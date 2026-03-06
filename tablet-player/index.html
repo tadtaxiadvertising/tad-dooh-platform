@@ -166,6 +166,9 @@
             // URL del servidor TAD (cambiar en production)
             SERVER_URL: 'https://tad-dooh-platform.vercel.app',
             
+            // Device ID forzado para testing (puedes cambiarlo aquí)
+            FORCE_DEVICE_ID: 'taxi-at23izb1d', // ← Device ID de Mendy
+            
             // Device ID (se genera automáticamente si no existe)
             DEVICE_ID_KEY: 'tad_device_id',
             
@@ -854,6 +857,26 @@
         };
         
         // ============================================
+        // TEST PLAYLIST (Para demo sin backend)
+        // ============================================
+        
+        const TEST_PLAYLIST = [
+            {
+                id: 'demo-video-1',
+                name: 'Bienvenido a TAD',
+                // Video placeholder - reemplazar con video real
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                duration: 15
+            },
+            {
+                id: 'demo-video-2',
+                name: 'TAD Dominicana Promo',
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+                duration: 30
+            }
+        ];
+        
+        // ============================================
         // INITIALIZATION
         // ============================================
         
@@ -862,6 +885,13 @@
             
             // Initialize storage
             await storage.init();
+            
+            // Override device ID if forced (para testing)
+            if (CONFIG.FORCE_DEVICE_ID) {
+                state.deviceId = CONFIG.FORCE_DEVICE_ID;
+                localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);
+                console.log('🔧 Device ID forzado:', state.deviceId);
+            }
             
             // Initialize UI
             ui.init();
@@ -874,12 +904,27 @@
                 watchdog.init();
             }
             
-            // Initial sync
+            // Load test playlist (mientras no hay backend)
+            state.currentCampaign = {
+                id: 'demo-campaign',
+                name: 'Campaña Demo TAD'
+            };
+            state.currentPlaylist = TEST_PLAYLIST;
+            state.currentIndex = 0;
+            
+            // Start playing test videos
+            if (state.currentPlaylist.length > 0) {
+                console.log('🎬 Reproduciendo playlist de prueba...');
+                player.play(state.currentPlaylist[0]);
+            }
+            
+            // Initial sync (intenta conectar al backend, si falla usa test playlist)
             if (state.isOnline) {
-                await sync.performSync();
-            } else {
-                // Load from local storage
-                await sync.loadLocalCampaigns();
+                try {
+                    await sync.performSync();
+                } catch (error) {
+                    console.log('⚠️ Sync no disponible, usando test playlist');
+                }
             }
             
             // Periodic sync check

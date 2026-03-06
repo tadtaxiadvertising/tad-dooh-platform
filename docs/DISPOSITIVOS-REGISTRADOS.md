@@ -6,7 +6,8 @@
 
 | # | Device ID | Nombre | Ciudad | Estado | Última Sync | Videos |
 |---|-----------|--------|--------|--------|-------------|--------|
-| 1 | `taxi-at23izb1d` | Taxi Santiago 1 | Santiago | 🟢 Activo | 2026-03-06 16:04 UTC | 0 |
+| 1 | `taxi-9wu77o406` | Taxi Santiago 1 | Santiago | 🟢 Activo | 2026-03-06 16:20 UTC | 0 |
+| ~ | `taxi-at23izb1d` | (anterior) | Santiago | ⚪ Reemplazado | 2026-03-06 16:04 UTC | 0 |
 
 ---
 
@@ -61,6 +62,8 @@ Start URL: https://tad-tablet-player.vercel.app
 
 | Hora (UTC) | Evento | Detalles |
 |------------|--------|----------|
+| 16:20 | ✅ **Device ID actualizado** | `taxi-9wu77o406` (nuevo ID persistente) |
+| 16:12 | 🔄 Cache borrada | ID anterior: taxi-at23izb1d |
 | 16:04 | ✅ Device registrado | ID: taxi-at23izb1d |
 | 15:57 | 🚀 Player deployado | https://tad-tablet-player.vercel.app |
 | 15:53 | 📱 Fully Kiosk instalado | Mendy confirmó instalación |

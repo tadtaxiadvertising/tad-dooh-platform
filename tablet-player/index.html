@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https:; connect-src 'self' https://tad-dooh-platform.vercel.app;">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    
+    <title>TAD Player - Taxi Advertising</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiVEFEIFBsYXllciIsInNob3J0X25hbWUiOiJUQUQiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6ImZ1bGxzY3JlZW4iLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCJ9">
+    
+    <style>
+        /* Custom styles for video player */
+        #video-container {
+            background: #000;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Hide cursor in kiosk mode */
+        .kiosk-mode {
+            cursor: none;
+        }
+        
+        /* Loading animation */
+        .loader {
+            border: 4px solid #333;
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Status indicator */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-online { background: #22c55e; }
+        .status-offline { background: #ef4444; }
+        .status-sync { background: #eab308; }
+    </style>
+</head>
+<body class="bg-black text-white kiosk-mode">
+    
+    <!-- App Container -->
+    <div id="app" class="min-h-screen flex flex-col">
+        
+        <!-- Header (oculto en kiosk mode, visible para debug) -->
+        <header id="header" class="hidden bg-zinc-900 border-b border-zinc-800 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <h1 class="text-xl font-bold text-taxi-400">TAD Player</h1>
+                    <span id="status-indicator" class="status-dot status-offline"></span>
+                    <span id="status-text" class="text-sm text-gray-400">Offline</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="device-id" class="text-sm text-gray-400">--</span>
+                    <span id="time" class="text-sm text-gray-400">--:--</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Video Container -->
+        <main id="video-container" class="flex-1 flex items-center justify-center relative">
+            
+            <!-- Video Element -->
+            <video 
+                id="main-video" 
+                class="w-full h-full"
+                playsinline
+                preload="auto"
+            ></video>
+            
+            <!-- Loading State -->
+            <div id="loading-state" class="absolute inset-0 flex items-center justify-center bg-black">
+                <div class="text-center">
+                    <div class="loader mx-auto mb-4"></div>
+                    <p class="text-gray-400">Cargando contenido...</p>
+                </div>
+            </div>
+            
+            <!-- Error State -->
+            <div id="error-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
+                <div class="text-center max-w-md px-4">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-xl font-bold mb-2">Error de Reproducción</h2>
+                    <p id="error-message" class="text-gray-400 mb-4">--</p>
+                    <button 
+                        onclick="player.retry()"
+                        class="bg-taxi-500 hover:bg-taxi-600 text-white font-bold py-2 px-6 rounded-full"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- No Content State -->
+            <div id="no-content-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
+                <div class="text-center max-w-md px-4">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <h2 class="text-xl font-bold mb-2">Esperando Contenido</h2>
+                    <p class="text-gray-400">No hay campañas activas para este dispositivo</p>
+                    <p class="text-gray-500 text-sm mt-2">ID: <span id="no-content-device-id">--</span></p>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer (oculto en kiosk mode) -->
+        <footer id="footer" class="hidden bg-zinc-900 border-t border-zinc-800 p-4">
+            <div class="flex items-center justify-between text-sm text-gray-400">
+                <div class="flex items-center space-x-4">
+                    <span id="current-campaign">--</span>
+                    <span id="playlist-position">--/--</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="player.toggleDebug()" class="hover:text-white">Debug</button>
+                    <button onclick="player.forceSync()" class="hover:text-white">Sync</button>
+                    <button onclick="player.restart()" class="hover:text-white">Restart</button>
+                </div>
+            </div>
+        </footer>
+        
+        <!-- Debug Panel (toggle con F12 o botón) -->
+        <div id="debug-panel" class="hidden absolute top-0 right-0 bg-black/90 p-4 text-xs font-mono max-w-md max-h-full overflow-auto">
+            <h3 class="font-bold mb-2">Debug Info</h3>
+            <pre id="debug-content" class="text-gray-400"></pre>
+        </div>
+    </div>
+    
+    <!-- Application Logic -->
+    <script type="module">
+        // ============================================
+        // TAD TABLET PLAYER - Offline-First PWA
+        // ============================================
+        
+        // Configuración
+        const CONFIG = {
+            // URL del servidor TAD (cambiar en production)
+            SERVER_URL: 'https://tad-dooh-platform.vercel.app',
+            
+            // Device ID (se genera automáticamente si no existe)
+            DEVICE_ID_KEY: 'tad_device_id',
+            
+            // Auth token
+            AUTH_TOKEN_KEY: 'tad_auth_token',
+            
+            // Sync settings
+            SYNC_INTERVAL: 24 * 60 * 60 * 1000, // 24 horas
+            SYNC_WINDOW: 10 * 60 * 1000, // 10 minutos de ventana
+            
+            // Analytics batch size
+            ANALYTICS_BATCH_SIZE: 100,
+            
+            // Heartbeat interval
+            HEARTBEAT_INTERVAL: 5 * 60 * 1000, // 5 minutos
+            
+            // Storage
+            STORAGE_CAMPAIGNS: 'tad_campaigns',
+            STORAGE_EVENTS: 'tad_events',
+            STORAGE_CONFIG: 'tad_config'
+        };
+        
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        
+        const state = {
+            deviceId: null,
+            authToken: null,
+            isOnline: navigator.onLine,
+            isSyncing: false,
+            currentCampaign: null,
+            currentPlaylist: [],
+            currentIndex: 0,
+            lastSync: null,
+            events: [],
+            config: {
+                loopEnabled: true,
+                analyticsEnabled: true,
+                watchdogEnabled: true
+            }
+        };
+        
+        // ============================================
+        // STORAGE WRAPPER (IndexedDB)
+        // ============================================
+        
+        const storage = {
+            async init() {
+                // Load from localStorage
+                state.deviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
+                state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
+                state.lastSync = localStorage.getItem('tad_last_sync');
+                
+                // Generate device ID if not exists
+                if (!state.deviceId) {
+                    state.deviceId = 'taxi-' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);
+                    console.log('🆕 Device ID generado:', state.deviceId);
+                }
+                
+                // Load config
+                const config = localStorage.getItem(CONFIG.STORAGE_CONFIG);
+                if (config) {
+                    state.config = JSON.parse(config);
+                }
+                
+                console.log('💾 Storage initialized');
+            },
+            
+            async saveEvents(events) {
+                // Store events in IndexedDB for persistence
+                const db = await this.getDB();
+                const tx = db.transaction('events', 'readwrite');
+                events.forEach(event => {
+                    tx.store.add({ ...event, id: Date.now() + Math.random() });
+                });
+                await tx.done;
+            },
+            
+            async getEvents() {
+                const db = await this.getDB();
+                const events = await db.getAll('events');
+                return events.sort((a, b) => a.timestamp - b.timestamp);
+            },
+            
+            async clearEvents(ids) {
+                const db = await this.getDB();
+                const tx = db.transaction('events', 'readwrite');
+                ids.forEach(id => tx.store.delete(id));
+                await tx.done;
+            },
+            
+            async getDB() {
+                if (!this.db) {
+                    this.db = await this.openDB();
+                }
+                return this.db;
+            },
+            
+            openDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('TADPlayer', 1);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('events')) {
+                            db.createObjectStore('events', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('campaigns')) {
+                            db.createObjectStore('campaigns', { keyPath: 'id' });
+                        }
+                    };
+                });
+            }
+        };
+        
+        // ============================================
+        // VIDEO PLAYER
+        // ============================================
+        
+        const player = {
+            video: null,
+            isPlaying: false,
+            retryCount: 0,
+            maxRetries: 3,
+            
+            init() {
+                this.video = document.getElementById('main-video');
+                
+                // Event listeners
+                this.video.addEventListener('play', () => this.onPlay());
+                this.video.addEventListener('pause', () => this.onPause());
+                this.video.addEventListener('ended', () => this.onEnded());
+                this.video.addEventListener('error', (e) => this.onError(e));
+                this.video.addEventListener('timeupdate', () => this.onTimeUpdate());
+                
+                console.log('▶️ Video player initialized');
+            },
+            
+            async play(video) {
+                try {
+                    this.showLoading();
+                    
+                    // Load video
+                    this.video.src = video.url || video.src;
+                    this.video.load();
+                    
+                    // Play
+                    await this.video.play();
+                    this.isPlaying = true;
+                    this.retryCount = 0;
+                    
+                    // Track event
+                    analytics.track('video_started', {
+                        campaignId: state.currentCampaign?.id,
+                        mediaId: video.id,
+                        videoUrl: video.url
+                    });
+                    
+                    console.log('▶️ Playing:', video.name || video.url);
+                    
+                } catch (error) {
+                    console.error('❌ Error playing video:', error);
+                    this.onError(error);
+                }
+            },
+            
+            onPlay() {
+                this.hideAllStates();
+                this.isPlaying = true;
+                ui.updatePlaylistPosition();
+            },
+            
+            onPause() {
+                this.isPlaying = false;
+            },
+            
+            async onEnded() {
+                console.log('✅ Video ended');
+                
+                // Track completion
+                analytics.track('video_completed', {
+                    campaignId: state.currentCampaign?.id,
+                    mediaId: state.currentPlaylist[state.currentIndex]?.id,
+                    duration: this.video.duration
+                });
+                
+                // Next video
+                this.next();
+            },
+            
+            onError(error) {
+                console.error('❌ Video error:', error);
+                this.retryCount++;
+                
+                if (this.retryCount >= this.maxRetries) {
+                    this.showError('Error al reproducir video. Reintentando...');
+                    
+                    // Track error
+                    analytics.track('video_error', {
+                        campaignId: state.currentCampaign?.id,
+                        mediaId: state.currentPlaylist[state.currentIndex]?.id,
+                        error: error.message || 'Unknown error'
+                    });
+                    
+                    // Skip to next
+                    setTimeout(() => this.next(), 3000);
+                } else {
+                    console.log('🔄 Retry', this.retryCount);
+                    setTimeout(() => this.play(state.currentPlaylist[state.currentIndex]), 2000);
+                }
+            },
+            
+            onTimeUpdate() {
+                // Update progress if needed
+                ui.updateProgress(this.video.currentTime / this.video.duration);
+            },
+            
+            next() {
+                if (state.currentPlaylist.length === 0) {
+                    this.showNoContent();
+                    return;
+                }
+                
+                state.currentIndex = (state.currentIndex + 1) % state.currentPlaylist.length;
+                const nextVideo = state.currentPlaylist[state.currentIndex];
+                this.play(nextVideo);
+            },
+            
+            previous() {
+                if (state.currentPlaylist.length === 0) return;
+                
+                state.currentIndex = (state.currentIndex - 1 + state.currentPlaylist.length) % state.currentPlaylist.length;
+                const prevVideo = state.currentPlaylist[state.currentIndex];
+                this.play(prevVideo);
+            },
+            
+            retry() {
+                this.retryCount = 0;
+                if (state.currentPlaylist.length > 0) {
+                    this.play(state.currentPlaylist[state.currentIndex]);
+                }
+            },
+            
+            restart() {
+                location.reload();
+            },
+            
+            showLoading() {
+                document.getElementById('loading-state').classList.remove('hidden');
+                this.hideAllStates();
+            },
+            
+            showError(message) {
+                document.getElementById('error-message').textContent = message;
+                document.getElementById('error-state').classList.remove('hidden');
+                this.hideAllStates();
+            },
+            
+            showNoContent() {
+                document.getElementById('no-content-device-id').textContent = state.deviceId;
+                document.getElementById('no-content-state').classList.remove('hidden');
+                this.hideAllStates();
+            },
+            
+            hideAllStates() {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-state').classList.add('hidden');
+                document.getElementById('no-content-state').classList.add('hidden');
+            },
+            
+            toggleDebug() {
+                const panel = document.getElementById('debug-panel');
+                panel.classList.toggle('hidden');
+                if (!panel.classList.contains('hidden')) {
+                    this.updateDebugInfo();
+                }
+            },
+            
+            updateDebugInfo() {
+                const debug = {
+                    deviceId: state.deviceId,
+                    isOnline: state.isOnline,
+                    isSyncing: state.isSyncing,
+                    playlistLength: state.currentPlaylist.length,
+                    currentIndex: state.currentIndex,
+                    lastSync: state.lastSync,
+                    pendingEvents: state.events.length,
+                    videoState: {
+                        src: this.video.src,
+                        currentTime: this.video.currentTime,
+                        duration: this.video.duration,
+                        paused: this.video.paused,
+                        error: this.video.error
+                    }
+                };
+                document.getElementById('debug-content').textContent = JSON.stringify(debug, null, 2);
+            },
+            
+            async forceSync() {
+                await sync.performSync();
+            }
+        };
+        
+        // ============================================
+        // ANALYTICS
+        // ============================================
+        
+        const analytics = {
+            track(eventType, data = {}) {
+                const event = {
+                    type: eventType,
+                    deviceId: state.deviceId,
+                    timestamp: Date.now(),
+                    occurredAt: new Date().toISOString(),
+                    ...data
+                };
+                
+                console.log('📊 Event:', event);
+                
+                // Add to local queue
+                state.events.push(event);
+                
+                // Save to IndexedDB
+                storage.saveEvents([event]);
+                
+                // Upload if online and batch is full
+                if (state.isOnline && state.events.length >= CONFIG.ANALYTICS_BATCH_SIZE) {
+                    this.uploadBatch();
+                }
+            },
+            
+            async uploadBatch() {
+                if (state.events.length === 0 || !state.isOnline) return;
+                
+                const batch = state.events.slice(0, CONFIG.ANALYTICS_BATCH_SIZE);
+                
+                try {
+                    const response = await fetch(`${CONFIG.SERVER_URL}/api/analytics/batch`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${state.authToken}`
+                        },
+                        body: JSON.stringify({
+                            deviceId: state.deviceId,
+                            events: batch
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Remove uploaded events
+                        state.events = state.events.slice(CONFIG.ANALYTICS_BATCH_SIZE);
+                        const ids = batch.map(e => e.id);
+                        await storage.clearEvents(ids);
+                        console.log('✅ Analytics uploaded:', batch.length);
+                    }
+                } catch (error) {
+                    console.error('❌ Error uploading analytics:', error);
+                }
+            },
+            
+            async uploadAll() {
+                const events = await storage.getEvents();
+                state.events = events;
+                await this.uploadBatch();
+            }
+        };
+        
+        // ============================================
+        // SYNC CLIENT
+        // ============================================
+        
+        const sync = {
+            async performSync() {
+                if (state.isSyncing) {
+                    console.log('⏳ Sync already in progress');
+                    return;
+                }
+                
+                if (!state.isOnline) {
+                    console.log('⏸️ Offline, skipping sync');
+                    return;
+                }
+                
+                state.isSyncing = true;
+                ui.updateStatus('sync');
+                
+                try {
+                    console.log('🔄 Starting sync...');
+                    
+                    // 1. Init sync
+                    const initResponse = await fetch(`${CONFIG.SERVER_URL}/api/sync/init`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${state.authToken}`
+                        },
+                        body: JSON.stringify({
+                            deviceId: state.deviceId,
+                            lastSync: state.lastSync
+                        })
+                    });
+                    
+                    if (!initResponse.ok) {
+                        throw new Error('Sync init failed');
+                    }
+                    
+                    const syncData = await initResponse.json();
+                    console.log('📥 Sync data received:', syncData);
+                    
+                    // 2. Download new campaigns
+                    if (syncData.campaigns && syncData.campaigns.length > 0) {
+                        await this.downloadCampaigns(syncData.campaigns);
+                    }
+                    
+                    // 3. Upload analytics
+                    await analytics.uploadAll();
+                    
+                    // 4. Execute commands
+                    if (syncData.commands && syncData.commands.length > 0) {
+                        await this.executeCommands(syncData.commands);
+                    }
+                    
+                    // 5. Update last sync
+                    state.lastSync = new Date().toISOString();
+                    localStorage.setItem('tad_last_sync', state.lastSync);
+                    
+                    console.log('✅ Sync completed');
+                    
+                } catch (error) {
+                    console.error('❌ Sync error:', error);
+                } finally {
+                    state.isSyncing = false;
+                    ui.updateStatus('online');
+                }
+            },
+            
+            async downloadCampaigns(campaigns) {
+                for (const campaign of campaigns) {
+                    console.log('📥 Downloading campaign:', campaign.name);
+                    
+                    // Download media files
+                    for (const media of campaign.media || []) {
+                        try {
+                            const response = await fetch(media.url);
+                            const blob = await response.blob();
+                            
+                            // Store in IndexedDB
+                            const db = await storage.getDB();
+                            const tx = db.transaction('campaigns', 'readwrite');
+                            tx.store.put({
+                                id: media.id,
+                                campaignId: campaign.id,
+                                blob: blob,
+                                url: media.url,
+                                downloadedAt: Date.now()
+                            });
+                            await tx.done;
+                            
+                            console.log('✅ Media downloaded:', media.id);
+                        } catch (error) {
+                            console.error('❌ Error downloading media:', error);
+                        }
+                    }
+                    
+                    // Update playlist
+                    if (campaign.id === state.currentCampaign?.id || !state.currentCampaign) {
+                        state.currentCampaign = campaign;
+                        state.currentPlaylist = campaign.playlist || [];
+                        state.currentIndex = 0;
+                        
+                        // Start playing
+                        if (state.currentPlaylist.length > 0) {
+                            player.play(state.currentPlaylist[0]);
+                        }
+                    }
+                }
+            },
+            
+            async executeCommands(commands) {
+                for (const command of commands) {
+                    console.log('⚡ Executing command:', command.type);
+                    
+                    switch (command.type) {
+                        case 'restart':
+                            player.restart();
+                            break;
+                        case 'clear_cache':
+                            await this.clearCache();
+                            break;
+                        case 'update_playlist':
+                            await this.updatePlaylist(command.params);
+                            break;
+                        case 'reboot':
+                            // Only works in Fully Kiosk with API
+                            await this.reboot();
+                            break;
+                    }
+                }
+            },
+            
+            async clearCache() {
+                const db = await storage.getDB();
+                const tx = db.transaction('campaigns', 'readwrite');
+                const store = tx.objectStore('campaigns');
+                await store.clear();
+                console.log('🧹 Cache cleared');
+            },
+            
+            async updatePlaylist(params) {
+                // Update playlist from server
+                await this.performSync();
+            },
+            
+            async reboot() {
+                // Fully Kiosk API endpoint
+                try {
+                    await fetch('http://localhost:2323/reboot', {
+                        method: 'POST',
+                        headers: {
+                            'Password': 'YOUR_FULLY_PASSWORD' // Configurable
+                        }
+                    });
+                } catch (error) {
+                    console.log('⚠️ Reboot via Fully Kiosk failed');
+                }
+            }
+        };
+        
+        // ============================================
+        // UI MANAGER
+        // ============================================
+        
+        const ui = {
+            init() {
+                this.updateTime();
+                setInterval(() => this.updateTime(), 1000);
+                
+                // Update device ID display
+                document.getElementById('device-id').textContent = state.deviceId;
+                
+                // Online/offline status
+                window.addEventListener('online', () => {
+                    state.isOnline = true;
+                    this.updateStatus('online');
+                    console.log('🟢 Online');
+                });
+                
+                window.addEventListener('offline', () => {
+                    state.isOnline = false;
+                    this.updateStatus('offline');
+                    console.log('🔴 Offline');
+                });
+                
+                console.log('🎨 UI initialized');
+            },
+            
+            updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('es-DO', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                document.getElementById('time').textContent = timeString;
+            },
+            
+            updateStatus(status) {
+                const indicator = document.getElementById('status-indicator');
+                const text = document.getElementById('status-text');
+                
+                indicator.className = 'status-dot';
+                
+                switch (status) {
+                    case 'online':
+                        indicator.classList.add('status-online');
+                        text.textContent = 'Online';
+                        break;
+                    case 'offline':
+                        indicator.classList.add('status-offline');
+                        text.textContent = 'Offline';
+                        break;
+                    case 'sync':
+                        indicator.classList.add('status-sync');
+                        text.textContent = 'Syncing...';
+                        break;
+                }
+            },
+            
+            updatePlaylistPosition() {
+                const position = `${state.currentIndex + 1}/${state.currentPlaylist.length}`;
+                document.getElementById('playlist-position').textContent = position;
+            },
+            
+            updateProgress(progress) {
+                // Optional: show progress bar
+            },
+            
+            showHeaderFooter(show) {
+                const header = document.getElementById('header');
+                const footer = document.getElementById('footer');
+                
+                if (show) {
+                    header.classList.remove('hidden');
+                    footer.classList.remove('hidden');
+                } else {
+                    header.classList.add('hidden');
+                    footer.classList.add('hidden');
+                }
+            }
+        };
+        
+        // ============================================
+        // WATCHDOG MONITOR
+        // ============================================
+        
+        const watchdog = {
+            lastActivity: Date.now(),
+            checkInterval: null,
+            
+            init() {
+                // Check every minute
+                this.checkInterval = setInterval(() => this.check(), 60 * 1000);
+                
+                // Track activity
+                document.addEventListener('click', () => this.onActivity());
+                document.addEventListener('keydown', () => this.onActivity());
+                
+                console.log('🐕 Watchdog initialized');
+            },
+            
+            onActivity() {
+                this.lastActivity = Date.now();
+            },
+            
+            check() {
+                const now = Date.now();
+                const inactiveTime = now - this.lastActivity;
+                
+                // If no activity for 10 minutes, check if video is playing
+                if (inactiveTime > 10 * 60 * 1000) {
+                    if (!player.isPlaying && state.currentPlaylist.length > 0) {
+                        console.log('⚠️ Watchdog: Video not playing, restarting...');
+                        player.retry();
+                    }
+                }
+                
+                // Send heartbeat
+                if (now % CONFIG.HEARTBEAT_INTERVAL < 60000) {
+                    this.sendHeartbeat();
+                }
+            },
+            
+            async sendHeartbeat() {
+                if (!state.isOnline) return;
+                
+                try {
+                    await fetch(`${CONFIG.SERVER_URL}/api/devices/${state.deviceId}/heartbeat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${state.authToken}`
+                        },
+                        body: JSON.stringify({
+                            status: player.isPlaying ? 'playing' : 'idle',
+                            battery: 100, // Would need native API
+                            storage: await this.getStorageInfo(),
+                            currentCampaign: state.currentCampaign?.id,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                } catch (error) {
+                    console.error('❌ Heartbeat failed:', error);
+                }
+            },
+            
+            async getStorageInfo() {
+                const db = await storage.getDB();
+                // Estimate storage usage
+                return { used: 0, total: 0 }; // Simplified
+            }
+        };
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        async function init() {
+            console.log('🚀 TAD Player initializing...');
+            
+            // Initialize storage
+            await storage.init();
+            
+            // Initialize UI
+            ui.init();
+            
+            // Initialize player
+            player.init();
+            
+            // Initialize watchdog
+            if (state.config.watchdogEnabled) {
+                watchdog.init();
+            }
+            
+            // Initial sync
+            if (state.isOnline) {
+                await sync.performSync();
+            } else {
+                // Load from local storage
+                await sync.loadLocalCampaigns();
+            }
+            
+            // Periodic sync check
+            setInterval(() => {
+                const now = Date.now();
+                const lastSync = new Date(state.lastSync).getTime();
+                
+                if (now - lastSync >= CONFIG.SYNC_INTERVAL) {
+                    sync.performSync();
+                }
+            }, 60 * 1000); // Check every minute
+            
+            console.log('✅ TAD Player ready');
+            console.log('📱 Device ID:', state.deviceId);
+        }
+        
+        // Start app
+        init();
+        
+        // Expose player for debugging
+        window.player = player;
+        window.sync = sync;
+        window.analytics = analytics;
+    </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+// ============================================
+// TAD DOOH Platform - Prisma Schema
+// ============================================
+// Database schema for PostgreSQL
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS (Administradores del sistema)
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns Campaign[]
+  
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+// ============================================
+// DEVICES (Tablets en taxis)
+// ============================================
+
+model Device {
+  id            String    @id @default(uuid())
+  deviceId      String    @unique @map("device_id")
+  name          String?
+  taxiNumber    String?   @map("taxi_number")
+  city          String?
+  status        DeviceStatus @default(ACTIVE)
+  lastSync      DateTime? @map("last_sync")
+  lastHeartbeat DateTime? @map("last_heartbeat")
+  batteryLevel  Int?      @map("battery_level")
+  storageUsed   BigInt?   @map("storage_used")
+  storageTotal  BigInt?   @map("storage_total")
+  appVersion    String?   @map("app_version")
+  authToken     String?   @map("auth_token")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt      @map("updated_at")
+
+  events         AnalyticsEvent[]
+  commands       DeviceCommand[]
+  campaignMetrics CampaignMetric[]
+  
+  @@map("devices")
+  @@index([status])
+  @@index([lastSync])
+  @@index([city])
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  OFFLINE
+  ERROR
+}
+
+// ============================================
+// CAMPAIGNS (Campañas publicitarias)
+// ============================================
+
+model Campaign {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(DRAFT)
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  targetCities String[] @map("target_cities")
+  targetFleets String[] @map("target_fleets")
+  priority    Int      @default(0)
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  createdBy User       @relation(fields: [createdById], references: [id])
+  playlists Playlist[]
+  metrics   CampaignMetric[]
+  
+  @@map("campaigns")
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+// ============================================
+// PLAYLISTS (Listas de reproducción)
+// ============================================
+
+model Playlist {
+  id        String   @id @default(uuid())
+  campaignId String  @map("campaign_id")
+  name      String
+  loopType  LoopType @default(SEQUENTIAL)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  items    PlaylistItem[]
+  
+  @@map("playlists")
+}
+
+enum LoopType {
+  SEQUENTIAL
+  RANDOM
+  WEIGHTED
+}
+
+// ============================================
+// PLAYLIST ITEMS (Items en playlist)
+// ============================================
+
+model PlaylistItem {
+  id        String   @id @default(uuid())
+  playlistId String  @map("playlist_id")
+  mediaId   String  @map("media_id")
+  position  Int
+  durationSeconds Int? @map("duration_seconds")
+  weight    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  media    Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  
+  @@map("playlist_items")
+  @@unique([playlistId, position])
+}
+
+// ============================================
+// MEDIA (Archivos de video/imagen)
+// ============================================
+
+model Media {
+  id              String   @id @default(uuid())
+  filename        String
+  originalFilename String? @map("original_filename")
+  mimeType        String  @map("mime_type")
+  fileSize        BigInt  @map("file_size")
+  durationSeconds Int?    @map("duration_seconds")
+  width           Int?
+  height          Int?
+  storageKey      String  @map("storage_key")
+  cdnUrl          String? @map("cdn_url")
+  hashMd5         String  @map("hash_md5")
+  hashSha256      String  @map("hash_sha256")
+  status          MediaStatus @default(PROCESSING)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  playlistItems PlaylistItem[]
+  
+  @@map("media")
+  @@index([status])
+}
+
+enum MediaStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+// ============================================
+// ANALYTICS EVENTS (Eventos de analytics)
+// ============================================
+
+model AnalyticsEvent {
+  id          BigInt   @id @default(autoincrement())
+  deviceId    String?  @map("device_id")
+  campaignId  String?  @map("campaign_id")
+  mediaId     String?  @map("media_id")
+  eventType   String   @map("event_type")
+  eventData   Json?    @map("event_data")
+  occurredAt  DateTime @map("occurred_at")
+  receivedAt  DateTime @default(now()) @map("received_at")
+  processed   Boolean  @default(false)
+
+  device Device? @relation(fields: [deviceId], references: [id])
+  
+  @@map("analytics_events")
+  @@index([deviceId])
+  @@index([campaignId])
+  @@index([eventType])
+  @@index([occurredAt])
+  @@index([processed])
+}
+
+// ============================================
+// CAMPAIGN METRICS (Métricas pre-computadas)
+// ============================================
+
+model CampaignMetric {
+  id               BigInt   @id @default(autoincrement())
+  campaignId       String   @map("campaign_id")
+  deviceId         String?  @map("device_id")
+  date             DateTime @db.Date
+  city             String?
+  totalImpressions Int      @default(0) @map("total_impressions")
+  totalCompletions Int      @default(0) @map("total_completions")
+  totalErrors      Int      @default(0) @map("total_errors")
+  uniqueDevices    Int      @default(0) @map("unique_devices")
+  avgCompletionRate Decimal? @map("avg_completion_rate") @db.Decimal(5, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  device   Device?  @relation(fields: [deviceId], references: [id])
+  
+  @@map("campaign_metrics")
+  @@index([campaignId])
+  @@index([date])
+  @@unique([campaignId, date, city])
+}
+
+// ============================================
+// DEVICE COMMANDS (Comandos remotos)
+// ============================================
+
+model DeviceCommand {
+  id           String        @id @default(uuid())
+  deviceId     String        @map("device_id")
+  commandType  String        @map("command_type")
+  commandParams Json?        @map("command_params")
+  status       CommandStatus @default(PENDING)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  executedAt   DateTime?     @map("executed_at")
+  result       Json?
+  expiresAt    DateTime?     @map("expires_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  
+  @@map("device_commands")
+  @@index([deviceId])
+  @@index([status])
+}
+
+enum CommandStatus {
+  PENDING
+  EXECUTED
+  FAILED
+  EXPIRED
+}

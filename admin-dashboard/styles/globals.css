@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --tad-yellow: #fad400;
+  --zinc-deep: #121212;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-tad-yellow: var(--tad-yellow);
+  --color-zinc-deep: var(--zinc-deep);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: inherit;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.text-shadow-glow {
+  text-shadow: 0 0 20px rgba(250, 212, 0, 0.4);
+}

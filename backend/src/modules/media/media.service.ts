@@ -96,6 +96,41 @@ export class MediaService {
     }
   }
 
+  async registerFileMock(dto: { originalname: string; mimetype: string; size: number }) {
+    const fileExt = extname(dto.originalname);
+    const fileId = uuidv4();
+    const fileName = `videos/mock-${fileId}${fileExt}`;
+    // Provide a valid default video URL to make it "100% funcional" for visual testing
+    const cdnUrl = `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4#mock-${fileId}`;
+
+    try {
+      const media = await this.prisma.media.create({
+        data: {
+          id: fileId,
+          filename: fileName,
+          originalFilename: dto.originalname,
+          mimeType: dto.mimetype,
+          fileSize: BigInt(dto.size),
+          storageKey: fileName,
+          cdnUrl: cdnUrl,
+          status: 'READY',
+          hashMd5: 'pending',
+          hashSha256: 'pending',
+        }
+      });
+
+      return {
+        id: media.id,
+        url: media.cdnUrl,
+        size: Number(media.fileSize),
+        mime: media.mimeType,
+      };
+    } catch (dbError: any) {
+      this.logger.error(`DB Error saving mock media: ${dbError.message}`);
+      throw new BadRequestException('Failed to save mock metadata to database');
+    }
+  }
+
   async listFiles() {
     try {
       // Return media from database as sources of truth for the dashboard

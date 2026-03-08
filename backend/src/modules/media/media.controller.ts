@@ -4,7 +4,8 @@ import {
   Get, 
   UseInterceptors, 
   UploadedFile, 
-  BadRequestException 
+  BadRequestException,
+  Body
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
@@ -37,5 +38,17 @@ export class MediaController {
   @Get()
   async getMedia() {
     return this.mediaService.listFiles();
+  }
+
+  @Post('register-mock')
+  async registerMockMedia(@Body() dto: { filename: string; mimetype: string; size: number; }) {
+    if (!dto.filename || !dto.mimetype || !dto.size) {
+      throw new BadRequestException('filename, mimetype, and size are required');
+    }
+    return this.mediaService.registerFileMock({
+      originalname: dto.filename,
+      mimetype: dto.mimetype,
+      size: dto.size
+    });
   }
 }

@@ -9,7 +9,8 @@
     "dev:backend": "cd backend && npm run start:dev",
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
     "build:backend": "cd backend && npm run build",
-    "deploy:vercel": "vercel --prod"
+    "deploy:vercel": "node devops/deploy-vercel.js",
+    "deploy": "node devops/deploy-all.js"
   },
   "repository": {
     "type": "git",

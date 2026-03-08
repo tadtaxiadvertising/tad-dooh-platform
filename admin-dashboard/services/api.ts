@@ -25,6 +25,9 @@ export const uploadMedia = (formData: FormData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(res => res.data);
 
+export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) => 
+  api.post('/media/register-mock', data).then(res => res.data);
+
 // Analytics
 export const getTopTaxis = () => api.get('/analytics/top-taxis').then(res => res.data);
 export const getHourlyPlays = () => api.get('/analytics/hourly').then(res => res.data);

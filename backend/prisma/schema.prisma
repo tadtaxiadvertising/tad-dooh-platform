@@ -22,7 +22,7 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      UserRole @default(ADMIN)
+  role      String @default("ADMIN")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,11 +31,7 @@ model User {
   @@map("users")
 }
 
-enum UserRole {
-  ADMIN
-  OPERATOR
-  VIEWER
-}
+
 
 // ============================================
 // DEVICES (Tablets en taxis)
@@ -47,7 +43,7 @@ model Device {
   name          String?
   taxiNumber    String?   @map("taxi_number")
   city          String?
-  status        DeviceStatus @default(ACTIVE)
+  status        String @default("ACTIVE")
   lastSync      DateTime? @map("last_sync")
   lastHeartbeat DateTime? @map("last_heartbeat")
   batteryLevel  Int?      @map("battery_level")
@@ -58,22 +54,30 @@ model Device {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt      @map("updated_at")
 
+  fleet         String?
+  lastSeen      DateTime? @map("last_seen")
+  storageFree   String?   @map("storage_free")
+  lastPlayback  DateTime? @map("last_playback")
+  playerStatus  String?   @map("player_status")
+  lastSyncHash  String?   @map("last_sync_hash")
+  lastSyncAt    DateTime? @map("last_sync_at")
+  lastOnline    DateTime? @map("last_online")
+  lastSyncSuccess Boolean? @map("last_sync_success")
+
   events         AnalyticsEvent[]
   commands       DeviceCommand[]
   campaignMetrics CampaignMetric[]
+  heartbeats     DeviceHeartbeat[]
+  playbackEvents PlaybackEvent[]
   
   @@map("devices")
   @@index([status])
   @@index([lastSync])
   @@index([city])
+  @@index([lastSeen])
 }
 
-enum DeviceStatus {
-  ACTIVE
-  INACTIVE
-  OFFLINE
-  ERROR
-}
+
 
 // ============================================
 // CAMPAIGNS (Campañas publicitarias)
@@ -82,32 +86,33 @@ enum DeviceStatus {
 model Campaign {
   id          String   @id @default(uuid())
   name        String
+  advertiser  String
   description String?
-  status      CampaignStatus @default(DRAFT)
-  startDate   DateTime? @map("start_date")
-  endDate     DateTime? @map("end_date")
-  targetCities String[] @map("target_cities")
-  targetFleets String[] @map("target_fleets")
+  status      String @default("DRAFT")
+  active      Boolean  @default(true)
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  version     Int      @default(1)
+  targetCities String @default("[]") @map("target_cities")
+  targetFleets String @default("[]") @map("target_fleets")
   priority    Int      @default(0)
-  createdById String   @map("created_by")
+  createdById String?  @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt      @map("updated_at")
 
-  createdBy User       @relation(fields: [createdById], references: [id])
+  createdBy User?      @relation(fields: [createdById], references: [id])
   playlists Playlist[]
   metrics   CampaignMetric[]
+  videos    Video[]
+  mediaAssets MediaAsset[]
   
   @@map("campaigns")
+  @@index([active])
   @@index([status])
   @@index([startDate, endDate])
 }
 
-enum CampaignStatus {
-  DRAFT
-  ACTIVE
-  PAUSED
-  COMPLETED
-}
+
 
 // ============================================
 // PLAYLISTS (Listas de reproducción)
@@ -117,7 +122,7 @@ model Playlist {
   id        String   @id @default(uuid())
   campaignId String  @map("campaign_id")
   name      String
-  loopType  LoopType @default(SEQUENTIAL)
+  loopType  String @default("SEQUENTIAL")
   createdAt DateTime @default(now()) @map("created_at")
 
   campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -126,11 +131,7 @@ model Playlist {
   @@map("playlists")
 }
 
-enum LoopType {
-  SEQUENTIAL
-  RANDOM
-  WEIGHTED
-}
+
 
 // ============================================
 // PLAYLIST ITEMS (Items en playlist)
@@ -169,7 +170,7 @@ model Media {
   cdnUrl          String? @map("cdn_url")
   hashMd5         String  @map("hash_md5")
   hashSha256      String  @map("hash_sha256")
-  status          MediaStatus @default(PROCESSING)
+  status          String @default("PROCESSING")
   createdAt       DateTime @default(now()) @map("created_at")
 
   playlistItems PlaylistItem[]
@@ -178,28 +179,25 @@ model Media {
   @@index([status])
 }
 
-enum MediaStatus {
-  PROCESSING
-  READY
-  ERROR
-}
+
 
 // ============================================
 // ANALYTICS EVENTS (Eventos de analytics)
 // ============================================
 
 model AnalyticsEvent {
-  id          BigInt   @id @default(autoincrement())
-  deviceId    String?  @map("device_id")
-  campaignId  String?  @map("campaign_id")
+  id          String   @id @default(uuid())
+  deviceId    String   @map("device_id")
+  campaignId  String   @map("campaign_id")
   mediaId     String?  @map("media_id")
   eventType   String   @map("event_type")
-  eventData   Json?    @map("event_data")
+  eventData   String?    @map("event_data")
+  timestamp   DateTime @default(now())
   occurredAt  DateTime @map("occurred_at")
   receivedAt  DateTime @default(now()) @map("received_at")
   processed   Boolean  @default(false)
 
-  device Device? @relation(fields: [deviceId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [deviceId])
   
   @@map("analytics_events")
   @@index([deviceId])
@@ -217,13 +215,13 @@ model CampaignMetric {
   id               BigInt   @id @default(autoincrement())
   campaignId       String   @map("campaign_id")
   deviceId         String?  @map("device_id")
-  date             DateTime @db.Date
+  date             DateTime
   city             String?
   totalImpressions Int      @default(0) @map("total_impressions")
   totalCompletions Int      @default(0) @map("total_completions")
   totalErrors      Int      @default(0) @map("total_errors")
   uniqueDevices    Int      @default(0) @map("unique_devices")
-  avgCompletionRate Decimal? @map("avg_completion_rate") @db.Decimal(5, 2)
+  avgCompletionRate Float? @map("avg_completion_rate")
   createdAt        DateTime @default(now()) @map("created_at")
 
   campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -243,11 +241,11 @@ model DeviceCommand {
   id           String        @id @default(uuid())
   deviceId     String        @map("device_id")
   commandType  String        @map("command_type")
-  commandParams Json?        @map("command_params")
-  status       CommandStatus @default(PENDING)
+  commandParams String?        @map("command_params")
+  status       String @default("PENDING")
   createdAt    DateTime      @default(now()) @map("created_at")
   executedAt   DateTime?     @map("executed_at")
-  result       Json?
+  result       String?
   expiresAt    DateTime?     @map("expires_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -257,9 +255,83 @@ model DeviceCommand {
   @@index([status])
 }
 
-enum CommandStatus {
-  PENDING
-  EXECUTED
-  FAILED
-  EXPIRED
+
+
+// ============================================
+// NEW MODELS FOR V1
+// ============================================
+
+model Video {
+  id          String   @id @default(uuid())
+  campaignId  String   @map("campaign_id")
+  title       String
+  url         String
+  duration    Int
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("videos")
 }
+
+model DeviceHeartbeat {
+  id           String   @id @default(uuid())
+  deviceId     String   @map("device_id")
+  batteryLevel Int?     @map("battery_level")
+  storageFree  String?  @map("storage_free")
+  timestamp    DateTime @default(now())
+
+  // Using deviceId as string field, relation works if we map it to the Device unique deviceId or ID. 
+  // It's usually better to map to Device ID. 
+  // Wait, device_id from payload is e.g. "taxi-9wu77o406". Let's link it to Device.deviceId as relation?
+  // Our Schema: Device has `id` and `deviceId` (unique).
+  // Standard relational is by `deviceId` in Device.id or Device.deviceId.
+  device       Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@map("device_heartbeats")
+  @@index([deviceId])
+}
+
+model PlaybackEvent {
+  id         String   @id @default(uuid())
+  deviceId   String   @map("device_id")
+  eventType  String   @map("event_type")
+  videoId    String   @map("video_id")
+  timestamp  DateTime @default(now())
+
+  device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@map("playback_events")
+  @@index([deviceId])
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid())
+  campaignId  String   @map("campaign_id")
+  type        String
+  filename    String
+  url         String
+  fileSize    Int      @map("file_size")
+  checksum    String
+  duration    Int?
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("media_assets")
+  @@index([campaignId])
+}
+
+model Fleet {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  city      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("fleets")
+}
+

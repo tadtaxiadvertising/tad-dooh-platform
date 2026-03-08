@@ -1,13 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart3, CloudUpload, User, Bell, Search, Zap } from 'lucide-react';
+import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet } from 'lucide-react';
 import clsx from 'clsx';
 
 const NAVIGATION = [
   { name: 'Insights', href: '/', icon: LayoutDashboard },
   { name: 'Fleet Monitoring', href: '/fleet', icon: CarFront },
   { name: 'Alerts & Offline', href: '/fleet/offline', icon: MonitorOff },
+  { name: 'Revenue & Payouts', href: '/finance', icon: Wallet },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Media Assets', href: '/media', icon: CloudUpload },
   { name: 'Intelligence', href: '/analytics', icon: BarChart3 },

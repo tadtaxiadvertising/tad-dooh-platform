@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { getMedia, uploadMedia, getCampaigns, addVideoToCampaign } from '../../services/api';
-import { CloudUpload, Link as LinkIcon, Film, CheckCircle, Trash2, Plus, Info, Zap, Calendar, Play, Activity, X, Eye } from 'lucide-react';
+import { CloudUpload, Link as LinkIcon, Film, Plus, Info, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function MediaPage() {
@@ -9,22 +9,26 @@ export default function MediaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>('');
   
-  // Form State
+  // Local blob previews for uploaded files (survives until page reload)
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+  
+  // Upload form state
   const [selectedCampaign, setSelectedCampaign] = useState('');
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(15);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     setError(null);
     try {
-      const [mediaData, campaignsData] = await Promise.all([
-        getMedia(),
-        getCampaigns()
-      ]);
+      const [mediaData, campaignsData] = await Promise.all([getMedia(), getCampaigns()]);
       setMedia(Array.isArray(mediaData) ? mediaData : []);
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
     } catch (err) {
@@ -37,48 +41,87 @@ export default function MediaPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  /** Extract the clean video URL (remove mock hash fragment) */
-  const getCleanUrl = (url: string) => {
-    return url?.split('#')[0] || url;
+  // Clean up blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+      Object.values(localPreviews).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
+
+  /** Check if a URL is a mock placeholder */
+  const isMockUrl = (url: string) => url?.includes('#mock-');
+
+  /** Get the best preview URL for a media item */
+  const getPreviewUrl = (file: any) => {
+    // If we have a local blob preview from this session, use it
+    if (localPreviews[file.id]) return localPreviews[file.id];
+    // If URL is a mock, the video is the same for all (BigBuckBunny) - still playable for demo
+    return file.url?.split('#')[0] || file.url;
   };
 
-  /** Get a display name from a media file */
+  /** Get a display name */
   const getDisplayName = (file: any) => {
-    // If the file has an originalFilename, use it
     if (file.originalFilename) return file.originalFilename;
-    // Otherwise extract the last part of filename and clean up UUIDs  
     const basename = file.filename?.split('/').pop() || 'Untitled';
-    // If it looks like a UUID filename, improve display
     if (/^[0-9a-f]{8}-/.test(basename)) {
-      const ext = basename.split('.').pop() || 'mp4';
-      return `Media-${basename.slice(0, 8)}.${ext}`;
+      return `Media-${basename.slice(0, 8)}.${basename.split('.').pop() || 'mp4'}`;
     }
     return basename;
   };
 
-  /** Find which campaigns use this media */
+  /** Find linked campaigns */
   const getLinkedCampaigns = (mediaId: string) => {
     return campaigns.filter(c => 
       c.mediaAssets?.some((a: any) => a.checksum === mediaId || a.url?.includes(mediaId))
     );
   };
 
+  /** Handle file selection - show preview immediately */
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+    // Create a local blob URL for instant preview
+    if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+    const blobUrl = URL.createObjectURL(file);
+    setFilePreviewUrl(blobUrl);
+    // Auto-fill title from filename if empty
+    if (!title) {
+      const name = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      setTitle(name.charAt(0).toUpperCase() + name.slice(1));
+    }
+  };
+
+  const resetUploadForm = () => {
+    setTitle('');
+    setSelectedCampaign('');
+    setSelectedFile(null);
+    setDuration(15);
+    setUploadProgress(0);
+    if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fileInputRef.current?.files?.[0]) return alert("Please select a video file.");
-    if (!selectedCampaign) return alert("Selecting a target campaign is mandatory.");
+    if (!selectedFile) return alert("Please select a video file.");
+    if (!selectedCampaign) return alert("Select a target campaign.");
     if (!title) return alert("Asset title is required.");
 
     setUploading(true);
-    const file = fileInputRef.current.files[0];
+    setUploadProgress(10);
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
-      // 1. Backend handles S3 and DB Synchronization
+      setUploadProgress(30);
+      // 1. Upload to backend
       const uploadedData = await uploadMedia(formData);
+      setUploadProgress(60);
       
-      // 2. Link the new Media ID to the Campaign
+      // 2. Link to campaign
       await addVideoToCampaign(selectedCampaign, {
         type: 'video',
         filename: title,
@@ -87,85 +130,75 @@ export default function MediaPage() {
         checksum: uploadedData.id,
         duration: Number(duration)
       });
+      setUploadProgress(90);
 
+      // 3. Save local blob URL for the uploaded media so it previews correctly this session
+      if (filePreviewUrl) {
+        setLocalPreviews(prev => ({ ...prev, [uploadedData.id]: filePreviewUrl }));
+        setFilePreviewUrl(null); // Don't revoke - we keep it for preview
+      }
+
+      setUploadProgress(100);
       setShowUploadModal(false);
-      setTitle('');
-      setSelectedCampaign('');
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      resetUploadForm();
       await loadData();
     } catch (e: any) {
-      alert("Injection Failed: " + (e.response?.data?.message || e.message));
+      alert("Upload Failed: " + (e.response?.data?.message || e.message));
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-700">
-      {/* Header Area */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
             Media <span className="text-tad-yellow text-shadow-glow">Assets</span>
           </h1>
           <p className="text-gray-400 max-w-2xl">
-            Centralized repository for DOOH content. Assets are automatically optimized and distributed across the tablet fleet.
+            Centralized asset repository. Upload videos and assign them to campaigns for distribution across the taxi fleet.
           </p>
         </div>
         <button 
-          onClick={() => setShowUploadModal(true)}
+          onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
           className="group relative flex items-center justify-center gap-2 bg-tad-yellow hover:bg-yellow-400 text-black font-bold py-3 px-6 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(250,212,0,0.4)]"
         >
           <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-          Deploy New Asset
+          Upload New Video
         </button>
       </div>
 
       {error && (
-        <div className="mb-10 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-500 animate-pulse">
-           <Activity className="w-5 h-5 flex-shrink-0" />
-           <div>
-              <p className="text-[10px] font-black uppercase tracking-widest">Storage Handshake Error</p>
-              <p className="text-xs font-bold leading-tight">{error}</p>
-           </div>
+        <div className="mb-10 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-500">
+           <Activity className="w-5 h-5 shrink-0" />
+           <p className="text-xs font-bold">{error}</p>
         </div>
       )}
 
-      {/* Statistics Row */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-tad-yellow/10 rounded-xl text-tad-yellow">
-              <Film className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Total Blobs</p>
-              <h3 className="text-2xl font-bold text-white">{media.length}</h3>
-            </div>
+        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex items-center gap-4">
+          <div className="p-3 bg-tad-yellow/10 rounded-xl text-tad-yellow"><Film className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Total Assets</p>
+            <h3 className="text-2xl font-bold text-white">{media.length}</h3>
           </div>
         </div>
-        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-zinc-800 rounded-xl text-zinc-400">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Linked to Campaigns</p>
-              <h3 className="text-2xl font-bold text-white">
-                {media.filter(m => getLinkedCampaigns(m.id).length > 0).length}
-              </h3>
-            </div>
+        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex items-center gap-4">
+          <div className="p-3 bg-zinc-800 rounded-xl text-zinc-400"><Zap className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Linked to Campaigns</p>
+            <h3 className="text-2xl font-bold text-white">{media.filter(m => getLinkedCampaigns(m.id).length > 0).length}</h3>
           </div>
         </div>
-        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-tad-yellow/10 rounded-xl text-tad-yellow">
-              <CloudUpload className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Cloud Health</p>
-              <h3 className="text-2xl font-bold text-white">Active</h3>
-            </div>
+        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex items-center gap-4">
+          <div className="p-3 bg-tad-yellow/10 rounded-xl text-tad-yellow"><CloudUpload className="w-6 h-6" /></div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Storage Status</p>
+            <h3 className="text-2xl font-bold text-white">Active</h3>
           </div>
         </div>
       </div>
@@ -177,15 +210,19 @@ export default function MediaPage() {
         ) : media.length > 0 ? (
           media.map((file, i) => {
             const linkedCampaigns = getLinkedCampaigns(file.id);
-            const cleanUrl = getCleanUrl(file.url);
+            const videoUrl = getPreviewUrl(file);
             const displayName = getDisplayName(file);
+            const hasLocalPreview = !!localPreviews[file.id];
 
             return (
-              <div key={i} className="group relative bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/50 transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
-                {/* Video Preview */}
-                <div className="aspect-video bg-black relative overflow-hidden cursor-pointer" onClick={() => setPreviewUrl(cleanUrl)}>
+              <div key={file.id || i} className="group relative bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/50 transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
+                {/* Video Thumbnail with real preview */}
+                <div 
+                  className="aspect-video bg-black relative overflow-hidden cursor-pointer"
+                  onClick={() => { setPreviewUrl(videoUrl); setPreviewTitle(displayName); }}
+                >
                   <video 
-                    src={cleanUrl} 
+                    src={videoUrl} 
                     className="w-full h-full object-cover"
                     preload="metadata"
                     muted
@@ -198,6 +235,19 @@ export default function MediaPage() {
                     <div className="bg-tad-yellow/90 rounded-full p-3 shadow-lg shadow-tad-yellow/30">
                       <Eye className="w-5 h-5 text-black" />
                     </div>
+                  </div>
+                  {/* Badges */}
+                  <div className="absolute top-3 left-3 flex gap-2">
+                    {hasLocalPreview && (
+                      <span className="bg-tad-yellow/90 text-black text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Original
+                      </span>
+                    )}
+                    {isMockUrl(file.url) && !hasLocalPreview && (
+                      <span className="bg-zinc-800/90 text-zinc-400 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Demo
+                      </span>
+                    )}
                   </div>
                   <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-gray-300 font-mono">
                     {file.mime?.split('/')[1]?.toUpperCase() || 'VIDEO'}
@@ -214,7 +264,7 @@ export default function MediaPage() {
                       </p>
                     </div>
                     <a 
-                      href={cleanUrl} 
+                      href={videoUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors shrink-0"
@@ -223,7 +273,6 @@ export default function MediaPage() {
                     </a>
                   </div>
 
-                  {/* Linked Campaigns */}
                   {linkedCampaigns.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-1">
                       {linkedCampaigns.map((c: any) => (
@@ -239,9 +288,7 @@ export default function MediaPage() {
                       <Calendar className="w-3 h-3" />
                       {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy') : 'Recently'}
                     </div>
-                    <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">
-                      READY
-                    </span>
+                    <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">READY</span>
                   </div>
                 </div>
               </div>
@@ -251,123 +298,163 @@ export default function MediaPage() {
           <div className="col-span-full py-20 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center">
             <Film className="w-16 h-16 text-zinc-700 mb-4" />
             <h3 className="text-xl font-bold text-gray-400">No media assets found</h3>
-            <p className="text-gray-500 mt-2">Deploy your first asset to start the platform synchronization.</p>
+            <p className="text-gray-500 mt-2">Upload your first video to start distributing content.</p>
           </div>
         )}
       </div>
 
-      {/* Video Preview Modal */}
+      {/* ======================== FULLSCREEN VIDEO PREVIEW MODAL ======================== */}
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setPreviewUrl(null)} />
           <div className="relative w-full max-w-4xl animate-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setPreviewUrl(null)}
-              className="absolute -top-12 right-0 text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold uppercase tracking-widest"
-            >
-              <X className="w-5 h-5" /> Close Preview
-            </button>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-lg truncate">{previewTitle || 'Preview'}</h3>
+              <button onClick={() => setPreviewUrl(null)}
+                className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold uppercase tracking-widest">
+                <X className="w-5 h-5" /> Close
+              </button>
+            </div>
             <div className="bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-              <video 
-                src={previewUrl} 
-                controls 
-                autoPlay
-                className="w-full aspect-video bg-black"
-              />
+              <video src={previewUrl} controls autoPlay className="w-full aspect-video bg-black" />
             </div>
           </div>
         </div>
       )}
 
-      {/* Upload Modal (Overlay) */}
+      {/* ======================== UPLOAD MODAL ======================== */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => !uploading && setShowUploadModal(false)} />
-          <div className="relative bg-zinc-900 border border-white/20 w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="relative bg-zinc-900 border border-white/20 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            {/* Upload Progress Bar */}
+            {uploading && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-800 z-10">
+                <div className="h-full bg-tad-yellow transition-all duration-500 rounded-r" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            )}
+
             <div className="p-8 pb-0 flex justify-between items-center">
               <div>
                 <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <CloudUpload className="text-tad-yellow" /> Deploy Asset
+                  <CloudUpload className="text-tad-yellow" /> Upload Video
                 </h3>
-                <p className="text-gray-400 text-sm mt-1">Bind a new video payload to your network containers.</p>
+                <p className="text-gray-400 text-sm mt-1">Select a video file, preview it, and assign it to a campaign.</p>
               </div>
               {!uploading && (
-                <button onClick={() => setShowUploadModal(false)} className="text-gray-500 hover:text-white p-2">
+                <button onClick={() => { setShowUploadModal(false); resetUploadForm(); }} className="text-gray-500 hover:text-white p-2">
                   <X className="w-6 h-6" />
                 </button>
               )}
             </div>
 
             <form onSubmit={handleUpload} className="p-8 space-y-6">
-              <div className="space-y-4">
-                <div className="relative group">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Source Video</label>
-                  <div className="relative flex items-center justify-center border-2 border-dashed border-white/10 group-hover:border-tad-yellow/40 rounded-2xl p-6 transition-colors cursor-pointer bg-white/5">
+              {/* File Selection with Preview */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 block">Video File</label>
+                
+                {!selectedFile ? (
+                  <div className="relative border-2 border-dashed border-white/10 hover:border-tad-yellow/40 rounded-2xl p-10 transition-colors cursor-pointer bg-white/5 text-center">
                     <input 
-                      required 
                       type="file" 
                       accept="video/mp4, video/webm"
-                      ref={fileInputRef} 
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
                       className="absolute inset-0 opacity-0 cursor-pointer" 
                     />
-                    <div className="text-center">
-                      <Film className="w-8 h-8 text-gray-500 mb-2 mx-auto" />
-                      <p className="text-sm text-gray-300">Drop payload or click to browse</p>
-                      <p className="text-[10px] text-gray-500 mt-1">MP4 or WebM (Max 50MB)</p>
+                    <Film className="w-10 h-10 text-gray-500 mb-3 mx-auto" />
+                    <p className="text-sm text-gray-300 font-bold">Drop video file here or click to browse</p>
+                    <p className="text-[10px] text-gray-500 mt-1">MP4 or WebM — Max 50MB</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Live Video Preview */}
+                    <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black">
+                      <video 
+                        src={filePreviewUrl || ''} 
+                        controls 
+                        className="w-full aspect-video bg-black"
+                        preload="metadata"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-tad-yellow/90 text-black text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Preview — Your Video
+                        </span>
+                      </div>
+                    </div>
+                    {/* File info + change button */}
+                    <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Play className="w-5 h-5 text-tad-yellow shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm text-white font-bold truncate">{selectedFile.name}</p>
+                          <p className="text-[10px] text-zinc-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => { resetUploadForm(); }}
+                        className="text-xs text-tad-yellow font-bold uppercase tracking-widest hover:underline shrink-0 ml-4"
+                      >
+                        Change
+                      </button>
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Asset Title</label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={title} 
-                      onChange={e => setTitle(e.target.value)} 
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all"
-                      placeholder="Summer 2026 Spot"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Loop Duration (sec)</label>
-                    <input 
-                      required 
-                      type="number" 
-                      value={duration} 
-                      onChange={e => setDuration(Number(e.target.value))} 
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
+              {/* Title & Duration */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Network Container (Campaign)</label>
-                  <select 
-                    required 
-                    value={selectedCampaign} 
-                    onChange={e => setSelectedCampaign(e.target.value)} 
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow outline-none appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>-- Select Target Container --</option>
-                    {campaigns?.filter(c => c.active).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Title</label>
+                  <input 
+                    required type="text" value={title} onChange={e => setTitle(e.target.value)} 
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all font-bold"
+                    placeholder="E.g. Summer Festival 2026"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Loop Duration (sec)</label>
+                  <input 
+                    required type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} min={1}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all font-mono"
+                  />
                 </div>
               </div>
 
+              {/* Campaign Selection */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Assign to Campaign</label>
+                <select 
+                  required value={selectedCampaign} onChange={e => setSelectedCampaign(e.target.value)} 
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow outline-none appearance-none cursor-pointer"
+                >
+                  <option value="" disabled>-- Select Campaign --</option>
+                  {campaigns?.filter(c => c.active).map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.advertiser})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Submit */}
               <div className="pt-4">
                 <button 
-                  disabled={uploading} 
+                  disabled={uploading || !selectedFile} 
                   type="submit" 
-                  className="w-full flex justify-center py-4 px-4 bg-tad-yellow hover:bg-yellow-400 text-black font-black rounded-2xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center gap-3 active:scale-95"
+                  className="w-full flex justify-center py-4 px-4 bg-tad-yellow hover:bg-yellow-400 text-black font-black rounded-2xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center gap-3 active:scale-95 uppercase tracking-widest text-sm"
                 >
-                  {uploading ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 shadow-inner" />}
-                  {uploading ? "INJECTING PAYLOAD..." : "DEPLOY TO NETWORK"}
+                  {uploading ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/></svg>
+                      Uploading {uploadProgress}%...
+                    </>
+                  ) : (
+                    <><CloudUpload className="w-5 h-5" /> Upload & Assign</>
+                  )}
                 </button>
                 <div className="mt-3 flex items-center gap-2 text-[10px] text-gray-500 justify-center">
                   <Info className="w-3 h-3" />
-                  Assets are processed through high-bandwidth R2 edge nodes.
+                  Video will be uploaded to cloud storage and auto-distributed to assigned taxis.
                 </div>
               </div>
             </form>
@@ -377,7 +464,3 @@ export default function MediaPage() {
     </div>
   );
 }
-
-const SpinnerIcon = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
-);

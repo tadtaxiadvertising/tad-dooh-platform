@@ -1,0 +1,36 @@
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { DeviceService } from './device.service';
+import { RegisterDeviceDto } from './dto/register-device.dto';
+import { HeartbeatDto } from './dto/heartbeat.dto';
+import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
+
+@Controller('device')
+export class DeviceController {
+  constructor(private readonly deviceService: DeviceService) {}
+
+  @Post('register')
+  @HttpCode(HttpStatus.OK)
+  async register(@Body() dto: RegisterDeviceDto) {
+    const device = await this.deviceService.registerDevice(dto);
+    return { success: true, device_id: device.deviceId };
+  }
+
+  @Post('heartbeat')
+  @HttpCode(HttpStatus.OK)
+  async heartbeat(@Body() dto: HeartbeatDto) {
+    await this.deviceService.deviceHeartbeat(dto);
+    return { success: true };
+  }
+
+  @Post('playback')
+  @HttpCode(HttpStatus.OK)
+  async playback(@Body() dto: PlaybackConfirmationDto) {
+    await this.deviceService.recordPlayback(dto);
+    return { success: true };
+  }
+
+  @Get('sync')
+  async sync(@Query('device_id') deviceId: string) {
+    return this.deviceService.syncDeviceCampaigns(deviceId);
+  }
+}

@@ -3,153 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAD Dominicana - Tablet Player</title>
+    <title>TAD DOOH Player - Simple</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: cover; }
         
-        body {
-            background: #000;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: #fff; z-index: 999;
         }
-        
-        .container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            z-index: 999;
-        }
-        
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #333;
-            border-top: 4px solid #00d4aa;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 50px; height: 50px; border: 4px solid #333;
+            border-top: 4px solid #fad400; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .device-info {
+            position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8);
+            color: #fff; padding: 10px 15px; border-radius: 8px; font-size: 12px;
+            z-index: 1000; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 5px;
         }
-        
-        .loading-text {
-            font-size: 18px;
-            opacity: 0.8;
-        }
-        
-        .device-id {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 1000;
-        }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+        .status-dot.online { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+        .text-yellow { color: #fad400; font-weight: bold; }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading">
+    <div id="loading" class="overlay">
         <div class="spinner"></div>
-        <div class="loading-text">Cargando TAD Player...</div>
+        <div style="font-size: 18px; font-weight: bold;">TAD DOOH Player</div>
+        <div id="loading-text" style="font-size: 14px; opacity: 0.7; margin-top: 10px;">Inicializando nodo publicitario...</div>
     </div>
     
-    <!-- Device ID Display -->
-    <div class="device-id">
-        📱 taxi-9wu77o406
+    <div class="device-info">
+        <div><span id="status-dot" class="status-dot"></span> <span id="status-text">OFFLINE</span></div>
+        <div style="font-family: monospace;" class="text-yellow" id="device-id-display">IDENTIFYING...</div>
+        <div id="playlist-stats" style="color: #888; font-size: 10px;">Assets: 0</div>
     </div>
     
-    <!-- Video Container -->
     <div class="container">
-        <video 
-            id="video" 
-            autoplay 
-            loop 
-            muted 
-            playsinline
-            preload="auto"
-        >
-            <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
-            <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" type="video/mp4">
-            Tu navegador no soporta video HTML5.
-        </video>
+        <video id="video" autoplay muted playsinline preload="auto"></video>
     </div>
     
     <script>
-        // Device ID persistente
-        const DEVICE_ID = 'taxi-9wu77o406';
-        document.querySelector('.device-id').textContent = '📱 ' + DEVICE_ID;
+        const API_BASE = 'https://tad-api.vercel.app/api';
         
-        // Video element
+        let DEVICE_ID = localStorage.getItem('tad_device_id');
+        if (!DEVICE_ID) {
+            DEVICE_ID = 'TAXI-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+            localStorage.setItem('tad_device_id', DEVICE_ID);
+        }
+        
+        document.getElementById('device-id-display').textContent = DEVICE_ID;
+        
         const video = document.getElementById('video');
         const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
         
-        // Hide loading when video starts
-        video.addEventListener('playing', function() {
-            loading.style.display = 'none';
-            console.log('▶️ Video playing');
+        let playlist = [];
+        let currentIndex = 0;
+        let isOnline = navigator.onLine;
+
+        function updateOnlineStatus() {
+            isOnline = navigator.onLine;
+            if(isOnline) {
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'ONLINE';
+            } else {
+                statusDot.className = 'status-dot';
+                statusText.textContent = 'OFFLINE';
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        async function syncWithCentral() {
+            loadingText.textContent = 'Sincronizando con TAD Central...';
+            try {
+                // Register Device
+                await fetch(`${API_BASE}/device/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: DEVICE_ID, app_version: '1.0.0-simple' })
+                });
+
+                // Fetch Payload
+                const response = await fetch(`${API_BASE}/device/sync?device_id=${DEVICE_ID}`);
+                const data = await response.json();
+                
+                if (data.media_assets && data.media_assets.length > 0) {
+                    playlist = data.media_assets;
+                    document.getElementById('playlist-stats').textContent = `Assets: ${playlist.length}`;
+                    loading.style.display = 'none';
+                    if(video.paused) playCurrentVideo();
+                } else {
+                    loadingText.textContent = 'Sin campañas activas para esta zona.';
+                    document.getElementById('playlist-stats').textContent = `Assets: 0`;
+                    // Loop default video if empty
+                    playlist = [{ id: 'fallback', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }];
+                    playCurrentVideo();
+                    loading.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Sync Error:", err);
+                loadingText.textContent = 'Error de conexión. Usando caché...';
+                if(playlist.length === 0) {
+                    playlist = [{ id: 'fallback', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }];
+                    playCurrentVideo();
+                }
+                setTimeout(() => { loading.style.display = 'none'; }, 2000);
+            }
+        }
+
+        async function sendTelemetry(mediaId) {
+            if(!isOnline || mediaId === 'fallback') return;
+            try {
+                await fetch(`${API_BASE}/device/playback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_id: DEVICE_ID,
+                        video_id: mediaId,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch(e) {}
+        }
+
+        async function sendHeartbeat() {
+            if(!isOnline) return;
+            try {
+                await fetch(`${API_BASE}/device/heartbeat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_id: DEVICE_ID,
+                        battery_level: 100,
+                        storage_free: "8GB",
+                        player_status: "PLAYING"
+                    })
+                });
+            } catch(e) {}
+        }
+
+        function playCurrentVideo() {
+            if (playlist.length === 0) return;
+            const currentMedia = playlist[currentIndex];
+            video.src = currentMedia.url;
+            video.play().catch(e => console.error("Playback error", e));
+        }
+
+        video.addEventListener('ended', () => {
+            const currentMedia = playlist[currentIndex];
+            sendTelemetry(currentMedia.id);
+            
+            currentIndex++;
+            if (currentIndex >= playlist.length) {
+                currentIndex = 0;
+                // Re-sync after every full loop
+                syncWithCentral();
+            } else {
+                playCurrentVideo();
+            }
         });
+
+        // Init
+        syncWithCentral();
         
-        // Error handling
-        video.addEventListener('error', function(e) {
-            console.error('❌ Video error:', e);
-            loading.innerHTML = `
-                <div style="color: #ff4444; text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-                    <div>Error cargando video</div>
-                    <div style="font-size: 12px; margin-top: 10px; opacity: 0.7;">
-                        Verifica conexión a internet
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Log when loaded
-        video.addEventListener('loadeddata', function() {
-            console.log('✅ Video loaded');
-        });
-        
-        // Force reload every 6 hours (para actualizar contenido)
-        setTimeout(function() {
-            location.reload();
-        }, 6 * 60 * 60 * 1000); // 6 horas
-        
-        // Console info
-        console.log('🚀 TAD Player Simple loaded');
-        console.log('📱 Device ID:', DEVICE_ID);
-        console.log('🎬 Video:', video.currentSrc);
+        // Heartbeat every 5 mins
+        setInterval(sendHeartbeat, 5 * 60 * 1000);
     </script>
 </body>
 </html>

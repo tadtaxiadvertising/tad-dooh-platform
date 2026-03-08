@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getDevices } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge } from 'lucide-react';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Signal, SignalZero } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,7 +12,7 @@ export default function FleetPage() {
     setLoading(true);
     try {
       const data = await getDevices();
-      setDevices(data);
+      setDevices(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -24,9 +24,13 @@ export default function FleetPage() {
     loadData();
   }, []);
 
+  const onlineCount = devices.filter(d => d.status === 'online').length;
+  const offlineCount = devices.filter(d => d.status === 'offline').length;
+  const totalDevices = devices.length;
+
   return (
     <div className="animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
             Fleet <span className="text-tad-yellow text-shadow-glow">Monitoring</span>
@@ -44,29 +48,64 @@ export default function FleetPage() {
         </button>
       </div>
 
+      {/* Fleet Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-zinc-950/50 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+          <div className="p-3 bg-tad-yellow/10 rounded-xl">
+            <Tablet className="w-5 h-5 text-tad-yellow" />
+          </div>
+          <div>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Total Fleet</p>
+            <p className="text-2xl font-black text-white">{totalDevices}</p>
+          </div>
+        </div>
+        <div className="bg-zinc-950/50 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+          <div className="p-3 bg-tad-yellow/10 rounded-xl">
+            <Signal className="w-5 h-5 text-tad-yellow" />
+          </div>
+          <div>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Online</p>
+            <p className="text-2xl font-black text-tad-yellow">{onlineCount}</p>
+          </div>
+        </div>
+        <div className="bg-zinc-950/50 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
+          <div className="p-3 bg-zinc-800 rounded-xl">
+            <SignalZero className="w-5 h-5 text-zinc-500" />
+          </div>
+          <div>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Offline</p>
+            <p className="text-2xl font-black text-zinc-400">{offlineCount}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading && devices.length === 0 ? (
           [1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-zinc-900/40 animate-pulse rounded-2xl border border-white/5" />)
         ) : devices.map((device) => {
           const isOnline = device.status === 'online';
           const isPlaying = device.player_status === 'playing';
+          const displayName = device.taxi_number || device.name || `TAXI-${device.device_id.slice(0, 8).toUpperCase()}`;
           
           return (
             <div key={device.device_id} className="relative bg-zinc-950 border border-white/10 rounded-2xl p-6 hover:border-tad-yellow/30 transition-all overflow-hidden group shadow-2xl">
               <div className="absolute top-0 right-0 p-4">
                 <div className={clsx(
-                  "w-2 h-2 rounded-full",
-                  isOnline ? "bg-tad-yellow shadow-[0_0_10px_rgba(250,212,0,0.5)]" : "bg-zinc-700"
+                  "w-2.5 h-2.5 rounded-full",
+                  isOnline ? "bg-tad-yellow shadow-[0_0_10px_rgba(250,212,0,0.5)] animate-pulse" : "bg-zinc-700"
                 )} />
               </div>
 
               <div className="flex items-start gap-4 mb-6">
-                <div className="p-3 bg-zinc-900 rounded-xl text-zinc-500 group-hover:text-tad-yellow transition-colors border border-white/5">
+                <div className={clsx(
+                  "p-3 rounded-xl transition-colors border border-white/5",
+                  isOnline ? "bg-tad-yellow/10 text-tad-yellow" : "bg-zinc-900 text-zinc-500 group-hover:text-tad-yellow"
+                )}>
                   <Tablet className="w-8 h-8" />
                 </div>
                 <div>
                   <h3 className="text-white font-bold text-lg leading-tight uppercase tracking-tighter">
-                    {device.taxi_number || device.device_id.slice(0, 12)}
+                    {displayName}
                   </h3>
                   <p className="text-[10px] text-zinc-500 font-mono mt-1">UUID: {device.device_id}</p>
                 </div>
@@ -86,7 +125,7 @@ export default function FleetPage() {
                     <HardDrive className="w-3 h-3 text-tad-yellow" /> Storage
                   </div>
                   <div className="text-sm font-bold text-white truncate">
-                    {device.storage_free || 'N/A'}
+                    {device.storage_free || 'Unknown'}
                   </div>
                 </div>
                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
@@ -112,7 +151,7 @@ export default function FleetPage() {
 
               <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
                 <div className="text-[10px] text-zinc-600 flex items-center gap-2">
-                  <Wifi className="w-3 h-3" />
+                  {isOnline ? <Wifi className="w-3 h-3 text-tad-yellow" /> : <WifiOff className="w-3 h-3" />}
                   LAST SYNC: {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'NEVER'}
                 </div>
                 <span className={clsx(

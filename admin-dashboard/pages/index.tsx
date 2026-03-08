@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getDevices, getCampaigns, getMedia } from '../services/api';
+import { getDevices, getCampaigns, getMedia, getHourlyPlays } from '../services/api';
 import { Activity, CarFront, Megaphone, CloudUpload, Zap, TrendingUp, ShieldCheck, Globe } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
@@ -8,8 +8,10 @@ export default function Home() {
     devices: 0,
     online: 0,
     campaigns: 0,
+    activeCampaigns: 0,
     media: 0
   });
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -17,14 +19,24 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     setError(null);
-    Promise.all([getDevices(), getCampaigns(), getMedia()])
-      .then(([devices, campaigns, media]) => {
+    Promise.all([getDevices(), getCampaigns(), getMedia(), getHourlyPlays()])
+      .then(([devices, campaigns, media, hourly]) => {
         setStats({
           devices: Array.isArray(devices) ? devices.length : 0,
           online: Array.isArray(devices) ? devices.filter((d: any) => d.status === 'online').length : 0,
           campaigns: Array.isArray(campaigns) ? campaigns.length : 0,
+          activeCampaigns: Array.isArray(campaigns) ? campaigns.filter((c: any) => c.active).length : 0,
           media: Array.isArray(media) ? media.length : 0
         });
+        // Use real hourly data for chart
+        if (Array.isArray(hourly) && hourly.length > 0) {
+          setChartData(hourly.sort((a: any, b: any) => a.hour.localeCompare(b.hour)).map((d: any) => ({ name: `${d.hour}:00`, val: Number(d.plays) })));
+        } else {
+          setChartData([
+            { name: '00:00', val: 0 },{ name: '04:00', val: 0 },{ name: '08:00', val: 0 },
+            { name: '12:00', val: 0 },{ name: '16:00', val: 0 },{ name: '20:00', val: 0 },{ name: '23:59', val: 0 },
+          ]);
+        }
       })
       .catch(err => {
         console.error("Dashboard Load Error:", err);
@@ -33,15 +45,7 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const mockChartData = [
-    { name: '00:00', val: 400 },
-    { name: '04:00', val: 300 },
-    { name: '08:00', val: 900 },
-    { name: '12:00', val: 1200 },
-    { name: '16:00', val: 1500 },
-    { name: '20:00', val: 1100 },
-    { name: '23:59', val: 600 },
-  ];
+  // chartData is loaded from API now
 
   return (
     <div className="animate-in fade-in duration-1000">
@@ -72,7 +76,7 @@ export default function Home() {
         />
         <StatCard 
           icon={<Megaphone className="w-5 h-5" />} 
-          label="Active Streams" 
+          label="Campaigns" 
           value={stats.campaigns} 
           sub="Production Ready"
           color="gray"
@@ -106,7 +110,7 @@ export default function Home() {
           <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
             {mounted ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                <AreaChart data={mockChartData}>
+                <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#fad400" stopOpacity={0.3}/>

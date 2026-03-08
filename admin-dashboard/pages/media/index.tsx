@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { getMedia, uploadMedia, getCampaigns, addVideoToCampaign } from '../../services/api';
-import { CloudUpload, Link as LinkIcon, Film, CheckCircle, Trash2, Plus, Info, Zap, Calendar, Play, Activity } from 'lucide-react';
+import { CloudUpload, Link as LinkIcon, Film, CheckCircle, Trash2, Plus, Info, Zap, Calendar, Play, Activity, X, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function MediaPage() {
@@ -10,6 +10,7 @@ export default function MediaPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   // Form State
   const [selectedCampaign, setSelectedCampaign] = useState('');
@@ -36,6 +37,32 @@ export default function MediaPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  /** Extract the clean video URL (remove mock hash fragment) */
+  const getCleanUrl = (url: string) => {
+    return url?.split('#')[0] || url;
+  };
+
+  /** Get a display name from a media file */
+  const getDisplayName = (file: any) => {
+    // If the file has an originalFilename, use it
+    if (file.originalFilename) return file.originalFilename;
+    // Otherwise extract the last part of filename and clean up UUIDs  
+    const basename = file.filename?.split('/').pop() || 'Untitled';
+    // If it looks like a UUID filename, improve display
+    if (/^[0-9a-f]{8}-/.test(basename)) {
+      const ext = basename.split('.').pop() || 'mp4';
+      return `Media-${basename.slice(0, 8)}.${ext}`;
+    }
+    return basename;
+  };
+
+  /** Find which campaigns use this media */
+  const getLinkedCampaigns = (mediaId: string) => {
+    return campaigns.filter(c => 
+      c.mediaAssets?.some((a: any) => a.checksum === mediaId || a.url?.includes(mediaId))
+    );
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fileInputRef.current?.files?.[0]) return alert("Please select a video file.");
@@ -54,10 +81,10 @@ export default function MediaPage() {
       // 2. Link the new Media ID to the Campaign
       await addVideoToCampaign(selectedCampaign, {
         type: 'video',
-        filename: title, // Using title as filename for display
+        filename: title,
         url: uploadedData.url,
         fileSize: uploadedData.size,
-        checksum: uploadedData.id, // Using the media ID as checksum for now
+        checksum: uploadedData.id,
         duration: Number(duration)
       });
 
@@ -123,8 +150,10 @@ export default function MediaPage() {
               <Zap className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 font-medium">Network Capacity</p>
-              <h3 className="text-2xl font-bold text-white">99.9%</h3>
+              <p className="text-sm text-gray-500 font-medium">Linked to Campaigns</p>
+              <h3 className="text-2xl font-bold text-white">
+                {media.filter(m => getLinkedCampaigns(m.id).length > 0).length}
+              </h3>
             </div>
           </div>
         </div>
@@ -146,48 +175,78 @@ export default function MediaPage() {
         {loading ? (
           [1,2,3].map(i => <div key={i} className="h-64 bg-zinc-900/40 animate-pulse rounded-2xl border border-white/5" />)
         ) : media.length > 0 ? (
-          media.map((file, i) => (
-            <div key={i} className="group relative bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/50 transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
-              {/* Thumbnail Mock */}
-              <div className="aspect-video bg-black flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-tad-yellow/5 mix-blend-overlay group-hover:bg-tad-yellow/10 transition-colors" />
-                <Play className="w-12 h-12 text-tad-yellow/50 group-hover:scale-125 transition-transform" />
-                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-gray-300 font-mono">
-                  {file.mime?.split('/')[1].toUpperCase()}
-                </div>
-              </div>
+          media.map((file, i) => {
+            const linkedCampaigns = getLinkedCampaigns(file.id);
+            const cleanUrl = getCleanUrl(file.url);
+            const displayName = getDisplayName(file);
 
-              <div className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="text-white font-bold truncate max-w-[180px]">{file.filename.split('/').pop()}</h4>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1 font-mono">
-                      <Zap className="w-3 h-3 text-tad-yellow" />
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+            return (
+              <div key={i} className="group relative bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/50 transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
+                {/* Video Preview */}
+                <div className="aspect-video bg-black relative overflow-hidden cursor-pointer" onClick={() => setPreviewUrl(cleanUrl)}>
+                  <video 
+                    src={cleanUrl} 
+                    className="w-full h-full object-cover"
+                    preload="metadata"
+                    muted
+                    playsInline
+                    onMouseOver={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                    onMouseOut={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="bg-tad-yellow/90 rounded-full p-3 shadow-lg shadow-tad-yellow/30">
+                      <Eye className="w-5 h-5 text-black" />
+                    </div>
                   </div>
-                  <a 
-                    href={file.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                  </a>
+                  <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-gray-300 font-mono">
+                    {file.mime?.split('/')[1]?.toUpperCase() || 'VIDEO'}
+                  </div>
                 </div>
-                
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2 text-[10px] text-gray-600">
-                    <Calendar className="w-3 h-3" />
-                    {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy') : 'Recently'}
+
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-white font-bold truncate">{displayName}</h4>
+                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1 font-mono">
+                        <Zap className="w-3 h-3 text-tad-yellow shrink-0" />
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <a 
+                      href={cleanUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors shrink-0"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                    </a>
                   </div>
-                  <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">
-                    READY
-                  </span>
+
+                  {/* Linked Campaigns */}
+                  {linkedCampaigns.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-1">
+                      {linkedCampaigns.map((c: any) => (
+                        <span key={c.id} className="text-[9px] bg-tad-yellow/10 text-tad-yellow px-2 py-0.5 rounded-full border border-tad-yellow/20 font-bold tracking-wider uppercase">
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                      <Calendar className="w-3 h-3" />
+                      {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy') : 'Recently'}
+                    </div>
+                    <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">
+                      READY
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="col-span-full py-20 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center">
             <Film className="w-16 h-16 text-zinc-700 mb-4" />
@@ -196,6 +255,29 @@ export default function MediaPage() {
           </div>
         )}
       </div>
+
+      {/* Video Preview Modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setPreviewUrl(null)} />
+          <div className="relative w-full max-w-4xl animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setPreviewUrl(null)}
+              className="absolute -top-12 right-0 text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold uppercase tracking-widest"
+            >
+              <X className="w-5 h-5" /> Close Preview
+            </button>
+            <div className="bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+              <video 
+                src={previewUrl} 
+                controls 
+                autoPlay
+                className="w-full aspect-video bg-black"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upload Modal (Overlay) */}
       {showUploadModal && (
@@ -210,8 +292,8 @@ export default function MediaPage() {
                 <p className="text-gray-400 text-sm mt-1">Bind a new video payload to your network containers.</p>
               </div>
               {!uploading && (
-                <button onClick={() => setShowUploadModal(false)} className="text-gray-500 hover:text-white">
-                  <Trash2 className="w-6 h-6 rotate-45" />
+                <button onClick={() => setShowUploadModal(false)} className="text-gray-500 hover:text-white p-2">
+                  <X className="w-6 h-6" />
                 </button>
               )}
             </div>
@@ -249,7 +331,7 @@ export default function MediaPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Loop Duration</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Loop Duration (sec)</label>
                     <input 
                       required 
                       type="number" 
@@ -280,7 +362,7 @@ export default function MediaPage() {
                   type="submit" 
                   className="w-full flex justify-center py-4 px-4 bg-tad-yellow hover:bg-yellow-400 text-black font-black rounded-2xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center gap-3 active:scale-95"
                 >
-                  {uploading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 shadow-inner" />}
+                  {uploading ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 shadow-inner" />}
                   {uploading ? "INJECTING PAYLOAD..." : "DEPLOY TO NETWORK"}
                 </button>
                 <div className="mt-3 flex items-center gap-2 text-[10px] text-gray-500 justify-center">
@@ -296,6 +378,6 @@ export default function MediaPage() {
   );
 }
 
-const RefreshCcw = (props: any) => (
+const SpinnerIcon = (props: any) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
 );

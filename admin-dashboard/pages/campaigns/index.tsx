@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getCampaigns } from '../../services/api';
-import { PlusCircle, Megaphone, Zap, Calendar, Users, Activity, ExternalLink, MoreVertical } from 'lucide-react';
+import { PlusCircle, Megaphone, Zap, Calendar, Users, Activity, ExternalLink, MoreVertical, Film, ChevronRight, Clock } from 'lucide-react';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import clsx from 'clsx';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -15,6 +16,8 @@ export default function CampaignsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const now = new Date();
 
   return (
     <div className="animate-in fade-in duration-700">
@@ -36,69 +39,86 @@ export default function CampaignsPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      {/* Campaign Cards (replacing the table for better UX) */}
+      <div className="space-y-4">
         {loading ? (
           [1,2,3].map(i => <div key={i} className="h-24 bg-zinc-900/40 animate-pulse rounded-2xl border border-white/5" />)
         ) : campaigns.length > 0 ? (
-          <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/5">
-                <thead>
-                  <tr className="bg-white/5">
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Campaign</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Advertiser</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Status</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Timeline</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Payloads</th>
-                    <th scope="col" className="px-6 py-4"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {campaigns.map((camp) => (
-                    <tr key={camp.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-tad-yellow/10 rounded-lg text-tad-yellow">
-                            <Megaphone className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm font-bold text-white group-hover:text-tad-yellow transition-colors uppercase tracking-tight">{camp.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-400 font-medium">
-                        {camp.advertiser}
-                      </td>
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border ${
-                          camp.active 
-                          ? 'bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20' 
-                          : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
-                        }`}>
-                          <Activity className="w-3 h-3" />
-                          {camp.active ? 'Broadcasting' : 'Paused'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-[11px] text-gray-500 font-mono">
-                        <div className="flex flex-col">
-                          <span>START: {format(new Date(camp.startDate || camp.start_date), 'MM/dd/yyyy')}</span>
-                          <span>END: {format(new Date(camp.endDate || camp.end_date), 'MM/dd/yyyy')}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-center">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-tad-yellow/10 text-tad-yellow text-xs font-black border border-tad-yellow/20">
-                          {camp.mediaAssets?.length || 0}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-right">
-                        <button className="p-2 text-gray-600 hover:text-white transition-colors">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          campaigns.map((camp) => {
+            const startDate = new Date(camp.startDate || camp.start_date);
+            const endDate = new Date(camp.endDate || camp.end_date);
+            const isLive = camp.active && now >= startDate && now <= endDate;
+            const assetCount = camp.mediaAssets?.length || 0;
+            const totalDuration = (camp.mediaAssets || []).reduce((sum: number, a: any) => sum + (a.duration || 0), 0);
+
+            return (
+              <Link 
+                key={camp.id} 
+                href={`/campaigns/${camp.id}`}
+                className="group block bg-zinc-950/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/30 transition-all shadow-lg hover:shadow-tad-yellow/5"
+              >
+                <div className="p-6 flex flex-col md:flex-row md:items-center gap-4">
+                  {/* Campaign Icon & Name */}
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={clsx(
+                      "p-3 rounded-xl border shrink-0",
+                      isLive 
+                        ? "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20" 
+                        : "bg-zinc-900 text-zinc-500 border-white/5"
+                    )}>
+                      <Megaphone className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-white font-bold text-lg group-hover:text-tad-yellow transition-colors uppercase tracking-tight truncate">
+                        {camp.name}
+                      </h3>
+                      <p className="text-zinc-500 text-xs font-medium truncate">{camp.advertiser}</p>
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className={clsx(
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase border",
+                      isLive 
+                        ? 'bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20' 
+                        : camp.active
+                          ? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                    )}>
+                      <span className={clsx("w-1.5 h-1.5 rounded-full", isLive ? "bg-tad-yellow animate-pulse" : camp.active ? "bg-zinc-500" : "bg-red-500")} />
+                      {isLive ? 'Live' : camp.active ? 'Scheduled' : 'Paused'}
+                    </span>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-6 shrink-0">
+                    <div className="text-center">
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Assets</p>
+                      <p className="text-white font-bold flex items-center gap-1">
+                        <Film className="w-3 h-3 text-tad-yellow" /> {assetCount}
+                      </p>
+                    </div>
+                    <div className="text-center hidden sm:block">
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Duration</p>
+                      <p className="text-white font-bold flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-zinc-500" /> {totalDuration}s
+                      </p>
+                    </div>
+                    <div className="text-center hidden md:block">
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Timeline</p>
+                      <p className="text-white font-mono text-[11px]">
+                        {format(startDate, 'MM/dd')} → {format(endDate, 'MM/dd')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <ChevronRight className="w-5 h-5 text-zinc-700 group-hover:text-tad-yellow transition-colors shrink-0" />
+                </div>
+              </Link>
+            );
+          })
         ) : (
           <div className="py-20 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center">
             <Megaphone className="w-16 h-16 text-zinc-700 mb-4" />

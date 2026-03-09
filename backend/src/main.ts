@@ -27,6 +27,7 @@ async function bootstrap() {
       'https://tad-admin.vercel.app',
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://localhost:3002',
       'null', // Necesario para FullyKiosk Browser (file://)
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

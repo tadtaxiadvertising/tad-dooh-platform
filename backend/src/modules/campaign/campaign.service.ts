@@ -77,7 +77,7 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
-      include: { mediaAssets: true, targets: true },
+      include: { mediaAssets: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -85,7 +85,7 @@ export class CampaignService {
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: true, targets: true },
+      include: { mediaAssets: true },
     });
   }
 

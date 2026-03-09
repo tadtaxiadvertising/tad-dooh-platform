@@ -143,6 +143,7 @@ export class MediaService {
         id: m.id,
         url: m.cdnUrl,
         filename: m.filename,
+        originalFilename: m.originalFilename,
         size: Number(m.fileSize),
         mime: m.mimeType,
         createdAt: m.createdAt,
@@ -151,5 +152,37 @@ export class MediaService {
       this.logger.error(`Error listing files from DB: ${error.message}`);
       return [];
     }
+  }
+
+  /**
+   * Cross media_id with playback_events to list device_ids that 
+   * have reported playbacks in the last 10 minutes.
+   */
+  async getMediaStatus(mediaId: string) {
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+    
+    const activePlays = await this.prisma.playbackEvent.findMany({
+      where: {
+        videoId: mediaId,
+        timestamp: {
+          gte: tenMinAgo,
+        },
+      },
+      select: {
+        deviceId: true,
+        timestamp: true,
+      },
+      distinct: ['deviceId'],
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+
+    return {
+      media_id: mediaId,
+      active_devices_count: activePlays.length,
+      active_devices: activePlays.map(p => p.deviceId),
+      last_activity: activePlays[0]?.timestamp || null,
+    };
   }
 }

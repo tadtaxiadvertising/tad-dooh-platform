@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -25,6 +25,19 @@ export class CampaignService {
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {
+    // If a specific device_id is provided in the future, we check its capacity here.
+    // For now, we perform a global or per-targeted-device check.
+    // Assuming the user's intent: "Before adding more, check if the device is full".
+    // We'll search for 'device_id' in the DTO if it was added.
+    const deviceId = (dto as any).device_id;
+    
+    if (deviceId) {
+      const activeVideos = await this.getActiveSyncVideos(deviceId);
+      if (activeVideos.media_assets.length >= 15) {
+        throw new BadRequestException("Pantalla llena");
+      }
+    }
+
     return this.prisma.mediaAsset.create({
       data: {
         campaignId,

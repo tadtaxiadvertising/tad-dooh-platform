@@ -107,11 +107,21 @@ export class DeviceService {
     this.logger.log(`Playback confirmed on device: ${dto.device_id} for video: ${dto.video_id}`);
     
     // Updates the device's last playback time (and last seen time)
-    return this.prisma.device.updateMany({
+    await this.prisma.device.updateMany({
       where: { deviceId: dto.device_id },
       data: {
         lastPlayback: new Date(dto.timestamp),
         lastSeen: new Date(),
+      },
+    });
+
+    // Record the playback event in the database for tracking/analytics
+    return this.prisma.playbackEvent.create({
+      data: {
+        deviceId: dto.device_id,
+        videoId: dto.video_id,
+        eventType: 'play_confirm',
+        timestamp: new Date(dto.timestamp),
       },
     });
   }

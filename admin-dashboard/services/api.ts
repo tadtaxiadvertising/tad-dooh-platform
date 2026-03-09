@@ -81,6 +81,7 @@ export const addVideoToCampaign = (campaignId: string, data: any) => api.post(`/
 
 // Media
 export const getMedia = () => api.get('/media').then(res => res.data);
+export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
 export const uploadMedia = (formData: FormData) => 
   api.post('/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

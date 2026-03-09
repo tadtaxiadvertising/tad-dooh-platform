@@ -41,6 +41,11 @@ export class MediaController {
     return this.mediaService.listFiles();
   }
 
+  @Get(':id/status')
+  async getStatus(@Param('id') id: string) {
+    return this.mediaService.getMediaStatus(id);
+  }
+
   @Post('register-mock')
   async registerMockMedia(@Body() dto: { filename: string; mimetype: string; size: number; }) {
     if (!dto.filename || !dto.mimetype || !dto.size) {

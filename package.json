@@ -11,17 +11,17 @@
     "build": "npm install --prefix admin-dashboard && npm run build --prefix admin-dashboard && npm install --prefix backend && npm run build --prefix backend",
     "build:backend": "cd backend && npm run build",
     "deploy:vercel": "node devops/deploy-vercel.js",
-    "deploy": "node devops/deploy-all.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tadtaxiadvertising/tad-dooh-platform.git"
-  },
   "keywords": [
     "dooh",
     "advertising",
     "taxi",
     "digital-signage",
     "offline-first"
-  ]
+  ],
+  "dependencies": {
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "postcss": "^8",
+    "autoprefixer": "^10"
+  }
 }

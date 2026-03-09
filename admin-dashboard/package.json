@@ -19,7 +19,9 @@
     "recharts": "^3.8.0",
     "tailwind-merge": "^3.5.0",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "postcss": "^8",
+    "autoprefixer": "^10"
   },
   "devDependencies": {
     "@types/node": "^20",

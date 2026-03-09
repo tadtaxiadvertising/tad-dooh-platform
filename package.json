@@ -5,12 +5,18 @@
   "author": "TAD Dominicana",
   "license": "PROPRIETARY",
   "private": true,
+  "workspaces": [
+    "admin-dashboard",
+    "backend"
+  ],
   "scripts": {
     "dev:backend": "cd backend && npm run start:dev",
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
-    "build": "npm install --prefix admin-dashboard && npm run build --prefix admin-dashboard && npm install --prefix backend && npm run build --prefix backend",
+    "install:all": "npm install",
+    "build": "npm run install:all && npm run build -w admin-dashboard && npm run build -w backend",
     "build:backend": "cd backend && npm run build",
-    "deploy:vercel": "node devops/deploy-vercel.js",
+    "deploy:vercel": "node devops/deploy-vercel.js"
+  },
   "keywords": [
     "dooh",
     "advertising",
@@ -22,6 +28,7 @@
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "postcss": "^8",
-    "autoprefixer": "^10"
+    "autoprefixer": "^10",
+    "@tailwindcss/next": "^4"
   }
 }

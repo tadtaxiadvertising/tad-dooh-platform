@@ -24,4 +24,7 @@ export class CreateCampaignDto {
 
   @IsOptional()
   budget?: number;
+
+  @IsOptional()
+  target_devices?: string[];
 }

@@ -12,7 +12,7 @@ export class CampaignService {
   // Note: I will include them to ensure the file remains functional.
 
   async createCampaign(dto: CreateCampaignDto) {
-    return this.prisma.campaign.create({
+    const campaign = await this.prisma.campaign.create({
       data: {
         name: dto.name,
         advertiser: dto.advertiser,
@@ -20,21 +20,44 @@ export class CampaignService {
         endDate: new Date(dto.end_date),
         active: dto.active ?? true,
         targetImpressions: dto.target_impressions || 0,
+        budget: dto.budget || 0,
+        status: 'ACTIVE',
       },
     });
+
+    if (dto.target_devices && dto.target_devices.length > 0) {
+      await this.assignCampaignToDevices(campaign.id, dto.target_devices);
+    }
+
+    return campaign;
+  }
+
+  /**
+   * Manual Distribution Logic (Point 1 from CTO)
+   * This links a campaign to a set of Device IDs.
+   */
+  async assignCampaignToDevices(campaignId: string, deviceIds: string[]) {
+    // 1. Limpiamos asignaciones viejas de esta campaña
+    await this.prisma.playlistItem.deleteMany({
+      where: { campaignId }
+    });
+
+    // 2. Creamos las nuevas asignaciones manuales
+    const data = deviceIds.map(deviceId => ({
+      campaignId,
+      deviceId
+    }));
+
+    return this.prisma.playlistItem.createMany({ data });
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {
-    // If a specific device_id is provided in the future, we check its capacity here.
-    // For now, we perform a global or per-targeted-device check.
-    // Assuming the user's intent: "Before adding more, check if the device is full".
-    // We'll search for 'device_id' in the DTO if it was added.
+    // Inventory Control: If targeted to specific devices, check their current slots
     const deviceId = (dto as any).device_id;
-    
     if (deviceId) {
-      const activeVideos = await this.getActiveSyncVideos(deviceId);
-      if (activeVideos.media_assets.length >= 15) {
-        throw new BadRequestException("Pantalla llena");
+      const activeData = await this.getActiveSyncVideos(deviceId);
+      if (activeData.media_assets.length >= 15) {
+        throw new BadRequestException("Pantalla llena (Límite de 15 slots alcanzado)");
       }
     }
 
@@ -54,7 +77,7 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
-      include: { mediaAssets: true },
+      include: { mediaAssets: true, targets: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -62,20 +85,29 @@ export class CampaignService {
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: true },
+      include: { mediaAssets: true, targets: true },
     });
   }
 
   /**
-   * Returns a flattened payload of all videos belonging to active campaigns
-   * whose dates overlap with the current date, and filter them by device location constraints.
-   * Includes a `sync_hash` for Delta Sync.
+   * Returns a payload of videos specifically assigned to this device (Manual Distribution)
    */
   async getActiveSyncVideos(deviceId?: string) {
     const now = new Date();
     
+    // Filter by manual assignment if deviceId is known
+    let assignedCampaignIds: string[] | undefined = undefined;
+    if (deviceId) {
+      const targets = await this.prisma.playlistItem.findMany({
+        where: { deviceId },
+        select: { campaignId: true }
+      });
+      assignedCampaignIds = targets.map(t => t.campaignId);
+    }
+
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: {
+        id: assignedCampaignIds ? { in: assignedCampaignIds } : undefined,
         active: true,
         startDate: { lte: now },
         endDate: { gte: now },
@@ -92,31 +124,9 @@ export class CampaignService {
       return { version: 0, sync_hash: 'empty', media_assets: [] };
     }
 
-    let deviceCity = '';
-    if (deviceId) {
-      const device = await this.prisma.device.findUnique({
-        where: { deviceId },
-        select: { city: true }
-      });
-      deviceCity = device?.city?.toLowerCase() || '';
-    }
-
     const mediaAssets = [];
     for (const campaign of activeCampaigns) {
-      let isAllowed = true;
-      try {
-        const targetCitiesArr = JSON.parse(campaign.targetCities || '[]');
-        if (targetCitiesArr.length > 0) {
-          if (!deviceCity) {
-            isAllowed = false;
-          } else {
-            const hasMatch = targetCitiesArr.some((c: string) => c.toLowerCase() === deviceCity);
-            if (!hasMatch) isAllowed = false;
-          }
-        }
-      } catch (e) {}
-
-      if (isAllowed && campaign.mediaAssets) {
+      if (campaign.mediaAssets) {
         mediaAssets.push(...campaign.mediaAssets);
       }
     }
@@ -127,7 +137,6 @@ export class CampaignService {
     const MAX_SLOTS_PER_DEVICE = 15;
     const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS_PER_DEVICE);
 
-    // Generate a unique hash based on the IDs and Checksums of the assets
     const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum || 'no-checksum'}`).join('|');
     const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
 
@@ -138,7 +147,6 @@ export class CampaignService {
       sync_hash: syncHash,
       media_assets: finalMediaAssets
     };
-
   }
 }
 

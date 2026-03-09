@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { getMedia, uploadMedia, registerMockMedia, getCampaigns, addVideoToCampaign } from '../../services/api';
+import { getMedia, uploadMedia, registerMockMedia, getCampaigns, addVideoToCampaign, getDevices, getDeviceSlots, getMediaStatus, assignCampaignToDevices } from '../../services/api';
 import { CloudUpload, Link as LinkIcon, Film, Plus, Info, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -14,6 +14,8 @@ export default function MediaPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const [mediaStatus, setMediaStatus] = useState<Record<string, any>>({});
+  const [devices, setDevices] = useState<any[]>([]);
+  const [deviceSlots, setDeviceSlots] = useState<Record<string, any>>({});
   
   // Local blob previews for uploaded files (survives until page reload)
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
@@ -24,14 +26,30 @@ export default function MediaPage() {
   const [duration, setDuration] = useState(15);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     setError(null);
     try {
-      const [mediaData, campaignsData] = await Promise.all([getMedia(), getCampaigns()]);
+      const [mediaData, campaignsData, devicesData] = await Promise.all([
+        getMedia(), 
+        getCampaigns(),
+        getDevices()
+      ]);
       setMedia(Array.isArray(mediaData) ? mediaData : []);
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
+      setDevices(Array.isArray(devicesData) ? devicesData : []);
+
+      // Fetch slots for each device
+      const slotMap: Record<string, any> = {};
+      await Promise.all(devicesData.map(async (d: any) => {
+        try {
+          const slots = await getDeviceSlots(d.device_id);
+          slotMap[d.device_id] = slots;
+        } catch (e) {}
+      }));
+      setDeviceSlots(slotMap);
     } catch (err) {
       console.error("Failed to load ecosystem data", err);
       setError("FAILED TO RETRIEVE MEDIA CLOUD INVENTORY. CHECK STORAGE UPLINK.");
@@ -121,6 +139,7 @@ export default function MediaPage() {
     setSelectedCampaign('');
     setSelectedFile(null);
     setDuration(15);
+    setSelectedDevices([]);
     setUploadProgress(0);
     if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -157,15 +176,21 @@ export default function MediaPage() {
 
       setUploadProgress(60);
       
-      // 2. Link to campaign
-      await addVideoToCampaign(selectedCampaign, {
-        type: 'video',
-        filename: title,
-        url: uploadedData.url,
-        fileSize: uploadedData.size,
-        checksum: uploadedData.id,
-        duration: Number(duration)
-      });
+      // 2. Link to campaign AND assign to devices
+      await Promise.all([
+        addVideoToCampaign(selectedCampaign, {
+          type: 'video',
+          filename: title,
+          url: uploadedData.url,
+          fileSize: uploadedData.size,
+          checksum: uploadedData.id,
+          duration: Number(duration)
+        }),
+        // Assign campaign to selected devices (Point 1 CTO)
+        selectedDevices.length > 0 
+          ? assignCampaignToDevices(selectedCampaign, selectedDevices) 
+          : Promise.resolve()
+      ]);
       setUploadProgress(90);
 
       // 3. Save local blob URL for the uploaded media so it previews correctly this session
@@ -337,14 +362,18 @@ export default function MediaPage() {
                   {mediaStatus[file.id]?.active_devices?.length > 0 && (
                      <div className="mt-4 p-3 bg-black/40 rounded-xl border border-green-500/10">
                         <p className="text-[9px] text-zinc-500 uppercase font-black mb-2 flex items-center gap-2">
-                           Sincronizado en <span className="text-green-500">({mediaStatus[file.id].active_devices.length}) Taxis</span>
+                           <Activity className="w-3 h-3 text-green-500" /> Visto en: <span className="text-green-500">({mediaStatus[file.id].active_devices.length}) Taxis</span>
                         </p>
                         <div className="flex flex-wrap gap-1.5">
-                           {mediaStatus[file.id].active_devices.map((id: string) => (
-                              <span key={id} className="text-[8px] px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-md border border-white/5 font-mono">
-                                 {id.split('-').pop()?.toUpperCase()}
-                              </span>
-                           ))}
+                           {mediaStatus[file.id].active_devices.map((id: string) => {
+                              const dev = devices.find(d => d.device_id === id);
+                              const label = dev?.taxi_number || dev?.name || id.split('-').pop()?.toUpperCase();
+                              return (
+                                <span key={id} className="text-[8px] px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-md border border-white/5 font-mono">
+                                   {label}
+                                </span>
+                              );
+                           })}
                         </div>
                      </div>
                   )}
@@ -492,6 +521,55 @@ export default function MediaPage() {
                     <option key={c.id} value={c.id}>{c.name} ({c.advertiser})</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Device Selector (Point 2 CTO) */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 block flex justify-between items-center">
+                   Distribución en Taxis (A Voluntad)
+                   <span className="text-tad-yellow">{selectedDevices.length} seleccionados</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                   {devices.map(device => {
+                      const slots = deviceSlots[device.device_id] || { count: 0, limit: 15 };
+                      const freeSlots = slots.limit - slots.count;
+                      const isSelected = selectedDevices.includes(device.device_id);
+                      const isFull = freeSlots <= 0;
+
+                      return (
+                        <div 
+                          key={device.device_id}
+                          onClick={() => {
+                             if (isFull && !isSelected) return;
+                             setSelectedDevices(prev => 
+                               prev.includes(device.device_id) 
+                                 ? prev.filter(id => id !== device.device_id) 
+                                 : [...prev, device.device_id]
+                             );
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'bg-tad-yellow/10 border-tad-yellow text-white' 
+                              : 'bg-black/20 border-white/10 text-gray-400 hover:border-white/30'
+                          } ${isFull && !isSelected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        >
+                           <div className="flex items-center gap-3 min-w-0">
+                              <div className={`p-1.5 rounded-md ${isSelected ? 'bg-tad-yellow text-black' : 'bg-zinc-800'}`}>
+                                 <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100' : 'opacity-20'}`} />
+                              </div>
+                              <div className="min-w-0">
+                                 <p className="text-[11px] font-bold truncate uppercase">{device.taxi_number || device.name || device.device_id.split('-')[0]}</p>
+                                 <p className={`text-[9px] font-bold uppercase ${freeSlots < 3 ? 'text-red-400' : 'text-zinc-500'}`}>
+                                    {freeSlots} slots libres
+                                 </p>
+                              </div>
+                           </div>
+                           {isFull && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                        </div>
+                      );
+                   })}
+                </div>
+                <p className="text-[9px] text-zinc-500 mt-2 italic">* Los videos se copiarán automáticamente solo a los taxis seleccionados.</p>
               </div>
 
               {/* Submit */}

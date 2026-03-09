@@ -101,10 +101,10 @@ export class CampaignService {
             if (!hasMatch) isAllowed = false;
           }
         }
-      } catch(e) { }
+      } catch (e) {}
 
-      if (!isAllowed) continue;
-
+      if (isAllowed && campaign.mediaAssets) {
+        mediaAssets.push(...campaign.mediaAssets);
       }
     }
 
@@ -115,15 +115,15 @@ export class CampaignService {
     const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS_PER_DEVICE);
 
     // Generate a unique hash based on the IDs and Checksums of the assets
-    const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum}`).join('|');
+    const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum || 'no-checksum'}`).join('|');
     const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
 
     const latestUpdate = activeCampaigns[0].updatedAt.getTime();
 
-    return { 
-      version: latestUpdate, 
+    return {
+      version: latestUpdate,
       sync_hash: syncHash,
-      media_assets: finalMediaAssets 
+      media_assets: finalMediaAssets
     };
 
   }

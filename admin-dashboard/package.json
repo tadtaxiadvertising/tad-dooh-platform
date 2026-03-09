@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build --no-turbo",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -21,8 +21,7 @@
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "postcss": "^8",
-    "autoprefixer": "^10",
-    "@tailwindcss/next": "^4"
+    "autoprefixer": "^10"
   },
   "devDependencies": {
     "@types/node": "^20",

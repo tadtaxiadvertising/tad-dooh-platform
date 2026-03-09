@@ -28,7 +28,6 @@
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "postcss": "^8",
-    "autoprefixer": "^10",
-    "@tailwindcss/next": "^4"
+    "autoprefixer": "^10"
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet } from 'lucide-react';
+import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn } from 'lucide-react';
 import clsx from 'clsx';
 
 const NAVIGATION = [
@@ -67,7 +67,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-6 w-full">
+        <div className="p-6 w-full space-y-3">
           <div className="bg-zinc-900 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
              <div className="w-10 h-10 rounded-xl bg-tad-yellow flex items-center justify-center font-black text-black shadow-lg">
                 AD
@@ -77,6 +77,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <p className="font-bold text-xs text-white truncate">Administrador</p>
              </div>
           </div>
+          
+          <button 
+            onClick={() => {
+              localStorage.removeItem('tad_admin_token');
+              localStorage.removeItem('tad_admin_user');
+              window.location.href = '/login';
+            }}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-zinc-900/50 border border-white/5 hover:border-red-500/30 hover:bg-red-500/5 text-zinc-600 hover:text-red-400 rounded-xl transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+          >
+            <LogIn className="w-3 h-3 rotate-180" />
+            Cerrar Sesión
+          </button>
         </div>
       </aside>
 

@@ -2,13 +2,13 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/main.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Allow-Origin", "value": "https://tad-dashboard.vercel.app" },
@@ -19,8 +19,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "src/main.ts",
+      "src": "/(.*)",
+      "dest": "api/index.ts",
       "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     }
   ]

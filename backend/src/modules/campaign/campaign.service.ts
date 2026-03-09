@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class CampaignService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
+  // Note: I will include them to ensure the file remains functional.
 
   async createCampaign(dto: CreateCampaignDto) {
     return this.prisma.campaign.create({
@@ -16,7 +20,6 @@ export class CampaignService {
         endDate: new Date(dto.end_date),
         active: dto.active ?? true,
         targetImpressions: dto.target_impressions || 0,
-        budget: dto.budget || 0,
       },
     });
   }
@@ -53,6 +56,7 @@ export class CampaignService {
   /**
    * Returns a flattened payload of all videos belonging to active campaigns
    * whose dates overlap with the current date, and filter them by device location constraints.
+   * Includes a `sync_hash` for Delta Sync.
    */
   async getActiveSyncVideos(deviceId?: string) {
     const now = new Date();
@@ -72,10 +76,9 @@ export class CampaignService {
     });
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
-      return { version: 0, media_assets: [] };
+      return { version: 0, sync_hash: 'empty', media_assets: [] };
     }
 
-    // 1. Check device info if we have a deviceId to enforce Geolocation / Fleet segmentation
     let deviceCity = '';
     if (deviceId) {
       const device = await this.prisma.device.findUnique({
@@ -87,37 +90,42 @@ export class CampaignService {
 
     const mediaAssets = [];
     for (const campaign of activeCampaigns) {
-      // 2. Filter logic for targeted DOOH content deployment
       let isAllowed = true;
       try {
         const targetCitiesArr = JSON.parse(campaign.targetCities || '[]');
         if (targetCitiesArr.length > 0) {
           if (!deviceCity) {
-            isAllowed = false; // Device doesn't have a city, but campaign is city-restricted
+            isAllowed = false;
           } else {
             const hasMatch = targetCitiesArr.some((c: string) => c.toLowerCase() === deviceCity);
             if (!hasMatch) isAllowed = false;
           }
         }
-      } catch(e) { /* ignore parse errors, default allow */ }
+      } catch(e) { }
 
       if (!isAllowed) continue;
 
-      for (const asset of campaign.mediaAssets) {
-        mediaAssets.push({
-          id: asset.id,
-          url: asset.url,
-          duration: asset.duration,
-          checksum: asset.checksum,
-          type: asset.type,
-          filename: asset.filename
-        });
       }
     }
 
-    // We use the most recently updated campaign's timestamp as the version baseline 
+    // ============================================
+    // SLOT LIMIT VALIDATION (MAX 15)
+    // ============================================
+    const MAX_SLOTS_PER_DEVICE = 15;
+    const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS_PER_DEVICE);
+
+    // Generate a unique hash based on the IDs and Checksums of the assets
+    const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum}`).join('|');
+    const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
+
     const latestUpdate = activeCampaigns[0].updatedAt.getTime();
 
-    return { version: latestUpdate, media_assets: mediaAssets };
+    return { 
+      version: latestUpdate, 
+      sync_hash: syncHash,
+      media_assets: finalMediaAssets 
+    };
+
   }
 }
+

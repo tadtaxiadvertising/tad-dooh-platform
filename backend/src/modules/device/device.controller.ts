@@ -32,7 +32,15 @@ export class DeviceController {
   }
 
   @Get('sync')
-  async sync(@Query('device_id') deviceId: string) {
-    return this.deviceService.syncDeviceCampaigns(deviceId);
+  async sync(
+    @Query('device_id') deviceId: string,
+    @Query('last_hash') lastHash?: string
+  ) {
+    return this.deviceService.syncDeviceCampaigns(deviceId, lastHash);
+  }
+
+  @Get(':id/slots')
+  async checkSlots(@Param('id') deviceId: string) {
+    return this.deviceService.getDeviceSlots(deviceId);
   }
 }

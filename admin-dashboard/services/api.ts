@@ -68,6 +68,7 @@ export const isAuthenticated = () => {
 // Fleet
 // ============================================
 export const getDevices = () => api.get('/fleet/devices').then(res => res.data);
+export const getDeviceSlots = (id: string) => api.get(`/device/${id}/slots`).then(res => res.data);
 export const getOfflineDevices = () => api.get('/fleet/offline').then(res => res.data);
 export const getPlayerErrors = () => api.get('/fleet/player-errors').then(res => res.data);
 export const getFleetFinance = () => api.get('/fleet/finance').then(res => res.data);

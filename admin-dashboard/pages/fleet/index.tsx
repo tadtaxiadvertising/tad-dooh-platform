@@ -3,6 +3,7 @@ import { getDevices } from '../../services/api';
 import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Signal, SignalZero } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
+import DeviceSlotsInfo from '../../components/DeviceSlotsInfo';
 
 export default function FleetPage() {
   const [devices, setDevices] = useState<any[]>([]);
@@ -147,6 +148,11 @@ export default function FleetPage() {
                     {device.player_status || 'Standby'}
                   </div>
                 </div>
+              </div>
+
+              {/* Inventory Capacity Monitor (Rule of 15 slots) */}
+              <div className="mt-6 p-4 bg-zinc-900/30 border border-white/5 rounded-2xl">
+                <DeviceSlotsInfo deviceId={device.device_id} />
               </div>
 
               <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">

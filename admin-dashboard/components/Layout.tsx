@@ -5,13 +5,13 @@ import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart
 import clsx from 'clsx';
 
 const NAVIGATION = [
-  { name: 'Insights', href: '/', icon: LayoutDashboard },
-  { name: 'Fleet Monitoring', href: '/fleet', icon: CarFront },
-  { name: 'Alerts & Offline', href: '/fleet/offline', icon: MonitorOff },
-  { name: 'Revenue & Payouts', href: '/finance', icon: Wallet },
-  { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
-  { name: 'Media Assets', href: '/media', icon: CloudUpload },
-  { name: 'Intelligence', href: '/analytics', icon: BarChart3 },
+  { name: 'Resumen', href: '/', icon: LayoutDashboard },
+  { name: 'Monitoreo de Flota', href: '/fleet', icon: CarFront },
+  { name: 'Alertas y Offline', href: '/fleet/offline', icon: MonitorOff },
+  { name: 'Ingresos y Pagos', href: '/finance', icon: Wallet },
+  { name: 'Campañas', href: '/campaigns', icon: Megaphone },
+  { name: 'Contenido Multimedia', href: '/media', icon: CloudUpload },
+  { name: 'Inteligencia', href: '/analytics', icon: BarChart3 },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 w-full space-y-1.5 px-4 h-full">
-          <p className="px-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4">Core Orchestration</p>
+          <p className="px-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4">Orquestación Central</p>
           {NAVIGATION.map((item) => {
             const Icon = item.icon;
             const isActive = router.pathname === item.href 
@@ -73,8 +73,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 AD
              </div>
              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter leading-none mb-1">Authenticated</p>
-                <p className="font-bold text-xs text-white truncate">Administrator</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter leading-none mb-1">Autenticado</p>
+                <p className="font-bold text-xs text-white truncate">Administrador</p>
              </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-colors" />
                 <input 
                   type="text" 
-                  placeholder="Global system search..." 
+                  placeholder="Búsqueda global..." 
                   className="w-full bg-zinc-900 border border-white/5 rounded-xl py-2.5 pl-12 pr-4 text-xs font-bold outline-none focus:border-tad-yellow focus:bg-zinc-800 transition-all italic tracking-wide text-white"
                 />
              </div>

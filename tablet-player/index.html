@@ -222,6 +222,7 @@
             currentPlaylist: [],
             currentIndex: 0,
             lastSync: null,
+            lastSyncHash: null,
             events: [],
             config: {
                 loopEnabled: true,
@@ -240,6 +241,7 @@
                 state.deviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
                 state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
                 state.lastSync = localStorage.getItem('tad_last_sync');
+                state.lastSyncHash = localStorage.getItem('tad_last_sync_hash');
                 
                 // Generate unique device ID if this is a new tablet
                 // Uses crypto.randomUUID for uniqueness, falls back to random string
@@ -602,11 +604,12 @@
                 ui.updateStatus('sync');
                 
                 try {
-                    console.log('🔄 Starting sync...');
+                    console.log('🔄 Starting Delta Sync...');
+                    const lastHash = state.lastSyncHash || '';
                     
-                    // 1. Sync via device endpoint
+                    // 1. Sync via device endpoint with last_hash
                     const syncResponse = await fetch(
-                        `${CONFIG.SERVER_URL}/api/device/sync?device_id=${encodeURIComponent(state.deviceId)}`,
+                        `${CONFIG.SERVER_URL}/api/device/sync?device_id=${encodeURIComponent(state.deviceId)}&last_hash=${encodeURIComponent(lastHash)}`,
                         {
                             headers: {
                                 'Authorization': `Bearer ${state.authToken}`
@@ -619,47 +622,50 @@
                     }
                     
                     const syncData = await syncResponse.json();
-                    console.log('📥 Sync data received:', syncData);
                     
-                    // 2. CHECK IF BLOCKED (subscription expired)
+                    // 2. CHECK IF BLOCKED
                     if (syncData.blocked) {
                         console.warn('⛔ Device BLOCKED:', syncData.reason);
                         player.showBlocked(syncData.reason);
-                        // Still upload analytics even if blocked
                         await analytics.uploadAll();
                         return;
                     }
-                    
-                    // 3. Download new campaigns if available
-                    if (syncData.media_assets && syncData.media_assets.length > 0) {
+
+                    // 3. HANDLE DELTA SYNC
+                    if (syncData.update === false) {
+                        console.log('🔄 Delta Sync: No changes detected (hash matches).');
+                    } else if (syncData.media_assets) {
+                        console.log('📥 New campaign content received. Updating playlist.');
                         state.currentPlaylist = syncData.media_assets;
                         state.currentIndex = 0;
+                        state.lastSyncHash = syncData.sync_hash;
+                        localStorage.setItem('tad_last_sync_hash', state.lastSyncHash);
+                        
                         if (state.currentPlaylist.length > 0) {
                             player.play(state.currentPlaylist[0]);
+                        } else {
+                            player.showNoContent();
                         }
                     }
                     
-                    // 4. Upload analytics
+                    // 4. Always upload analytics after a successful sync attempt
                     await analytics.uploadAll();
                     
-                    // 5. Update last sync
+                    // 5. Update last sync record
                     state.lastSync = new Date().toISOString();
                     localStorage.setItem('tad_last_sync', state.lastSync);
                     
-                    // Reset retry delay on success
                     this.syncRetryDelay = 30000;
-                    
-                    console.log('✅ Sync completed');
+                    console.log('✅ Sync process finished');
                     
                 } catch (error) {
                     console.error('❌ Sync error:', error);
-                    // Exponential backoff: 30s -> 60s -> 2min -> 5min -> 10min (max)
                     this.syncRetryDelay = Math.min(this.syncRetryDelay * 2, 10 * 60 * 1000);
-                    console.log(`🔄 Next retry in ${this.syncRetryDelay / 1000}s`);
+                    console.log(`🔄 Retrying in ${this.syncRetryDelay / 1000}s`);
                     setTimeout(() => this.performSync(), this.syncRetryDelay);
                 } finally {
                     state.isSyncing = false;
-                    ui.updateStatus(state.isOnline ? 'online' : 'offline');
+                    ui.updateStatus('online');
                 }
             },
             

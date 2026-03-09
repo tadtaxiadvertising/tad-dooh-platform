@@ -5,6 +5,8 @@ import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { CampaignService } from '../campaign/campaign.service';
 
+const MAX_SLOTS_PER_DEVICE = 15;
+
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
@@ -13,6 +15,25 @@ export class DeviceService {
     private readonly prisma: PrismaService,
     private readonly campaignService: CampaignService,
   ) {}
+
+  /**
+   * Calculates availability slots for a device.
+   * Based on current dynamic playlist generation.
+   */
+  async getDeviceSlots(deviceId: string) {
+    // We query the sync payload to see how many slots are "taking up" the device currently
+    const syncData = await this.campaignService.getActiveSyncVideos(deviceId);
+    const assignedSlots = syncData.media_assets?.length || 0;
+
+    return {
+      device_id: deviceId,
+      max_slots: MAX_SLOTS_PER_DEVICE,
+      assigned_slots: assignedSlots,
+      available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - assignedSlots),
+      usage_percentage: Math.round((assignedSlots / MAX_SLOTS_PER_DEVICE) * 100)
+    };
+  }
+
 
   async registerDevice(dto: RegisterDeviceDto) {
     const existingDevice = await this.prisma.device.findUnique({
@@ -95,7 +116,7 @@ export class DeviceService {
     });
   }
 
-  async syncDeviceCampaigns(deviceId: string) {
+  async syncDeviceCampaigns(deviceId: string, lastHash?: string) {
     if (deviceId) {
       await this.prisma.device.updateMany({
         where: { deviceId },
@@ -121,7 +142,6 @@ export class DeviceService {
       },
     });
 
-    // If device has a driver assigned, check their subscription
     if (driver) {
       const activeSubscription = driver.subscriptions[0];
 
@@ -133,13 +153,11 @@ export class DeviceService {
       if (activeSubscription.dueDate < new Date()) {
         this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${activeSubscription.dueDate.toISOString()}`);
         
-        // Mark subscription as expired
         await this.prisma.subscription.update({
           where: { id: activeSubscription.id },
           data: { status: 'EXPIRED' },
         });
 
-        // Mark driver as suspended
         await this.prisma.driver.update({
           where: { id: driver.id },
           data: { status: 'SUSPENDED', blockedAt: new Date() },
@@ -150,16 +168,36 @@ export class DeviceService {
 
       this.logger.log(`✅ Device ${deviceId}: subscription valid until ${activeSubscription.dueDate.toISOString()}`);
     }
-    // If no driver assigned, allow sync (grace period for new devices being set up)
 
     const payload = await this.campaignService.getActiveSyncVideos(deviceId);
 
-    if (!payload.media_assets || payload.media_assets.length === 0) {
-      return { update: false, blocked: false };
+    // ============================================
+    // DELTA SYNC LOGIC
+    // ============================================
+    if (lastHash && lastHash === payload.sync_hash) {
+      this.logger.log(`🔄 Device ${deviceId}: Delta Sync matches (${lastHash}). No update needed.`);
+      return { 
+        update: false, 
+        blocked: false,
+        sync_hash: payload.sync_hash 
+      };
     }
 
+    if (!payload.media_assets || payload.media_assets.length === 0) {
+      return { 
+        update: true, 
+        blocked: false, 
+        media_assets: [], 
+        sync_hash: 'empty' 
+      };
+    }
+
+    this.logger.log(`📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`);
+
     return {
+      update: true,
       blocked: false,
+      sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
     };

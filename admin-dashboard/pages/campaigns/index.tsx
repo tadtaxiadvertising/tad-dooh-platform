@@ -24,10 +24,10 @@ export default function CampaignsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Network <span className="text-tad-yellow text-shadow-glow">Campaigns</span>
+            Campañas de <span className="text-tad-yellow text-shadow-glow">la Red</span>
           </h1>
           <p className="text-gray-400 max-w-2xl">
-            Real-time management of DOOH broadcasts. Monitor state and deployment across the global tablet network.
+            Gestión en tiempo real de emisiones DOOH. Monitorea el estado y despliegue en la red global de tablets.
           </p>
         </div>
         <Link 
@@ -35,7 +35,7 @@ export default function CampaignsPage() {
           className="group relative flex items-center justify-center gap-2 bg-tad-yellow hover:bg-yellow-400 text-black font-bold py-3 px-6 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(250,212,0,0.4)]"
         >
           <PlusCircle className="w-5 h-5 transition-transform group-hover:rotate-12" />
-          Create New Campaign
+          Crear Nueva Campaña
         </Link>
       </div>
 
@@ -87,28 +87,28 @@ export default function CampaignsPage() {
                           : 'bg-red-500/10 text-red-400 border-red-500/20'
                     )}>
                       <span className={clsx("w-1.5 h-1.5 rounded-full", isLive ? "bg-tad-yellow animate-pulse" : camp.active ? "bg-zinc-500" : "bg-red-500")} />
-                      {isLive ? 'Live' : camp.active ? 'Scheduled' : 'Paused'}
+                      {isLive ? 'En Vivo' : camp.active ? 'Programada' : 'Pausada'}
                     </span>
                   </div>
 
                   {/* Stats */}
                   <div className="flex items-center gap-6 shrink-0">
                     <div className="text-center">
-                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Assets</p>
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Archivos</p>
                       <p className="text-white font-bold flex items-center gap-1">
                         <Film className="w-3 h-3 text-tad-yellow" /> {assetCount}
                       </p>
                     </div>
                     <div className="text-center hidden sm:block">
-                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Duration</p>
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Duración</p>
                       <p className="text-white font-bold flex items-center gap-1">
                         <Clock className="w-3 h-3 text-zinc-500" /> {totalDuration}s
                       </p>
                     </div>
                     <div className="text-center hidden md:block">
-                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Timeline</p>
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Cronograma</p>
                       <p className="text-white font-mono text-[11px]">
-                        {format(startDate, 'MM/dd')} → {format(endDate, 'MM/dd')}
+                        {format(startDate, 'dd/MM')} → {format(endDate, 'dd/MM')}
                       </p>
                     </div>
                   </div>
@@ -122,9 +122,9 @@ export default function CampaignsPage() {
         ) : (
           <div className="py-20 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center">
             <Megaphone className="w-16 h-16 text-zinc-700 mb-4" />
-            <h3 className="text-xl font-bold text-gray-400">No active campaigns</h3>
+            <h3 className="text-xl font-bold text-gray-400">No hay campañas activas</h3>
             <p className="text-gray-500 mt-2 max-w-sm">
-              Your network is currently idle. Create a new campaign to begin distributing content.
+              Tu red está actualmente inactiva. Crea una nueva campaña para empezar a distribuir contenido.
             </p>
           </div>
         )}

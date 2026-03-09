@@ -20,7 +20,7 @@ export default function CampaignDetailPage() {
       .then(data => setCampaign(data))
       .catch(err => {
         console.error(err);
-        setError("Failed to retrieve campaign data.");
+        setError("Error al obtener los datos de la campaña.");
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -38,10 +38,10 @@ export default function CampaignDetailPage() {
     return (
       <div className="text-center py-20">
         <Megaphone className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-400">Campaign not found</h3>
-        <p className="text-gray-500 mt-2">{error || "The requested campaign does not exist."}</p>
+        <h3 className="text-xl font-bold text-gray-400">Campaña no encontrada</h3>
+        <p className="text-gray-500 mt-2">{error || "La campaña solicitada no existe."}</p>
         <Link href="/campaigns" className="inline-block mt-6 text-tad-yellow hover:underline font-bold text-sm uppercase tracking-widest">
-          ← Back to Campaigns
+          ← Volver a Campañas
         </Link>
       </div>
     );
@@ -70,7 +70,7 @@ export default function CampaignDetailPage() {
           <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-zinc-800 transition-colors border border-white/5">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          <span className="text-sm font-bold uppercase tracking-widest">Back to Network</span>
+          <span className="text-sm font-bold uppercase tracking-widest">Volver a la Red</span>
         </Link>
       </div>
 
@@ -101,7 +101,7 @@ export default function CampaignDetailPage() {
                   : "bg-red-500/10 text-red-400 border-red-500/20"
             )}>
               <span className={clsx("w-2 h-2 rounded-full", isLive ? "bg-tad-yellow animate-pulse" : isActive ? "bg-zinc-500" : "bg-red-500")} />
-              {isLive ? 'Live Broadcasting' : isActive ? 'Scheduled' : 'Paused'}
+              {isLive ? 'Transmisión en Vivo' : isActive ? 'Programada' : 'Pausada'}
             </span>
           </div>
         </div>
@@ -110,25 +110,25 @@ export default function CampaignDetailPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
           <div className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-              <Calendar className="w-3 h-3" /> Start Date
+              <Calendar className="w-3 h-3" /> Fecha Inicio
             </div>
-            <p className="text-white font-bold text-sm font-mono">{format(startDate, 'MMM dd, yyyy')}</p>
+            <p className="text-white font-bold text-sm font-mono">{format(startDate, 'dd MMM, yyyy')}</p>
           </div>
           <div className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-              <Calendar className="w-3 h-3" /> End Date
+              <Calendar className="w-3 h-3" /> Fecha Fin
             </div>
-            <p className="text-white font-bold text-sm font-mono">{format(endDate, 'MMM dd, yyyy')}</p>
+            <p className="text-white font-bold text-sm font-mono">{format(endDate, 'dd MMM, yyyy')}</p>
           </div>
           <div className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-              <Film className="w-3 h-3" /> Media Assets
+              <Film className="w-3 h-3" /> Archivos
             </div>
             <p className="text-tad-yellow font-black text-2xl">{assets.length}</p>
           </div>
           <div className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-              <Clock className="w-3 h-3" /> Total Loop
+              <Clock className="w-3 h-3" /> Ciclo Total
             </div>
             <p className="text-white font-bold text-sm">{totalDuration}s</p>
           </div>
@@ -138,13 +138,13 @@ export default function CampaignDetailPage() {
       {/* Media Assets Section */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
-          Media <span className="text-tad-yellow">Payloads</span>
+          Cargas <span className="text-tad-yellow">Multimedia</span>
         </h2>
         <Link 
           href="/media"
           className="text-[10px] font-black text-tad-yellow uppercase tracking-widest hover:underline"
         >
-          + Add Media Asset
+          + Agregar Archivo
         </Link>
       </div>
 
@@ -183,7 +183,7 @@ export default function CampaignDetailPage() {
                   </p>
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
                     <span className="text-[10px] text-zinc-600">
-                      {asset.createdAt ? format(new Date(asset.createdAt), 'MMM d, yyyy HH:mm') : 'Recently'}
+                      {asset.createdAt ? format(new Date(asset.createdAt), 'd MMM, yyyy HH:mm') : 'Recientemente'}
                     </span>
                     <a 
                       href={cleanUrl} 
@@ -191,7 +191,7 @@ export default function CampaignDetailPage() {
                       rel="noopener noreferrer" 
                       className="text-[10px] text-tad-yellow font-bold uppercase tracking-widest hover:underline flex items-center gap-1"
                     >
-                      <Play className="w-3 h-3" /> Preview
+                      <Play className="w-3 h-3" /> Vista Previa
                     </a>
                   </div>
                 </div>
@@ -202,12 +202,12 @@ export default function CampaignDetailPage() {
       ) : (
         <div className="py-16 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center">
           <Film className="w-12 h-12 text-zinc-700 mb-4" />
-          <h3 className="text-lg font-bold text-gray-400">No media assets assigned</h3>
+          <h3 className="text-lg font-bold text-gray-400">No hay archivos multimedia asignados</h3>
           <p className="text-gray-500 mt-2 text-sm max-w-sm">
-            Go to Media Assets to upload and assign videos to this campaign.
+            Ve a Contenido Multimedia para subir y asignar videos a esta campaña.
           </p>
           <Link href="/media" className="mt-4 text-tad-yellow text-sm font-bold uppercase tracking-widest hover:underline">
-            Upload Media →
+            Subir Multimedia →
           </Link>
         </div>
       )}
@@ -215,22 +215,26 @@ export default function CampaignDetailPage() {
       {/* Campaign Info */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-zinc-950/50 border border-white/5 rounded-2xl p-6">
-          <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-4">Campaign Details</h3>
+          <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-4">Detalles de la Campaña</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-zinc-500">Status</span>
-              <span className="text-white font-bold">{campaign.status}</span>
+              <span className="text-zinc-500">Estado</span>
+              <span className="text-white font-bold">{campaign.status === 'active' ? 'Activo' : campaign.status}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Priority</span>
+              <span className="text-zinc-500">Prioridad</span>
               <span className="text-white font-bold">{campaign.priority || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Version</span>
+              <span className="text-zinc-500">Versión</span>
               <span className="text-white font-bold">v{campaign.version}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Created</span>
+              <span className="text-zinc-500">Anuncios Solicitados</span>
+              <span className="text-tad-yellow font-bold">{(campaign.targetImpressions || campaign.target_impressions || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Creado</span>
               <span className="text-white font-bold font-mono text-xs">
                 {campaign.createdAt ? formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true }) : 'N/A'}
               </span>
@@ -238,19 +242,19 @@ export default function CampaignDetailPage() {
           </div>
         </div>
         <div className="bg-zinc-950/50 border border-white/5 rounded-2xl p-6">
-          <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-4">Target Distribution</h3>
+          <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-4">Distribución Objetivo</h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-tad-yellow" />
-              <span className="text-zinc-500">Cities: </span>
+              <span className="text-zinc-500">Ciudades: </span>
               <span className="text-white font-bold">
-                {targetCities.length > 0 ? targetCities.join(', ') : 'All (Global)'}
+                {targetCities.length > 0 ? targetCities.join(', ') : 'Todas (Global)'}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-tad-yellow" />
-              <span className="text-zinc-500">Fleet: </span>
-              <span className="text-white font-bold">All Active Nodes</span>
+              <span className="text-zinc-500">Flota: </span>
+              <span className="text-white font-bold">Todos los Nodos Activos</span>
             </div>
           </div>
         </div>

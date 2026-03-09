@@ -1,11 +1,13 @@
 import { Controller, Post, Get, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { PlaybackEventDto } from './dto/playback-event.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
+  @Public() // Tablets send events without JWT
   @Post('event')
   @HttpCode(HttpStatus.OK)
   async ingestEvent(@Body() dto: any) {
@@ -13,6 +15,7 @@ export class AnalyticsController {
     return { success: true };
   }
 
+  @Public() // Tablets batch-upload analytics without JWT
   @Post('batch')
   @HttpCode(HttpStatus.OK)
   async ingestBatchEvents(@Body() dto: any[]) {

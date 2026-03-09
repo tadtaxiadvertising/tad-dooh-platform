@@ -107,14 +107,59 @@ export class DeviceService {
       });
     }
 
+    // ============================================
+    // SUBSCRIPTION CHECK — Block if payment overdue
+    // ============================================
+    const driver = await this.prisma.driver.findUnique({
+      where: { deviceId },
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          orderBy: { dueDate: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // If device has a driver assigned, check their subscription
+    if (driver) {
+      const activeSubscription = driver.subscriptions[0];
+
+      if (!activeSubscription) {
+        this.logger.warn(`⛔ Device ${deviceId}: driver ${driver.fullName} has NO active subscription`);
+        return { blocked: true, reason: 'no_subscription' };
+      }
+
+      if (activeSubscription.dueDate < new Date()) {
+        this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${activeSubscription.dueDate.toISOString()}`);
+        
+        // Mark subscription as expired
+        await this.prisma.subscription.update({
+          where: { id: activeSubscription.id },
+          data: { status: 'EXPIRED' },
+        });
+
+        // Mark driver as suspended
+        await this.prisma.driver.update({
+          where: { id: driver.id },
+          data: { status: 'SUSPENDED', blockedAt: new Date() },
+        });
+
+        return { blocked: true, reason: 'payment_overdue' };
+      }
+
+      this.logger.log(`✅ Device ${deviceId}: subscription valid until ${activeSubscription.dueDate.toISOString()}`);
+    }
+    // If no driver assigned, allow sync (grace period for new devices being set up)
+
     const payload = await this.campaignService.getActiveSyncVideos(deviceId);
 
     if (!payload.media_assets || payload.media_assets.length === 0) {
-      return { update: false };
+      return { update: false, blocked: false };
     }
 
-    // Optionally check hash logic if passed by client, but simplified here.
     return {
+      blocked: false,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
     };

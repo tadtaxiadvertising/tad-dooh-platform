@@ -27,10 +27,10 @@ export default function OfflineFleetPage() {
     <div className="animate-in fade-in duration-700">
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-          Critical <span className="text-tad-yellow text-shadow-glow">Alerts</span>
+          Alertas <span className="text-tad-yellow text-shadow-glow">Críticas</span>
         </h1>
         <p className="text-gray-400 max-w-2xl">
-          Detection of dormant nodes and signal failures. These units are currently unresponsive and require technical intervention.
+          Detección de nodos inactivos y fallos de señal. Estas unidades no responden actualmente y requieren intervención técnica.
         </p>
       </div>
 
@@ -40,8 +40,8 @@ export default function OfflineFleetPage() {
             <MonitorOff className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-white font-black uppercase tracking-tighter text-lg">Offline Inventory</h3>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Uplink heartbeat failure detection</p>
+            <h3 className="text-white font-black uppercase tracking-tighter text-lg">Inventario Fuera de Línea</h3>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Detección de fallo de pulso (heartbeat) de enlace</p>
           </div>
         </div>
         
@@ -49,9 +49,9 @@ export default function OfflineFleetPage() {
           <table className="min-w-full divide-y divide-white/5">
             <thead>
               <tr className="bg-white/5">
-                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">Global UUID</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">Last Auth Trace</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">Dormancy Duration</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">UUID Global</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">Último Rastro</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-black text-zinc-500 uppercase tracking-widest">Duración Inactividad</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -61,11 +61,11 @@ export default function OfflineFleetPage() {
                     {device.device_id}
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-xs text-zinc-400 font-medium">
-                    {device.last_seen ? new Date(device.last_seen).toLocaleString().toUpperCase() : 'NO AUTH TRACE'}
+                    {device.last_seen ? new Date(device.last_seen).toLocaleString().toUpperCase() : 'SIN RASTRO DE AUT.'}
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap">
                     <span className="text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
-                      {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'INFINITE DORMANCY'}
+                      {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'INACTIVIDAD INFINITA'}
                     </span>
                   </td>
                 </tr>
@@ -73,8 +73,8 @@ export default function OfflineFleetPage() {
               {devices.length === 0 && !loading && (
                 <tr>
                   <td colSpan={3} className="px-6 py-20 text-center">
-                    <h3 className="text-lg font-black text-emerald-500 uppercase tracking-widest mb-2">Network Clean</h3>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-tight">All registered hardware packets are communicating effectively.</p>
+                    <h3 className="text-lg font-black text-emerald-500 uppercase tracking-widest mb-2">Red Limpia</h3>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-tight">Todos los paquetes de hardware registrados se están comunicando eficazmente.</p>
                   </td>
                 </tr>
               )}

@@ -131,6 +131,22 @@
                     <p class="text-gray-500 text-sm mt-2">ID: <span id="no-content-device-id">--</span></p>
                 </div>
             </div>
+            
+            <!-- Blocked State (Subscription Expired) -->
+            <div id="blocked-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
+                <div class="text-center max-w-lg px-6">
+                    <svg class="w-20 h-20 mx-auto mb-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-10V5a2 2 0 00-2-2H8a2 2 0 00-2 2v2m8 0H6a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V9a2 2 0 00-2-2z"></path>
+                    </svg>
+                    <h2 class="text-2xl font-bold mb-3 text-yellow-400">Cuenta Suspendida</h2>
+                    <p class="text-gray-400 text-lg mb-4">Tu suscripción ha vencido. Para reactivar la publicidad contacta a soporte TAD.</p>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
+                        <p class="text-white font-bold text-lg">WhatsApp: +1 (849) 504-3872</p>
+                        <p class="text-gray-500 text-sm mt-1">tad.taxiadvertising@gmail.com</p>
+                    </div>
+                    <p class="text-gray-600 text-xs mt-4">ID: <span id="blocked-device-id">--</span></p>
+                </div>
+            </div>
         </main>
         
         <!-- Footer (oculto en kiosk mode) -->
@@ -163,17 +179,19 @@
         
         // Configuración
         const CONFIG = {
-            // URL del servidor TAD (cambiar en production)
-            SERVER_URL: 'https://tad-api.vercel.app',
+            // URL del servidor TAD – configurable via localStorage key 'tad_server_url'
+            SERVER_URL: localStorage.getItem('tad_server_url') || 'https://tad-api.vercel.app',
             
-            // Device ID forzado para testing (puedes cambiarlo aquí)
-            FORCE_DEVICE_ID: 'taxi-9wu77o406', // ← Device ID actual de Mendy
-            
-            // Device ID (se genera automáticamente si no existe)
+            // Device ID (se genera automáticamente y se persiste en localStorage)
+            // Para forzar un ID específico: localStorage.setItem('tad_device_id', 'taxi-XXXXX')
             DEVICE_ID_KEY: 'tad_device_id',
             
             // Auth token
             AUTH_TOKEN_KEY: 'tad_auth_token',
+            
+            // FullyKiosk Browser password – configurable via localStorage
+            // Set via: localStorage.setItem('tad_fkb_password', 'your_password')
+            FULLY_KIOSK_PASSWORD: localStorage.getItem('tad_fkb_password') || '',
             
             // Sync settings
             SYNC_INTERVAL: 24 * 60 * 60 * 1000, // 24 horas
@@ -218,17 +236,23 @@
         
         const storage = {
             async init() {
-                // Load from localStorage
+                // Load persisted state from localStorage
                 state.deviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
                 state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
                 state.lastSync = localStorage.getItem('tad_last_sync');
                 
-                // Generate device ID if not exists
+                // Generate unique device ID if this is a new tablet
+                // Uses crypto.randomUUID for uniqueness, falls back to random string
                 if (!state.deviceId) {
-                    state.deviceId = 'taxi-' + Math.random().toString(36).substr(2, 9);
+                    const uniquePart = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                        ? crypto.randomUUID().split('-')[0]
+                        : Math.random().toString(36).substr(2, 9);
+                    state.deviceId = 'taxi-' + uniquePart;
                     localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);
                     console.log('🆕 Device ID generado:', state.deviceId);
                 }
+                
+                console.log('🔑 Device ID activo:', state.deviceId);
                 
                 // Load config
                 const config = localStorage.getItem(CONFIG.STORAGE_CONFIG);
@@ -438,10 +462,24 @@
                 this.hideAllStates();
             },
             
+            showBlocked(reason) {
+                this.hideAllStates();
+                document.getElementById('blocked-device-id').textContent = state.deviceId;
+                document.getElementById('blocked-state').classList.remove('hidden');
+                // Stop video playback
+                if (this.video) {
+                    this.video.pause();
+                    this.video.src = '';
+                }
+                this.isPlaying = false;
+                console.warn('⛔ Player blocked:', reason);
+            },
+            
             hideAllStates() {
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('error-state').classList.add('hidden');
                 document.getElementById('no-content-state').classList.add('hidden');
+                document.getElementById('blocked-state').classList.add('hidden');
             },
             
             toggleDebug() {
@@ -547,6 +585,8 @@
         // ============================================
         
         const sync = {
+            syncRetryDelay: 30000, // Start at 30s, exponential backoff
+            
             async performSync() {
                 if (state.isSyncing) {
                     console.log('⏳ Sync already in progress');
@@ -564,50 +604,62 @@
                 try {
                     console.log('🔄 Starting sync...');
                     
-                    // 1. Init sync
-                    const initResponse = await fetch(`${CONFIG.SERVER_URL}/api/sync/init`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.authToken}`
-                        },
-                        body: JSON.stringify({
-                            deviceId: state.deviceId,
-                            lastSync: state.lastSync
-                        })
-                    });
+                    // 1. Sync via device endpoint
+                    const syncResponse = await fetch(
+                        `${CONFIG.SERVER_URL}/api/device/sync?device_id=${encodeURIComponent(state.deviceId)}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${state.authToken}`
+                            }
+                        }
+                    );
                     
-                    if (!initResponse.ok) {
-                        throw new Error('Sync init failed');
+                    if (!syncResponse.ok) {
+                        throw new Error(`Sync failed: ${syncResponse.status}`);
                     }
                     
-                    const syncData = await initResponse.json();
+                    const syncData = await syncResponse.json();
                     console.log('📥 Sync data received:', syncData);
                     
-                    // 2. Download new campaigns
-                    if (syncData.campaigns && syncData.campaigns.length > 0) {
-                        await this.downloadCampaigns(syncData.campaigns);
+                    // 2. CHECK IF BLOCKED (subscription expired)
+                    if (syncData.blocked) {
+                        console.warn('⛔ Device BLOCKED:', syncData.reason);
+                        player.showBlocked(syncData.reason);
+                        // Still upload analytics even if blocked
+                        await analytics.uploadAll();
+                        return;
                     }
                     
-                    // 3. Upload analytics
+                    // 3. Download new campaigns if available
+                    if (syncData.media_assets && syncData.media_assets.length > 0) {
+                        state.currentPlaylist = syncData.media_assets;
+                        state.currentIndex = 0;
+                        if (state.currentPlaylist.length > 0) {
+                            player.play(state.currentPlaylist[0]);
+                        }
+                    }
+                    
+                    // 4. Upload analytics
                     await analytics.uploadAll();
-                    
-                    // 4. Execute commands
-                    if (syncData.commands && syncData.commands.length > 0) {
-                        await this.executeCommands(syncData.commands);
-                    }
                     
                     // 5. Update last sync
                     state.lastSync = new Date().toISOString();
                     localStorage.setItem('tad_last_sync', state.lastSync);
                     
+                    // Reset retry delay on success
+                    this.syncRetryDelay = 30000;
+                    
                     console.log('✅ Sync completed');
                     
                 } catch (error) {
                     console.error('❌ Sync error:', error);
+                    // Exponential backoff: 30s -> 60s -> 2min -> 5min -> 10min (max)
+                    this.syncRetryDelay = Math.min(this.syncRetryDelay * 2, 10 * 60 * 1000);
+                    console.log(`🔄 Next retry in ${this.syncRetryDelay / 1000}s`);
+                    setTimeout(() => this.performSync(), this.syncRetryDelay);
                 } finally {
                     state.isSyncing = false;
-                    ui.updateStatus('online');
+                    ui.updateStatus(state.isOnline ? 'online' : 'offline');
                 }
             },
             
@@ -689,16 +741,17 @@
             },
             
             async reboot() {
-                // Fully Kiosk API endpoint
+                // Fully Kiosk Browser REST API – password from config
+                const fkbPassword = CONFIG.FULLY_KIOSK_PASSWORD;
+                if (!fkbPassword) {
+                    console.warn('⚠️ FullyKiosk password not configured. Set via: localStorage.setItem("tad_fkb_password", "your_password")');
+                    return;
+                }
                 try {
-                    await fetch('http://localhost:2323/reboot', {
-                        method: 'POST',
-                        headers: {
-                            'Password': 'YOUR_FULLY_PASSWORD' // Configurable
-                        }
-                    });
+                    await fetch('http://localhost:2323/?cmd=restartApp&password=' + encodeURIComponent(fkbPassword));
+                    console.log('🔄 Reboot command sent to FullyKiosk');
                 } catch (error) {
-                    console.log('⚠️ Reboot via Fully Kiosk failed');
+                    console.log('⚠️ Reboot via Fully Kiosk failed:', error.message);
                 }
             }
         };

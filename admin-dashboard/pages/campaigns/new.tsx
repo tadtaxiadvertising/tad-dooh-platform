@@ -12,6 +12,7 @@ export default function NewCampaignPage() {
     advertiser: '',
     start_date: '',
     end_date: '',
+    target_impressions: 1000,
     active: true
   });
   const [loading, setLoading] = useState(false);
@@ -20,11 +21,16 @@ export default function NewCampaignPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await createCampaign(form);
+      const payload = {
+        ...form,
+        start_date: form.start_date ? new Date(form.start_date).toISOString() : '',
+        end_date: form.end_date ? new Date(form.end_date).toISOString() : ''
+      };
+      await createCampaign(payload);
       router.push('/campaigns');
     } catch (err) {
       console.error(err);
-      alert('Failed to initialize container. Check network console.');
+      alert('Error al inicializar el contenedor. Revisa la consola.');
     } finally {
       setLoading(false);
     }
@@ -37,7 +43,7 @@ export default function NewCampaignPage() {
           <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-zinc-800 transition-colors border border-white/5">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          <span className="text-sm font-bold uppercase tracking-widest">Back to Network</span>
+          <span className="text-sm font-bold uppercase tracking-widest">Volver a la Red</span>
         </Link>
       </div>
 
@@ -47,28 +53,28 @@ export default function NewCampaignPage() {
             <div className="p-3 bg-tad-yellow rounded-2xl shadow-[0_0_20px_rgba(250,212,0,0.3)]">
               <Megaphone className="w-6 h-6 text-black" />
             </div>
-            New <span className="text-tad-yellow text-shadow-glow">Container</span>
+            Nueva <span className="text-tad-yellow text-shadow-glow">Campaña</span>
           </h3>
-          <p className="text-gray-400 mt-2 text-sm">Define a new network container for media payload distribution.</p>
+          <p className="text-gray-400 mt-2 text-sm">Define un nuevo contenedor en la red para distribuir contenido publicitario.</p>
         </div>
         
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div className="group">
-                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Campaign Label</label>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Nombre de Campaña</label>
                 <input 
                   required
                   type="text" 
                   value={form.name}
                   onChange={e => setForm({...form, name: e.target.value})}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all placeholder:text-zinc-700 font-bold"
-                  placeholder="e.g. SUMMER_FESTIVAL_2026"
+                  placeholder="ej. CONCIERTO_VERANO_2026"
                 />
               </div>
 
               <div className="group">
-                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Advertiser Entity</label>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Anunciante o Marca</label>
                 <div className="relative">
                   <input 
                     required
@@ -76,9 +82,24 @@ export default function NewCampaignPage() {
                     value={form.advertiser}
                     onChange={e => setForm({...form, advertiser: e.target.value})}
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow outline-none transition-all placeholder:text-zinc-700 font-bold"
-                    placeholder="e.g. Coca-Cola Global"
+                    placeholder="ej. Coca-Cola Global"
                   />
                   <Zap className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-tad-yellow/50" />
+                </div>
+              </div>
+
+              <div className="group">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Cantidad de Anuncios (Target)</label>
+                <div className="relative">
+                  <input 
+                    required
+                    type="number" 
+                    value={form.target_impressions}
+                    onChange={e => setForm({...form, target_impressions: parseInt(e.target.value)})}
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow outline-none transition-all placeholder:text-zinc-700 font-bold"
+                    placeholder="ej. 5000"
+                  />
+                  <Activity className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-tad-yellow/50" />
                 </div>
               </div>
             </div>
@@ -86,7 +107,7 @@ export default function NewCampaignPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="group">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Launch Date</label>
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Fecha de Inicio</label>
                   <div className="relative">
                     <input 
                       required
@@ -98,7 +119,7 @@ export default function NewCampaignPage() {
                   </div>
                 </div>
                 <div className="group">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Retract Date</label>
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Fecha de Fin</label>
                   <input 
                     required
                     type="date" 
@@ -118,8 +139,8 @@ export default function NewCampaignPage() {
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white uppercase tracking-tight">Active Deployment</p>
-                    <p className="text-[10px] text-zinc-500 uppercase font-black">Immediate activation upon save</p>
+                    <p className="text-sm font-bold text-white uppercase tracking-tight">Despliegue Activo</p>
+                    <p className="text-[10px] text-zinc-500 uppercase font-black">Activar Inmediatamente</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -146,12 +167,12 @@ export default function NewCampaignPage() {
               ) : (
                 <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
               )}
-              {loading ? 'Initializing...' : 'Authorize & Create'}
+              {loading ? 'Inicializando...' : 'Autorizar y Crear'}
             </button>
             
             <div className="mt-6 flex items-center gap-2 text-[10px] text-zinc-500 text-center max-w-sm">
               <Info className="w-4 h-4 text-tad-yellow flex-shrink-0" />
-              Once created, this container becomes a valid target for media payloads in the ecosystem dashboard.
+              Una vez creada, este contenedor será un destino válido para recibir tu Media en la red DOOH.
             </div>
           </div>
         </form>

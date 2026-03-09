@@ -3,7 +3,9 @@ import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
 export class DeviceController {
   constructor(private readonly deviceService: DeviceService) {}

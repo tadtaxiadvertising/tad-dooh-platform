@@ -18,4 +18,10 @@ export class CreateCampaignDto {
   @IsBoolean()
   @IsOptional()
   active?: boolean;
+
+  @IsOptional()
+  target_impressions?: number;
+
+  @IsOptional()
+  budget?: number;
 }

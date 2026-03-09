@@ -92,4 +92,91 @@ export class FleetService {
     const devices = await this.getFleetDevices();
     return devices.filter(d => d.status === 'offline');
   }
+
+  /**
+   * Real financial data: playback counts per device + subscription status.
+   * Replaces all simulated/hardcoded finance calculations.
+   */
+  async getFleetFinance() {
+    const RATE_PER_AD = 1.25; // RD$ per 30s ad play
+
+    // Get current month boundaries
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Count real playback events per device for this month
+    const playbackCounts = await this.prisma.playbackEvent.groupBy({
+      by: ['deviceId'],
+      _count: { id: true },
+      where: {
+        timestamp: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    });
+
+    // Build a map: deviceId -> playCount
+    const playsMap = new Map<string, number>();
+    for (const row of playbackCounts) {
+      playsMap.set(row.deviceId, row._count.id);
+    }
+
+    // Get all devices with driver + subscription info
+    const devices = await this.prisma.device.findMany({
+      include: {
+        driver: {
+          include: {
+            subscriptions: {
+              where: { status: 'ACTIVE' },
+              orderBy: { dueDate: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    const thirtyMinMs = 30 * 60 * 1000;
+
+    const fleetFinance = devices.map((d) => {
+      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs;
+      const adsPlayed = playsMap.get(d.deviceId) || 0;
+      const revenue = parseFloat((adsPlayed * RATE_PER_AD).toFixed(2));
+      const subscription = d.driver?.subscriptions?.[0] || null;
+
+      return {
+        device_id: d.deviceId,
+        display_name: d.taxiNumber || d.name || `TAXI-${d.deviceId.slice(0, 8).toUpperCase()}`,
+        city: d.city || 'Santo Domingo',
+        status: isOnline ? 'online' : 'offline',
+        ads_played: adsPlayed,
+        revenue,
+        driver: d.driver ? {
+          name: d.driver.fullName,
+          phone: d.driver.phone,
+          status: d.driver.status,
+        } : null,
+        subscription: subscription ? {
+          plan: subscription.plan,
+          amount: subscription.amount,
+          status: subscription.status,
+          due_date: subscription.dueDate,
+          paid: !!subscription.paidDate,
+        } : null,
+      };
+    });
+
+    const totalRevenue = fleetFinance.reduce((sum, d) => sum + d.revenue, 0);
+    const totalAds = fleetFinance.reduce((sum, d) => sum + d.ads_played, 0);
+
+    return {
+      period: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
+      rate_per_ad: RATE_PER_AD,
+      total_revenue: parseFloat(totalRevenue.toFixed(2)),
+      total_ads_played: totalAds,
+      devices: fleetFinance.sort((a, b) => b.revenue - a.revenue),
+    };
+  }
 }

@@ -69,6 +69,7 @@ model Device {
   campaignMetrics CampaignMetric[]
   heartbeats     DeviceHeartbeat[]
   playbackEvents PlaybackEvent[]
+  driver         Driver?
   
   @@map("devices")
   @@index([status])
@@ -96,6 +97,8 @@ model Campaign {
   targetCities String @default("[]") @map("target_cities")
   targetFleets String @default("[]") @map("target_fleets")
   priority    Int      @default(0)
+  targetImpressions Int @default(0) @map("target_impressions")
+  budget      Float @default(0)
   createdById String?  @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt      @map("updated_at")
@@ -333,5 +336,57 @@ model Fleet {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("fleets")
+}
+
+// ============================================
+// DRIVERS (Choferes de taxis)
+// ============================================
+
+model Driver {
+  id            String   @id @default(uuid())
+  fullName      String   @map("full_name")
+  phone         String   @unique  // WhatsApp number
+  licensePlate  String?  @map("license_plate")
+  taxiNumber    String?  @map("taxi_number")
+  deviceId      String?  @unique @map("device_id") // FK to Device.deviceId
+  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
+  onboardedAt   DateTime @default(now()) @map("onboarded_at")
+  blockedAt     DateTime? @map("blocked_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  device        Device?  @relation(fields: [deviceId], references: [deviceId])
+  subscriptions Subscription[]
+
+  @@map("drivers")
+  @@index([status])
+  @@index([phone])
+}
+
+// ============================================
+// SUBSCRIPTIONS (Suscripciones y pagos)
+// ============================================
+
+model Subscription {
+  id            String   @id @default(uuid())
+  driverId      String   @map("driver_id")
+  plan          String   // ANNUAL, MONTHLY
+  amount        Float    // RD$ amount (6000 or 500)
+  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED, CANCELLED
+  startDate     DateTime @default(now()) @map("start_date")
+  dueDate       DateTime @map("due_date")
+  paidDate      DateTime? @map("paid_date")
+  paymentMethod String?  @map("payment_method") // CASH, TRANSFER, CARD
+  paymentRef    String?  @map("payment_ref")    // Receipt or reference number
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+  @@index([driverId])
+  @@index([status])
+  @@index([dueDate])
 }
 

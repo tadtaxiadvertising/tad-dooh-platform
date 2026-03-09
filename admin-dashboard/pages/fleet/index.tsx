@@ -33,10 +33,10 @@ export default function FleetPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Fleet <span className="text-tad-yellow text-shadow-glow">Monitoring</span>
+            Monitoreo de <span className="text-tad-yellow text-shadow-glow">Flota</span>
           </h1>
           <p className="text-gray-400 max-w-2xl">
-            Real-time synchronization status of the tablet hardware network. Monitor battery health, storage, and connectivity across all active units.
+            Estado de sincronización en tiempo real de la red de hardware. Monitorea el estado de la batería, almacenamiento y conectividad de todas las unidades activas.
           </p>
         </div>
         <button 
@@ -44,7 +44,7 @@ export default function FleetPage() {
           className="group flex gap-2 items-center bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-all active:scale-95 shadow-lg"
         >
           <RefreshCcw className={clsx("h-5 w-5 text-tad-yellow", loading && "animate-spin")} />
-          Sync Fleet Data
+          Sincronizar Datos
         </button>
       </div>
 
@@ -55,7 +55,7 @@ export default function FleetPage() {
             <Tablet className="w-5 h-5 text-tad-yellow" />
           </div>
           <div>
-            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Total Fleet</p>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Flota Total</p>
             <p className="text-2xl font-black text-white">{totalDevices}</p>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function FleetPage() {
             <Signal className="w-5 h-5 text-tad-yellow" />
           </div>
           <div>
-            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Online</p>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">En Línea</p>
             <p className="text-2xl font-black text-tad-yellow">{onlineCount}</p>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function FleetPage() {
             <SignalZero className="w-5 h-5 text-zinc-500" />
           </div>
           <div>
-            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Offline</p>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Fuera de Línea</p>
             <p className="text-2xl font-black text-zinc-400">{offlineCount}</p>
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function FleetPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">
-                    <Battery className="w-3 h-3 text-tad-yellow" /> Power
+                    <Battery className="w-3 h-3 text-tad-yellow" /> Batería
                   </div>
                   <div className="text-sm font-bold text-white">
                     {device.battery_level != null ? `${device.battery_level}%` : 'N/A'}
@@ -122,15 +122,15 @@ export default function FleetPage() {
                 </div>
                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">
-                    <HardDrive className="w-3 h-3 text-tad-yellow" /> Storage
+                    <HardDrive className="w-3 h-3 text-tad-yellow" /> Almacén.
                   </div>
                   <div className="text-sm font-bold text-white truncate">
-                    {device.storage_free || 'Unknown'}
+                    {device.storage_free || 'Desconocido'}
                   </div>
                 </div>
                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">
-                    <MapPin className="w-3 h-3 text-tad-yellow" /> Zone
+                    <MapPin className="w-3 h-3 text-tad-yellow" /> Zona
                   </div>
                   <div className="text-sm font-bold text-white">
                     {device.city || 'Global'}
@@ -138,7 +138,7 @@ export default function FleetPage() {
                 </div>
                 <div className="bg-black/40 rounded-lg p-3 border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">
-                    <Gauge className="w-3 h-3 text-tad-yellow" /> Playback
+                    <Gauge className="w-3 h-3 text-tad-yellow" /> Estado Repo
                   </div>
                   <div className={clsx(
                     "text-[10px] font-black uppercase tracking-tighter",
@@ -152,7 +152,7 @@ export default function FleetPage() {
               <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
                 <div className="text-[10px] text-zinc-600 flex items-center gap-2">
                   {isOnline ? <Wifi className="w-3 h-3 text-tad-yellow" /> : <WifiOff className="w-3 h-3" />}
-                  LAST SYNC: {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'NEVER'}
+                  ÚLTIMA SYNC: {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'NUNCA'}
                 </div>
                 <span className={clsx(
                   "text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-widest",

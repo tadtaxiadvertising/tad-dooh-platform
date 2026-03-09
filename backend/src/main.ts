@@ -19,17 +19,28 @@ async function bootstrap() {
     }),
   );
 
-  // CORS configuration
+  // CORS configuration – explicit allowlist
+  const allowedOrigins = [
+    'https://tad-dooh-platform.vercel.app',
+    'https://tad-admin.vercel.app',
+    'https://tad-api.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'null', // FullyKiosk opens file:// pages which send origin "null"
+  ];
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'https://tad-dashboard.vercel.app',
-      'https://tad-dooh-dashboard.vercel.app',
-      /https:\/\/.*\.vercel\.app$/,
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (tablets, curl, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin',
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
   });
 
   // API prefix

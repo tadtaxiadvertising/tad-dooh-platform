@@ -51,16 +51,16 @@ export default function Home() {
     <div className="animate-in fade-in duration-1000">
       <div className="mb-10">
         <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">
-          System <span className="text-tad-yellow text-shadow-glow">Intelligence</span>
+          Inteligencia <span className="text-tad-yellow text-shadow-glow">del Sistema</span>
         </h1>
-        <p className="text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Global Node Authorization & Signal Distribution</p>
+        <p className="text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Autorización Global de Nodos y Distribución de Señal</p>
       </div>
 
       {error && (
         <div className="mb-10 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-500 animate-pulse">
            <Activity className="w-5 h-5 flex-shrink-0" />
            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest">Signal Error</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Error de Señal</p>
               <p className="text-xs font-bold leading-tight">{error}</p>
            </div>
         </div>
@@ -69,30 +69,30 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard 
           icon={<CarFront className="w-5 h-5" />} 
-          label="Active Fleet" 
+          label="Flota Activa" 
           value={stats.devices} 
-          sub={`${stats.online} Units Online`}
+          sub={`${stats.online} Unidades Online`}
           color="yellow"
         />
         <StatCard 
           icon={<Megaphone className="w-5 h-5" />} 
-          label="Campaigns" 
+          label="Campañas" 
           value={stats.campaigns} 
-          sub="Production Ready"
+          sub="Listas para Producción"
           color="gray"
         />
         <StatCard 
           icon={<CloudUpload className="w-5 h-5" />} 
-          label="Object Blobs" 
+          label="Cargas" 
           value={stats.media} 
-          sub="Cloud Optimized"
+          sub="Optimizadas para la Nube"
           color="yellow"
         />
         <StatCard 
           icon={<Activity className="w-5 h-5" />} 
-          label="Sys Health" 
+          label="Salud del Sist." 
           value="100%" 
-          sub="No Packet Loss"
+          sub="Sin Pérdida de Paquetes"
           color="gray"
         />
       </div>
@@ -101,10 +101,10 @@ export default function Home() {
         <div className="lg:col-span-2 bg-zinc-950/50 backdrop-blur-xl border border-white/5 p-8 rounded-3xl shadow-2xl">
            <div className="flex items-center justify-between mb-8">
               <div>
-              <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-tad-yellow" /> Network Throughput
+               <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-tad-yellow" /> Tráfico de Red
               </h3>
-              <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mt-1">Cumulative impressions across 24h cycle</p>
+              <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mt-1">Impresiones acumuladas durante el ciclo de 24h</p>
             </div>
           </div>
           <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
@@ -129,7 +129,7 @@ export default function Home() {
               </ResponsiveContainer>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-800 font-black italic">
-                SYNCHRONIZING DATASTREAM...
+                SINCRONIZANDO CON LA MATRIZ...
               </div>
             )}
           </div>
@@ -139,11 +139,11 @@ export default function Home() {
            <div className="bg-zinc-950/50 backdrop-blur-xl border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
               <div className="relative z-10">
                  <ShieldCheck className="w-12 h-12 text-tad-yellow mb-4" />
-                 <h4 className="text-xl font-black text-white uppercase tracking-tighter">Secure Protocol</h4>
-                 <p className="text-sm text-zinc-500 mt-2 font-medium">All tablet communications are encrypted via SSL/OIDC handshake 4.0.</p>
+                 <h4 className="text-xl font-black text-white uppercase tracking-tighter">Protocolo Seguro</h4>
+                 <p className="text-sm text-zinc-500 mt-2 font-medium">Todas las comunicaciones por tablet están encriptadas vía SSL/OIDC handshake 4.0.</p>
                  <div className="mt-6 flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-tad-yellow animate-ping" />
-                    <span className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.2em]">Active Protection</span>
+                    <span className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.2em]">Protección Activa</span>
                  </div>
               </div>
               <div className="absolute -right-4 -bottom-4 opacity-5">
@@ -152,10 +152,10 @@ export default function Home() {
            </div>
 
            <div className="bg-zinc-900 border border-white/5 p-8 rounded-3xl shadow-2xl">
-              <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-2">Expansion Pack</h4>
-              <p className="text-xs text-zinc-500 font-medium">Ready to deploy 2,000 additional nodes in Santo Domingo sector.</p>
+              <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-2">Paquete de Expansión</h4>
+              <p className="text-xs text-zinc-500 font-medium">Listos para desplegar 2,000 nodos adicionales en Santo Domingo.</p>
               <button className="mt-6 bg-tad-yellow text-black text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
-                 Scan Local Subnets
+                 Escanear Subredes
               </button>
            </div>
         </div>

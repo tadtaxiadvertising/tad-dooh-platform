@@ -15,6 +15,8 @@ export class CampaignService {
         startDate: new Date(dto.start_date),
         endDate: new Date(dto.end_date),
         active: dto.active ?? true,
+        targetImpressions: dto.target_impressions || 0,
+        budget: dto.budget || 0,
       },
     });
   }

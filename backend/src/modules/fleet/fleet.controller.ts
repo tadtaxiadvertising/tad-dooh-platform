@@ -24,4 +24,9 @@ export class FleetController {
   async getOfflineDevices() {
     return this.fleetService.getOfflineDevices();
   }
+
+  @Get('finance')
+  async getFleetFinance() {
+    return this.fleetService.getFleetFinance();
+  }
 }

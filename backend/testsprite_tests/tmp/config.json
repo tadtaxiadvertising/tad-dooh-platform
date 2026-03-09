@@ -1,0 +1,17 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "backend",
+  "localEndpoint": "http://localhost:3000/",
+  "serverPort": 55045,
+  "executionArgs": {
+    "projectName": "tad-dooh-backend",
+    "projectPath": "C:\\Users\\Arismendy\\OneDrive\\Escritorio\\TAD PLASTFORM\\tad-dooh-platform\\backend",
+    "testIds": [],
+    "additionalInstruction": "Focus on testing the REST API endpoints: device registration, heartbeat, campaign CRUD, tablet sync, analytics ingestion, and fleet monitoring.",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-Bts2e-KtGon595wIiYPoU3ekap0qQ0_UPwc_wS-8YGnMOfReaYteBRs6FM5HG51T-PkLTvyt_1WT6Bfp0pBY0v4N0opeqlvkY_3S2DUK60TcqrKsgrNf_OXyztIBim73OYI"
+    }
+  }
+}

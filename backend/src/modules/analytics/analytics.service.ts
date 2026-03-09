@@ -78,15 +78,15 @@ export class AnalyticsService {
   }
 
   async getTopTaxis() {
-    // Group events by deviceId and count them
-    const topDevices = await this.prisma.analyticsEvent.groupBy({
+    // Group events by deviceId and count them using the real PlaybackEvent model
+    const topDevices = await this.prisma.playbackEvent.groupBy({
       by: ['deviceId'],
       _count: {
-        _all: true,
+        id: true,
       },
       orderBy: {
         _count: {
-          deviceId: 'desc',
+          id: 'desc',
         },
       },
       take: 5,
@@ -94,19 +94,38 @@ export class AnalyticsService {
 
     return topDevices.map(d => ({
       device_id: d.deviceId,
-      plays: d._count._all,
+      plays: d._count.id,
     }));
   }
 
   async getHourlyAnalytics() {
-    return [
-      { hour: '00', plays: 120 },
-      { hour: '04', plays: 80 },
-      { hour: '08', plays: 450 },
-      { hour: '12', plays: 890 },
-      { hour: '16', plays: 1100 },
-      { hour: '20', plays: 750 },
-      { hour: '23', plays: 300 },
-    ];
+    // Get stats for the last 24 hours from PlaybackEvent
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const events = await this.prisma.playbackEvent.findMany({
+      where: {
+        timestamp: { gte: last24h },
+      },
+      select: {
+        timestamp: true,
+        eventType: true,
+      },
+    });
+
+    // Group by hour
+    const hourlyMap = new Map<string, number>();
+    // Pre-fill last 24 slots
+    for (let i = 0; i < 24; i++) {
+      const h = new Date(Date.now() - i * 60 * 60 * 1000).getHours();
+      hourlyMap.set(h.toString().padStart(2, '0'), 0);
+    }
+
+    events.forEach(e => {
+      const hour = new Date(e.timestamp).getHours().toString().padStart(2, '0');
+      hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + 1);
+    });
+
+    return Array.from(hourlyMap.entries())
+      .map(([hour, plays]) => ({ hour, plays }))
+      .sort((a, b) => a.hour.localeCompare(b.hour));
   }
 }

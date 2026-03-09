@@ -31,6 +31,11 @@ Este documento centraliza el estado actual, las reglas de negocio implementadas 
 - **Lógica**: Cruzamos la base de datos de `playback_events` para determinar en tiempo real qué taxis están visualizando un video específico.
 - **Visibilidad**: El administrador ve un indicador **"EN VIVO"** junto a una lista de taxis activos en la biblioteca multimedia.
 
+### D. DISTRIBUCIÓN A VOLUNTAD (Asignación Directa)
+- **Implementación**: Modelo `PlaylistItem` en DB (Backend) y Selector Múltiple de Dispositivos ("A Voluntad") en Modal Carga (Frontend).
+- **Lógica**: Se envía una lista explícita de `device_ids` a `/api/campaigns/:id/assign` para mapear directamente en la BD qué pantalla corre qué video. Al sincronizar (`getActiveSyncVideos`), el nodo busca contenido que le corresponda. 
+- **Prevención**: La interfaz lee `getDeviceSlots` por taxi, deshabilitando automáticamente la asignación en pantallas llenas.
+
 ---
 
 ## 🛠️ 3. RECURSOS Y ENDPOINTS CLAVE

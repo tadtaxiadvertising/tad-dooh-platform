@@ -88,7 +88,7 @@
     
     <!-- Device ID Display -->
     <div class="device-id">
-        📱 taxi-9wu77o406
+        📱 taxi-...
     </div>
     
     <!-- Video Container -->
@@ -109,7 +109,11 @@
     
     <script>
         // Device ID persistente
-        const DEVICE_ID = 'taxi-9wu77o406';
+        let DEVICE_ID = localStorage.getItem('tad_device_id');
+        if (!DEVICE_ID || DEVICE_ID === 'taxi-9wu77o406') {
+            DEVICE_ID = 'taxi-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('tad_device_id', DEVICE_ID);
+        }
         document.querySelector('.device-id').textContent = '📱 ' + DEVICE_ID;
         
         // Video element

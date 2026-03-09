@@ -243,8 +243,15 @@
                 state.lastSync = localStorage.getItem('tad_last_sync');
                 state.lastSyncHash = localStorage.getItem('tad_last_sync_hash');
                 
+                // Reset legacy hardcoded IDs if present (cleaning Mendy's test data)
+                const legacyIds = ['taxi-9wu77o406', 'taxi-at23izb1d'];
+                if (legacyIds.includes(state.deviceId)) {
+                    console.log('🚮 Removing legacy hardcoded Device ID');
+                    state.deviceId = null;
+                    localStorage.removeItem(CONFIG.DEVICE_ID_KEY);
+                }
+
                 // Generate unique device ID if this is a new tablet
-                // Uses crypto.randomUUID for uniqueness, falls back to random string
                 if (!state.deviceId) {
                     const uniquePart = (typeof crypto !== 'undefined' && crypto.randomUUID)
                         ? crypto.randomUUID().split('-')[0]
@@ -255,6 +262,27 @@
                 }
                 
                 console.log('🔑 Device ID activo:', state.deviceId);
+
+                // ============================================
+                // DEBUG GESTURE: 7 clicks to open Admin Panel
+                // ============================================
+                let clickCount = 0;
+                let lastClick = 0;
+                document.body.addEventListener('click', (e) => {
+                    const now = Date.now();
+                    if (now - lastClick > 500) clickCount = 0;
+                    clickCount++;
+                    lastClick = now;
+
+                    if (clickCount >= 7) {
+                        clickCount = 0;
+                        const action = confirm(`DEBUG TAD\nID: ${state.deviceId}\n\n¿Deseas REINICIAR el ID de este dispositivo?`);
+                        if (action) {
+                            localStorage.clear();
+                            location.reload();
+                        }
+                    }
+                });
                 
                 // Load config
                 const config = localStorage.getItem(CONFIG.STORAGE_CONFIG);

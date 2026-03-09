@@ -13,6 +13,7 @@ export default function MediaPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [mediaStatus, setMediaStatus] = useState<Record<string, any>>({});
   
   // Local blob previews for uploaded files (survives until page reload)
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
@@ -40,6 +41,28 @@ export default function MediaPage() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // Poll for media status (who is playing what)
+  useEffect(() => {
+    if (media.length === 0) return;
+    
+    const fetchStatuses = async () => {
+      const statusMap: Record<string, any> = {};
+      await Promise.all(media.map(async (m) => {
+        try {
+          const status = await getMediaStatus(m.id);
+          statusMap[m.id] = status;
+        } catch (e) {
+          // Ignore
+        }
+      }));
+      setMediaStatus(statusMap);
+    };
+
+    fetchStatuses();
+    const interval = setInterval(fetchStatuses, 30000); // Update every 30s
+    return () => clearInterval(interval);
+  }, [media]);
 
   // Clean up blob URLs on unmount
   useEffect(() => {
@@ -301,8 +324,30 @@ export default function MediaPage() {
                       <Calendar className="w-3 h-3" />
                       {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy') : 'Reciente'}
                     </div>
-                    <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">LISTO</span>
+                    {mediaStatus[file.id]?.active_devices?.length > 0 ? (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-[9px] font-black text-green-500 uppercase tracking-widest animate-pulse">
+                        <Activity className="w-3 h-3" /> EN VIVO
+                      </div>
+                    ) : (
+                      <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">LISTO</span>
+                    )}
                   </div>
+
+                  {/* Device list dropdown/indication if active */}
+                  {mediaStatus[file.id]?.active_devices?.length > 0 && (
+                     <div className="mt-4 p-3 bg-black/40 rounded-xl border border-green-500/10">
+                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-2 flex items-center gap-2">
+                           Sincronizado en <span className="text-green-500">({mediaStatus[file.id].active_devices.length}) Taxis</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                           {mediaStatus[file.id].active_devices.map((id: string) => (
+                              <span key={id} className="text-[8px] px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-md border border-white/5 font-mono">
+                                 {id.split('-').pop()?.toUpperCase()}
+                              </span>
+                           ))}
+                        </div>
+                     </div>
+                  )}
                 </div>
               </div>
             );

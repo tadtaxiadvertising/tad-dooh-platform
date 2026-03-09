@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TAD DOOH Player</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        overflow: hidden; /* Hide scrollbars for Full Kiosk */
+      }
+      #tad-player {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Main loop player, muted to bypass browser auto-play policies -->
+    <video id="tad-player" autoplay muted playsinline></video>
+    
+    <!-- Entry script loaded conditionally per Vite standard -->
+    <script type="module" src="/index.ts"></script>
+  </body>
+</html>

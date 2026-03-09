@@ -1,0 +1,1 @@
+postgresql://postgres:REDACTED@db.ltdcdhqixvbpdcitthqf.supabase.co:5432/postgres

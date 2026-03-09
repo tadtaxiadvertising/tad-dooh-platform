@@ -8,7 +8,7 @@
   "scripts": {
     "dev:backend": "cd backend && npm run start:dev",
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
-    "build": "npm install && cd backend && npm install && npm run build",
+    "build": "npm install --prefix backend && npm run build --prefix backend",
     "build:backend": "cd backend && npm run build",
     "deploy:vercel": "node devops/deploy-vercel.js",
     "deploy": "node devops/deploy-all.js"

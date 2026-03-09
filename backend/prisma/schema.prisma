@@ -67,9 +67,10 @@ model Device {
   events         AnalyticsEvent[]
   commands       DeviceCommand[]
   campaignMetrics CampaignMetric[]
-  heartbeats     DeviceHeartbeat[]
-  playbackEvents PlaybackEvent[]
-  driver         Driver?
+  heartbeats      DeviceHeartbeat[]
+  playbackEvents  PlaybackEvent[]
+  assignedCampaigns PlaylistItem[]
+  driver          Driver?
   
   @@map("devices")
   @@index([status])
@@ -106,8 +107,9 @@ model Campaign {
   createdBy User?      @relation(fields: [createdById], references: [id])
   playlists Playlist[]
   metrics   CampaignMetric[]
-  videos    Video[]
-  mediaAssets MediaAsset[]
+  videos       Video[]
+  mediaAssets  MediaAsset[]
+  targets      PlaylistItem[]
   
   @@map("campaigns")
   @@index([active])
@@ -129,7 +131,6 @@ model Playlist {
   createdAt DateTime @default(now()) @map("created_at")
 
   campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  items    PlaylistItem[]
   
   @@map("playlists")
 }
@@ -140,20 +141,19 @@ model Playlist {
 // PLAYLIST ITEMS (Items en playlist)
 // ============================================
 
-model PlaylistItem {
-  id        String   @id @default(uuid())
-  playlistId String  @map("playlist_id")
-  mediaId   String  @map("media_id")
-  position  Int
-  durationSeconds Int? @map("duration_seconds")
-  weight    Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
+// ============================================
+// CAMPAIGN TARGETS (Asignación manual a dispositivos)
+// ============================================
 
-  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  media    Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  
+model PlaylistItem {
+  campaignId String @map("campaign_id")
+  deviceId   String @map("device_id")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  device   Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@id([campaignId, deviceId])
   @@map("playlist_items")
-  @@unique([playlistId, position])
 }
 
 // ============================================
@@ -175,8 +175,6 @@ model Media {
   hashSha256      String  @map("hash_sha256")
   status          String @default("PROCESSING")
   createdAt       DateTime @default(now()) @map("created_at")
-
-  playlistItems PlaylistItem[]
   
   @@map("media")
   @@index([status])

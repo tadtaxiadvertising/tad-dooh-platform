@@ -992,12 +992,12 @@
             
             if (!state.deviceId && !fkDeviceId) {
                 console.log('📡 Solicitando nueva identidad a la Red...');
-                const uniquePart = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                    ? crypto.randomUUID().split('-')[0]
-                    : Math.random().toString(36).substr(2, 9);
-                state.deviceId = 'taxi-' + uniquePart;
+                const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? crypto.randomUUID().split('-')[0].toUpperCase()
+                    : Math.random().toString(36).substr(2, 6).toUpperCase();
+                state.deviceId = 'TAD-' + uuid;
             } else if (fkDeviceId) {
-                state.deviceId = 'taxi-' + fkDeviceId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
+                state.deviceId = 'TAD-' + fkDeviceId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
             }
             
             localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);

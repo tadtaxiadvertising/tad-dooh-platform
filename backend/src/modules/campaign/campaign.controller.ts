@@ -26,4 +26,9 @@ export class CampaignController {
   async getCampaignById(@Param('id') id: string) {
     return this.campaignService.getCampaignById(id);
   }
+
+  @Post(':id/assign')
+  async assignToDevices(@Param('id') id: string, @Body('deviceIds') deviceIds: string[]) {
+    return this.campaignService.assignCampaignToDevices(id, deviceIds);
+  }
 }

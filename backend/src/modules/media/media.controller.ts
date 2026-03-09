@@ -6,7 +6,8 @@ import {
   UseInterceptors, 
   UploadedFile, 
   BadRequestException,
-  Body
+  Body,
+  Param
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';

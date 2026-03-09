@@ -77,6 +77,8 @@ export const getFleetFinance = () => api.get('/fleet/finance').then(res => res.d
 export const getCampaigns = () => api.get('/campaigns').then(res => res.data);
 export const getCampaignById = (id: string) => api.get(`/campaigns/${id}`).then(res => res.data);
 export const createCampaign = (data: any) => api.post('/campaigns', data).then(res => res.data);
+export const assignCampaignToDevices = (id: string, deviceIds: string[]) => 
+  api.post(`/campaigns/${id}/assign`, { deviceIds }).then(res => res.data);
 export const addVideoToCampaign = (campaignId: string, data: any) => api.post(`/campaigns/${campaignId}/assets`, data).then(res => res.data);
 
 // Media

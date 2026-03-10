@@ -1,8 +1,8 @@
+import '../styles/globals.css';
 import React, { useEffect, useState } from 'react';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
-import '../styles/globals.css';
 
 const PUBLIC_PAGES = ['/login'];
 

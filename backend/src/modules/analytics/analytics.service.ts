@@ -128,4 +128,16 @@ export class AnalyticsService {
       .map(([hour, plays]) => ({ hour, plays }))
       .sort((a, b) => a.hour.localeCompare(b.hour));
   }
+
+  async getRecentPlays() {
+    return this.prisma.playbackEvent.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+      select: {
+        deviceId: true,
+        videoId: true,
+        timestamp: true,
+      },
+    });
+  }
 }

@@ -5,6 +5,7 @@ import { ArrowLeft, Megaphone, Calendar, Activity, Film, Clock, Zap, Users, MapP
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
+import { CampaignModal } from '../../components/CampaignModal';
 
 export default function CampaignDetailPage() {
   const router = useRouter();
@@ -12,8 +13,9 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchCampaign = () => {
     if (!id) return;
     setLoading(true);
     getCampaignById(id as string)
@@ -23,6 +25,10 @@ export default function CampaignDetailPage() {
         setError("Error al obtener los datos de la campaña.");
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchCampaign();
   }, [id]);
 
   if (loading) {
@@ -48,7 +54,21 @@ export default function CampaignDetailPage() {
   }
 
   const isActive = campaign.active;
-  const assets = campaign.mediaAssets || [];
+  
+  // MERGE V1 (mediaAssets) and V2 (media) records for display
+  const v1Assets = campaign.mediaAssets || [];
+  const v2Assets = (campaign.media || []).map((m: any) => ({
+    id: m.id,
+    type: 'VIDEO',
+    filename: m.filename || m.originalFilename || 'video.mp4',
+    url: m.url || m.cdnUrl,
+    fileSize: Number(m.fileSize || 0),
+    duration: m.durationSeconds || 15, // Default to 15s if unknown
+    createdAt: m.createdAt
+  }));
+  
+  const assets = [...v1Assets, ...v2Assets];
+
   const startDate = new Date(campaign.startDate || campaign.start_date);
   const endDate = new Date(campaign.endDate || campaign.end_date);
   const now = new Date();
@@ -92,6 +112,20 @@ export default function CampaignDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={async () => {
+                if (!confirm(`¿Eliminar la campaña "${campaign.name}" permanentemente?`)) return;
+                try {
+                  await (await import('../../services/api')).deleteCampaign(campaign.id);
+                  router.push('/campaigns');
+                } catch (err) {
+                  alert('Error al eliminar: ' + (err as any).message);
+                }
+              }}
+              className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase border border-red-500/20 transition-all mr-2"
+            >
+              Eliminar Campaña
+            </button>
             <span className={clsx(
               "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase border",
               isLive 
@@ -140,12 +174,12 @@ export default function CampaignDetailPage() {
         <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
           Cargas <span className="text-tad-yellow">Multimedia</span>
         </h2>
-        <Link 
-          href="/media"
-          className="text-[10px] font-black text-tad-yellow uppercase tracking-widest hover:underline"
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-tad-yellow hover:bg-yellow-400 text-black font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(250,212,0,0.2)]"
         >
-          + Agregar Archivo
-        </Link>
+          <Zap className="w-4 h-4" /> Gestionar Despliegue
+        </button>
       </div>
 
       {assets.length > 0 ? (
@@ -259,6 +293,14 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       </div>
+
+      <CampaignModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+        onSuccess={() => fetchCampaign()}
+      />
     </div>
   );
 }

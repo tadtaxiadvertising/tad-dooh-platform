@@ -41,15 +41,8 @@ export default function MediaPage() {
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
       setDevices(Array.isArray(devicesData) ? devicesData : []);
 
-      // Fetch slots for each device
-      const slotMap: Record<string, any> = {};
-      await Promise.all(devicesData.map(async (d: any) => {
-        try {
-          const slots = await getDeviceSlots(d.device_id);
-          slotMap[d.device_id] = slots;
-        } catch (e) {}
-      }));
-      setDeviceSlots(slotMap);
+      // Lazy-load slots only when the upload modal opens (not on page boot)
+      // This removes the N+1 device slot queries that were freezing the page
     } catch (err) {
       console.error("Failed to load ecosystem data", err);
       setError("FAILED TO RETRIEVE MEDIA CLOUD INVENTORY. CHECK STORAGE UPLINK.");
@@ -58,15 +51,29 @@ export default function MediaPage() {
     }
   };
 
+  // Load device slots lazily only when upload modal opens
+  const loadDeviceSlots = async () => {
+    if (Object.keys(deviceSlots).length > 0) return; // Already loaded
+    const slotMap: Record<string, any> = {};
+    await Promise.all(devices.map(async (d: any) => {
+      try {
+        const slots = await getDeviceSlots(d.device_id);
+        slotMap[d.device_id] = slots;
+      } catch (e) {}
+    }));
+    setDeviceSlots(slotMap);
+  };
+
   useEffect(() => { loadData(); }, []);
 
-  // Poll for media status (who is playing what)
+  // Poll for media status — only first 10 items, every 2 minutes (avoids request storm)
   useEffect(() => {
     if (media.length === 0) return;
     
     const fetchStatuses = async () => {
       const statusMap: Record<string, any> = {};
-      await Promise.all(media.map(async (m) => {
+      const batch = media.slice(0, 10); // Only check first 10
+      await Promise.all(batch.map(async (m) => {
         try {
           const status = await getMediaStatus(m.id);
           statusMap[m.id] = status;
@@ -78,9 +85,9 @@ export default function MediaPage() {
     };
 
     fetchStatuses();
-    const interval = setInterval(fetchStatuses, 30000); // Update every 30s
+    const interval = setInterval(fetchStatuses, 120000); // Every 2 min instead of 30s
     return () => clearInterval(interval);
-  }, [media]);
+  }, [media.length]); // Only re-trigger when count changes, not on every render
 
   // Clean up blob URLs on unmount
   useEffect(() => {
@@ -156,6 +163,7 @@ export default function MediaPage() {
 
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('campaignId', selectedCampaign);
 
     try {
       setUploadProgress(30);
@@ -211,6 +219,24 @@ export default function MediaPage() {
     }
   };
 
+  const handleDelete = async (fileId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('¿Estás seguro de que deseas eliminar este archivo permanentemente?')) return;
+    try {
+      // Intentamos con verbo POST hacia el /delete alternativo si estamos saltando el CORS de DELETE o por si acaso
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/media/${fileId}/delete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('tad_admin_token')}`
+        }
+      });
+      alert('Archivo eliminado con éxito');
+      await loadData();
+    } catch (err: any) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-700">
       {/* Header */}
@@ -224,7 +250,7 @@ export default function MediaPage() {
           </p>
         </div>
         <button 
-          onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
+          onClick={() => { resetUploadForm(); setShowUploadModal(true); loadDeviceSlots(); }}
           className="group relative flex items-center justify-center gap-2 bg-tad-yellow hover:bg-yellow-400 text-black font-bold py-3 px-6 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(250,212,0,0.4)]"
         >
           <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
@@ -298,6 +324,15 @@ export default function MediaPage() {
                     </div>
                   </div>
                   {/* Badges */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <button 
+                      onClick={(e) => handleDelete(file.id, e)}
+                      className="bg-red-500/90 hover:bg-red-600 text-white p-1.5 rounded-lg shadow-lg pointer-events-auto transition-colors"
+                      title="Eliminar archivo"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                   <div className="absolute top-3 left-3 flex gap-2">
                     {hasLocalPreview && (
                       <span className="bg-tad-yellow/90 text-black text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">

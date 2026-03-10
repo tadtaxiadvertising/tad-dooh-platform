@@ -32,23 +32,60 @@ export class CampaignService {
     return campaign;
   }
 
-  /**
-   * Manual Distribution Logic (Point 1 from CTO)
-   * This links a campaign to a set of Device IDs.
-   */
   async assignCampaignToDevices(campaignId: string, deviceIds: string[]) {
-    // 1. Limpiamos asignaciones viejas de esta campaña
-    await this.prisma.playlistItem.deleteMany({
-      where: { campaignId }
+    // 1. Fetch current status of targeted devices to respect 15-slot limit
+    const devices = await this.prisma.device.findMany({
+       where: { deviceId: { in: deviceIds } },
+       select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
     });
 
-    // 2. Creamos las nuevas asignaciones manuales
-    const data = deviceIds.map(deviceId => ({
-      campaignId,
-      deviceId
+    // 2. Identify available devices (less than 15 ads)
+    const availableDevices = devices.filter(d => d._count.campaigns < 15);
+    const skippedCount = devices.length - availableDevices.length;
+    
+    if (skippedCount > 0) {
+      console.log(`⚠️ Skipping ${skippedCount} devices because they reached 15-slot limit.`);
+    }
+
+    // 3. Clean old assignments for THIS campaign (v1 and v2)
+    await this.prisma.playlistItem.deleteMany({ where: { campaignId } });
+    await this.prisma.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
+
+    // 4. Create new assignments for available devices
+    const dataV2 = availableDevices.map(d => ({
+      campaign_id: campaignId,
+      device_id: d.id
     }));
 
-    return this.prisma.playlistItem.createMany({ data });
+    const dataV1 = availableDevices.map(d => ({
+      campaignId,
+      deviceId: d.deviceId
+    }));
+
+    if (dataV1.length > 0) {
+      await this.prisma.playlistItem.createMany({ data: dataV1 });
+    }
+    
+    if (dataV2.length > 0) {
+      await this.prisma.deviceCampaign.createMany({ data: dataV2 });
+    }
+    
+    return { count: dataV2.length, skipped: skippedCount };
+  }
+
+  // Revenue Protector: Enforce 15-slot limit on single assignment
+  async assignCampaignToDevice(deviceId: string, campaignId: string) {
+    const currentCount = await this.prisma.deviceCampaign.count({
+      where: { device_id: deviceId }
+    });
+
+    if (currentCount >= 15) {
+      throw new BadRequestException('Este taxi ya tiene los 15 slots de 30s ocupados.');
+    }
+
+    return await this.prisma.deviceCampaign.create({
+      data: { device_id: deviceId, campaign_id: campaignId }
+    });
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {
@@ -77,7 +114,7 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
-      include: { mediaAssets: true },
+      include: { mediaAssets: true, media: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -85,7 +122,7 @@ export class CampaignService {
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: true },
+      include: { mediaAssets: true, media: true },
     });
   }
 
@@ -95,25 +132,21 @@ export class CampaignService {
   async getActiveSyncVideos(deviceId?: string) {
     const now = new Date();
     
-    // Filter by manual assignment if deviceId is known
-    let assignedCampaignIds: string[] | undefined = undefined;
-    if (deviceId) {
-      const targets = await this.prisma.playlistItem.findMany({
-        where: { deviceId },
-        select: { campaignId: true }
-      });
-      assignedCampaignIds = targets.map(t => t.campaignId);
-    }
-
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: {
-        id: assignedCampaignIds ? { in: assignedCampaignIds } : undefined,
         active: true,
         startDate: { lte: now },
         endDate: { gte: now },
+        OR: deviceId ? [
+          { targetAll: true },
+          { isGlobal: true }, // Backward compatibility
+          { devices: { some: { device_id: deviceId } } }, // Explict device assignments
+          { targetDrivers: { some: { deviceId: deviceId } } } // DRIVER SEGMENTATION!
+        ] : undefined
       },
       include: {
         mediaAssets: true,
+        media: true,
       },
       orderBy: {
         updatedAt: 'desc',
@@ -124,10 +157,25 @@ export class CampaignService {
       return { version: 0, sync_hash: 'empty', media_assets: [] };
     }
 
-    const mediaAssets = [];
+    const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
-      if (campaign.mediaAssets) {
-        mediaAssets.push(...campaign.mediaAssets);
+      if ((campaign as any).mediaAssets) {
+        mediaAssets.push(...(campaign as any).mediaAssets);
+      }
+      if ((campaign as any).media) {
+        // Adapt Media to MediaAsset interface for backward compatibility with tablet
+        mediaAssets.push(...(campaign as any).media.map((m: any) => ({
+          id: m.id,
+          campaignId: m.campaign_id || campaign.id,
+          type: 'VIDEO',
+          filename: m.filename || m.name || 'unknown.mp4',
+          url: m.url || m.cdnUrl || '',
+          fileSize: Number(m.size || m.fileSize || 0),
+          checksum: m.hash || m.hashMd5 || 'no-checksum',
+          duration: Number(m.durationSeconds || 0),
+          version: 1,
+          createdAt: m.createdAt
+        })));
       }
     }
 

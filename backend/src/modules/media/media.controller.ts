@@ -30,11 +30,17 @@ export class MediaController {
       }
     }
   }))
-  async uploadMedia(@UploadedFile() file: Express.Multer.File) {
+  async uploadMedia(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('campaignId') campaignId: string
+  ) {
     if (!file) {
       throw new BadRequestException('A file payload is required');
     }
-    return this.mediaService.uploadFile(file);
+    if (!campaignId) {
+      throw new BadRequestException('campaignId is required');
+    }
+    return this.mediaService.uploadFile(file, campaignId);
   }
 
   @Get()
@@ -57,5 +63,16 @@ export class MediaController {
       mimetype: dto.mimetype,
       size: dto.size
     });
+  }
+
+  @Post(':id/delete')
+  async deleteMediaAlt(@Param('id') id: string) {
+    return this.mediaService.deleteFile(id);
+  }
+
+  @Post(':id')
+  async deleteMediaPost(@Param('id') id: string) {
+    // Para simplificar desde frontend fetchers que a veces confunden verbos
+    return this.mediaService.deleteFile(id);
   }
 }

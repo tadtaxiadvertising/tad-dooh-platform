@@ -5,6 +5,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 const express = require('express');
 
+// Fix para serialización de BigInt (usado por Prisma en campos count/size)
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 let cachedServer: any;
 
 async function bootstrapServer() {

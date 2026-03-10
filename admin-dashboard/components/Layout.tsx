@@ -1,17 +1,35 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { LayoutDashboard, CarFront, MonitorOff, Megaphone, MonitorPlay, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn } from 'lucide-react';
+import { LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase } from 'lucide-react';
 import clsx from 'clsx';
 
-const NAVIGATION = [
-  { name: 'Resumen', href: '/', icon: LayoutDashboard },
-  { name: 'Monitoreo de Flota', href: '/fleet', icon: CarFront },
-  { name: 'Alertas y Offline', href: '/fleet/offline', icon: MonitorOff },
-  { name: 'Ingresos y Pagos', href: '/finance', icon: Wallet },
-  { name: 'Campañas', href: '/campaigns', icon: Megaphone },
-  { name: 'Contenido Multimedia', href: '/media', icon: CloudUpload },
-  { name: 'Inteligencia', href: '/analytics', icon: BarChart3 },
+const NAVIGATION_GROUPS = [
+  {
+    label: '📊 OPERACIONES',
+    items: [
+      { name: 'Resumen', href: '/', icon: LayoutDashboard },
+      { name: 'Monitoreo de Flota', href: '/fleet', icon: CarFront },
+      { name: 'Alertas y Offline', href: '/fleet/offline', icon: MonitorOff },
+    ],
+  },
+  {
+    label: '👥 RED Y SOCIOS',
+    items: [
+      { name: 'Choferes y Suscripciones', href: '/drivers', icon: IdCard },
+      { name: 'Inventario de Pantallas', href: '/devices', icon: Tablet },
+    ],
+  },
+  {
+    label: '📢 PUBLICIDAD Y VENTAS',
+    items: [
+      { name: 'Campañas', href: '/campaigns', icon: Megaphone },
+      { name: 'Contenido Multimedia', href: '/media', icon: CloudUpload },
+      { name: 'Marcas y Anunciantes', href: '/advertisers', icon: Briefcase },
+      { name: 'Ingresos y Pagos', href: '/finance', icon: Wallet },
+      { name: 'Inteligencia', href: '/analytics', icon: BarChart3 },
+    ],
+  },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -21,7 +39,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden">
       {/* Sidebar */}
       <aside className="w-72 bg-zinc-950 border-r border-white/5 flex flex-col items-start pt-8 overflow-y-auto shrink-0 transition-all">
-        <div className="px-8 mb-10 w-full">
+        <div className="px-8 mb-8 w-full">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-tad-yellow rounded-xl shadow-[0_0_15px_rgba(250,212,0,0.4)]">
               <Zap className="w-6 h-6 text-black fill-current" />
@@ -35,36 +53,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 w-full space-y-1.5 px-4 h-full">
-          <p className="px-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4">Orquestación Central</p>
-          {NAVIGATION.map((item) => {
-            const Icon = item.icon;
-            const isActive = router.pathname === item.href 
-              || (item.href !== '/' && router.pathname.startsWith(item.href));
-            
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={clsx(
-                  'group flex items-center px-4 py-3.5 text-xs font-bold rounded-2xl transition-all relative overflow-hidden uppercase tracking-widest',
-                  isActive 
-                    ? 'bg-tad-yellow text-black shadow-[0_0_20px_rgba(250,212,0,0.2)]' 
-                    : 'text-zinc-500 hover:text-white hover:bg-white/5'
-                )}
-              >
-                {isActive && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-black rounded-full" />}
-                <Icon
-                  className={clsx(
-                    'mr-4 shrink-0 h-5 w-5 transition-transform group-hover:scale-110',
-                    isActive ? 'text-black' : 'text-zinc-600 group-hover:text-tad-yellow'
-                  )}
-                  aria-hidden="true"
-                />
-                {item.name}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 w-full px-4 h-full overflow-y-auto pb-4">
+          {NAVIGATION_GROUPS.map((group, gi) => (
+            <div key={group.label} className={clsx(gi > 0 && 'mt-5')}>
+              <p className="px-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-3">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = router.pathname === item.href
+                    || (item.href !== '/' && router.pathname.startsWith(item.href));
+
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={clsx(
+                        'group flex items-center px-4 py-3 text-[11px] font-bold rounded-2xl transition-all relative overflow-hidden uppercase tracking-wider',
+                        isActive
+                          ? 'bg-tad-yellow text-black shadow-[0_0_20px_rgba(250,212,0,0.2)]'
+                          : 'text-zinc-500 hover:text-white hover:bg-white/5'
+                      )}
+                    >
+                      {isActive && <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-black rounded-full" />}
+                      <Icon
+                        className={clsx(
+                          'mr-3 shrink-0 h-[18px] w-[18px] transition-transform group-hover:scale-110',
+                          isActive ? 'text-black' : 'text-zinc-600 group-hover:text-tad-yellow'
+                        )}
+                        aria-hidden="true"
+                      />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-6 w-full space-y-3">

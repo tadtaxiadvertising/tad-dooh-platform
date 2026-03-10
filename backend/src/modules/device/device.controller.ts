@@ -43,4 +43,13 @@ export class DeviceController {
   async checkSlots(@Param('id') deviceId: string) {
     return this.deviceService.getDeviceSlots(deviceId);
   }
+
+  @Post('command/:id/ack')
+  @HttpCode(HttpStatus.OK)
+  async acknowledgeCommand(
+    @Param('id') commandId: string,
+    @Body() result: any
+  ) {
+    return this.deviceService.acknowledgeCommand(commandId, result);
+  }
 }

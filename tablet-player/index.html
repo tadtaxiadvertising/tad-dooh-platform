@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https:; connect-src 'self' https://tad-api.vercel.app https://tad-dooh-platform.vercel.app;">
-    <meta http-equiv="X-Frame-Options" content="DENY">
+    <!-- Security Headers — Allows both localhost AND production Vercel endpoints -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https:; connect-src 'self' http://localhost:3000 https://tad-api.vercel.app https://tad-dooh-platform.vercel.app;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     
     <title>TAD Player - Taxi Advertising</title>
@@ -186,41 +186,49 @@
     <!-- Application Logic -->
     <script type="module">
         // ============================================
-        // TAD TABLET PLAYER - Offline-First PWA
+        // TAD TABLET PLAYER v2.0 — Localhost Edition
         // ============================================
-        
-        // Configuración
+        // Changes from v1:
+        //   - SERVER_URL defaults to http://localhost:3000 (no Vercel)
+        //   - True UUID-based identity: crypto.randomUUID() → localStorage
+        //   - Legacy IDs (taxi-9wu77o406, Mendy, etc.) are purged on boot
+        //   - TEST_PLAYLIST removed: if no backend content → TAD NODE logo
+        //   - Playback confirmation sent on each video_completed
+        // ============================================
+
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+
         const CONFIG = {
-            // URL del servidor TAD – configurable via localStorage key 'tad_server_url'
-            SERVER_URL: localStorage.getItem('tad_server_url') || 'https://tad-api.vercel.app',
+            // URL del servidor TAD — Localhost por defecto (override via localStorage)
+            SERVER_URL: localStorage.getItem('tad_server_url') || 'http://localhost:3000',
             
             // Device ID (se genera automáticamente y se persiste en localStorage)
-            // Para forzar un ID específico: localStorage.setItem('tad_device_id', 'taxi-XXXXX')
             DEVICE_ID_KEY: 'tad_device_id',
             
             // Auth token
             AUTH_TOKEN_KEY: 'tad_auth_token',
             
-            // FullyKiosk Browser password – configurable via localStorage
-            // Set via: localStorage.setItem('tad_fkb_password', 'your_password')
+            // FullyKiosk Browser password — configurable via localStorage
             FULLY_KIOSK_PASSWORD: localStorage.getItem('tad_fkb_password') || '',
             
             // Sync settings
-            SYNC_INTERVAL: 24 * 60 * 60 * 1000, // 24 horas
-            SYNC_WINDOW: 10 * 60 * 1000, // 10 minutos de ventana
+            SYNC_INTERVAL: 5 * 60 * 1000, // 5 minutos (más frecuente en localhost)
+            SYNC_WINDOW: 10 * 60 * 1000,
             
             // Analytics batch size
             ANALYTICS_BATCH_SIZE: 100,
             
             // Heartbeat interval
-            HEARTBEAT_INTERVAL: 5 * 60 * 1000, // 5 minutos
+            HEARTBEAT_INTERVAL: 5 * 60 * 1000,
             
-            // Storage
+            // Storage keys
             STORAGE_CAMPAIGNS: 'tad_campaigns',
             STORAGE_EVENTS: 'tad_events',
             STORAGE_CONFIG: 'tad_config'
         };
-        
+
         // ============================================
         // STATE MANAGEMENT
         // ============================================
@@ -242,37 +250,69 @@
                 watchdogEnabled: true
             }
         };
-        
+
         // ============================================
-        // STORAGE WRAPPER (IndexedDB)
+        // IDENTITY ENGINE — Unique UUID per Tablet
+        // ============================================
+        // This is the SINGLE source of truth for Device ID generation.
+        // It runs once during storage.init() and never again.
+        // The ID format is: TAD-XXXXXXXX (8-char uppercase hex from crypto.randomUUID)
+        //
+        // Legacy IDs from testing are automatically purged:
+        //   - taxi-9wu77o406, taxi-at23izb1d, Mendy
+        // ============================================
+
+        const LEGACY_IDS_TO_PURGE = [
+            'taxi-9wu77o406',
+            'taxi-at23izb1d',
+            'Mendy',
+        ];
+
+        function generateDeviceId() {
+            // Prefer FullyKiosk hardware ID if available (real tablet)
+            if (typeof fully !== 'undefined' && fully.getDeviceId) {
+                const hwId = fully.getDeviceId();
+                if (hwId) {
+                    return 'TAD-' + hwId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+                }
+            }
+
+            // Generate a true UUID and take the first segment (8 hex chars)
+            const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID().split('-')[0].toUpperCase()
+                : Math.random().toString(36).substr(2, 8).toUpperCase();
+
+            return 'TAD-' + uuid;
+        }
+
+        // ============================================
+        // STORAGE WRAPPER (IndexedDB + localStorage)
         // ============================================
         
         const storage = {
             async init() {
-                // Load persisted state from localStorage
-                state.deviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
-                state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
-                state.lastSync = localStorage.getItem('tad_last_sync');
-                state.lastSyncHash = localStorage.getItem('tad_last_sync_hash');
-                
-                // Reset legacy hardcoded IDs if present (cleaning Mendy's test data)
-                const legacyIds = ['taxi-9wu77o406', 'taxi-at23izb1d', 'Mendy'];
-                if (legacyIds.includes(state.deviceId)) {
-                    console.log('🚮 Removing legacy hardcoded Device ID');
-                    state.deviceId = null;
+                // 1. Read persisted Device ID
+                let savedId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
+
+                // 2. Purge any legacy/test IDs
+                if (savedId && LEGACY_IDS_TO_PURGE.includes(savedId)) {
+                    console.log('🚮 Purging legacy Device ID:', savedId);
+                    savedId = null;
                     localStorage.removeItem(CONFIG.DEVICE_ID_KEY);
                 }
 
-                // Generate unique device ID if this is a new tablet
-                if (!state.deviceId) {
-                    const uniquePart = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                        ? crypto.randomUUID().split('-')[0]
-                        : Math.random().toString(36).substr(2, 9);
-                    state.deviceId = 'taxi-' + uniquePart;
-                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);
-                    console.log('🆕 Device ID generado:', state.deviceId);
+                // 3. Generate a new ID only if none exists
+                if (!savedId) {
+                    savedId = generateDeviceId();
+                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, savedId);
+                    console.log('🆕 New Device ID generated:', savedId);
                 }
-                
+
+                state.deviceId = savedId;
+                state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
+                state.lastSync = localStorage.getItem('tad_last_sync');
+                state.lastSyncHash = localStorage.getItem('tad_last_sync_hash');
+
                 console.log('🔑 Device ID activo:', state.deviceId);
 
                 // ============================================
@@ -288,7 +328,7 @@
 
                     if (clickCount >= 7) {
                         clickCount = 0;
-                        const action = confirm(`DEBUG TAD\nID: ${state.deviceId}\n\n¿Deseas REINICIAR el ID de este dispositivo?`);
+                        const action = confirm(`DEBUG TAD\nID: ${state.deviceId}\nServer: ${CONFIG.SERVER_URL}\n\n¿Deseas REINICIAR el ID de este dispositivo?`);
                         if (action) {
                             localStorage.clear();
                             location.reload();
@@ -306,26 +346,28 @@
             },
             
             async saveEvents(events) {
-                // Store events in IndexedDB for persistence
                 const db = await this.getDB();
                 const tx = db.transaction('events', 'readwrite');
                 events.forEach(event => {
-                    tx.store.add({ ...event, id: Date.now() + Math.random() });
+                    tx.objectStore('events').add({ ...event, id: Date.now() + Math.random() });
                 });
-                await tx.done;
             },
             
             async getEvents() {
                 const db = await this.getDB();
-                const events = await db.getAll('events');
-                return events.sort((a, b) => a.timestamp - b.timestamp);
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('events', 'readonly');
+                    const req = tx.objectStore('events').getAll();
+                    req.onsuccess = () => resolve(req.result.sort((a, b) => a.timestamp - b.timestamp));
+                    req.onerror = () => reject(req.error);
+                });
             },
             
             async clearEvents(ids) {
                 const db = await this.getDB();
                 const tx = db.transaction('events', 'readwrite');
-                ids.forEach(id => tx.store.delete(id));
-                await tx.done;
+                const store = tx.objectStore('events');
+                ids.forEach(id => store.delete(id));
             },
             
             async getDB() {
@@ -368,7 +410,6 @@
             init() {
                 this.video = document.getElementById('main-video');
                 
-                // Event listeners
                 this.video.addEventListener('play', () => this.onPlay());
                 this.video.addEventListener('pause', () => this.onPause());
                 this.video.addEventListener('ended', () => this.onEnded());
@@ -382,23 +423,20 @@
                 try {
                     this.showLoading();
                     
-                    // Load video
                     this.video.src = video.url || video.src;
                     this.video.load();
                     
-                    // Play
                     await this.video.play();
                     this.isPlaying = true;
                     this.retryCount = 0;
                     
-                    // Track event
                     analytics.track('video_started', {
                         campaignId: state.currentCampaign?.id,
                         mediaId: video.id,
                         videoUrl: video.url
                     });
                     
-                    console.log('▶️ Playing:', video.name || video.url);
+                    console.log('▶️ Playing:', video.filename || video.name || video.url);
                     
                 } catch (error) {
                     console.error('❌ Error playing video:', error);
@@ -419,12 +457,31 @@
             async onEnded() {
                 console.log('✅ Video ended');
                 
+                const currentMedia = state.currentPlaylist[state.currentIndex];
+                
                 // Track completion
                 analytics.track('video_completed', {
                     campaignId: state.currentCampaign?.id,
-                    mediaId: state.currentPlaylist[state.currentIndex]?.id,
+                    mediaId: currentMedia?.id,
                     duration: this.video.duration
                 });
+
+                // Send Playback Confirmation to backend for "EN VIVO" tracking
+                if (state.isOnline && currentMedia) {
+                    try {
+                        await fetch(`${CONFIG.SERVER_URL}/api/device/playback`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                device_id: state.deviceId,
+                                video_id: currentMedia.id,
+                                timestamp: new Date().toISOString()
+                            })
+                        });
+                    } catch (e) {
+                        console.warn('⚠️ Playback confirmation failed (offline?)');
+                    }
+                }
                 
                 // Next video
                 this.next();
@@ -435,9 +492,8 @@
                 this.retryCount++;
                 
                 if (this.retryCount >= this.maxRetries) {
-                    this.showError('Error al reproducir video. Reintentando...');
+                    this.showError('Error al reproducir video. Saltando al siguiente...');
                     
-                    // Track error
                     analytics.track('video_error', {
                         campaignId: state.currentCampaign?.id,
                         mediaId: state.currentPlaylist[state.currentIndex]?.id,
@@ -453,7 +509,6 @@
             },
             
             onTimeUpdate() {
-                // Update progress if needed
                 ui.updateProgress(this.video.currentTime / this.video.duration);
             },
             
@@ -488,27 +543,33 @@
             },
             
             showLoading() {
-                document.getElementById('loading-state').classList.remove('hidden');
                 this.hideAllStates();
+                document.getElementById('loading-state').classList.remove('hidden');
             },
             
             showError(message) {
+                this.hideAllStates();
                 document.getElementById('error-message').textContent = message;
                 document.getElementById('error-state').classList.remove('hidden');
-                this.hideAllStates();
             },
             
             showNoContent() {
+                this.hideAllStates();
                 document.getElementById('no-content-device-id').textContent = state.deviceId;
                 document.getElementById('no-content-state').classList.remove('hidden');
-                this.hideAllStates();
+                // Stop any current playback
+                if (this.video) {
+                    this.video.pause();
+                    this.video.removeAttribute('src');
+                    this.video.load();
+                }
+                this.isPlaying = false;
             },
             
             showBlocked(reason) {
                 this.hideAllStates();
                 document.getElementById('blocked-device-id').textContent = state.deviceId;
                 document.getElementById('blocked-state').classList.remove('hidden');
-                // Stop video playback
                 if (this.video) {
                     this.video.pause();
                     this.video.src = '';
@@ -535,6 +596,7 @@
             updateDebugInfo() {
                 const debug = {
                     deviceId: state.deviceId,
+                    serverUrl: CONFIG.SERVER_URL,
                     isOnline: state.isOnline,
                     isSyncing: state.isSyncing,
                     playlistLength: state.currentPlaylist.length,
@@ -542,11 +604,11 @@
                     lastSync: state.lastSync,
                     pendingEvents: state.events.length,
                     videoState: {
-                        src: this.video.src,
-                        currentTime: this.video.currentTime,
-                        duration: this.video.duration,
-                        paused: this.video.paused,
-                        error: this.video.error
+                        src: this.video?.src,
+                        currentTime: this.video?.currentTime,
+                        duration: this.video?.duration,
+                        paused: this.video?.paused,
+                        error: this.video?.error
                     }
                 };
                 document.getElementById('debug-content').textContent = JSON.stringify(debug, null, 2);
@@ -573,13 +635,9 @@
                 
                 console.log('📊 Event:', event);
                 
-                // Add to local queue
                 state.events.push(event);
-                
-                // Save to IndexedDB
                 storage.saveEvents([event]);
                 
-                // Upload if online and batch is full
                 if (state.isOnline && state.events.length >= CONFIG.ANALYTICS_BATCH_SIZE) {
                     this.uploadBatch();
                 }
@@ -604,7 +662,6 @@
                     });
                     
                     if (response.ok) {
-                        // Remove uploaded events
                         state.events = state.events.slice(CONFIG.ANALYTICS_BATCH_SIZE);
                         const ids = batch.map(e => e.id);
                         await storage.clearEvents(ids);
@@ -623,11 +680,11 @@
         };
         
         // ============================================
-        // SYNC CLIENT
+        // SYNC CLIENT — Localhost-first
         // ============================================
         
         const sync = {
-            syncRetryDelay: 30000, // Start at 30s, exponential backoff
+            syncRetryDelay: 30000,
             
             async performSync() {
                 if (state.isSyncing) {
@@ -644,10 +701,9 @@
                 ui.updateStatus('sync');
                 
                 try {
-                    console.log('🔄 Starting Delta Sync...');
+                    console.log(`🔄 Starting Delta Sync against ${CONFIG.SERVER_URL}...`);
                     const lastHash = state.lastSyncHash || '';
                     
-                    // 1. Sync via device endpoint with last_hash
                     const syncResponse = await fetch(
                         `${CONFIG.SERVER_URL}/api/device/sync?device_id=${encodeURIComponent(state.deviceId)}&last_hash=${encodeURIComponent(lastHash)}`,
                         {
@@ -663,7 +719,7 @@
                     
                     const syncData = await syncResponse.json();
                     
-                    // 2. CHECK IF BLOCKED
+                    // CHECK IF BLOCKED
                     if (syncData.blocked) {
                         console.warn('⛔ Device BLOCKED:', syncData.reason);
                         player.showBlocked(syncData.reason);
@@ -671,7 +727,7 @@
                         return;
                     }
 
-                    // 3. HANDLE DELTA SYNC
+                    // HANDLE DELTA SYNC
                     if (syncData.update === false) {
                         console.log('🔄 Delta Sync: No changes detected (hash matches).');
                     } else if (syncData.media_assets) {
@@ -684,14 +740,27 @@
                         if (state.currentPlaylist.length > 0) {
                             player.play(state.currentPlaylist[0]);
                         } else {
+                            // NO CONTENT ASSIGNED — show TAD NODE logo (not test video!)
                             player.showNoContent();
                         }
+                    } else {
+                        // Response has no media_assets field at all → no content
+                        player.showNoContent();
                     }
                     
-                    // 4. Always upload analytics after a successful sync attempt
+                    // HANDLE COMMANDS
+                    if (syncData.commands && syncData.commands.length > 0) {
+                        for (const command of syncData.commands) {
+                            try {
+                                await this.executeRemoteCommand(command);
+                            } catch (e) {
+                                console.error('Error executing command', command.id, e);
+                            }
+                        }
+                    }
+
                     await analytics.uploadAll();
                     
-                    // 5. Update last sync record
                     state.lastSync = new Date().toISOString();
                     localStorage.setItem('tad_last_sync', state.lastSync);
                     
@@ -700,6 +769,10 @@
                     
                 } catch (error) {
                     console.error('❌ Sync error:', error);
+                    // On sync failure → show TAD NODE logo (NOT test playlist)
+                    if (state.currentPlaylist.length === 0) {
+                        player.showNoContent();
+                    }
                     this.syncRetryDelay = Math.min(this.syncRetryDelay * 2, 10 * 60 * 1000);
                     console.log(`🔄 Retrying in ${this.syncRetryDelay / 1000}s`);
                     setTimeout(() => this.performSync(), this.syncRetryDelay);
@@ -709,96 +782,67 @@
                 }
             },
             
-            async downloadCampaigns(campaigns) {
-                for (const campaign of campaigns) {
-                    console.log('📥 Downloading campaign:', campaign.name);
-                    
-                    // Download media files
-                    for (const media of campaign.media || []) {
-                        try {
-                            const response = await fetch(media.url);
-                            const blob = await response.blob();
-                            
-                            // Store in IndexedDB
-                            const db = await storage.getDB();
-                            const tx = db.transaction('campaigns', 'readwrite');
-                            tx.store.put({
-                                id: media.id,
-                                campaignId: campaign.id,
-                                blob: blob,
-                                url: media.url,
-                                downloadedAt: Date.now()
-                            });
-                            await tx.done;
-                            
-                            console.log('✅ Media downloaded:', media.id);
-                        } catch (error) {
-                            console.error('❌ Error downloading media:', error);
-                        }
-                    }
-                    
-                    // Update playlist
-                    if (campaign.id === state.currentCampaign?.id || !state.currentCampaign) {
-                        state.currentCampaign = campaign;
-                        state.currentPlaylist = campaign.playlist || [];
-                        state.currentIndex = 0;
-                        
-                        // Start playing
-                        if (state.currentPlaylist.length > 0) {
-                            player.play(state.currentPlaylist[0]);
-                        }
-                    }
-                }
-            },
-            
-            async executeCommands(commands) {
-                for (const command of commands) {
-                    console.log('⚡ Executing command:', command.type);
-                    
+            async executeRemoteCommand(command) {
+                console.log('📡 Executing remote command:', command.type, command.params);
+                let result = { success: true, timestamp: new Date().toISOString() };
+                
+                try {
                     switch (command.type) {
-                        case 'restart':
-                            player.restart();
-                            break;
-                        case 'clear_cache':
+                        case 'REBOOT':
+                            result.message = 'Rebooting app...';
+                            await this.acknowledgeCommand(command.id, result);
+                            location.reload();
+                            return; // Stop here, reload will happen
+                        case 'CLEAR_CACHE':
                             await this.clearCache();
+                            result.message = 'Cache cleared successfully.';
                             break;
-                        case 'update_playlist':
-                            await this.updatePlaylist(command.params);
+                        case 'FORCE_SYNC':
+                            result.message = 'Forcing sync ack...';
                             break;
-                        case 'reboot':
-                            // Only works in Fully Kiosk with API
-                            await this.reboot();
+                        case 'UPDATE_URL':
+                            if (command.params.url) {
+                                CONFIG.SERVER_URL = command.params.url;
+                                localStorage.setItem('tad_server_url', CONFIG.SERVER_URL);
+                                result.message = 'Server URL updated to ' + CONFIG.SERVER_URL;
+                            } else {
+                                throw new Error('Missing URL parameter');
+                            }
                             break;
+                        default:
+                            result.success = false;
+                            result.error = 'Unknown command type: ' + command.type;
                     }
+                } catch (e) {
+                    result.success = false;
+                    result.error = e.message;
+                }
+                
+                await this.acknowledgeCommand(command.id, result);
+            },
+
+            async acknowledgeCommand(id, result) {
+                try {
+                    await fetch(`${CONFIG.SERVER_URL}/api/device/command/${id}/ack`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(result)
+                    });
+                    console.log('✅ Command acknowledged:', id);
+                } catch (e) {
+                    console.error('Failed to ack command', id, e);
                 }
             },
             
             async clearCache() {
-                const db = await storage.getDB();
-                const tx = db.transaction('campaigns', 'readwrite');
-                const store = tx.objectStore('campaigns');
-                await store.clear();
-                console.log('🧹 Cache cleared');
-            },
-            
-            async updatePlaylist(params) {
-                // Update playlist from server
-                await this.performSync();
+                localStorage.clear();
+                // We keep the device ID though!
+                localStorage.setItem('tad_device_id', state.deviceId);
+                console.log('🧹 Cache cleared (except Identity)');
             },
             
             async reboot() {
-                // Fully Kiosk Browser REST API – password from config
-                const fkbPassword = CONFIG.FULLY_KIOSK_PASSWORD;
-                if (!fkbPassword) {
-                    console.warn('⚠️ FullyKiosk password not configured. Set via: localStorage.setItem("tad_fkb_password", "your_password")');
-                    return;
-                }
-                try {
-                    await fetch('http://localhost:2323/?cmd=restartApp&password=' + encodeURIComponent(fkbPassword));
-                    console.log('🔄 Reboot command sent to FullyKiosk');
-                } catch (error) {
-                    console.log('⚠️ Reboot via Fully Kiosk failed:', error.message);
-                }
+                location.reload();
             }
         };
         
@@ -811,14 +855,14 @@
                 this.updateTime();
                 setInterval(() => this.updateTime(), 1000);
                 
-                // Update device ID display
                 document.getElementById('device-id').textContent = state.deviceId;
                 
-                // Online/offline status
                 window.addEventListener('online', () => {
                     state.isOnline = true;
                     this.updateStatus('online');
                     console.log('🟢 Online');
+                    // Auto-sync when coming back online
+                    sync.performSync();
                 });
                 
                 window.addEventListener('offline', () => {
@@ -893,10 +937,8 @@
             checkInterval: null,
             
             init() {
-                // Check every minute
                 this.checkInterval = setInterval(() => this.check(), 60 * 1000);
                 
-                // Track activity
                 document.addEventListener('click', () => this.onActivity());
                 document.addEventListener('keydown', () => this.onActivity());
                 
@@ -911,7 +953,6 @@
                 const now = Date.now();
                 const inactiveTime = now - this.lastActivity;
                 
-                // If no activity for 10 minutes, check if video is playing
                 if (inactiveTime > 10 * 60 * 1000) {
                     if (!player.isPlaying && state.currentPlaylist.length > 0) {
                         console.log('⚠️ Watchdog: Video not playing, restarting...');
@@ -919,7 +960,6 @@
                     }
                 }
                 
-                // Send heartbeat
                 if (now % CONFIG.HEARTBEAT_INTERVAL < 60000) {
                     this.sendHeartbeat();
                 }
@@ -929,111 +969,80 @@
                 if (!state.isOnline) return;
                 
                 try {
-                    await fetch(`${CONFIG.SERVER_URL}/api/devices/${state.deviceId}/heartbeat`, {
+                    const response = await fetch(`${CONFIG.SERVER_URL}/api/device/heartbeat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${state.authToken}`
                         },
                         body: JSON.stringify({
-                            status: player.isPlaying ? 'playing' : 'idle',
-                            battery: 100, // Would need native API
-                            storage: await this.getStorageInfo(),
-                            currentCampaign: state.currentCampaign?.id,
+                            device_id: state.deviceId,
+                            player_status: player.isPlaying ? 'playing' : 'idle',
+                            battery_level: 100,
+                            storage_free: 'N/A',
                             timestamp: new Date().toISOString()
                         })
                     });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.blocked) {
+                            console.warn('⛔ Heartbeat Block detected:', data.reason);
+                            player.showBlocked(data.reason);
+                        }
+                    }
                 } catch (error) {
                     console.error('❌ Heartbeat failed:', error);
                 }
-            },
-            
-            async getStorageInfo() {
-                const db = await storage.getDB();
-                // Estimate storage usage
-                return { used: 0, total: 0 }; // Simplified
             }
         };
         
         // ============================================
-        // TEST PLAYLIST (Para demo sin backend)
-        // ============================================
-        
-        const TEST_PLAYLIST = [
-            {
-                id: 'demo-video-1',
-                name: 'Bienvenido a TAD',
-                // Video placeholder - reemplazar con video real
-                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                duration: 15
-            },
-            {
-                id: 'demo-video-2',
-                name: 'TAD Dominicana Promo',
-                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-                duration: 30
-            }
-        ];
-        
-        // ============================================
-        // INITIALIZATION
+        // INITIALIZATION — No Test Playlist!
         // ============================================
         
         async function init() {
-            console.log('🚀 TAD Player initializing...');
+            console.log('🚀 TAD Player v2.0 (Localhost) initializing...');
             
-            // Initialize storage
+            // 1. Initialize storage + Device Identity
             await storage.init();
             
-            // Auto-Registro dinámico
-            const fkDeviceId = (typeof fully !== 'undefined' && fully.getDeviceId) 
-                ? fully.getDeviceId() 
-                : state.deviceId || null;
-            
-            if (!state.deviceId && !fkDeviceId) {
-                console.log('📡 Solicitando nueva identidad a la Red...');
-                const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                    ? crypto.randomUUID().split('-')[0].toUpperCase()
-                    : Math.random().toString(36).substr(2, 6).toUpperCase();
-                state.deviceId = 'TAD-' + uuid;
-            } else if (fkDeviceId) {
-                state.deviceId = 'TAD-' + fkDeviceId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
-            }
-            
-            localStorage.setItem(CONFIG.DEVICE_ID_KEY, state.deviceId);
-
-            // Intentar registro físico en el backend para aparecer en Fleet Monitor
+            // 2. Register with backend (so tablet appears in Fleet Monitor)
             if (state.isOnline) {
                 try {
                     await fetch(`${CONFIG.SERVER_URL}/api/device/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ device_id: state.deviceId, app_version: 'v1.0.4-live' })
+                        body: JSON.stringify({ 
+                            device_id: state.deviceId, 
+                            app_version: 'v2.0.0-localhost' 
+                        })
                     });
-                    console.log('✅ Dispositivo Registrado:', state.deviceId);
+                    console.log('✅ Dispositivo Registrado en Backend:', state.deviceId);
                 } catch (e) {
-                    console.warn('⚠️ Fallo el registro en backend, operando en modo ad-hoc.');
+                    console.warn('⚠️ Registro en backend falló. Operando en modo ad-hoc.');
                 }
             }
             
-            // Initialize UI
+            // 3. Initialize UI + Player + Watchdog
             ui.init();
             player.init();
             if (state.config.watchdogEnabled) watchdog.init();
             
-            // Iniciar con pantalla de logo (TAD NODE)
+            // 4. Show TAD NODE logo while waiting for sync
             player.showNoContent();
             
-            // Initial sync (intenta conectar al backend, si falla usa test playlist)
+            // 5. Attempt first sync (if it fails, stays on TAD NODE logo)
             if (state.isOnline) {
                 try {
                     await sync.performSync();
                 } catch (error) {
-                    console.log('⚠️ Sync no disponible, usando test playlist');
+                    console.warn('⚠️ Initial sync failed. Showing TAD NODE logo.');
+                    player.showNoContent();
                 }
             }
             
-            // Periodic sync check
+            // 6. Periodic sync check (every minute, checks if SYNC_INTERVAL has passed)
             setInterval(() => {
                 const now = Date.now();
                 const lastSync = new Date(state.lastSync).getTime();
@@ -1041,19 +1050,38 @@
                 if (now - lastSync >= CONFIG.SYNC_INTERVAL) {
                     sync.performSync();
                 }
-            }, 60 * 1000); // Check every minute
+            }, 60 * 1000);
             
-            console.log('✅ TAD Player ready');
+            console.log('✅ TAD Player v2.0 ready');
             console.log('📱 Device ID:', state.deviceId);
+            console.log('🌐 Server:', CONFIG.SERVER_URL);
         }
         
         // Start app
         init();
         
-        // Expose player for debugging
+        // Expose for debugging
         window.player = player;
         window.sync = sync;
         window.analytics = analytics;
     </script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    console.log('[TAD CTO] PWA Service Worker registrado con éxito:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('[TAD CTO] Fallo al registrar Service Worker:', error);
+                });
+        });
+    }
+
+    // Refactorización de tu lógica de descarga:
+    // Ya NO necesitas convertir a Blob ni guardar en IndexedDB.
+    // Simplemente asigna la URL del backend al <video src="..."> 
+    // y el Service Worker se encargará de cachearlo automáticamente la primera vez que se reproduzca.
+</script>
 </body>
 </html>

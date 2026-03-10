@@ -47,4 +47,9 @@ export class AnalyticsController {
   async getHourlyAnalytics() {
     return this.analyticsService.getHourlyAnalytics();
   }
+
+  @Get('recent-plays')
+  async getRecentPlays() {
+    return this.analyticsService.getRecentPlays();
+  }
 }

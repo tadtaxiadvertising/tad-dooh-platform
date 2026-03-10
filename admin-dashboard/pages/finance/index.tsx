@@ -1,67 +1,49 @@
 import { useEffect, useState } from 'react';
-import { getFleetFinance } from '../../services/api';
-import { Wallet, CarFront, DollarSign, TrendingUp, Download, Calendar, Activity, CheckCircle, Clock, Zap, UserCheck, AlertTriangle } from 'lucide-react';
+import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl } from '../../services/api';
+import { 
+  Wallet, 
+  CarFront, 
+  DollarSign, 
+  Download, 
+  Calendar, 
+  Activity, 
+  UserCheck, 
+  AlertTriangle,
+  Receipt,
+  Users,
+  BarChart3,
+  Zap
+} from 'lucide-react';
 import clsx from 'clsx';
 
-interface DeviceFinance {
-  device_id: string;
-  display_name: string;
-  city: string;
-  status: 'online' | 'offline';
-  ads_played: number;
-  revenue: number;
-  driver: { name: string; phone: string; status: string } | null;
-  subscription: { plan: string; amount: number; status: string; due_date: string; paid: boolean } | null;
-}
-
-interface FinanceData {
-  period: string;
-  rate_per_ad: number;
-  total_revenue: number;
-  total_ads_played: number;
-  devices: DeviceFinance[];
-}
-
 export default function FinancePage() {
-  const [data, setData] = useState<FinanceData | null>(null);
+  const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns'>('payroll');
+  const [payrollData, setPayrollData] = useState<any>(null);
+  const [campaignData, setCampaignData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    loadData();
+  }, [activeTab]);
+
+  const loadData = async () => {
     setLoading(true);
     setError(null);
-    getFleetFinance()
-      .then((finData: FinanceData) => setData(finData))
-      .catch((err) => {
-        console.error('Finance load error:', err);
-        setError('Error cargando datos financieros');
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleExportCSV = () => {
-    if (!data || data.devices.length === 0) return;
-
-    const headers = ['Dispositivo', 'Chofer', 'Ciudad', 'Estado', 'Anuncios', 'Ingresos (RD$)', 'Plan', 'Suscripción'];
-    const rows = data.devices.map(d => [
-      d.display_name,
-      d.driver?.name || 'Sin asignar',
-      d.city,
-      d.status,
-      d.ads_played,
-      d.revenue.toFixed(2),
-      d.subscription?.plan || 'N/A',
-      d.subscription?.status || 'N/A',
-    ]);
-
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tad-finance-${data.period}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      if (activeTab === 'payroll') {
+        const data = await getDriverPayroll();
+        setPayrollData(data);
+      } else {
+        const data = await getCampaignBilling();
+        setCampaignData(data);
+      }
+    } catch (err) {
+      console.error('Finance load error:', err);
+      setError('Error cargando datos financieros del servidor.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,182 +51,265 @@ export default function FinancePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Ingresos y <span className="text-tad-yellow text-shadow-glow">Pagos</span>
+            Control <span className="text-tad-yellow text-shadow-glow">Financiero</span>
           </h1>
           <p className="text-gray-400 max-w-2xl">
-            Panel financiero basado en reproducciones reales de la flota. Los datos provienen de la tabla <code className="text-tad-yellow/70">playback_events</code>.
+            Facturación basada en impresiones reales detectadas por el sistema. No promedios, solo datos.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-white/5 self-start">
           <button 
-            onClick={handleExportCSV}
-            className="group relative flex items-center justify-center gap-2 bg-zinc-900 border border-white/10 hover:border-tad-yellow/50 text-white font-bold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-lg"
+            onClick={() => setActiveTab('payroll')}
+            className={clsx(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              activeTab === 'payroll' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
+            )}
           >
-            <Download className="w-5 h-5 text-zinc-400 group-hover:text-tad-yellow transition-colors" />
-            <span className="hidden sm:inline">Exportar CSV</span>
+            <Users className="w-4 h-4" />
+            Nómina Choferes
+          </button>
+          <button 
+            onClick={() => setActiveTab('campaigns')}
+            className={clsx(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              activeTab === 'campaigns' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
+            )}
+          >
+            <Receipt className="w-4 h-4" />
+            Facturación Marcas
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="font-bold">{error}</span>
+      {activeTab === 'payroll' ? (
+        <PayrollView data={payrollData} loading={loading} error={error} />
+      ) : (
+        <CampaignBillingView data={campaignData} loading={loading} error={error} />
+      )}
+    </div>
+  );
+}
+
+function PayrollView({ data, loading, error }: any) {
+  const [simulating, setSimulating] = useState(false);
+  const [simResult, setSimResult] = useState<any>(null);
+
+  const handleSimulate = async () => {
+    setSimulating(true);
+    try {
+      const result = await (await import('../../services/api')).simulatePayment();
+      setSimResult(result.summary);
+    } catch (e) {
+      alert('Error en simulación');
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {simResult && (
+        <div className="bg-tad-yellow/10 border border-tad-yellow/30 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-tad-yellow font-black uppercase tracking-widest text-xs flex items-center gap-2">
+              <Zap className="w-4 h-4" /> Simulación de Pago Masivo
+            </h4>
+            <button onClick={() => setSimResult(null)} className="text-zinc-500 hover:text-white text-xs font-bold">Cerrar</button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase font-black">Presupuesto</p>
+              <p className="text-xl font-black text-white">RD${simResult.totalBudgetRequired.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase font-black">Choferes Calificados</p>
+              <p className="text-xl font-black text-white">{simResult.qualifiedDrivers}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase font-black">Ads Detectados</p>
+              <p className="text-xl font-black text-white">{simResult.totalUniqueAdsPlayed}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase font-black">Promedio c/u</p>
+              <p className="text-xl font-black text-white">RD${simResult.avgPayoutPerDriver.toFixed(2)}</p>
+            </div>
+          </div>
+          <p className="text-[9px] text-zinc-500 mt-4 italic">* Esta es una auditoría basada en eventos de playback reales al momento de la consulta.</p>
         </div>
       )}
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-tad-yellow/30 transition-colors">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-tad-yellow/10 blur-[30px] rounded-full group-hover:bg-tad-yellow/20 transition-all" />
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <Wallet className="w-3 h-3 text-tad-yellow" /> Ingresos del Periodo
-          </p>
-          <h3 className="text-4xl font-black text-white">
-            {loading ? '...' : `RD$${(data?.total_revenue || 0).toLocaleString('es-DO', {minimumFractionDigits: 2})}`}
-          </h3>
-          <p className="text-xs text-zinc-500 mt-2 font-mono">{data?.period || '--'}</p>
+      {/* Stats Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard 
+          icon={<DollarSign className="text-tad-yellow" />}
+          label="Total a Pagar (DOP)"
+          value={loading ? '...' : `RD$${(data?.totalPayout || 0).toLocaleString()}`}
+          sub={data?.period || 'Periodo Actual'}
+        />
+        <StatCard 
+          icon={<UserCheck className="text-green-400" />}
+          label="Taxis Activos"
+          value={loading ? '...' : data?.drivers?.filter((d: any) => d.status === 'ACTIVE').length || 0}
+          sub="Detectados este mes"
+        />
+        <div className="flex items-center justify-center p-2">
+           <button 
+            disabled={simulating}
+            onClick={handleSimulate}
+            className="w-full flex items-center justify-center gap-2 bg-tad-yellow hover:bg-tad-yellow/90 text-black font-black py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50"
+           >
+            <Zap className={clsx("w-5 h-5", simulating && "animate-spin")} />
+            {simulating ? 'Procesando...' : 'Simular Pago'}
+           </button>
         </div>
-
-        <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <Clock className="w-3 h-3 text-zinc-400" /> Anuncios Reproducidos
-          </p>
-          <h3 className="text-3xl font-black text-white">
-            {loading ? '...' : (data?.total_ads_played || 0).toLocaleString('es-DO')} <span className="text-lg text-zinc-600">plays</span>
-          </h3>
-          <p className="text-xs text-zinc-500 mt-2 font-mono">Datos reales de playback_events</p>
-        </div>
-
-        <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <Activity className="w-3 h-3 text-tad-yellow" /> Tarifa por Ad
-          </p>
-          <h3 className="text-3xl font-black text-tad-yellow">RD${data?.rate_per_ad?.toFixed(2) || '1.25'}</h3>
-          <p className="text-xs text-zinc-500 mt-2 font-mono">Por reproducción de 30s</p>
-        </div>
-
-        <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <CarFront className="w-3 h-3 text-zinc-400" /> Dispositivos
-          </p>
-          <h3 className="text-3xl font-black text-white">
-            {loading ? '...' : data?.devices?.length || 0} <span className="text-lg text-zinc-600">taxis</span>
-          </h3>
-          <p className="text-xs text-zinc-500 mt-2 font-mono">En la red</p>
+        <div className="flex items-center justify-end">
+           <a 
+            href={getPayrollExportUrl()}
+            className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:border-tad-yellow/50 text-white font-bold py-4 px-8 rounded-2xl transition-all"
+           >
+            <Download className="w-5 h-5 text-tad-yellow" />
+            CSV
+           </a>
         </div>
       </div>
 
-      {/* Fleet Revenue Breakdown Table */}
       <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/40">
-          <h3 className="text-lg font-bold text-white uppercase tracking-tight">Libro Mayor de la Flota</h3>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Periodo:</span>
-            <span className="text-xs bg-black px-3 py-1.5 rounded-lg font-mono border border-white/10">{data?.period || '--'}</span>
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-black/50 border-b border-white/5">
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Unidad</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chofer</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Anuncios</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Ingresos</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Suscripción</th>
+        <table className="w-full text-left">
+          <thead className="bg-black/80 border-b border-white/5">
+            <tr>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chofer</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Placa</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Ads Únicos</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Plays Mes</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Pago RD$</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {loading ? (
+              <LoadingRows cols={6} />
+            ) : data?.drivers?.map((driver: any) => (
+              <tr key={driver.driverId} className="hover:bg-zinc-900/50 transition-colors">
+                <td className="px-6 py-5">
+                  <p className="font-bold text-sm text-white">{driver.fullName}</p>
+                  <p className="text-[10px] text-zinc-600 font-mono italic">{driver.phone}</p>
+                </td>
+                <td className="px-6 py-5 text-sm font-mono text-zinc-400">{driver.taxiPlate}</td>
+                <td className="px-6 py-5">
+                  <span className={clsx(
+                    "px-2 py-1 rounded text-[9px] font-black uppercase",
+                    driver.status === 'ACTIVE' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                  )}>
+                    {driver.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                <td className="px-6 py-5 text-right font-mono font-bold text-tad-yellow">{driver.uniqueAdsPlayed}</td>
+                <td className="px-6 py-5 text-right font-mono font-bold text-zinc-300">{driver.totalPlaysThisMonth}</td>
+                <td className="px-6 py-5 text-right font-black text-tad-yellow text-lg">RD${driver.amountToPay}</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-5"><div className="h-4 w-32 bg-zinc-800 rounded" /></td>
-                    <td className="px-6 py-5"><div className="h-4 w-24 bg-zinc-800 rounded" /></td>
-                    <td className="px-6 py-5"><div className="h-4 w-16 bg-zinc-800 rounded" /></td>
-                    <td className="px-6 py-5"><div className="h-4 w-12 bg-zinc-800 rounded ml-auto" /></td>
-                    <td className="px-6 py-5"><div className="h-4 w-20 bg-zinc-800 rounded ml-auto" /></td>
-                    <td className="px-6 py-5"><div className="h-4 w-24 bg-zinc-800 rounded mx-auto" /></td>
-                  </tr>
-                ))
-              ) : data && data.devices.length > 0 ? (
-                data.devices.map((device, idx) => {
-                  const isOnline = device.status === 'online';
-                  const subStatus = device.subscription?.status || 'NONE';
-
-                  return (
-                    <tr key={device.device_id || idx} className="hover:bg-zinc-900/50 transition-colors group">
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className={clsx("p-2 rounded-lg border", isOnline ? "bg-tad-yellow/10 border-tad-yellow/30 text-tad-yellow" : "bg-black border-white/10 text-zinc-600")}>
-                            <CarFront className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-white">{device.display_name}</p>
-                            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{device.city}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        {device.driver ? (
-                          <div>
-                            <p className="text-sm text-white font-medium flex items-center gap-1.5">
-                              <UserCheck className="w-3 h-3 text-tad-yellow" />
-                              {device.driver.name}
-                            </p>
-                            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{device.driver.phone}</p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-zinc-600 italic">Sin asignar</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={clsx(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-black tracking-widest uppercase border",
-                          isOnline ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-zinc-800 text-zinc-500 border-white/5"
-                        )}>
-                          <span className={clsx("w-1.5 h-1.5 rounded-full", isOnline ? "bg-green-500 animate-pulse" : "bg-zinc-600")} />
-                          {isOnline ? 'En Línea' : 'Offline'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <span className="text-sm font-bold font-mono text-zinc-300">{device.ads_played.toLocaleString()}</span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <span className="text-base font-black text-tad-yellow">RD${device.revenue.toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <div className={clsx(
-                          "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest inline-block",
-                          subStatus === 'ACTIVE' ? "bg-green-500/20 text-green-400" :
-                          subStatus === 'EXPIRED' ? "bg-red-500/20 text-red-400" :
-                          subStatus === 'SUSPENDED' ? "bg-orange-500/20 text-orange-400" :
-                          "bg-zinc-800 text-zinc-500"
-                        )}>
-                          {subStatus === 'ACTIVE' ? 'Activa' :
-                           subStatus === 'EXPIRED' ? 'Vencida' :
-                           subStatus === 'SUSPENDED' ? 'Suspendida' :
-                           'Sin Plan'}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
-                    <Wallet className="w-12 h-12 text-zinc-700 mx-auto mb-3 opacity-50" />
-                    <p className="font-bold">No hay datos de flota para este periodo.</p>
-                    <p className="text-xs mt-1">Los datos aparecerán cuando las tablets envíen playback events.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
+  );
+}
+
+function CampaignBillingView({ data, loading, error }: any) {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard 
+          icon={<Activity className="text-tad-yellow" />}
+          label="Impresiones Totales"
+          value={loading ? '...' : data.reduce((s: any, c: any) => s + c.totalImpressions, 0).toLocaleString()}
+          sub="Auditables"
+        />
+        <StatCard 
+          icon={<Receipt className="text-zinc-400" />}
+          label="Revenue Potencial"
+          value={loading ? '...' : `RD$${data.reduce((s: any, c: any) => s + c.estimatedRevenue, 0).toLocaleString()}`}
+          sub="Basado en CPM/Plays"
+        />
+        <div className="flex items-center justify-end">
+           <a 
+            href={getCampaignExportUrl()}
+            className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:border-tad-yellow/50 text-white font-bold py-4 px-8 rounded-2xl transition-all"
+           >
+            <Download className="w-5 h-5 text-tad-yellow" />
+            Reporte Ejecutivo CSV
+           </a>
+        </div>
+      </div>
+
+      <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <table className="w-full text-left">
+          <thead className="bg-black/80 border-b border-white/5">
+            <tr>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Campaña</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Taxis</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Impresiones Real</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Facturable Est.</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {loading ? (
+              <LoadingRows cols={5} />
+            ) : data.map((camp: any) => (
+              <tr key={camp.campaignId} className="hover:bg-zinc-900/50 transition-colors">
+                <td className="px-6 py-5">
+                  <p className="font-bold text-sm text-white uppercase italic">{camp.campaignName}</p>
+                </td>
+                <td className="px-6 py-5 text-sm text-zinc-400">{camp.assignedTaxis} unidades</td>
+                <td className="px-6 py-5">
+                  <span className="px-2 py-1 bg-tad-yellow/10 text-tad-yellow rounded text-[9px] font-black uppercase">
+                    {camp.status}
+                  </span>
+                </td>
+                <td className="px-6 py-5 text-right font-mono font-bold text-white text-base">
+                  {camp.totalImpressions.toLocaleString()}
+                </td>
+                <td className="px-6 py-5 text-right font-black text-tad-yellow text-lg">
+                  RD${camp.estimatedRevenue.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, sub }: any) {
+  return (
+    <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-tad-yellow/30 transition-colors">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 bg-black rounded-lg border border-white/5">
+          {icon}
+        </div>
+        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{label}</p>
+      </div>
+      <h3 className="text-3xl font-black text-white">{value}</h3>
+      <p className="text-[10px] text-zinc-500 mt-2 font-mono uppercase tracking-tighter">{sub}</p>
+    </div>
+  );
+}
+
+function LoadingRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {Array(4).fill(0).map((_, i) => (
+        <tr key={i} className="animate-pulse">
+          {Array(cols).fill(0).map((_, j) => (
+            <td key={j} className="px-6 py-5">
+              <div className="h-4 bg-zinc-800 rounded w-2/3" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
   );
 }

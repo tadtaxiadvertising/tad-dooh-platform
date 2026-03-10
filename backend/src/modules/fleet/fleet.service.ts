@@ -179,4 +179,48 @@ export class FleetService {
       devices: fleetFinance.sort((a, b) => b.revenue - a.revenue),
     };
   }
+
+  async sendCommand(deviceId: string, type: string, params: any) {
+    return this.prisma.deviceCommand.create({
+      data: {
+        deviceId: (await this.prisma.device.findUnique({ where: { deviceId } }))?.id || deviceId,
+        commandType: type,
+        commandParams: JSON.stringify(params || {}),
+        status: 'PENDING',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h default
+      }
+    });
+  }
+
+  async registerDeviceByAdmin(placa: string, nombreChofer: string) {
+    const crypto = require('crypto');
+    const deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
+    
+    // Create unit dynamically, discarding legacy burn-in tags
+    const device = await this.prisma.device.create({
+      data: {
+        deviceId,
+        status: 'ACTIVE',
+        taxiNumber: placa,
+        appVersion: '2.1.3',
+        lastSeen: new Date(),
+        driver: {
+          create: {
+            fullName: nombreChofer,
+            phone: 'PH-' + deviceId, // Bypass unique phone constraint for rapid testing scaling
+            licensePlate: placa,
+            taxiNumber: placa,
+          }
+        }
+      }
+    });
+
+    return { 
+      success: true, 
+      device_id: device.deviceId,
+      driver_name: nombreChofer,
+      taxi_number: placa 
+    };
+  }
 }
+

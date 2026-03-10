@@ -109,7 +109,8 @@ export default function Home() {
           </div>
           <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+            <div className="h-72 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
@@ -127,6 +128,7 @@ export default function Home() {
                   <Area type="monotone" dataKey="val" stroke="#fad400" strokeWidth={4} fillOpacity={1} fill="url(#colorVal)" />
                 </AreaChart>
               </ResponsiveContainer>
+            </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-800 font-black italic">
                 SINCRONIZANDO CON LA MATRIZ...

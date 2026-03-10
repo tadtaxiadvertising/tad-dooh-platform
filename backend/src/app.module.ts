@@ -8,10 +8,14 @@ import { CampaignModule } from './modules/campaign/campaign.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { MediaModule } from './modules/media/media.module';
 import { AssetsModule } from './modules/assets/assets.module';
+import { DriversModule } from './modules/drivers/drivers.module';
+import { AdvertisersModule } from './modules/advertisers/advertisers.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { SupabaseModule } from './modules/supabase/supabase.module';
 import { AuthService } from './modules/auth/auth.service';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 
 @Module({
@@ -33,19 +37,23 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 
     PrismaModule,
     AuthModule,
+    SupabaseModule,
     DeviceModule,
     AnalyticsModule,
     CampaignModule,
     FleetModule,
     MediaModule,
     AssetsModule,
+    DriversModule,
+    AdvertisersModule,
+    FinanceModule,
   ],
   providers: [
     // Global JWT guard — protects ALL routes by default
     // Use @Public() decorator on tablet-facing routes to bypass
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: SupabaseAuthGuard,
     },
   ],
 })

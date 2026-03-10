@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
-import { getCampaigns } from '../../services/api';
-import { PlusCircle, Megaphone, Zap, Calendar, Users, Activity, ExternalLink, MoreVertical, Film, ChevronRight, Clock } from 'lucide-react';
+import { getCampaigns, deleteCampaign } from '../../services/api';
+import { PlusCircle, Megaphone, Zap, Calendar, Users, Activity, ExternalLink, MoreVertical, Film, ChevronRight, Clock, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
+import DeviceSelectorModal from '../../components/DeviceSelectorModal';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -113,8 +117,39 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
-                  {/* Arrow */}
-                  <ChevronRight className="w-5 h-5 text-zinc-700 group-hover:text-tad-yellow transition-colors shrink-0" />
+                  {/* Actions (Distribuir) */}
+                  <div className="flex items-center gap-3 shrink-0 ml-4">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setSelectedCampaign(camp);
+                        setModalOpen(true);
+                      }}
+                      className="group/btn flex items-center justify-center gap-2 bg-zinc-900 hover:bg-tad-yellow text-zinc-500 hover:text-black font-black text-[10px] uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all border border-white/5 hover:border-tad-yellow/30"
+                    >
+                      <Zap className="w-3.5 h-3.5 group-hover/btn:animate-pulse" />
+                      Distribuir
+                    </button>
+                    <button 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!confirm(`¿Eliminar la campaña "${camp.name}" permanentemente?`)) return;
+                        try {
+                          await deleteCampaign(camp.id);
+                          setCampaigns(prev => prev.filter(c => c.id !== camp.id));
+                          setSuccessMsg(`Campaña "${camp.name}" eliminada.`);
+                          setTimeout(() => setSuccessMsg(''), 5000);
+                        } catch (err) {
+                          alert('Error al eliminar: ' + (err as any).message);
+                        }
+                      }}
+                      className="group/del flex items-center justify-center gap-2 bg-zinc-900 hover:bg-red-500 text-zinc-500 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 py-2.5 rounded-xl transition-all border border-white/5"
+                      title="Eliminar campaña"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <ChevronRight className="w-5 h-5 text-zinc-700 group-hover:text-tad-yellow transition-colors shrink-0" />
+                  </div>
                 </div>
               </Link>
             );
@@ -129,6 +164,27 @@ export default function CampaignsPage() {
           </div>
         )}
       </div>
+
+      {selectedCampaign && (
+        <DeviceSelectorModal 
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          campaignId={selectedCampaign.id}
+          campaignName={selectedCampaign.name}
+          initialSelected={selectedCampaign.devices || []}
+          onSuccess={() => {
+            setSuccessMsg(`Campaña "${selectedCampaign.name}" distribuida con éxito.`);
+            setTimeout(() => setSuccessMsg(''), 5000);
+          }}
+        />
+      )}
+
+      {successMsg && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 flex items-center gap-3 bg-tad-yellow text-black font-black uppercase text-[10px] tracking-widest px-8 py-4 rounded-2xl shadow-[0_20px_50px_rgba(250,212,0,0.3)] border border-yellow-200/50">
+           <Zap className="w-4 h-4" />
+           {successMsg}
+        </div>
+      )}
     </div>
   );
 }

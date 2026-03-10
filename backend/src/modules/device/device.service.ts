@@ -91,9 +91,12 @@ export class DeviceService {
         },
       });
     }
+    
+    // Check if tablet is blocked
+    const { blocked, reason } = await this.checkSubscriptionStatus(dto.device_id);
 
     // Record the heartbeat
-    return this.prisma.deviceHeartbeat.create({
+    await this.prisma.deviceHeartbeat.create({
       data: {
         deviceId: dto.device_id,
         batteryLevel: dto.battery_level,
@@ -101,6 +104,48 @@ export class DeviceService {
         timestamp: new Date(),
       },
     });
+
+    return { success: true, blocked, reason };
+  }
+
+  private async checkSubscriptionStatus(deviceId: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { deviceId },
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          orderBy: { dueDate: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (driver) {
+      const activeSubscription = driver.subscriptions[0];
+
+      if (!activeSubscription) {
+        this.logger.warn(`⛔ Device ${deviceId}: driver ${driver.fullName} has NO active subscription`);
+        return { blocked: true, reason: 'no_subscription' };
+      }
+
+      if (activeSubscription.dueDate < new Date()) {
+        this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${activeSubscription.dueDate.toISOString()}`);
+        
+        await this.prisma.subscription.update({
+          where: { id: activeSubscription.id },
+          data: { status: 'EXPIRED' },
+        });
+
+        await this.prisma.driver.update({
+          where: { id: driver.id },
+          data: { status: 'SUSPENDED', blockedAt: new Date() },
+        });
+
+        return { blocked: true, reason: 'payment_overdue' };
+      }
+    }
+
+    return { blocked: false };
   }
 
   async recordPlayback(dto: PlaybackConfirmationDto) {
@@ -138,45 +183,35 @@ export class DeviceService {
       });
     }
 
+    const { blocked, reason } = await this.checkSubscriptionStatus(deviceId);
+    if (blocked) return { blocked, reason };
+
     // ============================================
-    // SUBSCRIPTION CHECK — Block if payment overdue
+    // REMOTE COMMANDS — Fetch pending tasks
     // ============================================
-    const driver = await this.prisma.driver.findUnique({
-      where: { deviceId },
-      include: {
-        subscriptions: {
-          where: { status: 'ACTIVE' },
-          orderBy: { dueDate: 'desc' },
-          take: 1,
-        },
+    const pendingCommands = await this.prisma.deviceCommand.findMany({
+      where: { 
+        device: { deviceId }, 
+        status: 'PENDING',
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } }
+        ]
       },
+      select: {
+        id: true,
+        commandType: true,
+        commandParams: true,
+      }
     });
 
-    if (driver) {
-      const activeSubscription = driver.subscriptions[0];
-
-      if (!activeSubscription) {
-        this.logger.warn(`⛔ Device ${deviceId}: driver ${driver.fullName} has NO active subscription`);
-        return { blocked: true, reason: 'no_subscription' };
-      }
-
-      if (activeSubscription.dueDate < new Date()) {
-        this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${activeSubscription.dueDate.toISOString()}`);
-        
-        await this.prisma.subscription.update({
-          where: { id: activeSubscription.id },
-          data: { status: 'EXPIRED' },
-        });
-
-        await this.prisma.driver.update({
-          where: { id: driver.id },
-          data: { status: 'SUSPENDED', blockedAt: new Date() },
-        });
-
-        return { blocked: true, reason: 'payment_overdue' };
-      }
-
-      this.logger.log(`✅ Device ${deviceId}: subscription valid until ${activeSubscription.dueDate.toISOString()}`);
+    if (pendingCommands.length > 0) {
+      this.logger.log(`📤 Sending ${pendingCommands.length} pending commands to Device ${deviceId}`);
+      // Mark as PROCESSING so we don't send them multiple times if sync is fast
+      await this.prisma.deviceCommand.updateMany({
+        where: { id: { in: pendingCommands.map(c => c.id) } },
+        data: { status: 'PROCESSING' }
+      });
     }
 
     const payload = await this.campaignService.getActiveSyncVideos(deviceId);
@@ -210,6 +245,23 @@ export class DeviceService {
       sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
+      commands: pendingCommands.map(c => ({
+        id: c.id,
+        type: c.commandType,
+        params: c.commandParams ? JSON.parse(c.commandParams) : {}
+      }))
     };
+  }
+
+  async acknowledgeCommand(commandId: string, result: any) {
+    this.logger.log(`📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`);
+    return this.prisma.deviceCommand.update({
+      where: { id: commandId },
+      data: {
+        status: 'EXECUTED',
+        executedAt: new Date(),
+        result: JSON.stringify(result)
+      }
+    });
   }
 }

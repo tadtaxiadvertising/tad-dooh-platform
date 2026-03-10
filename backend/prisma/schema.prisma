@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -70,6 +71,7 @@ model Device {
   heartbeats      DeviceHeartbeat[]
   playbackEvents  PlaybackEvent[]
   assignedCampaigns PlaylistItem[]
+  campaigns      DeviceCampaign[]
   driver          Driver?
   
   @@map("devices")
@@ -89,12 +91,15 @@ model Campaign {
   id          String   @id @default(uuid())
   name        String
   advertiser  String
+  advertiserId String? @map("advertiser_id")
   description String?
   status      String @default("DRAFT")
   active      Boolean  @default(true)
   startDate   DateTime @map("start_date")
   endDate     DateTime @map("end_date")
   version     Int      @default(1)
+  isGlobal    Boolean  @default(false) @map("is_global")
+  targetAll   Boolean  @default(true) @map("target_all")
   targetCities String @default("[]") @map("target_cities")
   targetFleets String @default("[]") @map("target_fleets")
   priority    Int      @default(0)
@@ -105,11 +110,15 @@ model Campaign {
   updatedAt   DateTime @updatedAt      @map("updated_at")
 
   createdBy User?      @relation(fields: [createdById], references: [id])
+  advertiserRef Advertiser? @relation(fields: [advertiserId], references: [id])
   playlists Playlist[]
   metrics   CampaignMetric[]
   videos       Video[]
   mediaAssets  MediaAsset[]
+  media        Media[] @relation("MediaCampaign")
   targets      PlaylistItem[]
+  devices      DeviceCampaign[]
+  targetDrivers Driver[]
   
   @@map("campaigns")
   @@index([active])
@@ -157,22 +166,48 @@ model PlaylistItem {
 }
 
 // ============================================
+// DEVICE CAMPAIGNS (Relación explícita v2)
+// ============================================
+
+model DeviceCampaign {
+  device_id   String
+  campaign_id String
+  assigned_at DateTime @default(now())
+
+  // Relaciones
+  device      Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  campaign    Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@id([device_id, campaign_id])
+  @@index([device_id])
+  @@index([campaign_id])
+  @@map("device_campaigns")
+}
+
+// ============================================
 // MEDIA (Archivos de video/imagen)
 // ============================================
 
 model Media {
   id              String   @id @default(uuid())
-  filename        String
+  name            String?
+  filename        String?
   originalFilename String? @map("original_filename")
-  mimeType        String  @map("mime_type")
-  fileSize        BigInt  @map("file_size")
+  mime_type       String?  @map("mime_type")
+  mimeType        String?  
+  size            BigInt?
+  fileSize        BigInt?  @map("file_size")
   durationSeconds Int?    @map("duration_seconds")
   width           Int?
   height          Int?
-  storageKey      String  @map("storage_key")
+  storageKey      String?  @map("storage_key")
+  url             String?
   cdnUrl          String? @map("cdn_url")
-  hashMd5         String  @map("hash_md5")
-  hashSha256      String  @map("hash_sha256")
+  hash            String?
+  hashMd5         String?  @map("hash_md5")
+  hashSha256      String?  @map("hash_sha256")
+  campaign_id     String?
+  campaign        Campaign? @relation("MediaCampaign", fields: [campaign_id], references: [id])
   status          String @default("PROCESSING")
   createdAt       DateTime @default(now()) @map("created_at")
   
@@ -341,20 +376,25 @@ model Fleet {
 // ============================================
 
 model Driver {
-  id            String   @id @default(uuid())
-  fullName      String   @map("full_name")
-  phone         String   @unique  // WhatsApp number
-  licensePlate  String?  @map("license_plate")
-  taxiNumber    String?  @map("taxi_number")
-  deviceId      String?  @unique @map("device_id") // FK to Device.deviceId
-  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
-  onboardedAt   DateTime @default(now()) @map("onboarded_at")
-  blockedAt     DateTime? @map("blocked_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  fullName         String    @map("full_name")
+  cedula           String?   @unique
+  phone            String    @unique  // WhatsApp number
+  licensePlate     String?   @map("license_plate")
+  taxiPlate        String?   @unique @map("taxi_plate")
+  taxiNumber       String?   @map("taxi_number")
+  deviceId         String?   @unique @map("device_id") // FK to Device.deviceId
+  subscriptionPaid Boolean   @default(false) @map("subscription_paid")
+  subscriptionEnd  DateTime? @map("subscription_end")
+  status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
+  onboardedAt      DateTime  @default(now()) @map("onboarded_at")
+  blockedAt        DateTime? @map("blocked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   device        Device?  @relation(fields: [deviceId], references: [deviceId])
   subscriptions Subscription[]
+  campaigns     Campaign[]
 
   @@map("drivers")
   @@index([status])
@@ -388,3 +428,22 @@ model Subscription {
   @@index([dueDate])
 }
 
+// ============================================
+// ADVERTISERS (Anunciantes / Marcas)
+// ============================================
+
+model Advertiser {
+  id          String     @id @default(uuid())
+  companyName String     @map("company_name")
+  contactName String     @map("contact_name")
+  email       String     @unique
+  phone       String?
+  status      String     @default("ACTIVE")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  campaigns   Campaign[]
+
+  @@map("advertisers")
+  @@index([status])
+}

@@ -1,53 +1,27 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-// ============================================
-// Vercel Serverless-Safe Prisma Singleton
-// ============================================
-
-const globalForPrisma = globalThis as unknown as {
-  __prisma: PrismaClient | undefined;
-};
-
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private readonly logger: Logger;
+  private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super({
-      log: process.env.NODE_ENV === 'production'
-        ? ['error', 'warn']
-        : ['query', 'error', 'warn'],
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-    });
-
-    this.logger = new Logger(PrismaService.name);
-
-    // Reuse existing global instance if available (warm start)
-    if (globalForPrisma.__prisma) {
-      return globalForPrisma.__prisma as unknown as PrismaService;
-    }
-
-    // Store in global scope for reuse across warm invocations
-    globalForPrisma.__prisma = this;
-    this.logger.log('🔌 New PrismaClient instance created (cold start)');
+    // Aquí puedes agregar logs para ver los queries en modo debug si lo deseas
+    super();
   }
 
   async onModuleInit() {
+    this.logger.log('Inicializando conexión a Supabase...');
     try {
       await this.$connect();
-      this.logger.log('✅ Database connected successfully');
+      this.logger.log('✅ Conexión establecida con éxito');
     } catch (e) {
-      this.logger.error('❌ Fatal Database Error during $connect!', e);
+      this.logger.error('❌ Error fatal al conectar a la base de datos', e);
     }
   }
 
   async onModuleDestroy() {
-    this.logger.log('🔌 Disconnecting Prisma...');
+    this.logger.warn('Cerrando conexión a Supabase (Serverless Teardown)...');
     await this.$disconnect();
   }
 }

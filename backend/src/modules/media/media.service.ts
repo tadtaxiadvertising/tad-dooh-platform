@@ -1,99 +1,71 @@
 /// <reference types="multer" />
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { SupabaseService } from '../supabase/supabase.service';
+
 @Injectable()
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
-  private s3Client: S3Client;
-  private bucket: string;
-  private cdnBase: string;
+  private supabase: any;
 
   constructor(
     private readonly config: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly supabaseService: SupabaseService,
   ) {
-    const endpoint = this.config.get<string>('STORAGE_ENDPOINT');
-    const accessKey = this.config.get<string>('STORAGE_ACCESS_KEY');
-    const secretKey = this.config.get<string>('STORAGE_SECRET_KEY');
-    this.bucket = this.config.get<string>('STORAGE_BUCKET');
-    
-    this.cdnBase = this.config.get<string>('STORAGE_CDN_URL') || endpoint || '';
-
-    if (endpoint && accessKey && secretKey && this.bucket) {
-      this.s3Client = new S3Client({
-        region: 'auto',
-        endpoint,
-        credentials: {
-          accessKeyId: accessKey,
-          secretAccessKey: secretKey,
-        },
-      });
-      this.logger.log(`Initialized S3 Storage client for bucket: ${this.bucket}`);
-    } else {
-      this.logger.warn('Storage credentials not fully configured. Media uploads will fail or use mock paths.');
-    }
+    this.supabase = this.supabaseService.getClient();
   }
 
-  async uploadFile(file: Express.Multer.File) {
-    const fileExt = extname(file.originalname);
-    const fileId = uuidv4();
-    const fileName = `videos/${fileId}${fileExt}`;
-    let cdnUrl = '';
+  generateHash(buffer: Buffer) {
+    const crypto = require('crypto');
+    return crypto.createHash('md5').update(buffer).digest('hex');
+  }
 
-    if (this.s3Client) {
-      try {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.bucket,
-            Key: fileName,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-          }),
-        );
-        const cleanCdnBase = this.cdnBase.replace(/\/$/, "");
-        cdnUrl = `${cleanCdnBase}/${fileName}`;
-      } catch (error: any) {
-        this.logger.error(`Error uploading to S3: ${error.message}`);
-        throw new BadRequestException('Failed to upload video to cloud storage');
-      }
-    } else {
-      // Fallback for demo/development if no S3 is configured
-      this.logger.warn('S3 not configured. Generating mock CDN URL.');
-      cdnUrl = `https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4#mock-${fileId}`;
+  async uploadFile(file: any, campaignId: string) {
+    // 0. Auto-create bucket if missing (safe to call multiple times with service role key, will fail silently if exists)
+    await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => {});
+
+    // 1. Subir a Supabase Storage
+    const { data, error } = await this.supabase.storage
+      .from('campaign-videos')
+      .upload(`${campaignId}/${file.originalname}`, file.buffer, {
+        upsert: true 
+      });
+
+    if (error) {
+       this.logger.error("Supabase Storage Error: ", error);
+       // Throw error as requested
+       throw new BadRequestException(`Error subiendo a Storage: ${error.message}`);
     }
 
-    // Save metadata to database
+    // 2. Registrar en la BD para que aparezca en el Dashboard
     try {
       const media = await this.prisma.media.create({
         data: {
-          id: fileId,
-          filename: fileName,
+          filename: file.originalname,
           originalFilename: file.originalname,
+          url: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
+          cdnUrl: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
+          storageKey: data.path,
+          campaign_id: campaignId,
           mimeType: file.mimetype,
-          fileSize: BigInt(file.size),
-          storageKey: fileName,
-          cdnUrl: cdnUrl,
+          fileSize: BigInt(file.size), // Prisma BigInt conversion
           status: 'READY',
-          hashMd5: 'pending', // In a real app, calculate actual hash
-          hashSha256: 'pending',
+          hashMd5: this.generateHash(file.buffer) // Vital para que la tablet detecte cambios
         }
       });
 
       return {
-        id: media.id,
-        url: media.cdnUrl,
-        size: Number(media.fileSize),
-        mime: media.mimeType,
+        ...media,
+        fileSize: Number(media.fileSize)
       };
-    } catch (dbError: any) {
-      this.logger.error(`DB Error saving media: ${dbError.message}`);
-      // If S3 succeeded but DB failed, we have an orphaned file, but for now we throw
-      throw new BadRequestException('Failed to save media metadata to database');
+    } catch(dbError: any) {
+      this.logger.error("Database Insert Error: ", dbError);
+      throw new BadRequestException(`Error en base de datos: ${dbError.message}`);
     }
   }
 
@@ -184,5 +156,27 @@ export class MediaService {
       active_devices: activePlays.map(p => p.deviceId),
       last_activity: activePlays[0]?.timestamp || null,
     };
+  }
+
+  async deleteFile(id: string) {
+    try {
+      const media = await this.prisma.media.findUnique({ where: { id } });
+      if (!media) throw new BadRequestException('Media no encontrada');
+      
+      // Eliminar de Supabase Storage si no es un mock
+      if (media.storageKey && !media.storageKey.startsWith('videos/mock-')) {
+        await this.supabase.storage
+          .from('campaign-videos')
+          .remove([media.storageKey])
+          .catch(() => {});
+      }
+      
+      // Eliminar de la Base de Datos
+      await this.prisma.media.delete({ where: { id } });
+      return { success: true };
+    } catch (error: any) {
+      this.logger.error(`Error deleting file: ${error.message}`);
+      throw new BadRequestException(`Error al eliminar archivo: ${error.message}`);
+    }
   }
 }

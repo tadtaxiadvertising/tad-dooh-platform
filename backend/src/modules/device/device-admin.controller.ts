@@ -1,0 +1,128 @@
+import { Controller, Get, Delete, Param } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Controller('devices')
+export class DeviceAdminController {
+  constructor(private prisma: PrismaService) {}
+
+  // Ver los anuncios asignados a un taxi específico
+  @Get(':deviceId/campaigns')
+  async getDeviceCampaigns(@Param('deviceId') deviceId: string) {
+    const assignments = await this.prisma.deviceCampaign.findMany({
+      where: { device_id: deviceId },
+      include: {
+        campaign: true, // Traemos la data de la campaña
+      },
+    });
+    
+    // Retornamos mapeado para facilitar la vida al frontend
+    return assignments.map(a => ({
+      ...a.campaign,
+      assigned_at: a.assigned_at
+    }));
+  }
+
+  // Quitar un anuncio de un taxi específico
+  @Delete(':deviceId/campaigns/:campaignId')
+  async removeCampaignFromDevice(
+    @Param('deviceId') deviceId: string, // Este es el UUID (Device.id)
+    @Param('campaignId') campaignId: string
+  ) {
+    // Para borrar en PlaylistItem necesitamos el hardware deviceId
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+      select: { deviceId: true }
+    });
+
+    // 1. Borramos en la tabla v2
+    await this.prisma.deviceCampaign.delete({
+      where: {
+        device_id_campaign_id: {
+          device_id: deviceId,
+          campaign_id: campaignId,
+        },
+      },
+    });
+
+    // 2. Intentamos borrar en la tabla v1 (legacy) si existe el hardware ID
+    if (device?.deviceId) {
+      await this.prisma.playlistItem.deleteMany({
+        where: {
+          campaignId: campaignId,
+          deviceId: device.deviceId
+        }
+      });
+    }
+
+    return { success: true, message: 'Campaña removida del dispositivo exitosamente' };
+  }
+
+  // Eliminar un dispositivo completamente
+  @Delete(':deviceId')
+  async deleteDevice(@Param('deviceId') deviceId: string) {
+    // Find device by deviceId (hardware ID) or by UUID
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] }
+    });
+    if (!device) return { success: false, message: 'Dispositivo no encontrado' };
+
+    const uuid = device.id;
+    const hwId = device.deviceId;
+
+    // Clean up all related records
+    await this.prisma.playbackEvent.deleteMany({ where: { deviceId: hwId } });
+    await this.prisma.deviceHeartbeat.deleteMany({ where: { deviceId: hwId } });
+    await this.prisma.analyticsEvent.deleteMany({ where: { deviceId: hwId } });
+    await this.prisma.deviceCommand.deleteMany({ where: { deviceId: uuid } });
+    await this.prisma.deviceCampaign.deleteMany({ where: { device_id: uuid } });
+    await this.prisma.playlistItem.deleteMany({ where: { deviceId: hwId } });
+    await this.prisma.campaignMetric.deleteMany({ where: { deviceId: uuid } });
+    await this.prisma.driver.updateMany({ where: { deviceId: hwId }, data: { deviceId: null } });
+    await this.prisma.device.delete({ where: { id: uuid } });
+
+    return { success: true, message: `Dispositivo ${hwId} eliminado` };
+  }
+
+  // Perfil completo del nodo (device + driver + campaigns)
+  @Get(':deviceId/profile')
+  async getDeviceProfile(@Param('deviceId') deviceId: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+      include: {
+        driver: true,
+        campaigns: { include: { campaign: { select: { id: true, name: true, advertiser: true, active: true } } } },
+      }
+    });
+    if (!device) return { error: 'Dispositivo no encontrado' };
+
+    return {
+      id: device.id,
+      device_id: device.deviceId,
+      taxi_number: device.taxiNumber,
+      city: device.city,
+      status: device.status,
+      battery_level: device.batteryLevel,
+      storage_free: device.storageFree,
+      app_version: device.appVersion,
+      last_seen: device.lastSeen,
+      player_status: device.playerStatus,
+      driver: device.driver ? {
+        id: device.driver.id,
+        fullName: device.driver.fullName,
+        phone: device.driver.phone,
+        cedula: device.driver.cedula,
+        licensePlate: device.driver.licensePlate,
+        taxiPlate: device.driver.taxiPlate,
+        subscriptionPaid: device.driver.subscriptionPaid,
+        status: device.driver.status,
+      } : null,
+      campaigns: device.campaigns.map(c => ({
+        id: c.campaign.id,
+        name: c.campaign.name,
+        advertiser: c.campaign.advertiser,
+        active: c.campaign.active,
+        assigned_at: c.assigned_at,
+      })),
+    };
+  }
+}

@@ -72,7 +72,7 @@ export default function DriversPage() {
     const plate = d.taxiPlate || '';
     const matchSearch = name.toLowerCase().includes(search.toLowerCase()) || plate.toLowerCase().includes(search.toLowerCase());
     if (filter === 'active') return matchSearch && d.status === 'ACTIVE';
-    if (filter === 'blocked') return matchSearch && d.status === 'BLOCKED';
+    if (filter === 'blocked') return matchSearch && (d.status === 'BLOCKED' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
     if (filter === 'unpaid') return matchSearch && !d.subscriptionPaid;
     return matchSearch;
   });
@@ -80,7 +80,7 @@ export default function DriversPage() {
   const stats = {
     total: drivers.length,
     active: drivers.filter(d => d.status === 'ACTIVE').length,
-    blocked: drivers.filter(d => d.status === 'BLOCKED').length,
+    blocked: drivers.filter(d => d.status !== 'ACTIVE').length,
     unpaid: drivers.filter(d => !d.subscriptionPaid).length,
   };
 
@@ -111,26 +111,15 @@ export default function DriversPage() {
         </div>
       </div>
 
-      {/* Sprint Banner */}
-      <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-5 mb-8 flex items-center gap-4">
-        <div className="p-3 bg-amber-500/20 rounded-xl">
-          <Clock className="w-6 h-6 text-amber-400" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-amber-400 uppercase tracking-wider">En Construcción — Sprint 2</p>
-          <p className="text-xs text-zinc-400 mt-1">Los datos mostrados son de demostración. La integración con la API de choferes será activada en la próxima iteración.</p>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total Choferes', value: stats.total, icon: IdCard, color: 'text-white' },
           { label: 'Activos', value: stats.active, icon: UserCheck, color: 'text-emerald-400' },
-          { label: 'Bloqueados', value: stats.blocked, icon: UserX, color: 'text-red-400' },
-          { label: 'Sin Pagar', value: stats.unpaid, icon: AlertTriangle, color: 'text-amber-400' },
+          { label: 'Suspendidos', value: stats.blocked, icon: UserX, color: 'text-red-400' },
+          { label: 'Pendientes Pago', value: stats.unpaid, icon: AlertTriangle, color: 'text-amber-400' },
         ].map(s => (
-          <div key={s.label} className="bg-zinc-900/60 border border-white/5 rounded-2xl p-5">
+          <div key={s.label} className="bg-zinc-900/60 border border-white/5 rounded-2xl p-5 shadow-2xl">
             <div className="flex items-center gap-3 mb-3">
               <s.icon className={clsx('w-5 h-5', s.color)} />
               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{s.label}</span>
@@ -227,7 +216,7 @@ export default function DriversPage() {
                         'text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg',
                         driver.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                       )}>
-                        {driver.status === 'ACTIVE' ? 'Activo' : 'Bloqueado'}
+                        {driver.status === 'ACTIVE' ? 'Activo' : driver.status === 'SUSPENDED' ? 'Suspendido' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-6 py-4">

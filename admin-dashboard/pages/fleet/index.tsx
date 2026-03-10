@@ -484,6 +484,34 @@ export default function FleetPage() {
                 </div>
               </div>
 
+              {/* Advanced Remote Actions in Modal */}
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => handleCommand(selectedProfile.device_id, 'REBOOT')}
+                  disabled={commanding === `${selectedProfile.device_id}-REBOOT` || selectedProfile.status !== 'online'}
+                  className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all disabled:opacity-30"
+                >
+                  <Power className={clsx("w-4 h-4", commanding === `${selectedProfile.device_id}-REBOOT` && "animate-spin")} />
+                  Reboot
+                </button>
+                <button 
+                  onClick={() => handleCommand(selectedProfile.device_id, 'CLEAR_CACHE')}
+                  disabled={commanding === `${selectedProfile.device_id}-CLEAR_CACHE` || selectedProfile.status !== 'online'}
+                  className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 hover:bg-tad-yellow text-zinc-500 hover:text-black py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all disabled:opacity-30"
+                >
+                  <Trash2 className={clsx("w-4 h-4", commanding === `${selectedProfile.device_id}-CLEAR_CACHE` && "animate-spin")} />
+                  Wipe
+                </button>
+                <button 
+                  onClick={() => handleCommand(selectedProfile.device_id, 'FORCE_SYNC')}
+                  disabled={commanding === `${selectedProfile.device_id}-FORCE_SYNC` || selectedProfile.status !== 'online'}
+                  className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 hover:bg-tad-yellow text-zinc-500 hover:text-black py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all disabled:opacity-30"
+                >
+                  <RefreshCcw className={clsx("w-4 h-4", commanding === `${selectedProfile.device_id}-FORCE_SYNC` && "animate-spin")} />
+                  Sync
+                </button>
+              </div>
+
               <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5">
                 <div className="flex items-center gap-3 mb-6">
                   <Megaphone className="w-5 h-5 text-tad-yellow" />

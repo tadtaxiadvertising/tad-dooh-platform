@@ -114,19 +114,21 @@ export default function NewCampaignPage() {
                       type="date" 
                       value={form.start_date}
                       onChange={e => setForm({...form, start_date: e.target.value})}
-                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow outline-none transition-all [color-scheme:dark] font-mono text-sm" 
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all [color-scheme:dark] font-mono text-sm font-bold" 
                     />
                   </div>
                 </div>
                 <div className="group">
                   <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block group-focus-within:text-tad-yellow transition-colors">Fecha de Fin</label>
-                  <input 
-                    required
-                    type="date" 
-                    value={form.end_date}
-                    onChange={e => setForm({...form, end_date: e.target.value})}
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow outline-none transition-all [color-scheme:dark] font-mono text-sm" 
-                  />
+                  <div className="relative">
+                    <input 
+                      required
+                      type="date" 
+                      value={form.end_date}
+                      onChange={e => setForm({...form, end_date: e.target.value})}
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all [color-scheme:dark] font-mono text-sm font-bold" 
+                    />
+                  </div>
                 </div>
               </div>
 

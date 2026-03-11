@@ -2,53 +2,64 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nest
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 
-@Catch(Prisma.PrismaClientKnownRequestError)
+@Catch(
+  Prisma.PrismaClientKnownRequestError,
+  Prisma.PrismaClientUnknownRequestError,
+  Prisma.PrismaClientValidationError,
+  Prisma.PrismaClientInitializationError
+)
 export class PrismaClientExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaClientExceptionFilter.name);
 
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+  catch(
+    exception: 
+      | Prisma.PrismaClientKnownRequestError 
+      | Prisma.PrismaClientUnknownRequestError 
+      | Prisma.PrismaClientValidationError 
+      | Prisma.PrismaClientInitializationError, 
+    host: ArgumentsHost
+  ) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    this.logger.error(`Prisma Error Code: ${exception.code} - Message: ${exception.message}`);
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Error interno de base de datos.';
+    let errorCode = 'UNKNOWN';
 
-    switch (exception.code) {
-      case 'P2002': {
-        const status = HttpStatus.CONFLICT;
-        const target = (exception.meta?.target as string[]) || [];
-        response.status(status).json({
-          statusCode: status,
-          message: `Ya existe un registro con este/a: ${target.join(', ')}.`,
-          error: 'Conflict',
-        });
-        break;
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      this.logger.error(`Prisma Known Error [${exception.code}]: ${exception.message}`);
+      errorCode = exception.code;
+      
+      switch (exception.code) {
+        case 'P2002':
+          status = HttpStatus.CONFLICT;
+          const target = (exception.meta?.target as string[]) || [];
+          message = `Ya existe un registro con este/a: ${target.join(', ')}.`;
+          break;
+        case 'P2003':
+          status = HttpStatus.BAD_REQUEST;
+          message = `Error de relación: Verifique que el ID vinculado exista (ej: ID Tablet).`;
+          break;
+        case 'P2025':
+          status = HttpStatus.NOT_FOUND;
+          message = 'Registro no encontrado.';
+          break;
       }
-      case 'P2003': {
-        const status = HttpStatus.BAD_REQUEST;
-        response.status(status).json({
-          statusCode: status,
-          message: `Error de relación: Verifique que el ID de dispositivo u otro registro vinculado exista.`,
-          error: 'Bad Request',
-        });
-        break;
-      }
-      case 'P2025': {
-        const status = HttpStatus.NOT_FOUND;
-        response.status(status).json({
-          statusCode: status,
-          message: 'Registro no encontrado.',
-          error: 'Not Found',
-        });
-        break;
-      }
-      default:
-        // default 500 error code
-        response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: `Error interno de base de datos (${exception.code}).`,
-          error: 'Internal Server Error',
-        });
-        break;
+    } else if (exception instanceof Prisma.PrismaClientValidationError) {
+      this.logger.error(`Prisma Validation Error: ${exception.message}`);
+      status = HttpStatus.BAD_REQUEST;
+      message = 'Error de validación de datos: Verifique el formato de fechas o IDs.';
+      errorCode = 'VALIDATION_ERROR';
+    } else {
+      this.logger.error(`Prisma Unhandled Error: ${exception.message}`);
     }
+
+    response.status(status).json({
+      statusCode: status,
+      message,
+      errorCode,
+      error: status === HttpStatus.INTERNAL_SERVER_ERROR ? 'Internal Server Error' : undefined,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

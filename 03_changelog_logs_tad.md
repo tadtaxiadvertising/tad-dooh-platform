@@ -54,6 +54,15 @@
 - **Cambio**: Eliminación del bloque `builds` en `backend/vercel.json`.
 - **Razón**: Adopción de la infraestructura moderna de Vercel para Node.js, eliminando warnings de deprecación y acelerando los despliegues automáticos.
 
+### 🖥️ FEATURE: Control Total de Inventario de Pantallas (CRUD)
+- **Cambio**: Se transformó la página de `/devices` de una lista de solo lectura a un sistema de gestión manual completo.
+- **Archivos creados/modificados**:
+  - `admin-dashboard/components/DeviceModal.tsx` (**NUEVO**): Modal profesional para crear, editar y eliminar hardware.
+  - `admin-dashboard/pages/devices/index.tsx`: Integración de acciones CRUD y nuevo botón "Nueva Pantalla".
+  - `backend/src/modules/device/device-admin.controller.ts`: Implementación de endpoints POST y PUT para administración manual.
+  - `admin-dashboard/services/api.ts`: Añadidos métodos `createDevice`, `updateDevice` y `deleteDevice`.
+- **Razón**: El administrador ahora tiene control total para registrar hardware STI (Santiago) o corregir placas manualmente sin depender de registros automáticos de las tablets.
+
 ### 🔧 FIX: Botón de registro de choferes no funcional y falta de feedback
 - **Issue resuelto**: El botón "Registrar Chofer" en el dashboard no ejecutaba ninguna acción. Además, el backend no manejaba errores de duplicidad (cédula/teléfono), devolviendo errores 500 genéricos.
 - **Archivos creados/modificados**:

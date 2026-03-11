@@ -48,8 +48,16 @@ export class DriversController {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
     }
+
+    // Sanear campos opcionales: Convertir strings vacíos a undefined para evitar conflictos de unicidad en Prisma
+    const sanitize = (val?: string) => (val && val.trim() !== '' ? val : undefined);
+
     return this.driversService.create({
       ...body,
+      cedula: sanitize(body.cedula),
+      taxiPlate: sanitize(body.taxiPlate),
+      licensePlate: sanitize(body.licensePlate),
+      deviceId: sanitize(body.deviceId),
       subscriptionEnd: body.subscriptionEnd ? new Date(body.subscriptionEnd) : undefined,
     });
   }

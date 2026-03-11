@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl, getInvoiceUrl, getAutoPayroll, processPayrollPayment } from '../../services/api';
+import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getInvoiceUrl } from '../../services/api';
 import { 
   Wallet, 
   CarFront, 
@@ -11,15 +11,14 @@ import {
   AlertTriangle,
   Receipt,
   Users,
-  BarChart3,
-  Zap
+  Zap,
+  Search
 } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function FinancePage() {
-  const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns' | 'auto-payroll'>('auto-payroll');
-  const [payrollData, setPayrollData] = useState<any>(null);
-  const [autoPayrollData, setAutoPayrollData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns'>('payroll');
+  const [payroll, setPayroll] = useState<any[]>([]);
   const [campaignData, setCampaignData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +32,8 @@ export default function FinancePage() {
     setError(null);
     try {
       if (activeTab === 'payroll') {
-        const data = await getDriverPayroll();
-        setPayrollData(data);
-      } else if (activeTab === 'auto-payroll') {
         const data = await getAutoPayroll();
-        setAutoPayrollData(data);
+        setPayroll(data);
       } else {
         const data = await getCampaignBilling();
         setCampaignData(data);
@@ -50,23 +46,41 @@ export default function FinancePage() {
     }
   };
 
+  const handlePay = async (driverId: string, amount: number) => {
+    const ref = window.prompt(`Confirmar pago de RD$${amount.toLocaleString()}. Ingrese Ref. de Transferencia:`);
+    if (ref) {
+      try {
+        const now = new Date();
+        await processPayrollPayment({ 
+          driverId, 
+          month: now.getMonth() + 1, 
+          year: now.getFullYear(),
+          reference: ref 
+        });
+        alert('Pago registrado exitosamente.');
+        loadData();
+      } catch (err) {
+        alert('Error registrando el pago. Es posible que el chofer ya haya sido liquidado este mes.');
+      }
+    }
+  };
+
   return (
-    <div className="animate-in fade-in duration-700 pb-20">
+    <div className="animate-in fade-in duration-700 min-h-screen pb-20">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Control <span className="text-tad-yellow text-shadow-glow">Financiero</span>
+            Gestión <span className="text-tad-yellow text-shadow-glow">Económica</span>
           </h1>
-          <p className="text-gray-400 max-w-2xl">
-            Facturación basada en impresiones reales detectadas por el sistema. No promedios, solo datos.
-          </p>
+          <p className="text-zinc-500 font-medium">Control de nómina de choferes y facturación a marcas.</p>
         </div>
         
         <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-white/5 self-start">
           <button 
             onClick={() => setActiveTab('payroll')}
             className={clsx(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
               activeTab === 'payroll' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
             )}
           >
@@ -76,346 +90,139 @@ export default function FinancePage() {
           <button 
             onClick={() => setActiveTab('campaigns')}
             className={clsx(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
               activeTab === 'campaigns' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
             )}
           >
             <Receipt className="w-4 h-4" />
             Facturación Marcas
           </button>
-          <button 
-            onClick={() => setActiveTab('auto-payroll')}
-            className={clsx(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-              activeTab === 'auto-payroll' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
-            )}
-          >
-            <Zap className="w-4 h-4" />
-            Liquidación
-          </button>
         </div>
       </div>
 
       {activeTab === 'payroll' ? (
-        <PayrollView data={payrollData} loading={loading} error={error} />
-      ) : activeTab === 'auto-payroll' ? (
-        <AutoPayrollView data={autoPayrollData} loading={loading} onPay={() => loadData()} />
+        <div className="space-y-6">
+          <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-black/40 border-b border-white/5">
+                <tr className="text-tad-yellow">
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Chofer / Unidad</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center">Anuncios Activos</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-right">Monto a Liquidar</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={4} className="px-8 py-6"><div className="h-4 bg-zinc-900 rounded w-full" /></td>
+                    </tr>
+                  ))
+                ) : payroll.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-8 py-20 text-center text-zinc-500 italic">No hay datos de nómina disponibles.</td>
+                  </tr>
+                ) : payroll.map((item) => (
+                  <tr key={item.driverId} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-8 py-6">
+                      <p className="font-bold text-white text-base">{item.driverName}</p>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter">Taxi No. {item.taxiNumber || 'N/A'}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <div className="inline-flex items-center justify-center h-8 w-12 bg-zinc-900 border border-white/5 rounded-lg text-sm font-black text-white group-hover:border-tad-yellow/30 transition-colors">
+                        {item.activeAds}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <p className="text-xl font-black text-white">RD$ {item.totalAmount.toLocaleString()}</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Liquidación Mensual</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <button 
+                        onClick={() => handlePay(item.driverId, item.totalAmount)}
+                        className="bg-tad-yellow text-black px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-500 transition-all shadow-lg active:scale-95 flex items-center gap-2 mx-auto"
+                      >
+                        <Zap className="w-3 h-3" />
+                        Pagar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="flex items-start gap-4 bg-tad-yellow/5 border border-tad-yellow/20 p-6 rounded-3xl">
+            <div className="p-2 bg-tad-yellow/10 rounded-xl">
+              <AlertTriangle className="w-5 h-5 text-tad-yellow" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white mb-1 uppercase tracking-wider">Regla de Negocio: Liquidación RD$500</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed uppercase tracking-tighter">
+                Cada chofer recibe RD$500 mensuales por cada anuncio activo en el sistema. El cálculo se realiza cruzando las campañas con estado <span className="text-tad-yellow">"ACTIVE"</span> vinculadas al dispositivo del taxi. Solo se permite un pago por mes calendario para evitar duplicidades de tesorería.
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
-        <CampaignBillingView data={campaignData} loading={loading} error={error} />
-      )}
-    </div>
-  );
-}
-
-function PayrollView({ data, loading, error }: any) {
-  const [simulating, setSimulating] = useState(false);
-  const [simResult, setSimResult] = useState<any>(null);
-
-  const handleSimulate = async () => {
-    setSimulating(true);
-    try {
-      const result = await (await import('../../services/api')).simulatePayment();
-      setSimResult(result.summary);
-    } catch (e) {
-      alert('Error en simulación');
-    } finally {
-      setSimulating(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      {simResult && (
-        <div className="bg-tad-yellow/10 border border-tad-yellow/30 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-500">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-tad-yellow font-black uppercase tracking-widest text-xs flex items-center gap-2">
-              <Zap className="w-4 h-4" /> Simulación de Pago Masivo
-            </h4>
-            <button onClick={() => setSimResult(null)} className="text-zinc-500 hover:text-white text-xs font-bold">Cerrar</button>
+        <div className="space-y-6">
+          <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-black/40 border-b border-white/5">
+                <tr className="text-tad-yellow">
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Marca / Campaña</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center">Unidades</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center">Estado</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-right">Monto Estimado</th>
+                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center">Audit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={5} className="px-8 py-6"><div className="h-4 bg-zinc-900 rounded w-full" /></td>
+                    </tr>
+                  ))
+                ) : campaignData.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-20 text-center text-zinc-500 italic">No hay campañas registradas para facturación.</td>
+                  </tr>
+                ) : campaignData.map((camp) => (
+                  <tr key={camp.campaignId} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-8 py-6">
+                      <p className="font-bold text-white text-base uppercase italic">{camp.campaignName}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center text-zinc-400 font-bold text-sm">
+                      {camp.assignedTaxis} Taxis
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <span className="px-3 py-1 bg-white/5 text-zinc-400 rounded-full text-[9px] font-black uppercase border border-white/5">
+                        {camp.status}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <p className="text-xl font-black text-tad-yellow">RD$ {camp.estimatedRevenue.toLocaleString()}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                       <a 
+                        href={getInvoiceUrl(camp.campaignId)} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 bg-zinc-800 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight hover:bg-zinc-700 transition-all border border-white/5"
+                       >
+                         <Receipt className="w-3 h-3 text-tad-yellow" />
+                         Factura
+                       </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-[10px] text-zinc-500 uppercase font-black">Presupuesto</p>
-              <p className="text-xl font-black text-white">RD${simResult.totalBudgetRequired.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-zinc-500 uppercase font-black">Choferes Calificados</p>
-              <p className="text-xl font-black text-white">{simResult.qualifiedDrivers}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-zinc-500 uppercase font-black">Ads Detectados</p>
-              <p className="text-xl font-black text-white">{simResult.totalUniqueAdsPlayed}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-zinc-500 uppercase font-black">Promedio c/u</p>
-              <p className="text-xl font-black text-white">RD${simResult.avgPayoutPerDriver.toFixed(2)}</p>
-            </div>
-          </div>
-          <p className="text-[9px] text-zinc-500 mt-4 italic">* Esta es una auditoría basada en eventos de playback reales al momento de la consulta.</p>
         </div>
       )}
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard 
-          icon={<DollarSign className="text-tad-yellow" />}
-          label="Total a Pagar (DOP)"
-          value={loading ? '...' : `RD$${(data?.totalPayout || 0).toLocaleString()}`}
-          sub={data?.period || 'Periodo Actual'}
-        />
-        <StatCard 
-          icon={<UserCheck className="text-green-400" />}
-          label="Taxis Activos"
-          value={loading ? '...' : data?.drivers?.filter((d: any) => d.status === 'ACTIVE').length || 0}
-          sub="Detectados este mes"
-        />
-        <div className="flex items-center justify-center p-2">
-           <button 
-            disabled={simulating}
-            onClick={handleSimulate}
-            className="w-full flex items-center justify-center gap-2 bg-tad-yellow hover:bg-tad-yellow/90 text-black font-black py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50"
-           >
-            <Zap className={clsx("w-5 h-5", simulating && "animate-spin")} />
-            {simulating ? 'Procesando...' : 'Simular Pago'}
-           </button>
-        </div>
-        <div className="flex items-center justify-end">
-           <a 
-            href={getPayrollExportUrl()}
-            className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:border-tad-yellow/50 text-white font-bold py-4 px-8 rounded-2xl transition-all"
-           >
-            <Download className="w-5 h-5 text-tad-yellow" />
-            CSV
-           </a>
-        </div>
-      </div>
-
-      <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left">
-          <thead className="bg-black/80 border-b border-white/5">
-            <tr>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chofer</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Placa</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Ads Únicos</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Plays Mes</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Pago RD$</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {loading ? (
-              <LoadingRows cols={6} />
-            ) : data?.drivers?.map((driver: any) => (
-              <tr key={driver.driverId} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="px-6 py-5">
-                  <p className="font-bold text-sm text-white">{driver.fullName}</p>
-                  <p className="text-[10px] text-zinc-600 font-mono italic">{driver.phone}</p>
-                </td>
-                <td className="px-6 py-5 text-sm font-mono text-zinc-400">{driver.taxiPlate}</td>
-                <td className="px-6 py-5">
-                  <span className={clsx(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase",
-                    driver.status === 'ACTIVE' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-                  )}>
-                    {driver.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-right font-mono font-bold text-tad-yellow">{driver.uniqueAdsPlayed}</td>
-                <td className="px-6 py-5 text-right font-mono font-bold text-zinc-300">{driver.totalPlaysThisMonth}</td>
-                <td className="px-6 py-5 text-right font-black text-tad-yellow text-lg">RD${driver.amountToPay}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function CampaignBillingView({ data, loading, error }: any) {
-  return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          icon={<Activity className="text-tad-yellow" />}
-          label="Impresiones Totales"
-          value={loading ? '...' : data.reduce((s: any, c: any) => s + c.totalImpressions, 0).toLocaleString()}
-          sub="Auditables"
-        />
-        <StatCard 
-          icon={<Receipt className="text-zinc-400" />}
-          label="Revenue Potencial"
-          value={loading ? '...' : `RD$${data.reduce((s: any, c: any) => s + c.estimatedRevenue, 0).toLocaleString()}`}
-          sub="Basado en CPM/Plays"
-        />
-        <div className="flex items-center justify-end">
-           <a 
-            href={getCampaignExportUrl()}
-            className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:border-tad-yellow/50 text-white font-bold py-4 px-8 rounded-2xl transition-all"
-           >
-            <Download className="w-5 h-5 text-tad-yellow" />
-            Reporte Ejecutivo CSV
-           </a>
-        </div>
-      </div>
-
-      <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left">
-          <thead className="bg-black/80 border-b border-white/5">
-            <tr>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Campaña</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Taxis</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Estado</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Impresiones Real</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Facturable Est.</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {loading ? (
-              <LoadingRows cols={6} />
-            ) : data.map((camp: any) => (
-              <tr key={camp.campaignId} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="px-6 py-5">
-                  <p className="font-bold text-sm text-white uppercase italic">{camp.campaignName}</p>
-                </td>
-                <td className="px-6 py-5 text-sm text-zinc-400 text-center">{camp.assignedTaxis} unidades</td>
-                <td className="px-6 py-5 text-center">
-                  <span className="px-2 py-1 bg-tad-yellow/10 text-tad-yellow rounded text-[9px] font-black uppercase">
-                    {camp.status}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-right font-mono font-bold text-white text-base">
-                  {camp.totalImpressions.toLocaleString()}
-                </td>
-                <td className="px-6 py-5 text-right font-black text-tad-yellow text-lg">
-                  RD${camp.estimatedRevenue.toFixed(2)}
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <a 
-                    href={getInvoiceUrl(camp.campaignId)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-[10px] font-black uppercase transition-all"
-                  >
-                    <Receipt className="w-3 h-3 text-tad-yellow" />
-                    Factura
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, sub }: any) {
-  return (
-    <div className="bg-zinc-950/50 backdrop-blur-md border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-tad-yellow/30 transition-colors">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-black rounded-lg border border-white/5">
-          {icon}
-        </div>
-        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{label}</p>
-      </div>
-      <h3 className="text-3xl font-black text-white">{value}</h3>
-      <p className="text-[10px] text-zinc-500 mt-2 font-mono uppercase tracking-tighter">{sub}</p>
-    </div>
-  );
-}
-
-function LoadingRows({ cols }: { cols: number }) {
-  return (
-    <>
-      {Array(4).fill(0).map((_, i) => (
-        <tr key={i} className="animate-pulse">
-          {Array(cols).fill(0).map((_, j) => (
-            <td key={j} className="px-6 py-5">
-              <div className="h-4 bg-zinc-800 rounded w-2/3" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
-  );
-}
-
-function AutoPayrollView({ data, loading, onPay }: any) {
-  const [processingId, setProcessingId] = useState<string | null>(null);
-
-  const handleRegisterPayment = async (driverId: string) => {
-    if (!confirm('¿Seguro que desea registrar este pago para el periodo actual?')) return;
-    
-    setProcessingId(driverId);
-    try {
-      const now = new Date();
-      await processPayrollPayment({
-        driverId,
-        month: now.getMonth() + 1,
-        year: now.getFullYear()
-      });
-      alert('Pago registrado con éxito.');
-      onPay();
-    } catch (e) {
-      alert('Error registrando el pago. Es posible que ya exista un pago para este periodo.');
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-      <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-black/80 border-b border-white/5">
-            <tr className="text-[#fad400]">
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Chofer</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Anuncios Activos</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Monto a Pagar</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Acción</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {loading ? (
-              <LoadingRows cols={4} />
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-zinc-500 italic">No hay choferes vinculados a dispositivos actualmente.</td>
-              </tr>
-            ) : data.map((item: any) => (
-              <tr key={item.driverId} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
-                <td className="px-6 py-5 text-white font-bold">{item.driverName}</td>
-                <td className="px-6 py-5 text-white text-center font-mono">
-                  <span className="bg-zinc-900 px-3 py-1 rounded-lg border border-white/5">
-                    {item.activeAds}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-[#fad400] font-black text-right text-lg">
-                  RD$ {item.amountDue.toLocaleString()}
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <button 
-                    disabled={processingId === item.driverId}
-                    onClick={() => handleRegisterPayment(item.driverId)}
-                    className="bg-tad-yellow text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight hover:bg-yellow-500 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {processingId === item.driverId ? 'Procesando...' : 'Registrar Pago'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="flex items-center gap-4 bg-zinc-900/30 p-4 rounded-2xl border border-white/5">
-        <AlertTriangle className="w-5 h-5 text-tad-yellow flex-shrink-0" />
-        <p className="text-[10px] text-zinc-400 leading-relaxed">
-          <strong>Regla de Negocio:</strong> El monto se calcula multiplicando el número de campañas con estado <span className="text-tad-yellow">"ACTIVE"</span> vinculadas al dispositivo del chofer por un monto base de <span className="text-white">RD$ 500.00</span>. Los pagos solo pueden registrarse una vez por mes por cada chofer.
-        </p>
-      </div>
     </div>
   );
 }

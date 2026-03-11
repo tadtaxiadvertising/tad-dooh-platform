@@ -8,6 +8,15 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 💳 FEATURE: Nómina Automática RD$500/Anuncio
+- **Issue resuelto**: El cálculo de pagos a choferes era manual y propenso a errores.
+- **Archivos modificados**:
+  - `prisma/schema.prisma`: Actualizado modelo `PayrollPayment` con unicidad `[driverId, month, year]` y campo `referenceNum`. Se migró a UUID para consistencia.
+  - `backend/src/modules/finance/finance.service.ts`: Implementada lógica de cruce Drivers ↔ Devices ↔ Active Campaigns. Se eliminó la simulación por data real.
+  - `backend/src/modules/finance/finance.controller.ts`: Nuevos endpoints para liquidación mensual y procesamiento de pagos con referencia bancaria.
+  - `admin-dashboard/pages/finance/index.tsx`: Rediseño completo de la vista financiera con tabla de liquidación y captura de referencia de transferencia.
+- **Explicación técnica**: El sistema ahora garantiza que un chofer solo sea pagado una vez por mes por cada anuncio activo detectado en su hardware, asegurando trazabilidad financiera total de egresos.
+
 ### 🔄 SYNC: Sincronización de Contexto de Proyecto (Preparación Cambio de Cuenta)
 - **Acción**: Auditoría general y actualización de documentos maestros.
 - **Archivos modificados**:

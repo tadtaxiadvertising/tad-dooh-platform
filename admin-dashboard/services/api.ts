@@ -133,7 +133,7 @@ export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLI
 export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/campaigns.csv`;
 export const getInvoiceUrl = (id: string, print = false) => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/invoice/${id}${print ? '?print=true' : ''}`;
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
-export const processPayrollPayment = (data: { driverId: string; month: number; year: number }) => api.post('/finance/payroll/pay', data).then(res => res.data);
+export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 
 // Campaign Segmentation
 export const assignDriversToCampaign = (campaignId: string, data: { driverIds: string[]; targetAll: boolean }) => 

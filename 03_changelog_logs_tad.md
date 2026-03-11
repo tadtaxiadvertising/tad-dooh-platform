@@ -1,0 +1,173 @@
+# 📋 03 — CHANGELOG Y LOGS TAD DOOH PLATFORM
+
+> **Propósito**: Registro cronológico de cada bug solucionado, cómo se resolvió y qué archivos se tocaron.  
+> Usar para dar contexto inmediato a cualquier agente nuevo sobre el historial de cambios.
+> **Última Actualización**: 2026-03-10T23:40:00-04:00
+
+---
+
+## 📅 10 de Marzo, 2026
+
+### 🔧 FIX: Dashboard apuntando a localhost en producción
+- **Síntoma**: Al hacer login en `tad-dashboard.vercel.app`, la consola mostraba `net::ERR_CONNECTION_REFUSED localhost:3000/api/auth/login`.
+- **Causa raíz**: El fallback de `baseURL` en Axios era `http://localhost:3000/api` y la variable `NEXT_PUBLIC_API_URL` no estaba configurada en Vercel.
+- **Solución**: Se cambió el fallback a `https://tad-api.vercel.app/api` en `services/api.ts`.
+- **Archivos tocados**:
+  - `admin-dashboard/services/api.ts` (líneas 3-4, 131-132)
+- **Commit**: `fix: production dashboard point to tad-api.vercel.app instead of localhost`
+
+---
+
+### 🔧 FIX: Usuario admin no existía en Supabase producción
+- **Síntoma**: Login devolvía 401 "Credenciales inválidas" incluso con las credenciales correctas.
+- **Causa raíz**: El usuario `admin@tad.do` no estaba registrado en la instancia de Supabase Auth de producción. Solo existía localmente.
+- **Solución**: Se ejecutó un script de signup (`supabase.auth.signUp`) contra el proyecto de producción para crear el usuario con contraseña `TadAdmin2026!`.
+- **Archivos tocados**:
+  - `tmp/signup-admin.js` (script de una vez, no parte del codebase)
+- **User ID de producción**: `0a6ee6b5-e2c4-4d88-a656-71aff21a8234`
+
+---
+
+### 🔧 FIX: Módulo de Choferes mostraba placeholder "Sprint 2"
+- **Síntoma**: La página `/drivers` mostraba un banner amarillo "En Construcción — Sprint 2" y no filtraba correctamente los estados.
+- **Causa raíz**: El banner estaba hardcodeado y los filtros solo buscaban `BLOCKED` en lugar de incluir `SUSPENDED`/`INACTIVE`.
+- **Solución**: Se eliminó el banner de Sprint 2 y se actualizaron los filtros de estado.
+- **Archivos tocados**:
+  - `admin-dashboard/pages/drivers/index.tsx` (líneas 70-85, 114-143, 225-232)
+- **Commit**: `feat: stabilize production audit fixes (fleet c2, drivers activation, date picker)`
+
+---
+
+### 🔧 FIX: Comandos remotos no accesibles desde perfil de nodo
+- **Síntoma**: Para ejecutar `REBOOT/WIPE/SYNC` en un taxi, el admin tenía que buscar el dispositivo en la lista general.
+- **Solución**: Se añadieron botones de acción directa en el modal de perfil de nodo en Fleet.
+- **Archivos tocados**:
+  - `admin-dashboard/pages/fleet/index.tsx` (líneas 477-487, sección del modal)
+- **Commit**: Incluido en el commit anterior.
+
+---
+
+### 🔧 FIX: Date picker inconsistente en creación de campañas
+- **Síntoma**: Los inputs de fecha en `/campaigns/new` no tenían el mismo estilo ni feedback visual.
+- **Solución**: Se estandarizaron los estilos con `focus:ring-1 focus:ring-tad-yellow` y se envolvió el segundo input en un `<div className="relative">`.
+- **Archivos tocados**:
+  - `admin-dashboard/pages/campaigns/new.tsx` (líneas 109-131)
+- **Commit**: Incluido en el commit anterior.
+
+---
+
+## 📅 9 de Marzo, 2026
+
+### 🔧 FIX: Error 400 Multipart Boundary en subida de video
+- **Síntoma**: Al subir un video, el backend devolvía `400 Bad Request: Missing Multipart Boundary`.
+- **Causa raíz**: Axios estaba enviando el `Content-Type: application/json` en vez de dejar que el navegador auto-detecte el `multipart/form-data` boundary.
+- **Solución**: Se usó `transformRequest` en Axios para eliminar el header `Content-Type` manualmente en las funciones de upload.
+- **Archivos tocados**:
+  - `admin-dashboard/services/api.ts` (funciones `uploadMedia` y `uploadCampaignMedia`)
+
+---
+
+### 🔧 FIX: Supabase Storage rechazaba videos (RLS)
+- **Síntoma**: Error `403 Forbidden` al intentar subir archivos al bucket `campaign-videos`.
+- **Causa raíz**: Supabase Storage requiere permisos RLS que no estaban configurados para uploads desde backend.
+- **Solución**: Se configuró el backend para usar la `SUPABASE_SERVICE_ROLE_KEY` (que bypasea RLS) en vez de la `ANON_KEY`.
+- **Archivos tocados**:
+  - `backend/src/modules/media/media.service.ts`
+  - `backend/src/modules/supabase/supabase.service.ts`
+
+---
+
+### 🔧 FIX: Error 500 JSON BigInt en respuestas de Prisma
+- **Síntoma**: El endpoint de media devolvía `TypeError: Do not know how to serialize a BigInt`.
+- **Causa raíz**: Prisma devuelve campos `BigInt` para `size`/`fileSize`, y `JSON.stringify` no sabe serializarlos.
+- **Solución**: Se añadió `(BigInt.prototype as any).toJSON = function() { return this.toString(); }` en `main.ts` y `api/index.ts`.
+- **Archivos tocados**:
+  - `backend/src/main.ts` (línea 8-10)
+  - `backend/api/index.ts` (línea 9-11)
+
+---
+
+### 🔧 FIX: `Zap is not defined` en página de Finanzas
+- **Síntoma**: La página `/finance` crasheaba con `ReferenceError: Zap is not defined`.
+- **Causa raíz**: El icono `Zap` de `lucide-react` no estaba importado en el componente.
+- **Solución**: Se añadió `Zap` a la lista de imports de `lucide-react`.
+- **Archivos tocados**:
+  - `admin-dashboard/pages/finance/index.tsx`
+
+---
+
+### 🔧 FIX: Crash en Marcas por MOCK_ADVERTISERS
+- **Síntoma**: La página `/advertisers` mostraba un error de runtime intentando mapear datos estáticos inexistentes.
+- **Causa raíz**: El componente usaba datos mock hardcodeados en vez de la API real.
+- **Solución**: Se reemplazó el mock por una llamada a `getAdvertisers()` que conecta con la DB real.
+- **Archivos tocados**:
+  - `admin-dashboard/pages/advertisers/index.tsx`
+
+---
+
+### 🔧 FIX: Redirección 404 en Analytics
+- **Síntoma**: El menú lateral apuntaba a `/intelligence` que no existía como ruta.
+- **Solución**: Se cambió la ruta del menú a `/analytics`.
+- **Archivos tocados**:
+  - `admin-dashboard/components/Layout.tsx` (o equivalente del sidebar)
+
+---
+
+### 🔧 FIX: Dependency Injection error (MediaModule → CampaignModule)
+- **Síntoma**: El backend fallaba al arrancar con `Nest can't resolve dependencies of CampaignController (?, PrismaService, MediaService)`.
+- **Causa raíz**: `CampaignModule` dependía de `MediaService` pero no importaba `MediaModule`.
+- **Solución**: Se añadió `MediaModule` a los imports de `CampaignModule` y se exportó `MediaService` desde `MediaModule`.
+- **Archivos tocados**:
+  - `backend/src/modules/campaign/campaign.module.ts`
+  - `backend/src/modules/media/media.module.ts`
+- **Commit**: `fix: resolve MediaService dependency injection in CampaignModule`
+
+---
+
+## 📅 8 de Marzo, 2026
+
+### 🔧 FIX: CORS bloqueando llamadas desde Dashboard → API
+- **Síntoma**: El dashboard arrojaba `CORS policy: No 'Access-Control-Allow-Origin' header`.
+- **Causa raíz**: El `vercel.json` del backend tenía las cabeceras pero el `main.ts` también las configuraba con diferentes reglas, causando conflictos.
+- **Solución**: Se sincronizó la config CORS en `main.ts`, `api/index.ts` y `vercel.json` con la misma whitelist de orígenes.
+- **Archivos tocados**:
+  - `backend/src/main.ts` (líneas 28-42)
+  - `backend/api/index.ts` (líneas 24-38, 47-56)
+  - `backend/vercel.json` (headers section)
+
+---
+
+## 📅 7 de Marzo, 2026
+
+### 🎨 FEATURE: Tema oscuro con amarillo TAD (#fad400)
+- **Cambio**: Se actualizó toda la UI del dashboard de un tema claro a un tema oscuro premium con acentos en amarillo `#fad400`.
+- **Archivos tocados**:
+  - `admin-dashboard/styles/globals.css` (variables CSS)
+  - Todas las páginas en `admin-dashboard/pages/`
+  - Todos los componentes en `admin-dashboard/components/`
+
+---
+
+## 📅 6 de Marzo, 2026
+
+### 🚀 FEATURE: Despliegue backend a Vercel
+- **Cambio**: Se configuró `api/index.ts` como handler serverless para Vercel, con Express adapter para NestJS.
+- **Archivos tocados**:
+  - `backend/api/index.ts` (nuevo)
+  - `backend/vercel.json` (nuevo)
+  - `backend/.env.production` (configuración de producción)
+
+### 🔧 FIX: Migración de mock data a Supabase PostgreSQL
+- **Cambio**: Se eliminaron todos los datos mock y se conectó Prisma a la instancia real de Supabase.
+- **Schema sincronizado**: `npx prisma db push` ejecutado contra producción.
+
+---
+
+## 📌 NOTAS PARA EL AGENTE
+
+1. **Siempre hacer `git push origin main`** después de cambios — Vercel auto-deploya.
+2. **PowerShell en Windows** no soporta `&&`. Usar `;` como separador o `cmd /c "..."`.
+3. **Paths con espacios** (como `TAD PLASTFORM`) deben ir entre comillas en la terminal.
+4. **La API no tiene ruta raíz** en `/api` — el 404 ahí es normal. Las rutas funcionales empiezan en `/api/auth/login`, `/api/campaigns`, etc.
+5. **`@Public()` decorator** es obligatorio en cualquier ruta que la tablet/player necesite acceder sin login.
+6. **Prisma schema** está en `backend/prisma/schema.prisma`. Después de cambios, ejecutar `npx prisma generate` y `npx prisma db push`.

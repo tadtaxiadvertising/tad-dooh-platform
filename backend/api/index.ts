@@ -1,7 +1,9 @@
 // backend/api/index.ts
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
+import { PrismaClientExceptionFilter } from '../src/common/filters/prisma-exception.filter';
 import express from 'express';
 
 let cachedApp: any;
@@ -29,6 +31,16 @@ const createNestServer = async () => {
   });
 
   app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
 
   // BigInt Serialization fix
   (BigInt.prototype as any).toJSON = function () {

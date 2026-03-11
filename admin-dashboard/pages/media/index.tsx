@@ -300,29 +300,43 @@ export default function MediaPage() {
             const videoUrl = getPreviewUrl(file);
             const displayName = getDisplayName(file);
             const hasLocalPreview = !!localPreviews[file.id];
+            const isVideo = file.mime?.includes('video') || file.url?.includes('.mp4') || file.url?.includes('.webm');
 
             return (
-              <div key={file.id || i} className="group relative bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden hover:border-tad-yellow/50 transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
-                {/* Video Thumbnail with real preview */}
+              <div key={file.id || i} className="group relative bg-[#1a1a1a] border border-[#fad400]/20 rounded-2xl overflow-hidden hover:border-[#fad400] transition-all hover:shadow-[0_0_30px_rgba(250,212,0,0.15)]">
+                {/* Video/Image Thumbnail */}
                 <div 
-                  className="aspect-video bg-black relative overflow-hidden cursor-pointer"
+                  className="aspect-video bg-black relative overflow-hidden cursor-pointer flex items-center justify-center"
                   onClick={() => { setPreviewUrl(videoUrl); setPreviewTitle(displayName); }}
                 >
-                  <video 
-                    src={videoUrl} 
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                    muted
-                    playsInline
-                    onMouseOver={e => (e.target as HTMLVideoElement).play().catch(() => {})}
-                    onMouseOut={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
-                  />
+                  {isVideo ? (
+                    <video 
+                      src={videoUrl} 
+                      className="w-full h-full object-contain"
+                      preload="metadata"
+                      muted
+                      playsInline
+                      onMouseOver={e => {
+                        const target = e.target as HTMLVideoElement;
+                        target.play().catch(() => {});
+                      }}
+                      onMouseOut={e => {
+                        const v = e.target as HTMLVideoElement;
+                        v.pause();
+                        v.currentTime = 0;
+                      }}
+                    />
+                  ) : (
+                    <img src={videoUrl} alt={displayName} className="w-full h-full object-cover" />
+                  )}
+                  
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <div className="bg-tad-yellow/90 rounded-full p-3 shadow-lg shadow-tad-yellow/30">
+                    <div className="bg-[#fad400]/90 rounded-full p-3 shadow-lg shadow-[#fad400]/30">
                       <Eye className="w-5 h-5 text-black" />
                     </div>
                   </div>
+
                   {/* Badges */}
                   <div className="absolute top-3 right-3 z-10">
                     <button 
@@ -335,28 +349,23 @@ export default function MediaPage() {
                   </div>
                   <div className="absolute top-3 left-3 flex gap-2">
                     {hasLocalPreview && (
-                      <span className="bg-tad-yellow/90 text-black text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
+                      <span className="bg-[#fad400]/90 text-black text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> Original
-                      </span>
-                    )}
-                    {isMockUrl(file.url) && !hasLocalPreview && (
-                      <span className="bg-zinc-800/90 text-zinc-400 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> Demo
                       </span>
                     )}
                   </div>
                   <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-gray-300 font-mono">
-                    {file.mime?.split('/')[1]?.toUpperCase() || 'VIDEO'}
+                    {file.mime?.split('/')[1]?.toUpperCase() || 'MEDIA'}
                   </div>
                 </div>
 
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-white font-bold truncate">{displayName}</h4>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1 font-mono">
-                        <Zap className="w-3 h-3 text-tad-yellow shrink-0" />
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      <h4 className="text-[#fad400] font-bold truncate">{displayName}</h4>
+                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-1 font-mono">
+                        <Zap className="w-3 h-3 text-[#fad400] shrink-0" />
+                        {file.size ? (file.size / 1024 / 1024).toFixed(2) : '0.00'} MB
                       </p>
                     </div>
                     <a 
@@ -372,7 +381,7 @@ export default function MediaPage() {
                   {linkedCampaigns.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-1">
                       {linkedCampaigns.map((c: any) => (
-                        <span key={c.id} className="text-[9px] bg-tad-yellow/10 text-tad-yellow px-2 py-0.5 rounded-full border border-tad-yellow/20 font-bold tracking-wider uppercase">
+                        <span key={c.id} className="text-[9px] bg-[#fad400]/10 text-[#fad400] px-2 py-0.5 rounded-full border border-[#fad400]/20 font-bold tracking-wider uppercase">
                           {c.name}
                         </span>
                       ))}
@@ -389,7 +398,7 @@ export default function MediaPage() {
                         <Activity className="w-3 h-3" /> EN VIVO
                       </div>
                     ) : (
-                      <span className="text-[10px] bg-tad-yellow/10 text-tad-yellow px-2 py-1 rounded-full border border-tad-yellow/20 font-bold tracking-wider">LISTO</span>
+                      <span className="text-[10px] bg-[#fad400]/10 text-[#fad400] px-2 py-1 rounded-full border border-[#fad400]/20 font-bold tracking-wider">LISTO</span>
                     )}
                   </div>
 

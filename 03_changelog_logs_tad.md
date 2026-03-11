@@ -8,6 +8,24 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🔧 FIX: Media Storage Sync & Public URLs
+- **Issue resuelto**: Fallos de carga en la galería `/media` y URLs rotas en el dashboard.
+- **Archivos modificados**:
+  - `backend/src/modules/supabase/supabase.service.ts`: Implementado `getPublicUrl` y `listMediaFiles`.
+  - `admin-dashboard/pages/media/index.tsx`: Actualizado el grid de medios para usar URLs directas de Supabase.
+- **Explicación técnica**: Se vinculó el backend con el bucket `campaign-videos` de Supabase Storage. Ahora el dashboard no solo lista los nombres de archivos, sino que genera URLs públicas instantáneas. Se añadió un manejador de eventos `onMouseOver` en el frontend para previsualizar videos sin consumir ancho de banda excesivo.
+
+---
+
+### 🔧 FIX: CORS Policy Blocking en Producción
+- **Issue resuelto**: Error `net::ERR_FAILED` y `No 'Access-Control-Allow-Origin' header` al cargar el dashboard.
+- **Archivos modificados**:
+  - `backend/api/index.ts`: Añadido manejo manual de método OPTIONS y configuración de CORS en el Nest Serverless instance.
+  - `backend/vercel.json`: Inyectadas cabeceras Access-Control en la capa de routing de Vercel.
+- **Explicación técnica**: El adaptador serverless de NestJS a veces no procesa las peticiones preflight antes de que la función lambda termine. Se implementó un "Early Return" para peticiones OPTIONS en el entry point y se sincronizó la whitelist de dominios para asegurar que `tad-dashboard.vercel.app` tenga permisos plenos de lectura/escritura.
+
+---
+
 ### 🛰️ FEATURE: Mobile GPS Gateway (Chofer Tracking)
 - **Desafío**: Las tablets en los taxis a veces pierden conectividad o tienen GPS inestable, lo que impide ver la ubicación real en el dashboard.
 - **Solución**: Se implementó una PWA de "Check-In" para el chofer. Al escanear el QR de la tablet, el celular del chofer actúa como gateway enviando coordenadas GPS cada 60s.

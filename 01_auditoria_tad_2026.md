@@ -50,7 +50,7 @@
 | `/advertisers` | Base de datos de marcas/clientes | ✅ Funcional | Data real de DB (10 anunciantes) |
 | `/finance` | Ingresos, nómina, exportaciones CSV | ✅ Funcional | Cálculos basados en PlaybackEvents |
 | `/analytics` | Inteligencia: top taxis, plays/hora | ✅ Funcional | Propagaciones recientes (live feed) |
-| `/media` | Galería de archivos subidos | ✅ Funcional | Lista de medias con metadata |
+| `/media` | Galería de archivos subidos | ✅ Operativo | Previsualización vinculada a Supabase Storage |
 | `/devices` | Inventario técnico de hardware | 🏗️ Mockup | Pendiente integración |
 
 ---
@@ -118,9 +118,7 @@
 
 ## ⚠️ 6. RIESGOS IDENTIFICADOS
 
-| Riesgo | Severidad | Estado |
-|---|---|---|
-| DB en Supabase remota (latencia en dev local) | 🟡 Media | Mitigado con `directUrl` puerto 5432 |
+| Bloqueo CORS en Producción | 🔴 Crítica | ✅ Resuelto con Header Injection en Vercel |
 | Videos grandes > 50MB (Vercel limit) | 🟡 Media | Supabase Storage como intermediario |
 | Muerte de tablet por batería | 🟡 Media | ✅ Mitigado con Telemetry Tracking |
 | Leak de conexiones Prisma | 🔴 Alta | ✅ Mitigado (onModuleDestroy + `$disconnect()` + logging condicional) |
@@ -162,6 +160,8 @@
 - [ ] Dashboard analytics en tiempo real
 - [ ] Alertas SMS/WhatsApp para choferes
 - [ ] Integración con pasarela de pago
+- [ ] Módulo de Nómina (RD$500/anuncio por taxi)
+- [ ] Mapa de Calor de Reproducciones (Geo-fencing data)
 
 ---
 

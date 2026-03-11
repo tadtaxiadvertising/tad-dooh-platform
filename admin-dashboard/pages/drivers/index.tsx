@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IdCard, Search, Filter, UserCheck, UserX, CreditCard, Tablet, Calendar, ChevronRight, ChevronDown, Plus, AlertTriangle, CheckCircle2, Clock, Download, Lock, Unlock, Zap, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import { getDrivers, updateDriverSubscription } from '../../services/api';
+import DriverModal from '../../components/DriverModal';
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export default function DriversPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'blocked' | 'unpaid'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadDrivers();
@@ -104,7 +106,10 @@ export default function DriversPage() {
             <Download className="w-5 h-5" />
             Reporte CSV
           </button>
-          <button className="group flex gap-2 items-center bg-tad-yellow hover:bg-yellow-400 text-black font-extrabold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-[0_0_15px_rgba(250,212,0,0.3)]">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="group flex gap-2 items-center bg-tad-yellow hover:bg-yellow-400 text-black font-extrabold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-[0_0_15px_rgba(250,212,0,0.3)]"
+          >
             <Plus className="h-5 w-5" />
             Registrar Chofer
           </button>
@@ -292,6 +297,12 @@ export default function DriversPage() {
           </table>
         </div>
       </div>
+
+      <DriverModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={loadDrivers} 
+      />
     </div>
   );
 }

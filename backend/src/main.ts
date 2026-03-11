@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
 
 // Fix para serialización de BigInt
 (BigInt.prototype as any).toJSON = function () {
@@ -23,6 +24,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
 
   // CONFIGURACIÓN DE CORS REFORZADA
   app.enableCors({

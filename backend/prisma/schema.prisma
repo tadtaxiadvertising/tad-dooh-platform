@@ -76,6 +76,7 @@ model Device {
   assignedCampaigns PlaylistItem[]
   campaigns      DeviceCampaign[]
   driver          Driver?
+  subscription    Subscription?
   
   @@map("devices")
   @@index([status])
@@ -440,22 +441,25 @@ model PayrollPayment {
 model Subscription {
   id            String   @id @default(uuid())
   driverId      String   @map("driver_id")
+  deviceId      String?  @unique @map("device_id")
   plan          String   // ANNUAL, MONTHLY
-  amount        Float    // RD$ amount (6000 or 500)
-  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED, CANCELLED
+  amount        Float    @default(6000.0)
+  status        String   @default("PENDING") // ACTIVE, EXPIRED, PENDING
   startDate     DateTime @default(now()) @map("start_date")
   dueDate       DateTime @map("due_date")
-  paidDate      DateTime? @map("paid_date")
-  paymentMethod String?  @map("payment_method") // CASH, TRANSFER, CARD
-  paymentRef    String?  @map("payment_ref")    // Receipt or reference number
+  validUntil    DateTime @map("valid_until")
+  paidAt        DateTime? @map("paid_at")
+  paymentMethod String?   @map("payment_method")
   notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  device        Device?  @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
   @@map("subscriptions")
   @@index([driverId])
+  @@index([deviceId])
   @@index([status])
   @@index([dueDate])
 }

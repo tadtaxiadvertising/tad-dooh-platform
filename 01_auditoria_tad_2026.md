@@ -1,8 +1,8 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-11T01:30:00-04:00
-> **Sprint Actual**: Sprint 3 (Sprint 1 y 2 completados al 95%)
+> **Última Actualización**: 2026-03-11T02:30:00-04:00
+> **Sprint Actual**: Sprint 3 (Sprint 2 completado al 100%)
 
 ---
 
@@ -129,6 +129,7 @@
 | Sin HTTPS local para PWA/Service Worker | 🟡 Media | No aplica en dev; usar `ngrok` para staging |
 | BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
 | JWT validación vía red (latencia +200ms) | 🔴 Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
+| Tablets morosas (Falta de pago RD$6k) | 🔴 Alta | ✅ Resuelto — `SubscriptionGuard` bloquea `/sync` si no hay pago activo |
 
 ---
 

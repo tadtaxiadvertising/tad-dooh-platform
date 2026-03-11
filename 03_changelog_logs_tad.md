@@ -16,6 +16,19 @@
   - `03_changelog_logs_tad.md`: Este log.
 - **Propósito**: Asegurar que el siguiente asistente tenga el 100% de la visibilidad sobre las implementaciones de Nómina Automática, Telemetría GPS y correcciones de CORS realizadas hoy.
 
+### 🔒 FEATURE: Bloqueo de Tablets Morosas (SubscriptionModule)
+- **Issue resuelto**: Las tablets funcionaban sin validar el pago anual de RD$6,000.
+- **Archivos modificados**:
+  - `prisma/schema.prisma`: Integración de la relación `Device` ↔ `Subscription` para tracking de vigencia.
+  - `backend/src/modules/drivers/guards/subscription.guard.ts`: Nuevo guard que intercepta el `/sync` de la tablet. Si el estatus no es `ACTIVE` o la fecha `validUntil` expiró, devuelve `403 Forbidden` con `errorCode: SUBSCRIPTION_REQUIRED`.
+  - `backend/src/modules/device/device.controller.ts`: Aplicación global de `SubscriptionGuard` en el endpoint de sincronización.
+  - `backend/src/modules/device/device.service.ts`: Actualizada lógica interna de validación para usar el nuevo esquema de la base de datos.
+- **Impacto**: Se asegura el cumplimiento comercial del proyecto bloqueando dispositivos que no hayan regularizado su pago anual.
+
+### 🚀 OPTIMIZATION: Vercel Zero Config
+- **Cambio**: Eliminación del bloque `builds` en `backend/vercel.json`.
+- **Razón**: Adopción de la infraestructura moderna de Vercel para Node.js, eliminando warnings de deprecación y acelerando los despliegues automáticos.
+
 ---
 
 ### 🔒 FIX: Race Condition de Sesión (Kick-out Inmediato Post-Login)

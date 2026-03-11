@@ -110,40 +110,29 @@ export class DeviceService {
   }
 
   private async checkSubscriptionStatus(deviceId: string) {
-    const driver = await this.prisma.driver.findUnique({
+    const sub = await this.prisma.subscription.findUnique({
       where: { deviceId },
-      include: {
-        subscriptions: {
-          where: { status: 'ACTIVE' },
-          orderBy: { dueDate: 'desc' },
-          take: 1,
-        },
-      },
     });
 
-    if (driver) {
-      const activeSubscription = driver.subscriptions[0];
+    if (!sub) {
+      this.logger.warn(`⛔ Device ${deviceId}: NO subscription found`);
+      return { blocked: true, reason: 'no_subscription' };
+    }
 
-      if (!activeSubscription) {
-        this.logger.warn(`⛔ Device ${deviceId}: driver ${driver.fullName} has NO active subscription`);
-        return { blocked: true, reason: 'no_subscription' };
-      }
+    if (sub.status !== 'ACTIVE') {
+      this.logger.warn(`⛔ Device ${deviceId}: subscription status is ${sub.status}`);
+      return { blocked: true, reason: 'inactive_subscription' };
+    }
 
-      if (activeSubscription.dueDate < new Date()) {
-        this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${activeSubscription.dueDate.toISOString()}`);
-        
-        await this.prisma.subscription.update({
-          where: { id: activeSubscription.id },
-          data: { status: 'EXPIRED' },
-        });
+    if (sub.validUntil < new Date()) {
+      this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${sub.validUntil.toISOString()}`);
+      
+      await this.prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: 'EXPIRED' },
+      });
 
-        await this.prisma.driver.update({
-          where: { id: driver.id },
-          data: { status: 'SUSPENDED', blockedAt: new Date() },
-        });
-
-        return { blocked: true, reason: 'payment_overdue' };
-      }
+      return { blocked: true, reason: 'payment_overdue' };
     }
 
     return { blocked: false };

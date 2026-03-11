@@ -45,12 +45,14 @@ const createNestServer = async () => {
 };
 
 export default async (req: any, res: any) => {
-  // Manejo de Preflight
+  // Manejo de Preflight (CORS) — CRÍTICO para Vercel Serverless
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, Access-Control-Allow-Origin');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 horas
     return res.status(204).end();
   }
 

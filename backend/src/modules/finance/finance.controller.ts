@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Response } from '@nestjs/common';
+import { Controller, Get, Query, Param, Res, HttpStatus } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -24,7 +24,7 @@ export class FinanceController {
   }
 
   @Get('export/payroll.csv')
-  async exportPayrollCsv(@Response() res, @Query('month') month?: string) {
+  async exportPayrollCsv(@Res() res, @Query('month') month?: string) {
     const targetDate = month ? new Date(month) : new Date();
     const data = await this.financeService.getDriverPayrollReport(targetDate);
     
@@ -50,7 +50,7 @@ export class FinanceController {
   }
 
   @Get('export/campaigns.csv')
-  async exportCampaignsCsv(@Response() res) {
+  async exportCampaignsCsv(@Res() res) {
     const data = await this.financeService.getCampaignBillingReport();
     
     const csvData = data.map(c => ({
@@ -72,7 +72,7 @@ export class FinanceController {
   }
 
   @Get('invoice/:id')
-  async getInvoiceHtml(@Param('id') id: string, @Response() res) {
+  async getInvoiceHtml(@Param('id') id: string, @Res() res) {
     const html = await this.financeService.getCampaignInvoice(id);
     if (!html) {
       return res.status(404).send('Campaign not found');

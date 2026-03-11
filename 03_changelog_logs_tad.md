@@ -8,6 +8,14 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🛠️ FIX: Build Error TS2304 (Missing Param Decorator)
+- **Issue resuelto**: Fallo de despliegue en Vercel por referencia inexistente a `Param`.
+- **Archivos modificados**:
+  - `backend/src/modules/finance/finance.controller.ts`: Se añadió `Param` al import de `@nestjs/common` y se estandarizó el uso de `@Res()`.
+- **Explicación técnica**: Durante la implementación del generador de facturas, se utilizó el decorador `@Param('id')` para identificar la campaña, pero el compilador de TypeScript falló al no encontrar la definición en el scope del archivo. Se corrigió el import para restaurar el pipeline de CI/CD.
+
+---
+
 ### 🛠️ HOTFIX: Hardened CORS & Preflight Response
 - **Issue resuelto**: Peticiones `GET /api/drivers` bloqueadas por política CORS (`net::ERR_FAILED`).
 - **Archivos modificados**:

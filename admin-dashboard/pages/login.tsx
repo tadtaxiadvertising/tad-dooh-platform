@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/router';
-import { login } from '../services/api';
+import { supabase } from '../services/supabaseClient';
 import { ShieldCheck, LogIn, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -16,10 +16,28 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push('/');
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError || !data.session) {
+        throw new Error(authError?.message || 'Credenciales inválidas');
+      }
+
+      // Guardar el token también en localStorage para que el interceptor
+      // de Axios en api.ts pueda leerlo en todas las peticiones al backend.
+      localStorage.setItem('tad_admin_token', data.session.access_token);
+      localStorage.setItem('tad_admin_user', JSON.stringify({
+        id: data.user?.id,
+        email: data.user?.email,
+        name: 'Admin',
+        role: 'ADMIN',
+      }));
+
+      router.replace('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Credenciales inválidas');
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }

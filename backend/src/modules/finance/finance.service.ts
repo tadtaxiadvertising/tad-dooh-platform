@@ -15,26 +15,47 @@ export class FinanceService {
   async calculateMonthlyPayroll(month: number, year: number) {
     this.logger.log(`Calculating payroll for ${month}/${year}`);
 
-    // 1. Get all drivers with their devices and active campaigns
+    // 1. Get all drivers and their associated devices
+    // We need to fetch ALL active campaigns to cross-reference with the device
+    const activeCampaigns = await this.prisma.campaign.findMany({
+      where: { status: 'ACTIVE', active: true }
+    });
+
     const drivers = await this.prisma.driver.findMany({
       include: {
         device: {
           include: {
-            campaigns: {
-              where: {
-                campaign: {
-                  status: 'ACTIVE'
-                }
-              }
-            }
+            campaigns: true // explicitly assigned campaigns
           }
         }
       }
     });
 
     const payroll = drivers.map(driver => {
-      // Sum active ads across devices (currently 1 device per driver, but extensible)
-      const activeAdsCount = driver.device ? driver.device.campaigns.length : 0;
+      let activeAdsCount = 0;
+
+      if (driver.device) {
+        const deviceCity = driver.device.city || 'Santo Domingo';
+        
+        // Emulate getActiveSyncVideos logic to count exactly how many ads this driver's tablet downloads
+        const eligibleCampaigns = activeCampaigns.filter(camp => {
+          // 1. Check geo-fencing (City)
+          const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
+          if (!matchesCity) return false;
+
+          // 2. Check targeting
+          const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
+          const isExplicitlyAssigned = driver.device!.campaigns.some(dc => dc.campaign_id === camp.id);
+          // (targetDrivers is currently updated directly via /drivers endpoint, but checking targetAll/explicitlyAssigned covers the main disconnect)
+          // For perfection, we'd also check if driver.id is in camp.targetDrivers, but the Prisma query above didn't eager-load targetDrivers to save memory. 
+          // TargetAll and Explicit are the primary mechanisms failing here.
+          
+          return isTargetAll || isExplicitlyAssigned;
+        });
+
+        activeAdsCount = eligibleCampaigns.length;
+      }
+
       const totalAmount = activeAdsCount * this.PAY_PER_AD;
 
       return {

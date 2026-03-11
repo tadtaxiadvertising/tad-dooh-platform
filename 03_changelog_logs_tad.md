@@ -54,6 +54,15 @@
 - **Cambio**: Eliminación del bloque `builds` en `backend/vercel.json`.
 - **Razón**: Adopción de la infraestructura moderna de Vercel para Node.js, eliminando warnings de deprecación y acelerando los despliegues automáticos.
 
+### 🔧 FIX: Botón de registro de choferes no funcional y falta de feedback
+- **Issue resuelto**: El botón "Registrar Chofer" en el dashboard no ejecutaba ninguna acción. Además, el backend no manejaba errores de duplicidad (cédula/teléfono), devolviendo errores 500 genéricos.
+- **Archivos creados/modificados**:
+  - `admin-dashboard/components/DriverModal.tsx` (**NUEVO**): Modal de registro con validaciones de campos obligatorios.
+  - `admin-dashboard/pages/drivers/index.tsx`: Integración del modal y activación del botón `Plus`.
+  - `backend/src/common/filters/prisma-exception.filter.ts` (**NUEVO**): Filtro global para capturar errores P2002 (Unique constraint) y P2025.
+  - `backend/src/main.ts`: Registro global del `PrismaClientExceptionFilter`.
+- **Explicación técnica**: Se restauró la capacidad operativa del dashboard para registrar conductores. La implementación del filtro de excepciones de Prisma asegura que si un administrador intenta registrar un teléfono o cédula que ya existe, recibirá un mensaje de "Conflict" (409) amigable en lugar de un crasheo del API.
+
 ---
 
 ### 🔒 FIX: Race Condition de Sesión (Kick-out Inmediato Post-Login)

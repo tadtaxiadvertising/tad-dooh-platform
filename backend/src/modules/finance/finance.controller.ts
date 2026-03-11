@@ -4,6 +4,7 @@ import {
   Post, 
   Body, 
   Param, 
+  Query,
   Res, 
   HttpStatus, 
   UseGuards 
@@ -89,9 +90,6 @@ export class FinanceController {
     @Res() res: Response
   ) {
     const html = await this.financeService.generateInvoiceHtml(campaignId);
-    if (!html) {
-      return res.status(HttpStatus.NOT_FOUND).send('Campaign not found');
-    }
     res.setHeader('Content-Type', 'text/html');
     return res.status(HttpStatus.OK).send(html);
   }

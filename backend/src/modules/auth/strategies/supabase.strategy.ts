@@ -15,13 +15,19 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private readonly configService: ConfigService) {
+    const secret = configService.get<string>('SUPABASE_JWT_SECRET');
+    
+    // DIAGNÓSTICO DE SEGURIDAD PARA EL CTO:
+    // Si el secreto empieza con 'sb_secret_', el usuario está usando la MANAGEMENT KEY 
+    // en lugar del JWT SECRET de firma. Esto causará 401 en todas las validaciones.
+    if (secret && secret.startsWith('sb_secret_')) {
+      console.warn('🚨 ALERTA ARQUITECTO: El SUPABASE_JWT_SECRET parece ser una llave de gestión (sb_secret_). No funcionará para validar tokens de usuario. Reemplázalo con el "JWT Secret" de Settings > API de Supabase.');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('SUPABASE_JWT_SECRET') ||
-        configService.get<string>('JWT_SECRET') ||
-        'tad-default-secret-change-me',
+      secretOrKey: secret || configService.get<string>('JWT_SECRET') || 'tad-default-secret-change-me',
     });
   }
 

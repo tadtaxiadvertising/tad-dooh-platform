@@ -162,9 +162,10 @@ export class FleetService {
           plan: subscription.plan,
           amount: subscription.amount,
           status: subscription.status,
-          due_date: subscription.dueDate,
-          paid: !!subscription.paidDate,
-        } : null,
+          paid: !!subscription.paidAt,
+          expiresAt: subscription.validUntil,
+        } : null
+,
       };
     });
 

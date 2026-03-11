@@ -1,8 +1,8 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-10T23:40:00-04:00
-> **Sprint Actual**: Sprint 2 (Sprint 1 completado al 100%)
+> **Última Actualización**: 2026-03-11T01:15:00-04:00
+> **Sprint Actual**: Sprint 3 (Sprint 1 y 2 completados al 95%)
 
 ---
 
@@ -48,7 +48,7 @@
 | `/fleet` | Monitor de dispositivos/tablets | ✅ Funcional | Filtros, C2 remoto, perfil de nodo |
 | `/drivers` | Gestión de choferes y suscripciones | ✅ Funcional | Data real de DB (13 choferes) |
 | `/advertisers` | Base de datos de marcas/clientes | ✅ Funcional | Data real de DB (10 anunciantes) |
-| `/finance` | Ingresos, nómina, exportaciones CSV | ✅ Funcional | Cálculos basados en PlaybackEvents |
+| `/finance` | Ingresos, nómina, exportaciones CSV | ✅ Funcional | Liquidación automática RD$500/anuncio |
 | `/analytics` | Inteligencia: top taxis, plays/hora | ✅ Funcional | Propagaciones recientes (live feed) |
 | `/media` | Galería de archivos subidos | ✅ Operativo | Previsualización vinculada a Supabase Storage |
 | `/devices` | Inventario técnico de hardware | 🏗️ Mockup | Pendiente integración |
@@ -65,7 +65,7 @@
 | `DriversModule` | `drivers.controller.ts` | `GET /`, `POST /`, `PUT /:id/subscription`, `/check-access` | ✅ Funcional |
 | `AdvertisersModule` | `advertisers.controller.ts` | `GET /`, `POST /` | ✅ Funcional |
 | `MediaModule` | `media.controller.ts` | `GET /`, `POST /upload`, `GET /:id/status` | ✅ Funcional |
-| `FinanceModule` | `finance.controller.ts` | `/report/payroll`, `/report/campaigns`, `/simulate-payment`, `/export/*`, **`/invoice/:id`** | ✅ Funcional |
+| `FinanceModule` | `finance.controller.ts` | `/payroll`, `/payroll/pay`, `/report/*`, `/export/*`, `/invoice/:id` | ✅ Funcional |
 | `AnalyticsModule` | `analytics.controller.ts` | `/top-taxis`, `/hourly`, `/recent-plays`, **`/qr-scan`** | ✅ Funcional |
 | `DeviceModule` | `device.controller.ts` | `/sync`, `/heartbeat`, `/command/:id/ack`, `/:id/profile`, `/:id/campaigns` | ✅ Funcional |
 | `AssetsModule` | `assets.controller.ts` | Assets management | ✅ Funcional |
@@ -164,7 +164,7 @@
 - [ ] Dashboard analytics en tiempo real
 - [ ] Alertas SMS/WhatsApp para choferes
 - [ ] Integración con pasarela de pago
-- [x] Módulo de Nómina (RD$500/anuncio por taxi)
+- [x] Módulo de Nómina Automática (RD$500/anuncio por taxi)
 - [ ] Mapa de Calor de Reproducciones (Geo-fencing data)
 
 ---

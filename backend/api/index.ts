@@ -1,69 +1,51 @@
-import 'reflect-metadata';
+// backend/api/index.ts
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
-const express = require('express');
+import { AppModule } from '../src/app.module';
+import express from 'express';
 
-// Fix para serialización de BigInt (usado por Prisma en campos count/size)
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
+const server = express();
+
+export const createNestServer = async (expressInstance) => {
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressInstance),
+  );
+
+  // CONFIGURACIÓN CORS PROFESIONAL
+  app.enableCors({
+    origin: [
+      'https://tad-dashboard.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+  });
+
+  // Global Prefix
+  app.setGlobalPrefix('api');
+
+  // BigInt Serialization fix
+  (BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+  };
+
+  await app.init();
 };
 
-let cachedServer: any;
-
-async function bootstrapServer() {
-  if (!cachedServer) {
-    const expressApp = express();
-    expressApp.use(express.json());
-    
-    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-    
-    // Configuración de CORS espejo de main.ts para Vercel
-    app.enableCors({
-      origin: [
-        'https://tad-dashboard.vercel.app',
-        'https://tad-dooh-platform.vercel.app',
-        'https://tad-admin.vercel.app',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-        'http://localhost:8080',
-        'null',
-      ],
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      credentials: true,
-      allowedHeaders: 'Content-Type, Accept, Authorization',
-    });
-
-    app.setGlobalPrefix('api');
-    await app.init();
-    cachedServer = expressApp;
-  }
-  return cachedServer;
-}
-
-export default async function handler(req: any, res: any) {
-  // Asegurar headers de CORS básicos incluso en errores de bootstrap
-  res.setHeader('Access-Control-Allow-Origin', 'https://tad-dashboard.vercel.app');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
-
+// Handler para Vercel
+export default async (req: any, res: any) => {
+  // Manejo manual de OPTIONS para evitar bloqueos de Vercel Edge
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.setHeader('Access-Control-Allow-Origin', 'https://tad-dashboard.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
+    res.status(204).end();
+    return;
   }
 
-  try {
-    const server = await bootstrapServer();
-    return server(req, res);
-  } catch (error) {
-    console.error('Fatal Bootstrap Error:', error);
-    res.status(500).json({ 
-      error: 'Internal Server Error', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'production' ? null : error.stack
-    });
-  }
-}
+  await createNestServer(server);
+  server(req, res);
+};

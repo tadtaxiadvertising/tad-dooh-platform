@@ -1,28 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+// backend/src/modules/supabase/supabase.service.ts
+import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService {
-  private readonly logger = new Logger(SupabaseService.name);
-  private clientInstance: SupabaseClient;
+  private supabase: SupabaseClient;
 
-  constructor(private configService: ConfigService) {}
+  constructor() {
+    this.supabase = createClient(
+      process.env.SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || ''
+    );
+  }
 
-  getClient() {
-    if (this.clientInstance) return this.clientInstance;
+  // Genera una URL pública para el visualizador del Dashboard
+  getPublicUrl(path: string, bucket: string = 'campaign-videos') {
+    const { data } = this.supabase.storage.from(bucket).getPublicUrl(path);
+    return data.publicUrl;
+  }
 
-    const url = this.configService.get<string>('SUPABASE_URL') || 'https://ltdcdhqixvbpdcitthqf.supabase.co';
-    const key = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || this.configService.get<string>('SUPABASE_KEY') || 'public-anon-key';
-
-    this.clientInstance = createClient(url, key, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+  // Listar archivos para la vista /media
+  async listMediaFiles(bucket: string = 'campaign-videos') {
+    const { data, error } = await this.supabase.storage.from(bucket).list('', {
+      limit: 100,
+      sortBy: { column: 'created_at', order: 'desc' },
     });
 
-    this.logger.log('🚀 Supabase Client Initialized');
-    return this.clientInstance;
+    if (error) throw error;
+
+    return data.map(file => ({
+      ...file,
+      url: this.getPublicUrl(file.name, bucket)
+    }));
+  }
+
+  getClient() {
+    return this.supabase;
   }
 }

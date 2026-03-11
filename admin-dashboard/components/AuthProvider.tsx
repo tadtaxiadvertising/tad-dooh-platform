@@ -21,7 +21,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // ── 1. Leer sesión inicial desde el storage (síncrono en el SDK de Supabase)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!supabase) return; // Safely exit if Supabase couldn't be initialized (SSR)
+
+    supabase.auth.getSession().then((response: any) => {
+      const session = response?.data?.session || null;
       setSession(session);
       setLoading(false);
 
@@ -32,8 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // ── 2. Subscribirse a cambios de sesión (login, logout, refresh de token)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange(
+      (_event: any, session: any) => {
         setSession(session);
 
         if (_event === 'SIGNED_OUT') {
@@ -51,7 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      data?.subscription?.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

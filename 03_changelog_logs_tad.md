@@ -8,6 +8,22 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🛡️ FIX ARCHITECTURAL: By-pass de JWT Secret erróneo (Kick-out Loop 401)
+- **Issue resuelto**: El dashboard expulsaba repetidamente al administrador porque el backend (NestJS) fallaba al validar matemáticamente la firma del JWT usando un `SUPABASE_JWT_SECRET` local erróneo configurado en Vercel (una Management Key en vez de la llave de autenticación JWT).
+- **Archivos modificados**:
+  - `backend/src/modules/auth/guards/supabase-auth.guard.ts`: Se reescribió `canActivate` para descartar `passport-jwt` y en su lugar emplear `supabase.auth.getUser(token)` a través del SDK oficial conectado por el servicio maestro.
+- **Explicación técnica**: Delegamos la validación íntegramente a los servidores de Supabase, creando una capa de mitigación permanente que funciona y aprueba el token correctamente sin importar los errores locales en la configuración de la variable JWT en Vercel.
+
+### 🐛 FIX FRONTEND: Error 500 Build Vercel (`supabaseUrl is required`)
+- **Issue resuelto**: Vercel fallaba durante el paso Next.js Build (SSG) intentando instanciar Supabase sin tener disponibles temporalmente las llaves públicas.
+- **Archivos Modificados**: 
+  - `admin-dashboard/services/supabaseClient.ts`: Implementación de fallbacks con cadenas vacías `|| ''` y bloqueo condicional del cliente.
+
+### 🛠️ FIX BACKEND: Error de Tipado en Fleet Module
+- **Issue resuelto**: El build de NestJS se interrumpía silenciosamente por una referencia a una propiedad antigua (`paidDate`).
+- **Archivos Modificados**:
+  - `backend/src/modules/fleet/fleet.service.ts`: Actualizado campo `paidDate` a la convención reciente `paidAt` vinculada a `validUntil`.
+
 ### 💳 FEATURE: Nómina Automática RD$500/Anuncio
 - **Issue resuelto**: El cálculo de pagos a choferes era manual y propenso a errores.
 - **Archivos modificados**:

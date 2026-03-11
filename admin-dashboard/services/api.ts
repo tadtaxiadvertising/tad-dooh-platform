@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -128,8 +128,8 @@ export const createAdvertiser = (data: any) => api.post('/advertisers', data).th
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
 export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
-export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
-export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/finance/export/campaigns.csv`;
+export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
+export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/campaigns.csv`;
 
 // Campaign Segmentation
 export const assignDriversToCampaign = (campaignId: string, data: { driverIds: string[]; targetAll: boolean }) => 

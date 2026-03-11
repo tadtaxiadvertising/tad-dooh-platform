@@ -1,7 +1,7 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-11T01:15:00-04:00
+> **Última Actualización**: 2026-03-11T01:30:00-04:00
 > **Sprint Actual**: Sprint 3 (Sprint 1 y 2 completados al 95%)
 
 ---
@@ -128,6 +128,7 @@
 | Leak de conexiones Prisma | 🔴 Alta | ✅ Mitigado (onModuleDestroy + `$disconnect()` + logging condicional) |
 | Sin HTTPS local para PWA/Service Worker | 🟡 Media | No aplica en dev; usar `ngrok` para staging |
 | BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
+| JWT validación vía red (latencia +200ms) | 🔴 Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
 
 ---
 

@@ -130,6 +130,7 @@
 | BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
 | JWT validación vía red (latencia +200ms) | 🔴 Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
 | Tablets morosas (Falta de pago RD$6k) | 🔴 Alta | ✅ Resuelto — `SubscriptionGuard` bloquea `/sync` si no hay pago activo |
+| Pago a Choferes (Auditabilidad) | 🟡 Media | ✅ Automatizado. Lógica de `PayrollPayment` con restricción de unicidad mensual implementada. RD$500/anuncio activo detectado por dispositivo. |
 
 ---
 

@@ -417,18 +417,19 @@ model Driver {
 // ============================================
 
 model PayrollPayment {
-  id           String   @id @default(cuid())
-  driverId     String   @map("driver_id")
-  amount       Float
-  periodMonth  Int      @map("period_month") // 1-12
-  periodYear   Int      @map("period_year")
-  status       String   @default("PENDING") // "PENDING", "PAID"
-  paidAt       DateTime? @map("paid_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  driverId      String   @map("driver_id")
+  amount        Float
+  month         Int      // 1-12
+  year          Int      // 2026
+  status        String   @default("PENDING") // PENDING, PAID
+  referenceNum  String?  @map("reference_num") // Bank transfer reference
+  paidAt        DateTime? @map("paid_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  driver       Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
-
-  @@unique([driverId, periodMonth, periodYear]) // Un solo pago por mes al chofer
+  @@unique([driverId, month, year]) // Evita pagar doble el mismo mes
   @@map("payroll_payments")
   @@index([driverId])
   @@index([status])

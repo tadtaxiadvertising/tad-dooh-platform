@@ -7,27 +7,22 @@ export class SubscriptionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const deviceId = request.headers['x-device-id'] || request.query.device_id || request.query.deviceId;
+    
+    // Extraer DeviceID de cabeceras o query params
+    const deviceId = request.headers['x-device-id'] || request.query.deviceId || request.body?.deviceId;
 
-    if (!deviceId) return true; // Si no hay ID, el middleware de Auth se encargará
+    if (!deviceId) return true; // El AuthGuard global se encarga si falta identificación
 
-    const driver = await this.prisma.driver.findFirst({
+    const sub = await this.prisma.subscription.findUnique({
       where: { deviceId: deviceId as string },
-      include: { subscriptions: true }
     });
 
-    if (!driver) {
-      throw new ForbiddenException('Dispositivo no vinculado a un chofer activo.');
-    }
-
-    // Si tiene suscripción marcada como pagada (Regla D - Sprint 2)
-    const hasActiveSubscription = driver.subscriptionPaid === true;
-
-    if (!hasActiveSubscription) {
+    // REGLA DE NEGOCIO: Si no existe suscripción o está vencida
+    if (!sub || sub.status !== 'ACTIVE' || new Date() > sub.validUntil) {
       throw new ForbiddenException({
-        error: 'SUBSCRIPTION_EXPIRED',
-        message: 'Acceso bloqueado. Pendiente pago suscripción anual RD$6,000.',
-        contact: 'Soporte TAD: +1-829-XXX-XXXX'
+        errorCode: 'SUBSCRIPTION_REQUIRED',
+        message: 'Acceso bloqueado: Pago de suscripción RD$6,000 pendiente.',
+        contact: 'soporte@tad.do'
       });
     }
 

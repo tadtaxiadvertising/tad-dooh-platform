@@ -33,7 +33,8 @@ export class DeviceController {
     return { success: true };
   }
 
-  @UseGuards(SubscriptionGuard) // Valida suscripción del chofer antes de entregar contenido
+  @Public()
+  @UseGuards(SubscriptionGuard) // Valida suscripción activa (RD$6,000 anual)
   @Post('sync')
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {

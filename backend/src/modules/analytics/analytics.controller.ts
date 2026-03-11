@@ -70,4 +70,12 @@ export class AnalyticsController {
   async getRecentPlays() {
     return this.analyticsService.getRecentPlays();
   }
+
+  @Public() // El celular del chofer no tiene el JWT del admin dashboard
+  @Post('external-gps')
+  @HttpCode(HttpStatus.OK)
+  async trackExternalGps(@Body() data: { deviceId: string; lat: number; lng: number; driverId?: string }) {
+    await this.analyticsService.updateDeviceLocationFromMobile(data);
+    return { success: true };
+  }
 }

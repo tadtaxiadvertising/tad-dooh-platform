@@ -15,13 +15,6 @@
       "src": "/api/(.*)",
       "dest": "backend/api/index.ts"
     },
-    {
-      "src": "/_next/(.*)",
-      "dest": "admin-dashboard/_next/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "admin-dashboard/$1"
-    }
+    { "handle": "filesystem" }
   ]
 }

@@ -2,7 +2,29 @@
 
 > **Propósito**: Registro cronológico de cada bug solucionado, cómo se resolvió y qué archivos se tocaron.  
 > Usar para dar contexto inmediato a cualquier agente nuevo sobre el historial de cambios.
-> **Última Actualización**: 2026-03-10T23:40:00-04:00
+> **Última Actualización**: 2026-03-11T00:02:00-04:00
+
+---
+
+## 📅 11 de Marzo, 2026
+
+### 🔧 FIX: Optimización de Prisma para Vercel Serverless (Riesgo #7)
+- **Síntoma**: Riesgo de agotamiento del pool de conexiones de PostgreSQL en invocaciones serverless concurrentes.
+- **Causa raíz**: El constructor de `PrismaService` no usaba logging condicional, generando ruido en producción.
+- **Solución**: Se añadió logging condicional (`['query', 'info', 'warn', 'error']` en dev, solo `['error']` en prod). El `onModuleDestroy` con `$disconnect()` ya existía.
+- **Archivos tocados**:
+  - `backend/src/modules/prisma/prisma.service.ts` (constructor optimizado)
+
+---
+
+### 🚀 FEATURE: SubscriptionGuard — Bloqueo de tablets por falta de pago
+- **Implementación**: Nuevo Guard `SubscriptionGuard` que intercepta el endpoint `/api/device/sync`.
+- **Lógica**: Busca el `Driver` asociado al `device_id` enviado por la tablet. Si `subscriptionPaid === false`, responde con `403 Forbidden` y un mensaje estructurado indicando `SUBSCRIPTION_EXPIRED`.
+- **Impacto**: Las tablets de choferes morosos no recibirán contenido publicitario hasta que se regularice el pago de RD$6,000/año.
+- **Archivos tocados**:
+  - `backend/src/modules/drivers/guards/subscription.guard.ts` (**NUEVO**)
+  - `backend/src/modules/device/device.controller.ts` (añadido `@UseGuards(SubscriptionGuard)` al endpoint `/sync`)
+- **Notas**: El guard usa `PrismaService` inyectado. `DeviceModule` ya importa `PrismaModule`, por lo que no requiere cambios adicionales en los módulos.
 
 ---
 

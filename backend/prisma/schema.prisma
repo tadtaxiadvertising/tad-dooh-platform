@@ -105,6 +105,7 @@ model Campaign {
   priority    Int      @default(0)
   targetImpressions Int @default(0) @map("target_impressions")
   budget      Float @default(0)
+  targetUrl   String? @map("target_url") // URL de destino para QR Scan redirect
   createdById String?  @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt      @map("updated_at")

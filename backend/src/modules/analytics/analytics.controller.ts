@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
 import { AnalyticsService } from './analytics.service';
 import { PlaybackEventDto } from './dto/playback-event.dto';
 import { Public } from '../auth/decorators/public.decorator';
@@ -6,6 +7,23 @@ import { Public } from '../auth/decorators/public.decorator';
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
+
+  // ============================================
+  // QR SCAN TRACKING — Redirect Proxy
+  // ============================================
+  @Public() // El celular del pasajero no requiere JWT
+  @Get('qr-scan')
+  async trackQrScan(
+    @Query('campaignId') campaignId: string,
+    @Query('deviceId') deviceId: string,
+    @Res() res: Response
+  ) {
+    // 1. Registrar el evento en segundo plano (no bloquea el redirect)
+    const targetUrl = await this.analyticsService.registerQrScan(campaignId, deviceId);
+
+    // 2. Redirigir al destino final de la marca
+    return res.redirect(HttpStatus.MOVED_PERMANENTLY, targetUrl);
+  }
 
   @Public() // Tablets send events without JWT
   @Post('event')

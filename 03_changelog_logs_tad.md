@@ -8,11 +8,11 @@
 
 ## 📅 11 de Marzo, 2026
 
-### 🛠️ FIX: Build Error TS2304 (Missing Param Decorator)
-- **Issue resuelto**: Fallo de despliegue en Vercel por referencia inexistente a `Param`.
+### 🛠️ FIX: Vercel Build Error (TS2304)
+- **Issue resuelto**: Fallo de compilación en producción por falta del import `Param` en el módulo de finanzas.
 - **Archivos modificados**:
-  - `backend/src/modules/finance/finance.controller.ts`: Se añadió `Param` al import de `@nestjs/common` y se estandarizó el uso de `@Res()`.
-- **Explicación técnica**: Durante la implementación del generador de facturas, se utilizó el decorador `@Param('id')` para identificar la campaña, pero el compilador de TypeScript falló al no encontrar la definición en el scope del archivo. Se corrigió el import para restaurar el pipeline de CI/CD.
+  - `backend/src/modules/finance/finance.controller.ts`: Se incluyó `Param` en los imports de `@nestjs/common`.
+- **Explicación técnica**: El decorador `@Param` fue implementado para el generador de facturas pero no se registró en la sección de imports del archivo, lo que provocó que el compilador de TypeScript en Vercel abortara el proceso de build. Se corrigió para permitir el auto-deploy.
 
 ---
 

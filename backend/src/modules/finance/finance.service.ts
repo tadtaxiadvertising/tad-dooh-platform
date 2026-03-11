@@ -161,7 +161,7 @@ export class FinanceService {
   /**
    * Generates a professional HTML invoice for a campaign.
    */
-  async getCampaignInvoice(campaignId: string) {
+  async generateInvoiceHtml(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {

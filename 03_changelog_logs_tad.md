@@ -28,6 +28,19 @@
 
 ---
 
+### 🚀 FEATURE: QR Scan Tracking con Redirect Proxy
+- **Implementación**: Nuevo endpoint público `GET /api/analytics/qr-scan?campaignId=X&deviceId=Y`.
+- **Flujo**: El código QR en la tablet apunta a la API de TAD. La API registra un evento `QR_SCAN` en `AnalyticsEvent` y redirige al pasajero (HTTP 301) a la `targetUrl` de la campaña.
+- **Schema**: Se añadió el campo `targetUrl` al modelo `Campaign` en Prisma (`npx prisma db push` ejecutado).
+- **Fallback**: Si no hay `targetUrl`, redirige a `https://tad.do`.
+- **Uso en tablet**: El QR se genera con la URL `https://tad-api.vercel.app/api/analytics/qr-scan?campaignId={id}&deviceId={tabletId}`.
+- **Archivos tocados**:
+  - `backend/prisma/schema.prisma` (campo `targetUrl` en Campaign)
+  - `backend/src/modules/analytics/analytics.controller.ts` (endpoint `qr-scan`)
+  - `backend/src/modules/analytics/analytics.service.ts` (método `registerQrScan`)
+
+---
+
 ## 📅 10 de Marzo, 2026
 
 ### 🔧 FIX: Dashboard apuntando a localhost en producción

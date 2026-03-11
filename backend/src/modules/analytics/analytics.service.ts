@@ -140,4 +140,39 @@ export class AnalyticsService {
       },
     });
   }
+
+  // ============================================
+  // QR SCAN TRACKING
+  // ============================================
+  async registerQrScan(campaignId: string, deviceId: string): Promise<string> {
+    const DEFAULT_URL = 'https://tad.do';
+
+    if (!campaignId || !deviceId) return DEFAULT_URL;
+
+    try {
+      // Buscamos la campaña para obtener su URL de destino
+      const campaign = await this.prisma.campaign.findUnique({
+        where: { id: campaignId },
+        select: { targetUrl: true },
+      });
+
+      // Registro del evento QR_SCAN (fire-and-forget pattern)
+      await this.prisma.analyticsEvent.create({
+        data: {
+          eventType: 'QR_SCAN',
+          campaignId,
+          deviceId,
+          eventData: JSON.stringify({ source: 'qr_redirect' }),
+          occurredAt: new Date(),
+        },
+      });
+
+      this.logger.log(`📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`);
+
+      return campaign?.targetUrl || DEFAULT_URL;
+    } catch (error) {
+      this.logger.error(`Error registrando QR scan: ${error.message}`);
+      return DEFAULT_URL;
+    }
+  }
 }

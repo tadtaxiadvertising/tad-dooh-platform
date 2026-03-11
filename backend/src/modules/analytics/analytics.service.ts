@@ -33,6 +33,8 @@ export class AnalyticsService {
         eventType: dto.eventType,
         timestamp: dto.timestamp ? new Date(dto.timestamp) : new Date(),
         occurredAt: dto.timestamp ? new Date(dto.timestamp) : new Date(),
+        lat: dto.lat,
+        lng: dto.lng,
         processed: false
       },
     });
@@ -46,6 +48,8 @@ export class AnalyticsService {
       eventType: dto.eventType,
       timestamp: dto.timestamp ? new Date(dto.timestamp) : new Date(),
       occurredAt: dto.timestamp ? new Date(dto.timestamp) : new Date(),
+      lat: dto.lat,
+      lng: dto.lng,
       processed: false
     }));
 

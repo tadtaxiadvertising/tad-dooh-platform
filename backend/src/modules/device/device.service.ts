@@ -167,6 +167,8 @@ export class DeviceService {
         videoId: dto.video_id,
         eventType: 'play_confirm',
         timestamp: new Date(dto.timestamp),
+        lat: dto.lat,
+        lng: dto.lng,
       },
     });
   }

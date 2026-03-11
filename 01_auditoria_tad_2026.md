@@ -149,7 +149,8 @@
 - [x] Bloqueo automático de tablets por falta de pago (SubscriptionGuard)
 - [x] Tracking de QR Scans con Redirect Proxy (atribución directa)
 - [x] Generador de Facturas HTML Print-Ready (Cero Costos)
-- [ ] Gestión de Zonas GPS (geo-fencing)
+- [x] Estructura GPS para Geo-fencing (Lat/Lng en PlaybackEvents)
+- [ ] Gestión de Zonas GPS (geo-fencing) - Lógica de filtrado en sync
 - [ ] Admin Alerts (batería < 15%)
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)

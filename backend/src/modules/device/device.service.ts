@@ -114,16 +114,18 @@ export class DeviceService {
       where: { deviceId },
     });
 
+    // GRACE PERIOD: Sin suscripción = acceso permitido (onboarding/piloto)
     if (!sub) {
-      this.logger.warn(`⛔ Device ${deviceId}: NO subscription found`);
-      return { blocked: true, reason: 'no_subscription' };
+      this.logger.log(`⚠️ Device ${deviceId}: Sin suscripción (grace period — acceso permitido).`);
+      return { blocked: false };
     }
 
-    if (sub.status !== 'ACTIVE') {
-      this.logger.warn(`⛔ Device ${deviceId}: subscription status is ${sub.status}`);
-      return { blocked: true, reason: 'inactive_subscription' };
+    // Suscripción activa
+    if (sub.status === 'ACTIVE' && sub.validUntil >= new Date()) {
+      return { blocked: false };
     }
 
+    // Suscripción expirada → bloquear
     if (sub.validUntil < new Date()) {
       this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${sub.validUntil.toISOString()}`);
       
@@ -133,6 +135,12 @@ export class DeviceService {
       });
 
       return { blocked: true, reason: 'payment_overdue' };
+    }
+
+    // Suscripción inactiva por otra razón
+    if (sub.status !== 'ACTIVE') {
+      this.logger.warn(`⛔ Device ${deviceId}: subscription status is ${sub.status}`);
+      return { blocked: true, reason: 'inactive_subscription' };
     }
 
     return { blocked: false };

@@ -8,8 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- Security Headers — Allows both localhost AND production Vercel endpoints -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https:; connect-src 'self' http://localhost:3000 https://tad-api.vercel.app https://tad-dooh-platform.vercel.app;">
+    <!-- Security Headers — Allows localhost, Vercel, AND Supabase Storage -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https: https://*.supabase.co; connect-src 'self' http://localhost:3000 https://tad-api.vercel.app https://tad-dooh-platform.vercel.app https://*.supabase.co; img-src 'self' data: https:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     
     <title>TAD Player - Taxi Advertising</title>
@@ -93,6 +93,8 @@
                 class="w-full h-full"
                 playsinline
                 preload="auto"
+                muted
+                autoplay
             ></video>
             
             <!-- Loading State -->
@@ -247,8 +249,12 @@
             config: {
                 loopEnabled: true,
                 analyticsEnabled: true,
-                watchdogEnabled: true
-            }
+                watchdogEnabled: true,
+                simulatorMode: !(/Android|iPhone|iPad/i.test(navigator.userAgent))
+            },
+            batteryLevel: 100,
+            lat: null,
+            lng: null
         };
 
         // ============================================
@@ -423,6 +429,8 @@
                 try {
                     this.showLoading();
                     
+                    // Ensure video is muted for autoplay policy
+                    this.video.muted = true;
                     this.video.src = video.url || video.src;
                     this.video.load();
                     
@@ -430,10 +438,14 @@
                     this.isPlaying = true;
                     this.retryCount = 0;
                     
+                    // Track campaignId from the media asset itself
+                    const campaignId = video.campaignId || state.currentCampaign?.id;
+                    
                     analytics.track('video_started', {
-                        campaignId: state.currentCampaign?.id,
+                        campaignId: campaignId,
                         mediaId: video.id,
-                        videoUrl: video.url
+                        videoUrl: video.url,
+                        filename: video.filename
                     });
                     
                     console.log('▶️ Playing:', video.filename || video.name || video.url);
@@ -458,12 +470,14 @@
                 console.log('✅ Video ended');
                 
                 const currentMedia = state.currentPlaylist[state.currentIndex];
+                const campaignId = currentMedia?.campaignId || state.currentCampaign?.id;
                 
                 // Track completion
                 analytics.track('video_completed', {
-                    campaignId: state.currentCampaign?.id,
+                    campaignId: campaignId,
                     mediaId: currentMedia?.id,
-                    duration: this.video.duration
+                    duration: this.video.duration,
+                    filename: currentMedia?.filename
                 });
 
                 // Send Playback Confirmation to backend for "EN VIVO" tracking
@@ -704,14 +718,20 @@
                     console.log(`🔄 Starting Delta Sync against ${CONFIG.SERVER_URL}...`);
                     const lastHash = state.lastSyncHash || '';
                     
-                    const syncResponse = await fetch(
-                        `${CONFIG.SERVER_URL}/api/device/sync?device_id=${encodeURIComponent(state.deviceId)}&last_hash=${encodeURIComponent(lastHash)}`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${state.authToken}`
-                            }
-                        }
-                    );
+                    const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/device/sync`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${state.authToken}`
+                        },
+                        body: JSON.stringify({
+                            deviceId: state.deviceId,
+                            lastHash: lastHash,
+                            batteryLevel: state.batteryLevel || 100,
+                            lat: state.lat,
+                            lng: state.lng
+                        })
+                    });
                     
                     if (!syncResponse.ok) {
                         throw new Error(`Sync failed: ${syncResponse.status}`);
@@ -798,7 +818,8 @@
                             result.message = 'Cache cleared successfully.';
                             break;
                         case 'FORCE_SYNC':
-                            result.message = 'Forcing sync ack...';
+                            result.message = 'Forcing sync...';
+                            await sync.performSync();
                             break;
                         case 'UPDATE_URL':
                             if (command.params.url) {
@@ -968,6 +989,25 @@
             async sendHeartbeat() {
                 if (!state.isOnline) return;
                 
+                // Get telemetry
+                if (navigator.getBattery) {
+                    const battery = await navigator.getBattery();
+                    state.batteryLevel = Math.floor(battery.level * 100);
+                }
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        state.lat = pos.coords.latitude;
+                        state.lng = pos.coords.longitude;
+                    }, null, { enableHighAccuracy: true });
+                }
+
+                // Simulator Mode fallback
+                if (state.config.simulatorMode && !state.lat) {
+                    state.lat = 18.4861 + (Math.random() - 0.5) * 0.01;
+                    state.lng = -69.9312 + (Math.random() - 0.5) * 0.01;
+                }
+                
                 try {
                     const response = await fetch(`${CONFIG.SERVER_URL}/api/device/heartbeat`, {
                         method: 'POST',
@@ -978,8 +1018,10 @@
                         body: JSON.stringify({
                             device_id: state.deviceId,
                             player_status: player.isPlaying ? 'playing' : 'idle',
-                            battery_level: 100,
+                            battery_level: state.batteryLevel,
                             storage_free: 'N/A',
+                            lat: state.lat,
+                            lng: state.lng,
                             timestamp: new Date().toISOString()
                         })
                     });

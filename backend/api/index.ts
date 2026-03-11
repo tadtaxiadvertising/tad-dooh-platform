@@ -15,7 +15,7 @@ const createNestServer = async () => {
   const adapter = new ExpressAdapter(expressApp);
   
   const app = await NestFactory.create(AppModule, adapter);
-  
+  app.enableCors({
     origin: true, // Echoes the origin header
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,

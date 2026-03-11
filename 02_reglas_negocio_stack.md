@@ -1,7 +1,7 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-03-11T01:15:00-04:00
+> **Última Actualización**: 2026-03-11T18:25:00-04:00
 
 ---
 
@@ -53,7 +53,7 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 ### Frontend (admin-dashboard)
 | Layer | Tecnología | Versión |
 |---|---|---|
-| Framework | Next.js (Pages Router) | 15.1.6 |
+| Framework | Next.js (Pages Router) | 15.1.7 |
 | UI Library | React | 19.0.0 |
 | Styling | Tailwind CSS + PostCSS | 4.0.0 |
 | Icons | lucide-react | Latest |
@@ -67,7 +67,7 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | Framework | NestJS | 10.x |
 | ORM | Prisma Client | 5.22.0 |
 | Auth Guard | Custom `SupabaseAuthGuard` | — |
-| File Upload | `@nestjs/platform-express` + Multer | — |
+| File Upload | Direct-to-Supabase Storage (Browser) | — |
 | Validation | `class-validator` + `ValidationPipe` | — |
 | Rate Limiting | `@nestjs/throttler` (100 req/min) | — |
 | CORS | Configured in `main.ts` + `api/index.ts` | — |

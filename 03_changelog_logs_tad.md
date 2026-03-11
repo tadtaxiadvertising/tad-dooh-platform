@@ -2,7 +2,37 @@
 
 > **Propósito**: Registro cronológico de cada bug solucionado, cómo se resolvió y qué archivos se tocaron.  
 > Usar para dar contexto inmediato a cualquier agente nuevo sobre el historial de cambios.
-> **Última Actualización**: 2026-03-11T01:15:00-04:00
+> **Última Actualización**: 2026-03-11T18:15:00-04:00
+
+---
+
+## 📅 11 de Marzo, 2026 (Tarde - Estabilización Crítica)
+
+### 🚀 ARCHITECTURAL FIX: Direct-to-Supabase Media Upload (Bypass Vercel 4.5MB Limit)
+- **Issue resuelto**: Las cargas de video fallaban con errores de red o CORS debido al límite físico de 4.5MB de las Vercel Serverless Functions. El backend de Nest intentaba procesar el video pero la conexión se cortaba antes.
+- **Solución implementada**: Se delegó la carga física del video al navegador del cliente (browser-side upload). 
+- **Archivos modificados**:
+  - `admin-dashboard/lib/supabase.ts` (**NUEVO**): Cliente Supabase para el frontend.
+  - `admin-dashboard/services/api.ts`: Refactorizado `uploadMedia` para usar `@supabase/supabase-js`. Ahora el frontend sube el archivo al bucket `campaign-videos` y solo envía la URL y metadatos al backend.
+  - `admin-dashboard/components/CampaignModal.tsx`: Actualizado para el nuevo flujo de subida.
+  - `admin-dashboard/pages/media/index.tsx`: Actualizado para usar la subida directa.
+- **Beneficio**: Subidas de hasta 50MB (o más, según config de Supabase) sin riesgo de timeouts en Vercel.
+
+### 🛡️ SECURITY: Upgrade Next.js to 15.1.7 (CVE-2025-66478)
+- **Acción**: Actualización de dependencia para cerrar vulnerabilidad de seguridad crítica detectada por Vercel.
+- **Archivos modificados**: `package.json` (raíz), `admin-dashboard/package.json`.
+
+### 🛠️ FIX: Vercel Deployment & Build Errors
+- **Issue 1 (Next.js Detection)**: Vercel no detectaba Next.js tras una limpieza agresiva del `package.json` raíz. 
+  - *Solución*: Se restauraron `next`, `react` y `react-dom` en la raíz como señal para Vercel.
+- **Issue 2 (Runtime Error)**: Error `Function Runtimes must have a valid version` en `vercel.json`.
+  - *Solución*: Se simplificó `vercel.json` eliminando el bloque `functions` experimental y manteniendo solo los `rewrites` estables para monorepo.
+- **Issue 3 (CORS Preflight)**: Fallos intermitentes en peticiones `OPTIONS` desde subdominios de preview.
+  - *Solución*: Se reforzó el handler manual de CORS en `backend/api/index.ts` con headers específicos y `Access-Control-Max-Age`.
+
+### 🖥️ DATA: 100 Tablets STI Santiago (Inventario)
+- **Acción**: Generación de 100 nuevos registros de hardware con nomenclatura `TADSTI-001` hasta `TADSTI-100`.
+- **Razón**: Asegurar disponibilidad de dispositivos para pruebas en la zona norte sin depender de registros manuales.
 
 ---
 

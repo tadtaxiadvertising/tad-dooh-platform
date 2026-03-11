@@ -16,18 +16,10 @@ const createNestServer = async () => {
   
   const app = await NestFactory.create(AppModule, adapter);
   
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Permitir localhost, el dominio oficial y subdominios de vercel (previews)
-      if (!origin || origin.includes('localhost') || origin.endsWith('.vercel.app') || origin === 'https://tad-dashboard.vercel.app') {
-        callback(null, true);
-      } else {
-        callback(null, true); // En desarrollo somos permisivos, en prod Vercel filtra
-      }
-    },
+    origin: true, // Echoes the origin header
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, Access-Control-Allow-Origin',
   });
 
   app.setGlobalPrefix('api');

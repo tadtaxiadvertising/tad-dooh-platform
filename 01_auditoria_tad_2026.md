@@ -153,6 +153,8 @@
 - [x] Estructura GPS para Geo-fencing (Lat/Lng en PlaybackEvents)
 - [x] Lógica de Geo-fencing (Filtrado por ciudad)
 - [x] Monitoreo de salud de hardware (Batería/GPS en tiempo real)
+- [x] Tracking de ubicación vía celular del chofer (Estrategia Mobile Gateway)
+- [x] Sincronización de telemetría externa hacia Device ID
 - [ ] Integración con WhatsApp API para alertas automáticas (Siguiente)
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)

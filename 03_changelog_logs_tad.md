@@ -8,6 +8,18 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🛰️ FEATURE: Mobile GPS Gateway (Chofer Tracking)
+- **Desafío**: Las tablets en los taxis a veces pierden conectividad o tienen GPS inestable, lo que impide ver la ubicación real en el dashboard.
+- **Solución**: Se implementó una PWA de "Check-In" para el chofer. Al escanear el QR de la tablet, el celular del chofer actúa como gateway enviando coordenadas GPS cada 60s.
+- **Backend**: Nuevo endpoint público `POST /api/analytics/external-gps` que actualiza el estado del dispositivo basándose en la telemetría del móvil.
+- **Dashboard**: Nueva página `/check-in` diseñada con estética premium para uso móvil.
+- **Archivos tocados**:
+  - `backend/src/modules/analytics/analytics.controller.ts` (endpoint `external-gps`)
+  - `backend/src/modules/analytics/analytics.service.ts` (lógica de actualización remota)
+  - `admin-dashboard/pages/check-in.tsx` (nueva PWA para choferes)
+
+---
+
 ### 📡 FEATURE: Geo-fencing & Device Telemetry
 - **Implementación**: Se transformó el proceso de sincronización en un canal bidireccional de telemetría y contenido inteligente.
 - **Geo-fencing**: Nueva lógica de filtrado `OR` (Ciudad/Global). Las tablets ahora solo descargan anuncios que coincidan con su ciudad base o sean de alcance nacional.

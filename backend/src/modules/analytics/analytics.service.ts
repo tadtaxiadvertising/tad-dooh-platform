@@ -179,4 +179,21 @@ export class AnalyticsService {
       return DEFAULT_URL;
     }
   }
+
+  // ============================================
+  // EXTERNAL MOBILE GPS GATEWAY
+  // ============================================
+  async updateDeviceLocationFromMobile(data: { deviceId: string; lat: number; lng: number }) {
+    this.logger.log(`🛰️ Mobile GPS Update for Device: ${data.deviceId} (${data.lat}, ${data.lng})`);
+    
+    return this.prisma.device.update({
+      where: { deviceId: data.deviceId },
+      data: {
+        lastLat: data.lat,
+        lastLng: data.lng,
+        lastSync: new Date(),
+        isOnline: true // Marcamos como online porque el chofer está activo
+      },
+    });
+  }
 }

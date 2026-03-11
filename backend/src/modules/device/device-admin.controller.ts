@@ -1,4 +1,4 @@
-import { Controller, Get, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('devices')
@@ -55,6 +55,41 @@ export class DeviceAdminController {
     }
 
     return { success: true, message: 'Campaña removida del dispositivo exitosamente' };
+  }
+
+  // Crear un nuevo dispositivo manualmente
+  @Post()
+  async createDevice(@Body() data: { deviceId: string, taxiNumber?: string, city?: string }) {
+    if (!data.deviceId) throw new BadRequestException('ID de dispositivo (hardware) es obligatorio');
+    
+    // Check if hardware ID already exists
+    const existing = await this.prisma.device.findUnique({ where: { deviceId: data.deviceId } });
+    if (existing) throw new BadRequestException(`El ID ${data.deviceId} ya está registrado`);
+
+    return this.prisma.device.create({
+      data: {
+        deviceId: data.deviceId,
+        taxiNumber: data.taxiNumber,
+        city: data.city || 'Santo Domingo',
+        status: 'ACTIVE',
+      }
+    });
+  }
+
+  // Actualizar datos de un dispositivo
+  @Put(':id')
+  async updateDevice(
+    @Param('id') id: string,
+    @Body() data: { taxiNumber?: string, city?: string, status?: string }
+  ) {
+    return this.prisma.device.update({
+      where: { id },
+      data: {
+        taxiNumber: data.taxiNumber,
+        city: data.city,
+        status: data.status,
+      }
+    });
   }
 
   // Eliminar un dispositivo completamente

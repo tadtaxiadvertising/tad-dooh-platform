@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { getDevices } from '../../services/api';
-import { Tablet, Search, Wifi, WifiOff, Battery, HardDrive, Clock, RefreshCcw, AlertTriangle, CheckCircle2, Server } from 'lucide-react';
+import { Tablet, Search, Wifi, WifiOff, Battery, HardDrive, Clock, RefreshCcw, AlertTriangle, CheckCircle2, Server, Plus, Edit2 } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
+import DeviceModal from '../../components/DeviceModal';
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'healthy' | 'warning' | 'critical'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<any>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -60,13 +63,22 @@ export default function DevicesPage() {
             Estado técnico del hardware desplegado. Batería, almacenamiento, versión de firmware y salud general de cada unidad en la red TAD.
           </p>
         </div>
-        <button
-          onClick={loadData}
-          className="group flex gap-2 items-center bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-all active:scale-95 shadow-lg"
-        >
-          <RefreshCcw className={clsx("h-5 w-5 text-tad-yellow", loading && "animate-spin")} />
-          Actualizar
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setSelectedDevice(null); setIsModalOpen(true); }}
+            className="flex gap-2 items-center bg-tad-yellow hover:bg-tad-yellow/90 text-black font-black py-3 px-6 rounded-xl transition-all active:scale-95 shadow-lg shadow-tad-yellow/10"
+          >
+            <Plus className="h-5 w-5" />
+            Nueva Pantalla
+          </button>
+          <button
+            onClick={loadData}
+            className="group flex gap-2 items-center bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-all active:scale-95 shadow-lg"
+          >
+            <RefreshCcw className={clsx("h-5 w-5 text-tad-yellow", loading && "animate-spin")} />
+            Actualizar
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -147,11 +159,19 @@ export default function DevicesPage() {
                     <p className="text-xs font-mono font-bold text-tad-yellow">{id}</p>
                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Placa: {plate}</p>
                   </div>
-                  <div className={clsx(
-                    'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider',
-                    device.status === 'online' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'
-                  )}>
-                    {device.status === 'online' ? '● Online' : '○ Offline'}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setSelectedDevice(device); setIsModalOpen(true); }}
+                      className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <div className={clsx(
+                      'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider h-fit',
+                      device.status === 'online' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'
+                    )}>
+                      {device.status === 'online' ? '● Online' : '○ Offline'}
+                    </div>
                   </div>
                 </div>
 
@@ -192,6 +212,13 @@ export default function DevicesPage() {
           })
         )}
       </div>
+
+      <DeviceModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadData}
+        device={selectedDevice}
+      />
     </div>
   );
 }

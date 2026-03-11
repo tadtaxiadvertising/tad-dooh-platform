@@ -143,6 +143,8 @@ export const getTabletPlaylist = (deviceId: string) => api.get(`/campaigns/table
 
 // Delete operations
 export const deleteCampaign = (id: string) => api.delete(`/campaigns/${id}`).then(res => res.data);
+export const createDevice = (data: any) => api.post('/devices', data).then(res => res.data);
+export const updateDevice = (id: string, data: any) => api.put(`/devices/${id}`, data).then(res => res.data);
 export const deleteDevice = (deviceId: string) => api.delete(`/devices/${deviceId}`).then(res => res.data);
 
 // Device Profile (full info with driver + campaigns)

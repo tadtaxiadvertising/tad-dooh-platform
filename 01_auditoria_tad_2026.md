@@ -118,6 +118,9 @@
 
 ## ⚠️ 6. RIESGOS IDENTIFICADOS
 
+| Riesgo | Severidad | Estado |
+|---|---|---|
+| Inestabilidad de Handlers Serverless | Alta | ✅ Mitigado con CORS-First Handler |
 | Bloqueo CORS en Producción | 🔴 Crítica | ✅ Resuelto con Header Injection en Vercel |
 | Videos grandes > 50MB (Vercel limit) | 🟡 Media | Supabase Storage como intermediario |
 | Muerte de tablet por batería | 🟡 Media | ✅ Mitigado con Telemetry Tracking |

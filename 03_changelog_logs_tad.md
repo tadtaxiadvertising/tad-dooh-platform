@@ -18,6 +18,16 @@
 
 ---
 
+### 🔒 FEATURE: JWT Local Validation (Upgrade AuthModule)
+- **Issue resuelto**: El `SupabaseAuthGuard` hacía una llamada HTTP a `supabase.auth.getUser()` por cada request del dashboard, añadiendo ~200ms de latencia y consumiendo el rate limit de Supabase.
+- **Archivos modificados**:
+  - `backend/src/modules/auth/strategies/supabase.strategy.ts`: Migrado de `passport-custom` a `passport-jwt` con validación local usando `SUPABASE_JWT_SECRET`.
+  - `backend/src/modules/auth/guards/supabase-auth.guard.ts`: Ahora extiende `AuthGuard('jwt')` de Passport, eliminando la dependencia en `SupabaseService`.
+  - `backend/src/modules/auth/auth.module.ts`: Consolidado en una única estrategia (`SupabaseStrategy`), uso de `SUPABASE_JWT_SECRET` como secreto primario.
+- **Explicación técnica**: La firma de los JWTs de Supabase puede validarse matemáticamente usando `SUPABASE_JWT_SECRET`, sin necesidad de llamadas de red. Esto reduce la latencia de cada request del dashboard en ~200ms y elimina el riesgo de rate limiting en el Free Tier de Supabase. La variable `SUPABASE_JWT_SECRET` ya estaba configurada en `.env` y en Vercel.
+
+---
+
 ### 🔧 FIX: Chart Render Crash (width -1) y Vercel Build Warning
 - **Issue resuelto**: El dashboard crasheaba al renderizar gráficos (Recharts) debido a dimensiones inválidas durante el montaje y advertencias de Vercel por el archivo `vercel.json` en el frontend.
 - **Archivos modificados**:

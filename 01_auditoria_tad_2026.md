@@ -122,7 +122,7 @@
 |---|---|---|
 | DB en Supabase remota (latencia en dev local) | 🟡 Media | Mitigado con `directUrl` puerto 5432 |
 | Videos grandes > 50MB (Vercel limit) | 🟡 Media | Supabase Storage como intermediario |
-| Connection pooling en Vercel serverless | 🔴 Alta | Mitigado con `onModuleDestroy` + `prisma.$disconnect()` |
+| Connection pooling en Vercel serverless | 🔴 Alta | ✅ Mitigado con `onModuleDestroy` + `$disconnect()` + logging condicional |
 | Sin HTTPS local para PWA/Service Worker | 🟡 Media | No aplica en dev; usar `ngrok` para staging |
 | BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
 
@@ -146,6 +146,7 @@
 - [x] Módulo de Anunciantes conectado a data real
 - [x] Autenticación Supabase Auth (migrado de JWT local)
 - [x] Targeting por chofer (many-to-many)
+- [x] Bloqueo automático de tablets por falta de pago (SubscriptionGuard)
 - [ ] Generador de Facturas (PDF mensual)
 - [ ] Gestión de Zonas GPS (geo-fencing)
 - [ ] Admin Alerts (batería < 15%)

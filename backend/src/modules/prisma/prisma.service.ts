@@ -6,8 +6,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    // Aquí puedes agregar logs para ver los queries en modo debug si lo deseas
-    super();
+    super({
+      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+    });
   }
 
   async onModuleInit() {
@@ -20,9 +21,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
   }
 
+  // Crítico para Vercel: Cerramos la conexión al terminar la ejecución de la función lambda
   async onModuleDestroy() {
     this.logger.warn('Cerrando conexión a Supabase (Serverless Teardown)...');
     await this.$disconnect();
   }
 }
-

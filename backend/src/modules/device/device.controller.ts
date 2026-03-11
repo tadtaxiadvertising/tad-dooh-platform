@@ -1,9 +1,10 @@
-import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { SubscriptionGuard } from '../drivers/guards/subscription.guard';
 
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
@@ -31,6 +32,7 @@ export class DeviceController {
     return { success: true };
   }
 
+  @UseGuards(SubscriptionGuard) // Valida suscripción del chofer antes de entregar contenido
   @Get('sync')
   async sync(
     @Query('device_id') deviceId: string,

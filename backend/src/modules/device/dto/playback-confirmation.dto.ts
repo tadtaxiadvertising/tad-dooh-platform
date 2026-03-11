@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 
 export class PlaybackConfirmationDto {
   @IsString()
@@ -12,4 +12,12 @@ export class PlaybackConfirmationDto {
   @IsString()
   @IsNotEmpty()
   timestamp: string;
+
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
 }

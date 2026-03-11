@@ -8,6 +8,18 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🛰️ FEATURE: Estructura GPS para Geo-fencing
+- **Implementación**: Se añadieron campos de coordenadas (`lat`, `lng`) a los modelos `PlaybackEvent` e `AnalyticsEvent` para rastrear la ubicación exacta de cada anuncio reproducido.
+- **API**: Actualizado el DTO `PlaybackConfirmationDto` para aceptar coordenadas opcionales desde las tablets.
+- **Backend**: Los servicios de `Device` y `Analytics` ahora capturan y persisten la data geográfica recibida.
+- **Archivos tocados**:
+  - `backend/prisma/schema.prisma` (campos `lat`, `lng` añadidos)
+  - `backend/src/modules/device/dto/playback-confirmation.dto.ts` (DTO actualizado)
+  - `backend/src/modules/device/device.service.ts` (registro de coordenadas)
+  - `backend/src/modules/analytics/analytics.service.ts` (registro de coordenadas en eventos)
+
+---
+
 ### 🚀 FEATURE: Generador de Facturas HTML Print-Ready
 - **Implementación**: Nuevo sistema de facturación profesional que genera documentos HTML con estilos premium listos para imprimir a PDF.
 - **Lógica**: Calcula automáticamente el subtotal basado en los meses de duración de la campaña (RD$1,500/mes) e incluye el cálculo de ITBIS (18%).

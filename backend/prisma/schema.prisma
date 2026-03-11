@@ -229,6 +229,8 @@ model AnalyticsEvent {
   mediaId     String?  @map("media_id")
   eventType   String   @map("event_type")
   eventData   String?    @map("event_data")
+  lat         Float?     // Latitud
+  lng         Float?     // Longitud
   timestamp   DateTime @default(now())
   occurredAt  DateTime @map("occurred_at")
   receivedAt  DateTime @default(now()) @map("received_at")
@@ -337,6 +339,8 @@ model PlaybackEvent {
   deviceId   String   @map("device_id")
   eventType  String   @map("event_type")
   videoId    String   @map("video_id")
+  lat        Float?   // Latitud para Geo-fencing
+  lng        Float?   // Longitud para Geo-fencing
   timestamp  DateTime @default(now())
 
   device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)

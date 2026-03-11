@@ -1,8 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
+  private readonly logger = new Logger(SubscriptionGuard.name);
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -17,10 +18,17 @@ export class SubscriptionGuard implements CanActivate {
       where: { deviceId: deviceId as string },
     });
 
-    // REGLA DE NEGOCIO: Si no existe suscripción o está vencida
-    if (!sub || sub.status !== 'ACTIVE' || new Date() > sub.validUntil) {
+    // GRACE PERIOD: Si no hay suscripción registrada, permitir acceso (onboarding/piloto)
+    if (!sub) {
+      this.logger.warn(`⚠️ Device ${deviceId}: Sin suscripción. Acceso permitido (grace period).`);
+      return true;
+    }
+
+    // BLOQUEO: Solo si la suscripción existe Y está expirada
+    if (sub.status === 'EXPIRED' || (sub.validUntil && new Date() > sub.validUntil)) {
+      this.logger.warn(`⛔ Device ${deviceId}: Suscripción vencida. Bloqueando.`);
       throw new ForbiddenException({
-        errorCode: 'SUBSCRIPTION_REQUIRED',
+        errorCode: 'SUBSCRIPTION_EXPIRED',
         message: 'Acceso bloqueado: Pago de suscripción RD$6,000 pendiente.',
         contact: 'soporte@tad.do'
       });

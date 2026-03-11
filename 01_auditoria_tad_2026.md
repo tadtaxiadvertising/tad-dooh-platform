@@ -1,8 +1,8 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-11T02:30:00-04:00
-> **Sprint Actual**: Sprint 3 (Sprint 2 completado al 100%)
+> **Última Actualización**: 2026-03-11T18:20:00-04:00
+> **Sprint Actual**: Sprint 3 (Sistemas de Calle e Inventario)
 
 ---
 
@@ -14,7 +14,7 @@
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  [Admin Dashboard]       [API Backend]       [Tablet PWA]    │
-│   Next.js 15 (React 19)   NestJS 10           HTML + SW     │
+│   Next.js 15.1.7 (React 19) NestJS 10           HTML + SW     │
 │   Vercel (tad-dashboard)   Vercel (tad-api)    FullyKiosk    │
 │        │                      │                    │         │
 │        └──────────┬───────────┘                    │         │
@@ -31,7 +31,7 @@
 | **API Backend** | NestJS 10 / Prisma 5 / Express | https://tad-api.vercel.app | ✅ Operativo |
 | **Tablet Player** | PWA (HTML + Service Worker + Cache API) | Carga local vía FullyKiosk | ✅ Funcional |
 | **Base de Datos** | Supabase PostgreSQL (us-west-2) | Pool: puerto 6543 / Direct: 5432 | ✅ Conectada |
-| **Storage** | Supabase Storage (bucket: `campaign-videos`) | Via Supabase SDK | ✅ Funcional |
+| **Storage** | Supabase Storage (bucket: `campaign-videos`) | Via Browser-Direct Upload | ✅ Operativo |
 | **Auth** | Supabase Auth (email/password) | Via Supabase SDK | ✅ Funcional |
 
 ---
@@ -51,7 +51,7 @@
 | `/finance` | Ingresos, nómina, exportaciones CSV | ✅ Funcional | Liquidación automática RD$500/anuncio |
 | `/analytics` | Inteligencia: top taxis, plays/hora | ✅ Funcional | Propagaciones recientes (live feed) |
 | `/media` | Galería de archivos subidos | ✅ Operativo | Previsualización vinculada a Supabase Storage |
-| `/devices` | Inventario técnico de hardware | 🏗️ Mockup | Pendiente integración |
+| `/devices` | Inventario técnico de hardware (STI/SDQ) | ✅ Funcional | CRUD Manual Completo |
 
 ---
 
@@ -107,9 +107,10 @@
 ## 📊 5. ESTADO DE LA BASE DE DATOS
 
 ### Data Actual en Producción
-- **13 Choferes** registrados (nomenclatura TAD-XXXX, data real dominicana).
-- **10 Anunciantes** (marcas top de SDQ/STI).
-- **Dispositivos** vinculados a choferes via `driver.deviceId → device.deviceId`.
+- **Choferes**: 13 registrados.
+- **Anunciantes**: 10 registrados.
+- **Dispositivos**: 100 tablets para Santiago (STI) sincronizadas.
+- **Sincronización**: driver.deviceId → device.deviceId.
 
 ### Modelos Prisma Principales
 `User`, `Device`, `Campaign`, `Driver`, `Advertiser`, `Subscription`, `Media`, `MediaAsset`, `Video`, `PlaybackEvent`, `DeviceCommand`, `DeviceHeartbeat`, `AnalyticsEvent`, `CampaignMetric`, `DeviceCampaign`, `PlaylistItem`, `Playlist`, `Fleet`.

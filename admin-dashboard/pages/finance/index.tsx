@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl, getInvoiceUrl } from '../../services/api';
+import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl, getInvoiceUrl, getAutoPayroll, processPayrollPayment } from '../../services/api';
 import { 
   Wallet, 
   CarFront, 
@@ -17,8 +17,9 @@ import {
 import clsx from 'clsx';
 
 export default function FinancePage() {
-  const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns'>('payroll');
+  const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns' | 'auto-payroll'>('auto-payroll');
   const [payrollData, setPayrollData] = useState<any>(null);
+  const [autoPayrollData, setAutoPayrollData] = useState<any[]>([]);
   const [campaignData, setCampaignData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,9 @@ export default function FinancePage() {
       if (activeTab === 'payroll') {
         const data = await getDriverPayroll();
         setPayrollData(data);
+      } else if (activeTab === 'auto-payroll') {
+        const data = await getAutoPayroll();
+        setAutoPayrollData(data);
       } else {
         const data = await getCampaignBilling();
         setCampaignData(data);
@@ -79,11 +83,23 @@ export default function FinancePage() {
             <Receipt className="w-4 h-4" />
             Facturación Marcas
           </button>
+          <button 
+            onClick={() => setActiveTab('auto-payroll')}
+            className={clsx(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              activeTab === 'auto-payroll' ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
+            )}
+          >
+            <Zap className="w-4 h-4" />
+            Liquidación
+          </button>
         </div>
       </div>
 
       {activeTab === 'payroll' ? (
         <PayrollView data={payrollData} loading={loading} error={error} />
+      ) : activeTab === 'auto-payroll' ? (
+        <AutoPayrollView data={autoPayrollData} loading={loading} onPay={() => loadData()} />
       ) : (
         <CampaignBillingView data={campaignData} loading={loading} error={error} />
       )}
@@ -323,5 +339,83 @@ function LoadingRows({ cols }: { cols: number }) {
         </tr>
       ))}
     </>
+  );
+}
+
+function AutoPayrollView({ data, loading, onPay }: any) {
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleRegisterPayment = async (driverId: string) => {
+    if (!confirm('¿Seguro que desea registrar este pago para el periodo actual?')) return;
+    
+    setProcessingId(driverId);
+    try {
+      const now = new Date();
+      await processPayrollPayment({
+        driverId,
+        month: now.getMonth() + 1,
+        year: now.getFullYear()
+      });
+      alert('Pago registrado con éxito.');
+      onPay();
+    } catch (e) {
+      alert('Error registrando el pago. Es posible que ya exista un pago para este periodo.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+      <div className="bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-black/80 border-b border-white/5">
+            <tr className="text-[#fad400]">
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Chofer</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Anuncios Activos</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Monto a Pagar</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {loading ? (
+              <LoadingRows cols={4} />
+            ) : data.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-10 text-center text-zinc-500 italic">No hay choferes vinculados a dispositivos actualmente.</td>
+              </tr>
+            ) : data.map((item: any) => (
+              <tr key={item.driverId} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                <td className="px-6 py-5 text-white font-bold">{item.driverName}</td>
+                <td className="px-6 py-5 text-white text-center font-mono">
+                  <span className="bg-zinc-900 px-3 py-1 rounded-lg border border-white/5">
+                    {item.activeAds}
+                  </span>
+                </td>
+                <td className="px-6 py-5 text-[#fad400] font-black text-right text-lg">
+                  RD$ {item.amountDue.toLocaleString()}
+                </td>
+                <td className="px-6 py-5 text-center">
+                  <button 
+                    disabled={processingId === item.driverId}
+                    onClick={() => handleRegisterPayment(item.driverId)}
+                    className="bg-tad-yellow text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight hover:bg-yellow-500 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {processingId === item.driverId ? 'Procesando...' : 'Registrar Pago'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="flex items-center gap-4 bg-zinc-900/30 p-4 rounded-2xl border border-white/5">
+        <AlertTriangle className="w-5 h-5 text-tad-yellow flex-shrink-0" />
+        <p className="text-[10px] text-zinc-400 leading-relaxed">
+          <strong>Regla de Negocio:</strong> El monto se calcula multiplicando el número de campañas con estado <span className="text-tad-yellow">"ACTIVE"</span> vinculadas al dispositivo del chofer por un monto base de <span className="text-white">RD$ 500.00</span>. Los pagos solo pueden registrarse una vez por mes por cada chofer.
+        </p>
+      </div>
+    </div>
   );
 }

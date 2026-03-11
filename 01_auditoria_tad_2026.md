@@ -164,7 +164,7 @@
 - [ ] Dashboard analytics en tiempo real
 - [ ] Alertas SMS/WhatsApp para choferes
 - [ ] Integración con pasarela de pago
-- [ ] Módulo de Nómina (RD$500/anuncio por taxi)
+- [x] Módulo de Nómina (RD$500/anuncio por taxi)
 - [ ] Mapa de Calor de Reproducciones (Geo-fencing data)
 
 ---

@@ -322,6 +322,71 @@ export class FinanceService {
   }
 
   /**
+   * Calculates the current payroll for all drivers based on active ads.
+   * Logic: RD$500 per active campaign on the driver's device.
+   */
+  async calculateCurrentPayroll() {
+    this.logger.log('Calculating current payroll for all drivers');
+
+    const drivers = await this.prisma.driver.findMany({
+      include: {
+        device: {
+          include: {
+            campaigns: {
+              where: {
+                campaign: {
+                  status: 'ACTIVE'
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const payroll = drivers.map(driver => {
+      const activeAdsCount = driver.device ? driver.device.campaigns.length : 0;
+      const amountDue = activeAdsCount * 500;
+
+      return {
+        driverId: driver.id,
+        driverName: driver.fullName,
+        activeAds: activeAdsCount,
+        amountDue: amountDue,
+        currency: 'DOP'
+      };
+    });
+
+    return payroll;
+  }
+
+  /**
+   * Marks a payroll period as paid for a specific driver.
+   */
+  async markAsPaid(driverId: string, month: number, year: number) {
+    this.logger.log(`Marking payroll as PAID for driver ${driverId} for period ${month}/${year}`);
+
+    // Re-calculate to ensure accuracy at the moment of payment
+    const payrollData = await this.calculateCurrentPayroll();
+    const driverEntry = payrollData.find(p => p.driverId === driverId);
+
+    if (!driverEntry) {
+      throw new Error('Driver not found in current payroll calculation');
+    }
+
+    return this.prisma.payrollPayment.create({
+      data: {
+        driverId,
+        amount: driverEntry.amountDue,
+        periodMonth: month,
+        periodYear: year,
+        status: 'PAID',
+        paidAt: new Date()
+      }
+    });
+  }
+
+  /**
    * Flattens JSON data to a CSV string.
    */
   generateCSV(data: any[]) {

@@ -8,6 +8,16 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🚀 FEATURE: Módulo de Nómina Automática
+- **Issue resuelto**: Necesidad de calcular pagos a choferes (RD$500/anuncio) de forma centralizada.
+- **Archivos modificados**:
+  - `prisma/schema.prisma`: Añadido modelo `PayrollPayment` para histórico de pagos.
+  - `backend/src/modules/finance/finance.service.ts`: Lógica de cálculo `activeAds * 500`.
+  - `admin-dashboard/pages/finance/index.tsx`: Nueva interfaz de gestión de nómina ("Liquidación").
+- **Explicación técnica**: Se implementó un motor de liquidación que cruza la tabla de `Drivers` con las `Campaigns` activas en sus `Devices`. Esto permite al administrador ver en tiempo real cuánto debe pagar a cada chofer al final del mes y registrar el pago en la base de datos con un constraint de unicidad mensual.
+
+---
+
 ### 🛠️ FIX: Vercel Build Error (TS2304)
 - **Issue resuelto**: Fallo de compilación en producción por falta del import `Param` en el módulo de finanzas.
 - **Archivos modificados**:

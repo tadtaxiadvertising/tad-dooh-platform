@@ -65,7 +65,7 @@
 | `DriversModule` | `drivers.controller.ts` | `GET /`, `POST /`, `PUT /:id/subscription`, `/check-access` | ✅ Funcional |
 | `AdvertisersModule` | `advertisers.controller.ts` | `GET /`, `POST /` | ✅ Funcional |
 | `MediaModule` | `media.controller.ts` | `GET /`, `POST /upload`, `GET /:id/status` | ✅ Funcional |
-| `FinanceModule` | `finance.controller.ts` | `/report/payroll`, `/report/campaigns`, `/simulate-payment`, `/export/*` | ✅ Funcional |
+| `FinanceModule` | `finance.controller.ts` | `/report/payroll`, `/report/campaigns`, `/simulate-payment`, `/export/*`, **`/invoice/:id`** | ✅ Funcional |
 | `AnalyticsModule` | `analytics.controller.ts` | `/top-taxis`, `/hourly`, `/recent-plays`, **`/qr-scan`** | ✅ Funcional |
 | `DeviceModule` | `device.controller.ts` | `/sync`, `/heartbeat`, `/command/:id/ack`, `/:id/profile`, `/:id/campaigns` | ✅ Funcional |
 | `AssetsModule` | `assets.controller.ts` | Assets management | ✅ Funcional |
@@ -148,7 +148,7 @@
 - [x] Targeting por chofer (many-to-many)
 - [x] Bloqueo automático de tablets por falta de pago (SubscriptionGuard)
 - [x] Tracking de QR Scans con Redirect Proxy (atribución directa)
-- [ ] Generador de Facturas (PDF mensual)
+- [x] Generador de Facturas HTML Print-Ready (Cero Costos)
 - [ ] Gestión de Zonas GPS (geo-fencing)
 - [ ] Admin Alerts (batería < 15%)
 

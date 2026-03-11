@@ -70,4 +70,14 @@ export class FinanceController {
     
     return res.send(csvStr);
   }
+
+  @Get('invoice/:id')
+  async getInvoiceHtml(@Param('id') id: string, @Response() res) {
+    const html = await this.financeService.getCampaignInvoice(id);
+    if (!html) {
+      return res.status(404).send('Campaign not found');
+    }
+    res.set('Content-Type', 'text/html');
+    return res.send(html);
+  }
 }

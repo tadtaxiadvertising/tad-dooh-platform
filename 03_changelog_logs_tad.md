@@ -8,6 +8,18 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🚀 FEATURE: Generador de Facturas HTML Print-Ready
+- **Implementación**: Nuevo sistema de facturación profesional que genera documentos HTML con estilos premium listos para imprimir a PDF.
+- **Lógica**: Calcula automáticamente el subtotal basado en los meses de duración de la campaña (RD$1,500/mes) e incluye el cálculo de ITBIS (18%).
+- **Dashboard**: Se añadió un botón "Factura" en la vista de finanzas que abre la factura en una nueva pestaña.
+- **Archivos tocados**:
+  - `backend/src/modules/finance/finance.service.ts` (lógica de cálculo + template HTML)
+  - `backend/src/modules/finance/finance.controller.ts` (endpoint `/invoice/:id`)
+  - `admin-dashboard/services/api.ts` (helper `getInvoiceUrl`)
+  - `admin-dashboard/pages/finance/index.tsx` (botón de acción en la tabla)
+
+---
+
 ### 🔧 FIX: Optimización de Prisma para Vercel Serverless (Riesgo #7)
 - **Síntoma**: Riesgo de agotamiento del pool de conexiones de PostgreSQL en invocaciones serverless concurrentes.
 - **Causa raíz**: El constructor de `PrismaService` no usaba logging condicional, generando ruido en producción.

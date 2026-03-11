@@ -8,6 +8,20 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 📡 FEATURE: Geo-fencing & Device Telemetry
+- **Implementación**: Se transformó el proceso de sincronización en un canal bidireccional de telemetría y contenido inteligente.
+- **Geo-fencing**: Nueva lógica de filtrado `OR` (Ciudad/Global). Las tablets ahora solo descargan anuncios que coincidan con su ciudad base o sean de alcance nacional.
+- **Salud del Dispositivo**: El endpoint `/sync` (ahora `POST`) captura nivel de batería y coordenadas GPS en tiempo real.
+- **Alertas**: Implementado log preventivo para niveles de batería críticos (<15%) para reducir downtime de hardware.
+- **Archivos tocados**:
+  - `prisma/schema.prisma` (campos `city`, `batteryLevel`, `lastLat/Lng` en Device; `targetCity` en Campaign)
+  - `backend/src/modules/device/dto/sync-device.dto.ts` (nuevo DTO de telemetría)
+  - `backend/src/modules/device/device.controller.ts` (endpoint `/sync` migrado a POST)
+  - `backend/src/modules/device/device.service.ts` (lógica de actualización de salud y filtrado)
+  - `backend/src/modules/campaign/campaign.service.ts` (filtrado por `targetCity`)
+
+---
+
 ### 🛰️ FEATURE: Estructura GPS para Geo-fencing
 - **Implementación**: Se añadieron campos de coordenadas (`lat`, `lng`) a los modelos `PlaybackEvent` e `AnalyticsEvent` para rastrear la ubicación exacta de cada anuncio reproducido.
 - **API**: Actualizado el DTO `PlaybackConfirmationDto` para aceptar coordenadas opcionales desde las tablets.

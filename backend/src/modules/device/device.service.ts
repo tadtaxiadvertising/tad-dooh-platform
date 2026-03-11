@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
+import { SyncDeviceDto } from './dto/sync-device.dto';
 import { CampaignService } from '../campaign/campaign.service';
 
 const MAX_SLOTS_PER_DEVICE = 15;
@@ -173,16 +174,24 @@ export class DeviceService {
     });
   }
 
-  async syncDeviceCampaigns(deviceId: string, lastHash?: string) {
-    if (deviceId) {
-      await this.prisma.device.updateMany({
-        where: { deviceId },
-        data: { 
-          lastSync: new Date(), 
-          lastSeen: new Date(),
-          lastOnline: new Date()
-        },
-      });
+  async syncDeviceCampaigns(dto: SyncDeviceDto) {
+    const { deviceId, lat, lng, batteryLevel, lastHash } = dto;
+
+    // 1. Update Telemetry & Health
+    const device = await this.prisma.device.update({
+      where: { deviceId },
+      data: {
+        lastLat: lat,
+        lastLng: lng,
+        batteryLevel: batteryLevel,
+        lastSync: new Date(),
+        isOnline: true,
+      },
+    });
+
+    // 2. Alert Logic (Internal Log)
+    if (batteryLevel !== undefined && batteryLevel < 15) {
+      this.logger.warn(`🚨 [CRITICAL_BATTERY] Device ${deviceId} at ${batteryLevel}%`);
     }
 
     const { blocked, reason } = await this.checkSubscriptionStatus(deviceId);
@@ -216,7 +225,9 @@ export class DeviceService {
       });
     }
 
-    const payload = await this.campaignService.getActiveSyncVideos(deviceId);
+    // Capture device city for geofencing
+    const deviceCity = device.city || 'Santo Domingo';
+    const payload = await this.campaignService.getActiveSyncVideos(deviceId, deviceCity);
 
     // ============================================
     // DELTA SYNC LOGIC

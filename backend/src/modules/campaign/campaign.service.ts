@@ -129,7 +129,7 @@ export class CampaignService {
   /**
    * Returns a payload of videos specifically assigned to this device (Manual Distribution)
    */
-  async getActiveSyncVideos(deviceId?: string) {
+  async getActiveSyncVideos(deviceId: string, deviceCity?: string) {
     const now = new Date();
     
     const activeCampaigns = await this.prisma.campaign.findMany({
@@ -137,12 +137,22 @@ export class CampaignService {
         active: true,
         startDate: { lte: now },
         endDate: { gte: now },
-        OR: deviceId ? [
-          { targetAll: true },
-          { isGlobal: true }, // Backward compatibility
-          { devices: { some: { device_id: deviceId } } }, // Explict device assignments
-          { targetDrivers: { some: { deviceId: deviceId } } } // DRIVER SEGMENTATION!
-        ] : undefined
+        AND: [
+          {
+            OR: [
+              { targetAll: true },
+              { isGlobal: true },
+              { devices: { some: { device_id: deviceId } } },
+              { targetDrivers: { some: { deviceId: deviceId } } }
+            ]
+          },
+          {
+            OR: [
+              { targetCity: 'Global' },
+              { targetCity: deviceCity || 'Santo Domingo' }
+            ]
+          }
+        ]
       },
       include: {
         mediaAssets: true,

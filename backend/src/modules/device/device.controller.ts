@@ -5,6 +5,7 @@ import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { SubscriptionGuard } from '../drivers/guards/subscription.guard';
+import { SyncDeviceDto } from './dto/sync-device.dto';
 
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
@@ -33,12 +34,10 @@ export class DeviceController {
   }
 
   @UseGuards(SubscriptionGuard) // Valida suscripción del chofer antes de entregar contenido
-  @Get('sync')
-  async sync(
-    @Query('device_id') deviceId: string,
-    @Query('last_hash') lastHash?: string
-  ) {
-    return this.deviceService.syncDeviceCampaigns(deviceId, lastHash);
+  @Post('sync')
+  @HttpCode(HttpStatus.OK)
+  async sync(@Body() dto: SyncDeviceDto) {
+    return this.deviceService.syncDeviceCampaigns(dto);
   }
 
   @Get(':id/slots')

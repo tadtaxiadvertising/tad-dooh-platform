@@ -122,7 +122,8 @@
 |---|---|---|
 | DB en Supabase remota (latencia en dev local) | 🟡 Media | Mitigado con `directUrl` puerto 5432 |
 | Videos grandes > 50MB (Vercel limit) | 🟡 Media | Supabase Storage como intermediario |
-| Connection pooling en Vercel serverless | 🔴 Alta | ✅ Mitigado con `onModuleDestroy` + `$disconnect()` + logging condicional |
+| Muerte de tablet por batería | 🟡 Media | ✅ Mitigado con Telemetry Tracking |
+| Leak de conexiones Prisma | 🔴 Alta | ✅ Mitigado (onModuleDestroy + `$disconnect()` + logging condicional) |
 | Sin HTTPS local para PWA/Service Worker | 🟡 Media | No aplica en dev; usar `ngrok` para staging |
 | BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
 
@@ -150,8 +151,9 @@
 - [x] Tracking de QR Scans con Redirect Proxy (atribución directa)
 - [x] Generador de Facturas HTML Print-Ready (Cero Costos)
 - [x] Estructura GPS para Geo-fencing (Lat/Lng en PlaybackEvents)
-- [ ] Gestión de Zonas GPS (geo-fencing) - Lógica de filtrado en sync
-- [ ] Admin Alerts (batería < 15%)
+- [x] Lógica de Geo-fencing (Filtrado por ciudad)
+- [x] Monitoreo de salud de hardware (Batería/GPS en tiempo real)
+- [ ] Integración con WhatsApp API para alertas automáticas (Siguiente)
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)
 - [ ] Onboarding de tablets en campo

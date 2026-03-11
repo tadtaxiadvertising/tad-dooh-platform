@@ -47,7 +47,10 @@ model Device {
   status        String @default("ACTIVE")
   lastSync      DateTime? @map("last_sync")
   lastHeartbeat DateTime? @map("last_heartbeat")
-  batteryLevel  Int?      @map("battery_level")
+  batteryLevel  Int?      @default(100) @map("battery_level")
+  lastLat       Float?    @map("last_lat") // Última latitud conocida
+  lastLng       Float?    @map("last_lng") // Última longitud conocida
+  isOnline      Boolean   @default(false) @map("is_online")
   storageUsed   BigInt?   @map("storage_used")
   storageTotal  BigInt?   @map("storage_total")
   appVersion    String?   @map("app_version")
@@ -101,6 +104,7 @@ model Campaign {
   isGlobal    Boolean  @default(false) @map("is_global")
   targetAll   Boolean  @default(true) @map("target_all")
   targetCities String @default("[]") @map("target_cities")
+  targetCity  String   @default("Global") @map("target_city") // "Global", "Santo Domingo", etc.
   targetFleets String @default("[]") @map("target_fleets")
   priority    Int      @default(0)
   targetImpressions Int @default(0) @map("target_impressions")

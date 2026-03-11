@@ -63,6 +63,12 @@
   - `backend/src/main.ts`: Registro global del `PrismaClientExceptionFilter`.
 - **Explicación técnica**: Se restauró la capacidad operativa del dashboard para registrar conductores. La implementación del filtro de excepciones de Prisma asegura que si un administrador intenta registrar un teléfono o cédula que ya existe, recibirá un mensaje de "Conflict" (409) amigable en lugar de un crasheo del API.
 
+### 🚀 OPTIMIZATION: Zero-Config & Cleanup (Vercel Legacy Warning)
+- **Issue resuelto**: Vercel emitía un warning sobre el uso de `builds` (infraestructura heredada) en el archivo de configuración raíz.
+- **Archivos modificados**:
+  - `vercel.json` (**ELIMINADO**): Se borró el archivo de configuración raíz para permitir que cada sub-proyecto (`backend`, `admin-dashboard`) use su propia configuración nativa ("Zero Config").
+- **Explicación técnica**: En un monorepo moderno de Vercel (donde cada proyecto apunta a su subdirectorio), un archivo `vercel.json` en la raíz con el campo `builds` bloquea las optimizaciones automáticas y causa el warning detectado. Al eliminarlo, Vercel auto-detecta Next.js y Node.js correctamente en cada sub-proyecto.
+
 ---
 
 ### 🔒 FIX: Race Condition de Sesión (Kick-out Inmediato Post-Login)

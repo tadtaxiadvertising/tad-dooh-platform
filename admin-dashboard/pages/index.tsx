@@ -107,28 +107,35 @@ export default function Home() {
               <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mt-1">Impresiones acumuladas durante el ciclo de 24h</p>
             </div>
           </div>
-          <div className="h-[300px] w-full" style={{ minHeight: '300px' }}>
+          <div className="w-full h-[300px] min-h-[300px] bg-black/20 rounded-2xl relative">
             {mounted ? (
-            <div className="h-72 w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#fad400" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#fad400" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis dataKey="name" stroke="#52525b" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                  <YAxis stroke="#52525b" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#000', border: '1px solid #27272a', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}
-                    itemStyle={{ color: '#fff' }}
-                  />
-                  <Area type="monotone" dataKey="val" stroke="#fad400" strokeWidth={4} fillOpacity={1} fill="url(#colorVal)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+              (!chartData || chartData.length === 0) ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600">
+                  <Activity className="w-10 h-10 opacity-20 mb-2" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Esperando Telemetría...</p>
+                </div>
+              ) : (
+                <div className="w-full h-full p-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#fad400" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#fad400" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="name" stroke="#52525b" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
+                      <YAxis stroke="#52525b" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#000', border: '1px solid #27272a', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#fff' }}
+                      />
+                      <Area type="monotone" dataKey="val" stroke="#fad400" strokeWidth={4} fillOpacity={1} fill="url(#colorVal)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-800 font-black italic">
                 SINCRONIZANDO CON LA MATRIZ...

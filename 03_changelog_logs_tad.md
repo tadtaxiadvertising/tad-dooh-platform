@@ -18,6 +18,16 @@
 
 ---
 
+### 🔧 FIX: Chart Render Crash (width -1) y Vercel Build Warning
+- **Issue resuelto**: El dashboard crasheaba al renderizar gráficos (Recharts) debido a dimensiones inválidas durante el montaje y advertencias de Vercel por el archivo `vercel.json` en el frontend.
+- **Archivos modificados**:
+  - `admin-dashboard/pages/index.tsx`: Implementado wrapper con altura estricta y null-checks.
+  - `admin-dashboard/pages/analytics/index.tsx`: Implementado wrapper con altura estricta y estados de carga/vaciado.
+  - `admin-dashboard/vercel.json`: Eliminado para permitir la optimización zero-config de Next.js 15.
+- **Explicación técnica**: `ResponsiveContainer` requiere que su padre tenga dimensiones calculadas > 0. Se forzaron alturas mínimas (`min-h-[300px]`) y se añadieron guardas para evitar errores 500 si la API devuelve arrays vacíos o nulos, mejorando la robustez en condiciones de baja conectividad.
+
+---
+
 ### 🚀 FEATURE: Módulo de Nómina Automática
 - **Issue resuelto**: Necesidad de calcular pagos a choferes (RD$500/anuncio) de forma centralizada.
 - **Archivos modificados**:

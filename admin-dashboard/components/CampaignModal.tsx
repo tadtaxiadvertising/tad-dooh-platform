@@ -54,11 +54,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
     setUploading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('campaignId', campaignId);
-      
-      await uploadCampaignMedia(campaignId, formData);
+      await uploadCampaignMedia(campaignId, file);
       setStep(2); // Go to segmentation
     } catch (err: any) {
       console.error(err);

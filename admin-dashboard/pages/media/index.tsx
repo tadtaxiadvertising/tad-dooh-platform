@@ -161,27 +161,9 @@ export default function MediaPage() {
     setUploading(true);
     setUploadProgress(10);
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('campaignId', selectedCampaign);
-
     try {
       setUploadProgress(30);
-      let uploadedData;
-      
-      try {
-        // Attempt realistic physical upload (will fail if payload > 4.5MB on Vercel without S3 presigned urls)
-        uploadedData = await uploadMedia(formData);
-      } catch (err: any) {
-        console.warn('Physical upload failed (likely Vercel 4.5MB limit or S3 misconfig). Falling back to Cloud Register.', err);
-        // Fallback to bypass Vercel serverless size limit by sending only metadata
-        uploadedData = await registerMockMedia({
-          filename: selectedFile.name,
-          mimetype: selectedFile.type,
-          size: selectedFile.size
-        });
-      }
-
+      const uploadedData = await uploadMedia(selectedFile, selectedCampaign);
       setUploadProgress(60);
       
       // 2. Link to campaign AND assign to devices

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../lib/supabase';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api',
@@ -91,21 +92,54 @@ export const addVideoToCampaign = (campaignId: string, data: any) => api.post(`/
 // Media
 export const getMedia = () => api.get('/media').then(res => res.data);
 export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
-export const uploadMedia = (formData: FormData) => 
-  api.post('/media/upload', formData, {
-    transformRequest: [(data, headers) => {
-      delete headers['Content-Type'];
-      return data;
-    }]
-  }).then(res => res.data);
+export const uploadMedia = async (file: File, campaignId?: string) => {
+  const bucket = 'campaign-videos';
+  const filePath = `${campaignId || 'general'}/${Date.now()}_${file.name}`;
 
-export const uploadCampaignMedia = (campaignId: string, formData: FormData) => 
-  api.post(`/campaigns/${campaignId}/upload`, formData, {
-    transformRequest: [(data, headers) => {
-      delete headers['Content-Type'];
-      return data;
-    }]
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
+
+  return {
+    id: data.path, // Use path as fallback ID if needed
+    url: publicUrl,
+    size: file.size,
+    name: file.name,
+    path: data.path
+  };
+};
+
+export const uploadCampaignMedia = async (campaignId: string, file: File) => {
+  const bucket = 'campaign-videos';
+  const filePath = `${campaignId}/${Date.now()}_${file.name}`;
+
+  // 1. Direct upload to Supabase Storage (Bypasses Vercel 4.5MB limit)
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (error) throw error;
+
+  // 2. Get Public URL
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
+
+  // 3. Register metadata in our backend (NestJS/Prisma)
+  return api.post(`/campaigns/${campaignId}/assets`, {
+    type: 'video',
+    filename: file.name,
+    url: publicUrl,
+    fileSize: file.size,
+    checksum: `sha256-${Date.now()}`, // Placeholder for real hash to trigger tablet sync
+    duration: 0
   }).then(res => res.data);
+};
 
 export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) => 
   api.post('/media/register-mock', data).then(res => res.data);

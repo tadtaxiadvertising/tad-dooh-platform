@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase } from 'lucide-react';
 import clsx from 'clsx';
+import { supabase } from '../services/supabaseClient';
+import { useAuth } from './AuthProvider';
 
 const NAVIGATION_GROUPS = [
   {
@@ -34,6 +36,16 @@ const NAVIGATION_GROUPS = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { session } = useAuth();
+  const userEmail = session?.user?.email || 'Administrador';
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // Limpiar legacy tokens por si acaso
+    localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_user');
+    // El AuthProvider detecta el SIGNED_OUT y redirige solo
+  };
 
   return (
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden">
@@ -93,23 +105,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-6 w-full space-y-3">
+          <div className="p-6 w-full space-y-3">
           <div className="bg-zinc-900 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
              <div className="w-10 h-10 rounded-xl bg-tad-yellow flex items-center justify-center font-black text-black shadow-lg">
                 AD
              </div>
              <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter leading-none mb-1">Autenticado</p>
-                <p className="font-bold text-xs text-white truncate">Administrador</p>
+                <p className="font-bold text-xs text-white truncate">{userEmail}</p>
              </div>
           </div>
           
           <button 
-            onClick={() => {
-              localStorage.removeItem('tad_admin_token');
-              localStorage.removeItem('tad_admin_user');
-              window.location.href = '/login';
-            }}
+            onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-zinc-900/50 border border-white/5 hover:border-red-500/30 hover:bg-red-500/5 text-zinc-600 hover:text-red-400 rounded-xl transition-all text-[10px] font-black uppercase tracking-[0.2em]"
           >
             <LogIn className="w-3 h-3 rotate-180" />

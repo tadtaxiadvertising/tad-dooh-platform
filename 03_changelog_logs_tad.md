@@ -18,6 +18,19 @@
 
 ---
 
+### 🔒 FIX: Race Condition de Sesión (Kick-out Inmediato Post-Login)
+- **Issue resuelto**: El dashboard expulsaba al usuario a `/login` segundos después del login porque `_app.tsx` evaluaba `localStorage.getItem('tad_admin_token')` antes de que el SDK de Supabase hidratara la sesión.
+- **Archivos creados/modificados**:
+  - `admin-dashboard/services/supabaseClient.ts` (**NUEVO**): Cliente Supabase con `persistSession: true`, `autoRefreshToken: true` y `storageKey: 'tad-auth-token'`.
+  - `admin-dashboard/components/AuthProvider.tsx` (**NUEVO**): Proveedor de contexto con estado de `loading` bloqueante — muestra una pantalla de carga TAD hasta que `getSession()` resuelve, previniendo cualquier redirección prematura.
+  - `admin-dashboard/pages/_app.tsx`: Simplificado para usar `AuthProvider`, elimina el patrón `if (!checked) return null`.
+  - `admin-dashboard/pages/login.tsx`: Login ahora usa `supabase.auth.signInWithPassword()` directo (token nativo Supabase).
+  - `admin-dashboard/components/Layout.tsx`: Logout usa `supabase.auth.signOut()` para invalidar la sesión correctamente.
+  - `admin-dashboard/package.json`: Añadida dependencia `@supabase/supabase-js@^2.99.0`.
+- **Explicación técnica**: El bug era un race condition clásico de hidratación. La solución es usar `supabase.auth.getSession()` (asíncrono) como única fuente de verdad y bloquear el render de la app hasta que resuelva. El listener `onAuthStateChange` maneja los cambios de sesión en tiempo real (auto-refresh de token, logout).
+
+---
+
 ### 🔒 FEATURE: JWT Local Validation (Upgrade AuthModule)
 - **Issue resuelto**: El `SupabaseAuthGuard` hacía una llamada HTTP a `supabase.auth.getUser()` por cada request del dashboard, añadiendo ~200ms de latencia y consumiendo el rate limit de Supabase.
 - **Archivos modificados**:

@@ -1,5 +1,15 @@
-import { Controller, Get, Query, Param, Res, HttpStatus } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Param, 
+  Res, 
+  HttpStatus, 
+  UseGuards 
+} from '@nestjs/common';
 import { FinanceService } from './finance.service';
+import { Response } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('finance')
@@ -12,15 +22,17 @@ export class FinanceController {
   }
 
   @Get('report/payroll')
-  async getDriverPayroll(@Query('month') month?: string) {
+  async getDriverPayroll(@Res() res: Response, @Query('month') month?: string) {
     const targetDate = month ? new Date(month) : new Date();
-    return this.financeService.getDriverPayrollReport(targetDate);
+    const result = await this.financeService.getDriverPayrollReport(targetDate);
+    return res.status(HttpStatus.OK).json(result);
   }
 
   @Get('simulate-payment')
-  async simulateMassPayment(@Query('month') month?: string) {
+  async simulateMassPayment(@Res() res: Response, @Query('month') month?: string) {
     const targetDate = month ? new Date(month) : new Date();
-    return this.financeService.getMassPaymentSimulation(targetDate);
+    const result = await this.financeService.getMassPaymentSimulation(targetDate);
+    return res.status(HttpStatus.OK).json(result);
   }
 
   @Get('export/payroll.csv')
@@ -71,13 +83,16 @@ export class FinanceController {
     return res.send(csvStr);
   }
 
-  @Get('invoice/:id')
-  async getInvoiceHtml(@Param('id') id: string, @Res() res) {
-    const html = await this.financeService.getCampaignInvoice(id);
+  @Get('invoice/:campaignId')
+  async getInvoice(
+    @Param('campaignId') campaignId: string, // Aquí fallaba el build
+    @Res() res: Response
+  ) {
+    const html = await this.financeService.generateInvoiceHtml(campaignId);
     if (!html) {
-      return res.status(404).send('Campaign not found');
+      return res.status(HttpStatus.NOT_FOUND).send('Campaign not found');
     }
-    res.set('Content-Type', 'text/html');
-    return res.send(html);
+    res.setHeader('Content-Type', 'text/html');
+    return res.status(HttpStatus.OK).send(html);
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl } from '../../services/api';
+import { getCampaignBilling, getDriverPayroll, getPayrollExportUrl, getCampaignExportUrl, getInvoiceUrl } from '../../services/api';
 import { 
   Wallet, 
   CarFront, 
@@ -248,22 +248,23 @@ function CampaignBillingView({ data, loading, error }: any) {
           <thead className="bg-black/80 border-b border-white/5">
             <tr>
               <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Campaña</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Taxis</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Taxis</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Estado</th>
               <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Impresiones Real</th>
               <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Facturable Est.</th>
+              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {loading ? (
-              <LoadingRows cols={5} />
+              <LoadingRows cols={6} />
             ) : data.map((camp: any) => (
               <tr key={camp.campaignId} className="hover:bg-zinc-900/50 transition-colors">
                 <td className="px-6 py-5">
                   <p className="font-bold text-sm text-white uppercase italic">{camp.campaignName}</p>
                 </td>
-                <td className="px-6 py-5 text-sm text-zinc-400">{camp.assignedTaxis} unidades</td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-5 text-sm text-zinc-400 text-center">{camp.assignedTaxis} unidades</td>
+                <td className="px-6 py-5 text-center">
                   <span className="px-2 py-1 bg-tad-yellow/10 text-tad-yellow rounded text-[9px] font-black uppercase">
                     {camp.status}
                   </span>
@@ -273,6 +274,17 @@ function CampaignBillingView({ data, loading, error }: any) {
                 </td>
                 <td className="px-6 py-5 text-right font-black text-tad-yellow text-lg">
                   RD${camp.estimatedRevenue.toFixed(2)}
+                </td>
+                <td className="px-6 py-5 text-center">
+                  <a 
+                    href={getInvoiceUrl(camp.campaignId)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-[10px] font-black uppercase transition-all"
+                  >
+                    <Receipt className="w-3 h-3 text-tad-yellow" />
+                    Factura
+                  </a>
                 </td>
               </tr>
             ))}

@@ -8,6 +8,15 @@
 
 ## 📅 11 de Marzo, 2026
 
+### 🛠️ HOTFIX: Hardened CORS & Preflight Response
+- **Issue resuelto**: Peticiones `GET /api/drivers` bloqueadas por política CORS (`net::ERR_FAILED`).
+- **Archivos modificados**:
+  - `backend/api/index.ts`: Implementada inyección de cabeceras manual antes de `createNestServer`.
+  - `backend/vercel.json`: Forzado de headers en la capa de routing global de Vercel.
+- **Explicación técnica**: Se detectó que las funciones Lambda de Vercel terminaban la ejecución o fallaban antes de emitir las cabeceras CORS de NestJS. Se movió la lógica de cabeceras al nivel más alto del handler (Express) para asegurar que cualquier petición, incluso las fallidas, devuelva los permisos necesarios al navegador.
+
+---
+
 ### 🔧 FIX: Media Storage Sync & Public URLs
 - **Issue resuelto**: Fallos de carga en la galería `/media` y URLs rotas en el dashboard.
 - **Archivos modificados**:

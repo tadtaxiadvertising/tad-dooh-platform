@@ -11,17 +11,12 @@ export const createNestServer = async (expressInstance) => {
     AppModule,
     new ExpressAdapter(expressInstance),
   );
-
-  // CONFIGURACIÓN CORS PROFESIONAL
+  
+  // CORS interno de NestJS como respaldo
   app.enableCors({
-    origin: [
-      'https://tad-dashboard.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ],
+    origin: '*', // En serverless, el filtrado real lo haremos en el handler de abajo
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   // Global Prefix
@@ -35,17 +30,23 @@ export const createNestServer = async (expressInstance) => {
   await app.init();
 };
 
-// Handler para Vercel
 export default async (req: any, res: any) => {
-  // Manejo manual de OPTIONS para evitar bloqueos de Vercel Edge
+  // 1. INYECCIÓN FORZADA DE CABECERAS (Nivel Infraestructura)
+  res.setHeader('Access-Control-Allow-Origin', 'https://tad-dashboard.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // 2. MANEJO MANUAL DE PREFLIGHT (Crítico para evitar el net::ERR_FAILED)
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', 'https://tad-dashboard.vercel.app');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
-    res.status(204).end();
-    return;
+    return res.status(204).end();
   }
 
-  await createNestServer(server);
-  server(req, res);
+  try {
+    await createNestServer(server);
+    server(req, res);
+  } catch (err) {
+    console.error('NestJS Bootstrap Error:', err);
+    res.status(500).json({ error: 'Internal Server Error during bootstrap', details: err.message });
+  }
 };

@@ -404,10 +404,33 @@ model Driver {
   device        Device?  @relation(fields: [deviceId], references: [deviceId])
   subscriptions Subscription[]
   campaigns     Campaign[]
+  payrollPayments PayrollPayment[]
 
   @@map("drivers")
   @@index([status])
   @@index([phone])
+}
+
+// ============================================
+// PAYROLL (Pagos a choferes por anuncios)
+// ============================================
+
+model PayrollPayment {
+  id           String   @id @default(cuid())
+  driverId     String   @map("driver_id")
+  amount       Float
+  periodMonth  Int      @map("period_month") // 1-12
+  periodYear   Int      @map("period_year")
+  status       String   @default("PENDING") // "PENDING", "PAID"
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  driver       Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, periodMonth, periodYear]) // Un solo pago por mes al chofer
+  @@map("payroll_payments")
+  @@index([driverId])
+  @@index([status])
 }
 
 // ============================================

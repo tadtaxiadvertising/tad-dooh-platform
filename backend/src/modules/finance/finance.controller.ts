@@ -93,4 +93,14 @@ export class FinanceController {
     res.setHeader('Content-Type', 'text/html');
     return res.status(HttpStatus.OK).send(html);
   }
+
+  @Get('payroll')
+  async getPayroll() {
+    return this.financeService.calculateCurrentPayroll();
+  }
+
+  @Post('payroll/pay')
+  async processPayment(@Body() data: { driverId: string; month: number; year: number }) {
+    return this.financeService.markAsPaid(data.driverId, data.month, data.year);
+  }
 }

@@ -38,6 +38,13 @@
 - **Problema**: Vercel no encontraba el entry point de NestJS en la carpeta anidada.
 - **Solución**: Movido el entry point a la raíz (`api/index.ts`) y ajustado enrutamiento en `vercel.json`.
 
+### 🔧 FIX: Monorepo Build Desync (Vercel)
+- **Error**: `Cannot find module '@tailwindcss/postcss'` a pesar de estar instalado en el workspace.
+- **Causa**: `npm run install:all` dentro de Vercel eliminaba paquetes y rompía symlinks de workspaces durante el build.
+- **Acción**: 
+  1. Hoisting de `@tailwindcss/postcss` y `postcss` a la raíz del proyecto.
+  2. Simplificación del script `build` en `package.json` (eliminado `npm install` redundante).
+
 ---
 
 ## 📅 11 de Marzo, 2026 (Noche - Estabilización Post-Despliegue)

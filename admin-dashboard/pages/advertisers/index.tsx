@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Briefcase, Search, Plus, Clock, ChevronRight, Globe, Phone, Mail, DollarSign, BarChart3, CheckCircle2, XCircle, TrendingUp, Download } from 'lucide-react';
 import clsx from 'clsx';
 import { getAdvertisers } from '../../services/api';
+import { AdvertiserModal } from '../../components/AdvertiserModal';
 
 export default function AdvertisersPage() {
   const [advertisers, setAdvertisers] = useState<any[]>([]);
@@ -9,6 +10,7 @@ export default function AdvertisersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadAdvertisers();
@@ -78,7 +80,9 @@ export default function AdvertisersPage() {
             <Download className="w-5 h-5" />
             Reporte CSV
           </button>
-          <button className="group flex gap-2 items-center bg-tad-yellow hover:bg-yellow-400 text-black font-extrabold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-[0_0_15px_rgba(250,212,0,0.3)]">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="group flex gap-2 items-center bg-tad-yellow hover:bg-yellow-400 text-black font-extrabold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-[0_0_15px_rgba(250,212,0,0.3)]">
             <Plus className="h-5 w-5" />
             Nuevo Anunciante
           </button>
@@ -180,6 +184,12 @@ export default function AdvertisersPage() {
           </div>
         ))}
       </div>
+
+      <AdvertiserModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadAdvertisers}
+      />
     </div>
   );
 }

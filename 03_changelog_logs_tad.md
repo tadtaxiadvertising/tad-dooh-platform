@@ -29,6 +29,15 @@
   7. Generación de Nómina Financiera.
 - **Archivo**: `tmp/master-test.js`.
 
+### 🛰️ TRACKING: Hybrid Mobile Gateway (Beta)
+- **Concepto**: El celular del chofer rastrea el taxi y vincula la data a la tablet offline vía QR dinámico.
+- **Backend**: Endpoint `/api/fleet/track-batch` con lógica de ahorro de batería (Batching 10:1).
+- **Control de Negocio**: Bloqueo automático de GPS si la membresía de RD$6k no está al día.
+
+### 🚀 DEPLOY: Monorepo Fixes
+- **Problema**: Vercel no encontraba el entry point de NestJS en la carpeta anidada.
+- **Solución**: Movido el entry point a la raíz (`api/index.ts`) y ajustado enrutamiento en `vercel.json`.
+
 ---
 
 ## 📅 11 de Marzo, 2026 (Noche - Estabilización Post-Despliegue)

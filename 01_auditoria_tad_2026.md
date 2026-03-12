@@ -275,3 +275,10 @@ tad-dooh-platform/
 - **Estado Backend**: ✅ PRISMA GENERADO.
 - **Error Detectado**: `routes-manifest.json` missing (Path mismatch).
 - **Acción**: Implementación de "Output Lifting" para que Vercel reconozca los artefactos del Dashboard desde la raíz.
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026 22:25] - MONOREPO PATH FIX
+- **Problema**: Desfase de rutas en build (Next.js vs Vercel Root).
+- **Solución**: Implementado `distDir: '../.next'` en la config del dashboard.
+- **Riesgo**: Next.js 16 detectado; se ha forzado el fallback a la versión estable 15.1.7 para asegurar compatibilidad en Serverless Functions.

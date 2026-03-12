@@ -393,7 +393,7 @@ export default function MediaPage() {
                         <div className="flex flex-wrap gap-1.5">
                            {mediaStatus[file.id].active_devices.map((id: string) => {
                               const dev = devices.find(d => d.device_id === id);
-                              const label = dev?.taxi_number || dev?.name || id.split('-').pop()?.toUpperCase();
+                              const label = dev?.taxi_number || dev?.name || id.toUpperCase();
                               return (
                                 <span key={id} className="text-[8px] px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-md border border-white/5 font-mono">
                                    {label}
@@ -563,7 +563,10 @@ export default function MediaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                    {devices.map(device => {
                       const slots = deviceSlots[device.device_id] || { count: 0, limit: 15 };
-                      const freeSlots = slots.limit - slots.count;
+                      // Force cast numbers to avoid NaN errors from API responses
+                      const count = Number(slots.count) || 0;
+                      const limit = Number(slots.limit) || 15;
+                      const freeSlots = limit - count;
                       const isSelected = selectedDevices.includes(device.device_id);
                       const isFull = freeSlots <= 0;
 
@@ -589,7 +592,7 @@ export default function MediaPage() {
                                  <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100' : 'opacity-20'}`} />
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-[11px] font-bold truncate uppercase">{device.taxi_number || device.name || device.device_id.split('-')[0]}</p>
+                                 <p className="text-[11px] font-bold truncate uppercase">{device.taxi_number || device.name || device.device_id}</p>
                                  <p className={`text-[9px] font-bold uppercase ${freeSlots < 3 ? 'text-red-400' : 'text-zinc-500'}`}>
                                     {freeSlots} slots libres
                                  </p>

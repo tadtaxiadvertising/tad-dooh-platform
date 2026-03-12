@@ -57,6 +57,7 @@ export default async (req: any, res: any) => {
   }
 
   try {
+    console.log(`📡 Incoming request: ${req.method} ${req.url}`);
     const server = await createNestServer();
     return server(req, res);
   } catch (err) {

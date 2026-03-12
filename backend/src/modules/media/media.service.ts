@@ -29,10 +29,14 @@ export class MediaService {
     // 0. Auto-create bucket if missing (safe to call multiple times with service role key, will fail silently if exists)
     await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => {});
 
+    // Sanitize filename to prevent "Invalid key" errors in Supabase Storage
+    const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const storagePath = `${campaignId}/${Date.now()}_${sanitizedFilename}`;
+
     // 1. Subir a Supabase Storage
     const { data, error } = await this.supabase.storage
       .from('campaign-videos')
-      .upload(`${campaignId}/${file.originalname}`, file.buffer, {
+      .upload(storagePath, file.buffer, {
         upsert: true 
       });
 

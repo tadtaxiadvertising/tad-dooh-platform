@@ -13,7 +13,7 @@
     "dev:backend": "cd backend && npm run start:dev",
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
     "install:all": "npm install",
-    "build": "npm run install:all && npm run build -w admin-dashboard && npm run build -w backend",
+    "build": "npm run build -w admin-dashboard && npm run build -w backend",
     "build:backend": "cd backend && npm run build",
     "vercel-build": "npm run build:backend",
     "deploy:vercel": "node devops/deploy-vercel.js"
@@ -35,5 +35,9 @@
     "react-dom": "^19.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "postcss": "^8.5.8"
   }
 }

@@ -23,7 +23,7 @@ export default function MediaPage() {
   // Upload form state
   const [selectedCampaign, setSelectedCampaign] = useState('');
   const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState(15);
+  const [duration, setDuration] = useState(30);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
@@ -145,7 +145,7 @@ export default function MediaPage() {
     setTitle('');
     setSelectedCampaign('');
     setSelectedFile(null);
-    setDuration(15);
+    setDuration(30);
     setSelectedDevices([]);
     setUploadProgress(0);
     if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
@@ -527,11 +527,16 @@ export default function MediaPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Duración del Ciclo (seg)</label>
-                  <input 
-                    required type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} min={1}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all font-mono"
-                  />
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Duración del Ciclo</label>
+                  <select 
+                    required value={duration} onChange={e => setDuration(Number(e.target.value))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-tad-yellow focus:ring-1 focus:ring-tad-yellow outline-none transition-all cursor-pointer font-bold"
+                  >
+                    <option value={30}>30 Segundos</option>
+                    <option value={60}>1 Minuto</option>
+                    <option value={90}>1 Minuto 30 Segs</option>
+                    <option value={120}>2 Minutos</option>
+                  </select>
                 </div>
               </div>
 

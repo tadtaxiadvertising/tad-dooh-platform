@@ -14,6 +14,7 @@
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
     "install:all": "npm install",
     "build": "npm run build -w admin-dashboard && npm run build -w backend",
+    "postbuild": "cp -r admin-dashboard/.next .next && cp -r admin-dashboard/public public",
     "build:backend": "cd backend && npm run build",
     "vercel-build": "npm run build:backend",
     "deploy:vercel": "node devops/deploy-vercel.js"

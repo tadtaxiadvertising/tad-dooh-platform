@@ -282,3 +282,13 @@ tad-dooh-platform/
 - **Problema**: Desfase de rutas en build (Next.js vs Vercel Root).
 - **Solución**: Implementado `distDir: '../.next'` en la config del dashboard.
 - **Riesgo**: Next.js 16 detectado; se ha forzado el fallback a la versión estable 15.1.7 para asegurar compatibilidad en Serverless Functions.
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026 22:35] - EMERGENCY ROLLBACK NEXT16
+- **Incidencia**: Error de resolución de módulos internos en Next.js 16.1.6 durante SSG (`Cannot find module 'next/dist/shared/lib/no-fallback-error.external.js'`).
+- **Acción**: 
+  1. Downgrade forzado a Next.js 15.1.7 (Stable).
+  2. Revertido `distDir: '../.next'` — causaba rotura de resolución de módulos fuera del workspace.
+  3. Cambio de estrategia a `postbuild copy` (`cp -r`) — mantiene la copia local para SSG y copia a la raíz para Vercel.
+- **Estado**: El Dashboard ahora mantiene sus dependencias locales durante la generación de páginas.

@@ -93,52 +93,42 @@ export const addVideoToCampaign = (campaignId: string, data: any) => api.post(`/
 export const getMedia = () => api.get('/media').then(res => res.data);
 export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
 export const uploadMedia = async (file: File, campaignId?: string) => {
-  const bucket = 'campaign-videos';
-  const filePath = `${campaignId || 'general'}/${Date.now()}_${file.name}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('campaignId', campaignId || 'general');
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, { cacheControl: '3600', upsert: true });
-
-  if (error) throw error;
-
-  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
+  const res = await api.post('/media/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 
   return {
-    id: data.path, // Use path as fallback ID if needed
-    url: publicUrl,
-    size: file.size,
+    id: res.data.id,
+    url: res.data.url,
+    size: res.data.size,
     name: file.name,
-    path: data.path
+    path: `campaign-videos/${res.data.id}`
   };
 };
 
 export const uploadCampaignMedia = async (campaignId: string, file: File) => {
-  const bucket = 'campaign-videos';
-  const filePath = `${campaignId}/${Date.now()}_${file.name}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('campaignId', campaignId);
 
-  // 1. Direct upload to Supabase Storage (Bypasses Vercel 4.5MB limit)
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: true
-    });
+  // 1. Upload safely via our backend, enforcing limits and injecting service credentials
+  const res = await api.post('/media/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 
-  if (error) throw error;
-
-  // 2. Get Public URL
-  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
-
-  // 3. Register metadata in our backend (NestJS/Prisma)
+  // 2. Register metadata in our backend (NestJS/Prisma)
   return api.post(`/campaigns/${campaignId}/assets`, {
     type: 'video',
     filename: file.name,
-    url: publicUrl,
-    fileSize: file.size,
-    checksum: `sha256-${Date.now()}`, // Placeholder for real hash to trigger tablet sync
+    url: res.data.url,
+    fileSize: res.data.size,
+    checksum: res.data.hash || `sha256-${Date.now()}`,
     duration: 0
-  }).then(res => res.data);
+  }).then(r => r.data);
 };
 
 export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) => 

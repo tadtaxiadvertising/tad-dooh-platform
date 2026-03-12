@@ -248,3 +248,12 @@ tad-dooh-platform/
 ### ⚠️ Próximo Paso Crítico:
 - Implementar la **Pantalla de Bloqueo** en la Tablet. Si el API devuelve 402 al celular, el celular debe notificar a la tablet para que deje de mostrar anuncios.
 - **Métrica de Pago:** Asegurar que el cálculo de RD$500/mes se base solo en días con tracking GPS activo y anuncios reproducidos.
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026] - FIX DE DESPLIEGUE SERVERLESS
+- **Incidencia:** Fallo de compilación en Vercel (Errores TS2307, TS1241, TS1206) por falta de soporte de decoradores en el compilador de `@vercel/node` en la raíz del monorepo.
+- **Solución Implementada:** 
+  - Generación de un `tsconfig.json` maestro en la raíz con `experimentalDecorators: true` y `emitDecoratorMetadata: true`.
+  - Instalación de dependencias core de NestJS (`@nestjs/core`, `@nestjs/common`, etc.) a nivel raíz para satisfacer las importaciones del Serverless Function (`api/index.ts`).
+- **Estado Técnico:** Despliegue CI/CD Vercel estabilizado y adaptado al patrón Monorepo.

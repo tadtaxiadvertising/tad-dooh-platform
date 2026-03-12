@@ -267,3 +267,11 @@ tad-dooh-platform/
   - Instalación de `@tailwindcss/postcss` en el workspace `admin-dashboard`.
   - Creación del archivo `postcss.config.js` vinculando el plugin.
 - **Estado Técnico:** Pipeline de CI/CD para el Dashboard en fase de re-validación.
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026 22:15] - FINALIZACIÓN DE PIPELINE
+- **Estado Dashboard**: ✅ COMPILADO.
+- **Estado Backend**: ✅ PRISMA GENERADO.
+- **Error Detectado**: `routes-manifest.json` missing (Path mismatch).
+- **Acción**: Implementación de "Output Lifting" para que Vercel reconozca los artefactos del Dashboard desde la raíz.

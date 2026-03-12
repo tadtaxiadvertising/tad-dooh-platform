@@ -13,7 +13,7 @@
     "dev:backend": "cd backend && npm run start:dev",
     "dev:tablet": "cd tablet-player && python -m http.server 8080",
     "install:all": "npm install",
-    "build": "npm run build -w admin-dashboard && npm run build -w backend",
+    "build": "npm run build -w admin-dashboard && mv admin-dashboard/.next .next && npm run build -w backend",
     "build:backend": "cd backend && npm run build",
     "vercel-build": "npm run build:backend",
     "deploy:vercel": "node devops/deploy-vercel.js"

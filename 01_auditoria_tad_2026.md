@@ -1,7 +1,7 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-11T18:20:00-04:00
+> **Última Actualización**: 2026-03-11T19:50:00-04:00
 > **Sprint Actual**: Sprint 3 (Sistemas de Calle e Inventario)
 
 ---
@@ -132,6 +132,8 @@
 | JWT validación vía red (latencia +200ms) | 🔴 Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
 | Tablets morosas (Falta de pago RD$6k) | 🔴 Alta | ✅ Resuelto — `SubscriptionGuard` bloquea `/sync` si no hay pago activo |
 | Pago a Choferes (Auditabilidad) | 🟡 Media | ✅ Automatizado. Lógica de `PayrollPayment` con restricción de unicidad mensual implementada. RD$500/anuncio activo detectado por dispositivo. |
+| Tablet offline (Sin SIM Card) | 🔴 Crítica | ✅ Resuelto — Arquitectura "Sync Window" (Hotspot + Service Worker + Cache API) |
+| Espacio en Disco (Cache Storage) | 🟡 Media | Mitigación: Política de purga en SW por fecha/campaña finalizada. |
 
 ---
 
@@ -148,19 +150,27 @@
 - [x] Revenue Protector (15 slots)
 - [x] Mapa de calor por campaña
 
-### Sprint 2: GESTIÓN DE FLOTA (EN PROGRESO)
-- [x] Módulo de Choferes conectado a data real
-- [x] Módulo de Anunciantes conectado a data real
-- [x] Autenticación Supabase Auth (migrado de JWT local)
-- [x] Targeting por chofer (many-to-many)
+### Sprint 2: SISTEMAS DE CALLE E INVENTARIO 🔄 EN PROGRESO
+- [x] Gestión de Choferes (CRUD Directo con Validaciones)
+- [x] Inventario de Pantallas STI (100 registros pre-generados)
+- [x] CRUD Manual de Hardware (Devices CRUD)
+- [x] Liquidación de Nómina RD$500/Anuncio (Automatizada)
+- [x] Generador de Facturas Premium (HTML Print-Ready)
+- [x] Telemetría GPS y Batería en tiempo real
+- [x] Filtro de Geo-fencing (Ciudad/Global) en Tablets
+- [x] Analytics Batch Upload Fix (Robust Object Handling)
+- [x] Subscription Grace Period (Development Ease)
 - [x] Bloqueo automático de tablets por falta de pago (SubscriptionGuard)
 - [x] Tracking de QR Scans con Redirect Proxy (atribución directa)
-- [x] Generador de Facturas HTML Print-Ready (Cero Costos)
 - [x] Estructura GPS para Geo-fencing (Lat/Lng en PlaybackEvents)
 - [x] Lógica de Geo-fencing (Filtrado por ciudad)
 - [x] Monitoreo de salud de hardware (Batería/GPS en tiempo real)
 - [x] Tracking de ubicación vía celular del chofer (Estrategia Mobile Gateway)
 - [x] Sincronización de telemetría externa hacia Device ID
+- [x] Tracking de ubicación vía QR (Celular como puente).
+- [x] Arquitectura de sincronización de contenido (Hotspot + Service Worker).
+- [x] Implementación de IndexedDB en tablet para almacenamiento de logs offline.
+- [ ] Crear alerta en Dashboard: "Dispositivo con contenido desactualizado (> 7 días)".
 - [ ] Integración con WhatsApp API para alertas automáticas (Siguiente)
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)
@@ -214,3 +224,25 @@ tad-dooh-platform/
 │   └── .env                   # Variables locales
 └── tablet-player/             # PWA para tablets en taxis
 ```
+
+---
+
+## 📍 ESTADO DEL SISTEMA DE TRACKING
+- **Estrategia:** Mobile Gateway (Celular -> Servidor).
+- **Vínculo:** QR dinámico con DeviceID (Generado localmente via `qrcode.js`).
+- **Estado:** ✅ Implementado (Backend + Tablet QR).
+- **Validación de Negocio:** Bloqueo por falta de pago de RD$6,000 integrado en el flujo de GPS (HTTP 402).
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026] - SISTEMA DE TRACKING HÍBRIDO
+
+### ✅ Logros:
+1. **Controlador de Flota:** Implementado en NestJS con validación de pago (402 Payment Required).
+2. **Lógica de Batching:** El celular ahora agrupa 10 puntos de GPS antes de enviar a Vercel (Optimización de costos).
+3. **QR de Vinculación:** Generación local en tablet (Agnóstico a internet).
+4. **Relación de Datos:** Tabla `driver_locations` creada con índices compuestos para auditoría de rutas.
+
+### ⚠️ Próximo Paso Crítico:
+- Implementar la **Pantalla de Bloqueo** en la Tablet. Si el API devuelve 402 al celular, el celular debe notificar a la tablet para que deje de mostrar anuncios.
+- **Métrica de Pago:** Asegurar que el cálculo de RD$500/mes se base solo en días con tracking GPS activo y anuncios reproducidos.

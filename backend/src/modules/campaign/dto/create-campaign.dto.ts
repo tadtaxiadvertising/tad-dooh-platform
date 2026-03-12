@@ -27,4 +27,8 @@ export class CreateCampaignDto {
 
   @IsOptional()
   target_devices?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  target_all?: boolean;
 }

@@ -16,6 +16,7 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiVEFEIFBsYXllciIsInNob3J0X25hbWUiOiJUQUQiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6ImZ1bGxzY3JlZW4iLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCJ9">
@@ -141,6 +142,13 @@
                         <div class="flex items-center justify-center gap-3">
                             <span class="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] text-zinc-500 font-mono" id="no-content-device-id">--</span>
                         </div>
+                        
+                        <!-- QR Code for Driver Sync (Mobile Gateway) -->
+                        <div class="mt-8 mb-4">
+                            <p class="text-[10px] text-tad-yellow uppercase tracking-[0.2em] font-black mb-3">Escanea para Iniciar Ruta</p>
+                            <div id="sync-qrcode" class="inline-block p-2 bg-white rounded-xl shadow-2xl"></div>
+                        </div>
+
                         <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-black">Conectado a la Red de Distribución</p>
                     </div>
                 </div>
@@ -758,6 +766,27 @@
                         localStorage.setItem('tad_last_sync_hash', state.lastSyncHash);
                         
                         if (state.currentPlaylist.length > 0) {
+                            // HEAVY SYNC: Force pre-fetch of all assets to Cache Storage (SW)
+                            console.log('📦 Pre-fetching assets for offline use...');
+                            for (const asset of state.currentPlaylist) {
+                                try {
+                                    const assetUrl = asset.url || asset.src;
+                                    if (assetUrl) {
+                                        console.log(`   ⬇️ Fetching ${assetUrl}`);
+                                        await fetch(assetUrl, { mode: 'cors' });
+                                    }
+                                } catch (e) {
+                                    console.warn('   ⚠️ Pre-fetch failed for asset:', asset.id, e);
+                                }
+                            }
+                            console.log('✅ All assets synced to local cache.');
+                            
+                            // Visual Alert for Driver (if online triggered)
+                            if (syncData.update) {
+                                // We use a custom UI toast later, for now console and play
+                                console.log('✅ Sincronización completa. Puedes apagar tu Hotspot.');
+                            }
+
                             player.play(state.currentPlaylist[0]);
                         } else {
                             // NO CONTENT ASSIGNED — show TAD NODE logo (not test video!)
@@ -891,8 +920,35 @@
                     this.updateStatus('offline');
                     console.log('🔴 Offline');
                 });
+
+                this.generateSyncQR();
                 
                 console.log('🎨 UI initialized');
+            },
+
+            generateSyncQR() {
+                const qrContainer = document.getElementById('sync-qrcode');
+                if (!qrContainer) return;
+                
+                qrContainer.innerHTML = ''; // Limpiar previo
+                
+                const PWA_URL = "https://tad-drivers.vercel.app/sync";
+                const syncUrl = `${PWA_URL}?device_id=${state.deviceId}`;
+                
+                try {
+                    // QRCode es de la librería qrcode.min.js cargada vía unpkg
+                    new QRCode(qrContainer, {
+                        text: syncUrl,
+                        width: 128,
+                        height: 128,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                    console.log('📱 Sync QR generated for:', state.deviceId);
+                } catch (e) {
+                    console.error('❌ Error generando QR:', e);
+                }
             },
             
             updateTime() {

@@ -21,6 +21,7 @@ export class CampaignService {
         active: dto.active ?? true,
         targetImpressions: dto.target_impressions || 0,
         budget: dto.budget || 0,
+        targetAll: dto.target_all !== undefined ? dto.target_all : true,
         status: 'ACTIVE',
       },
     });

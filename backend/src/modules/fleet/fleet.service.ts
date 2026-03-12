@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,11 +11,16 @@ export class FleetService {
   async getFleetDevices() {
     const devices = await this.prisma.device.findMany({
       select: {
+        id: true,
         deviceId: true,
+        taxiNumber: true,
         lastSeen: true,
         batteryLevel: true,
         playerStatus: true,
         storageFree: true,
+        status: true,
+        city: true,
+        lastHeartbeat: true,
       },
     });
 
@@ -30,12 +35,15 @@ export class FleetService {
       }
 
       return {
+        ...d,
+        id: d.id,
         device_id: d.deviceId,
-        status: isOnline ? 'online' : 'offline',
+        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
         last_seen: d.lastSeen,
         battery_level: d.batteryLevel,
         player_status: d.playerStatus,
         storage_free: d.storageFree,
+        is_online: isOnline
       };
     });
   }
@@ -222,6 +230,41 @@ export class FleetService {
       driver_name: nombreChofer,
       taxi_number: placa 
     };
+  }
+
+  async trackBatch(data: { driverId: string; deviceId: string; locations: any[] }) {
+    // 1. VALIDACIÓN DE REGLA DE NEGOCIO: Suscripción Anual
+    // Buscamos la suscripción ligada al dispositivo
+    const sub = await this.prisma.subscription.findUnique({
+      where: { deviceId: data.deviceId },
+    });
+
+    // Bloqueamos si la suscripción existe Y está vencida/expirada
+    if (sub && (sub.status === 'EXPIRED' || (sub.validUntil && new Date() > sub.validUntil))) {
+      throw new HttpException({
+        status: HttpStatus.PAYMENT_REQUIRED,
+        error: 'Suscripción de RD$6,000 pendiente o vencida.',
+        code: 'PAYMENT_REQUIRED'
+      }, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    // 2. GUARDADO MASIVO
+    const records = data.locations.map(loc => ({
+      driverId: data.driverId,
+      deviceId: data.deviceId,
+      latitude: loc.lat,
+      longitude: loc.lng,
+      speed: loc.speed || 0,
+      timestamp: new Date(loc.ts)
+    }));
+
+    if (records.length > 0) {
+      await this.prisma.driverLocation.createMany({
+        data: records
+      });
+    }
+
+    return { success: true, count: records.length };
   }
 }
 

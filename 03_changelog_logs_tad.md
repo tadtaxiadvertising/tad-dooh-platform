@@ -2,7 +2,64 @@
 
 > **Propósito**: Registro cronológico de cada bug solucionado, cómo se resolvió y qué archivos se tocaron.  
 > Usar para dar contexto inmediato a cualquier agente nuevo sobre el historial de cambios.
-> **Última Actualización**: 2026-03-11T18:15:00-04:00
+> **Última Actualización**: 2026-03-11T19:55:00-04:00
+
+---
+
+## 📅 11 de Marzo, 2026 (Noche - Modos de Operación Offline)
+
+### 🔃 ARCHITECTURE: "Sync Window" para Tablets 100% Offline
+- **Contexto**: Las tablets operarán sin SIM card. La sincronización solo ocurre cuando el chofer activa su Hotspot (Tethering).
+- **Solución implementada**: 
+  - **Pre-fetching**: El script de sincronización en la tablet ahora descarga físicamente todos los videos del manifiesto al detectar internet (vía `fetch` activando el Service Worker).
+  - **Cache Persistence**: El `sw.js` intercepta estas peticiones y las guarda en el `Cache Storage API` con estrategia `Cache-First`.
+  - **Auditoría Offline**: Los eventos de reproducción se guardan en `IndexedDB` y se suben masivamente al backend (`/api/analytics/batch`) en cuanto se detecta conexión (`navigator.onLine`).
+- **Archivos modificados**:
+  - `tablet-player/index.html`: Lógica de pre-fetch en `sync.performSync` y guardado masivo de eventos acumulados.
+  - `01_auditoria_tad_2026.md`: Actualización de Roadmap y Riesgos con mitigación de espacio en disco.
+
+### 🧪 QA: Master E2E Test Suite (`master-test.js`)
+- **Herramienta**: Creada una suite de pruebas completa en Node.js que valida:
+  1. Login de administrador (JWT Local Validation).
+  2. Registro de hardware.
+  3. Protocolo de Heartbeat y Telemetría.
+  4. Sincronización de Contenido (Sync).
+  5. Ingestión masiva de Analíticas (Batch Upload).
+  6. Envío de Comandos C2 (Reboot).
+  7. Generación de Nómina Financiera.
+- **Archivo**: `tmp/master-test.js`.
+
+---
+
+## 📅 11 de Marzo, 2026 (Noche - Estabilización Post-Despliegue)
+
+### 🐛 FIX: Analytics Batch Ingestion Crash (500 Internal Server Error)
+- **Issue**: El backend crasheaba con `dtos.map is not a function` cuando la tablet player enviaba analytics.
+- **Causa**: La tablet player enviaba un objeto `{ deviceId, events: [] }` pero el backend esperaba un array plano `[]`.
+- **Solución**: Se refactorizó `ingestBatchEvents` en el controlador y servicio para manejar ambos formatos (array y objeto envuelto) y se añadieron guardas para batches vacíos.
+- **Archivos modificados**:
+  - `backend/src/modules/analytics/analytics.controller.ts`
+  - `backend/src/modules/analytics/analytics.service.ts`
+
+### 🛡️ DEV-EXP: Subscription Grace Period (Seamless Onboarding)
+- **Issue**: Los nuevos dispositivos registrados durante el desarrollo eran bloqueados inmediatamente por falta de pago de suscripción, impidiendo pruebas rápidas.
+- **Solución**: Se implementó un "Grace Period" en `SubscriptionGuard` y `DeviceService`. Ahora solo se bloquean dispositivos con suscripción **explícitamente vencida**; los nuevos o sin suscripción previa pueden descargar contenido para pruebas.
+- **Archivos modificados**:
+  - `backend/src/modules/drivers/guards/subscription.guard.ts`
+  - `backend/src/modules/device/device.service.ts`
+
+### 📊 UI: "Pantallas Asignadas" en Detalle de Campaña
+- **Mejora**: Añadida sección en `/campaigns/[id]` para ver qué tablets están recibiendo la campaña, su estado (online/offline), ubicación y última sincronización.
+- **Lógica**: Soporta tanto asignaciones directas como campañas globales (que muestran todos los nodos activos).
+- **Archivos modificados**:
+  - `admin-dashboard/pages/campaigns/[id].tsx`
+  - `admin-dashboard/services/api.ts`
+  - `backend/src/modules/campaign/campaign.controller.ts` (endpoint granular `:id/devices`)
+
+### 🔧 INFRA: Sistema de Control Local (Taskkill Node/Next)
+- **Acción**: Limpieza de procesos colgantes en Windows para evitar errores `EADDRINUSE` en los puertos 3000 y 3001.
+- **Script**: `taskkill /F /IM node.exe /T`.
+
 
 ---
 

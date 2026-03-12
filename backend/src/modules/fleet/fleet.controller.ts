@@ -46,4 +46,13 @@ export class FleetController {
     }
     return this.fleetService.registerDeviceByAdmin(body.placa, body.driverName);
   }
+
+  @Post('track-batch')
+  async handleBatchTracking(@Body() data: { 
+    driverId: string; 
+    deviceId: string; 
+    locations: any[];
+  }) {
+    return this.fleetService.trackBatch(data);
+  }
 }

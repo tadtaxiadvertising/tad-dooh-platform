@@ -36,8 +36,9 @@ export class AnalyticsController {
   @Public() // Tablets batch-upload analytics without JWT
   @Post('batch')
   @HttpCode(HttpStatus.OK)
-  async ingestBatchEvents(@Body() dto: any[]) {
-    await this.analyticsService.ingestBatchEvents(dto);
+  async ingestBatchEvents(@Body() body: any) {
+    const events = Array.isArray(body) ? body : (body.events || []);
+    await this.analyticsService.ingestBatchEvents(events);
     return { success: true };
   }
 

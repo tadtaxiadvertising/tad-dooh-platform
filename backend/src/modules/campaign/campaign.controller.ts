@@ -124,20 +124,70 @@ export class CampaignController {
     }
   }
 
-  // 2. Reporte de Cobertura (Legacy/Alt View)
+  // 2. Reporte de Cobertura — Pantallas que reciben esta campaña
   @Get(':campaignId/devices')
   async getCampaignDevices(@Param('campaignId') campaignId: string) {
+    // First, get the campaign to check if it's global
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { targetAll: true, isGlobal: true, targetCity: true }
+    });
+
+    if (!campaign) return [];
+
+    // If global → return ALL active devices
+    if (campaign.targetAll || campaign.isGlobal) {
+      const allDevices = await this.prisma.device.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: { lastSeen: 'desc' }
+      });
+
+      return allDevices.map(d => ({
+        ...d,
+        assigned_at: null, // Global → no explicit assignment date
+        assignment_type: 'GLOBAL'
+      }));
+    }
+
+    // Otherwise → only explicitly assigned devices
     const assignments = await this.prisma.deviceCampaign.findMany({
       where: { campaign_id: campaignId },
       include: {
         device: true, 
       },
     });
+
+    // Also check drivers targeted
+    const targetedDriverDevices = await this.prisma.device.findMany({
+      where: {
+        driver: {
+          campaigns: { some: { id: campaignId } }
+        }
+      }
+    });
     
-    return assignments.map(a => ({
-      ...a.device,
-      assigned_at: a.assigned_at
-    }));
+    // Merge both (avoid duplicates)
+    const deviceMap = new Map<string, any>();
+    
+    for (const a of assignments) {
+      deviceMap.set(a.device.id, {
+        ...a.device,
+        assigned_at: a.assigned_at,
+        assignment_type: 'DIRECT'
+      });
+    }
+    
+    for (const d of targetedDriverDevices) {
+      if (!deviceMap.has(d.id)) {
+        deviceMap.set(d.id, {
+          ...d,
+          assigned_at: null,
+          assignment_type: 'DRIVER'
+        });
+      }
+    }
+
+    return Array.from(deviceMap.values());
   }
 
   // 3. Playlist Personalizada para Tablet (Segmentación por Chofer)

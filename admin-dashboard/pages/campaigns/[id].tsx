@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { getCampaignById } from '../../services/api';
-import { ArrowLeft, Megaphone, Calendar, Activity, Film, Clock, Zap, Users, MapPin, Play } from 'lucide-react';
+import { getCampaignById, getCampaignDevices } from '../../services/api';
+import { ArrowLeft, Megaphone, Calendar, Activity, Film, Clock, Zap, Users, MapPin, Play, Tablet, Wifi, WifiOff, RefreshCcw } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -14,6 +14,8 @@ export default function CampaignDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [assignedDevices, setAssignedDevices] = useState<any[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
 
   const fetchCampaign = () => {
     if (!id) return;
@@ -27,8 +29,18 @@ export default function CampaignDetailPage() {
       .finally(() => setLoading(false));
   };
 
+  const fetchAssignedDevices = () => {
+    if (!id) return;
+    setLoadingDevices(true);
+    getCampaignDevices(id as string)
+      .then(data => setAssignedDevices(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error loading devices:', err))
+      .finally(() => setLoadingDevices(false));
+  };
+
   useEffect(() => {
     fetchCampaign();
+    fetchAssignedDevices();
   }, [id]);
 
   if (loading) {
@@ -294,12 +306,130 @@ export default function CampaignDetailPage() {
         </div>
       </div>
 
+      {/* ====== PANTALLAS ASIGNADAS ====== */}
+      <div className="mt-10">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
+            Pantallas <span className="text-tad-yellow">Asignadas</span>
+          </h2>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">
+              {assignedDevices.length} pantalla{assignedDevices.length !== 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={fetchAssignedDevices}
+              className="p-2 bg-zinc-900 hover:bg-zinc-800 rounded-xl border border-white/5 transition-colors"
+              title="Recargar"
+            >
+              <RefreshCcw className={clsx("w-4 h-4 text-tad-yellow", loadingDevices && "animate-spin")} />
+            </button>
+          </div>
+        </div>
+
+        {loadingDevices ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3].map(i => <div key={i} className="h-32 bg-zinc-900/40 animate-pulse rounded-2xl border border-white/5" />)}
+          </div>
+        ) : assignedDevices.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {assignedDevices.map((device: any) => {
+              const isOnline = device.lastHeartbeat
+                ? (new Date().getTime() - new Date(device.lastHeartbeat || device.lastSeen).getTime() < 300000)
+                : false;
+              const deviceName = device.taxiNumber || device.deviceId || 'Sin Nombre';
+              const lastSyncTime = device.lastSeen || device.lastSync || device.assigned_at;
+
+              return (
+                <div
+                  key={device.id || device.deviceId}
+                  className="bg-zinc-950/50 border border-white/10 rounded-2xl p-5 hover:border-tad-yellow/30 transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={clsx(
+                        "p-2 rounded-xl border border-white/5",
+                        isOnline ? "bg-tad-yellow/10 text-tad-yellow" : "bg-zinc-900 text-zinc-600"
+                      )}>
+                        <Tablet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-white font-bold text-sm uppercase tracking-tight">{deviceName}</p>
+                        <p className="text-[9px] text-zinc-600 font-mono">{device.deviceId}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isOnline ? (
+                        <Wifi className="w-3.5 h-3.5 text-tad-yellow" />
+                      ) : (
+                        <WifiOff className="w-3.5 h-3.5 text-zinc-700" />
+                      )}
+                      <span className={clsx(
+                        "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border",
+                        isOnline
+                          ? "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20"
+                          : "bg-zinc-900 text-zinc-600 border-white/5"
+                      )}>
+                        {isOnline ? 'En Vivo' : 'Offline'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/30 rounded-lg p-2.5 border border-white/5">
+                      <p className="text-[8px] text-zinc-600 font-black uppercase tracking-widest mb-0.5">Ciudad</p>
+                      <p className="text-xs text-white font-bold">{device.city || 'Global'}</p>
+                    </div>
+                    <div className="bg-black/30 rounded-lg p-2.5 border border-white/5">
+                      <p className="text-[8px] text-zinc-600 font-black uppercase tracking-widest mb-0.5">Última Sync</p>
+                      <p className="text-xs text-white font-bold">
+                        {lastSyncTime
+                          ? formatDistanceToNow(new Date(lastSyncTime), { addSuffix: true })
+                          : 'Nunca'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className={clsx(
+                      "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded border",
+                      device.assignment_type === 'GLOBAL'
+                        ? "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20"
+                        : device.assignment_type === 'DRIVER'
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          : "bg-zinc-800 text-zinc-400 border-white/5"
+                    )}>
+                      {device.assignment_type === 'GLOBAL' ? '🌐 Global' : device.assignment_type === 'DRIVER' ? '👤 Chofer' : '📌 Directa'}
+                    </span>
+                    {device.assigned_at && (
+                      <span className="text-[9px] text-zinc-600 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDistanceToNow(new Date(device.assigned_at), { addSuffix: true })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-12 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center">
+            <Tablet className="w-12 h-12 text-zinc-700 mb-4" />
+            <h3 className="text-lg font-bold text-gray-400">Sin pantallas asignadas directamente</h3>
+            <p className="text-gray-500 mt-2 text-sm max-w-md">
+              {campaign?.targetAll
+                ? 'Esta campaña está en modo "Transmisión Global" — se envía a TODAS las tablets activas automáticamente.'
+                : 'Usa el botón "Gestionar Despliegue" para asignar pantallas a esta campaña.'}
+            </p>
+          </div>
+        )}
+      </div>
+
       <CampaignModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         campaignId={campaign.id}
         campaignName={campaign.name}
-        onSuccess={() => fetchCampaign()}
+        onSuccess={() => { fetchCampaign(); fetchAssignedDevices(); }}
       />
     </div>
   );

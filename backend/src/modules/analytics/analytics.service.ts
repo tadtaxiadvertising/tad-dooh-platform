@@ -41,20 +41,24 @@ export class AnalyticsService {
   }
 
   async ingestBatchEvents(dtos: any[]) {
+    if (!dtos || dtos.length === 0) {
+      return { count: 0 };
+    }
+
     this.logger.log(`Ingesting ${dtos.length} analytics events in batch.`);
     const processedEvents = dtos.map(dto => ({
       deviceId: dto.deviceId,
       campaignId: dto.campaignId,
-      eventType: dto.eventType,
+      eventType: dto.type || dto.eventType, // Support both formats
       timestamp: dto.timestamp ? new Date(dto.timestamp) : new Date(),
-      occurredAt: dto.timestamp ? new Date(dto.timestamp) : new Date(),
+      occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : (dto.timestamp ? new Date(dto.timestamp) : new Date()),
       lat: dto.lat,
       lng: dto.lng,
       processed: false
     }));
 
     await this.prisma.analyticsEvent.createMany({
-      data: processedEvents,
+      data: processedEvents as any,
     });
     
     return { count: processedEvents.length };

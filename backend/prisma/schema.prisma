@@ -77,6 +77,7 @@ model Device {
   campaigns      DeviceCampaign[]
   driver          Driver?
   subscription    Subscription?
+  locations       DriverLocation[]
   
   @@map("devices")
   @@index([status])
@@ -230,7 +231,7 @@ model Media {
 model AnalyticsEvent {
   id          String   @id @default(uuid())
   deviceId    String   @map("device_id")
-  campaignId  String   @map("campaign_id")
+  campaignId  String?  @map("campaign_id")
   mediaId     String?  @map("media_id")
   eventType   String   @map("event_type")
   eventData   String?    @map("event_data")
@@ -406,6 +407,7 @@ model Driver {
   subscriptions Subscription[]
   campaigns     Campaign[]
   payrollPayments PayrollPayment[]
+  locations     DriverLocation[]
 
   @@map("drivers")
   @@index([status])
@@ -483,4 +485,25 @@ model Advertiser {
 
   @@map("advertisers")
   @@index([status])
+}
+
+// ============================================
+// TRACKING (GPS Tracking Hybrid logic)
+// ============================================
+
+model DriverLocation {
+  id        String   @id @default(uuid())
+  driverId  String   @map("driver_id")
+  deviceId  String   @map("device_id")
+  latitude  Float
+  longitude Float
+  speed     Float    @default(0)
+  timestamp DateTime @default(now())
+
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@map("driver_locations")
+  @@index([deviceId, timestamp])
+  @@index([driverId])
 }

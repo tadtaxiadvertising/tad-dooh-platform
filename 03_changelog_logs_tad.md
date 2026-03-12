@@ -52,6 +52,12 @@
 - **Build Command**: `cd .. && npm install && cd admin-dashboard && next build`
 - **Estado**: Pendiente de confirmación de build verde.
 
+### 🛡️ FEATURE: Pantalla de Bloqueo de Tablet (402 Payment Required)
+- **Concepto**: Implementación del "Kill-switch" visual en la tablet (Hardware API).
+- **Lógica**: Se añadieron handlers en la lógica de `sync.performSync()` y silenciosos en `watchdog.sendHeartbeat()` para capturar respuestas `HTTP 402` y `403` procedentes del `SubscriptionGuard` bloqueando cualquier operación.
+- **Visuales**: `showBlocked` oculta todos los procesos y lanza un mensaje directo vinculante con contacto al soporte por impagos de RD$6,000.00.
+- **Archivos Modificados**: `tablet-player/index.html`. 
+
 ---
 
 ## 📅 11 de Marzo, 2026 (Noche - Estabilización Post-Despliegue)

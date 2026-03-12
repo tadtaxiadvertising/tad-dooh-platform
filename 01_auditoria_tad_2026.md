@@ -171,7 +171,7 @@
 - [x] Arquitectura de sincronización de contenido (Hotspot + Service Worker).
 - [x] Implementación de IndexedDB en tablet para almacenamiento de logs offline.
 - [x] Motor de Ingestión de GPS (Batching 10+1).
-- [ ] Implementación de Pantalla de Bloqueo (Remote Kill-switch).
+- [x] Implementación de Pantalla de Bloqueo (Remote Kill-switch).
 - [ ] Crear alerta en Dashboard: "Dispositivo con contenido desactualizado (> 7 días)".
 - [x] Integración de Validación de Suscripción en GPS Gateway.
 

@@ -10,3 +10,5 @@ admin-dashboard/node_modules/
 admin-dashboard/.next/
 admin-dashboard/out/
 tmp/
+
+.vercel

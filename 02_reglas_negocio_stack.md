@@ -158,3 +158,15 @@ git add . && git commit -m "msg" && git push origin main
 - **API Prefix**: Todas las rutas bajo `/api/` (configurado globalmente).
 - **Frontend routing**: Next.js Pages Router (NO App Router).
 - **Estilos**: Tailwind 4 con color personalizado `tad-yellow` (#fad400).
+
+---
+
+## 📍 REGLAS: SISTEMA DE TRACKING Y GATEWAY
+
+1. **Arquitectura Gateway**: La tablet (offline) vincula al chofer vía QR. El celular del chofer (4G) actúa como puente (Mobile Gateway) enviando datos al servidor.
+2. **GPS Batching**: Para optimizar batería y nube, los datos se agrupan:
+   - Envío cada **10 coordenadas acumuladas**.
+   - Envío forzado cada **60 segundos** (si hay menos de 10 puntos).
+3. **Bloqueo RD$6,000**: Si la suscripción anual del dispositivo no está `ACTIVE`/Pagada, el endpoint `/fleet/track-batch` devuelve **402 Payment Required**.
+4. **Validación de Identidad**: El chofer debe estar autenticado en la PWA. No se permiten reportes de GPS para un `deviceId` que no tenga asignado en la base de datos.
+5. **Cálculo de Comisión**: El pago de RD$500/mes para el chofer se desbloquea tras alcanzar 75% de "Attendance" (días con tracking activo durante horario laboral).

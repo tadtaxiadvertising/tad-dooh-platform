@@ -170,8 +170,10 @@
 - [x] Tracking de ubicación vía QR (Celular como puente).
 - [x] Arquitectura de sincronización de contenido (Hotspot + Service Worker).
 - [x] Implementación de IndexedDB en tablet para almacenamiento de logs offline.
+- [x] Motor de Ingestión de GPS (Batching 10+1).
+- [ ] Implementación de Pantalla de Bloqueo (Remote Kill-switch).
 - [ ] Crear alerta en Dashboard: "Dispositivo con contenido desactualizado (> 7 días)".
-- [ ] Integración con WhatsApp API para alertas automáticas (Siguiente)
+- [x] Integración de Validación de Suscripción en GPS Gateway.
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)
 - [ ] Onboarding de tablets en campo

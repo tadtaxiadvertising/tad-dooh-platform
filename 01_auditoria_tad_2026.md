@@ -257,3 +257,13 @@ tad-dooh-platform/
   - Generación de un `tsconfig.json` maestro en la raíz con `experimentalDecorators: true` y `emitDecoratorMetadata: true`.
   - Instalación de dependencias core de NestJS (`@nestjs/core`, `@nestjs/common`, etc.) a nivel raíz para satisfacer las importaciones del Serverless Function (`api/index.ts`).
 - **Estado Técnico:** Despliegue CI/CD Vercel estabilizado y adaptado al patrón Monorepo.
+
+---
+
+## [ACTUALIZACIÓN 11-MAR-2026] - CORRECCIÓN DE BUILD FRONTEND (TAILWIND 4)
+- **Incidencia:** Fallo en el despliegue del Dashboard (`Error: Cannot find module '@tailwindcss/postcss'`).
+- **Causa:** El motor Turbopack de Next.js 16 requiere el puente de PostCSS para procesar `globals.css` bajo el estándar de Tailwind 4, pero la dependencia no estaba declarada en el workspace.
+- **Solución Implementada:** 
+  - Instalación de `@tailwindcss/postcss` en el workspace `admin-dashboard`.
+  - Creación del archivo `postcss.config.js` vinculando el plugin.
+- **Estado Técnico:** Pipeline de CI/CD para el Dashboard en fase de re-validación.

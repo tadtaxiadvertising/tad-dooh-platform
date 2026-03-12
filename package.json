@@ -29,7 +29,7 @@
     "@nestjs/core": "^11.1.16",
     "@nestjs/platform-express": "^11.1.16",
     "express": "^5.2.1",
-    "next": "15.1.7",
+    "next": "15.1.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "reflect-metadata": "^0.2.2",

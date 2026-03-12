@@ -45,6 +45,13 @@
   1. Hoisting de `@tailwindcss/postcss` y `postcss` a la raíz del proyecto.
   2. Simplificación del script `build` en `package.json` (eliminado `npm install` redundante).
 
+### 🔧 FIX: Vercel Deployment Pathing (Solución Final)
+- **Error**: `routes-manifest.json` not found — Next.js genera los manifiestos dentro del workspace pero Vercel los busca en la raíz.
+- **Causa**: Conflicto de rutas relativas en monorepo. Intentos con `distDir`, `mv`, `cp -r` fallaban por dependencias internas de Next.js 16.
+- **Solución Final**: Cambio de 'Root Directory' a `admin-dashboard` en el panel de Vercel + downgrade a Next 15.1.7 estable.
+- **Build Command**: `cd .. && npm install && cd admin-dashboard && next build`
+- **Estado**: Pendiente de confirmación de build verde.
+
 ---
 
 ## 📅 11 de Marzo, 2026 (Noche - Estabilización Post-Despliegue)

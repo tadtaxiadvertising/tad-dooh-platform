@@ -59,7 +59,7 @@ export class DriversService {
    * Listar todos los choferes con su dispositivo y estado de suscripción
    */
   async findAll() {
-    return this.prisma.driver.findMany({
+    const drivers = await this.prisma.driver.findMany({
       include: { 
         device: {
           select: {
@@ -70,14 +70,21 @@ export class DriversService {
             appVersion: true,
             lastSeen: true,
           }
-        },
-        subscriptions: {
-          orderBy: { startDate: 'desc' },
-          take: 1
         }
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Get active campaigns count for earnings calculation
+    const activeAdsCount = await this.prisma.campaign.count({
+      where: { status: 'ACTIVE' }
+    });
+
+    return drivers.map(driver => ({
+      ...driver,
+      activeAds: activeAdsCount,
+      projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0
+    }));
   }
 
   /**

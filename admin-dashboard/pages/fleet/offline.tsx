@@ -4,7 +4,7 @@ import { MonitorOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function OfflineFleetPage() {
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<{ device_id: string; last_seen?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {

@@ -43,7 +43,7 @@ export default function DeviceSelectorModal({
       loadData();
       setSelectedDevices(initialSelected);
     }
-  }, [isOpen]);
+  }, [isOpen, initialSelected]);
 
   const loadData = async () => {
     setLoading(true);
@@ -56,7 +56,7 @@ export default function DeviceSelectorModal({
         try {
           const slots = await getDeviceSlots(d.device_id);
           return { id: d.device_id, count: slots.assigned_slots, limit: slots.max_slots };
-        } catch (e) {
+        } catch {
           return { id: d.device_id, count: 0, limit: 15 };
         }
       });
@@ -127,6 +127,8 @@ export default function DeviceSelectorModal({
             <button 
               onClick={onClose}
               className="p-2 bg-zinc-900 rounded-full text-zinc-500 hover:text-white transition-colors"
+              title="Cerrar modal"
+              aria-label="Cerrar modal"
             >
               <X className="w-5 h-5" />
             </button>

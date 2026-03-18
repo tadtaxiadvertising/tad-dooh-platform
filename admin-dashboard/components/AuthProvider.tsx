@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../services/supabaseClient';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
-const PUBLIC_PATHS = ['/login'];
+const PUBLIC_PATHS = ['/login', '/check-in'];
 
 interface AuthContextValue {
   session: Session | null;
@@ -23,8 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── 1. Leer sesión inicial desde el storage (síncrono en el SDK de Supabase)
     if (!supabase) return; // Safely exit if Supabase couldn't be initialized (SSR)
 
-    supabase.auth.getSession().then((response: any) => {
-      const session = response?.data?.session || null;
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       setSession(session);
       setLoading(false);
 
@@ -36,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // ── 2. Subscribirse a cambios de sesión (login, logout, refresh de token)
     const { data } = supabase.auth.onAuthStateChange(
-      (_event: any, session: any) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         setSession(session);
 
         if (_event === 'SIGNED_OUT') {

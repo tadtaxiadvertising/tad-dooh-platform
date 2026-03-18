@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Phone, IdCard, CreditCard, Tablet, Hash } from 'lucide-react';
 import { createDriver } from '../services/api';
+import { notifyChange } from '../lib/sync-channel';
 
 interface DriverModalProps {
   isOpen: boolean;
@@ -8,7 +9,7 @@ interface DriverModalProps {
   onSuccess: () => void;
 }
 
-export default function DriverModal({ isOpen, onClose, onSuccess }: DriverModalProps) {
+const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess }: DriverModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -30,6 +31,7 @@ export default function DriverModal({ isOpen, onClose, onSuccess }: DriverModalP
 
     try {
       await createDriver(formData);
+      notifyChange('CONDUCTORES');
       onSuccess();
       onClose();
       // Reset form
@@ -42,10 +44,12 @@ export default function DriverModal({ isOpen, onClose, onSuccess }: DriverModalP
         deviceId: '',
         subscriptionPaid: false,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating driver:', err);
-      const message = err.response?.data?.message || 'Error al registrar el chofer. Verifique que el teléfono o cédula no estén duplicados.';
-      setError(Array.isArray(message) ? message.join(', ') : message);
+      const errorMsg = err instanceof Error && 'response' in err 
+        ? (err as { response: { data: { message: string | string[] } } }).response.data.message 
+        : (err instanceof Error ? err.message : 'Error al registrar el conductor. Verifique que el teléfono o cédula no estén duplicados.');
+      setError(Array.isArray(errorMsg) ? errorMsg.join(', ') : (errorMsg || 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -57,9 +61,14 @@ export default function DriverModal({ isOpen, onClose, onSuccess }: DriverModalP
         <div className="flex items-center justify-between p-6 border-b border-white/5 bg-zinc-900/50">
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <User className="w-5 h-5 text-tad-yellow" />
-            Registrar Nuevo <span className="text-tad-yellow">Chofer</span>
+            Registrar Nuevo <span className="text-tad-yellow">Conductor</span>
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl text-zinc-500 hover:text-white transition-colors">
+          <button 
+            onClick={onClose} 
+            className="p-2 hover:bg-white/5 rounded-xl text-zinc-500 hover:text-white transition-colors"
+            title="Cerrar modal"
+            aria-label="Cerrar modal"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -180,4 +189,6 @@ export default function DriverModal({ isOpen, onClose, onSuccess }: DriverModalP
       </div>
     </div>
   );
-}
+});
+
+export default DriverModal;

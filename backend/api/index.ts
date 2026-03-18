@@ -59,12 +59,13 @@ export default async (req: any, res: any) => {
   try {
     const server = await createNestServer();
     return server(req, res);
-  } catch (err) {
-    console.error('NestJS Bootstrap Error:', err);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error('NestJS Bootstrap Error:', error);
     res.status(500).json({ 
       error: 'Internal Server Error', 
-      message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
     });
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Target, Users, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Target, Users } from 'lucide-react';
 
 interface DistributionData {
   campaign_name: string;

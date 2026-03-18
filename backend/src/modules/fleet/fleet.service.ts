@@ -88,10 +88,14 @@ export class FleetService {
   async getFleetMap() {
     return this.prisma.device.findMany({
       select: {
+        id: true,
         deviceId: true,
         taxiNumber: true,
         city: true,
         lastSeen: true,
+        lastLat: true,
+        lastLng: true,
+        status: true
       }
     });
   }
@@ -201,11 +205,53 @@ export class FleetService {
     });
   }
 
-  async registerDeviceByAdmin(placa: string, nombreChofer: string) {
+  async registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string) {
     const crypto = require('crypto');
-    const deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
+    // Si proveen un ID, validamos su formato, de lo contrario generamos
+    let deviceId = providedDeviceId?.trim();
+    if (!deviceId) {
+      deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
+    }
     
-    // Create unit dynamically, discarding legacy burn-in tags
+    // 1. Verificar si el dispositivo ya existe (ej: la tablet ya se auto-registró)
+    const existing = await this.prisma.device.findUnique({
+      where: { deviceId },
+      include: { driver: true }
+    });
+
+    if (existing) {
+      // Si existe, actualizamos el vehículo y le vinculamos/actualizamos el chofer
+      const updated = await this.prisma.device.update({
+        where: { deviceId },
+        data: {
+          taxiNumber: placa,
+          status: 'ACTIVE',
+          driver: existing.driver ? {
+            update: {
+              fullName: nombreChofer,
+              licensePlate: placa,
+              taxiNumber: placa,
+            }
+          } : {
+            create: {
+              fullName: nombreChofer,
+              phone: 'PH-' + deviceId, // Bypass par scale-test
+              licensePlate: placa,
+              taxiNumber: placa,
+            }
+          }
+        }
+      });
+      return { 
+        success: true, 
+        device_id: updated.deviceId,
+        driver_name: nombreChofer,
+        taxi_number: placa,
+        linked_to_existing: true
+      };
+    }
+
+    // 2. Si no existe, lo creamos desde cero
     const device = await this.prisma.device.create({
       data: {
         deviceId,
@@ -216,7 +262,7 @@ export class FleetService {
         driver: {
           create: {
             fullName: nombreChofer,
-            phone: 'PH-' + deviceId, // Bypass unique phone constraint for rapid testing scaling
+            phone: 'PH-' + deviceId,
             licensePlate: placa,
             taxiNumber: placa,
           }
@@ -228,29 +274,221 @@ export class FleetService {
       success: true, 
       device_id: device.deviceId,
       driver_name: nombreChofer,
-      taxi_number: placa 
+      taxi_number: placa,
+      linked_to_existing: false
     };
   }
 
-  async trackBatch(data: { driverId: string; deviceId: string; locations: any[] }) {
-    // 1. VALIDACIÓN DE REGLA DE NEGOCIO: Suscripción Anual
-    // Buscamos la suscripción ligada al dispositivo
+  /**
+   * Retorna las últimas ubicaciones con datos de chofer y dispositivo.
+   * Usado por la pestaña de Rastreo GPS en el Dashboard Admin.
+   */
+  async getTrackingData() {
+    const locations = await this.prisma.driverLocation.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: 500,
+      include: {
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            taxiNumber: true,
+            taxiPlate: true,
+            licensePlate: true,
+            status: true,
+            subscriptionPaid: true,
+          },
+        },
+        device: {
+          select: {
+            deviceId: true,
+            taxiNumber: true,
+            city: true,
+            status: true,
+            batteryLevel: true,
+            lastSeen: true,
+          },
+        },
+      },
+    });
+
+    return locations.map((loc) => ({
+      id: loc.id,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      speed: loc.speed,
+      timestamp: loc.timestamp,
+      driver: loc.driver ? {
+        id: loc.driver.id,
+        name: loc.driver.fullName,
+        phone: loc.driver.phone,
+        taxiNumber: loc.driver.taxiNumber || loc.driver.licensePlate,
+        plate: loc.driver.taxiPlate || loc.driver.licensePlate,
+        status: loc.driver.status,
+        subscriptionPaid: loc.driver.subscriptionPaid,
+      } : null,
+      device: loc.device ? {
+        deviceId: loc.device.deviceId,
+        taxiNumber: loc.device.taxiNumber,
+        city: loc.device.city,
+        status: loc.device.status,
+        batteryLevel: loc.device.batteryLevel,
+        lastSeen: loc.device.lastSeen,
+      } : null,
+    }));
+  }
+
+  /**
+   * Retorna un resumen por chofer: total de puntos GPS, última ubicación, velocidad promedio.
+   */
+  async getTrackingSummary() {
+    try {
+      // 1. Obtener todos los drivers con su tablet vinculada
+      const drivers = await this.prisma.driver.findMany({
+        where: { deviceId: { not: null } },
+        include: {
+          device: {
+            select: {
+              deviceId: true,
+              taxiNumber: true,
+              city: true,
+              batteryLevel: true,
+              lastSeen: true,
+            },
+          },
+          locations: {
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      if (drivers.length === 0) return [];
+
+      // 2. Contar puntos GPS de HOY (batch optimization)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const driverIds = drivers.map(d => d.id);
+
+      const counts = await this.prisma.driverLocation.groupBy({
+        by: ['driverId'],
+        _count: { id: true },
+        _avg: { speed: true },
+        where: {
+          driverId: { in: driverIds },
+          timestamp: { gte: todayStart },
+        },
+      });
+
+      const countMap = new Map(counts.map((c) => [
+        c.driverId, 
+        { 
+          count: c._count.id, 
+          avgSpeed: c._avg?.speed || 0 
+        }
+      ]));
+
+      // 3. Total histórico por chofer
+      const totalCounts = await this.prisma.driverLocation.groupBy({
+        by: ['driverId'],
+        _count: { id: true },
+        where: {
+          driverId: { in: driverIds }
+        }
+      });
+      const totalMap = new Map(totalCounts.map((c) => [c.driverId, c._count.id]));
+
+      const now = new Date();
+      const fiveMinMs = 5 * 60 * 1000;
+
+      return drivers.map((d) => {
+        const lastLocation = d.locations[0] || null;
+        const todayStats = countMap.get(d.id) || { count: 0, avgSpeed: 0 };
+        const totalPoints = totalMap.get(d.id) || 0;
+        
+        // Determinar si está activo (señal en los últimos 5 minutos)
+        const isActive = lastLocation
+          ? (now.getTime() - new Date(lastLocation.timestamp).getTime()) < fiveMinMs
+          : false;
+
+        return {
+          driverId: d.id,
+          driverName: d.fullName,
+          phone: d.phone,
+          taxiNumber: d.taxiNumber || d.licensePlate,
+          plate: d.taxiPlate || d.licensePlate,
+          status: d.status,
+          subscriptionPaid: d.subscriptionPaid,
+          device: d.device ? {
+            deviceId: d.device.deviceId,
+            taxiNumber: d.device.taxiNumber,
+            city: d.device.city,
+            batteryLevel: d.device.batteryLevel,
+            lastSeen: d.device.lastSeen,
+          } : null,
+          tracking: {
+            isActive,
+            pointsToday: todayStats.count,
+            totalPoints,
+            avgSpeedToday: typeof todayStats.avgSpeed === 'number' ? parseFloat(todayStats.avgSpeed.toFixed(1)) : 0,
+            lastPosition: lastLocation ? {
+              lat: lastLocation.latitude,
+              lng: lastLocation.longitude,
+              speed: lastLocation.speed || 0,
+              timestamp: lastLocation.timestamp,
+            } : null,
+          },
+        };
+      });
+    } catch (error) {
+      console.error('CRITICAL: Error in getTrackingSummary:', error);
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Error al procesar el resumen de rastreo.',
+        error: error.message
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async trackBatch(data: { driverId?: string; deviceId: string; locations: any[] }) {
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId: data.deviceId },
+      include: { driver: true }
+    });
+
+    if (!device?.driver) {
+      throw new HttpException({
+        status: HttpStatus.NOT_FOUND,
+        error: 'Dispositivo no registrado o sin chofer asignado.',
+        code: 'NOT_FOUND'
+      }, HttpStatus.NOT_FOUND);
+    }
+
+    const resolvedDriverId = data.driverId || device.driver.id;
+
+    // 1. VALIDACIÓN DE REGLA DE NEGOCIO: Suscripción Activa
+    // Verificamos tanto el flag manual del chofer como la entidad Subscription
+    const isPaidManual = device.driver.subscriptionPaid;
+    
     const sub = await this.prisma.subscription.findUnique({
       where: { deviceId: data.deviceId },
     });
 
-    // Bloqueamos si la suscripción existe Y está vencida/expirada
-    if (sub && (sub.status === 'EXPIRED' || (sub.validUntil && new Date() > sub.validUntil))) {
+    const isSubActive = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
+
+    if (!isPaidManual && !isSubActive) {
       throw new HttpException({
         status: HttpStatus.PAYMENT_REQUIRED,
-        error: 'Suscripción de RD$6,000 pendiente o vencida.',
+        error: 'Acceso denegado: Suscripción de RD$6,000 pendiente o vencida.',
         code: 'PAYMENT_REQUIRED'
       }, HttpStatus.PAYMENT_REQUIRED);
     }
 
     // 2. GUARDADO MASIVO
     const records = data.locations.map(loc => ({
-      driverId: data.driverId,
+      driverId: resolvedDriverId,
       deviceId: data.deviceId,
       latitude: loc.lat,
       longitude: loc.lng,
@@ -264,7 +502,7 @@ export class FleetService {
       });
     }
 
-    return { success: true, count: records.length };
+    return { success: true, count: records.length, driverId: resolvedDriverId };
   }
 }
 

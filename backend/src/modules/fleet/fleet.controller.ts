@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { FleetService } from './fleet.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('fleet')
 export class FleetController {
@@ -39,17 +40,28 @@ export class FleetController {
   }
 
   @Post('register')
-  async registerDevice(@Body() body: { placa: string; driverName: string }) {
+  async registerDevice(@Body() body: { placa: string; driverName: string; deviceId?: string }) {
     if (!body.placa || !body.driverName) {
       const { BadRequestException } = require('@nestjs/common');
       throw new BadRequestException('placa y driverName son obligatorios');
     }
-    return this.fleetService.registerDeviceByAdmin(body.placa, body.driverName);
+    return this.fleetService.registerDeviceByAdmin(body.placa, body.driverName, body.deviceId);
   }
 
+  @Get('tracking')
+  async getTrackingData() {
+    return this.fleetService.getTrackingData();
+  }
+
+  @Get('tracking/summary')
+  async getTrackingSummary() {
+    return this.fleetService.getTrackingSummary();
+  }
+
+  @Public()
   @Post('track-batch')
   async handleBatchTracking(@Body() data: { 
-    driverId: string; 
+    driverId?: string; 
     deviceId: string; 
     locations: any[];
   }) {

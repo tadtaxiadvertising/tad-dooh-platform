@@ -215,7 +215,8 @@ model Media {
   hashSha256      String?  @map("hash_sha256")
   campaign_id     String?
   campaign        Campaign? @relation("MediaCampaign", fields: [campaign_id], references: [id])
-  status          String @default("PROCESSING")
+  status          String @default("READY")
+  qrUrl           String?  @map("qr_url")
   createdAt       DateTime @default(now()) @map("created_at")
   
   @@map("media")
@@ -314,6 +315,7 @@ model Video {
   duration    Int
   fileSize    Int?     @map("file_size")
   mimeType    String?  @map("mime_type")
+  qrUrl       String?  @map("qr_url")
   createdAt   DateTime @default(now()) @map("created_at")
   uploadedAt  DateTime @default(now()) @map("uploaded_at")
 
@@ -364,6 +366,7 @@ model MediaAsset {
   fileSize    Int      @map("file_size")
   checksum    String
   duration    Int?
+  qrUrl       String?  @map("qr_url")
   version     Int      @default(1)
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -505,5 +508,6 @@ model DriverLocation {
 
   @@map("driver_locations")
   @@index([deviceId, timestamp])
+  @@index([driverId, timestamp]) // Optimización para resumen diario
   @@index([driverId])
 }

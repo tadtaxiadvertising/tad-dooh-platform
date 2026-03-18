@@ -1,16 +1,30 @@
 // backend/src/modules/supabase/supabase.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService {
+  private readonly logger = new Logger(SupabaseService.name);
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(
-      process.env.SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || ''
-    );
+    const url = process.env.SUPABASE_URL || '';
+    // For server-side auth validation (getUser), we MUST use the service_role_key.
+    // The anon_key can only validate its own session, not arbitrary user tokens.
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+
+    if (!url || !key) {
+      this.logger.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set! Auth will fail.');
+    }
+
+    this.supabase = createClient(url, key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      }
+    });
+
+    this.logger.log(`SupabaseService initialized | URL: ${url ? url.substring(0, 30) + '...' : 'MISSING'} | Key: ${key ? '***' + key.slice(-6) : 'MISSING'}`);
   }
 
   // Genera una URL pública para el visualizador del Dashboard

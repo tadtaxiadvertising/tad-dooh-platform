@@ -16,7 +16,6 @@ export class FinanceService {
     this.logger.log(`Calculating payroll for ${month}/${year}`);
 
     // 1. Get all drivers and their associated devices
-    // We need to fetch ALL active campaigns to cross-reference with the device
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: { status: 'ACTIVE', active: true }
     });
@@ -37,18 +36,12 @@ export class FinanceService {
       if (driver.device) {
         const deviceCity = driver.device.city || 'Santo Domingo';
         
-        // Emulate getActiveSyncVideos logic to count exactly how many ads this driver's tablet downloads
         const eligibleCampaigns = activeCampaigns.filter(camp => {
-          // 1. Check geo-fencing (City)
           const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
           if (!matchesCity) return false;
 
-          // 2. Check targeting
           const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
           const isExplicitlyAssigned = driver.device!.campaigns.some(dc => dc.campaign_id === camp.id);
-          // (targetDrivers is currently updated directly via /drivers endpoint, but checking targetAll/explicitlyAssigned covers the main disconnect)
-          // For perfection, we'd also check if driver.id is in camp.targetDrivers, but the Prisma query above didn't eager-load targetDrivers to save memory. 
-          // TargetAll and Explicit are the primary mechanisms failing here.
           
           return isTargetAll || isExplicitlyAssigned;
         });
@@ -69,6 +62,46 @@ export class FinanceService {
     });
 
     return payroll;
+  }
+
+  /**
+   * AUTOMATIC BILLING TRIGGER: Generates payroll records for all drivers for a specific month.
+   */
+  async triggerMonthlyBilling(month: number, year: number) {
+    this.logger.log(`🚀 TRIGGER: Bulk billing generation for ${month}/${year}`);
+
+    // Check if payroll already processed for this period to avoid duplicates
+    const existing = await this.prisma.payrollPayment.findFirst({
+      where: { month, year }
+    });
+
+    if (existing) {
+      this.logger.warn(`⚠️ Payroll for ${month}/${year} already exists. Aborting bulk trigger.`);
+      return { success: false, message: 'La nómina para este periodo ya fue generada.', count: 0 };
+    }
+
+    const payrollData = await this.calculateMonthlyPayroll(month, year);
+    const recordsToCreate = payrollData
+      .filter(p => p.totalAmount > 0)
+      .map(p => ({
+        driverId: p.driverId,
+        month,
+        year,
+        amount: p.totalAmount,
+        status: 'PENDING',
+      }));
+
+    if (recordsToCreate.length === 0) {
+      return { success: true, message: 'No se encontraron montos a liquidar para este periodo.', count: 0 };
+    }
+
+    const result = await this.prisma.payrollPayment.createMany({
+      data: recordsToCreate,
+      skipDuplicates: true,
+    });
+
+    this.logger.log(`✅ Bulk billing completed: ${result.count} drivers credited.`);
+    return { success: true, count: result.count };
   }
 
   /**
@@ -118,16 +151,28 @@ export class FinanceService {
           where: { videoId: { in: mediaIds }, eventType: 'play_confirm' }
         });
 
-        // Pricing model: RD$100 CPM
-        const CPM = 100;
-        const revenue = (impressions / 1000) * CPM;
+        const mediaItems = await this.prisma.media.findMany({
+          where: { id: { in: mediaIds } }
+        });
+
+        // Pricing model: RD$1,500 per 30-second block per media asset
+        let monthlyRevenue = 0;
+        mediaItems.forEach(media => {
+          const duration = (media as any).durationSeconds || 30;
+          const blocks = Math.ceil(duration / 30);
+          monthlyRevenue += blocks * 1500;
+        });
+
+        const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+        const totalRevenue = monthlyRevenue * diffMonths;
 
         return {
           campaignId: campaign.id,
           campaignName: campaign.name,
           totalImpressions: impressions,
           assignedTaxis: campaign._count.devices,
-          estimatedRevenue: revenue,
+          estimatedRevenue: totalRevenue,
           status: campaign.status
         };
       })
@@ -154,11 +199,18 @@ export class FinanceService {
       }
     });
 
-    // RD$1,500/month flat fee + impressions stats
+    // RD$1,500 per 30-second block per media asset
+    let monthlyBase = 0;
+    campaign.media.forEach(m => {
+      const dur = m.durationSeconds || 30;
+      const blocks = Math.ceil(dur / 30);
+      monthlyBase += blocks * 1500;
+    });
+
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
     
-    const subtotal = diffMonths * 1500;
+    const subtotal = monthlyBase * diffMonths;
     const taxes = subtotal * 0.18;
     const total = subtotal + taxes;
 
@@ -171,13 +223,78 @@ export class FinanceService {
       period: `${campaign.startDate.toLocaleDateString('es-DO')} - ${campaign.endDate.toLocaleDateString('es-DO')}`,
       impressions,
       qty: diffMonths,
-      unitPrice: 1500,
+      unitPrice: monthlyBase,
       subtotal,
       taxes,
       total
     };
 
     return this.generateInvoiceTemplate(invoiceData);
+  }
+
+  /**
+   * Generates a CSV export for payroll
+   */
+  async exportPayrollCsv(month: number, year: number) {
+    const data = await this.calculateMonthlyPayroll(month, year);
+    let csv = 'ID Conductor,Nombre Conductor,Taxi,Ads Activos,Monto Liquidar\n';
+    data.forEach(d => {
+      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.activeAds},RD$ ${d.totalAmount}\n`;
+    });
+    return csv;
+  }
+
+  /**
+   * Generates a CSV export for a single campaign's billing & performance
+   */
+  async exportCampaignCsv(campaignId: string) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { media: true, _count: { select: { devices: true } } }
+    });
+
+    if (!campaign) return 'Campaña no encontrada';
+
+    const impressions = await this.prisma.playbackEvent.count({
+      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+    });
+
+    let monthlyBase = 0;
+    campaign.media.forEach(m => {
+      const dur = m.durationSeconds || 30;
+      const blocks = Math.ceil(dur / 30);
+      monthlyBase += blocks * 1500;
+    });
+
+    const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+    const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+    const total = monthlyBase * diffMonths;
+
+    let csv = 'Detalle de Facturación - TAD DOOH\n';
+    csv += `Campaña,${campaign.name}\n`;
+    csv += `Cliente,${campaign.advertiser}\n`;
+    csv += `Periodo,${campaign.startDate.toLocaleDateString()} - ${campaign.endDate.toLocaleDateString()}\n`;
+    csv += `Meses,${diffMonths}\n`;
+    csv += `Impactos Totales,${impressions}\n`;
+    csv += `Monto Total,RD$ ${total}\n\n`;
+    
+    csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
+    campaign.media.forEach(m => {
+      const dur = m.durationSeconds || 30;
+      const blocks = Math.ceil(dur / 30);
+      csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${blocks * 1500}\n`;
+    });
+
+    return csv;
+  }
+
+  async exportCampaignsCsv() {
+    const data = await this.getCampaignBillingReport();
+    let csv = 'ID Campaña,Nombre Campaña,Estado,Taxis Asignados,Impactos Reales,Ingreso Proyectado (RD$)\n';
+    data.forEach(c => {
+      csv += `${c.campaignId},${c.campaignName},${c.status},${c.assignedTaxis},${c.totalImpressions},${c.estimatedRevenue}\n`;
+    });
+    return csv;
   }
 
   private generateInvoiceTemplate(data: any) {

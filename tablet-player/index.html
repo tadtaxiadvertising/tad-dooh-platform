@@ -7,22 +7,56 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-512.png">
     
-    <!-- Security Headers — Allows localhost, Vercel, AND Supabase Storage -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; media-src 'self' blob: https: https://*.supabase.co; connect-src 'self' http://localhost:3000 https://tad-api.vercel.app https://tad-dooh-platform.vercel.app https://*.supabase.co; img-src 'self' data: https:;">
+    <!-- Security: Permissive for local dev, restrict in production -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src * blob: data:; connect-src *; img-src * data: blob:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     
     <title>TAD Player - Taxi Advertising</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (Local) -->
+    <script src="./tailwind.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Outfit', 'sans-serif'],
+            },
+            colors: {
+              taxi: {
+                400: '#FFD400',
+                500: '#FFC000',
+                600: '#eab308',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <script src="./qrcode.min.js"></script>
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiVEFEIFBsYXllciIsInNob3J0X25hbWUiOiJUQUQiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6ImZ1bGxzY3JlZW4iLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCJ9">
+    <link rel="manifest" href="manifest.webmanifest">
     
     <style>
-        /* Custom styles for video player */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        h1, h2, h3, .font-display {
+            font-family: 'Outfit', sans-serif;
+        }
+
         #video-container {
             background: #000;
         }
@@ -33,36 +67,46 @@
             object-fit: contain;
         }
         
-        /* Hide cursor in kiosk mode */
         .kiosk-mode {
             cursor: none;
         }
         
-        /* Loading animation */
         .loader {
-            border: 4px solid #333;
-            border-top: 4px solid #fff;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #FFD400;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* Status indicator */
+
+        .glow-yellow {
+            text-shadow: 0 0 25px rgba(255, 212, 0, 0.6), 0 0 50px rgba(255, 212, 0, 0.3);
+        }
+
+        .bg-mesh {
+            background-color: #000;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(50, 100%, 50%, 0.1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(50, 100%, 50%, 0.05) 0, transparent 50%),
+                radial-gradient(at 50% 50%, hsla(0, 0%, 5%, 0.8) 0, transparent 80%);
+        }
+
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             display: inline-block;
+            box-shadow: 0 0 10px currentColor;
         }
-        .status-online { background: #22c55e; }
-        .status-offline { background: #ef4444; }
-        .status-sync { background: #eab308; }
+        .status-online { color: #22c55e; background: currentColor; }
+        .status-offline { color: #ef4444; background: currentColor; }
+        .status-sync { color: #eab308; background: currentColor; }
     </style>
 </head>
 <body class="bg-black text-white kiosk-mode">
@@ -93,9 +137,11 @@
                 id="main-video" 
                 class="w-full h-full"
                 playsinline
+                webkit-playsinline
                 preload="auto"
                 muted
                 autoplay
+                loop
             ></video>
             
             <!-- Loading State -->
@@ -124,32 +170,36 @@
             </div>
             
             <!-- No Content State (TAD NODE LOGO) -->
-            <div id="no-content-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
-                <div class="text-center">
-                    <div class="mb-10 relative">
+            <div id="no-content-state" class="hidden absolute inset-0 flex items-center justify-center bg-mesh">
+                <div class="text-center w-full max-w-2xl px-8">
+                    <div class="mb-12 relative perspective-1000">
                         <!-- Abstract "TAD NODE" Logo -->
-                        <div class="w-32 h-32 mx-auto bg-gradient-to-tr from-[#fad400] to-yellow-200 rounded-3xl rotate-45 flex items-center justify-center shadow-[0_0_50px_rgba(250,212,0,0.3)] animate-pulse">
-                            <div class="w-16 h-16 bg-black rounded-xl -rotate-45 flex items-center justify-center">
-                                <span class="text-[#fad400] font-black text-2xl tracking-tighter">TAD</span>
+                        <div class="w-32 h-32 mx-auto bg-gradient-to-tr from-taxi-400 to-yellow-100 rounded-[2.5rem] rotate-[15deg] flex items-center justify-center shadow-[0_0_80px_rgba(255,212,0,0.3)] animate-pulse transition-transform hover:scale-110 duration-700">
+                            <div class="w-16 h-16 bg-black rounded-3xl -rotate-[15deg] flex items-center justify-center border border-white/10">
+                                <span class="text-taxi-400 font-black text-2xl tracking-tighter glow-yellow font-display">TAD</span>
                             </div>
                         </div>
-                        <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                            <span class="text-white font-black text-3xl uppercase tracking-[0.2em] italic">NODE</span>
+                    </div>
+
+                    <div class="space-y-4 mb-10">
+                        <h2 class="text-4xl font-black text-white tracking-tighter uppercase italic font-display">
+                            Transmisor <span class="text-taxi-400">de Contenido</span>
+                        </h2>
+                        <div class="flex flex-col items-center gap-2">
+                            <p class="text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] font-display">Identificador de Nodo</p>
+                            <span id="node-id-display" class="bg-white/5 border border-white/10 px-6 py-2 rounded-xl text-taxi-400 font-black font-mono text-xl tracking-wider">--</span>
                         </div>
                     </div>
-                    <div class="mt-12 space-y-4">
-                        <h2 class="text-xl font-bold text-gray-400 uppercase tracking-widest">Esperando Contenido</h2>
-                        <div class="flex items-center justify-center gap-3">
-                            <span class="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] text-zinc-500 font-mono" id="no-content-device-id">--</span>
-                        </div>
-                        
-                        <!-- QR Code for Driver Sync (Mobile Gateway) -->
-                        <div class="mt-8 mb-4">
-                            <p class="text-[10px] text-tad-yellow uppercase tracking-[0.2em] font-black mb-3">Escanea para Iniciar Ruta</p>
-                            <div id="sync-qrcode" class="inline-block p-2 bg-white rounded-xl shadow-2xl"></div>
-                        </div>
 
-                        <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-black">Conectado a la Red de Distribución</p>
+                    <div class="flex flex-col items-center gap-6">
+                        <!-- QR Code for Driver Sync -->
+                        <div class="p-3 bg-white rounded-3xl shadow-[0_0_120px_rgba(255,212,0,0.15)] transition-all hover:scale-105 duration-500">
+                            <div id="sync-qrcode" class="p-2"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-zinc-400 font-black uppercase tracking-[0.3em] text-[8px] font-display mb-2">Escanear para Vincular GPS</p>
+                            <p id="node-public-url" class="text-[9px] text-zinc-600 font-mono font-bold">--</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -305,17 +355,28 @@
         
         const storage = {
             async init() {
-                // 1. Read persisted Device ID
+                // 1. Check for deviceId in URL parameters (Priority 1)
+                const urlParams = new URLSearchParams(window.location.search);
+                let urlId = urlParams.get('deviceId') || urlParams.get('device_id') || urlParams.get('node') || urlParams.get('id');
+                
+                // 2. Read persisted Device ID (Priority 2)
                 let savedId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
 
-                // 2. Purge any legacy/test IDs
+                // 3. Logic to decide which ID to use
+                if (urlId) {
+                    console.log('🔗 Device ID from URL detected:', urlId);
+                    savedId = urlId;
+                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, savedId);
+                }
+
+                // 4. Purge any legacy/test IDs
                 if (savedId && LEGACY_IDS_TO_PURGE.includes(savedId)) {
                     console.log('🚮 Purging legacy Device ID:', savedId);
                     savedId = null;
                     localStorage.removeItem(CONFIG.DEVICE_ID_KEY);
                 }
 
-                // 3. Generate a new ID only if none exists
+                // 5. Generate a new ID only if none exists
                 if (!savedId) {
                     savedId = generateDeviceId();
                     localStorage.setItem(CONFIG.DEVICE_ID_KEY, savedId);
@@ -378,10 +439,13 @@
             },
             
             async clearEvents(ids) {
+                if (!ids || !Array.isArray(ids) || ids.length === 0) return;
                 const db = await this.getDB();
                 const tx = db.transaction('events', 'readwrite');
                 const store = tx.objectStore('events');
-                ids.forEach(id => store.delete(id));
+                ids.forEach(id => {
+                    if (id !== undefined) store.delete(id);
+                });
             },
             
             async getDB() {
@@ -935,24 +999,30 @@
 
             generateSyncQR() {
                 const qrContainer = document.getElementById('sync-qrcode');
+                const nodeIdDisplay = document.getElementById('node-id-display');
+                const nodeUrlDisplay = document.getElementById('node-public-url');
+                
+                if (nodeIdDisplay) nodeIdDisplay.textContent = state.deviceId;
                 if (!qrContainer) return;
                 
-                qrContainer.innerHTML = ''; // Limpiar previo
+                qrContainer.innerHTML = '';
                 
-                const PWA_URL = "https://tad-drivers.vercel.app/sync";
-                const syncUrl = `${PWA_URL}?device_id=${state.deviceId}`;
+                const currentHost = window.location.host; // IP:Port
+                const PWA_URL = `http://${currentHost.split(':')[0]}:3001/check-in`;
+                const syncUrl = `${PWA_URL}?deviceId=${state.deviceId}`;
+                
+                if (nodeUrlDisplay) nodeUrlDisplay.textContent = `NODO: http://${currentHost}/?node=${state.deviceId}`;
                 
                 try {
-                    // QRCode es de la librería qrcode.min.js cargada vía unpkg
                     new QRCode(qrContainer, {
                         text: syncUrl,
-                        width: 128,
-                        height: 128,
+                        width: 160,
+                        height: 160,
                         colorDark : "#000000",
                         colorLight : "#ffffff",
                         correctLevel : QRCode.CorrectLevel.H
                     });
-                    console.log('📱 Sync QR generated for:', state.deviceId);
+                    console.log('📱 Node QR generated for:', state.deviceId);
                 } catch (e) {
                     console.error('❌ Error generando QR:', e);
                 }

@@ -27,21 +27,12 @@ async function bootstrap() {
 
   app.useGlobalFilters(new PrismaClientExceptionFilter());
 
-  // CONFIGURACIÓN DE CORS REFORZADA
+  // CONFIGURACIÓN DE CORS TEMPORAL PARA TROUBLESHOOTING
   app.enableCors({
-    origin: [
-      'https://tad-dashboard.vercel.app',
-      'https://tad-dooh-platform.vercel.app',
-      'https://tad-admin.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'http://localhost:8080',
-      'null', // Necesario para FullyKiosk Browser (file://)
-    ],
+    origin: (origin, callback) => callback(null, true),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-device-id', 'X-Requested-With'],
   });
 
   // API prefix

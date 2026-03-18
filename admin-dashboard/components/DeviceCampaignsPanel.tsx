@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getDeviceCampaigns, removeCampaignFromDevice } from '../services/api';
 
 export default function DeviceCampaignsPanel({ deviceId }: { deviceId: string }) {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; assigned_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       const data = await getDeviceCampaigns(deviceId);
       setCampaigns(data);
@@ -14,13 +14,13 @@ export default function DeviceCampaignsPanel({ deviceId }: { deviceId: string })
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceId]);
 
   useEffect(() => {
     if (deviceId) {
       fetchCampaigns();
     }
-  }, [deviceId]);
+  }, [deviceId, fetchCampaigns]);
 
   const removeCampaign = async (campaignId: string) => {
     if(!confirm('¿Seguro que deseas remover este anuncio de este taxi?')) return;
@@ -49,11 +49,13 @@ export default function DeviceCampaignsPanel({ deviceId }: { deviceId: string })
           <p className="text-[10px] text-zinc-600 font-bold uppercase">{campaigns.length} / 15 SLOTS OCUPADOS</p>
         </div>
         <div className="h-1 flex-1 mx-6 bg-zinc-900 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-tad-yellow transition-all duration-1000" 
-            style={{ width: `${(campaigns.length / 15) * 100}%` }}
-          />
+          <div className="h-full bg-tad-yellow transition-all duration-1000 progress-bar" />
         </div>
+        <style jsx>{`
+          .progress-bar {
+            width: ${(campaigns.length / 15) * 100}%;
+          }
+        `}</style>
       </div>
 
       {campaigns.length === 0 ? (

@@ -160,4 +160,49 @@ export class DeviceAdminController {
       })),
     };
   }
+
+  // Actualizar perfil completo (dispositivo y chofer)
+  @Put(':deviceId/profile')
+  async updateDeviceProfile(@Param('deviceId') deviceId: string, @Body() data: any) {
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+      include: { driver: true }
+    });
+    
+    if (!device) throw new BadRequestException('Dispositivo no encontrado');
+
+    // Update Device
+    const updateData: any = {};
+    if (data.taxi_number !== undefined) updateData.taxiNumber = data.taxi_number;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    // Update Driver if exists
+    if (device.driver) {
+      updateData.driver = {
+        update: {
+          fullName: data.driver_name !== undefined ? data.driver_name : device.driver.fullName,
+          phone: data.driver_phone !== undefined ? data.driver_phone : device.driver.phone,
+          subscriptionPaid: data.subscription_paid !== undefined ? data.subscription_paid : device.driver.subscriptionPaid
+        }
+      };
+    } else if (data.driver_name) {
+      // Create driver if not exists but name is provided
+      updateData.driver = {
+        create: {
+          fullName: data.driver_name,
+          phone: data.driver_phone || 'N/A',
+          subscriptionPaid: data.subscription_paid || false,
+          licensePlate: data.taxi_number || 'N/A',
+          taxiNumber: data.taxi_number || 'N/A',
+        }
+      };
+    }
+
+    const updated = await this.prisma.device.update({
+      where: { id: device.id },
+      data: updateData
+    });
+
+    return { success: true, message: 'Perfil actualizado', device: updated };
+  }
 }

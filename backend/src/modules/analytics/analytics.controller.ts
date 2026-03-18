@@ -72,6 +72,11 @@ export class AnalyticsController {
     return this.analyticsService.getRecentPlays();
   }
 
+  @Get('heatmap')
+  async getHeatmap() {
+    return this.analyticsService.getPlaybackHeatmap();
+  }
+
   @Public() // El celular del chofer no tiene el JWT del admin dashboard
   @Post('external-gps')
   @HttpCode(HttpStatus.OK)

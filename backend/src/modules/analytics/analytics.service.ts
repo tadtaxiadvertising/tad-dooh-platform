@@ -5,6 +5,15 @@ import { PlaybackEventDto } from './dto/playback-event.dto';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
+  
+  // Minimal in-memory cache for high-frequency dashboard data
+  private cache: {
+    summary?: { data: any; expiry: number };
+    topTaxis?: { data: any; expiry: number };
+    hourly?: { data: any; expiry: number };
+  } = {};
+
+  private readonly CACHE_TTL = 30000; // 30 seconds
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -81,12 +90,47 @@ export class AnalyticsService {
   }
 
   async getAnalyticsSummary() {
-    const totalEvents = await this.prisma.analyticsEvent.count();
-    return { totalEvents };
+    const now = Date.now();
+    if (this.cache.summary && this.cache.summary.expiry > now) {
+      return this.cache.summary.data;
+    }
+
+    const totalImpressions = await this.prisma.playbackEvent.count({
+      where: { eventType: 'play_confirm' }
+    });
+    
+    const uniqueNodes = await this.prisma.playbackEvent.groupBy({
+      by: ['deviceId'],
+      _count: { deviceId: true }
+    });
+
+    const totalScans = await this.prisma.analyticsEvent.count({
+      where: { eventType: 'QR_SCAN' }
+    });
+
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentImpressions = await this.prisma.playbackEvent.count({
+      where: { timestamp: { gte: last24h }, eventType: 'play_confirm' }
+    });
+
+    const data = { 
+      totalImpressions, 
+      activeNodes: uniqueNodes.length,
+      totalScans,
+      ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
+      hourlyAverage: Math.round(recentImpressions / 24)
+    };
+
+    this.cache.summary = { data, expiry: now + this.CACHE_TTL };
+    return data;
   }
 
   async getTopTaxis() {
-    // Group events by deviceId and count them using the real PlaybackEvent model
+    const now = Date.now();
+    if (this.cache.topTaxis && this.cache.topTaxis.expiry > now) {
+      return this.cache.topTaxis.data;
+    }
+
     const topDevices = await this.prisma.playbackEvent.groupBy({
       by: ['deviceId'],
       _count: {
@@ -100,10 +144,13 @@ export class AnalyticsService {
       take: 5,
     });
 
-    return topDevices.map(d => ({
+    const data = topDevices.map(d => ({
       device_id: d.deviceId,
       plays: d._count.id,
     }));
+
+    this.cache.topTaxis = { data, expiry: now + this.CACHE_TTL };
+    return data;
   }
 
   async getHourlyAnalytics() {
@@ -138,15 +185,52 @@ export class AnalyticsService {
   }
 
   async getRecentPlays() {
-    return this.prisma.playbackEvent.findMany({
+    const events = await this.prisma.playbackEvent.findMany({
       orderBy: { timestamp: 'desc' },
       take: 20,
-      select: {
-        deviceId: true,
-        videoId: true,
-        timestamp: true,
-      },
+      include: {
+        device: {
+          select: { taxiNumber: true }
+        }
+      }
     });
+    
+    return events.map(e => ({
+      deviceId: e.deviceId,
+      videoId: e.videoId,
+      timestamp: e.timestamp,
+      taxiNumber: e.device?.taxiNumber
+    }));
+  }
+
+  /**
+   * Heatmap of where ads are being played
+   */
+  async getPlaybackHeatmap() {
+    this.logger.log('Generating playback heatmap data');
+    
+    // Get last 15 days of confirmed playback events with geography
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
+    const locations = await this.prisma.playbackEvent.findMany({
+      where: {
+        timestamp: { gte: fifteenDaysAgo },
+        lat: { not: null },
+        lng: { not: null }
+      },
+      select: {
+        lat: true,
+        lng: true,
+      },
+      take: 2000 // Sample size limit
+    });
+
+    return locations.map(loc => ({
+      lat: loc.lat,
+      lng: loc.lng,
+      weight: 1.0 // Intensity
+    }));
   }
 
   // ============================================

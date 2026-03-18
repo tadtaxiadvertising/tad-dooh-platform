@@ -25,11 +25,11 @@ export class MediaService {
     return crypto.createHash('md5').update(buffer).digest('hex');
   }
 
-  async uploadFile(file: any, campaignId: string) {
-    // 0. Auto-create bucket if missing (safe to call multiple times with service role key, will fail silently if exists)
+  async uploadFile(file: any, campaignId: string, qrUrl?: string) {
+    // 0. Auto-create bucket if missing
     await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => {});
 
-    // Sanitize filename to prevent "Invalid key" errors in Supabase Storage
+    // Sanitize filename
     const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const storagePath = `${campaignId}/${Date.now()}_${sanitizedFilename}`;
 
@@ -42,7 +42,6 @@ export class MediaService {
 
     if (error) {
        this.logger.error("Supabase Storage Error: ", error);
-       // Throw error as requested
        throw new BadRequestException(`Error subiendo a Storage: ${error.message}`);
     }
 
@@ -57,9 +56,10 @@ export class MediaService {
           storageKey: data.path,
           campaign_id: campaignId,
           mimeType: file.mimetype,
-          fileSize: BigInt(file.size), // Prisma BigInt conversion
+          fileSize: BigInt(file.size),
           status: 'READY',
-          hashMd5: this.generateHash(file.buffer) // Vital para que la tablet detecte cambios
+          qrUrl: qrUrl,
+          hashMd5: this.generateHash(file.buffer)
         }
       });
 
@@ -122,6 +122,7 @@ export class MediaService {
         originalFilename: m.originalFilename,
         size: Number(m.fileSize),
         mime: m.mimeType,
+        qrUrl: m.qrUrl,
         createdAt: m.createdAt,
       }));
     } catch (error: any) {
@@ -160,6 +161,24 @@ export class MediaService {
       active_devices: activePlays.map(p => p.deviceId),
       last_activity: activePlays[0]?.timestamp || null,
     };
+  }
+
+  async updateMedia(id: string, data: { qrUrl?: string }) {
+    try {
+      const media = await this.prisma.media.update({
+        where: { id },
+        data: {
+          qrUrl: data.qrUrl
+        }
+      });
+      return {
+        ...media,
+        fileSize: Number(media.fileSize)
+      };
+    } catch (error: any) {
+      this.logger.error(`Error updating media ${id}: ${error.message}`);
+      throw new BadRequestException(`Falla al actualizar metadata: ${error.message}`);
+    }
   }
 
   async deleteFile(id: string) {

@@ -3,7 +3,7 @@ import type { AppProps } from 'next/app';
 import { AuthProvider } from '../components/AuthProvider';
 import Layout from '../components/Layout';
 
-const PUBLIC_PAGES = ['/login'];
+const PUBLIC_PAGES = ['/login', '/check-in'];
 
 export default function App({ Component, pageProps, router }: AppProps) {
   const isPublic = PUBLIC_PAGES.includes(router.pathname);

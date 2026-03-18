@@ -21,4 +21,4 @@ export const supabase = supabaseUrl && supabaseAnonKey
         storageKey: 'tad-auth-token',
       },
     })
-  : (null as any); // Previene ejecución si falta la config en build time
+  : null; // Previene ejecución si falta la config en build time

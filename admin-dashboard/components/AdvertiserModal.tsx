@@ -44,9 +44,10 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
         onClose();
       }, 2000);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Error al conectar con el servidor.');
+      const errorMessage = err instanceof Error ? err.message : 'Error al conectar con el servidor.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,6 +73,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
           <button 
             onClick={onClose}
             className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+            title="Cerrar modal"
+            aria-label="Cerrar modal"
           >
             <X className="w-6 h-6" />
           </button>
@@ -85,7 +88,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
             </div>
             <h3 className="text-2xl font-black text-white mb-2">¡Marca Registrada!</h3>
             <p className="text-zinc-400 max-w-md">
-              El perfil de "{formData.companyName}" ha sido creado. Ya puedes empezar a subir campañas para este anunciante.
+              El perfil de &quot;{formData.companyName}&quot; ha sido creado. Ya puedes empezar a subir campañas para este anunciante.
             </p>
           </div>
         ) : (

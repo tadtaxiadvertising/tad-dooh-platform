@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Play, Target } from 'lucide-react';
+import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target } from 'lucide-react';
 import { getDrivers, uploadCampaignMedia, assignDriversToCampaign } from '../services/api';
 import clsx from 'clsx';
 
@@ -11,14 +11,14 @@ interface CampaignModalProps {
   onSuccess?: () => void;
 }
 
-export const CampaignModal: React.FC<CampaignModalProps> = ({ 
+export const CampaignModal = React.memo(function CampaignModal({ 
   isOpen, 
   onClose, 
   campaignId, 
   campaignName,
   onSuccess 
-}) => {
-  const [drivers, setDrivers] = useState<any[]>([]);
+}: CampaignModalProps) {
+  const [drivers, setDrivers] = useState<{ id: string; fullName: string; taxiPlate: string }[]>([]);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [targetAll, setTargetAll] = useState(true);
   const [file, setFile] = useState<File | null>(null);
@@ -56,9 +56,12 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
     try {
       await uploadCampaignMedia(campaignId, file);
       setStep(2); // Go to segmentation
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || 'Error al subir el archivo');
+      const errorMessage = err instanceof Error && 'response' in err 
+        ? (err as { response: { data: { message: string } } }).response.data.message 
+        : 'Error al procesar la solicitud';
+      setError(errorMessage || 'Error al procesar la solicitud');
     } finally {
       setUploading(false);
     }
@@ -73,7 +76,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
       });
       setStep(3); // Success
       if (onSuccess) onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError('Error al asignar segmentación');
     } finally {
@@ -106,6 +109,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
           <button 
             onClick={onClose}
             className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-zinc-400 hover:text-white"
+            title="Cerrar modal"
+            aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -132,6 +137,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                     <button 
                       onClick={() => { setFile(null); setPreviewUrl(null); }}
                       className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur rounded-xl text-white hover:bg-red-500 transition-colors"
+                      title="Eliminar archivo"
+                      aria-label="Eliminar archivo"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -150,6 +157,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                       accept="video/*"
                       onChange={handleFileChange}
                       className="absolute inset-0 opacity-0 cursor-pointer"
+                      title="Seleccionar video de campaña"
+                      aria-label="Seleccionar video de campaña"
                     />
                   </>
                 )}
@@ -223,7 +232,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                     </div>
                     <div>
                       <p className="text-white font-bold uppercase text-sm">Selección Exclusiva</p>
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase">Solo choferes seleccionados manualmente</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase">Solo conductores seleccionados manualmente</p>
                     </div>
                   </div>
                   <div className={clsx("w-6 h-6 rounded-full border-2", !targetAll ? "bg-tad-yellow border-tad-yellow" : "border-white/20")} />
@@ -232,7 +241,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
 
               {!targetAll && (
                 <div className="space-y-3 max-height-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                  <label className="text-[10px] text-zinc-600 font-black uppercase tracking-widest pl-2">Lista de Choferes</label>
+                  <label className="text-[10px] text-zinc-600 font-black uppercase tracking-widest pl-2">Lista de Conductores</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {drivers.map(driver => (
                       <div 
@@ -310,4 +319,4 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
       `}</style>
     </div>
   );
-};
+});

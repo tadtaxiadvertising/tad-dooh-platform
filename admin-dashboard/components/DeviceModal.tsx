@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Tablet, X, Check, AlertCircle, Save, Trash2, MapPin, Hash } from 'lucide-react';
-import clsx from 'clsx';
+
 import { createDevice, updateDevice, deleteDevice } from '../services/api';
 
 interface DeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  device?: any; // If present, we are editing
+  device?: { id?: string; device_id?: string; deviceId?: string; taxi_number?: string; taxiNumber?: string; city?: string; status?: string } | null; // If present, we are editing
 }
 
-export default function DeviceModal({ isOpen, onClose, onSuccess, device }: DeviceModalProps) {
+const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess, device }: DeviceModalProps) {
   const [formData, setFormData] = useState({
     deviceId: '',
     taxiNumber: '',
@@ -50,15 +50,19 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
     try {
       if (device) {
         // Find UUID for update if device_id is hardware string
-        const id = device.id || device.device_id; 
+        const id = device.id || device.device_id || ''; 
+        if (!id) throw new Error('Identificador de dispositivo no encontrado');
         await updateDevice(id, formData);
       } else {
         await createDevice(formData);
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al procesar la solicitud');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error && 'response' in err 
+        ? (err as { response: { data: { message: string } } }).response.data.message 
+        : (err instanceof Error ? err.message : 'Error al procesar la solicitud');
+      setError(errorMessage || 'Error al procesar la solicitud');
     } finally {
       setLoading(false);
     }
@@ -66,15 +70,16 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
 
   const handleDelete = async () => {
     if (!device) return;
-    if (!window.confirm('¿Estás seguro de eliminar este dispositivo? Se perderán todos los vínculos con choferes y campañas.')) return;
+    if (!window.confirm('¿Estás seguro de eliminar este dispositivo? Se perderán todos los vínculos con conductores y campañas.')) return;
 
     setLoading(true);
     try {
-      const id = device.id || device.device_id;
+      const id = device.id || device.device_id || '';
+      if (!id) throw new Error('ID no encontrado');
       await deleteDevice(id);
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch {
       setError('No se pudo eliminar el dispositivo');
     } finally {
       setLoading(false);
@@ -96,7 +101,12 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
               <p className="text-[10px] text-tad-yellow font-bold uppercase tracking-widest">Inventario de Hardware</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button 
+            onClick={onClose} 
+            className="text-zinc-500 hover:text-white transition-colors"
+            title="Cerrar modal"
+            aria-label="Cerrar modal"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -148,12 +158,17 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
 
             {/* City */}
             <div>
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1">
+              <label 
+                htmlFor="city-select"
+                className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1"
+              >
                 Ciudad / Ubicación
               </label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                 <select
+                  id="city-select"
+                  title="Seleccionar ciudad"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer"
                   value={formData.city}
                   onChange={e => setFormData({ ...formData, city: e.target.value })}
@@ -174,6 +189,8 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
                 onClick={handleDelete}
                 disabled={loading}
                 className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-4 px-6 rounded-2xl border border-red-500/20 transition-all active:scale-95"
+                title="Eliminar dispositivo"
+                aria-label="Eliminar dispositivo"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -191,4 +208,6 @@ export default function DeviceModal({ isOpen, onClose, onSuccess, device }: Devi
       </div>
     </div>
   );
-}
+});
+
+export default DeviceModal;

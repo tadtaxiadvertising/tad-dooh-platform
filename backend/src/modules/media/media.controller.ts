@@ -7,7 +7,8 @@ import {
   UploadedFile, 
   BadRequestException,
   Body,
-  Param
+  Param,
+  Patch
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
@@ -32,7 +33,8 @@ export class MediaController {
   }))
   async uploadMedia(
     @UploadedFile() file: Express.Multer.File,
-    @Body('campaignId') campaignId: string
+    @Body('campaignId') campaignId: string,
+    @Body('qrUrl') qrUrl?: string
   ) {
     if (!file) {
       throw new BadRequestException('A file payload is required');
@@ -40,7 +42,7 @@ export class MediaController {
     if (!campaignId) {
       throw new BadRequestException('campaignId is required');
     }
-    return this.mediaService.uploadFile(file, campaignId);
+    return this.mediaService.uploadFile(file, campaignId, qrUrl);
   }
 
   @Get()
@@ -74,5 +76,10 @@ export class MediaController {
   async deleteMediaPost(@Param('id') id: string) {
     // Para simplificar desde frontend fetchers que a veces confunden verbos
     return this.mediaService.deleteFile(id);
+  }
+ 
+  @Patch(':id')
+  async updateMedia(@Param('id') id: string, @Body() dto: { qrUrl: string }) {
+    return this.mediaService.updateMedia(id, dto);
   }
 }

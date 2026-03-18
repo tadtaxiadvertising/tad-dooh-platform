@@ -40,7 +40,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
     "express": "^5.2.1",
-    "next": "15.2.2",
+    "next": "15.2.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^7.5.0",
@@ -55,6 +55,6 @@
     "postcss": "^8.5.8"
   },
   "overrides": {
-    "next": "15.2.2"
+    "next": "15.2.6"
   }
 }

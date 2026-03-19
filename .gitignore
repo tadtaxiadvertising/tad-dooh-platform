@@ -1,12 +1,30 @@
+# Environment (Critical Security)
+.env
+.env.*
+!.env.example
+
+# Logs and Debug scripts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+error_logs.json
+*_output.txt
+*.mp4
+!tablet-player/test.mp4
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Dependencies
 node_modules/
 dist/
-.env*
-*.log
+.next/
 .vercel/
-.DS_Store
-backend/node_modules/
-backend/dist/
-admin-dashboard/node_modules/
+out/
+build/
+ode_modules/
 admin-dashboard/.next/
 admin-dashboard/out/
 tmp/

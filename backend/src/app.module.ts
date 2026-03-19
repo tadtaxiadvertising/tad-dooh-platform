@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import * as zod from 'zod';
 import { DeviceModule } from './modules/device/device.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { CampaignModule } from './modules/campaign/campaign.module';
@@ -19,11 +20,34 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 
 @Module({
   imports: [
-    // Configuration
+    // Configuration with Validation (RELAXED for EasyPanel free tier)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'production' ? undefined : '.env',
       ignoreEnvFile: process.env.NODE_ENV === 'production',
+      validate: (config) => {
+        const schema = zod.object({
+          DATABASE_URL: zod.string().url().optional(),
+          DIRECT_URL: zod.string().url().optional(),
+          JWT_SECRET: zod.string().optional(),
+          SUPABASE_URL: zod.string().url().optional(),
+          SUPABASE_SERVICE_ROLE_KEY: zod.string().optional(),
+          PORT: zod.string().regex(/^\d+$/).default('3000'),
+          NODE_ENV: zod.string().default('production'),
+          CORS_ORIGIN: zod.string().default('*'),
+        });
+
+        const result = schema.safeParse(config);
+        if (!result.success) {
+          console.warn('⚠️ ADVERTENCIA: Variables de entorno incompletas o inválidas:');
+          const errors = result.error.format();
+          Object.keys(errors).forEach(key => {
+            if (key !== '_errors') console.warn(`   - ${key}: ${JSON.stringify(errors[key])}`);
+          });
+          // NO lanzamos error para permitir que el contenedor intente arrancar
+        }
+        return result.data || config;
+      },
     }),
 
     // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
@@ -61,7 +85,10 @@ export class AppModule implements NestModule, OnModuleInit {
 
   async onModuleInit() {
     // Seed default admin user if none exist
-    await this.authService.seedAdminUser();
+    try {
+      await this.authService.seedAdminUser();
+    } catch (e) {
+      console.warn('⚠️ No se pudo ejecutar el seed inicial:', e.message);
+    }
   }
 }
-

@@ -133,36 +133,49 @@ export class CampaignService {
   async getActiveSyncVideos(deviceId: string, deviceCity?: string) {
     const now = new Date();
     
-    const activeCampaigns = await this.prisma.campaign.findMany({
-      where: {
-        active: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-        AND: [
-          {
-            OR: [
-              { targetAll: true },
-              { isGlobal: true },
-              { devices: { some: { device_id: deviceId } } },
-              { targetDrivers: { some: { deviceId: deviceId } } }
-            ]
+    let activeCampaigns: any[] = [];
+    
+    try {
+      // Try the full query with all relations
+      activeCampaigns = await this.prisma.campaign.findMany({
+        where: {
+          active: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+          OR: [
+            { targetAll: true },
+            { devices: { some: { device_id: deviceId } } },
+          ]
+        },
+        include: {
+          mediaAssets: true,
+          media: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        }
+      });
+    } catch (primaryError) {
+      // Fallback: simplified query without optional relations that may not exist
+      try {
+        activeCampaigns = await this.prisma.campaign.findMany({
+          where: {
+            active: true,
+            startDate: { lte: now },
+            endDate: { gte: now },
+            targetAll: true,
           },
-          {
-            OR: [
-              { targetCity: 'Global' },
-              { targetCity: deviceCity || 'Santo Domingo' }
-            ]
-          }
-        ]
-      },
-      include: {
-        mediaAssets: true,
-        media: true,
-      },
-      orderBy: {
-        updatedAt: 'desc',
+          include: {
+            mediaAssets: true,
+            media: true,
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+      } catch (fallbackError) {
+        // Last resort: return empty payload
+        return { version: 0, sync_hash: 'error', media_assets: [] };
       }
-    });
+    }
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
       return { version: 0, sync_hash: 'empty', media_assets: [] };

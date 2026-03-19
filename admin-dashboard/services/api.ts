@@ -1,18 +1,32 @@
 import axios from 'axios';
 
-
+/**
+ * Estrategia de routing del API client:
+ *
+ * LOCALHOST (dev):
+ *   → http://localhost:3000/api  (directo al backend local, sin proxy)
+ *
+ * PRODUCCIÓN (EasyPanel):
+ *   → /api/proxy  (Next.js API Route que actúa como proxy server-side)
+ *   ↳ El proxy usa BACKEND_INTERNAL_URL (runtime env var) para llegar al backend
+ *   ↳ Ventaja: No depende de variables build-time, no tiene errores CORS, no da 502 por URL vacía
+ *
+ * NUNCA usar /backend-api en producción (depende de next.config.ts rewrite
+ * que a su vez depende de NEXT_PUBLIC_API_URL en build-time → URL vacía → 502)
+ */
 const getBaseURL = () => {
   if (typeof window !== 'undefined') {
-    // En localhost, llamar directamente al backend local
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:3000/api';
     }
-    // En producción: usar rewrite de Next.js (/backend-api) 
-    // que EasyPanel NO intercepta (solo intercepta /api/*)
-    return '/backend-api';
+    // Producción: usar el proxy interno de Next.js (API Route)
+    // /api/proxy/{endpoint} → backend NestJS server-side
+    return '/api/proxy';
   }
-  // SSR: llamar directamente al backend (server-to-server no tiene CORS)
-  return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+  // SSR: usar URL interna si está disponible, pública como fallback
+  return process.env.BACKEND_INTERNAL_URL
+    ? `${process.env.BACKEND_INTERNAL_URL}/api`
+    : (process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
 };
 
 const api = axios.create({
@@ -20,13 +34,12 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // 15s timeout para evitar Network Error por esperas infinitas
+  timeout: 25000, // 25s — suficiente para EasyPanel free tier con cold starts
 });
 
 // ============================================
 // JWT Auth Interceptor
 // ============================================
-// Attach token from localStorage to every request
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('tad_admin_token');
@@ -41,15 +54,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Diagnóstico mejorado para Network Errors
     if (!error.response && (error.message === 'Network Error' || error.code === 'ECONNABORTED')) {
-      console.error('📡 CONFLICTO DE RED DETECTADO:', {
+      console.error('📡 ERROR DE RED:', {
         baseURL: api.defaults.baseURL,
-        method: error.config?.method?.toUpperCase(),
         url: error.config?.url,
         code: error.code,
         message: error.message,
-        tip: 'Verifica que el Backend (NestJS) en el puerto 3000 esté aceptando conexiones.'
       });
     }
 
@@ -100,7 +110,7 @@ export const getDeviceSlots = (id: string) => api.get(`/device/${id}/slots`).the
 export const getOfflineDevices = () => api.get('/fleet/offline').then(res => res.data);
 export const getPlayerErrors = () => api.get('/fleet/player-errors').then(res => res.data);
 export const getFleetFinance = () => api.get('/fleet/finance').then(res => res.data);
-export const sendCommand = (deviceId: string, type: string, params: Record<string, unknown> = {}) => 
+export const sendCommand = (deviceId: string, type: string, params: Record<string, unknown> = {}) =>
   api.post(`/fleet/${deviceId}/command`, { type, params }).then(res => res.data);
 export const getFleetLocations = () => api.get('/fleet/map').then(res => res.data);
 
@@ -113,7 +123,7 @@ export const getCampaignDevices = (campaignId: string) => api.get(`/campaigns/${
 export const getCampaigns = () => api.get('/campaigns').then(res => res.data);
 export const getCampaignById = (id: string) => api.get(`/campaigns/${id}`).then(res => res.data);
 export const createCampaign = (data: Record<string, unknown>) => api.post('/campaigns', data).then(res => res.data);
-export const assignCampaignToDevices = (id: string, deviceIds: string[]) => 
+export const assignCampaignToDevices = (id: string, deviceIds: string[]) =>
   api.post(`/campaigns/${id}/assign`, { deviceIds }).then(res => res.data);
 export const addVideoToCampaign = (campaignId: string, data: Record<string, unknown>) => api.post(`/campaigns/${campaignId}/assets`, data).then(res => res.data);
 
@@ -145,12 +155,10 @@ export const uploadCampaignMedia = async (campaignId: string, file: File) => {
   formData.append('file', file);
   formData.append('campaignId', campaignId);
 
-  // 1. Upload safely via our backend, enforcing limits and injecting service credentials
   const res = await api.post('/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 
-  // 2. Register metadata in our backend (NestJS/Prisma)
   return api.post(`/campaigns/${campaignId}/assets`, {
     type: 'video',
     filename: file.name,
@@ -161,7 +169,7 @@ export const uploadCampaignMedia = async (campaignId: string, file: File) => {
   }).then(r => r.data);
 };
 
-export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) => 
+export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) =>
   api.post('/media/register-mock', data).then(res => res.data);
 
 // Analytics
@@ -185,15 +193,17 @@ export const createAdvertiser = (data: Record<string, unknown>) => api.post('/ad
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
 export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
-export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
-export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/campaigns.csv`;
-export const getCampaignReportUrl = (id: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/campaign/${id}.csv`;
-export const getInvoiceUrl = (id: string, print = false) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/invoice/${id}${print ? '?print=true' : ''}`;
+// URLs de export usan /api/proxy en producción o directo en dev
+const getProxyBase = () => typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api/proxy' : 'http://localhost:3000/api';
+export const getPayrollExportUrl = (month?: string) => `${getProxyBase()}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
+export const getCampaignExportUrl = () => `${getProxyBase()}/finance/export/campaigns.csv`;
+export const getCampaignReportUrl = (id: string) => `${getProxyBase()}/finance/export/campaign/${id}.csv`;
+export const getInvoiceUrl = (id: string, print = false) => `${getProxyBase()}/finance/invoice/${id}${print ? '?print=true' : ''}`;
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 
 // Campaign Segmentation
-export const assignDriversToCampaign = (campaignId: string, data: { driverIds: string[]; targetAll: boolean }) => 
+export const assignDriversToCampaign = (campaignId: string, data: { driverIds: string[]; targetAll: boolean }) =>
   api.post(`/campaigns/${campaignId}/drivers`, data).then(res => res.data);
 
 export const getTabletPlaylist = (deviceId: string) => api.get(`/campaigns/tablet/${deviceId}/playlist`).then(res => res.data);
@@ -204,7 +214,7 @@ export const createDevice = (data: Record<string, unknown>) => api.post('/device
 export const updateDevice = (id: string, data: Record<string, unknown>) => api.put(`/devices/${id}`, data).then(res => res.data);
 export const deleteDevice = (deviceId: string) => api.delete(`/devices/${deviceId}`).then(res => res.data);
 
-// Device Profile (full info with driver + campaigns)
+// Device Profile
 export const getDeviceProfile = (deviceId: string) => api.get(`/devices/${deviceId}/profile`).then(res => res.data);
 export const updateDeviceProfile = (deviceId: string, data: Record<string, unknown>) => api.put(`/devices/${deviceId}/profile`, data).then(res => res.data);
 
@@ -213,4 +223,3 @@ export const getTrackingData = () => api.get('/fleet/tracking').then(res => res.
 export const getTrackingSummary = () => api.get('/fleet/tracking/summary').then(res => res.data);
 
 export default api;
-

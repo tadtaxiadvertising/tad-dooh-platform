@@ -22,17 +22,30 @@ export class DeviceService {
    * Based on current dynamic playlist generation.
    */
   async getDeviceSlots(deviceId: string) {
-    // We query the sync payload to see how many slots are "taking up" the device currently
-    const syncData = await this.campaignService.getActiveSyncVideos(deviceId);
-    const assignedSlots = syncData.media_assets?.length || 0;
+    try {
+      // We query the sync payload to see how many slots are "taking up" the device currently
+      const syncData = await this.campaignService.getActiveSyncVideos(deviceId);
+      const assignedSlots = syncData.media_assets?.length || 0;
 
-    return {
-      device_id: deviceId,
-      max_slots: MAX_SLOTS_PER_DEVICE,
-      assigned_slots: assignedSlots,
-      available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - assignedSlots),
-      usage_percentage: Math.round((assignedSlots / MAX_SLOTS_PER_DEVICE) * 100)
-    };
+      return {
+        device_id: deviceId,
+        max_slots: MAX_SLOTS_PER_DEVICE,
+        assigned_slots: assignedSlots,
+        available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - assignedSlots),
+        usage_percentage: Math.round((assignedSlots / MAX_SLOTS_PER_DEVICE) * 100)
+      };
+    } catch (error) {
+      // Return safe defaults if DB query fails — never crash the fleet page with 500
+      this.logger.warn(`⚠️ getDeviceSlots(${deviceId}): DB error (returning defaults) — ${error?.message}`);
+      return {
+        device_id: deviceId,
+        max_slots: MAX_SLOTS_PER_DEVICE,
+        assigned_slots: 0,
+        available_slots: MAX_SLOTS_PER_DEVICE,
+        usage_percentage: 0,
+        error: 'Could not fetch live slot data'
+      };
+    }
   }
 
 

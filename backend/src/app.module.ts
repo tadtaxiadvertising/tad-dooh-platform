@@ -1,6 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { DeviceModule } from './modules/device/device.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -27,13 +26,8 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
       ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 100,
-      },
-    ]),
+    // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
+    // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
 
     PrismaModule,
     AuthModule,

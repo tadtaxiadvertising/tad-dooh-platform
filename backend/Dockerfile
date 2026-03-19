@@ -27,4 +27,4 @@ RUN npx prisma generate
 EXPOSE 3000
 
 # Arranque directo y veloz
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

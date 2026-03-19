@@ -1,11 +1,15 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getDevices, getDeviceSlots, getMediaStatus, assignCampaignToDevices, updateMedia } from '../../services/api';
+import useSWR from 'swr';
+import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia } from '../../services/api';
 import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import clsx from 'clsx';
+
+// Fetcher for SWR
+const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 export default function MediaPage() {
   const [media, setMedia] = useState<{ id: string; url: string; filename: string; originalFilename?: string; size?: number; mime?: string; qrUrl?: string; createdAt?: string }[]>([]);
@@ -18,8 +22,6 @@ export default function MediaPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const [mediaStatus, setMediaStatus] = useState<Record<string, { active_devices?: string[] }>>({});
-  const [devices, setDevices] = useState<{ id: string; device_id: string; taxiNumber?: string; name?: string; status?: string }[]>([]);
-  const [deviceSlots, setDeviceSlots] = useState<Record<string, { count: number; limit: number }>>({});
   
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [selectedCampaign, setSelectedCampaign] = useState('');
@@ -36,14 +38,12 @@ export default function MediaPage() {
     setLoading(true);
     setError(null);
     try {
-      const [mediaData, campaignsData, devicesData] = await Promise.all([
+      const [mediaData, campaignsData] = await Promise.all([
         getMedia(), 
-        getCampaigns(),
-        getDevices()
+        getCampaigns()
       ]);
       setMedia(Array.isArray(mediaData) ? mediaData : []);
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
-      setDevices(Array.isArray(devicesData) ? devicesData : []);
     } catch (err) {
       console.error(err);
       setError("ERROR DE ENLACE CON LA BÓVEDA MULTIMEDIA.");
@@ -56,23 +56,14 @@ export default function MediaPage() {
   useTabSync('DEVICES', loadData);
   useTabSync('CAMPAIGNS', loadData);
 
-  const loadDeviceTelemetry = async () => {
-    try {
-      const devicesData = await getDevices();
-      setDevices(Array.isArray(devicesData) ? devicesData : []);
-      const slotMap: Record<string, { count: number; limit: number }> = {};
-      await Promise.all((Array.isArray(devicesData) ? devicesData : []).map(async (d: { device_id?: string; id?: string }) => {
-        try {
-          const deviceId = d.device_id || d.id;
-          if (deviceId) {
-            const slots = await getDeviceSlots(deviceId);
-            slotMap[deviceId] = slots;
-          }
-        } catch { /* ignore */ }
-      }));
-      setDeviceSlots(slotMap);
-    } catch (err) { console.error(err); }
-  };
+  // TAREA B: Frontend Refactor - SWR Implementation for Fleet Summary
+  // Eliminates individual GET /api/device/:id/slots calls.
+  const { data: fleetSummary, error: swrError, isLoading: swrLoading } = useSWR('/fleet/summary', fetcher, {
+    dedupingInterval: 60000,
+    revalidateOnFocus: false
+  });
+  
+  const devices = Array.isArray(fleetSummary) ? fleetSummary : [];
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -236,7 +227,7 @@ export default function MediaPage() {
         </div>
         
         <button 
-          onClick={() => { resetUploadForm(); setShowUploadModal(true); loadDeviceTelemetry(); }}
+          onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
           className="btn-primary px-10 h-14 flex items-center gap-4 group"
         >
           <CloudUpload className="w-5 h-5 transition-transform group-hover:-translate-y-1 duration-300" />
@@ -466,7 +457,7 @@ export default function MediaPage() {
                No se detectan activos en la bóveda central. Inicie el protocolo de ingesta para poblar el cluster multimedia.
             </p>
             <button 
-               onClick={() => { resetUploadForm(); setShowUploadModal(true); loadDeviceTelemetry(); }}
+               onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
                className="bg-white/5 hover:bg-tad-yellow hover:text-black text-zinc-400 px-12 py-5 rounded-[2rem] border border-white/5 hover:border-transparent text-[10px] font-black uppercase tracking-[0.5em] transition-all italic"
             >
                INICIAR INGESTA CORE
@@ -637,10 +628,13 @@ export default function MediaPage() {
                    <span className="text-[10px] font-black text-tad-yellow uppercase italic tracking-widest">{selectedDevices.length} DESTINOS</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-64 overflow-y-auto pr-3 custom-scrollbar">
-                   {devices.map(device => {
-                      const slots = deviceSlots[device.device_id] || { count: 0, limit: 15 };
-                      const count = Number(slots.count) || 0;
-                      const limit = Number(slots.limit) || 15;
+                   {swrLoading ? (
+                     <div className="col-span-1 sm:col-span-2 py-10 flex justify-center"><div className="w-8 h-8 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent" /></div>
+                   ) : swrError ? (
+                     <div className="col-span-1 sm:col-span-2 text-[10px] text-rose-500 font-bold uppercase py-4">Falla en Sincronización de Nodos</div>
+                   ) : devices.map(device => {
+                      const count = device.occupied_slots || 0;
+                      const limit = device.max_slots || 15;
                       const freeSlots = limit - count;
                       const isSelected = selectedDevices.includes(device.device_id);
                       const isFull = freeSlots <= 0;

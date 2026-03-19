@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
-import { getDevices, getDeviceSlots, assignCampaignToDevices } from '../services/api';
+import useSWR from 'swr';
+import api, { assignCampaignToDevices } from '../services/api';
 import { X, CheckCircle, AlertTriangle, Monitor, Search, ChevronRight, Loader2, Info } from 'lucide-react';
 import clsx from 'clsx';
 
+const fetcher = (url: string) => api.get(url).then(res => res.data);
+
 interface Device {
   device_id: string;
-  name: string;
+  name?: string;
   taxi_number?: string;
+  taxiNumber?: string;
   status: string;
-}
-
-interface DeviceSlots {
-  [key: string]: { count: number; limit: number };
+  occupied_slots: number;
+  max_slots: number;
 }
 
 interface DeviceSelectorModalProps {
@@ -31,46 +33,20 @@ export default function DeviceSelectorModal({
   initialSelected = [],
   onSuccess
 }: DeviceSelectorModalProps) {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [deviceSlots, setDeviceSlots] = useState<DeviceSlots>({});
-  const [selectedDevices, setSelectedDevices] = useState<string[]>(initialSelected);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState('');
+  const { data: fleetSummary, isLoading: swrLoading, error: swrError } = useSWR(
+    isOpen ? '/fleet/summary' : null, 
+    fetcher, 
+    { dedupingInterval: 60000, revalidateOnFocus: false }
+  );
+
+  const devices: Device[] = Array.isArray(fleetSummary) ? fleetSummary : [];
+  const loading = swrLoading;
 
   useEffect(() => {
     if (isOpen) {
-      loadData();
       setSelectedDevices(initialSelected);
     }
   }, [isOpen, initialSelected]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const devs = await getDevices();
-      setDevices(devs);
-      
-      // Fetch slots for all devices in parallel
-      const slotPromises = devs.map(async (d: Device) => {
-        try {
-          const slots = await getDeviceSlots(d.device_id);
-          return { id: d.device_id, count: slots.assigned_slots, limit: slots.max_slots };
-        } catch {
-          return { id: d.device_id, count: 0, limit: 15 };
-        }
-      });
-      
-      const slotResults = await Promise.all(slotPromises);
-      const slotMap: DeviceSlots = {};
-      slotResults.forEach(r => slotMap[r.id] = { count: r.count, limit: r.limit });
-      setDeviceSlots(slotMap);
-    } catch (e) {
-      console.error('Error loading devices:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -86,16 +62,16 @@ export default function DeviceSelectorModal({
     }
   };
 
-  const toggleDevice = (deviceId: string) => {
-    const isFull = (deviceSlots[deviceId]?.limit - deviceSlots[deviceId]?.count) <= 0;
-    const isSelected = selectedDevices.includes(deviceId);
+  const toggleDevice = (device: Device) => {
+    const isFull = (device.max_slots || 15) - (device.occupied_slots || 0) <= 0;
+    const isSelected = selectedDevices.includes(device.device_id);
 
     if (isFull && !isSelected) return; // Prevent selection if full (unless already selected to allow deselect)
 
     setSelectedDevices(prev => 
-      prev.includes(deviceId) 
-        ? prev.filter(id => id !== deviceId) 
-        : [...prev, deviceId]
+      prev.includes(device.device_id) 
+        ? prev.filter(id => id !== device.device_id) 
+        : [...prev, device.device_id]
     );
   };
 
@@ -157,18 +133,24 @@ export default function DeviceSelectorModal({
               <Loader2 className="w-12 h-12 text-tad-yellow animate-spin mb-4" />
               <p className="text-zinc-600 font-black text-[10px] tracking-widest uppercase italic">Sincronizando inventario en tiempo real...</p>
             </div>
+          ) : swrError ? (
+            <div className="flex flex-col items-center justify-center py-20 translate-y-[-10px]">
+              <AlertTriangle className="w-12 h-12 text-rose-500 mb-4" />
+              <p className="text-rose-500 font-black text-[10px] tracking-widest uppercase italic">Error al cargar el inventario</p>
+            </div>
           ) : filteredDevices.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {filteredDevices.map(device => {
-                const slots = deviceSlots[device.device_id] || { count: 0, limit: 15 };
-                const freeSlots = slots.limit - slots.count;
+                const count = device.occupied_slots || 0;
+                const limit = device.max_slots || 15;
+                const freeSlots = limit - count;
                 const isSelected = selectedDevices.includes(device.device_id);
                 const isFull = freeSlots <= 0;
 
                 return (
                   <div 
                     key={device.device_id}
-                    onClick={() => toggleDevice(device.device_id)}
+                    onClick={() => toggleDevice(device)}
                     className={clsx(
                       "group relative flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden",
                       isSelected 

@@ -21,6 +21,12 @@ export class FleetController {
     return this.fleetService.getFleetStatusSummary();
   }
 
+  // TAREA A: Backend Refactor - Batch Fetching API Endpoint
+  @Get('summary')
+  async getFleetSummary() {
+    return this.fleetService.getFleetStatusSummary(); // Alies to the optimized query
+  }
+
   @Get('map')
   async getFleetMap() {
     return this.fleetService.getFleetMap();

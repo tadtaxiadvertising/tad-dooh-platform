@@ -25,6 +25,17 @@ async function bootstrap() {
     }),
   );
 
+  // DEBUG LOGGER: Para ver si las peticiones llegan a NestJS
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
+  // Health check pública (sin prefijo /api)
+  app.getHttpAdapter().get('/health', (req, res) => {
+    res.status(200).send({ status: 'OK', timestamp: new Date() });
+  });
+
   app.useGlobalFilters(new PrismaClientExceptionFilter());
 
   // CONFIGURACIÓN DE CORS REFORZADA (Middleware global)

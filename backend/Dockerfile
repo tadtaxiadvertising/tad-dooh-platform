@@ -23,7 +23,7 @@ RUN npm prune --production
 # Variables de entorno críticas para Docker
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=256
-ENV ARIS_PORT=3000
+ENV PORT=3000
 ENV HOST=0.0.0.0
 
 EXPOSE 3000

@@ -7,8 +7,8 @@ FROM node:20-slim AS base
 FROM base AS deps
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+COPY package.json ./
+RUN rm -rf package-lock.json && npm install --legacy-peer-deps
 
 # ---- Builder ----
 FROM base AS builder

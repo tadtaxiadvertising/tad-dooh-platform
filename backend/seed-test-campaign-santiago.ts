@@ -2,7 +2,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
+async function seedTestSantiago() {
   console.log('🚀 Iniciando Configuración: Campaña de Prueba Santiago (STI)...');
 
   // 1. Obtener un Anunciante de Santiago
@@ -95,7 +95,7 @@ async function main() {
   console.log('======================================================');
 }
 
-main()
+seedTestSantiago()
   .catch((e) => {
     console.error(e);
     process.exit(1);

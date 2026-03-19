@@ -112,6 +112,7 @@ export const getPlayerErrors = () => api.get('/fleet/player-errors').then(res =>
 export const getFleetFinance = () => api.get('/fleet/finance').then(res => res.data);
 export const sendCommand = (deviceId: string, type: string, params: Record<string, unknown> = {}) =>
   api.post(`/fleet/${deviceId}/command`, { type, params }).then(res => res.data);
+export const getFleetStatusSummary = () => api.get('/fleet/status-summary').then(res => res.data);
 export const getFleetLocations = () => api.get('/fleet/map').then(res => res.data);
 
 // Device Inventory

@@ -16,6 +16,11 @@ export class FleetController {
     return this.fleetService.getFleetStats();
   }
 
+  @Get('status-summary')
+  async getFleetStatusSummary() {
+    return this.fleetService.getFleetStatusSummary();
+  }
+
   @Get('map')
   async getFleetMap() {
     return this.fleetService.getFleetMap();

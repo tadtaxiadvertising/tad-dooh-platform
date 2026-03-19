@@ -3,11 +3,14 @@ import axios from 'axios';
 
 const getBaseURL = () => {
   if (typeof window !== 'undefined') {
-    // Si estamos en localhost, preferir el backend local incluso si la ENV no está definida
+    // En localhost, llamar directamente al backend local
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:3000/api';
     }
+    // En producción: usar el proxy Next.js del mismo dominio → elimina CORS al 100%
+    return '/api/proxy';
   }
+  // SSR: llamar directamente al backend
   return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
 };
 

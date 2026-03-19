@@ -9,7 +9,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install everything including devDeps
-RUN npm ci
+RUN npm install
 
 COPY . .
 

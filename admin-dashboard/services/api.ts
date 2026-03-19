@@ -7,10 +7,11 @@ const getBaseURL = () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:3000/api';
     }
-    // En producción: usar el proxy Next.js del mismo dominio → elimina CORS al 100%
-    return '/api/proxy';
+    // En producción: usar rewrite de Next.js (/backend-api) 
+    // que EasyPanel NO intercepta (solo intercepta /api/*)
+    return '/backend-api';
   }
-  // SSR: llamar directamente al backend
+  // SSR: llamar directamente al backend (server-to-server no tiene CORS)
   return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
 };
 

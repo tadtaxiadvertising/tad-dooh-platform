@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Usar fallbacks directos para asegurar que la app no crashee si Vercel pierde el caché de variables
-// Nota: Estas llaves son públicas por diseño (Anon Key/Url), por lo que es seguro incrustarlas en el Frontend PWA.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ltdcdhqixvbpdcitthqf.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi';
+// Fijamos las llaves verificadas directamente para evitar que errores en el panel de control de EasyPanel
+// bloqueen el acceso de los usuarios por DNS no resuelto (.com en vez de .co).
+const supabaseUrl = 'https://ltdcdhqixvbpdcitthqf.supabase.co';
+const supabaseAnonKey = 'sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi';
 
 /**
  * Cliente Supabase para el Admin Dashboard.
@@ -12,13 +12,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publish
  * - autoRefreshToken: true → renueva el JWT antes de que expire (cada ~50 min).
  * - storageKey: clave única para evitar colisiones con otras apps en el mismo dominio.
  */
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: typeof window !== 'undefined',
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: 'tad-auth-token',
-      },
-    })
-  : null; // Previene ejecución si falta la config en build time
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: typeof window !== 'undefined',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'tad-auth-token',
+  },
+});

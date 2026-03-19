@@ -8,7 +8,7 @@ const getBaseURL = () => {
       return 'http://localhost:3000/api';
     }
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
 };
 
 const api = axios.create({
@@ -181,10 +181,10 @@ export const createAdvertiser = (data: Record<string, unknown>) => api.post('/ad
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
 export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
-export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
-export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/campaigns.csv`;
-export const getCampaignReportUrl = (id: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/export/campaign/${id}.csv`;
-export const getInvoiceUrl = (id: string, print = false) => `${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.vercel.app/api'}/finance/invoice/${id}${print ? '?print=true' : ''}`;
+export const getPayrollExportUrl = (month?: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
+export const getCampaignExportUrl = () => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/campaigns.csv`;
+export const getCampaignReportUrl = (id: string) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/export/campaign/${id}.csv`;
+export const getInvoiceUrl = (id: string, print = false) => `${process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api'}/finance/invoice/${id}${print ? '?print=true' : ''}`;
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 

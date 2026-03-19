@@ -21,5 +21,5 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-# Ejecuta migraciones antes de iniciar la app
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# Ejecuta sincronización del esquema antes de iniciar la app
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main"]

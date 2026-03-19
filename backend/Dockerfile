@@ -19,7 +19,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
+ENV NODE_OPTIONS=--max-old-space-size=512
+
 EXPOSE 3000
 
-# Ejecuta sincronización del esquema antes de iniciar la app
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main"]
+# Sincroniza esquema y arranca con logs claros
+CMD sh -c "echo '🚀 Sincronizando BD...' && npx prisma db push --accept-data-loss && echo '✅ BD Lista. Iniciando NestJS...' && node dist/main"

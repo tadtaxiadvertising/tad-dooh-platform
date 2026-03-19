@@ -24,9 +24,7 @@ const BACKEND_BASE = (
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
+    bodyParser: false,
     externalResolver: true,
     responseLimit: false,
   },
@@ -77,30 +75,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       forwardHeaders['x-device-id'] = req.headers['x-device-id'] as string;
     }
 
-    // Preparar body (solo para métodos que lo permiten)
-    let body: BodyInit | undefined;
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      if (req.headers['content-type']?.includes('multipart/form-data')) {
-        // Para uploads, no re-serialize el body — pasar como stream no es posible
-        // En su lugar, serializar como JSON el body ya parseado
-        body = JSON.stringify(req.body);
-        forwardHeaders['Content-Type'] = 'application/json';
-      } else {
-        body = JSON.stringify(req.body);
-        if (!forwardHeaders['Content-Type']) {
-          forwardHeaders['Content-Type'] = 'application/json';
-        }
-      }
-    }
-
     // Ejecutar la petición al backend (server-to-server: sin CORS, sin proxy issues)
-    const backendResponse = await fetch(targetUrl, {
+    const fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: forwardHeaders,
-      body,
       // Timeout de 30s para operaciones largas (uploads, queries complejas)
       signal: AbortSignal.timeout(30000),
-    });
+    };
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      // Al usar bodyParser: false, `req` es un ReadableStream de entrada directo
+      fetchOptions.body = req as any;
+      // Requisito interno de undici/NodeJS para streaming body duplex
+      (fetchOptions as any).duplex = 'half';
+    }
+
+    const backendResponse = await fetch(targetUrl, fetchOptions);
 
     // Headers CORS de respuesta
     res.setHeader('Access-Control-Allow-Origin', '*');

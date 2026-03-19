@@ -138,18 +138,7 @@ export const uploadMedia = async (file: File, campaignId?: string, qrUrl?: strin
   formData.append('campaignId', campaignId || 'general');
   if (qrUrl) formData.append('qrUrl', qrUrl);
 
-  const baseURL = typeof window !== 'undefined' 
-    ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:3000/api' 
-        : '/backend-api')
-    : '';
-
-  const res = await axios.post(`${baseURL}/media/upload`, formData, {
-    headers: { 
-      'Content-Type': 'multipart/form-data',
-      'Authorization': `Bearer ${localStorage.getItem('tad_admin_token')}`
-    }
-  });
+  const res = await api.post('/media/upload', formData);
 
   return {
     id: res.data.id,
@@ -165,18 +154,7 @@ export const uploadCampaignMedia = async (campaignId: string, file: File) => {
   formData.append('file', file);
   formData.append('campaignId', campaignId);
 
-  const baseURL = typeof window !== 'undefined' 
-    ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:3000/api' 
-        : '/backend-api')
-    : '';
-
-  const res = await axios.post(`${baseURL}/media/upload`, formData, {
-    headers: { 
-      'Content-Type': 'multipart/form-data',
-      'Authorization': `Bearer ${localStorage.getItem('tad_admin_token')}`
-    }
-  });
+  const res = await api.post('/media/upload', formData);
 
   return api.post(`/campaigns/${campaignId}/assets`, {
     type: 'video',

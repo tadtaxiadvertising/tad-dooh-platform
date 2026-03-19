@@ -11,24 +11,24 @@ interface SlotData {
   usage_percentage: number;
 }
 
-export default function DeviceSlotsInfo({ deviceId }: { deviceId: string }) {
-  const [slots, setSlots] = useState<SlotData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!deviceId) return;
-    setLoading(true);
-    getDeviceSlots(deviceId)
-      .then(setSlots)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [deviceId]);
-
+export default function DeviceSlotsInfo({ 
+  deviceId, 
+  slots, 
+  loading = false 
+}: { 
+  deviceId: string; 
+  slots?: SlotData | null;
+  loading?: boolean;
+}) {
   if (loading) return (
     <div className="w-full h-8 bg-zinc-900/50 animate-pulse rounded-full border border-white/5" />
   );
 
-  if (!slots) return null;
+  if (!slots) return (
+    <div className="flex flex-col gap-2 w-full opacity-30 italic text-[9px] text-zinc-500">
+       Información de Slots Pendiente... {deviceId}
+    </div>
+  );
 
   const isFull = slots.available_slots === 0;
   const isWarning = slots.usage_percentage >= 80;

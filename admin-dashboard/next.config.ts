@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
+  experimental: {
+    // Reduce el uso de RAM sacando el build de webpack a un proceso separado
+    webpackBuildWorker: true,
+    // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
+    parallelServerCompiles: false,
+  },
   // El rewrite usa BACKEND_INTERNAL que se evalúa en runtime del servidor Next.js
   // (no en build-time), por lo que funciona con EasyPanel env vars normales.
   async rewrites() {

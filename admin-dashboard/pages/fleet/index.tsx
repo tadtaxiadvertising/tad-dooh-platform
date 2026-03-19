@@ -1,14 +1,28 @@
 import { useEffect, useState, useCallback } from 'react';
-import api, { getDevices, sendCommand, deleteDevice, getDeviceProfile, updateDeviceProfile } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio, LayoutGrid } from 'lucide-react';
+import api, { getFleetStatusSummary, sendCommand, deleteDevice, getDeviceProfile, updateDeviceProfile } from '../../services/api';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceSlotsInfo from '../../components/DeviceSlotsInfo';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 
+interface FleetDevice {
+  id: string;
+  device_id: string;
+  taxi_number?: string;
+  status: string;
+  is_online: boolean;
+  battery_level?: number;
+  occupied_slots: number;
+  max_slots: number;
+  player_status?: string;
+  last_seen?: string;
+  city?: string; // Fallback for filtering
+}
+
 export default function FleetPage() {
-  const [devices, setDevices] = useState<{ id: string; device_id: string; taxi_number?: string; name?: string; status: string; battery_level?: number; storage_free?: string; city?: string; player_status?: string; last_seen?: string }[]>([]);
+  const [devices, setDevices] = useState<FleetDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
@@ -30,14 +44,16 @@ export default function FleetPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getDevices();
+      // ⚡ TAREA B: Frontend Refactor - Use Batch Endpoint
+      // Consolidates 100+ requests into 1.
+      const data = await getFleetStatusSummary();
       setDevices(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Fleet load error:', err);
     } finally {
       setLoading(false);
     }
-  }, []); // Dependencies are now empty to prevent infinite loop
+  }, []);
 
   useTabSync('DEVICES', loadData);
 
@@ -346,7 +362,17 @@ export default function FleetPage() {
                 </div>
 
                 <div className="bg-zinc-900/50 border border-white/10 p-6 rounded-[2rem] group/slots hover:bg-zinc-800/50 hover:border-tad-yellow/20 transition-all mb-10 shadow-inner">
-                  <DeviceSlotsInfo deviceId={device.device_id} />
+                  <DeviceSlotsInfo 
+                    deviceId={device.device_id} 
+                    loading={loading}
+                    slots={{
+                      device_id: device.device_id,
+                      max_slots: device.max_slots || 15,
+                      assigned_slots: device.occupied_slots || 0,
+                      available_slots: Math.max(0, (device.max_slots || 15) - (device.occupied_slots || 0)),
+                      usage_percentage: Math.round(((device.occupied_slots || 0) / (device.max_slots || 15)) * 100)
+                    }}
+                  />
                 </div>
               </div>
 

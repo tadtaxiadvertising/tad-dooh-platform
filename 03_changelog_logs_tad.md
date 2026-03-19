@@ -1,8 +1,14 @@
-# 📋 03 — CHANGELOG Y LOGS TAD DOOH PLATFORM
+## 📅 19 de Marzo, 2026 (Refactorización de Emergencia - Eliminación de Waterfall N+1)
 
-> **Propósito**: Registro cronológico de cada bug solucionado, cómo se resolvió y qué archivos se tocaron.
-> Usar para dar contexto inmediato a cualquier agente nuevo sobre el historial de cambios.
-> **Última Actualización**: 2026-03-12T23:30:00-04:00
+### 🚀 PERFORMANCE: Consolidación de Telemetría (Fleet Batching)
+- **Backend Refactor**: Creado el endpoint `GET /api/fleet/status-summary` en `FleetService`. Este endpoint agrupa el estado de conexión, nivel de batería, slots ocupados y datos del chofer en un único query de Prisma con `include` y `_count`, eliminando el problema de N+1 peticiones.
+- **Frontend Refactor**: La página de `/fleet` ahora realiza una sola petición inicial para obtener el estado de toda la flota.
+- **Component Optimization**: `DeviceSlotsInfo` fue transformado en un componente puramente presentacional, recibiendo los datos por props y eliminando sus propios `useEffect` de carga individual.
+- **Impacto**: Reducción drástica de la carga sobre el VPS (512MB RAM) al pasar de 100+ peticiones concurrentes a 1 sola petición por ciclo de refresco.
+
+### 🛠️ INFRA: Optimización de Memoria (Next.js Build)
+- **Next Config**: Actualizado `next.config.ts` con flags experimentales `webpackBuildWorker: true` y `parallelServerCompiles: false`. Esto estabiliza el proceso de build en EasyPanel al serializar tareas pesadas y reducir picos de consumo de RAM.
+- **Networking**: Configuración preparada para usar `BACKEND_INTERNAL_URL` apuntando a la red interna de Docker (`http://tad-api:3000`), mejorando la latencia y seguridad del tráfico backend-frontend.
 
 ---
 

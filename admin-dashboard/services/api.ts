@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from './supabaseClient';
 
 /**
  * Estrategia de routing del API client:
@@ -40,11 +41,17 @@ const api = axios.create({
 // ============================================
 // JWT Auth Interceptor
 // ============================================
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('tad_admin_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // 🔥 Extract token dynamic session from Supabase to guarantee it's auto-refreshed
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    } else {
+      // Fallback for edge cases where login just ran
+      const localToken = localStorage.getItem('tad_admin_token');
+      if (localToken) config.headers.Authorization = `Bearer ${localToken}`;
     }
   }
   return config;

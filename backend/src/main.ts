@@ -27,9 +27,13 @@ async function bootstrap() {
 
   app.useGlobalFilters(new PrismaClientExceptionFilter());
 
-  // CONFIGURACIÓN DE CORS TEMPORAL PARA TROUBLESHOOTING
+  // CONFIGURACIÓN DE CORS REFORZADA
   app.enableCors({
-    origin: (origin, callback) => callback(null, true),
+    origin: [
+      'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-device-id', 'X-Requested-With'],

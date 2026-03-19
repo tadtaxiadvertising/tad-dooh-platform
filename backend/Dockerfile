@@ -1,32 +1,30 @@
 # ============================================
-# TAD DOOH Backend - Ultra-Stable Production
+# TAD DOOH Backend - Robust Production Build
 # ============================================
-FROM node:20-alpine
+FROM node:20
 
-RUN apk add --no-cache openssl libc6-compat
+# No usamos alpine para descartar problemas de compatibilidad de libc
+RUN apt-get update && apt-get install -y openssl
 
 WORKDIR /app
 
-# Copia de dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalación limpia
 RUN npm install
 COPY . .
 
-# Construcción y limpieza
 RUN npx prisma generate
 RUN npm run build
 RUN npm prune --production
 
-# Variables de entorno críticas para Docker
+# Variables de entorno explícitas para el contenedor
 ENV NODE_ENV=production
-ENV NODE_OPTIONS=--max-old-space-size=256
+ENV NODE_OPTIONS=--max-old-space-size=512
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
 EXPOSE 3000
 
-# Punto de entrada verificado con delay de seguridad
+# Usamos node directamente con la ruta verificada
 CMD ["node", "dist/src/main"]

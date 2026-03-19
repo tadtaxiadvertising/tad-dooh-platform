@@ -8,7 +8,7 @@ export class SupabaseService {
   private supabase: SupabaseClient;
 
   constructor() {
-    const url = process.env.SUPABASE_URL || '';
+    const url = process.env.SUPABASE_URL || 'https://ltdcdhqixvbpdcitthqf.supabase.co';
     // For server-side auth validation (getUser), we MUST use the service_role_key.
     // The anon_key can only validate its own session, not arbitrary user tokens.
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';

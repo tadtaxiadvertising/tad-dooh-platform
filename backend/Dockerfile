@@ -10,7 +10,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install
+# Instalación limpia sin dependencias opcionales para reducir tamaño
+RUN npm install --no-optional
 COPY . .
 
 RUN npx prisma generate
@@ -18,7 +19,7 @@ RUN npm run build
 RUN npm prune --production
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS=--max-old-space-size=512
+ENV NODE_OPTIONS=--max-old-space-size=640
 ENV PORT=3000
 
 EXPOSE 3000

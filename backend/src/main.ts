@@ -25,15 +25,9 @@ async function bootstrap() {
     }),
   );
 
-  // DEBUG LOGGER: Para ver si las peticiones llegan a NestJS
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
-
-  // Health check pública (sin prefijo /api)
+  // Health check pública (sin prefijo /api y sin auth)
   app.getHttpAdapter().get('/health', (req, res) => {
-    res.status(200).send({ status: 'OK', timestamp: new Date() });
+    res.status(200).send({ status: 'OK', uptime: process.uptime(), memory: process.memoryUsage() });
   });
 
   app.useGlobalFilters(new PrismaClientExceptionFilter());
@@ -51,22 +45,17 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api');
 
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('TAD DOOH Platform API')
-    .setDescription('API for managing taxi advertising distribution network')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .addTag('devices', 'Device management operations')
-    .addTag('campaigns', 'Campaign management operations')
-    .addTag('media', 'Media upload and management')
-    .addTag('analytics', 'Analytics and metrics')
-    .addTag('sync', 'Device synchronization')
-    .addTag('commands', 'Remote device commands')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  // Swagger SÓLO en desarrollo (ahorra ~150MB de RAM en producción)
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('TAD DOOH Platform API')
+      .setDescription('API for managing taxi advertising distribution network')
+      .setVersion('0.1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   // Port
   const port = configService.get('PORT') || 3000;

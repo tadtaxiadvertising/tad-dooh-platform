@@ -1,57 +1,25 @@
-# ============================================
-# TAD DOOH Backend - Production Dockerfile
-# ============================================
+# ETAPA 1: Construcción
 FROM node:20-alpine AS builder
-
 WORKDIR /app
-
-# Instalar dependencias del sistema para bcrypt y prisma
-RUN apk add --no-cache libc6-compat python3 make g++
-
-# Copiar archivos de dependencias y prisma schema
+RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma/
-
-# Instalar TODAS las dependencias (necesitamos devDeps para build)
-RUN npm ci
-
-# Generar Prisma Client
-RUN npx prisma generate
-
-# Copiar código fuente
+RUN npm install
 COPY . .
-
-# Build de NestJS
+RUN npx prisma generate
 RUN npm run build
 
-# ============================================
-# Production Stage
-# ============================================
-FROM node:20-alpine
-
+# ETAPA 2: Ejecución
+FROM node:20-alpine AS runner
 WORKDIR /app
-
-RUN apk add --no-cache libc6-compat
-
-# Copiar package.json para el script start:prod
-COPY --from=builder /app/package*.json ./
-
-# Copiar node_modules de producción
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copiar build compilado
-COPY --from=builder /app/dist ./dist
-
-# Copiar Prisma schema + client generado (CRÍTICO)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
-ENV NODE_OPTIONS=--max-old-space-size=1536
-ENV PORT=3000
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-# Ejecutar migraciones y arrancar
+# Ejecuta migraciones antes de iniciar la app
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]

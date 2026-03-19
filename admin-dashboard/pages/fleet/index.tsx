@@ -1,11 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
-import api, { getFleetStatusSummary, sendCommand, deleteDevice, getDeviceProfile, updateDeviceProfile } from '../../services/api';
+import { useState } from 'react';
+import useSWR from 'swr';
+import api, { sendCommand, deleteDevice, updateDeviceProfile } from '../../services/api';
 import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceSlotsInfo from '../../components/DeviceSlotsInfo';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+
+const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 interface FleetDevice {
   id: string;
@@ -22,8 +25,6 @@ interface FleetDevice {
 }
 
 export default function FleetPage() {
-  const [devices, setDevices] = useState<FleetDevice[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [commanding, setCommanding] = useState<string | null>(null);
@@ -41,27 +42,18 @@ export default function FleetPage() {
   const [, setSavingProfile] = useState(false);
   const [editForm, setEditForm] = useState({ driver_name: '', driver_phone: '', taxi_number: '', subscription_paid: false });
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      // ⚡ TAREA B: Frontend Refactor - Use Batch Endpoint
-      // Consolidates 100+ requests into 1.
-      const data = await getFleetStatusSummary();
-      setDevices(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Fleet load error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // ⚡ TAREA B: Frontend Refactor - Use Batch Endpoint via SWR
+  // Consolidates 100+ requests into 1, caching natively with deduping.
+  const { data: fleetData, error, isLoading, mutate } = useSWR('/fleet/summary', fetcher, {
+    dedupingInterval: 60000,
+    refreshInterval: 30000, // Replaces setInterval
+    revalidateOnFocus: true
+  });
 
-  useTabSync('DEVICES', loadData);
+  const devices: FleetDevice[] = Array.isArray(fleetData) ? fleetData : [];
+  const loading = isLoading;
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000); 
-    return () => clearInterval(interval);
-  }, [loadData]);
+  useTabSync('DEVICES', mutate);
 
   const handleCommand = async (deviceId: string, type: string) => {
     setCommanding(`${deviceId}-${type}`);
@@ -93,8 +85,8 @@ export default function FleetPage() {
       setNewPlaca('');
       setNewDriver('');
       setNewDeviceId('');
+      await mutate(); // Replaced loadData()
       notifyChange('DEVICES');
-      loadData();
     } catch (err: unknown) {
       setToast('⚠️ ERROR DE PROTOCOLO');
       console.error(err);
@@ -107,7 +99,8 @@ export default function FleetPage() {
     if (!confirm(`¿Proceder con la purga irreversible del nodo ${deviceId}? Todos los logs de auditoría serán eliminados.`)) return;
     try {
       await deleteDevice(deviceId);
-      setDevices(prev => prev.filter(d => d.device_id !== deviceId && d.id !== deviceId));
+      // No direct state manipulation needed if SWR revalidates
+      await mutate(); // Revalidate SWR cache after deletion
       notifyChange('DEVICES');
       setToast('NODO PURGADO DEL CLUSTER');
     } catch (err) {
@@ -152,7 +145,7 @@ export default function FleetPage() {
       await updateDeviceProfile(selectedProfile.device_id, editForm);
       setToast('REGISTRO SINCRONIZADO');
       notifyChange('DEVICES');
-      loadData();
+      await mutate(); // Revalidate SWR cache after profile update
       await openProfile(selectedProfile.device_id); 
     } catch (err) {
       console.error(err);
@@ -203,7 +196,7 @@ export default function FleetPage() {
         
         <div className="flex items-center gap-4 bg-zinc-900/10 backdrop-blur-3xl p-1.5 rounded-full border border-white/5">
            <button 
-             onClick={loadData}
+             onClick={() => mutate()} // Changed from loadData to mutate
              disabled={loading}
              className="px-10 py-3.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-zinc-400 hover:bg-white/5 flex items-center gap-3 italic"
            >

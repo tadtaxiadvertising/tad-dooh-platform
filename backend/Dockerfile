@@ -1,10 +1,9 @@
 # ============================================
-# TAD DOOH Backend - Robust Production Build
+# TAD DOOH Backend - Definitive Production
 # ============================================
-FROM node:20
+FROM node:20-slim
 
-# No usamos alpine para descartar problemas de compatibilidad de libc
-RUN apt-get update && apt-get install -y openssl
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,13 +17,11 @@ RUN npx prisma generate
 RUN npm run build
 RUN npm prune --production
 
-# Variables de entorno explícitas para el contenedor
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=512
 ENV PORT=3000
-ENV HOST=0.0.0.0
 
 EXPOSE 3000
 
-# Usamos node directamente con la ruta verificada
+# La app escucha en 0.0.0.0:3000 explícitamente (ya configurado en main.ts)
 CMD ["node", "dist/src/main"]

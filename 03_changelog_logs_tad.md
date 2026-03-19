@@ -1,14 +1,13 @@
 ## 📅 19 de Marzo, 2026 (Refactorización de Emergencia - Eliminación de Waterfall N+1)
 
-### 🚀 PERFORMANCE: Consolidación de Telemetría (Fleet Batching)
-- **Backend Refactor**: Creado el endpoint `GET /api/fleet/status-summary` en `FleetService`. Este endpoint agrupa el estado de conexión, nivel de batería, slots ocupados y datos del chofer en un único query de Prisma con `include` y `_count`, eliminando el problema de N+1 peticiones.
-- **Frontend Refactor**: La página de `/fleet` ahora realiza una sola petición inicial para obtener el estado de toda la flota.
-- **Component Optimization**: `DeviceSlotsInfo` fue transformado en un componente puramente presentacional, recibiendo los datos por props y eliminando sus propios `useEffect` de carga individual.
-- **Impacto**: Reducción drástica de la carga sobre el VPS (512MB RAM) al pasar de 100+ peticiones concurrentes a 1 sola petición por ciclo de refresco.
+### 🛡️ STABILITY: Eliminación Total N+1
+- **Backend Batching**: Implementado `GET /api/fleet/summary` en `FleetController` y `FleetService` (usando Prisma `findMany` con `include` y `_count` de campañas vigentes compartiendo un mismo query óptimo) devolviendo nivel de batería, status, free_slots, chofer y locación.
+- **SWR + Frontend Caching**: Modificadas masivamente las rutas de alto impacto `admin-dashboard/pages/media/index.tsx` y `admin-dashboard/components/DeviceSelectorModal.tsx` para usar **SWR** (`useSWR`) apuntando a `/fleet/summary` con un `dedupingInterval` de 60s en lugar de loops iterativos con `getDeviceSlots(deviceId)`.
+- **Efecto de Red**: 1 sola llamada engloba el estado entero del inventario pre-calculado por Prisma, destrabando la carga del procesador del servidor web (Next.js Node) y Supabase simultáneamente, evitando errores *fetch failed*.
 
-### 🛠️ INFRA: Optimización de Memoria (Next.js Build)
-- **Next Config**: Actualizado `next.config.ts` con flags experimentales `webpackBuildWorker: true` y `parallelServerCompiles: false`. Esto estabiliza el proceso de build en EasyPanel al serializar tareas pesadas y reducir picos de consumo de RAM.
-- **Networking**: Configuración preparada para usar `BACKEND_INTERNAL_URL` apuntando a la red interna de Docker (`http://tad-api:3000`), mejorando la latencia y seguridad del tráfico backend-frontend.
+### 🛠️ INFRA: Optimización de Memoria y Proxy Interno
+- **Next Config (Worker Offload)**: Activado `webpackBuildWorker: true` y `parallelServerCompiles: false` para salvaguardar la memoria y procesador de EasyPanel durante despliegues (previene caídas repentinas en ambiente productivo sin escalabilidad real).
+- **Internal Cluster Traffic**: Forzado de `BACKEND_INTERNAL_URL` en modo Docker Swarm Proxy/Nixpacks para comunicarse de manera encapsulada sobre `http://tad-api:3000` eludiendo capas de red públicas.
 
 ---
 

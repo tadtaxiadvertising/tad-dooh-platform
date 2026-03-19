@@ -2,7 +2,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
+async function seedSantiago() {
   console.log('🚀 Iniciando Ingesta Masiva: Santiago de los Caballeros Ecosystem...');
 
   // 1. Crear Fleets (Central de Taxis)
@@ -90,7 +90,7 @@ async function main() {
   console.log('======================================================');
 }
 
-main()
+seedSantiago()
   .catch((e) => {
     console.error(e);
     process.exit(1);

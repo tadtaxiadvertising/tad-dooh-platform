@@ -84,7 +84,7 @@ export default function AnalyticsHistoryPage() {
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
               <input 
                 type="text" 
-                placeholder="BUSCAR EVENTOS, ID DE NODO O TAXI..."
+                placeholder="BUSCAR EVENTOS, ID DE PANTALLA O TAXI..."
                 className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white focus:outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -125,7 +125,7 @@ export default function AnalyticsHistoryPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-900/40 border-b border-gray-700/50">
-                <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Fuente / Nodo</th>
+                <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Fuente / Pantalla</th>
                 <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Evento de Red</th>
                 <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Registro Temporal</th>
                 <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Verificación</th>
@@ -164,7 +164,7 @@ export default function AnalyticsHistoryPage() {
                             <p className="text-lg font-bold text-white tracking-tight uppercase group-hover:text-tad-yellow transition-colors leading-none mb-1.5">
                                TAXI_{play.taxiNumber || play.deviceId.slice(0, 4).toUpperCase()}
                             </p>
-                            <p className="text-[10px] font-mono text-gray-500 font-bold uppercase tracking-widest">NODO: {play.deviceId.split('-')[0].toUpperCase()}</p>
+                            <p className="text-[10px] font-mono text-gray-500 font-bold uppercase tracking-widest">PANTALLA: {play.deviceId.split('-')[0].toUpperCase()}</p>
                          </div>
                       </div>
                     </td>

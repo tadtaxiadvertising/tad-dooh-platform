@@ -468,7 +468,7 @@ export default function TrackingPage() {
                                 <div className="space-y-6">
                                   <div className="flex items-center gap-3">
                                      <Tablet className="w-5 h-5 text-tad-yellow" />
-                                     <h4 className="text-white font-bold uppercase tracking-widest text-xs">Especificaciones del Nodo Receptor</h4>
+                                     <h4 className="text-white font-bold uppercase tracking-widest text-xs">Especificaciones del Pantalla Receptor</h4>
                                   </div>
                                   {driver.device ? (
                                     <div className="grid grid-cols-2 gap-4">
@@ -499,7 +499,7 @@ export default function TrackingPage() {
                                   ) : (
                                     <div className="p-8 border border-dashed border-gray-700 rounded-2xl text-center">
                                        <Tablet className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-                                       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Nodo receptor no detectado</p>
+                                       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Pantalla receptor no detectado</p>
                                     </div>
                                   )}
                                 </div>

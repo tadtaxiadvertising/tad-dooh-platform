@@ -98,13 +98,13 @@ export default function FleetPage() {
   };
 
   const handleDeleteDevice = async (deviceId: string) => {
-    if (!confirm(`¿Proceder con la purga irreversible del nodo ${deviceId}? Todos los logs de auditoría serán eliminados.`)) return;
+    if (!confirm(`¿Proceder con la purga irreversible del pantalla ${deviceId}? Todos los logs de auditoría serán eliminados.`)) return;
     try {
       await deleteDevice(deviceId);
       // No direct state manipulation needed if SWR revalidates
       await mutate(); // Revalidate SWR cache after deletion
       notifyChange('DEVICES');
-      setToast('NODO PURGADO DEL CLUSTER');
+      setToast('PANTALLA PURGADO DEL CLUSTER');
     } catch (err) {
       console.error(err);
       setToast('FALLA EN PURGADO');
@@ -207,7 +207,7 @@ export default function FleetPage() {
           className="bg-tad-yellow text-black px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-[0.1em] flex items-center gap-3 hover:bg-yellow-400 transition-all shadow-lg hover:-translate-y-0.5"
         >
           <Plus className="w-4 h-4" />
-          Vincular Nodo
+          Vincular Pantalla
         </button>
       </div>
 
@@ -215,7 +215,7 @@ export default function FleetPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
           { label: 'Unidades Vinculadas', value: devices.length, icon: Tablet, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
-          { label: 'Nodos en Línea', value: onlineCount, icon: Wifi, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+          { label: 'Pantallas en Línea', value: onlineCount, icon: Wifi, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
           { label: 'Vault Global', value: '4.2 TB', icon: HardDrive, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
           { label: 'Estatus Energía', value: 'Nominal', icon: Zap, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
         ].map((s, i) => (
@@ -307,7 +307,7 @@ export default function FleetPage() {
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleDeleteDevice(device.id); }}
-                      title="Purgar Nodo"
+                      title="Purgar Pantalla"
                       className="p-2 bg-gray-900/50 border border-gray-700 hover:bg-rose-500 hover:text-white hover:border-rose-500 text-gray-400 rounded-lg transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -409,13 +409,13 @@ export default function FleetPage() {
            </div>
            <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tight leading-none mb-3 transition-colors duration-500 group-hover:text-white">Red Inactiva</h3>
            <p className="text-gray-500 font-bold uppercase tracking-wider text-[11px] max-w-md leading-relaxed mb-8">
-              No se han detectado nodos de hardware en el espectro. Inicie el protocolo para poblar la red periférica.
+              No se han detectado pantallas de hardware en el espectro. Inicie el protocolo para poblar la red periférica.
            </p>
            <button 
               onClick={() => setShowAddModal(true)}
               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-4 rounded-xl border border-gray-700 hover:border-tad-yellow hover:shadow-lg hover:-translate-y-1 text-xs font-bold uppercase tracking-widest transition-all"
            >
-              Anexar Nodo de Hardware
+              Anexar Pantalla de Hardware
            </button>
         </div>
       )}
@@ -435,7 +435,7 @@ export default function FleetPage() {
                     </div>
                     <div>
                         <h2 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-2">
-                          Terminal de <span className="text-tad-yellow">Nodo</span>
+                          Terminal de <span className="text-tad-yellow">Pantalla</span>
                         </h2>
                         <div className="flex items-center gap-4">
                            <div className="flex items-center gap-2">
@@ -584,7 +584,7 @@ export default function FleetPage() {
                            <div className="flex-1">
                               <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Protocolo de Purga</h4>
                               <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                                Remover el nodo lo desvinculará físicamente del core de comunicación maestro regional.
+                                Remover el pantalla lo desvinculará físicamente del core de comunicación maestro regional.
                               </p>
                               <button 
                                 onClick={() => { handleDeleteDevice(selectedProfile.id); setSelectedProfile(null); }}
@@ -615,7 +615,7 @@ export default function FleetPage() {
                       <Plus className="w-8 h-8 text-black" />
                    </div>
                    <div>
-                      <h2 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-2">Nuevo <span className="text-tad-yellow">Nodo</span></h2>
+                      <h2 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-2">Nuevo <span className="text-tad-yellow">Pantalla</span></h2>
                       <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Sincronización de Flota</p>
                    </div>
                 </div>
@@ -653,11 +653,11 @@ export default function FleetPage() {
                       {adding ? (
                         <div className="flex items-center gap-3">
                            <RefreshCcw className="w-5 h-5 animate-spin" />
-                           CONFIGURANDO NODOS...
+                           CONFIGURANDO PANTALLAS...
                         </div>
                       ) : (
                         <div className="flex items-center gap-3">
-                           INCLUIR NODO A FLOTA <ArrowRight className="w-5 h-5" />
+                           INCLUIR PANTALLA A FLOTA <ArrowRight className="w-5 h-5" />
                         </div>
                       )}
                    </button>

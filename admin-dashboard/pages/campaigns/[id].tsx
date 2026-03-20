@@ -273,13 +273,13 @@ export default function CampaignDetailPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black text-white uppercase tracking-tight">
-                Nodos <span className="text-tad-yellow">Asignados</span>
+                Pantallas <span className="text-tad-yellow">Asignados</span>
               </h2>
               <div className="flex items-center gap-4">
                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">{assignedDevices.length} Hardware</span>
                   <button 
                     onClick={fetchAssignedDevices} 
-                    title="Actualizar nodos"
+                    title="Actualizar pantallas"
                     className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-tad-yellow/30 transition-all text-gray-500 hover:text-tad-yellow shadow-sm"
                   >
                     <RefreshCcw className={clsx("w-4 h-4", loadingDevices && "animate-spin")} />

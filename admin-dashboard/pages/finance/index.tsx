@@ -199,7 +199,7 @@ export default function FinancePage() {
                                 <p className="font-bold text-white text-lg tracking-tight uppercase group-hover:text-tad-yellow transition-colors leading-none mb-1.5">{item.driverName}</p>
                                 <div className="flex items-center gap-2">
                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">NODO: {item.taxiNumber || 'DESCONOCIDO'}</p>
+                                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">PANTALLA: {item.taxiNumber || 'DESCONOCIDO'}</p>
                                 </div>
                              </div>
                           </div>
@@ -326,7 +326,7 @@ export default function FinancePage() {
                     <tr className="bg-gray-900/40 border-b border-gray-700/50">
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Estrategia Global</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Alcance</th>
-                      <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Nodos Emisores</th>
+                      <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Pantallas Emisores</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-right">Proyección</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Auditoría</th>
                     </tr>
@@ -377,7 +377,7 @@ export default function FinancePage() {
                         <td className="px-8 py-6 text-center">
                           <div className="flex flex-col items-center">
                              <span className="text-gray-400 font-bold text-xl leading-none group-hover:text-white transition-colors">{camp.assignedTaxis}</span>
-                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Nodos Activos</span>
+                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Pantallas Activos</span>
                           </div>
                         </td>
                         <td className="px-8 py-6 text-right">

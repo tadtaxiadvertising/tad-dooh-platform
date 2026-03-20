@@ -168,7 +168,7 @@ export default function DriversPage() {
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
               <input 
                 type="text" 
-                placeholder="BUSCAR SOCIOS, PLACAS O NODOS..."
+                placeholder="BUSCAR SOCIOS, PLACAS O PANTALLAS..."
                 className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -199,7 +199,7 @@ export default function DriversPage() {
               <Radio className="w-8 h-8 text-tad-yellow animate-pulse" />
               <div className="absolute inset-0 bg-tad-yellow/10 blur-xl animate-pulse -z-10" />
            </div>
-           <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Sincronizando Nodos</h3>
+           <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Sincronizando Pantallas</h3>
            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Descargando Base de Datos...</p>
         </div>
       ) : (

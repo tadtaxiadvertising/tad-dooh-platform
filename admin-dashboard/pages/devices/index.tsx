@@ -76,7 +76,7 @@ export default function DevicesPage() {
              className="px-6 py-2.5 bg-tad-yellow text-black hover:bg-yellow-400 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm group"
            >
              <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-             Vincular Nodo
+             Vincular Pantalla
            </button>
            <button
              onClick={loadData}
@@ -114,7 +114,7 @@ export default function DevicesPage() {
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
           <input
             type="text"
-            placeholder="Buscar nodo..."
+            placeholder="Buscar pantalla..."
             className="w-full bg-transparent border-none py-3 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none placeholder:text-gray-500"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -148,7 +148,7 @@ export default function DevicesPage() {
             <div className="w-20 h-20 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-gray-700">
                <Tablet className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Nodo No Detectado</h3>
+            <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Pantalla No Detectado</h3>
             <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] max-w-sm leading-relaxed">
                No hay terminales que coincidan con los criterios.
             </p>
@@ -191,7 +191,7 @@ export default function DevicesPage() {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { setSelectedDevice(device); setIsModalOpen(true); }}
-                      title="Sincronizar Nodo"
+                      title="Sincronizar Pantalla"
                       className="w-8 h-8 bg-gray-900 border border-gray-700 hover:border-tad-yellow hover:text-tad-yellow rounded-xl flex items-center justify-center text-gray-500 transition-all shadow-sm"
                     >
                       <Edit2 className="w-3.5 h-3.5" />

@@ -21,33 +21,40 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // CUSTOM MARKER ICON GENERATOR
 // ============================================
 const createVehicleIcon = (status: 'active' | 'offline' | 'unpaid') => {
-  const color = status === 'active' ? '#fad400' : status === 'unpaid' ? '#ef4444' : '#71717a';
+  const color = status === 'active' ? '#fad400' : status === 'unpaid' ? '#ef4444' : '#94a3b8';
   
   return L.divIcon({
     className: 'custom-vehicle-marker',
     html: `
-      <div class="relative group" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 34px; height: 42px; background: ${color}; clip-path: polygon(50% 100%, 0% 0%, 100% 0%); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); opacity: 0.9;"></div>
-        <div style="position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 34px; height: 34px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; border: 2.5px solid #000; box-shadow: 0 4px 12px rgba(0,0,0,0.6);">
-           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-             <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"></path>
-             <circle cx="7" cy="17" r="2"></circle>
-             <circle cx="17" cy="17" r="2"></circle>
-           </svg>
+      <div class="relative flex items-center justify-center" style="width: 50px; height: 50px;">
+        <!-- Pin Shape -->
+        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid ${color}; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></div>
+        
+        <!-- Main Circular Container -->
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; border: 3px solid ${color}; box-shadow: 0 8px 25px rgba(0,0,0,0.25); z-index: 10;">
+           <div style="width: 30px; height: 30px; background: ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"></path>
+                <circle cx="7" cy="17" r="2"></circle>
+                <circle cx="17" cy="17" r="2"></circle>
+              </svg>
+           </div>
         </div>
+
+        <!-- Active Aura -->
         ${status === 'active' ? `
-          <div style="position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 34px; height: 34px; border-radius: 50%; background: ${color}; opacity: 0.4; animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 50%; background: ${color}; opacity: 0.5; animation: ping-glow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
         ` : ''}
       </div>
       <style>
-        @keyframes ping-slow {
-          75%, 100% { transform: translateX(-50%) scale(1.8); opacity: 0; }
+        @keyframes ping-glow {
+          75%, 100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
         }
       </style>
     `,
-    iconSize: [40, 50],
-    iconAnchor: [20, 50],
-    popupAnchor: [0, -45],
+    iconSize: [50, 60],
+    iconAnchor: [25, 60],
+    popupAnchor: [0, -55],
   });
 };
 
@@ -123,8 +130,8 @@ const MapView: React.FC<MapViewProps> = ({
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) return <div className="w-full h-full bg-[#0a0a0a] animate-pulse flex items-center justify-center">
-    <Navigation className="w-10 h-10 text-zinc-900 animate-spin" />
+  if (!isMounted) return <div className="w-full h-full bg-slate-50 animate-pulse flex items-center justify-center">
+    <Navigation className="w-10 h-10 text-slate-200 animate-spin" />
   </div>;
 
   return (
@@ -132,13 +139,13 @@ const MapView: React.FC<MapViewProps> = ({
       <MapContainer 
         center={center} 
         zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
+        style={{ height: '100%', width: '100%', background: '#f8fafc' }}
         zoomControl={false}
         className="z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
           className="map-tiles-filter"
         />
         
@@ -152,14 +159,14 @@ const MapView: React.FC<MapViewProps> = ({
              pathOptions={{ 
                color: zone.color, 
                fillColor: zone.color, 
-               fillOpacity: 0.05, 
-               weight: 2, 
-               dashArray: '10, 10' 
+               fillOpacity: 0.1, 
+               weight: 3, 
+               dashArray: '8, 8' 
              }}
            >
               <Popup className="zone-popup">
-                 <div className="px-3 py-1 bg-black/80 backdrop-blur-md rounded-lg border border-white/10">
-                    <span className="text-[10px] font-black uppercase text-white tracking-widest leading-none">{zone.name}</span>
+                 <div className="px-3 py-1 bg-white shadow-xl rounded-lg border border-slate-200">
+                    <span className="text-[10px] font-black uppercase text-slate-800 tracking-widest leading-none">{zone.name}</span>
                  </div>
               </Popup>
            </Polygon>
@@ -176,7 +183,7 @@ const MapView: React.FC<MapViewProps> = ({
               position={[loc.lastLat, loc.lastLng]}
               icon={icon}
             >
-              <Popup className="custom-popup-premium" offset={[0, -10]}>
+              <Popup className="custom-popup-premium" offset={[0, -15]}>
                 <VehiclePopup 
                   device={loc as any} 
                   onViewHistory={() => onViewHistory?.(loc)}
@@ -193,7 +200,7 @@ const MapView: React.FC<MapViewProps> = ({
              position={[point.lat, point.lng]}
              icon={L.divIcon({
                 className: 'heat-dot',
-                html: `<div style="background: linear-gradient(to bottom, #fad400, #f87171); width: 24px; height: 24px; border-radius: 50%; blur: 20px; opacity: 0.4;"></div>`,
+                html: `<div style="background: linear-gradient(to bottom, #fad400, #f87171); width: 24px; height: 24px; border-radius: 50%; filter: blur(4px); opacity: 0.5;"></div>`,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
              })}
@@ -202,14 +209,14 @@ const MapView: React.FC<MapViewProps> = ({
       </MapContainer>
 
       <style jsx global>{`
-        .map-tiles-filter { filter: contrast(1.1) brightness(1) saturate(0.8) invert(0.05); }
+        .map-tiles-filter { filter: saturate(1.1) brightness(1.02); }
         .custom-popup-premium .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .custom-popup-premium .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .custom-popup-premium .leaflet-popup-tip-container { display: none !important; }
-        .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #000 !important; }
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; margin: 30px !important; }
-        .leaflet-control-zoom a { background: #000 !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; width: 40px !important; height: 40px !important; line-height: 40px !important; border-radius: 12px !important; margin-bottom: 5px !important; }
-        .leaflet-control-zoom a:hover { background: #fad400 !important; color: #000 !important; border-color: #fad400 !important; }
+        .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #f8fafc !important; }
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; margin: 30px !important; }
+        .leaflet-control-zoom a { background: #fff !important; color: #000 !important; border: 1px solid rgba(0,0,0,0.05) !important; width: 44px !important; height: 44px !important; line-height: 44px !important; border-radius: 12px !important; margin-bottom: 8px !important; transition: all 0.3s; }
+        .leaflet-control-zoom a:hover { background: #fad400 !important; color: #000 !important; border-color: #fad400 !important; transform: scale(1.05); }
       `}</style>
     </div>
   );

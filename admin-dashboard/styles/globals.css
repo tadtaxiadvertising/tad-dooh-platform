@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* stylelint-disable at-rule-no-unknown */
 @theme {
   --color-tad-yellow: #FFD400;
   --color-tad-accent: #ffae00;
@@ -10,6 +11,7 @@
   
   --shadow-3xl: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
 }
+/* stylelint-enable at-rule-no-unknown */
 
 :root {
   --background: #09090b;
@@ -41,6 +43,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* stylelint-disable at-rule-no-unknown */
 .btn-pill {
   @apply rounded-full px-8 py-4 font-black uppercase tracking-widest text-[11px] transition-all duration-300;
 }
@@ -52,6 +55,7 @@ body {
 .card-premium {
   @apply bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] transition-all duration-700 hover:border-tad-yellow/30 hover:bg-zinc-900/60;
 }
+/* stylelint-enable at-rule-no-unknown */
 
 @keyframes float {
   0% { transform: translateY(0px); }
@@ -109,3 +113,42 @@ body {
 .progress-fill {
   width: var(--fill, 0%);
 }
+
+.bar-fill {
+  height: var(--bar-h, 0%);
+}
+
+/* Animation delay utilities — replaces inline style={{ animationDelay }} */
+.delay-0   { animation-delay: 0ms; }
+.delay-50  { animation-delay: 50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-350 { animation-delay: 350ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-450 { animation-delay: 450ms; }
+
+.text-shadow-glow {
+  text-shadow: 0 0 50px rgba(250, 212, 0, 0.4);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(250, 212, 0, 0.05);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 212, 0, 0.2);
+}
+.delay-500 { animation-delay: 500ms; }

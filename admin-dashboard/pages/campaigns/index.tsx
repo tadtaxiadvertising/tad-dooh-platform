@@ -43,27 +43,13 @@ export default function CampaignsPage() {
          <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10 pt-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(255,212,0,0.15)] shrink-0">
-                <Megaphone className="w-6 h-6 text-black" />
-             </div>
-             <div>
-                <div className="flex items-center gap-2 mb-1">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)]" />
-                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Broadcast Protocol 4.2</p>
-                </div>
-                <h1 className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tight leading-none">
-                  Campaign <span className="text-tad-yellow">Orchestrator</span>
-                </h1>
-             </div>
-          </div>
-          <p className="text-gray-400 max-w-2xl text-sm font-medium leading-relaxed pl-16">
-            Tactical DOOH asset management and regional schedule delivery.
-          </p>
-        </div>
-        
+      {/* Page Context Transition */}
+      <div className="flex items-center gap-3 mb-8 opacity-60">
+        <div className="w-8 h-px bg-white/20" />
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Broadcasting / Campaign Orchestrator</p>
+      </div>
+
+      <div className="flex justify-end mb-6">
         <Link 
           href="/campaigns/new"
           className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md shrink-0"
@@ -73,31 +59,31 @@ export default function CampaignsPage() {
         </Link>
       </div>
 
-      {/* Primary IQ Metrics */}
+      {/* Primary IQ Metrics Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { icon: Megaphone, label: 'Global Campaigns', value: campaigns.length, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-          { icon: Zap, label: 'Active Impacts', value: campaigns.filter(c => c.active).length, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
-          { icon: Target, label: 'Projected Reach', value: '4.2M+', color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-          { icon: Activity, label: 'Link Integrity', value: 'Nominal', color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-        ].map((stat, i) => (
+          { icon: Megaphone, label: 'Campañas Globales', value: campaigns.length, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
+          { icon: Zap, label: 'Impactos Activos', value: campaigns.filter(c => c.active).length, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+          { icon: Target, label: 'Alcance Red', value: '4.2M+', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+          { icon: Activity, label: 'Integridad Link', value: 'Nominal', color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
+        ].map((s, i) => (
           <div 
             key={i} 
             className={clsx(
-              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-              `[animation-delay:${i * 50}ms]`
+              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-sm hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+              i === 0 ? 'delay-0' : i === 1 ? 'delay-50' : i === 2 ? 'delay-100' : 'delay-150'
             )}
           >
              <div className="flex justify-between items-start mb-6">
-                <div className={clsx("p-3 rounded-xl border transition-all duration-300 shadow-sm", stat.bgColor, stat.border, stat.color)}>
-                   <stat.icon className="w-5 h-5" />
+                <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bgColor, s.border, s.color)}>
+                   <s.icon className="w-5 h-5" />
                 </div>
-                <div className="h-2 w-2 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors" />
+                <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
              </div>
              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className={clsx("text-3xl font-black tracking-tight leading-none mt-1", stat.color)}>
-                  {typeof stat.value === 'number' && stat.value < 10 ? `0${stat.value}` : stat.value}
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{s.label}</p>
+                <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none mt-1", s.color)}>
+                  {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
                 </h3>
              </div>
           </div>
@@ -121,7 +107,7 @@ export default function CampaignsPage() {
                 key={camp.id} 
                 className={clsx(
                   "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden hover:border-tad-yellow/40 transition-all duration-500 shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both hover:shadow-lg",
-                  `[animation-delay:${idx * 50}ms]`
+                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
                 )}
               >
                 {/* Visual Status Glow */}

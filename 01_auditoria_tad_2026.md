@@ -2,8 +2,8 @@
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-14T01:00:00-04:00
-> **Sprint Actual**: Sprint 3 (Sistemas de Calle e Inventario)
+> **Última Actualización**: 2026-03-20T14:10:00-04:00
+> **Estado Operativo Actual**: Layout Responsive (Móvil/Tablet) Completado. Diseño UI "Dark Premium" homologado en todas las vistas. Sincronización Realtime Broadcast integrada.
 
 ---
 
@@ -46,8 +46,8 @@
 | `/campaigns` | CRUD de campañas publicitarias | ✅ Funcional | Crear, listar, eliminar, distribuir |
 | `/campaigns/new` | Formulario de nueva campaña | ✅ Funcional | Fechas, anunciante, impressions |
 | `/campaigns/[id]` | Detalle de campaña + upload video | ✅ Funcional | Subida a Supabase Storage |
-| `/fleet` | Monitor de dispositivos/tablets | ✅ Funcional | Filtros, C2 remoto, perfil de nodo |
-| `/drivers` | Gestión de choferes y suscripciones | ✅ Funcional | Data real de DB (13 choferes) |
+| `/fleet` | Monitor de dispositivos/tablets | ✅ Funcional | Filtros, Broadcast Sync, perfil de nodo |
+| `/drivers` | Gestión de choferes y suscripciones | ✅ Premium v4.5 | Data real de DB (13 choferes) + Animaciones |
 | `/advertisers` | Base de datos de marcas/clientes | ✅ Funcional | Data real de DB (10 anunciantes) |
 | `/finance` | Ingresos, nómina, exportaciones CSV | ✅ Funcional | Liquidación automática RD$500/anuncio |
 | `/analytics` | Inteligencia: top taxis, plays/hora | ✅ Funcional | Propagaciones recientes (live feed) |
@@ -127,23 +127,20 @@
 
 ## ⚠️ 6. RIESGOS IDENTIFICADOS
 
-| Riesgo | Severidad | Estado |
-| --- | --- | --- |
-| Pipeline CI/CD / Build | Alta | ✅ Resuelto (Missing Param Decorator) |
-| Inestabilidad de Handlers Serverless | Alta | ✅ Mitigado con CORS-First Handler |
-| Bloqueo CORS en Producción | 🔴 Crítica | ✅ Resuelto con Header Injection en Vercel |
-| Videos grandes > 50MB (Vercel limit) | 🟡 Media | Supabase Storage como intermediario |
-| Muerte de tablet por batería | 🟡 Media | ✅ Mitigado con Telemetry Tracking |
-| Leak de conexiones Prisma | 🔴 Alta | ✅ Mitigado (onModuleDestroy + `$disconnect()` + logging condicional) |
-| Sin HTTPS local para PWA/Service Worker | 🟡 Media | No aplica en dev; usar `ngrok` para staging |
-| BigInt serialization en Prisma | 🟢 Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
-| JWT validación vía red (latencia +200ms) | 🔴 Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
-| Tablets morosas (Falta de pago RD$6k) | 🔴 Alta | ✅ Resuelto — `SubscriptionGuard` bloquea `/sync` si no hay pago activo |
-| Pago a Choferes (Auditabilidad) | 🟡 Media | ✅ Automatizado. Lógica de `PayrollPayment` con restricción de unicidad mensual implementada. RD$500/anuncio activo detectado por dispositivo. |
-| Tablet offline (Sin SIM Card) | 🔴 Crítica | ✅ Resuelto — Arquitectura "Sync Window" (Hotspot + Service Worker + Cache API) |
-| Espacio en Disco (Cache Storage) | 🟡 Media | Mitigación: Política de purga en SW por fecha/campaña finalizada. |
-| Errores de Tipado en Producción | 🔴 Crítica | ✅ Resuelto — Validación estricta en Typescript para `supabaseClient` y eliminación de tipos `any`. |
-| Conflictos de Puertos Locales | 🟢 Bajo | ✅ Resuelto — Matado forzoso de procesos huérfanos de Node en el puerto 3000/3001. |
+| 🔴 10 | **Error 401 en Finanzas** | ALTA | Auth | ✅ **DIAGNOSTICADO**: `SUPABASE_SERVICE_ROLE_KEY` mal configurada con Management Key. Requiere reemplazo por Service Role JWT. |
+| 🟡 11 | **Videos grandes > 50MB (Vercel limit)** | Media | ✅ Mitigado con Supabase Storage Direct Upload |
+| 🟡 12 | **Muerte de tablet por batería** | Media | ✅ Mitigado con Telemetry Tracking |
+| 🔴 13 | **Leak de conexiones Prisma** | Alta | ✅ Mitigado (onModuleDestroy + `$disconnect()` + logging condicional) |
+| 🟡 14 | **Sin HTTPS local para PWA/Service Worker** | Media | No aplica en dev; usar `ngrok` para staging |
+| 🟢 15 | **BigInt serialization en Prisma** | Resuelto | `toJSON()` override en `main.ts` y `api/index.ts` |
+| 🔴 16 | **JWT validación vía red (latencia +200ms)** | Alta | ✅ Resuelto — `SupabaseStrategy` valida localmente con `SUPABASE_JWT_SECRET` |
+| 🔴 17 | **Tablets morosas (Falta de pago RD$6k)** | Alta | ✅ Resuelto — `SubscriptionGuard` bloquea `/sync` si no hay pago activo |
+| 🟡 18 | **Pago a Conductor (Auditabilidad)** | Media | ✅ Automatizado. Lógica de `PayrollPayment` con restricción de unicidad mensual implementada. RD$500/anuncio activo detectado por dispositivo. |
+| 🔴 19 | **Tablet offline (Sin SIM Card)** | Crítica | ✅ Resuelto — Arquitectura "Sync Window" (Hotspot + Service Worker + Cache API) |
+| 🟡 20 | **Espacio en Disco (Cache Storage)** | Media | Mitigación: Política de purga en SW por fecha/campaña finalizada. |
+| 🔴 21 | **Errores de Tipado en Producción** | Crítica | ✅ Resuelto — Validación estricta en Typescript para `supabaseClient` y eliminación de tipos `any`. |
+| 🟢 22 | **Conflictos de Puertos Locales** | Bajo | ✅ Resuelto — Matado forzoso de procesos huérfanos de Node en el puerto 3000/3001. |
+| 🟣 23 | **Elementos Desproporcionados (UI)** | MEDIA | UX | ✅ **RESUELTO**: Auditoría v4.5 aplicada. Estandarización de fuentes `text-4xl` y corrección de `animation-delay`. |
 
 ---
 
@@ -186,17 +183,22 @@
 - [x] Implementación de Pantalla de Bloqueo (Remote Kill-switch).
 - [x] Optimización de Monitoreo (Apertura instantánea de perfiles + Terminología agnóstica "Unidades").
 - [x] Estabilización de Entorno Local (Bypass Firewall vía localhost).
-- [ ] Crear alerta en Dashboard: "Dispositivo con contenido desactualizado (> 7 días)".
+- [x] **Auditoría UI/UX Premium v4.5** (Estandarización de fuentes, animaciones y layout).
+- [x] Solución de Bug Crítico en contenedores de Flota (Layout Grid Fix).
+- [x] Diagnóstico de Auth 401 en API de Finanzas.
+- [x] Crear alerta en Dashboard: "Sync Integridad" (Broadcast Realtime).
 - [x] Integración de Validación de Suscripción en GPS Gateway.
+- [x] Implementación de Layout Responsive nativo (Mobile/Tablet Support).
+- [x] Validación de codecs (MP4 Only Logic).
 
 ### Sprint 3: PILOTO DE CALLE (FUTURO)
 
 - [ ] Onboarding de tablets en campo
-- [ ] Dashboard analytics en tiempo real
+- [x] Dashboard analytics en tiempo real (Dashboard Overview v4.5)
 - [ ] Alertas SMS/WhatsApp para choferes
 - [ ] Integración con pasarela de pago
 - [x] Módulo de Nómina Automática (RD$500/anuncio por taxi)
-- [ ] Mapa de Calor de Reproducciones (Geo-fencing data)
+- [x] Mapa de Calor de Reproducciones (Integrado en Analytics)
 
 ---
 

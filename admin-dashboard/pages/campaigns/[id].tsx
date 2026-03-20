@@ -45,11 +45,11 @@ export default function CampaignDetailPage() {
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-12">
-        <div className="h-10 bg-zinc-900 rounded-3xl w-64" />
-        <div className="h-80 bg-zinc-900/40 rounded-[3.5rem] border border-white/5" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-           {[1,2,3,4].map(i => <div key={i} className="h-40 bg-zinc-900/20 rounded-[2.5rem] border border-white/5" />)}
+      <div className="animate-pulse space-y-8 pt-6">
+        <div className="h-10 bg-gray-900 rounded-2xl w-64" />
+        <div className="h-48 bg-gray-800/40 rounded-3xl border border-gray-700/50" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           {[1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-900/50 rounded-2xl border border-gray-700/50" />)}
         </div>
       </div>
     );
@@ -57,16 +57,16 @@ export default function CampaignDetailPage() {
 
   if (error || !campaign) {
     return (
-      <div className="text-center py-40 bg-zinc-950/20 border-2 border-dashed border-white/5 rounded-[4rem] animate-in fade-in duration-1000">
-        <div className="w-24 h-24 bg-zinc-900 rounded-[2.5rem] flex items-center justify-center mb-10 mx-auto shadow-3xl">
-           <Megaphone className="w-12 h-12 text-zinc-800" />
+      <div className="text-center py-32 bg-gray-800/20 border-2 border-dashed border-gray-700/50 rounded-3xl animate-in fade-in duration-700 max-w-2xl mx-auto mt-20">
+        <div className="w-20 h-20 bg-gray-900 rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-sm border border-gray-700">
+           <Megaphone className="w-10 h-10 text-gray-600" />
         </div>
-        <h3 className="text-3xl font-black text-zinc-700 uppercase italic tracking-[0.2em] leading-none mb-4 italic">Falla de Enlace</h3>
-        <p className="text-zinc-800 font-bold uppercase tracking-[0.2em] text-[10px] max-w-sm leading-relaxed mb-10 mx-auto">
-          {error || "La campaña solicitada no ha podido ser localizada en el cluster de datos central."}
+        <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-4">Error de Sincronización</h3>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs max-w-sm leading-relaxed mb-8 mx-auto">
+          {error || "La campaña solicitada no ha podido ser localizada."}
         </p>
-        <Link href="/campaigns" className="bg-white/5 hover:bg-tad-yellow hover:text-black text-zinc-400 px-12 py-5 rounded-[2rem] border border-white/5 hover:border-transparent text-[10px] font-black uppercase tracking-[0.5em] transition-all italic">
-          ← REINTENTAR ACCESO
+        <Link href="/campaigns" className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all">
+          ← Volver a Campañas
         </Link>
       </div>
     );
@@ -296,7 +296,10 @@ export default function CampaignDetailPage() {
                 {assignedDevices.map((device, idx) => {
                   const isDeviceOnline = device.lastHeartbeat ? (new Date().getTime() - new Date(device.lastHeartbeat || device.lastSeen || '').getTime() < 300000) : false;
                   return (
-                    <div key={device.id} className="group/node bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${idx * 50}ms` }}>
+                    <div key={device.id} className="group/node bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 node-card">
+                       <style jsx>{`
+                         .node-card { animation-delay: ${idx * 50}ms; }
+                       `}</style>
                        <div className={clsx(
                           "absolute -right-8 -bottom-8 w-24 h-24 blur-[40px] opacity-10 transition-all duration-500",
                           isDeviceOnline ? "bg-tad-yellow group-hover/node:opacity-20" : "bg-gray-500"

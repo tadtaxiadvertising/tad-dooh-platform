@@ -1,7 +1,7 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-03-11T18:25:00-04:00
+> **Última Actualización**: 2026-03-20T13:55:00-04:00
 
 ---
 
@@ -29,11 +29,12 @@ Password: TadAdmin2026!
 
 ### Supabase Project
 ```
-Project ID:    ltdcdhqixvbpdcitthqf
+PROJECT_ID:    ltdcdhqixvbpdcitthqf
 Region:        us-west-2 (AWS)
 SUPABASE_URL:  https://ltdcdhqixvbpdcitthqf.supabase.co
 SUPABASE_KEY:  (ver archivo .env del backend → SUPABASE_KEY)
 SERVICE_ROLE:  (ver archivo .env del backend → SUPABASE_SERVICE_ROLE_KEY)
+💡 IMPORTANTE: La SERVICE_ROLE key debe ser el JWT del proyecto, NO la sb_secret management key.
 ```
 
 ### Base de Datos PostgreSQL
@@ -170,3 +171,5 @@ git add . && git commit -m "msg" && git push origin main
 3. **Bloqueo RD$6,000**: Si la suscripción anual del dispositivo no está `ACTIVE`/Pagada, el endpoint `/fleet/track-batch` devuelve **402 Payment Required**.
 4. **Validación de Identidad**: El chofer debe estar autenticado en la PWA. No se permiten reportes de GPS para un `deviceId` que no tenga asignado en la base de datos.
 5. **Cálculo de Comisión**: El pago de RD$500/mes para el chofer se desbloquea tras alcanzar 75% de "Attendance" (días con tracking activo durante horario laboral).
+6. **Restricción de Formato (Codecs)**: En el módulo de Multimedia (`/media`), se bloquea cualquier carga que no sea `video/mp4`. Esto garantiza compatibilidad nativa con el motor de renderizado de las tablets STI.
+7. **Broadcast de Sincronización**: La consola de administración (`/fleet`) tiene la capacidad de emitir un `WAKE_UP_CALL` vía el canal `fleet_sync` de Supabase Realtime para forzar una actualización inmediata de contenido en toda la flota activa.

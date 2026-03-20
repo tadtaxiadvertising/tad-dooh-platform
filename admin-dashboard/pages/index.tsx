@@ -71,81 +71,22 @@ export default function Home() {
          <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10 pt-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(255,212,0,0.15)] shrink-0">
-                <Radio className="w-6 h-6 text-black" />
-             </div>
-             <div>
-                <div className="flex items-center gap-2 mb-1">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)]" />
-                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Network OS 4.5</p>
-                </div>
-                <h1 className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tight leading-none">
-                  Command <span className="text-tad-yellow">Nexus</span>
-                </h1>
-             </div>
-          </div>
-          <p className="text-gray-400 max-w-2xl text-sm font-medium leading-relaxed pl-16">
-            Plataforma de orquestación y telemetría DOOH en tiempo real.
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-5 bg-gray-800/40 backdrop-blur-xl p-2 rounded-full border border-gray-700/50 pl-6 pr-2 shadow-lg shrink-0">
-           <div className="text-right">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Status</p>
-              <div className="flex items-center gap-2 justify-end">
-                 <span className="text-xs font-bold text-emerald-500 uppercase">Operational</span>
-                 <div className="flex gap-1">
-                    {[1,2,3].map(i => <div key={i} className="w-1 h-2.5 bg-emerald-500/40 rounded-full" />)}
-                 </div>
-              </div>
-           </div>
-           <button 
-             title="System Activity Monitor"
-             className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-gray-400 hover:text-tad-yellow transition-all border border-gray-700/50"
-           >
-              <Activity className="w-4 h-4" />
-           </button>
-        </div>
+      {/* Page Context Transition */}
+      <div className="flex items-center gap-3 mb-8 opacity-60">
+        <div className="w-8 h-px bg-white/20" />
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Dashboard / Command Nexus</p>
       </div>
 
       {/* Primary Metrics Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <StatsCard 
-          icon={<CarFront className="w-5 h-5" />} 
-          label="Nodos Activos" 
-          value={stats.devices} 
-          sub={`${stats.online} Online`}
-          trend="Secure"
-          color="yellow"
-        />
-        <StatsCard 
-          icon={<Megaphone className="w-5 h-5" />} 
-          label="Campañas" 
-          value={stats.campaigns} 
-          sub={`${stats.activeCampaigns} Streams`}
-          trend="Live"
-          color="white"
-        />
-        <StatsCard 
-          icon={<CloudUpload className="w-5 h-5" />} 
-          label="Archivos" 
-          value={stats.media} 
-          sub="Optimizados"
-          trend="Sync"
-          color="yellow"
-        />
-        <StatsCard 
-          icon={<Activity className="w-5 h-5" />} 
-          label="Confiabilidad" 
-          value="99.9%" 
-          sub="38ms Latency"
-          trend="Nominal"
-          color="white"
-        />
+        {[
+          { icon: <CarFront className="w-5 h-5" />, label: "Nodos Activos", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
+          { icon: <Megaphone className="w-5 h-5" />, label: "Campañas", value: stats.campaigns, sub: `${stats.activeCampaigns} Streams`, trend: "Live", color: "white" },
+          { icon: <CloudUpload className="w-5 h-5" />, label: "Archivos", value: stats.media, sub: "Optimizados", trend: "Sync", color: "yellow" },
+          { icon: <Activity className="w-5 h-5" />, label: "Confiabilidad", value: "99.9%", sub: "38ms Latency", trend: "Nominal", color: "white" }
+        ].map((s, i) => (
+          <StatsCard key={i} {...s} delay={i * 50} />
+        ))}
       </div>
 
       {error && (
@@ -241,18 +182,13 @@ export default function Home() {
                 <p className="text-sm text-gray-400 leading-relaxed mb-6"> 
                   Handshake activo sobre el cluster central v4.5. Latencia nominal: <span className="text-emerald-500 font-medium">38ms (Stable)</span>
                 </p>
-                <div className="flex items-end gap-1.5 h-8">
-                   {[1,2,3,2,4,3,1,2,5,3].map((h, i) => (
-                     <div key={i} className="flex-1 bg-gray-800 rounded-sm overflow-hidden relative">
-                        <div 
-                           className={clsx(
-                             "absolute bottom-0 left-0 w-full bg-tad-yellow/70 rounded-sm",
-                             `h-[${h * 20}%]`
-                           )} 
-                         />
-                     </div>
-                   ))}
-                </div>
+                 <div className="flex items-end gap-1.5 h-8">
+                    {(['h-[20%]','h-[40%]','h-[60%]','h-[40%]','h-[80%]','h-[60%]','h-[20%]','h-[40%]','h-full','h-[60%]'] as const).map((hClass, i) => (
+                      <div key={i} className="flex-1 bg-gray-800 rounded-sm overflow-hidden relative">
+                          <div className={clsx('absolute bottom-0 left-0 w-full bg-tad-yellow/70 rounded-sm', hClass)} />
+                      </div>
+                    ))}
+                 </div>
              </div>
 
              <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl group hover:border-blue-500/30 transition-all duration-500 relative overflow-hidden">
@@ -298,9 +234,9 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-6 leading-relaxed">
                  Soporte OIDC listo para la integración de <span className="text-white font-medium">2.5K nodos</span> en el próximo ciclo expansivo.
               </p>
-              <button className="w-full bg-gray-800 hover:bg-tad-yellow hover:text-black border border-gray-700 hover:border-transparent text-gray-300 transition-all py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+              <Link href="/fleet" className="w-full flex bg-gray-800 hover:bg-tad-yellow hover:text-black border border-gray-700 hover:border-transparent text-gray-300 transition-all py-3 rounded-xl text-xs font-bold uppercase tracking-wider items-center justify-center gap-2">
                  Analizar Nodos <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </Link>
            </div>
 
            <Link 
@@ -327,32 +263,48 @@ export default function Home() {
   );
 }
 
-function StatsCard({ icon, label, value, sub, trend, color }: { 
+function StatsCard({ icon, label, value, sub, trend, color, delay }: { 
   icon: React.ReactNode; 
   label: string; 
   value: string | number; 
   sub: string; 
   trend: string; 
   color: string;
+  delay?: number;
 }) {
     return (
-      <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl group hover:-translate-y-1 hover:border-gray-600 transition-all duration-300 shadow-md flex flex-col">
+      <div 
+        className={clsx(
+          "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:-translate-y-1 hover:border-gray-600 transition-all duration-300 shadow-sm flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 fill-mode-both home-stats-card"
+        )}
+      >
+         <style jsx>{`
+           .home-stats-card { animation-delay: ${delay}ms; }
+         `}</style>
+         <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/[0.02] blur-3xl -z-10" />
+         
          <div className="flex justify-between items-start mb-6">
-            <div className={clsx("p-3 rounded-xl border shadow-sm", color === 'yellow' ? 'bg-gray-900 border-gray-700 text-tad-yellow' : 'bg-gray-900 border-gray-700 text-white')}>
+            <div className={clsx(
+              "p-3 rounded-2xl border shadow-sm transition-all duration-300", 
+              color === 'yellow' ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow' : 'bg-gray-900 border-gray-700 text-white'
+            )}>
                {icon}
             </div>
-            <span className={clsx("text-[10px] font-bold px-3 py-1 rounded-full border tracking-wider uppercase", color === 'yellow' ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow' : 'bg-gray-800 border-gray-700 text-gray-400')}>
+            <span className={clsx(
+              "text-[10px] font-bold px-3 py-1 rounded-full border tracking-widest uppercase", 
+              color === 'yellow' ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.2)]' : 'bg-gray-800 border-gray-700 text-gray-400'
+            )}>
                {trend}
             </span>
          </div>
          
          <div className="mt-auto">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-            <h3 className="text-3xl lg:text-4xl font-black text-white tracking-tight mb-3">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{label}</p>
+            <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-3">
                {typeof value === 'number' && value < 10 ? `0${value}` : value}
             </h3>
             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 bg-tad-yellow rounded-full" />
+               <div className="w-1.5 h-1.5 bg-tad-yellow rounded-full shadow-[0_0_5px_#fad400] animate-pulse" />
                <p className="text-xs font-medium text-gray-400">{sub}</p>
             </div>
          </div>

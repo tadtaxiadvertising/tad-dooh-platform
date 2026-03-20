@@ -51,7 +51,11 @@ api.interceptors.request.use(async (config) => {
     } else {
       // Fallback for edge cases where login just ran
       const localToken = localStorage.getItem('tad_admin_token');
-      if (localToken) config.headers.Authorization = `Bearer ${localToken}`;
+      if (localToken) {
+        config.headers.Authorization = `Bearer ${localToken}`;
+      } else {
+        console.warn('⚠️ AUTH_CORE: No se ha detectado un Bearer Token para la petición:', config.url);
+      }
     }
   }
   return config;

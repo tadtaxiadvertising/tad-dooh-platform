@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import api, { sendCommand, deleteDevice, updateDeviceProfile } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio } from 'lucide-react';
+import api, { sendCommand, deleteDevice, updateDeviceProfile, getDeviceProfile } from '../../services/api';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceSlotsInfo from '../../components/DeviceSlotsInfo';
+import { supabase } from '../../services/supabaseClient';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 
@@ -22,6 +23,7 @@ interface FleetDevice {
   player_status?: string;
   last_seen?: string;
   city?: string; // Fallback for filtering
+  storage_free?: string;
 }
 
 export default function FleetPage() {
@@ -173,72 +175,67 @@ export default function FleetPage() {
          <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10 pt-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(255,212,0,0.15)] shrink-0">
-                <Tablet className="w-6 h-6 text-black" />
-             </div>
-             <div>
-                <div className="flex items-center gap-2 mb-1">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)]" />
-                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Fleet Intelligence 4.2</p>
-                </div>
-                <h1 className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tight leading-none">
-                  Fleet <span className="text-tad-yellow">Command</span>
-                </h1>
-             </div>
-          </div>
-          <p className="text-gray-400 max-w-2xl text-sm font-medium leading-relaxed pl-16">
-            Centralized hardware telemetry and regional device distribution node.
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4 bg-gray-800/40 backdrop-blur-xl p-1.5 rounded-2xl border border-gray-700/50 shadow-lg shrink-0">
+      {/* Page Context Transition */}
+      <div className="flex items-center gap-3 mb-8 opacity-60 pt-6">
+        <div className="w-8 h-px bg-white/20" />
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Hardware / Fleet Monitoring</p>
+      </div>
+
+      <div className="flex justify-between items-center mb-8 gap-4">
+        <div className="flex items-center gap-4 bg-gray-800/40 backdrop-blur-xl p-1.5 rounded-2xl border border-gray-700/50 shadow-lg">
            <button 
-             onClick={() => mutate()}
+             onClick={async () => {
+               await mutate();
+               if (supabase) {
+                 await supabase.channel('fleet_sync').send({
+                   type: 'broadcast',
+                   event: 'WAKE_UP_CALL',
+                   payload: { timestamp: new Date().toISOString() }
+                 });
+               }
+             }}
              disabled={loading}
-             className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white hover:bg-gray-700/50 flex items-center gap-2 transition-all"
+             className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white hover:bg-gray-700/50 flex items-center gap-2 transition-all relative overflow-hidden group"
            >
-             <RefreshCcw className={clsx("h-4 w-4", loading && "animate-spin text-tad-yellow")} />
-             Sync Nodes
-           </button>
-           <button 
-             onClick={() => setShowAddModal(true)}
-             className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md"
-           >
-             <Plus className="h-4 w-4" />
-             Attach Hardware
+             <div className="absolute inset-0 bg-tad-yellow/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+             <RefreshCcw className={clsx("h-4 w-4 relative z-10", loading && "animate-spin text-tad-yellow")} />
+             <span className="relative z-10">Sync Integridad</span>
            </button>
         </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-tad-yellow text-black px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-[0.1em] flex items-center gap-3 hover:bg-yellow-400 transition-all shadow-lg hover:-translate-y-0.5"
+        >
+          <Plus className="w-4 h-4" />
+          Vincular Nodo
+        </button>
       </div>
 
       {/* Metrics Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { label: 'Units Connected', value: devices.length, icon: Tablet, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-          { label: 'Network Handshake', value: onlineCount, icon: Wifi, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
-          { label: 'Global Storage', value: '4.2 TB', icon: HardDrive, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-          { label: 'Power Integrity', value: 'Nominal', icon: Zap, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-        ].map((stat, i) => (
+          { label: 'Unidades Vinculadas', value: devices.length, icon: Tablet, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
+          { label: 'Nodos en Línea', value: onlineCount, icon: Wifi, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+          { label: 'Vault Global', value: '4.2 TB', icon: HardDrive, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+          { label: 'Estatus Energía', value: 'Nominal', icon: Zap, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
+        ].map((s, i) => (
           <div 
             key={i} 
             className={clsx(
-              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-              `[animation-delay:${i * 50}ms]`
+              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-sm hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+              i === 0 ? 'delay-0' : i === 1 ? 'delay-50' : i === 2 ? 'delay-100' : 'delay-150'
             )}
           >
              <div className="flex justify-between items-start mb-6">
-                <div className={clsx("p-3 rounded-xl border transition-all duration-300 shadow-sm", stat.bgColor, stat.border, stat.color)}>
-                   <stat.icon className="w-5 h-5" />
+                <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bgColor, s.border, s.color)}>
+                   <s.icon className="w-5 h-5" />
                 </div>
-                <div className="h-2 w-2 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors" />
+                <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
              </div>
              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className={clsx("text-3xl font-black tracking-tight leading-none mt-1", stat.color)}>
-                  {typeof stat.value === 'number' && stat.value < 10 ? `0${stat.value}` : stat.value}
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{s.label}</p>
+                <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none mt-1", s.color)}>
+                  {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
                 </h3>
              </div>
           </div>
@@ -291,7 +288,7 @@ export default function FleetPage() {
               key={device.device_id} 
               className={clsx(
                 "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-tad-yellow/30 transition-all duration-500 hover:-translate-y-1 shadow-md hover:shadow-lg flex flex-col animate-in fade-in slide-in-from-bottom-12 fill-mode-both",
-                `[animation-delay:${idx * 50}ms]`
+                idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
               )}
             >
               <div className={clsx(
@@ -373,7 +370,7 @@ export default function FleetPage() {
               <div className="mt-auto border-t border-gray-700/50 pt-5 flex flex-col gap-4 relative z-10">
                 <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
-                    <ClockIcon className="w-3.5 h-3.5" />
+                    <Clock className="w-3.5 h-3.5" />
                     <span>Enlace:</span>
                   </div>
                   <span className="text-gray-400">

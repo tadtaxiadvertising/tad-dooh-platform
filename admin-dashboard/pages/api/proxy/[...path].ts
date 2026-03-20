@@ -62,7 +62,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // 🔑 ESTO ES LO CRÍTICO: Reenviar el token al backend y sobreescribir el Host
     if (req.headers.authorization) {
-      forwardHeaders['authorization'] = req.headers.authorization;
+      // SOLO uppercase para evitar que fetch los combine con comas como "Bearer xyz, Bearer xyz"
+      delete forwardHeaders['authorization'];
       forwardHeaders['Authorization'] = req.headers.authorization;
     }
     

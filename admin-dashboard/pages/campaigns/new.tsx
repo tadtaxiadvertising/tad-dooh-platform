@@ -37,142 +37,138 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
+    <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 pt-6">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-15%] left-[-10%] w-[65%] h-[65%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[5%] right-[-10%] w-[55%] h-[55%] bg-white/[0.01] blur-[160px] rounded-full" />
+         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
+         <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      <div className="max-w-5xl mx-auto space-y-12">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Navigation Nexus */}
         <div className="flex items-center justify-between">
-          <Link href="/campaigns" className="btn-pill px-8 border border-white/5 text-zinc-500 hover:text-white flex items-center gap-4">
+          <Link href="/campaigns" className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all flex items-center gap-2 shadow-sm">
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest italic">Close_Terminal</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Cerrar Terminal</span>
           </Link>
-          <div className="flex items-center gap-4 bg-zinc-900/10 backdrop-blur-3xl p-1.5 rounded-full border border-white/5 pl-6 pr-1.5">
-               <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
-               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em] italic leading-none pr-4">Injection Protocol v4.2</p>
+          <div className="flex items-center gap-3 bg-gray-800/40 backdrop-blur-xl p-1.5 rounded-xl border border-gray-700/50 pl-4 pr-1.5 shadow-sm">
+               <div className="w-2 h-2 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pr-3">Injection Protocol 4.2</p>
           </div>
         </div>
 
         {/* Form Core Terminal */}
-        <div className="bg-zinc-950/80 backdrop-blur-3xl border border-white/10 rounded-[4rem] overflow-hidden shadow-3xl relative animate-in slide-in-from-bottom-10 duration-1000 fill-mode-both">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-tad-yellow/[0.03] blur-[120px] -z-10" />
+        <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg relative animate-in slide-in-from-bottom-10 duration-1000 fill-mode-both">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/[0.03] blur-[80px] -z-10" />
           
-          <div className="p-12 border-b border-white/5 bg-white/[0.01] flex flex-col md:flex-row md:items-center justify-between gap-10">
-            <div className="flex items-center gap-8">
-              <div className="w-20 h-20 bg-tad-yellow rounded-3xl flex items-center justify-center shadow-[0_20px_40px_rgba(255,212,0,0.2)]">
-                <Megaphone className="w-10 h-10 text-black" />
+          <div className="p-8 border-b border-gray-700/50 bg-gray-900/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-md shrink-0">
+                <Megaphone className="w-8 h-8 text-black" />
               </div>
               <div>
-                <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic leading-none mb-3 font-display">
-                  New <span className="text-tad-yellow italic">Campaign</span>
+                <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-1">
+                  Nueva <span className="text-tad-yellow">Campaña</span>
                 </h1>
-                <p className="text-zinc-600 text-[11px] font-black uppercase tracking-[0.3em] italic">High-Fidelity DOOH Container Injection</p>
+                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Inyección de contenedor DOOH</p>
               </div>
             </div>
-            <div className="flex flex-col items-center md:items-end gap-2 text-right">
-               <ShieldCheck className="w-8 h-8 text-zinc-800" />
-               <p className="text-[9px] font-black text-zinc-800 uppercase tracking-[0.5em] italic">SECURED_API_HANDSHAKE</p>
+            <div className="flex flex-col items-center md:items-end gap-1 text-right">
+               <ShieldCheck className="w-6 h-6 text-gray-500" />
+               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SECURED_API</p>
             </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="p-12 space-y-12">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-              <div className="space-y-10">
+          <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+              <div className="space-y-6">
                 <div className="group/field relative">
-                  <label className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4 block group-focus-within/field:text-tad-yellow transition-colors italic ml-6">Comercial Project Name</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Nombre del Proyecto</label>
                   <div className="relative">
-                    <Radio className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within/field:text-tad-yellow/60 transition-all" />
+                    <Radio className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
                     <input 
                       required
                       type="text" 
                       value={form.name}
                       onChange={e => setForm({...form, name: e.target.value.toUpperCase()})}
-                      className="w-full bg-black/40 border border-white/5 rounded-full py-6 pl-16 pr-8 text-white text-sm font-black italic tracking-tight focus:border-tad-yellow/40 outline-none transition-all placeholder:text-zinc-900 uppercase"
-                      placeholder="EX. REGIONAL_DISPATCH_NORTH_V4"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 uppercase shadow-sm"
+                      placeholder="EJ. CAMPAÑA_VERANO_V4"
                     />
                   </div>
                 </div>
 
                 <div className="group/field relative">
-                  <label className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4 block group-focus-within/field:text-tad-yellow transition-colors italic ml-6">Advertiser Brand Matrix</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Marca / Anunciante</label>
                   <div className="relative">
-                    <Globe className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within/field:text-tad-yellow/60 transition-all" />
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
                     <input 
                       required
                       type="text" 
                       value={form.advertiser}
                       onChange={e => setForm({...form, advertiser: e.target.value})}
-                      className="w-full bg-black/40 border border-white/5 rounded-full py-6 pl-16 pr-8 text-white text-sm font-black italic tracking-tight focus:border-tad-yellow/40 outline-none transition-all placeholder:text-zinc-900"
-                      placeholder="EX. COCA-COLA DOMINICANA"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 uppercase shadow-sm"
+                      placeholder="EJ. COCA-COLA"
                     />
                   </div>
                 </div>
 
                 <div className="group/field relative">
-                  <label className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4 block group-focus-within/field:text-tad-yellow transition-colors italic ml-6">Impact Target (Impressions)</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Meta de Impactos</label>
                   <div className="relative">
-                    <Target className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within/field:text-tad-yellow/60 transition-all" />
+                    <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
                     <input 
                       required
                       type="number" 
                       value={form.target_impressions}
                       onChange={e => setForm({...form, target_impressions: parseInt(e.target.value)})}
-                      className="w-full bg-black/40 border border-white/5 rounded-full py-6 pl-16 pr-8 text-white text-sm font-black italic tracking-tight focus:border-tad-yellow/40 outline-none transition-all placeholder:text-zinc-900"
-                      placeholder="EX. 500000"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm"
+                      placeholder="EJ. 500000"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="group/field relative">
-                    <label className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4 block group-focus-within/field:text-tad-yellow transition-colors italic ml-2">Sincronización Inicial</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Inicio de Difusión</label>
                     <div className="relative">
-                      <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within/field:text-tad-yellow/60 transition-all z-10" />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
                       <input 
                         required
                         type="date" 
                         value={form.start_date}
                         onChange={e => setForm({...form, start_date: e.target.value})}
-                        title="Fecha de inicio de la pauta"
-                        placeholder="AAAA-MM-DD"
-                        className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] py-6 pl-16 pr-6 text-white text-sm font-black italic tracking-tighter focus:border-tad-yellow/40 outline-none transition-all [color-scheme:dark] group-hover/field:bg-zinc-950 transition-colors" 
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
                       />
                     </div>
                   </div>
                   <div className="group/field relative">
-                    <label className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4 block group-focus-within/field:text-tad-yellow transition-colors italic ml-2">Término de Difusión</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Término de Difusión</label>
                     <div className="relative">
-                      <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within/field:text-tad-yellow/60 transition-all z-10" />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
                       <input 
                         required
                         type="date" 
                         value={form.end_date}
                         onChange={e => setForm({...form, end_date: e.target.value})}
-                        title="Fecha de finalización de la pauta"
-                        placeholder="AAAA-MM-DD"
-                        className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] py-6 pl-16 pr-6 text-white text-sm font-black italic tracking-tighter focus:border-tad-yellow/40 outline-none transition-all [color-scheme:dark] group-hover/field:bg-zinc-950 transition-colors" 
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3rem] flex items-center justify-between group/toggle hover:border-tad-yellow/20 transition-all shadow-2xl">
-                  <div className="flex items-center gap-6">
+                <div className="bg-gray-900/50 border border-gray-700 p-6 rounded-2xl flex items-center justify-between group/toggle hover:border-tad-yellow/30 transition-all shadow-sm">
+                  <div className="flex items-center gap-4">
                     <div className={clsx(
-                      "w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 border border-white/5 shadow-3xl",
-                      form.active ? "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20 shadow-tad-yellow/5" : "bg-black/40 text-zinc-800"
+                      "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 border shadow-sm",
+                      form.active ? "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/30" : "bg-gray-800 border-gray-700 text-gray-500"
                     )}>
-                      <Activity className={clsx("w-8 h-8", form.active && "animate-pulse")} />
+                      <Activity className={clsx("w-6 h-6", form.active && "animate-pulse")} />
                     </div>
                     <div>
-                      <p className="text-xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">Canal Operativo</p>
-                      <p className="text-[10px] text-zinc-700 font-black uppercase tracking-[0.3em] font-display italic">Autorizar Inyección Inmediata</p>
+                      <p className="text-sm font-black text-white uppercase tracking-tight mb-0.5">Autorizar Inyección</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Activar campaña de forma inmediata</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -180,44 +176,38 @@ export default function NewCampaignPage() {
                       type="checkbox" 
                       checked={form.active}
                       onChange={e => setForm({...form, active: e.target.checked})}
-                      title="Activar campaña inmediatamente"
                       className="sr-only peer" 
                     />
-                    <div className="w-20 h-10 bg-zinc-900 border border-white/10 rounded-full peer peer-checked:after:translate-x-10 peer-checked:after:bg-black after:content-[''] after:absolute after:top-1.5 after:left-1.5 after:bg-zinc-700 after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-tad-yellow shadow-3xl"></div>
+                    <div className="w-14 h-7 bg-gray-800 border border-gray-700 rounded-full peer peer-checked:after:translate-x-7 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-gray-400 peer-checked:after:bg-black after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tad-yellow shadow-sm" />
                   </label>
                 </div>
 
-                <div className="p-8 bg-zinc-950/40 rounded-[2.5rem] border border-white/5 flex gap-6 items-start">
-                   <Info className="w-6 h-6 text-tad-yellow shrink-0 mt-1" />
-                   <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-wide leading-relaxed italic">
-                      Tras la autorización, este contenedor será verificado por el clúster central y estará disponible para recibir activos multimedia en el Vault Digital.
+                <div className="p-4 bg-gray-900/30 rounded-xl border border-gray-700 flex gap-3 items-start">
+                   <Info className="w-5 h-5 text-tad-yellow shrink-0 mt-0.5" />
+                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider leading-relaxed">
+                      Tras la autorización, este contenedor será verificado por el clúster central y estará disponible para recibir activos en el Vault Digital.
                    </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-16 flex flex-col items-center border-t border-white/5 translate-y-0">
+            <div className="pt-10 flex flex-col items-center border-t border-gray-700/50">
                <button 
                 type="submit" 
                 disabled={loading}
-                className="group relative w-full xl:w-auto min-w-[450px] bg-tad-yellow hover:bg-yellow-400 text-black py-10 px-12 rounded-[2.5rem] shadow-3xl shadow-tad-yellow/20 transition-all active:scale-95 flex flex-col items-center justify-center gap-4 overflow-hidden"
+                className="group relative w-full md:w-auto md:min-w-[350px] bg-tad-yellow hover:bg-yellow-400 text-black py-4 px-8 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 overflow-hidden"
               >
-                <div className="absolute top-0 right-[-10%] w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-10 -translate-y-10 group-hover:translate-x-0 group-hover:translate-y-0 transition-transform duration-1000" />
-                
                 {loading ? (
-                   <RefreshCcw className="w-10 h-10 animate-spin" />
+                   <RefreshCcw className="w-5 h-5 animate-spin" />
                 ) : (
-                   <Save className="w-10 h-10 group-hover:scale-110 transition-transform duration-700" />
+                   <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 )}
                 
-                <div className="flex flex-col items-center">
-                   <span className="text-[11px] font-black uppercase tracking-[0.5em] italic mb-1 opacity-60">Handshake de Autorización</span>
-                   <span className="text-xl font-black uppercase tracking-widest italic">{loading ? 'Estableciendo Enlace...' : 'Confirmar e Iniciar Campaña'}</span>
-                </div>
+                <span className="text-sm font-black uppercase tracking-widest">{loading ? 'Estableciendo Enlace...' : 'Confirmar e Iniciar'}</span>
               </button>
               
-              <p className="mt-10 text-[10px] font-black text-zinc-800 uppercase tracking-[0.8em] italic leading-none flex items-center gap-4">
-                 <Zap className="w-4 h-4 text-tad-yellow shadow-[0_0_10px_#fad400]" /> TADCORE_PROTOCOL_ACTIVE_v4.2
+              <p className="mt-6 text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em] flex items-center gap-2">
+                 <Zap className="w-3 h-3 text-tad-yellow" /> TAD_PROTOCOL_ACTIVE
               </p>
             </div>
           </form>

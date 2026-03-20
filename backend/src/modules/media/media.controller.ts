@@ -36,13 +36,21 @@ export class MediaController {
     @Body('campaignId') campaignId: string,
     @Body('qrUrl') qrUrl?: string
   ) {
+    console.log(`[MEDIA_UPLOAD] Ingesting: ${file?.originalname} | Size: ${file?.size} bytes | Campaign: ${campaignId}`);
+    
     if (!file) {
+      console.error('[MEDIA_UPLOAD] Rejected: Missing file payload');
       throw new BadRequestException('A file payload is required');
     }
-    if (!campaignId) {
-      throw new BadRequestException('campaignId is required');
+
+    const targetCampaignId = campaignId || 'general';
+    
+    try {
+      return await this.mediaService.uploadFile(file, targetCampaignId, qrUrl);
+    } catch (e) {
+      console.error(`[MEDIA_UPLOAD] Critical Service Error: ${e.message}`);
+      throw e;
     }
-    return this.mediaService.uploadFile(file, campaignId, qrUrl);
   }
 
   @Get()

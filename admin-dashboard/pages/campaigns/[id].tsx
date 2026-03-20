@@ -294,9 +294,11 @@ export default function CampaignDetailPage() {
             ) : assignedDevices.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {assignedDevices.map((device, idx) => {
-                  const isDeviceOnline = device.lastHeartbeat ? (new Date().getTime() - new Date(device.lastHeartbeat || device.lastSeen || '').getTime() < 300000) : false;
-                  return (
-                    <div key={device.id} style={{ animationDelay: `${idx * 50}ms` }} className="group/node bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                    const isDeviceOnline = device.lastHeartbeat ? (new Date().getTime() - new Date(device.lastHeartbeat || device.lastSeen || '').getTime() < 300000) : false;
+                    // eslint-disable-next-line react/forbid-dom-props
+                    const delayStyle = { animationDelay: `${idx * 50}ms` } as React.CSSProperties;
+                    return (
+                      <div key={device.id} style={delayStyle} className="group/node bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                        <div className={clsx(
                           "absolute -right-8 -bottom-8 w-24 h-24 blur-[40px] opacity-10 transition-all duration-500",
                           isDeviceOnline ? "bg-tad-yellow group-hover/node:opacity-20" : "bg-gray-500"

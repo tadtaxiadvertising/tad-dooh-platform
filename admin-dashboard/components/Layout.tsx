@@ -96,6 +96,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           
           <button 
              onClick={() => setIsCollapsed(!isCollapsed)} 
+             title="Alternar Menú"
+             aria-label="Alternar Menú"
              className={clsx(
                 "hidden lg:flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all outline-none", 
                 isCollapsed ? "hidden scale-0 opacity-0" : "opacity-100 scale-100"

@@ -11,7 +11,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly supabaseService: SupabaseService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: any) => {
+          let data = request?.headers?.authorization;
+          if (!data) return null;
+          data = data.replace(/bearer\s+/i, '').replace(/['"]/g, '').trim();
+          return data;
+        },
+      ]),
       ignoreExpiration: false,
       // We still need a secret for the base Strategy to not error, 
       // but we will do the real verification in validate() using Supabase.
@@ -21,8 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(req: any, payload: any) {
-    const token = req.headers.authorization?.split(' ')[1];
+    let token = req.headers.authorization;
     if (!token) throw new UnauthorizedException('No token provided');
+    token = token.replace(/bearer\s+/i, '').replace(/['"]/g, '').trim();
+
 
     const supabase = this.supabaseService.getClient();
     const { data: { user }, error } = await supabase.auth.getUser(token);

@@ -49,16 +49,19 @@ export default function DeviceSlotsInfo({
       </div>
 
       <div className="relative h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5 shadow-inner">
-        {/* Progress Bar with Gradient */}
         <div 
           className={clsx(
-            "absolute top-0 left-0 h-full transition-all duration-1000 ease-out rounded-full",
+            "absolute top-0 left-0 h-full transition-all duration-1000 ease-out rounded-full progress-bar-width",
             isFull ? "bg-gradient-to-r from-red-600 to-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]" :
             isWarning ? "bg-gradient-to-r from-yellow-600 to-tad-yellow shadow-[0_0_10px_rgba(250,212,0,0.3)]" :
             "bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
           )}
-          style={{ width: `${slots.usage_percentage}%` }}
         />
+        <style jsx>{`
+          .progress-bar-width {
+            width: ${slots.usage_percentage}%;
+          }
+        `}</style>
       </div>
 
       {isFull ? (

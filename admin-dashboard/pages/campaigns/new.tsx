@@ -131,28 +131,42 @@ export default function NewCampaignPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="group/field relative">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Inicio de Difusión</label>
+                    <label 
+                      htmlFor="start_date"
+                      className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2"
+                    >
+                      Inicio de Difusión
+                    </label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
                       <input 
+                        id="start_date"
                         required
                         type="date" 
                         value={form.start_date}
                         onChange={e => setForm({...form, start_date: e.target.value})}
                         className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
+                        placeholder="AAAA-MM-DD"
                       />
                     </div>
                   </div>
                   <div className="group/field relative">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Término de Difusión</label>
+                    <label 
+                      htmlFor="end_date"
+                      className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2"
+                    >
+                      Término de Difusión
+                    </label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
                       <input 
+                        id="end_date"
                         required
                         type="date" 
                         value={form.end_date}
                         onChange={e => setForm({...form, end_date: e.target.value})}
                         className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
+                        placeholder="AAAA-MM-DD"
                       />
                     </div>
                   </div>
@@ -173,10 +187,12 @@ export default function NewCampaignPage() {
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
+                      id="active_toggle"
                       type="checkbox" 
                       checked={form.active}
                       onChange={e => setForm({...form, active: e.target.checked})}
                       className="sr-only peer" 
+                      title="Autorizar Inyección"
                     />
                     <div className="w-14 h-7 bg-gray-800 border border-gray-700 rounded-full peer peer-checked:after:translate-x-7 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-gray-400 peer-checked:after:bg-black after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tad-yellow shadow-sm" />
                   </label>

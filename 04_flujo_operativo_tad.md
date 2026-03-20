@@ -1,6 +1,6 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
-**Versión:** 1.0 (Refactorización 2026)
-**Estado:** Documentación Técnica Operativa
+**Versión:** 1.2 (Auditoría v4.5)
+**Última Actualización:** 20 de Marzo, 2026 (14:00)
 
 ## 1. Onboarding de Conductor (Conductor Onboarding)
 1. **Registro:** El administrador registra al nuevo conductor en el Dashboard (/drivers).
@@ -16,6 +16,7 @@
 1. **Carga de Archivos:** Se suben los videos o imágenes en la sección de Contenido Multimedia (/media) a Supabase Storage.
 2. **Creación de Campaña:** Se crea la campaña asignando presupuesto, anunciante y fechas.
 3. **Targeting (Distribución):** Se eligen los conductores o zonas donde se emitirá la campaña (Zap Distribuir). Esto envía una notificación vía Supabase Realtime/API a las tablets indicando la actualización de su playlist.
+4. **Sincronización de Emergencia (Broadcast):** Si un dispositivo no actualiza su contenido automáticamente, el administrador puede usar el botón "Sync Integridad" desde `/fleet` para forzar un WAKE_UP_CALL masivo a través de Supabase Realtime.
 
 ## 4. Operación en Calle (On-Street Operation)
 1. **Mobile Gateway:** El celular del conductor captura puntos GPS cada 10-30 segundos.
@@ -27,6 +28,10 @@
 1. **Auditoría de Emisión:** El sistema calcula las impresiones y tiempo de exposición basado en los logs de GPS y reproducción.
 2. **Liquidación de Nómina:** En Gestión Económica (/finance), se genera la nómina mensual. Cada conductor recibe RD$500 por cada campaña activa que haya transmitido satisfactoriamente.
 3. **Pago:** El administrador registra el pago con una referencia bancaria, cerrando el ciclo mensual.
+
+## 6. Mantenimiento y Dashboard Responsive
+1. **Acceso Multi-Dispositivo:** El Dashboard administrativo está optimizado para dispositivos móviles y tabletas, permitiendo al personal de campo cerrar unidades o sincronizar flotas desde cualquier ubicación sin necesidad de una PC estacionaria.
+2. **Auditoría de Salud:** El administrador debe supervisar diariamente los estados "STABLE" y "OS Build" en la cabecera del sistema para garantizar que todos los nodos ejecutan la versión core v4.5.1 de TAD Node OS.
 
 ---
 **TAD Advertising Systems — 2026**

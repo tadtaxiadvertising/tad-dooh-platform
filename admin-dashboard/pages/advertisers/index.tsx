@@ -83,45 +83,45 @@ export default function AdvertisersPage() {
     <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-15%] left-[-10%] w-[65%] h-[65%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[5%] right-[-10%] w-[55%] h-[55%] bg-white/[0.01] blur-[160px] rounded-full" />
+         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
+         <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10 mb-12">
-        <div className="space-y-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10 pt-6">
+        <div className="space-y-2">
           <div className="flex items-center gap-4">
-             <div className="w-14 h-14 bg-tad-yellow rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(255,212,0,0.15)]">
-                <Briefcase className="w-7 h-7 text-black" />
+             <div className="w-12 h-12 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(255,212,0,0.15)] shrink-0">
+                <Briefcase className="w-6 h-6 text-black" />
              </div>
              <div>
-                <div className="flex items-center gap-3 mb-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
-                   <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">Integrated Partner Network v4.2</p>
+                <div className="flex items-center gap-2 mb-1">
+                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)]" />
+                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Network 4.5</p>
                 </div>
-                <h1 className="text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter leading-none font-display">
-                  Strategic <span className="text-tad-yellow transition-all duration-700 hover:text-white cursor-default italic">Partners</span>
+                <h1 className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tight leading-none">
+                  Strategic <span className="text-tad-yellow cursor-default">Partners</span>
                 </h1>
              </div>
           </div>
-          <p className="text-zinc-500 max-w-2xl text-[12px] font-bold uppercase tracking-widest leading-relaxed">
-            Manage <span className="text-white">corporate accounts</span> and advertising assets.
+          <p className="text-gray-400 max-w-2xl text-sm font-medium leading-relaxed pl-16">
+            Gestiona cuentas corporativas y activos de marca.
           </p>
         </div>
         
-        <div className="flex items-center gap-4 bg-zinc-900/10 backdrop-blur-3xl p-1.5 rounded-full border border-white/5">
+        <div className="flex items-center gap-4 bg-gray-800/40 backdrop-blur-xl p-1.5 rounded-2xl border border-gray-700/50 shadow-lg shrink-0">
            <button 
              onClick={downloadCSV}
-             className="btn-pill px-8 border border-white/5 text-zinc-400 hover:bg-white/5 flex items-center gap-3"
+             className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white hover:bg-gray-700/50 flex items-center gap-2 transition-all"
            >
              <FileSpreadsheet className="h-4 w-4" />
-             Export_CRM
+             Exportar CRM
            </button>
            <button 
              onClick={() => setIsModalOpen(true)}
-             className="btn-primary px-10 h-14 flex items-center gap-4"
+             className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md"
            >
-             <UserPlus className="h-6 w-6" />
-             Add_Socio
+             <UserPlus className="h-4 w-4" />
+             Nueva Cuenta
            </button>
         </div>
       </div>
@@ -139,63 +139,60 @@ export default function AdvertisersPage() {
       )}
 
       {/* Fiscal Metrics Cluster */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { label: 'Cartera de Marcas', value: advertisers.length, icon: Building2, color: 'text-white', sub: 'Registros Únicos' },
-          { label: 'Pauta Activa', value: totalActiveCampaigns, icon: TrendingUp, color: 'text-tad-yellow', sub: 'Campañas en Vivo' },
-          { label: 'Inversión Retenida', value: `RD$ ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-500', sub: 'Valor Total Bruto' },
-          { label: 'Lifetime Value', value: advertisers.length > 0 ? `RD$ ${(totalRevenue / advertisers.length).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '0', icon: Zap, color: 'text-blue-500', sub: 'Promedio por Cuenta' },
-        ].map((stat, i) => (
+          { label: 'Cartera de Marcas', value: advertisers.length, icon: Building2, color: 'text-white', bgColor: 'bg-zinc-800/80', border: 'border-white/10' },
+          { label: 'Pauta Activa', value: totalActiveCampaigns, icon: TrendingUp, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+          { label: 'Inversión Retenida', value: `RD$ ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+          { label: 'Ticket Promedio', value: advertisers.length > 0 ? `RD$ ${(totalRevenue / advertisers.length).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '0', icon: Zap, color: 'text-white', bgColor: 'bg-zinc-800/80', border: 'border-white/10' },
+        ].map((s, i) => (
           <div 
             key={i} 
-            className={clsx(
-              "bg-zinc-950/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] group hover:border-white/10 transition-all duration-700 relative overflow-hidden flex flex-col justify-between h-full shadow-2xl animate-in fade-in slide-in-from-bottom-6 fill-mode-both",
-              `[animation-delay:${i * 100}ms]`
-            )}
+              className={clsx(
+                "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-sm hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+                i === 0 ? 'delay-0' : i === 1 ? 'delay-50' : i === 2 ? 'delay-100' : 'delay-150'
+              )}
           >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.01] blur-[100px] -z-10 group-hover:bg-white/[0.02] transition-colors" />
-              <div className="flex justify-between items-start mb-8">
-                 <div className={clsx("p-5 rounded-2xl border border-white/5 bg-white/[0.02] transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-3xl", stat.color)}>
-                    <stat.icon className="w-7 h-7" />
+              <div className="flex justify-between items-start mb-6">
+                 <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bgColor, s.border, s.color)}>
+                    <s.icon className="w-5 h-5" />
                  </div>
-                 <div className="h-3 w-3 rounded-full bg-zinc-800" />
+                 <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
               </div>
               <div>
-                 <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em] mb-2 italic">{stat.label}</p>
-                 <h3 className={clsx("text-4xl font-black italic tracking-tighter leading-none transition-colors", stat.color)}>{stat.value}</h3>
-                 <p className="text-[9px] font-black text-zinc-800 uppercase tracking-widest mt-4 italic">{stat.sub}</p>
+                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{s.label}</p>
+                 <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none mt-1", s.color)}>{s.value}</h3>
               </div>
           </div>
         ))}
       </div>
 
       {/* Search & Filtration Nexus */}
-      <div className="relative mb-16 group animate-in slide-in-from-top-12 duration-1000">
-          <div className="absolute inset-0 bg-tad-yellow/5 blur-[120px] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-          <div className="relative flex flex-col xl:flex-row gap-8 p-2 bg-zinc-900/10 border border-white/5 backdrop-blur-3xl rounded-full shadow-3xl">
+      <div className="relative mb-10 animate-in slide-in-from-top-10 duration-700 fill-mode-both">
+          <div className="relative flex flex-col lg:flex-row gap-4 p-2 bg-gray-800/40 border border-gray-700/50 backdrop-blur-xl rounded-2xl shadow-md">
             <div className="relative flex-1 group">
-              <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-600 group-focus-within:text-tad-yellow transition-colors" />
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
               <input 
                 type="text" 
-                placeholder="PROBE PARTNER MANIFEST..."
-                className="w-full bg-transparent border-none py-6 pl-16 pr-8 text-[11px] font-black uppercase tracking-[0.3em] text-white outline-none placeholder:text-zinc-800 italic"
+                placeholder="BUSCAR MARCAS O CREADORES..."
+                className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex p-1 bg-zinc-900/40 rounded-full border border-white/5 shadow-22xl">
+            <div className="flex p-1 bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner overflow-x-auto">
               {(['all', 'active', 'inactive'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
                   className={clsx(
-                    "px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all italic",
+                    "px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     filter === f 
-                      ? "bg-tad-yellow text-black shadow-3xl shadow-tad-yellow/10 scale-105" 
-                      : "text-zinc-600 hover:text-white hover:bg-white/5"
+                      ? "bg-gray-700 text-white shadow-sm" 
+                      : "text-gray-500 hover:text-white hover:bg-gray-800"
                   )}
                 >
-                  {f === 'all' ? 'All' : f === 'active' ? 'Active' : 'Legacy'}
+                  {f === 'all' ? 'All' : f === 'active' ? 'Active' : 'Inactive'}
                 </button>
               ))}
             </div>
@@ -203,9 +200,9 @@ export default function AdvertisersPage() {
       </div>
 
       {/* Advertisers Grid Surface */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {loading ? (
-          [1,2,3,4,5,6].map(i => <div key={i} className="h-96 bg-zinc-900/10 backdrop-blur-3xl animate-pulse rounded-[4rem] border border-white/5" />)
+          [1,2,3,4,5,6].map(i => <div key={i} className="h-[400px] bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/50" />)
         ) : filtered.length > 0 ? (
           filtered.map((advertiser, idx) => {
             const totalSpend = (advertiser.campaigns)?.reduce((s, c) => s + (c.budget || 0), 0) || 0;
@@ -215,82 +212,77 @@ export default function AdvertisersPage() {
               <div 
                 key={advertiser.id} 
                 className={clsx(
-                  "group relative bg-zinc-950/60 backdrop-blur-3xl border border-white/5 rounded-[4rem] p-12 hover:border-tad-yellow/40 transition-all duration-1000 hover:shadow-3xl flex flex-col animate-in fade-in slide-in-from-bottom-12 fill-mode-both",
-                  `[animation-delay:${idx * 50}ms]`
+                  "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 hover:border-gray-500 transition-all duration-500 hover:shadow-lg flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
                 )}
               >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/[0.02] blur-[120px] -z-10 group-hover:bg-tad-yellow/[0.08] transition-all duration-1000" />
                 
-                <div className="flex items-start justify-between mb-10">
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-tad-yellow/20 to-black rounded-[2rem] flex items-center justify-center border border-tad-yellow/10 shadow-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-700 relative overflow-hidden">
-                       <div className="absolute inset-0 bg-tad-yellow/5 animate-pulse" />
-                       <span className="text-3xl font-black text-tad-yellow italic relative z-10">{(advertiser.companyName || 'A').charAt(0)}</span>
+                <div className="flex items-start justify-between mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700/50 to-gray-900 rounded-2xl flex items-center justify-center border border-gray-700/50 shadow-md group-hover:rotate-3 transition-all">
+                       <span className="text-2xl font-bold text-gray-300 relative z-10">{(advertiser.companyName || 'A').charAt(0)}</span>
                     </div>
                     <div>
-                      <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none mb-3 group-hover:text-tad-yellow transition-colors">{advertiser.companyName}</h4>
-                      <div className="flex items-center gap-2 px-4 py-1.5 bg-black/40 rounded-full border border-white/5">
-                         <Shield className="w-3.5 h-3.5 text-zinc-700" />
-                         <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em] italic">REG_ACCOUNT_v4</p>
+                      <h4 className="text-lg font-bold text-white tracking-tight uppercase leading-none mb-2 group-hover:text-tad-yellow transition-colors">{advertiser.companyName}</h4>
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700/50 w-fit">
+                         <Shield className="w-3 h-3 text-gray-500" />
+                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cuenta Activa</p>
                       </div>
                     </div>
                   </div>
                   <div className={clsx(
-                    "px-5 py-2 rounded-2xl border text-[9px] font-black uppercase italic tracking-[0.3em] transition-all shadow-3xl",
+                    "px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm",
                     advertiser.status === 'ACTIVE' 
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-emerald-500/5' 
-                      : 'bg-zinc-950 text-zinc-700 border-white/5'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                      : 'bg-gray-900 text-gray-500 border-gray-700/50'
                   )}>
-                    {advertiser.status === 'ACTIVE' ? 'Operativo' : 'Legacy'}
+                    {advertiser.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                   </div>
                 </div>
 
-                <div className="space-y-6 mb-12 bg-black/40 p-8 rounded-[3rem] border border-white/5 group-hover:bg-black/60 transition-colors">
+                <div className="space-y-4 mb-8 bg-gray-900/50 p-6 rounded-2xl border border-gray-700/50">
                   {[
-                    { icon: Mail, value: advertiser.email || 'VOID_ENTRY' },
-                    { icon: Phone, value: advertiser.phone || 'VOID_ENTRY' },
-                    { icon: TrendingUp, value: advertiser.contactName || 'UNNAMED_CONTACT' }
+                    { icon: Mail, value: advertiser.email || 'SIN DATOS' },
+                    { icon: Phone, value: advertiser.phone || 'SIN DATOS' },
+                    { icon: TrendingUp, value: advertiser.contactName || 'SIN CONTACTO' }
                   ].map((info, ii) => (
-                    <div key={ii} className="flex items-center gap-5 text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em] italic group-hover:text-zinc-400 transition-colors">
+                    <div key={ii} className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
                       <info.icon className="w-4 h-4 text-tad-yellow shrink-0" />
                       <span className="truncate">{info.value}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-2 gap-8 pt-10 border-t border-white/5 mt-auto relative items-center">
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-700/50 mt-auto relative items-center">
                   <div>
-                    <p className="text-[9px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-3 italic">Pautas Cluster</p>
-                    <div className="flex items-center gap-4">
-                       <h5 className="text-3xl font-black text-white italic leading-none">{advertiser.campaigns?.length || 0}</h5>
-                       {activeCount > 0 && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_#10b981]" />}
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Campañas Mág.</p>
+                    <div className="flex items-center gap-2">
+                       <h5 className="text-2xl font-bold text-white leading-none">{advertiser.campaigns?.length || 0}</h5>
+                       {activeCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-3 italic">Fiscal Val.</p>
-                    <h5 className="text-2xl font-black text-emerald-500 italic leading-none truncate">RD$ {totalSpend.toLocaleString()}</h5>
-                  </div>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-[1.25rem] bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:bg-tad-yellow group-hover:text-black transition-all duration-500 shadow-3xl hover:scale-110">
-                     <ChevronRight className="w-6 h-6" />
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Inversión (RD$)</p>
+                    <h5 className="text-xl font-bold text-emerald-500 leading-none truncate">{totalSpend.toLocaleString()}</h5>
                   </div>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="col-span-full py-48 border-2 border-dashed border-white/5 rounded-[5rem] bg-zinc-950/20 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000">
-             <div className="w-28 h-28 bg-zinc-900 rounded-[3rem] flex items-center justify-center mb-12 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                <Briefcase className="w-14 h-14 text-zinc-800" />
+          <div className="col-span-full py-32 border border-dashed border-gray-700/50 rounded-3xl bg-gray-800/20 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000">
+             <div className="w-20 h-20 bg-gray-900/50 rounded-2xl flex items-center justify-center mb-8 shadow-sm border border-gray-700/50">
+                <Briefcase className="w-10 h-10 text-gray-600" />
              </div>
-             <h3 className="text-4xl font-black text-zinc-800 uppercase italic tracking-[0.3em] leading-none mb-6">Cámara de CRM Vacía</h3>
-             <p className="text-zinc-900 font-bold uppercase tracking-[0.3em] text-[11px] max-w-sm leading-relaxed mb-12 italic">
-                La red de anunciantes no registra nodos activos. Inicie el protocolo de anexión corporativa para poblar el clúster regional.
+             <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-4">No Hay Registros</h3>
+             <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] max-w-sm leading-relaxed mb-8">
+                El sistema no registra cuentas corporativas.
              </p>
              <button 
                 onClick={() => setIsModalOpen(true)}
-                className="bg-white/5 hover:bg-tad-yellow hover:text-black text-zinc-500 px-16 py-6 rounded-[2.5rem] border border-white/10 hover:border-transparent text-[11px] font-black uppercase tracking-[0.5em] transition-all italic shadow-2xl overflow-hidden group/btn"
+                className="bg-gray-800/50 hover:bg-tad-yellow hover:text-black text-gray-400 px-10 py-4 rounded-xl border border-gray-700/50 hover:border-transparent text-xs font-bold uppercase tracking-widest transition-all shadow-md"
              >
-                <span className="relative z-10">AUTHORIZE_NEW_PARTNER</span>
+                <span className="relative z-10">Nuevo Registro</span>
              </button>
           </div>
         )}

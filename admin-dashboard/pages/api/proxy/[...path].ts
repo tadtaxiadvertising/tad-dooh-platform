@@ -60,52 +60,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2. Reenviar TODO al backend
     const forwardHeaders = { ...req.headers } as Record<string, string>;
     
-    // 🔑 ESTO ES LO CRÍTICO: Reenviar el token al backend y sobreescribir el Host
-    if (req.headers.authorization) {
-      // SOLO uppercase para evitar que fetch los combine con comas como "Bearer xyz, Bearer xyz"
+    // 🔑 ESTO ES LO CRÍTICO: Reenviar el token al backend
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
       delete forwardHeaders['authorization'];
-      forwardHeaders['Authorization'] = req.headers.authorization;
+      forwardHeaders['Authorization'] = authHeader;
+    } else {
+      console.warn(`[PROXY WARNING] No se detectó Header Authorization para: ${pathStr}`);
     }
     
-    // Update Host so backend doesn't reject it or mismatch origin
+    // Update Host so backend doesn't reject it
     forwardHeaders['host'] = new URL(targetUrl).host;
 
-    // Ejecutar la petición al backend (server-to-server: sin CORS, sin proxy issues)
+    // Ejecutar la petición al backend
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: forwardHeaders,
-      // Timeout de 30s para operaciones largas (uploads, queries complejas)
       signal: AbortSignal.timeout(30000),
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      // Al usar bodyParser: false, `req` es un ReadableStream de entrada directo
       fetchOptions.body = req as any;
-      // Requisito interno de undici/NodeJS para streaming body duplex
       (fetchOptions as any).duplex = 'half';
     }
 
     const backendResponse = await fetch(targetUrl, fetchOptions);
 
+    if (backendResponse.status === 401) {
+      console.warn(`[PROXY 401] El backend rechazó las credenciales para: ${pathStr}`);
+    }
+
     // Headers CORS de respuesta
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
 
-    // Propagar Content-Type del backend
     const contentType = backendResponse.headers.get('content-type');
-    if (contentType) {
-      res.setHeader('Content-Type', contentType);
-    }
+    if (contentType) res.setHeader('Content-Type', contentType);
 
     const responseText = await backendResponse.text();
 
-    // Intentar devolver JSON si corresponde, texto plano si no
     if (contentType?.includes('application/json')) {
       try {
         const data = JSON.parse(responseText);
         return res.status(backendResponse.status).json(data);
       } catch {
-        // Parseo falló, devolver texto
+        // Fallback
       }
     }
 

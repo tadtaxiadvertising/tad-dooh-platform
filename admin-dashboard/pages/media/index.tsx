@@ -111,6 +111,11 @@ export default function MediaPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type !== 'video/mp4') {
+      alert('Error: Solo se permiten archivos de video en formato MP4.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setSelectedFile(file);
     if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
     const blobUrl = URL.createObjectURL(file);
@@ -205,30 +210,19 @@ export default function MediaPage() {
          <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 mt-2">
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-tad-yellow rounded-xl flex items-center justify-center shadow-lg">
-                <Film className="w-6 h-6 text-black" />
-             </div>
-             <div>
-                <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-none">
-                  Vault <span className="text-tad-yellow transition-all duration-700 hover:text-white cursor-default">Multimedia</span>
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow animate-pulse" />
-                   <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Activos y Distribución</p>
-                </div>
-             </div>
-          </div>
-        </div>
-        
+      {/* Page Context Transition */}
+      <div className="flex items-center gap-3 mb-8 opacity-60">
+        <div className="w-8 h-px bg-white/20" />
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Vault / Nexus Multimedia</p>
+      </div>
+
+      <div className="flex justify-end mb-6">
         <button 
-          onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
-          className="bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all flex items-center gap-2"
+          onClick={() => setShowUploadModal(true)}
+          className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md group shrink-0"
         >
-          <CloudUpload className="w-4 h-4" />
-          Inyectar Activo
+          <CloudUpload className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          Importar Asset
         </button>
       </div>
 
@@ -239,34 +233,32 @@ export default function MediaPage() {
         </div>
       )}
 
-      {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Main Stats Cluster */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {[
-           { label: 'Total Vault Assets', value: media.length, icon: Film, color: 'yellow' },
-           { label: 'Network Points', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'white' },
-           { label: 'Auditoría SSL', value: '100%', icon: HardDrive, color: 'yellow' }
-        ].map((stat, i) => (
-           <div key={i} className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl hover:border-tad-yellow/30 transition-all duration-300">
+           { label: 'Activos en Bóveda', value: media.length, icon: Film, color: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
+           { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'text-tad-yellow', bg: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+           { label: 'Integridad Global', value: '100%', icon: ShieldCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
+        ].map((s, i) => (
+           <div key={i} className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative overflow-hidden shadow-sm">
               <div className="flex justify-between items-start mb-4">
-                 <div className={clsx("p-3 rounded-xl", 
-                   stat.color === 'yellow' ? "bg-tad-yellow/10 text-tad-yellow" : "bg-gray-900 text-gray-400"
-                 )}>
-                    <stat.icon className="w-5 h-5" />
+                 <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bg, s.border, s.color)}>
+                    <s.icon className="w-5 h-5" />
                  </div>
                  <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-black text-white tracking-tight">
-                {typeof stat.value === 'number' && stat.value < 10 ? `0${stat.value}` : stat.value}
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+              <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none", s.color)}>
+                {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
               </h3>
            </div>
         ))}
       </div>
 
       {/* Media Inventory Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
         {loading ? (
-          [1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/50" />)
+          [1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/50" />)
         ) : media.length > 0 ? (
           media.map((file, idx) => {
             const linkedCampaigns = getLinkedCampaigns(file.id);
@@ -279,8 +271,8 @@ export default function MediaPage() {
               <div 
                 key={file.id} 
                 className={clsx(
-                  "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden hover:border-tad-yellow/30 transition-all duration-500 shadow-sm hover:shadow-md hover:-translate-y-1 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-                  `[animation-delay:${idx * 50}ms]`
+                  "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden hover:border-tad-yellow/30 transition-all duration-500 shadow-sm hover:shadow-md hover:-translate-y-1 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
                 )}
               >
                 {/* Preview Surface */}
@@ -447,190 +439,223 @@ export default function MediaPage() {
             );
           })
         ) : (
-          <div className="col-span-full py-24 border-2 border-dashed border-gray-700/50 rounded-3xl bg-gray-800/20 flex flex-col items-center justify-center text-center opacity-0 animate-in fade-in duration-1000 fill-mode-both">
-            <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-               <Activity className="w-8 h-8 text-gray-700" />
+          <div className="col-span-full py-32 border-2 border-dashed border-gray-700/50 rounded-3xl bg-gray-800/20 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000">
+            <div className="w-20 h-20 bg-gray-900 rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-sm border border-gray-700">
+               <Film className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Vacío Operacional</h3>
-            <p className="text-gray-500 font-bold uppercase tracking-wider text-xs max-w-sm leading-relaxed mb-6">
-               No se detectan activos en la Vault. Inicie una subida para poblar el entorno multimedia.
+            <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-4">Bóveda Vacía</h3>
+            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs max-w-sm leading-relaxed mb-8 mx-auto">
+              No se han detectado activos multimedia en el cluster central.
             </p>
             <button 
                onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
-               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-6 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all"
+               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all shadow-sm"
             >
-               INICIAR INGESTA TÁCTICA
+               INICIAR INGESTA MULTIMEDIA
             </button>
           </div>
         )}
       </div>
-
-      {/* Fullscreen Preview Modal */}
+        {/* Fullscreen Preview Modal */}
       {previewUrl && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setPreviewUrl(null)} />
-          <div className="relative w-full max-w-5xl animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                 <div className="w-1.5 h-6 bg-tad-yellow rounded-full" />
-                 <h3 className="text-white font-black text-xl uppercase tracking-widest">{previewTitle || 'PREVIEW'}</h3>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={() => setPreviewUrl(null)} />
+          <div className="relative w-full max-w-6xl animate-in zoom-in-95 duration-500">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                  <div className="w-1.5 h-8 bg-tad-yellow rounded-full shadow-[0_0_10px_#fad400]" />
+                  <div>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">{previewTitle || 'EXPLORADOR DE ACTIVOS'}</h3>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-2">Visualización de Master Digital v4.2</p>
+                  </div>
               </div>
               <button 
                 onClick={() => setPreviewUrl(null)} 
-                title="Cerrar vista previa"
-                className="p-2.5 bg-gray-900 border border-gray-700 hover:border-rose-500/50 hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 rounded-xl transition-all"
+                className="p-3 bg-gray-900 border border-gray-800 hover:border-rose-500/50 hover:bg-rose-500/10 text-gray-500 hover:text-rose-500 rounded-2xl transition-all shadow-lg"
+                aria-label="Cerrar vista previa"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-700 shadow-xl aspect-video relative group">
+            <div className="bg-black rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl aspect-video relative group ring-1 ring-white/5">
               <video src={previewUrl} controls autoPlay className="w-full h-full object-contain" />
-              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gray-800">
-                 <div className="h-full bg-tad-yellow w-full" />
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-gray-900/50 backdrop-blur-sm">
+                 <div className="h-full bg-tad-yellow w-full shadow-[0_0_10px_#fad400]" />
               </div>
             </div>
-            <p className="text-center mt-4 text-[10px] text-gray-600 font-bold uppercase tracking-widest">© PREVIEW SYSTEM V4.2</p>
+            <div className="flex justify-center mt-6">
+               <div className="px-6 py-2 bg-gray-900/50 border border-gray-800 rounded-full backdrop-blur-md">
+                 <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.3em]">© TAD NEXUS SECURE PREVIEW SYSTEM</p>
+               </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Upload Nexus Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => !uploading && setShowUploadModal(false)} />
-          <div className="relative bg-gray-900 border border-gray-700 w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-500">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => !uploading && setShowUploadModal(false)} />
+          <div className="relative bg-gray-900 border border-gray-700/50 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 max-h-[95vh] flex flex-col">
             
             {uploading && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-50">
-                <div 
-                  className={clsx(
-                    "h-full bg-tad-yellow transition-all duration-300",
-                    `w-[${uploadProgress}%]`
-                  )} 
-                />
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-800 z-50">
+                <div className="h-full bg-tad-yellow shadow-[0_0_15px_#fad400] transition-all duration-300 nexus-upload-progress" />
+                <style jsx>{`
+                  .nexus-upload-progress {
+                    width: ${uploadProgress}%;
+                  }
+                `}</style>
               </div>
             )}
 
-            <div className="p-6 md:p-8 pb-5 flex justify-between items-center border-b border-gray-700/50 bg-gray-800/30">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-tad-yellow rounded-2xl shadow-sm group hover:scale-105 transition-transform">
+            <div className="p-8 pb-6 flex justify-between items-center bg-gray-800/30 border-b border-gray-700/50">
+              <div className="flex items-center gap-5">
+                <div className="p-4 bg-tad-yellow rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
                    <CloudUpload className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight leading-none">Ingesta de <span className="text-tad-yellow">Activos</span></h3>
-                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Upload Protocol</p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">Nueva <span className="text-tad-yellow">Ingesta</span></h3>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                    <Activity className="w-3 h-3 text-tad-yellow" /> Protocolo de Carga Nexus v4.2
+                  </p>
                 </div>
               </div>
               {!uploading && (
                 <button 
                   onClick={() => { setShowUploadModal(false); resetUploadForm(); }} 
-                  title="Cerrar modal"
-                  className="p-3 bg-gray-800 hover:bg-rose-500/10 border border-gray-700 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 rounded-xl transition-all"
+                  className="p-3 bg-gray-800 hover:bg-rose-500/10 border border-gray-700 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 rounded-xl transition-all shadow-sm"
+                  aria-label="Cerrar modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleUpload} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Archivo Fuente</label>
+            <form onSubmit={handleUpload} className="p-8 space-y-8 overflow-y-auto custom-scrollbar bg-gray-900/50 flex-1">
+              {/* File Drop Surface */}
+              <div className="space-y-4">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Origen de Datos</label>
                 {!selectedFile ? (
-                  <div className="relative border-2 border-dashed border-gray-700 hover:border-tad-yellow/50 bg-gray-800/30 rounded-2xl p-10 transition-all duration-300 group/drop cursor-pointer flex flex-col items-center">
-                    <input type="file" accept="video/mp4, video/webm" ref={fileInputRef} onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer" title="Escoger archivo" />
-                    <Film className="w-12 h-12 text-gray-500 mb-4 group-hover/drop:text-tad-yellow group-hover/drop:scale-110 transition-all duration-300" />
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-wider group-hover:text-white transition-colors">Seleccionar Video</p>
-                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-widest">MP4 / WEBM • Límite 50MB</p>
+                  <div className="relative border-2 border-dashed border-gray-700/50 hover:border-tad-yellow/40 bg-gray-800/10 rounded-3xl p-16 transition-all duration-500 group/drop cursor-pointer flex flex-col items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-tad-yellow/[0.01] opacity-0 group-hover/drop:opacity-100 transition-opacity" />
+                    <input type="file" accept="video/mp4, video/webm" ref={fileInputRef} onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer z-10" title="Seleccionar archivo" />
+                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-700/50 group-hover/drop:border-tad-yellow/30 transition-all group-hover/drop:scale-110 shadow-sm relative z-10">
+                       <Film className="w-10 h-10 text-gray-500 group-hover/drop:text-tad-yellow transition-colors" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest group-hover/drop:text-white transition-colors relative z-10">Seleccionar Master Digital</p>
+                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-[0.2em] relative z-10">MP4 / WEBM • Máximo 50MB</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 animate-in zoom-in-95 duration-300">
-                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-700 bg-black shadow-md">
+                  <div className="space-y-6 animate-in zoom-in-95 duration-500">
+                    <div className="relative aspect-video rounded-3xl overflow-hidden border border-gray-700/50 bg-black shadow-2xl group/preview">
                       <video src={filePreviewUrl || ''} controls className="w-full h-full" preload="metadata" />
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-tad-yellow text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
-                          <Eye className="w-3.5 h-3.5" /> Preview Listo
+                      <div className="absolute top-6 left-6">
+                        <span className="bg-tad-yellow text-black text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg backdrop-blur-md">
+                          <Eye className="w-4 h-4" /> Preview Activo
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-tad-yellow/10 rounded-lg border border-tad-yellow/20">
-                           <Play className="w-4 h-4 text-tad-yellow" />
+                    <div className="flex items-center justify-between bg-gray-800/40 p-5 rounded-2xl border border-gray-700/50 backdrop-blur-xl">
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 bg-tad-yellow/10 rounded-xl border border-tad-yellow/30 flex items-center justify-center shrink-0">
+                           <Play className="w-5 h-5 text-tad-yellow" />
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-white uppercase truncate max-w-[200px] md:max-w-xs">{selectedFile?.name}</p>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{(selectedFile!.size / 1024 / 1024).toFixed(2)} MB • {selectedFile?.type.toUpperCase()}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white uppercase truncate max-w-[300px]">{selectedFile?.name}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{(selectedFile!.size / 1024 / 1024).toFixed(2)} MB • {selectedFile?.type.replace('video/', '').toUpperCase()}</p>
                         </div>
                       </div>
-                      <button type="button" onClick={resetUploadForm} className="text-[10px] font-bold text-tad-yellow uppercase tracking-widest hover:underline px-3 py-1.5 bg-gray-900 rounded-lg border border-gray-700">Reiniciar</button>
+                      <button type="button" onClick={resetUploadForm} className="px-4 py-2 bg-gray-900 border border-gray-700 hover:border-tad-yellow text-gray-400 hover:text-tad-yellow text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm">
+                        Purgar
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Identificador del Contenido</label>
-                  <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm" placeholder="Ej. CAMPAÑA_DISTRI_V4" />
+              {/* Metadata Cluster */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Nombre del Activo</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={title} 
+                    onChange={e => setTitle(e.target.value)} 
+                    className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all placeholder:text-gray-600 shadow-inner" 
+                    placeholder="IDENTIFICADOR_COMERCIAL_V" 
+                  />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Ciclo de Reproducción</label>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Loop de Reproducción</label>
                   <select 
                     required 
                     value={duration} 
                     onChange={e => setDuration(Number(e.target.value))} 
-                    title="Seleccionar duración del activo"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all cursor-pointer shadow-sm"
+                    className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all cursor-pointer shadow-inner appearance-none"
+                    title="Duración del loop"
                   >
-                    <option value={30}>30 SEGUNDOS</option>
-                    <option value={60}>60 SEGUNDOS</option>
-                    <option value={120}>120 SEGUNDOS</option>
+                    <option value={30}>30 SEGUNDOS (Estándar)</option>
+                    <option value={60}>60 SEGUNDOS (Extendido)</option>
+                    <option value={120}>120 SEGUNDOS (Master)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Destino Escaneo QR (Opcional)</label>
+              {/* Link QR Surface */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Call to Action (Enlace QR)</label>
                 <div className="relative group/input">
-                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      <Share2 className="w-4 h-4 text-gray-500 group-focus-within/input:text-tad-yellow transition-colors" />
+                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
+                      <Share2 className="w-5 h-5 text-gray-500 group-focus-within/input:text-tad-yellow transition-colors" />
                    </div>
                    <input 
-                     type="text" 
+                     type="url" 
                      value={qrUrl} 
                      onChange={e => setQrUrl(e.target.value)} 
-                     className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm" 
-                     placeholder="https://tudominio.com/promo-video" 
+                     className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl pl-14 pr-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all placeholder:text-gray-700 shadow-inner" 
+                     placeholder="https://destino-comercial.com/nexus" 
                    />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Campaña Objetivo</label>
+              {/* Campaign Selection */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Campaña de Destino</label>
                 <select 
                   required 
                   value={selectedCampaign} 
                   onChange={e => setSelectedCampaign(e.target.value)} 
-                  title="Seleccionar campaña objetivo"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none cursor-pointer shadow-sm"
+                  className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none cursor-pointer shadow-inner appearance-none"
+                  title="Campaña objetivo"
                 >
-                  <option value="" disabled>-- SELECCIONAR CLUSTER OBJETIVO --</option>
+                  <option value="" disabled>-- VINCULAR A CLUSTER COMERCIAL --</option>
                   {campaigns?.filter(c => c.active).map(c => (
-                    <option key={c.id} value={c.id}>{c.name.toUpperCase()} [{c.advertiser.toUpperCase()}]</option>
+                    <option key={c.id} value={c.id}>{c.name.toUpperCase()} • {c.advertiser.toUpperCase()}</option>
                   ))}
                 </select>
               </div>
 
+              {/* Node Distribution Grid */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1">
-                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Difusión Taxis</label>
-                   <span className="text-[10px] font-bold text-tad-yellow uppercase tracking-widest bg-tad-yellow/10 px-2 py-1 rounded-md">{selectedDevices.length} DESTINOS</span>
+                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Distribución por Nodos (Hardware)</label>
+                   <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black text-tad-yellow uppercase tracking-widest bg-tad-yellow/10 px-3 py-1 rounded-full border border-tad-yellow/20">{selectedDevices.length} SELECCIONADOS</span>
+                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
                    {swrLoading ? (
-                     <div className="col-span-1 sm:col-span-2 py-8 flex justify-center"><div className="w-6 h-6 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent" /></div>
+                     <div className="col-span-full py-12 flex flex-col items-center gap-4">
+                        <div className="w-8 h-8 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent shadow-[0_0_10px_#fad400]" />
+                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest animate-pulse">Sincronizando Hardware...</p>
+                     </div>
                    ) : swrError ? (
-                     <div className="col-span-1 sm:col-span-2 text-[10px] text-rose-500 font-bold uppercase py-4">Falla en Sincronización de Nodos</div>
+                     <div className="col-span-full text-center py-8">
+                        <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
+                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest">Error de Sincronización Telemetría</p>
+                     </div>
                    ) : devices.map(device => {
                       const count = device.occupied_slots || 0;
                       const limit = device.max_slots || 15;
@@ -639,42 +664,66 @@ export default function MediaPage() {
                       const isFull = freeSlots <= 0;
 
                       return (
-                        <div key={device.device_id} onClick={() => { if (!isFull || isSelected) setSelectedDevices(prev => prev.includes(device.device_id) ? prev.filter(id => id !== device.device_id) : [...prev, device.device_id]); }} className={clsx("p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between group/dev", isSelected ? "bg-tad-yellow/10 border-tad-yellow/40" : "bg-gray-800/60 border-gray-700 hover:border-gray-500", isFull && !isSelected && "opacity-40 cursor-not-allowed")}>
-                           <div className="flex items-center gap-3 min-w-0">
-                              <div className={clsx("p-1.5 rounded-lg transition-all", isSelected ? "bg-tad-yellow text-black" : "bg-gray-900 text-gray-500")}>
+                        <div 
+                          key={device.device_id} 
+                          onClick={() => { 
+                            if (!isFull || isSelected) {
+                              setSelectedDevices(prev => 
+                                prev.includes(device.device_id) 
+                                ? prev.filter(id => id !== device.device_id) 
+                                : [...prev, device.device_id]
+                              );
+                            }
+                          }} 
+                          className={clsx(
+                            "p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group/dev shadow-sm",
+                            isSelected 
+                              ? "bg-tad-yellow/10 border-tad-yellow/40 ring-1 ring-tad-yellow/20" 
+                              : "bg-gray-800/40 border-gray-700/50 hover:border-gray-500",
+                            isFull && !isSelected && "opacity-40 cursor-not-allowed grayscale"
+                          )}
+                        >
+                           <div className="flex items-center gap-4 min-w-0">
+                              <div className={clsx(
+                                "p-2 rounded-xl transition-all shadow-sm", 
+                                isSelected ? "bg-tad-yellow text-black" : "bg-gray-900 text-gray-600 group-hover/dev:text-gray-400"
+                              )}>
                                  <CheckCircle className="w-4 h-4" />
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-xs font-bold text-white truncate uppercase">{device.taxiNumber || device.name || device.device_id.slice(0, 8)}</p>
-                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 animate-pulse" : "bg-gray-600")} />
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase">{freeSlots} SLOTS</p>
+                                 <p className="text-xs font-bold text-white truncate uppercase tracking-tight">{device.taxiNumber || device.name || device.device_id.slice(0, 8)}</p>
+                                 <div className="flex items-center gap-2 mt-1">
+                                    <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 shadow-[0_0_5px_#10b981]" : "bg-gray-600")} />
+                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{freeSlots} DISPONIBLES</p>
                                  </div>
                               </div>
                            </div>
-                           {isFull && <AlertTriangle className="w-4 h-4 text-rose-500" />}
+                           {isFull && <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />}
                         </div>
                       );
                    })}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-700/50">
+              {/* Action Section */}
+              <div className="pt-6 pb-2">
                 <button 
-                  disabled={uploading || !selectedFile} 
+                  disabled={uploading || !selectedFile || !selectedCampaign || !title} 
                   type="submit" 
-                  title="Ejecutar ingesta"
-                  className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-bold uppercase tracking-widest py-4 rounded-xl shadow-md disabled:opacity-50 transition-all flex items-center justify-center gap-3 active:scale-95 text-sm"
+                  className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-black uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-[0_10px_30px_rgba(250,212,0,0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-4 active:scale-95 text-xs"
                 >
                   {uploading ? (
                     <>
-                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                       SUBIENDO {uploadProgress}%
+                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                       DISTRIBUYENDO ACTIVO {uploadProgress}%
                     </>
                   ) : (
-                    <><CloudUpload className="w-5 h-5" /> EJECUTAR INGESTA MULTIMEDIA</>
+                    <><CloudUpload className="w-5 h-5" /> INICIAR PROTOCOLO DE INGESTA</>
                   )}
                 </button>
+                <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-6 leading-relaxed">
+                   Al ejecutar el protocolo, el activo será verificado y propagado a los nodos de red seleccionados automáticamente.
+                </p>
               </div>
             </form>
           </div>

@@ -1,3 +1,46 @@
+# Changelog de Desarrollos e Iteraciones (TAD DOOH)
+
+## 📅 20 de Marzo, 2026 (Business Rules & UX/UI Responsive v4.5)
+
+### 📱 RESPONSIVIDAD Y LAYOUT GLOBAL
+
+- **DashboardShell Overlay**: Introducido un Overlay Z-50 transigente con botón "Hamburger Menu" nativo para escalar el menú de Side-nav (Layout.tsx) perfectamente a móviles y tabletas sin quebrar el layout en grillas completas.
+- **Grillas Autoadaptativas**: Todos los bloques de métricas superiores operan sobre reglas Tailwind de la forma `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`, encapsulando tablas superestructurales (`media`, `fleet`, `finance`, `drivers`) con bloques robustos `overflow-x-auto custom-scrollbar`.
+
+### 🎛️ FUNCIONALIDAD INTERACTIVA
+
+- **Sincronización Broadcaster**: Botón de Sincronización de Nodos en Dashboard (`fleet/index.tsx`) envía ahora correctamente el Payload `WAKE_UP_CALL` a las flotas vía canal Realtime de Supabase.
+- **Botones y Enrutado**: Reescritura total de rutas "huérfanas" en la página de inicio (Dashboard Overview) hacia rutas oficiales (`/fleet`, `/analytics`) usando integraciones seguras nativas de Next.js `<Link>`.
+- **Carga de Archivos**: Reforzado control estricto de formato en Media (`pages/media/index.tsx` limitando y bloqueando explícitamente contenido fuera de `video/mp4` protegiendo Bucket de Storage).
+
+### 🎨 REESTILIZACIÓN DARK PREMIUM
+
+- **Conductores Module**: Replicación homologada de elementos de diseño del panel de finanzas hacia `drivers/index.tsx` (Hover Styles `bg-gray-900/40`, Elevaciones `group-hover:-translate-y-1`, Bloques expansivos translúcidos `bg-black/20 backdrop-blur-xl`, y cascades animadas uniformes).
+- **Consolidación de Identidad**: Todos los reportes de error/warn en accesibilidad del DOM (ARIA/Titles faltantes en Layout.tsx) resueltos; linter limpio.
+
+---
+
+## 📅 20 de Marzo, 2026 (Auditoría UI Premium v4.5 & Fix de Infraestructura)
+
+### 🎨 UI/UX: Estandarización de Alta Fidelidad (v4.5)
+
+- **Dashboard Audit**: Se realizó una auditoría completa de los elementos visuales en `campaigns`, `fleet`, `media` y `devices`.
+- **Typographic Scale**: Estandarizada la fuente de las métricas principales a `text-3xl lg:text-4xl font-bold` para garantizar legibilidad y un look premium.
+- **Interacciones**: Corregida la sintaxis de `animation-delay` en todas las páginas, migrando de clases dinámicas de Tailwind a estilos `style={{ animationDelay: '...' }}` para asegurar animaciones fluidas.
+- **Visual Harmony**: Ajuste de contenedores y espaciados para eliminar elementos desproporcionados reportados en versiones previas.
+
+### 🛠️ STABILITY: Fix de Layout y Registro
+
+- **Fleet Grid Fix**: Se resolvió un bug de cierre de etiquetas `div` en `pages/fleet/index.tsx` que rompía la rejilla de dispositivos.
+- **Header Consolidation**: Unificados botones de acción en la cabecera de la flota (Sync/Attach) para una interfaz más limpia.
+- **Devices Inventory**: Actualizada la página de inventario técnico con el nuevo diseño, incluyendo estados de salud animados.
+
+### 🔐 AUTH: Diagnóstico de Error 401
+- **Finance API**: Identificada la causa raíz del error `401 Unauthorized` en el endpoint de nómina. La variable `SUPABASE_SERVICE_ROLE_KEY` estaba usando una "Management Key" en lugar de la "Service Role Key" (JWT).
+- **Environment**: Documentada la necesidad de `SUPABASE_JWT_SECRET` para validaciones locales y reducción de latencia.
+
+---
+
 ## 📅 19 de Marzo, 2026 (Refactorización de Emergencia - Eliminación de Waterfall N+1)
 
 ### 🛡️ STABILITY: Eliminación Total N+1

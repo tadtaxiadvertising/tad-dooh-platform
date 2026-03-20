@@ -42,6 +42,7 @@ export class SupabaseAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      this.logger.warn(`❌ [AUTH_GUARD] Petición sin Header Authorization válido: ${request.url}`);
       throw new UnauthorizedException('Token de acceso no válido o ausente.');
     }
 
@@ -49,7 +50,6 @@ export class SupabaseAuthGuard implements CanActivate {
     const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET');
 
     // --- ESTRATEGIA 1: Validación Local (Offline-First Backend) ---
-    // Solo funciona si el JWT secret es el real de Supabase (eyJ... base64 largo)
     if (jwtSecret && jwtSecret.length > 40 && !jwtSecret.startsWith('sb_')) {
       try {
         const payload = jwt.verify(token, jwtSecret) as any;
@@ -62,7 +62,7 @@ export class SupabaseAuthGuard implements CanActivate {
           return true;
         }
       } catch (err) {
-        this.logger.warn(`Local JWT validation failed, falling back to network: ${err.message}`);
+        this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 1 FALLIDA (Check JWT_SECRET): ${err.message}`);
       }
     }
 
@@ -77,25 +77,21 @@ export class SupabaseAuthGuard implements CanActivate {
           email: data.user.email,
           role: data.user.app_metadata?.role || 'ADMIN',
         };
-        this.logger.log(`Auth OK via Supabase network: ${data.user.email}`);
+        this.logger.log(`✅ [AUTH_GUARD] ESTRATEGIA 2 OK (Red Supabase): ${data.user.email}`);
         return true;
       }
 
-      this.logger.warn(`Supabase network validation failed: ${error?.message || 'No user returned'}`);
+      this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA (Check SERVICE_ROLE_KEY): ${error?.message || 'No user returned'}`);
     } catch (err) {
-      this.logger.warn(`Supabase network call error: ${err.message}`);
+      this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 ERROR DE RED: ${err.message}`);
     }
 
-    // --- ESTRATEGIA 3: DEV FALLBACK — Decode sin verificar firma ---
-    // SOLO en desarrollo local. Permite que el frontend funcione sin credenciales
-    // de producción (service_role_key real). NUNCA activo en producción.
+    // --- ESTRATEGIA 3: DEV FALLBACK ---
     if (this.isDev) {
       try {
         const decoded = jwt.decode(token) as any;
         if (decoded && (decoded.sub || decoded.email)) {
-          this.logger.warn(
-            `⚠️  DEV MODE FALLBACK: Token aceptado sin verificar firma — usuario: ${decoded.email || decoded.sub}`
-          );
+          this.logger.warn(`🚩 [AUTH_GUARD] ESTRATEGIA 3 (DEV MODE BYPASS) -> ACCEPTED: ${decoded.email}`);
           request.user = {
             id: decoded.sub || 'dev-user',
             email: decoded.email || 'dev@local',
@@ -104,10 +100,11 @@ export class SupabaseAuthGuard implements CanActivate {
           return true;
         }
       } catch (err) {
-        this.logger.error(`DEV fallback JWT decode failed: ${err.message}`);
+        this.logger.error(`❌ [AUTH_GUARD] ESTRATEGIA 3 ERROR: ${err.message}`);
       }
     }
 
+    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url}`);
     throw new UnauthorizedException('La sesión expiró o es inválida. Por favor inicia sesión de nuevo.');
   }
 }

@@ -296,7 +296,6 @@ export default function CampaignDetailPage() {
                 {assignedDevices.map((device, idx) => {
                   const isDeviceOnline = device.lastHeartbeat ? (new Date().getTime() - new Date(device.lastHeartbeat || device.lastSeen || '').getTime() < 300000) : false;
                   return (
-                    {/* eslint-disable-next-line react/forbid-dom-props */}
                     <div key={device.id} style={{ animationDelay: `${idx * 50}ms` }} className="group/node bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                        <div className={clsx(
                           "absolute -right-8 -bottom-8 w-24 h-24 blur-[40px] opacity-10 transition-all duration-500",

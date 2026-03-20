@@ -198,68 +198,65 @@ export default function MediaPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
+    <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 pt-6">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-15%] left-[-10%] w-[65%] h-[65%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[5%] right-[-10%] w-[55%] h-[55%] bg-white/[0.01] blur-[160px] rounded-full" />
+         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
+         <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 mb-12">
-        <div className="space-y-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 mt-2">
+        <div className="space-y-2">
           <div className="flex items-center gap-4">
-             <div className="w-14 h-14 bg-tad-yellow rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(255,212,0,0.15)]">
-                <Film className="w-7 h-7 text-black" />
+             <div className="w-12 h-12 bg-tad-yellow rounded-xl flex items-center justify-center shadow-lg">
+                <Film className="w-6 h-6 text-black" />
              </div>
              <div>
-                <div className="flex items-center gap-3 mb-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
-                   <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">Integrated Media Vault v4.2</p>
-                </div>
-                <h1 className="text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter leading-none font-display">
-                  Media <span className="text-tad-yellow transition-all duration-700 hover:text-white cursor-default italic">Nexus</span>
+                <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-none">
+                  Vault <span className="text-tad-yellow transition-all duration-700 hover:text-white cursor-default">Multimedia</span>
                 </h1>
+                <div className="flex items-center gap-2 mt-1">
+                   <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow animate-pulse" />
+                   <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Activos y Distribución</p>
+                </div>
              </div>
           </div>
-          <p className="text-zinc-500 max-w-2xl text-[12px] font-bold uppercase tracking-widest leading-relaxed">
-            Manage <span className="text-white">high-performance visual assets</span> and distribution pipelines.
-          </p>
         </div>
         
         <button 
           onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
-          className="btn-primary px-10 h-14 flex items-center gap-4 group"
+          className="bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all flex items-center gap-2"
         >
-          <CloudUpload className="w-5 h-5 transition-transform group-hover:-translate-y-1 duration-300" />
-          Ingesta_Multimedia
+          <CloudUpload className="w-4 h-4" />
+          Inyectar Activo
         </button>
       </div>
 
       {error && (
-        <div className="mb-12 p-6 bg-rose-500/10 border border-rose-500/20 rounded-[2rem] flex items-center gap-4 text-rose-500 animate-in zoom-in duration-500">
-           <AlertTriangle className="w-6 h-6 animate-pulse" />
-           <p className="text-xs font-black uppercase tracking-widest">{error}</p>
+        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 text-rose-500">
+           <AlertTriangle className="w-5 h-5 animate-pulse" />
+           <p className="text-xs font-bold uppercase tracking-wider">{error}</p>
         </div>
       )}
 
       {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {[
            { label: 'Total Vault Assets', value: media.length, icon: Film, color: 'yellow' },
            { label: 'Network Points', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'white' },
-           { label: 'Integrity Check', value: '100%', icon: HardDrive, color: 'yellow' }
+           { label: 'Auditoría SSL', value: '100%', icon: HardDrive, color: 'yellow' }
         ].map((stat, i) => (
-           <div key={i} className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[3rem] group hover:border-tad-yellow/30 transition-all duration-700 hover:-translate-y-2 shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-              <div className="flex justify-between items-start mb-8">
-                 <div className={clsx("p-5 rounded-full border transition-all duration-700 shadow-2xl", 
-                   stat.color === 'yellow' ? "bg-tad-yellow text-black border-tad-yellow" : "bg-black/60 border-white/10 text-white"
+           <div key={i} className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-2xl hover:border-tad-yellow/30 transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                 <div className={clsx("p-3 rounded-xl", 
+                   stat.color === 'yellow' ? "bg-tad-yellow/10 text-tad-yellow" : "bg-gray-900 text-gray-400"
                  )}>
-                    <stat.icon className="w-6 h-6" />
+                    <stat.icon className="w-5 h-5" />
                  </div>
-                 <div className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
               </div>
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1.5 italic lowercase">{stat.label}</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none font-display">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{stat.label}</p>
+              <h3 className="text-3xl font-black text-white tracking-tight">
                 {typeof stat.value === 'number' && stat.value < 10 ? `0${stat.value}` : stat.value}
               </h3>
            </div>
@@ -267,9 +264,9 @@ export default function MediaPage() {
       </div>
 
       {/* Media Inventory Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {loading ? (
-          [1,2,3,4,5,6].map(i => <div key={i} className="h-80 bg-zinc-900/20 backdrop-blur-3xl animate-pulse rounded-[3rem] border border-white/5" />)
+          [1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/50" />)
         ) : media.length > 0 ? (
           media.map((file, idx) => {
             const linkedCampaigns = getLinkedCampaigns(file.id);
@@ -282,19 +279,19 @@ export default function MediaPage() {
               <div 
                 key={file.id} 
                 className={clsx(
-                  "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] overflow-hidden hover:border-tad-yellow/30 transition-all duration-700 hover:-translate-y-3 shadow-[0_45px_100px_rgba(0,0,0,0.6)] flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+                  "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden hover:border-tad-yellow/30 transition-all duration-500 shadow-sm hover:shadow-md hover:-translate-y-1 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
                   `[animation-delay:${idx * 50}ms]`
                 )}
               >
                 {/* Preview Surface */}
                 <div 
-                  className="aspect-video bg-black relative overflow-hidden cursor-pointer group/surface"
+                  className="aspect-video bg-gray-900 relative overflow-hidden cursor-pointer group/surface"
                   onClick={() => { setPreviewUrl(videoUrl); setPreviewTitle(displayName); }}
                 >
                   {isVideo ? (
                     <video 
                       src={videoUrl} 
-                      className="w-full h-full object-contain transition-transform duration-1000 group-hover/surface:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover/surface:scale-105"
                       preload="metadata"
                       muted
                       onMouseOver={e => (e.target as HTMLVideoElement).play().catch(() => {})}
@@ -304,74 +301,76 @@ export default function MediaPage() {
                       }}
                     />
                   ) : (
-                    <div className="relative w-full h-full transition-transform duration-1000 group-hover/surface:scale-110">
+                    <div className="relative w-full h-full transition-transform duration-700 group-hover/surface:scale-105">
                       <Image src={videoUrl} alt={displayName} fill className="object-cover" />
                     </div>
                   )}
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60" />
                   
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/surface:opacity-100 transition-all duration-500 scale-90 group-hover/surface:scale-100 pointer-events-none">
-                    <div className="bg-tad-yellow text-black rounded-full p-5 shadow-[0_0_40px_rgba(250,212,0,0.5)]">
-                      <Play className="w-8 h-8 fill-black" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/surface:opacity-100 transition-all duration-300 scale-95 group-hover/surface:scale-100 pointer-events-none">
+                    <div className="bg-tad-yellow text-black rounded-full p-4 shadow-[0_0_20px_rgba(250,212,0,0.5)]">
+                      <Play className="w-6 h-6 fill-black" />
                     </div>
-                                    <div className="absolute top-6 left-6 flex gap-3">
+                  </div>
+                  
+                  <div className="absolute top-4 left-4 flex gap-2">
                     {isActive ? (
-                       <div className="bg-tad-yellow text-[10px] font-black px-6 py-2 rounded-full text-black uppercase tracking-widest flex items-center gap-2.5 shadow-2xl shadow-tad-yellow/20 animate-pulse">
-                         <Activity className="w-4 h-4" /> LOCAL_LIVE
+                       <div className="bg-tad-yellow text-[10px] font-bold px-3 py-1 rounded-full text-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm animate-pulse">
+                         <Activity className="w-3 h-3" /> LIVE
                        </div>
                     ) : (
-                       <div className="bg-zinc-950/80 backdrop-blur-md text-[9px] font-black px-5 py-2 rounded-full text-zinc-500 border border-white/10 uppercase tracking-[0.2em] shadow-lg">
-                         READY_IDLE
+                       <div className="bg-gray-900/80 backdrop-blur-md text-[10px] font-bold px-3 py-1 rounded-full text-gray-500 border border-gray-700 uppercase tracking-wider shadow-sm">
+                         IDLE
                        </div>
                     )}
-                  </div>  </div>
+                  </div>  
 
                   <button 
                     onClick={(e) => handleDelete(file.id, e)}
-                    title="Purgar activo"
-                    className="absolute top-6 right-6 bg-rose-500/10 hover:bg-rose-600 backdrop-blur-md text-rose-500 hover:text-white p-3 rounded-2xl transition-all opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-500 border border-rose-500/20"
+                    title="Eliminar activo"
+                    className="absolute top-4 right-4 bg-rose-500/10 hover:bg-rose-600 backdrop-blur-md text-rose-500 hover:text-white p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 duration-300 border border-rose-500/20"
                   >
-                    <X className="w-4.5 h-4.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Information Surface */}
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="mb-8">
-                     <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase truncate leading-none mb-3 group-hover:text-tad-yellow transition-colors duration-500">{displayName}</h4>
-                     <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Cpu className="w-4 h-4 text-tad-yellow" /> {isVideo ? 'CODEC_AV1' : 'STATIC_RAW'} • {(file.size ? file.size / 1024 / 1024 : 0).toFixed(2)} MB
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="mb-4">
+                     <h4 className="text-sm font-bold text-white truncate mb-1.5 group-hover:text-tad-yellow transition-colors duration-300">{displayName}</h4>
+                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <Cpu className="w-3 h-3 text-tad-yellow" /> {isVideo ? 'VIDEO' : 'STATIC'} • {(file.size ? file.size / 1024 / 1024 : 0).toFixed(2)} MB
                      </p>
                   </div>
 
-                  <div className="space-y-5 mb-10">
-                    <p className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em] flex items-center gap-2 italic">
-                       <Zap className="w-3.5 h-3.5" /> Canales de Difusión
+                  <div className="space-y-3 mb-6">
+                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                       <Zap className="w-3 h-3" /> Campanãs Enlazadas
                     </p>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-wrap gap-2">
                       {linkedCampaigns.length > 0 ? (
                         linkedCampaigns.map((c) => (
-                          <div key={c.id} className="bg-zinc-800/40 border border-white/5 px-4 py-2 rounded-xl hover:border-tad-yellow/40 hover:bg-zinc-800/60 transition-all flex items-center gap-2 group/tag cursor-default">
-                             <div className="w-2 h-2 rounded-full bg-tad-yellow/30 group-hover/tag:bg-tad-yellow transition-colors shadow-[0_0_5px_rgba(255,212,0,0.3)]" />
-                             <span className="text-[11px] font-black text-zinc-400 group-hover/tag:text-white transition-colors uppercase tracking-tight italic">{c.name}</span>
+                          <div key={c.id} className="bg-gray-900/50 border border-gray-700/50 px-2 py-1.5 rounded-lg hover:border-tad-yellow/40 transition-all flex items-center gap-1.5 group/tag cursor-default">
+                             <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow/50 group-hover/tag:bg-tad-yellow transition-colors" />
+                             <span className="text-[10px] font-bold text-gray-400 group-hover/tag:text-white transition-colors uppercase truncate max-w-[120px]">{c.name}</span>
                           </div>
                         ))
                       ) : (
-                        <div className="w-full py-5 text-center border-2 border-dashed border-white/10 rounded-2xl bg-black/20">
-                           <p className="text-[10px] text-zinc-700 font-black uppercase italic tracking-widest">Sin Enlace Activo</p>
+                        <div className="w-full py-3 text-center border border-dashed border-gray-700 rounded-xl bg-gray-900/20">
+                           <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Sin Enlace</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-4 mb-10 p-5 bg-black/40 rounded-[2rem] border border-white/5 group/qr">
-                    <p className="text-[9px] text-zinc-600 font-black uppercase tracking-[0.3em] flex items-center justify-between italic">
-                      <span className="flex items-center gap-2">
-                        <Share2 className="w-3.5 h-3.5 text-tad-yellow" /> QR Redirect Target
+                  <div className="space-y-3 mb-6 p-4 bg-gray-900/50 rounded-xl border border-gray-700/50 group/qr hover:border-gray-500 transition-colors">
+                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Share2 className="w-3 h-3 text-tad-yellow" /> Enlace QR
                       </span>
                       {file.qrUrl ? (
-                         <span className="text-emerald-500/50">LINK_ACTIVE</span>
+                         <span className="text-emerald-500/50">ACTIVO</span>
                       ) : (
                          <span className="text-rose-500/50">NO_LINK</span>
                       )}
@@ -385,7 +384,7 @@ export default function MediaPage() {
                            autoFocus
                            aria-label="URL de destino para QR"
                            placeholder="https://..."
-                           className="flex-1 bg-zinc-900/50 border border-tad-yellow/30 rounded-xl px-4 py-2.5 text-[11px] text-white focus:outline-none focus:border-tad-yellow italic"
+                           className="flex-1 bg-gray-800 border border-tad-yellow/30 rounded-lg px-3 py-1.5 text-[10px] text-white focus:outline-none focus:border-tad-yellow"
                            onKeyDown={(e) => {
                              if (e.key === 'Enter') handleUpdateQR(file.id, e.currentTarget.value);
                              if (e.key === 'Escape') setEditingQr(null);
@@ -398,47 +397,47 @@ export default function MediaPage() {
                            }}
                            title="Guardar URL QR"
                            aria-label="Guardar URL"
-                           className="bg-tad-yellow p-2.5 rounded-xl text-black"
+                           className="bg-tad-yellow p-1.5 rounded-lg text-black"
                          >
-                            <ShieldCheck className="w-4 h-4" />
+                            <ShieldCheck className="w-3.5 h-3.5" />
                          </button>
                       </div>
                     ) : (
                       <div 
                         onClick={() => setEditingQr(file.id)}
-                        className="flex items-center justify-between cursor-pointer group-hover/qr:border-tad-yellow/20 border border-transparent rounded-xl transition-all"
+                        className="flex items-center justify-between cursor-pointer group-hover/qr:border-tad-yellow/20 border border-transparent rounded-lg transition-all"
                       >
-                         <p className="text-[11px] font-bold text-zinc-500 truncate max-w-[200px] italic">
-                           {file.qrUrl || 'Asignar destino QR de video...'}
+                         <p className="text-[10px] font-bold text-gray-400 truncate max-w-[150px]">
+                           {file.qrUrl || 'Asignar destino...'}
                          </p>
-                         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center opacity-0 group-hover/qr:opacity-100 transition-all">
-                            <Zap className="w-3.5 h-3.5 text-zinc-500" />
+                         <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center opacity-0 group-hover/qr:opacity-100 transition-all border border-gray-700">
+                            <Zap className="w-3 h-3 text-gray-500" />
                          </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-auto pt-8 border-t border-white/10 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-2xl bg-zinc-800 border border-white/5 flex items-center justify-center group-hover:bg-tad-yellow group-hover:text-black transition-all shadow-inner">
-                           <Calendar className="w-5 h-5 text-zinc-500 group-hover:text-black" />
+                  <div className="mt-auto pt-4 border-t border-gray-700/50 flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gray-900 border border-gray-700 flex items-center justify-center group-hover:text-tad-yellow transition-colors">
+                           <Calendar className="w-3.5 h-3.5 text-gray-500 group-hover:text-tad-yellow" />
                         </div>
                         <div>
-                           <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest leading-none mb-1.5">Registro</p>
-                           <p className="text-sm font-black text-zinc-400 italic">{file.createdAt ? format(new Date(file.createdAt), 'dd.MM.yy') : 'REC_ID'}</p>
+                           <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest leading-none mb-1">Registro</p>
+                           <p className="text-[11px] font-bold text-gray-400">{file.createdAt ? format(new Date(file.createdAt), 'dd MMM yy') : 'ID'}</p>
                         </div>
                      </div>
                      
-                     <div className="flex -space-x-3">
+                     <div className="flex -space-x-2">
                         {mediaStatus[file.id]?.active_devices?.slice(0, 3).map((id) => (
-                          <div key={id} title={id} className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-950 flex items-center justify-center text-[9px] font-black text-tad-yellow shadow-xl hover:z-10 hover:-translate-y-2 transition-all cursor-help ring-1 ring-white/5">
+                          <div key={id} title={id} className="w-8 h-8 rounded-full bg-gray-800 border-2 border-gray-900 flex items-center justify-center text-[8px] font-bold text-tad-yellow shadow-sm hover:z-10 hover:-translate-y-1 transition-transform cursor-help">
                              {devices.find(d => d.device_id === id)?.taxiNumber?.replace('TAXI-', '') || 'ND'}
                           </div>
                         ))}
                         {(!mediaStatus[file.id]?.active_devices || mediaStatus[file.id].active_devices!.length === 0) && (
-                          <div className="flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 shadow-inner">
-                             <ShieldCheck className="w-4.5 h-4.5 text-emerald-500" />
-                             <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest italic">Integral</span>
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                             <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Seguro</span>
                           </div>
                         )}
                      </div>
@@ -448,19 +447,19 @@ export default function MediaPage() {
             );
           })
         ) : (
-          <div className="col-span-full py-40 border-2 border-dashed border-white/5 rounded-[4rem] bg-zinc-950/20 flex flex-col items-center justify-center text-center opacity-0 animate-in fade-in duration-1000 fill-mode-both">
-            <div className="w-24 h-24 bg-zinc-900 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-3xl">
-               <Activity className="w-12 h-12 text-zinc-800" />
+          <div className="col-span-full py-24 border-2 border-dashed border-gray-700/50 rounded-3xl bg-gray-800/20 flex flex-col items-center justify-center text-center opacity-0 animate-in fade-in duration-1000 fill-mode-both">
+            <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+               <Activity className="w-8 h-8 text-gray-700" />
             </div>
-            <h3 className="text-3xl font-black text-zinc-700 uppercase italic tracking-[0.2em] leading-none mb-4">Vacío Operacional</h3>
-            <p className="text-zinc-800 font-bold uppercase tracking-[0.2em] text-[10px] max-w-sm leading-relaxed mb-10">
-               No se detectan activos en la bóveda central. Inicie el protocolo de ingesta para poblar el cluster multimedia.
+            <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Vacío Operacional</h3>
+            <p className="text-gray-500 font-bold uppercase tracking-wider text-xs max-w-sm leading-relaxed mb-6">
+               No se detectan activos en la Vault. Inicie una subida para poblar el entorno multimedia.
             </p>
             <button 
                onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
-               className="bg-white/5 hover:bg-tad-yellow hover:text-black text-zinc-400 px-12 py-5 rounded-[2rem] border border-white/5 hover:border-transparent text-[10px] font-black uppercase tracking-[0.5em] transition-all italic"
+               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-6 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all"
             >
-               INICIAR INGESTA CORE
+               INICIAR INGESTA TÁCTICA
             </button>
           </div>
         )}
@@ -469,119 +468,119 @@ export default function MediaPage() {
       {/* Fullscreen Preview Modal */}
       {previewUrl && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl" onClick={() => setPreviewUrl(null)} />
-          <div className="relative w-full max-w-5xl animate-in zoom-in-95 duration-500">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                 <div className="w-2 h-8 bg-tad-yellow rounded-full" />
-                 <h3 className="text-white font-black text-2xl uppercase italic tracking-tighter">{previewTitle || 'PROTOTIPO_VISUAL'}</h3>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setPreviewUrl(null)} />
+          <div className="relative w-full max-w-5xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                 <div className="w-1.5 h-6 bg-tad-yellow rounded-full" />
+                 <h3 className="text-white font-black text-xl uppercase tracking-widest">{previewTitle || 'PREVIEW'}</h3>
               </div>
               <button 
                 onClick={() => setPreviewUrl(null)} 
                 title="Cerrar vista previa"
-                className="p-4 bg-white/5 hover:bg-rose-500/20 text-zinc-500 hover:text-rose-500 rounded-2xl transition-all"
+                className="p-2.5 bg-gray-900 border border-gray-700 hover:border-rose-500/50 hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 rounded-xl transition-all"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="bg-zinc-950 rounded-[3rem] overflow-hidden border border-white/10 shadow-3xl aspect-video relative group">
+            <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-700 shadow-xl aspect-video relative group">
               <video src={previewUrl} controls autoPlay className="w-full h-full object-contain" />
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-tad-yellow/20">
+              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gray-800">
                  <div className="h-full bg-tad-yellow w-full" />
               </div>
             </div>
-            <p className="text-center mt-6 text-[10px] text-zinc-600 font-black uppercase tracking-[0.5em] italic">© TADCORE PREVIEW SYSTEM CORE v4.2</p>
+            <p className="text-center mt-4 text-[10px] text-gray-600 font-bold uppercase tracking-widest">© PREVIEW SYSTEM V4.2</p>
           </div>
         </div>
       )}
 
       {/* Upload Nexus Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => !uploading && setShowUploadModal(false)} />
-          <div className="relative bg-zinc-950 border border-white/10 w-full max-w-3xl rounded-[3.5rem] overflow-hidden shadow-3xl animate-in zoom-in-95 duration-500 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => !uploading && setShowUploadModal(false)} />
+          <div className="relative bg-gray-900 border border-gray-700 w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
             
             {uploading && (
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-900 z-50">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-50">
                 <div 
                   className={clsx(
-                    "h-full bg-tad-yellow transition-all duration-700 shadow-[0_0_15px_#fad400]",
+                    "h-full bg-tad-yellow transition-all duration-300",
                     `w-[${uploadProgress}%]`
                   )} 
                 />
               </div>
             )}
 
-            <div className="p-10 pb-6 flex justify-between items-center bg-white/[0.01] border-b border-white/5">
-              <div className="flex items-center gap-6">
-                <div className="p-5 bg-tad-yellow rounded-3xl shadow-2xl shadow-tad-yellow/20 group hover:rotate-12 transition-transform">
-                   <CloudUpload className="w-8 h-8 text-black" />
+            <div className="p-6 md:p-8 pb-5 flex justify-between items-center border-b border-gray-700/50 bg-gray-800/30">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-tad-yellow rounded-2xl shadow-sm group hover:scale-105 transition-transform">
+                   <CloudUpload className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">Ingesta de <span className="text-tad-yellow">Activos</span></h3>
-                  <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic">Protocolo de Carga Periférica</p>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight leading-none">Ingesta de <span className="text-tad-yellow">Activos</span></h3>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Upload Protocol</p>
                 </div>
               </div>
               {!uploading && (
                 <button 
                   onClick={() => { setShowUploadModal(false); resetUploadForm(); }} 
                   title="Cerrar modal"
-                  className="p-4 bg-white/5 hover:bg-rose-500/20 text-zinc-500 hover:text-rose-500 rounded-2xl transition-all"
+                  className="p-3 bg-gray-800 hover:bg-rose-500/10 border border-gray-700 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 rounded-xl transition-all"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleUpload} className="p-10 space-y-8 overflow-y-auto custom-scrollbar">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 italic">Handshake de Archivo</label>
+            <form onSubmit={handleUpload} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Archivo Fuente</label>
                 {!selectedFile ? (
-                  <div className="relative border-2 border-dashed border-white/5 hover:border-tad-yellow/30 bg-black/40 rounded-[2.5rem] p-16 transition-all duration-500 group/drop cursor-pointer flex flex-col items-center">
+                  <div className="relative border-2 border-dashed border-gray-700 hover:border-tad-yellow/50 bg-gray-800/30 rounded-2xl p-10 transition-all duration-300 group/drop cursor-pointer flex flex-col items-center">
                     <input type="file" accept="video/mp4, video/webm" ref={fileInputRef} onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer" title="Escoger archivo" />
-                    <Film className="w-16 h-16 text-zinc-800 mb-6 group-hover/drop:text-tad-yellow group-hover/drop:scale-110 transition-all duration-500" />
-                    <p className="text-lg font-black text-zinc-500 italic uppercase tracking-tighter group-hover:text-white transition-colors">VINCULAR VIDEO AL NODO</p>
-                    <p className="text-[10px] text-zinc-700 font-bold mt-2 uppercase tracking-widest italic">MP4 / WEBM • Límite Operacional 50MB</p>
+                    <Film className="w-12 h-12 text-gray-500 mb-4 group-hover/drop:text-tad-yellow group-hover/drop:scale-110 transition-all duration-300" />
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-wider group-hover:text-white transition-colors">Seleccionar Video</p>
+                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-widest">MP4 / WEBM • Límite 50MB</p>
                   </div>
                 ) : (
-                  <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                    <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-white/10 bg-black shadow-2xl">
+                  <div className="space-y-4 animate-in zoom-in-95 duration-300">
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-700 bg-black shadow-md">
                       <video src={filePreviewUrl || ''} controls className="w-full h-full" preload="metadata" />
-                      <div className="absolute top-6 left-6">
-                        <span className="bg-tad-yellow text-black text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest italic flex items-center gap-2 shadow-2xl">
-                          <Eye className="w-3.5 h-3.5" /> Handshake Visual Confirmado
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-tad-yellow text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+                          <Eye className="w-3.5 h-3.5" /> Preview Listo
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5">
-                      <div className="flex items-center gap-5">
-                        <div className="p-4 bg-tad-yellow/10 rounded-2xl border border-tad-yellow/20">
-                           <Play className="w-5 h-5 text-tad-yellow shadow-[0_0_10px_#fad400]" />
+                    <div className="flex items-center justify-between bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-tad-yellow/10 rounded-lg border border-tad-yellow/20">
+                           <Play className="w-4 h-4 text-tad-yellow" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-white italic uppercase tracking-tighter">{selectedFile?.name}</p>
-                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic">{(selectedFile!.size / 1024 / 1024).toFixed(2)} MB • {selectedFile?.type.toUpperCase()}</p>
+                          <p className="text-xs font-bold text-white uppercase truncate max-w-[200px] md:max-w-xs">{selectedFile?.name}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{(selectedFile!.size / 1024 / 1024).toFixed(2)} MB • {selectedFile?.type.toUpperCase()}</p>
                         </div>
                       </div>
-                      <button type="button" onClick={resetUploadForm} className="text-[10px] font-black text-tad-yellow uppercase tracking-widest italic hover:underline">Reiniciar Ingesta</button>
+                      <button type="button" onClick={resetUploadForm} className="text-[10px] font-bold text-tad-yellow uppercase tracking-widest hover:underline px-3 py-1.5 bg-gray-900 rounded-lg border border-gray-700">Reiniciar</button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 italic">Identificador del Contenido</label>
-                  <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-black border border-white/5 rounded-2xl px-6 py-5 text-white font-black italic tracking-tighter focus:border-tad-yellow outline-none transition-all placeholder:text-zinc-800" placeholder="Ej. CAMPAÑA_DISTRI_V4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Identificador del Contenido</label>
+                  <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm" placeholder="Ej. CAMPAÑA_DISTRI_V4" />
                 </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 italic">Ciclo de Reproducción</label>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Ciclo de Reproducción</label>
                   <select 
                     required 
                     value={duration} 
                     onChange={e => setDuration(Number(e.target.value))} 
                     title="Seleccionar duración del activo"
-                    className="w-full bg-black border border-white/5 rounded-2xl px-6 py-5 text-white font-black italic tracking-tighter focus:border-tad-yellow outline-none transition-all cursor-pointer"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all cursor-pointer shadow-sm"
                   >
                     <option value={30}>30 SEGUNDOS</option>
                     <option value={60}>60 SEGUNDOS</option>
@@ -590,30 +589,30 @@ export default function MediaPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 italic">Destino Escaneo QR (Opcional)</label>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Destino Escaneo QR (Opcional)</label>
                 <div className="relative group/input">
-                   <div className="absolute left-6 top-1/2 -translate-y-1/2">
-                      <Share2 className="w-4 h-4 text-zinc-700 group-focus-within/input:text-tad-yellow transition-colors" />
+                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      <Share2 className="w-4 h-4 text-gray-500 group-focus-within/input:text-tad-yellow transition-colors" />
                    </div>
                    <input 
                      type="text" 
                      value={qrUrl} 
                      onChange={e => setQrUrl(e.target.value)} 
-                     className="w-full bg-black border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white font-black italic tracking-tighter focus:border-tad-yellow outline-none transition-all placeholder:text-zinc-800" 
+                     className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm" 
                      placeholder="https://tudominio.com/promo-video" 
                    />
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 italic">Asignación de Campaña Objetivo</label>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Campaña Objetivo</label>
                 <select 
                   required 
                   value={selectedCampaign} 
                   onChange={e => setSelectedCampaign(e.target.value)} 
                   title="Seleccionar campaña objetivo"
-                  className="w-full bg-black border border-white/5 rounded-2xl px-6 py-5 text-white font-black italic tracking-tighter focus:border-tad-yellow outline-none cursor-pointer"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-tad-yellow outline-none cursor-pointer shadow-sm"
                 >
                   <option value="" disabled>-- SELECCIONAR CLUSTER OBJETIVO --</option>
                   {campaigns?.filter(c => c.active).map(c => (
@@ -622,14 +621,14 @@ export default function MediaPage() {
                 </select>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="flex justify-between items-center px-1">
-                   <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Difusión Crítica (Taxis)</label>
-                   <span className="text-[10px] font-black text-tad-yellow uppercase italic tracking-widest">{selectedDevices.length} DESTINOS</span>
+                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Difusión Taxis</label>
+                   <span className="text-[10px] font-bold text-tad-yellow uppercase tracking-widest bg-tad-yellow/10 px-2 py-1 rounded-md">{selectedDevices.length} DESTINOS</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-64 overflow-y-auto pr-3 custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                    {swrLoading ? (
-                     <div className="col-span-1 sm:col-span-2 py-10 flex justify-center"><div className="w-8 h-8 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent" /></div>
+                     <div className="col-span-1 sm:col-span-2 py-8 flex justify-center"><div className="w-6 h-6 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent" /></div>
                    ) : swrError ? (
                      <div className="col-span-1 sm:col-span-2 text-[10px] text-rose-500 font-bold uppercase py-4">Falla en Sincronización de Nodos</div>
                    ) : devices.map(device => {
@@ -640,48 +639,44 @@ export default function MediaPage() {
                       const isFull = freeSlots <= 0;
 
                       return (
-                        <div key={device.device_id} onClick={() => { if (!isFull || isSelected) setSelectedDevices(prev => prev.includes(device.device_id) ? prev.filter(id => id !== device.device_id) : [...prev, device.device_id]); }} className={clsx("p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group/dev", isSelected ? "bg-tad-yellow/10 border-tad-yellow/40" : "bg-black/60 border-white/5 hover:border-white/20", isFull && !isSelected && "opacity-30 cursor-not-allowed")}>
-                           <div className="flex items-center gap-4 min-w-0">
-                              <div className={clsx("p-2 rounded-xl transition-all", isSelected ? "bg-tad-yellow text-black" : "bg-zinc-900 text-zinc-700")}>
+                        <div key={device.device_id} onClick={() => { if (!isFull || isSelected) setSelectedDevices(prev => prev.includes(device.device_id) ? prev.filter(id => id !== device.device_id) : [...prev, device.device_id]); }} className={clsx("p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between group/dev", isSelected ? "bg-tad-yellow/10 border-tad-yellow/40" : "bg-gray-800/60 border-gray-700 hover:border-gray-500", isFull && !isSelected && "opacity-40 cursor-not-allowed")}>
+                           <div className="flex items-center gap-3 min-w-0">
+                              <div className={clsx("p-1.5 rounded-lg transition-all", isSelected ? "bg-tad-yellow text-black" : "bg-gray-900 text-gray-500")}>
                                  <CheckCircle className="w-4 h-4" />
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-[11px] font-black text-white italic truncate uppercase">{device.taxiNumber || device.name || device.device_id.slice(0, 8)}</p>
-                                 <div className="flex items-center gap-2 mt-1">
-                                    <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 shadow-[0_0_5px_#10b981]" : "bg-zinc-800")} />
-                                    <p className="text-[8px] font-black text-zinc-600 uppercase italic">{freeSlots} SLOTS</p>
+                                 <p className="text-xs font-bold text-white truncate uppercase">{device.taxiNumber || device.name || device.device_id.slice(0, 8)}</p>
+                                 <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 animate-pulse" : "bg-gray-600")} />
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase">{freeSlots} SLOTS</p>
                                  </div>
                               </div>
                            </div>
-                           {isFull && <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />}
+                           {isFull && <AlertTriangle className="w-4 h-4 text-rose-500" />}
                         </div>
                       );
                    })}
                 </div>
               </div>
 
-              <div className="pt-6">
+              <div className="pt-4 border-t border-gray-700/50">
                 <button 
                   disabled={uploading || !selectedFile} 
                   type="submit" 
                   title="Ejecutar ingesta"
-                  className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-black italic uppercase tracking-[0.2em] py-6 rounded-3xl shadow-3xl shadow-tad-yellow/10 disabled:opacity-50 transition-all flex items-center justify-center gap-4 active:scale-95"
+                  className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-bold uppercase tracking-widest py-4 rounded-xl shadow-md disabled:opacity-50 transition-all flex items-center justify-center gap-3 active:scale-95 text-sm"
                 >
                   {uploading ? (
                     <>
-                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                       SUBIENDO_NODO {uploadProgress}%
+                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                       SUBIENDO {uploadProgress}%
                     </>
                   ) : (
-                    <><CloudUpload className="w-6 h-6" /> EJECUTAR INGESTA MULTIMEDIA</>
+                    <><CloudUpload className="w-5 h-5" /> EJECUTAR INGESTA MULTIMEDIA</>
                   )}
                 </button>
               </div>
             </form>
-            
-            <div className="p-6 bg-white/[0.02] border-t border-white/5 text-center">
-               <p className="text-[9px] text-zinc-800 font-black uppercase tracking-[0.5em] italic">© TADCORE UPLOAD NEXUS TERMINAL v4.2</p>
-            </div>
           </div>
         </div>
       )}

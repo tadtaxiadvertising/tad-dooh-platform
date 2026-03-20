@@ -73,8 +73,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('tad_admin_token');
       localStorage.removeItem('tad_admin_user');
+      
+      // 🔥 Destruir la sesión de Supabase cliente para matar el ping-pong loop
+      // donde el Frontend la cree viva pero el Backend la rechaza.
+      supabase.auth.signOut().catch(() => {});
+      
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+        // Un pequeño delay para permitir que el SIGNED_OUT auth event dispare primero si es posible
+        setTimeout(() => { window.location.href = '/login'; }, 100);
       }
     }
     return Promise.reject(error);

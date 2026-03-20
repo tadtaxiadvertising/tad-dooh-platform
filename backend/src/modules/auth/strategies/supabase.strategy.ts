@@ -25,7 +25,15 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: any) => {
+          let data = request?.headers?.authorization;
+          if (!data) return null;
+          // Limpia la cadena: quita "Bearer ", "bearer ", espacios extra y comillas
+          data = data.replace(/bearer\s+/i, '').replace(/['"]/g, '').trim();
+          return data;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret || configService.get<string>('JWT_SECRET') || 'tad-default-secret-change-me',
     });

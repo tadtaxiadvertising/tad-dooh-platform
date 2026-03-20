@@ -473,8 +473,12 @@ export default function TrackingPage() {
                                   {driver.device ? (
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50 transition-all">
-                                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1.5">UUID Satelital</p>
-                                        <p className="text-white font-mono text-xs break-all leading-tight uppercase">{driver.device.deviceId}</p>
+                                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1.5">Pantalla</p>
+                                        <p className="text-white font-mono text-xs break-all leading-tight uppercase">
+                                          {driver.device.deviceId.startsWith('NEXUS-') 
+                                            ? `[${driver.device.deviceId.replace('NEXUS-', '').replace(/-/g, '')}]` 
+                                            : driver.device.deviceId}
+                                        </p>
                                       </div>
                                       <div className="bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50 transition-all">
                                         <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1.5">Zona de Operación</p>

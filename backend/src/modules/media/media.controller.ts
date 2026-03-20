@@ -20,7 +20,7 @@ export class MediaController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
     limits: {
-      fileSize: 50 * 1024 * 1024, // 50MB
+      fileSize: 200 * 1024 * 1024, // 200MB limit for high-quality taxi ads
     },
     fileFilter: (req, file, cb) => {
       // Validate mp4 or webm natively inside Multer config

@@ -95,9 +95,9 @@ export class CampaignController {
       }
 
       // V2 Real Map extraction using DeviceUUIDs directly from explicit assignments
-      const deviceUuids = distributions.map(d => d.device_id);
+      const deviceUuids = distributions.map(d => d.device_id || (d as any).deviceId);
       const devices = await this.prisma.device.findMany({
-        where: { id: { in: deviceUuids } }
+        where: { id: { in: deviceUuids.filter(Boolean) } }
       });
 
       const assignedTaxis = devices.map(d => ({

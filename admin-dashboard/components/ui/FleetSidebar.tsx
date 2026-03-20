@@ -38,7 +38,12 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
               <h3 className="text-white font-black text-xs uppercase tracking-[0.2em] mb-1">Master Console</h3>
               <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-none">Flota Realtime Puerto Plata / Santiago</p>
            </div>
-           <button onClick={onClose} className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all">
+           <button 
+             onClick={onClose} 
+             title="Cerrar Consola"
+             aria-label="Cerrar Consola de Flota"
+             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-tad-yellow/50"
+           >
               <X className="w-4 h-4" />
            </button>
         </div>

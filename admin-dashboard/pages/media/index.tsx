@@ -544,7 +544,7 @@ export default function MediaPage() {
                        <Film className="w-10 h-10 text-gray-500 group-hover/drop:text-tad-yellow transition-colors" />
                     </div>
                     <p className="text-sm font-bold text-gray-400 uppercase tracking-widest group-hover/drop:text-white transition-colors relative z-10">Seleccionar Master Digital</p>
-                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-[0.2em] relative z-10">MP4 / WEBM • Máximo 50MB</p>
+                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-[0.2em] relative z-10">MP4 / WEBM • Máximo 200MB</p>
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in zoom-in-95 duration-500">

@@ -211,7 +211,9 @@ export default function TrackingPage() {
            <button 
              onClick={loadData}
              disabled={isRefreshing}
-             className="p-3 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-tad-yellow transition-all"
+             title="Refrescar Telemetría"
+             aria-label="Refrescar Datos de Flota"
+             className="p-3 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-tad-yellow transition-all outline-none focus:ring-2 focus:ring-tad-yellow/30"
            >
              <RefreshCw className={clsx("w-4 h-4", isRefreshing && "animate-spin text-tad-yellow")} />
            </button>
@@ -336,7 +338,7 @@ export default function TrackingPage() {
                             <div className="flex items-center gap-2">
                                <div className={clsx("w-1.5 h-1.5 rounded-full", driver.tracking.isActive ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-zinc-700")} />
                                <span className={driver.tracking.isActive ? "text-emerald-500" : "text-zinc-600"}>
-                                 {timeAgo(driver.tracking.lastPosition?.timestamp)}
+                                 {timeAgo(driver.tracking.lastPosition?.timestamp || null)}
                                </span>
                             </div>
                          </td>
@@ -350,7 +352,11 @@ export default function TrackingPage() {
                             {driver.tracking.avgSpeedToday.toFixed(1)} KM/H
                          </td>
                          <td className="p-6">
-                            <button className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all">
+                            <button 
+                              className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all outline-none focus:ring-2 focus:ring-tad-yellow/30"
+                              title="Ver Detalles"
+                              aria-label="Ver Detalles del Conductor"
+                            >
                                <ExternalLink className="w-4 h-4" />
                             </button>
                          </td>
@@ -387,7 +393,12 @@ export default function TrackingPage() {
                              </div>
                           </td>
                           <td className="p-6 text-right">
-                             <button onClick={() => openInMaps(loc.latitude, loc.longitude)} className="p-2 border border-white/5 rounded-lg text-zinc-600 hover:text-tad-yellow transition-all">
+                             <button 
+                               onClick={() => openInMaps(loc.latitude, loc.longitude)} 
+                               className="p-2 border border-white/5 rounded-lg text-zinc-600 hover:text-tad-yellow transition-all outline-none focus:ring-2 focus:ring-tad-yellow/30"
+                               title="Ver en Google Maps"
+                               aria-label="Ver ubicación en Google Maps"
+                             >
                                 <MapIcon className="w-4 h-4" />
                              </button>
                           </td>

@@ -40,6 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
   const userEmail = session?.user?.email || 'Administrador';
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
@@ -56,43 +57,67 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "w-[300px] bg-zinc-900/95 backdrop-blur-3xl border-r border-white-[0.03] flex flex-col items-start pt-10 overflow-hidden shrink-0 transition-all z-50 fixed lg:static h-full",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white-[0.03] flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full",
+        isSidebarOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0",
+        isCollapsed ? "lg:w-[88px]" : "lg:w-[280px]"
       )}>
         <button 
-          className="lg:hidden absolute top-4 right-4 text-zinc-400 hover:text-white"
+          className="lg:hidden absolute top-4 right-4 text-zinc-400 hover:text-white z-50"
           onClick={() => setIsSidebarOpen(false)}
           title="Cerrar el panel de control"
           aria-label="Cerrar el panel de control"
         >
           <X className="w-5 h-5" />
         </button>
-        <div className="absolute top-[-5%] left-[-5%] w-64 h-64 bg-tad-yellow/10 blur-[100px] -z-10 pointer-events-none" />
+        <div className="absolute top-[-5%] left-[-5%] w-64 h-64 bg-tad-yellow/10 blur-[100px] -z-10 pointer-events-none transition-all duration-1000" />
         
         {/* Brand Identity Section */}
-        <div className="px-8 mb-12 w-full">
+        <div className={clsx(
+           "px-6 mb-10 w-full flex items-center transition-all duration-500", 
+           isCollapsed ? "justify-center" : "justify-between"
+        )}>
           <div className="flex items-center gap-4 group">
-            <div className="p-2.5 bg-tad-yellow rounded-2xl shadow-[0_0_25px_rgba(255,212,0,0.15)] group-hover:shadow-[0_0_35px_rgba(255,212,0,0.25)] transition-all duration-700">
-              <Zap className="w-6 h-6 text-black fill-current" />
+            <div 
+               onClick={() => setIsCollapsed(!isCollapsed)}
+               className={clsx(
+                 "p-2.5 bg-tad-yellow rounded-xl shadow-[0_0_25px_rgba(255,212,0,0.15)] group-hover:shadow-[0_0_35px_rgba(255,212,0,0.25)] transition-all duration-500 shrink-0 cursor-pointer lg:hover:scale-105",
+                 isCollapsed ? "scale-100" : ""
+               )}
+            >
+              <Zap className="w-5 h-5 text-black fill-current" />
             </div>
-            <div>
+            <div className={clsx("transition-all duration-300 overflow-hidden whitespace-nowrap", isCollapsed ? "opacity-0 w-0 hidden lg:block" : "opacity-100 w-auto")}>
               <h1 className="text-xl font-bold tracking-tight text-white uppercase leading-none">
                 TAD <span className="text-tad-yellow">Node</span>
               </h1>
-              <p className="text-[10px] text-zinc-500 font-bold tracking-[0.3em] mt-1.5 uppercase transition-colors group-hover:text-zinc-400">Master Console</p>
+              <p className="text-[9px] text-zinc-500 font-bold tracking-[0.3em] mt-1.5 uppercase transition-colors group-hover:text-zinc-400">Master Console</p>
             </div>
           </div>
+          
+          <button 
+             onClick={() => setIsCollapsed(!isCollapsed)} 
+             className={clsx(
+                "hidden lg:flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all outline-none", 
+                isCollapsed ? "hidden scale-0 opacity-0" : "opacity-100 scale-100"
+             )}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Global Navigation Nexus */}
-        <nav className="flex-1 w-full px-4 h-full overflow-y-auto pb-10 custom-scrollbar">
+        <nav className="flex-1 w-full px-4 h-full overflow-y-auto pb-10 custom-scrollbar overflow-x-hidden">
           {NAVIGATION_GROUPS.map((group, gi) => (
-            <div key={group.label} className={clsx(gi > 0 && 'mt-10')}>
-              <p className="px-4 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-5 flex items-center gap-4">
-                {group.label}
-                 <span className="h-px flex-1 bg-white-[0.02]" />
+            <div key={group.label} className={clsx(gi > 0 && 'mt-8')}>
+              <p className={clsx(
+                 "text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap", 
+                 isCollapsed ? "justify-center px-0 opacity-40" : "px-2 gap-4"
+              )}>
+                 {!isCollapsed && <span className="transition-all duration-300">{group.label}</span>}
+                 {!isCollapsed && <span className="h-px flex-1 bg-white-[0.03]" />}
+                 {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
               </p>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = router.pathname === item.href
@@ -102,24 +127,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.name}
                       href={item.href}
+                      title={isCollapsed ? item.name : undefined}
                       className={clsx(
-                        'group flex items-center px-4 py-3 text-xs font-bold rounded-xl transition-all relative overflow-hidden tracking-wide',
+                        'group flex items-center text-xs font-bold rounded-xl transition-all relative tracking-wide border border-transparent',
                         isActive
-                          ? 'bg-tad-yellow text-black shadow-lg shadow-tad-yellow/5'
-                          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03]'
+                          ? 'bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20 shadow-[0_0_15px_rgba(255,212,0,0.05)]'
+                          : 'text-zinc-500 hover:text-white hover:bg-white/[0.03] hover:border-white/[0.05]',
+                        isCollapsed ? 'justify-center p-3' : 'px-4 py-3'
                       )}
                     >
                       {isActive && (
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-black/30" />
+                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-tad-yellow rounded-r-full shadow-[0_0_8px_#fad400]" />
                       )}
-                      <Icon
-                        className={clsx(
-                          'mr-3.5 shrink-0 h-4.5 w-4.5 transition-all duration-500',
-                          isActive ? 'text-black' : 'text-zinc-600 group-hover:text-tad-yellow'
-                        )}
-                        aria-hidden="true"
-                      />
-                      <span className="relative z-10">{item.name}</span>
+                      
+                      <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-3.5 w-5 h-5")}>
+                         {isActive && <div className="absolute inset-0 bg-tad-yellow/20 blur-md rounded-full" />}
+                         <Icon
+                           className={clsx(
+                             'shrink-0 transition-all duration-500 relative z-10',
+                             isActive ? 'text-tad-yellow' : 'text-zinc-500 group-hover:text-zinc-300',
+                             isCollapsed ? 'w-5 h-5' : 'w-4.5 h-4.5'
+                           )}
+                           aria-hidden="true"
+                         />
+                      </div>
+                      
+                      <span className={clsx(
+                         "relative z-10 transition-all duration-300 whitespace-nowrap", 
+                         isCollapsed ? "opacity-0 w-0 hidden lg:block translate-x-4" : "opacity-100 w-auto translate-x-0"
+                      )}>
+                         {item.name}
+                      </span>
                     </Link>
                   );
                 })}
@@ -129,27 +167,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Terminal Workspace Profile */}
-        <div className="p-6 w-full mt-auto bg-zinc-900/40 border-t border-white-[0.03]">
-           <div className="bg-zinc-900 border border-white-[0.05] p-4 rounded-2xl group hover:border-tad-yellow/30 transition-all duration-500 relative overflow-hidden">
-              <div className="flex items-center gap-3.5 relative z-10">
-                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-md group-hover:scale-105 transition-transform text-xs uppercase">
-                    {userEmail.slice(0, 2)}
-                 </div>
-                 <div className="flex-1 min-w-0">
-                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
-                       <ShieldCheck className="w-3 h-3 text-emerald-500/80" /> Root_Access
-                    </p>
-                    <p className="font-bold text-xs text-white truncate tracking-tight">{userEmail}</p>
-                 </div>
+        <div className={clsx(
+           "p-4 w-full mt-auto bg-zinc-900/40 border-t border-white-[0.03] transition-all duration-500 relative",
+           isCollapsed ? "items-center flex flex-col px-2" : ""
+        )}>
+           <div className={clsx(
+              "bg-zinc-950 border border-white-[0.05] rounded-2xl group transition-all duration-500 relative overflow-hidden flex items-center",
+              isCollapsed ? "p-2 justify-center" : "p-3 gap-3"
+           )}>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(255,212,0,0.2)] group-hover:scale-105 transition-transform text-xs uppercase shrink-0">
+                 {userEmail.slice(0, 2)}
+              </div>
+              <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> SYS_ADMIN
+                 </p>
+                 <p className="font-bold text-xs text-zinc-300 truncate tracking-tight">{userEmail}</p>
               </div>
            </div>
            
            <button 
              onClick={handleLogout}
-             className="w-full mt-3 flex items-center justify-center gap-3 py-3 px-6 bg-transparent hover:bg-rose-500/10 text-zinc-600 hover:text-rose-500 rounded-xl border border-white-[0.05] hover:border-rose-500/30 transition-all text-[9px] font-bold uppercase tracking-widest"
+             title={isCollapsed ? "Cerrar Sesión" : undefined}
+             className={clsx(
+                "mt-2.5 flex items-center justify-center bg-transparent hover:bg-rose-500/10 text-zinc-600 hover:text-rose-500 rounded-xl border border-white-[0.05] hover:border-rose-500/30 transition-all",
+                isCollapsed ? "w-10 h-10" : "w-full py-2.5 gap-2 px-6"
+             )}
            >
-             <LogIn className="w-3 h-3 rotate-180" />
-             Eyectar Hardware
+             <LogIn className="w-4 h-4 rotate-180" />
+             {!isCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Desconectar</span>}
            </button>
         </div>
       </aside>

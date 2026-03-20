@@ -30,7 +30,7 @@ export default function OfflineFleetPage() {
           Alertas <span className="text-tad-yellow text-shadow-glow">Críticas</span>
         </h1>
         <p className="text-gray-400 max-w-2xl">
-          Detección de nodos inactivos y fallos de señal. Estas unidades no responden actualmente y requieren intervención técnica.
+          Detección de pantallas inactivos y fallos de señal. Estas unidades no responden actualmente y requieren intervención técnica.
         </p>
       </div>
 

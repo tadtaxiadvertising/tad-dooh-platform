@@ -220,7 +220,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all duration-500" />
                 <input 
                   type="text" 
-                  placeholder="CONSULAR NODO, PILOTO O CAMPAÑA..." 
+                  placeholder="CONSULAR PANTALLA, PILOTO O CAMPAÑA..." 
                   className="w-full bg-zinc-900/40 border border-white-[0.03] rounded-xl py-3 pl-12 pr-6 text-[10px] font-bold outline-none focus:border-tad-yellow/40 focus:bg-zinc-900/80 transition-all tracking-widest text-white uppercase placeholder:text-zinc-700"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-30 group-focus-within:opacity-100 transition-opacity pointer-events-none">

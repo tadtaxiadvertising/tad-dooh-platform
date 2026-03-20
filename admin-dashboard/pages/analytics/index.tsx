@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div>
                        <h4 className="text-lg font-bold text-white uppercase tracking-tight">Ranking Fleet</h4>
-                       <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Impactos por Nodo (Top 5)</p>
+                       <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Impactos por Pantalla (Top 5)</p>
                     </div>
                  </div>
                  <div className="h-64 w-full">

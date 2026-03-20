@@ -640,7 +640,7 @@ export default function MediaPage() {
               {/* Node Distribution Grid */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1">
-                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Distribución por Nodos (Hardware)</label>
+                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Distribución por Pantallas (Hardware)</label>
                    <div className="flex items-center gap-2">
                       <span className="text-[9px] font-black text-tad-yellow uppercase tracking-widest bg-tad-yellow/10 px-3 py-1 rounded-full border border-tad-yellow/20">{selectedDevices.length} SELECCIONADOS</span>
                    </div>
@@ -722,7 +722,7 @@ export default function MediaPage() {
                   )}
                 </button>
                 <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-6 leading-relaxed">
-                   Al ejecutar el protocolo, el activo será verificado y propagado a los nodos de red seleccionados automáticamente.
+                   Al ejecutar el protocolo, el activo será verificado y propagado a los pantallas de red seleccionados automáticamente.
                 </p>
               </div>
             </form>

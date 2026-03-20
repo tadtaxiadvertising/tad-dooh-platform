@@ -80,7 +80,7 @@ export default function Home() {
       {/* Primary Metrics Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { icon: <CarFront className="w-5 h-5" />, label: "Nodos Activos", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
+          { icon: <CarFront className="w-5 h-5" />, label: "Pantallas Activos", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
           { icon: <Megaphone className="w-5 h-5" />, label: "Campañas", value: stats.campaigns, sub: `${stats.activeCampaigns} Streams`, trend: "Live", color: "white" },
           { icon: <CloudUpload className="w-5 h-5" />, label: "Archivos", value: stats.media, sub: "Optimizados", trend: "Sync", color: "yellow" },
           { icon: <Activity className="w-5 h-5" />, label: "Confiabilidad", value: "99.9%", sub: "38ms Latency", trend: "Nominal", color: "white" }
@@ -217,7 +217,7 @@ export default function Home() {
                  </div>
                  <h4 className="text-xl font-bold text-white mb-3">Capa de Seguridad</h4>
                  <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                   Protección Handshake con cifrado TLS 1.3 auditado. Nodos validados por firma digital regional.
+                   Protección Handshake con cifrado TLS 1.3 auditado. Pantallas validados por firma digital regional.
                  </p>
                  <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-700/50">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
@@ -232,10 +232,10 @@ export default function Home() {
                  <h4 className="text-lg font-bold text-white">Escalabilidad</h4>
               </div>
               <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                 Soporte OIDC listo para la integración de <span className="text-white font-medium">2.5K nodos</span> en el próximo ciclo expansivo.
+                 Soporte OIDC listo para la integración de <span className="text-white font-medium">2.5K pantallas</span> en el próximo ciclo expansivo.
               </p>
               <Link href="/fleet" className="w-full flex bg-gray-800 hover:bg-tad-yellow hover:text-black border border-gray-700 hover:border-transparent text-gray-300 transition-all py-3 rounded-xl text-xs font-bold uppercase tracking-wider items-center justify-center gap-2">
-                 Analizar Nodos <ArrowUpRight className="w-4 h-4" />
+                 Analizar Pantallas <ArrowUpRight className="w-4 h-4" />
               </Link>
            </div>
 

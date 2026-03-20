@@ -25,7 +25,7 @@ async function seedSantiago() {
 
   for (let i = 1; i <= 100; i++) {
     const fullName = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
-    const deviceId = `NEXUS-STI-${1000 + i}`;
+    const deviceId = `STI${i.toString().padStart(4, '0')}`;
     
     // Crear Dispositivo
     await prisma.device.upsert({

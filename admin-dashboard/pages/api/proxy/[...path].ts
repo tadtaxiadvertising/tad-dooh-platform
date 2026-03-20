@@ -57,23 +57,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Headers a reenviar al backend
-    const forwardHeaders: Record<string, string> = {};
-
-    // Reenviar content-type (importante para multipart/form-data)
-    if (req.headers['content-type']) {
-      forwardHeaders['Content-Type'] = req.headers['content-type'];
+    // 2. Reenviar TODO al backend
+    const forwardHeaders = { ...req.headers } as Record<string, string>;
+    
+    // 🔑 ESTO ES LO CRÍTICO: Reenviar el token al backend y sobreescribir el Host
+    if (req.headers.authorization) {
+      forwardHeaders['authorization'] = req.headers.authorization;
+      forwardHeaders['Authorization'] = req.headers.authorization;
     }
-
-    // Reenviar token de autenticación
-    if (req.headers['authorization']) {
-      forwardHeaders['Authorization'] = req.headers['authorization'] as string;
-    }
-
-    // Reenviar device ID para endpoints de tablet
-    if (req.headers['x-device-id']) {
-      forwardHeaders['x-device-id'] = req.headers['x-device-id'] as string;
-    }
+    
+    // Update Host so backend doesn't reject it or mismatch origin
+    forwardHeaders['host'] = new URL(targetUrl).host;
 
     // Ejecutar la petición al backend (server-to-server: sin CORS, sin proxy issues)
     const fetchOptions: RequestInit = {

@@ -9,6 +9,13 @@
 - **Next Config (Worker Offload)**: Activado `webpackBuildWorker: true` y `parallelServerCompiles: false` para salvaguardar la memoria y procesador de EasyPanel durante despliegues (previene caídas repentinas en ambiente productivo sin escalabilidad real).
 - **Internal Cluster Traffic**: Forzado de `BACKEND_INTERNAL_URL` en modo Docker Swarm Proxy/Nixpacks para comunicarse de manera encapsulada sobre `http://tad-api:3000` eludiendo capas de red públicas.
 
+### 🔐 SECURITY & AUTH: Resolución de Errores 401 y RLS
+- **Extractor JWT Robusto**: Modificado el `fromAuthHeaderAsBearerToken` en NestJS (`supabase.strategy.ts` y `jwt.strategy.ts`) por un extractor Regex custom `replace(/bearer\s+/i, '')`. Esto hace al backend inmune a headers maliciosos o proxies que dupliquen la palabra Bearer.
+- **Proxy Bug de Comas HTTP Fix**: Se removió el reenvío de `authorization` en minúscula en el Proxy Next.js (`[...path].ts`) junto al mayúscula, evitando que el Node HTTP engine combine ambos headers con comas (`Bearer xyz, Bearer xyz`) lo cual destruía la extracción matemática del Token en auth guards.
+- **Supabase Auth Ping-Pong Loop Stop**: Se añadió lógica en el `api.interceptors.response` del frontend de Axios para hacer un `supabase.auth.signOut()` explícito y forzoso al recibir un status 401 del backend, rompiendo limpiamente el bucle infinito de redirecciones entre `/login` y `/`.
+- **EasyPanel Environment Alert**: Documentada y reparada la caída causada por la falta de la credencial `SUPABASE_JWT_SECRET` en el contenedor de `tad-api`.
+- **Database RLS Lockdown**: Sustituida la directiva insegura `WITH CHECK (true)` para `anon` en `public.driver_locations` por restricción exclusiva a `authenticated` y `service_role`, bloqueando inyecciones de telemetría de hackers y compliendo con el Standard Cybernetic Linter de Supabase Pwned Checks.
+
 ---
 
 ## 📅 14 de Marzo, 2026 (Refactorización Estructural y Mapas)

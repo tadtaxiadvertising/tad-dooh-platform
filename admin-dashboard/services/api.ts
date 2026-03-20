@@ -149,13 +149,18 @@ export const addVideoToCampaign = (campaignId: string, data: Record<string, unkn
 export const getMedia = () => api.get('/media').then(res => res.data);
 export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
 export const updateMedia = (id: string, data: { qrUrl: string }) => api.patch(`/media/${id}`, data).then(res => res.data);
-export const uploadMedia = async (file: File, campaignId?: string, qrUrl?: string) => {
+export const uploadMedia = async (file: File, campaignId: string = 'general', qrUrl?: string) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('campaignId', campaignId || 'general');
+  formData.append('campaignId', campaignId);
   if (qrUrl) formData.append('qrUrl', qrUrl);
 
-  const res = await api.post('/media/upload', formData);
+  const res = await api.post('/media/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 300000, // 5 min for 200MB uploads
+  });
 
   return {
     id: res.data.id,
@@ -167,18 +172,14 @@ export const uploadMedia = async (file: File, campaignId?: string, qrUrl?: strin
 };
 
 export const uploadCampaignMedia = async (campaignId: string, file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('campaignId', campaignId);
-
-  const res = await api.post('/media/upload', formData);
-
+  const uploadedData = await uploadMedia(file, campaignId);
+  
   return api.post(`/campaigns/${campaignId}/assets`, {
     type: 'video',
     filename: file.name,
-    url: res.data.url,
-    fileSize: res.data.size,
-    checksum: res.data.hash || `sha256-${Date.now()}`,
+    url: uploadedData.url,
+    fileSize: uploadedData.size,
+    checksum: uploadedData.id,
     duration: 0
   }).then(r => r.data);
 };

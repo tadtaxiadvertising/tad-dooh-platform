@@ -5,6 +5,7 @@ import { getDrivers, updateDriverSubscription } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import WhatsAppButton from '../../components/ui/WhatsAppButton';
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<{ 
@@ -232,6 +233,7 @@ export default function DriversPage() {
                             <p className="text-base font-bold text-white uppercase tracking-tight group-hover:text-tad-yellow transition-colors leading-none mb-1">{driver.fullName}</p>
                             <div className="flex items-center gap-2">
                                <p className="text-xs text-gray-500 font-bold tracking-widest">{driver.phone}</p>
+                               <WhatsAppButton phone={driver.phone} name={driver.fullName} className="scale-75 origin-left ml-[-4px]" />
                             </div>
                           </div>
                         </div>

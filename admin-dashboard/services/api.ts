@@ -144,6 +144,8 @@ export const createCampaign = (data: Record<string, unknown>) => api.post('/camp
 export const assignCampaignToDevices = (id: string, deviceIds: string[]) =>
   api.post(`/campaigns/${id}/assign`, { deviceIds }).then(res => res.data);
 export const addVideoToCampaign = (campaignId: string, data: Record<string, unknown>) => api.post(`/campaigns/${campaignId}/assets`, data).then(res => res.data);
+export const linkMediaToCampaign = (campaignId: string, mediaId: string) => api.post(`/campaigns/${campaignId}/link-media`, { mediaId }).then(res => res.data);
+export const unlinkMediaFromCampaign = (campaignId: string, mediaId: string) => api.post(`/campaigns/${campaignId}/unlink-media`, { mediaId }).then(res => res.data);
 
 // Media
 export const getMedia = () => api.get('/media').then(res => res.data);
@@ -173,15 +175,7 @@ export const uploadMedia = async (file: File, campaignId: string = 'general', qr
 
 export const uploadCampaignMedia = async (campaignId: string, file: File) => {
   const uploadedData = await uploadMedia(file, campaignId);
-  
-  return api.post(`/campaigns/${campaignId}/assets`, {
-    type: 'video',
-    filename: file.name,
-    url: uploadedData.url,
-    fileSize: uploadedData.size,
-    checksum: uploadedData.id,
-    duration: 0
-  }).then(r => r.data);
+  return uploadedData;
 };
 
 export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) =>

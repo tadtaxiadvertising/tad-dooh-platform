@@ -42,4 +42,13 @@
 2. **Auditoría de Salud:** El administrador debe supervisar diariamente los estados "STABLE" y "OS Build" en la cabecera del sistema para garantizar que todos los nodos ejecutan la versión core v4.5.1 de TAD Node OS.
 
 ---
+
+## 7. Problemas Actuales y Alertas Críticas (Current Problems)
+
+- [x] **Error 500 (Table Not Found)**: Resuelto mediante `npx prisma db push` para sincronizar `financial_transactions`.
+- [ ] **Validación de Sync en Campo**: Pendiente verificar en tablet física que `OfflineSyncManager` descargue videos correctamente desde la API de producción.
+- [x] **Mapeo de Relaciones Sync**: Corregido mapeo de Prisma para incluir `targetDrivers` y `DeviceCampaign` en la generación de playlist.
+- [x] **Handshake Assets**: Corregida la subida de medios que fallaba por un segundo POST innecesario a `/assets`.
+
+---
 TAD Advertising Systems — 2026

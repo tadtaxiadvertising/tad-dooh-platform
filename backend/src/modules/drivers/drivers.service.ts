@@ -156,4 +156,63 @@ export class DriversService {
 
     return { total, active, suspended, unpaid };
   }
+
+  /**
+   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER (TAD DRIVER)
+   * Retorna ganancias, anuncios reproducidos y estado de suscripción.
+   */
+  async getDriverHubData(deviceId: string) {
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId },
+      include: { driver: true }
+    });
+
+    if (!device || !device.driver) {
+      throw new Error('Dispositivo no vinculado a un chofer.');
+    }
+
+    const { driver } = device;
+
+    // 1. Conteo de anuncios reproducidos (confirmados)
+    const adsPlayed = await this.prisma.analyticsEvent.count({
+      where: { 
+        deviceId: device.deviceId,
+        eventType: { in: ['play_confirm', 'video_end', 'impression'] }
+      }
+    });
+
+    // 2. Ganancias proyectadas basadas en pautas activas (RD$500 c/u)
+    const activeAdsCount = await this.prisma.campaign.count({
+      where: { status: 'ACTIVE' }
+    });
+    
+    const projectedEarnings = driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0;
+
+    // 3. Pagos realizados/pendientes
+    const lastPayment = await this.prisma.payrollPayment.findFirst({
+      where: { driverId: driver.id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const totalPaid = await this.prisma.payrollPayment.aggregate({
+      where: { driverId: driver.id, status: 'PAID' },
+      _sum: { amount: true }
+    });
+
+    return {
+      driverName: driver.fullName,
+      taxiNumber: driver.taxiNumber || driver.taxiPlate || 'S/N',
+      adsPlayed,
+      projectedEarnings,
+      activeAds: activeAdsCount,
+      totalPaid: totalPaid._sum.amount || 0,
+      lastPayment: lastPayment ? {
+        amount: lastPayment.amount,
+        status: lastPayment.status,
+        date: lastPayment.paidAt || lastPayment.createdAt
+      } : null,
+      subscriptionStatus: driver.status,
+      subscriptionPaid: driver.subscriptionPaid
+    };
+  }
 }

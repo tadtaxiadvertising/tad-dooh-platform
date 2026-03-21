@@ -216,6 +216,9 @@ export const getCampaignReportUrl = (id: string) => `${getProxyBase()}/finance/e
 export const getInvoiceUrl = (id: string, print = false) => `${getProxyBase()}/finance/invoice/${id}${print ? '?print=true' : ''}`;
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
+export const recordFinancialTransaction = (data: Record<string, unknown>) => api.post('/finance/transactions', data).then(res => res.data);
+export const getFinancialSummary = () => api.get('/finance/summary').then(res => res.data);
+export const getFinancialLedger = () => api.get('/finance/ledger').then(res => res.data);
 
 // Campaign Segmentation
 export const assignDriversToCampaign = (campaignId: string, data: { driverIds: string[]; targetAll: boolean }) =>

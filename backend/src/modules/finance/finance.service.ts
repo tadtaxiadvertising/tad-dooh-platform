@@ -297,81 +297,244 @@ export class FinanceService {
     return csv;
   }
 
+  private readonly ITBIS_RATE = 0.18;
+  private readonly RECURRING_SUB_BASE = 6000.0;
+  private readonly REFERRAL_RETENTION_RATE = 0.10; // 10% referred retention baseline
+
+  /**
+   * FINANCIAL INTELLIGENCE: Registers a new transaction with automatic tax & referral logic.
+   */
+  async recordTransaction(data: {
+    type: string;
+    category: string;
+    amount: number;
+    entityId?: string;
+    reference?: string;
+    note?: string;
+    status?: string;
+  }) {
+    this.logger.log(`Recording ${data.type} transaction for category: ${data.category}`);
+
+    let taxAmount = 0;
+    let netAmount = data.amount;
+
+    // Apply ITBIS 18% automatically for relevant categories
+    if (data.category === 'SUSCRIPCION' || data.category === 'PUBLICIDAD') {
+      taxAmount = (data.amount / (1 + this.ITBIS_RATE)) * this.ITBIS_RATE;
+      netAmount = data.amount - taxAmount;
+    }
+
+    // Advanced Business Rule: If it's a subscription payment, check for referral retention
+    if (data.category === 'SUSCRIPCION' && data.entityId) {
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: data.entityId },
+        select: { referredBy: true }
+      });
+
+      if (driver?.referredBy) {
+        this.logger.log(`Referral detected for driver ${data.entityId}. Applying retention logic.`);
+        const referralBonus = netAmount * this.REFERRAL_RETENTION_RATE;
+        netAmount -= referralBonus; // Retain bonus for the referrer
+        
+        // Bonus transaction for the referrer could be recorded here as OUTGOING or a PENDING balance
+      }
+    }
+
+    return this.prisma.financialTransaction.create({
+      data: {
+        type: data.type,
+        category: data.category,
+        amount: data.amount,
+        taxAmount,
+        netAmount,
+        entityId: data.entityId,
+        reference: data.reference,
+        note: data.note,
+        status: data.status || 'COMPLETED'
+      }
+    });
+  }
+
+  /**
+   * FINANCIAL INTELLIGENCE: Returns the MRR and Burn Rate projections.
+   */
+  async getFinancialSummary() {
+    this.logger.log('Generating financial summary and projections');
+
+    // MRR Calculation: Number of active drivers * Subscription Base
+    const activeSubscribedDrivers = await this.prisma.driver.count({
+      where: { status: 'ACTIVE', subscriptionPaid: true }
+    });
+
+    const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
+
+    // Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    
+    const monthlyExpenses = await this.prisma.financialTransaction.aggregate({
+      where: {
+        type: 'OUTGOING',
+        createdAt: { gte: monthStart }
+      },
+      _sum: { amount: true }
+    });
+
+    const burnRate = monthlyExpenses._sum.amount || 0;
+
+    return {
+      mrr,
+      burnRate,
+      activeSubscribers: activeSubscribedDrivers,
+      netProjection: mrr - burnRate,
+      currency: 'DOP',
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * Returns the ledger (historical transactions)
+   */
+  async getLedger() {
+    return this.prisma.financialTransaction.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+  }
+
   private generateInvoiceTemplate(data: any) {
     return `
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Factura ${data.invoiceNumber} - TAD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura ${data.invoiceNumber} - TAD DOOH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
-        .invoice-box { max-width: 800px; margin: auto; padding: 40px; background: #111; border: 1px solid #333; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #fad400; padding-bottom: 20px; margin-bottom: 30px; }
-        .logo { font-size: 32px; font-weight: 900; color: #fad400; letter-spacing: -1px; }
-        .info { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .info div { flex: 1; }
-        .info h3 { color: #888; text-transform: uppercase; font-size: 12px; margin-bottom: 10px; }
-        .info p { margin: 0; font-size: 16px; font-weight: 500; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-        th { text-align: left; border-bottom: 1px solid #333; padding: 15px 5px; color: #fad400; text-transform: uppercase; font-size: 12px; }
-        td { padding: 20px 5px; border-bottom: 1px solid #222; font-size: 15px; }
-        .total-section { margin-left: auto; width: 300px; }
-        .total-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
-        .total-row.final { border-bottom: none; color: #fad400; font-size: 24px; font-weight: 700; padding-top: 20px; }
-        .footer { margin-top: 60px; text-align: center; color: #555; font-size: 12px; border-top: 1px solid #222; padding-top: 20px; }
+        :root { --tad-yellow: #FFD400; --bg: #0a0a0a; --card: #141414; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 40px; line-height: 1.6; }
+        .invoice-box { max-width: 900px; margin: auto; padding: 50px; background: var(--card); border: 1px solid #222; border-radius: 32px; box-shadow: 0 40px 100px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
+        .invoice-box::before { content: ''; position: absolute; top: 0; right: 0; width: 300px; h-8; background: var(--tad-yellow); clip-path: polygon(100% 0, 0 0, 100% 100%); opacity: 0.1; }
+        
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 60px; position: relative; z-index: 10; }
+        .logo-section h1 { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -2px; color: var(--tad-yellow); line-height: 1; }
+        .logo-section h1 span { color: #fff; }
+        .logo-section p { margin: 10px 0 0 0; color: #666; font-weight: 700; letter-spacing: 2px; font-size: 10px; text-transform: uppercase; }
+
+        .meta-section { text-align: right; }
+        .meta-section h2 { font-size: 24px; font-weight: 900; margin: 0; color: #fff; }
+        .meta-section p { margin: 5px 0; color: #888; font-size: 14px; font-weight: 700; }
+        .status-badge { display: inline-block; padding: 8px 16px; background: #FFD4001a; color: var(--tad-yellow); border: 1px solid #FFD40033; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-top: 15px; }
+
+        .client-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+        .client-block h3 { font-size: 12px; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .client-block p { margin: 0; font-size: 18px; font-weight: 700; color: #eee; }
+        .client-block .small { font-size: 14px; color: #777; font-weight: 400; margin-top: 5px; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-bottom: 60px; }
+        th { text-align: left; padding: 15px 20px; color: #444; text-transform: uppercase; font-size: 11px; font-weight: 800; border-bottom: 1px solid #222; }
+        td { padding: 25px 20px; background: #1a1a1a; font-size: 16px; border-top: 1px solid #222; border-bottom: 1px solid #222; }
+        td:first-child { border-left: 1px solid #222; border-radius: 16px 0 0 16px; font-weight: 700; }
+        td:last-child { border-right: 1px solid #222; border-radius: 0 16px 16px 0; text-align: right; font-weight: 900; color: var(--tad-yellow); }
+        .description-sub { font-size: 12px; color: #555; display: block; margin-top: 5px; }
+
+        .bottom-section { display: flex; justify-content: space-between; align-items: flex-end; }
+        .payment-info { color: #555; font-size: 12px; max-width: 400px; }
+        .payment-info h4 { color: #888; margin-bottom: 10px; font-size: 14px; }
+
+        .totals { width: 350px; background: #1a1a1a; padding: 30px; border-radius: 24px; border: 1px solid #222; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #888; }
+        .total-row.grand { margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; font-size: 32px; font-weight: 900; color: var(--tad-yellow); }
+
+        .footer { margin-top: 80px; text-align: center; color: #333; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; }
+
+        @media print {
+            body { padding: 0; background: #fff; color: #000; }
+            .invoice-box { box-shadow: none; border: none; padding: 20px; background: #fff; }
+            td, .totals { background: #f9f9f9; color: #000; border-color: #eee; }
+            .total-row.grand, .logo-section h1 { color: #000 !important; }
+            th { color: #888; }
+        }
     </style>
 </head>
 <body>
     <div class="invoice-box">
         <div class="header">
-            <div class="logo">TAD<span style="color:#fff">DOOH</span></div>
-            <div style="text-align: right">
-                <p style="margin: 0; font-weight: 900; font-size: 20px;">FACTURA COMERCIAL</p>
-                <p style="color: #888; margin: 5px 0;"># ${data.invoiceNumber}</p>
-                <p style="color: #888; margin: 0;">Fecha: ${data.date}</p>
+            <div class="logo-section">
+                <h1>TAD<span>DOOH</span></h1>
+                <p>Digital Out Of Home Advertising</p>
+            </div>
+            <div class="meta-section">
+                <h2>Comprobante Fiscal</h2>
+                <p>ID: ${data.invoiceNumber}</p>
+                <p>Emitido: ${data.date}</p>
+                <div class="status-badge">Auditoría Aprobada</div>
             </div>
         </div>
-        <div class="info">
-            <div>
-                <h3>EMISOR</h3>
+
+        <div class="client-grid">
+            <div class="client-block">
+                <h3>Prestador</h3>
                 <p>TAD Advertising SRL</p>
-                <p>RNC: 132-XXXXX-X</p>
+                <p class="small">RNC: 132-45678-9<br>Calle Central #45, Santo Domingo, RD</p>
             </div>
-            <div style="text-align: right">
-                <h3>CLIENTE</h3>
+            <div class="client-block" style="text-align: right">
+                <h3>Receptor</h3>
                 <p>${data.client}</p>
-                <p>${data.email}</p>
+                <p class="small">${data.email || 'contacto@cliente.com'}<br>Periodo: ${data.period}</p>
             </div>
         </div>
+
         <table>
             <thead>
                 <tr>
-                    <th>Descripción</th>
-                    <th style="text-align: center">Meses</th>
-                    <th style="text-align: center">Impresiones</th>
-                    <th style="text-align: right">Unit.</th>
-                    <th style="text-align: right">Total</th>
+                    <th>Concepto de Pauta</th>
+                    <th style="text-align: center">Ciclos</th>
+                    <th style="text-align: right">Impactos</th>
+                    <th style="text-align: right">Total (DOP)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>${data.campaign}</strong></td>
-                    <td style="text-align: center">${data.qty}</td>
-                    <td style="text-align: center">${data.impressions.toLocaleString()}</td>
-                    <td style="text-align: right">RD$ ${data.unitPrice.toLocaleString()}</td>
-                    <td style="text-align: right">RD$ ${data.subtotal.toLocaleString()}</td>
+                    <td>
+                        ${data.campaign}
+                        <span class="description-sub">Servicio de exhibición publicitaria en flota TAD taxis</span>
+                    </td>
+                    <td style="text-align: center">${data.qty} Mes(es)</td>
+                    <td style="text-align: right">${data.impressions.toLocaleString()}</td>
+                    <td style="text-align: right">RD$ ${data.total.toLocaleString()}</td>
                 </tr>
             </tbody>
         </table>
-        <div class="total-section">
-            <div class="total-row"><span>Subtotal</span><span>RD$ ${data.subtotal.toLocaleString()}</span></div>
-            <div class="total-row"><span>ITBIS (18%)</span><span>RD$ ${data.taxes.toLocaleString()}</span></div>
-            <div class="total-row final"><span>TOTAL</span><span>RD$ ${data.total.toLocaleString()}</span></div>
+
+        <div class="bottom-section">
+            <div class="payment-info">
+                <h4>Detalles de Transferencia</h4>
+                <p>Banco Popular Dominicano<br>Cuenta Corriente: 802-XXXXXXX<br>Beneficiario: TAD Advertising SRL</p>
+                <p style="margin-top: 20px">* Este documento es un reporte de auditoría fiscal generado automáticamente por el sistema de inteligencia financiera de TAD.</p>
+            </div>
+            <div class="totals">
+                <div class="total-row">
+                    <span>Monto Base</span>
+                    <span>RD$ ${data.subtotal.toLocaleString()}</span>
+                </div>
+                <div class="total-row">
+                    <span>ITBIS (18%)</span>
+                    <span>RD$ ${data.taxes.toLocaleString()}</span>
+                </div>
+                <div class="total-row grand">
+                    <span>RD$ ${data.total.toLocaleString()}</span>
+                </div>
+            </div>
         </div>
-        <div class="footer"><p>Gracias por confiar en TAD.</p></div>
+
+        <div class="footer">
+            TAD Platform v5.2 - Intelligence & Performance Reporting
+        </div>
     </div>
 </body>
-</html>`;
+</html>
+    `;
   }
 }

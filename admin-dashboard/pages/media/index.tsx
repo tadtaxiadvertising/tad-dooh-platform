@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
-import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia } from '../../services/api';
-import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu } from 'lucide-react';
+import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia, deleteMedia } from '../../services/api';
+import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 import clsx from 'clsx';
 
 // Fetcher for SWR
@@ -338,13 +339,24 @@ export default function MediaPage() {
                     )}
                   </div>  
 
-                  <button 
-                    onClick={(e) => handleDelete(file.id, e)}
-                    title="Eliminar activo"
-                    className="absolute top-4 right-4 bg-rose-500/10 hover:bg-rose-600 backdrop-blur-md text-rose-500 hover:text-white p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 duration-300 border border-rose-500/20"
+                  <AntigravityButton
+                    variant="danger"
+                    actionName="delete_media"
+                    critical={true}
+                    className="absolute top-4 right-4 w-10 h-10 p-0 rounded-xl"
+                    onAsyncClick={async () => {
+                      if (!confirm('¿Purgar permanentemente este activo de la bóveda?')) {
+                        throw new Error('Cancelado por el usuario');
+                      }
+                      return await deleteMedia(file.id);
+                    }}
+                    onSuccess={() => {
+                      loadData();
+                      notifyChange('MEDIA');
+                    }}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    <Trash2 className="w-4 h-4" />
+                  </AntigravityButton>
                 </div>
 
                 {/* Information Surface */}

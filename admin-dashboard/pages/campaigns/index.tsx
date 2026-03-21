@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import DeviceSelectorModal from '../../components/DeviceSelectorModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; devices?: string[] }[]>([]);
@@ -200,25 +201,24 @@ export default function CampaignsPage() {
                         >
                           <ChevronRight className="w-5 h-5" />
                         </Link>
-                        <button 
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            if (!confirm(`¿Eliminar la campaña "${camp.name}"? Esta acción no se puede deshacer.`)) return;
-                            try {
-                              await deleteCampaign(camp.id);
-                              setCampaigns(prev => prev.filter(c => c.id !== camp.id));
-                              notifyChange('CAMPAIGNS');
-                              setSuccessMsg(`Campaña "${camp.name}" eliminada.`);
-                              setTimeout(() => setSuccessMsg(''), 5000);
-                            } catch (err: unknown) {
-                              alert('Error: ' + (err as Error).message);
+                        <AntigravityButton
+                          variant="danger"
+                          actionName="delete_campaign"
+                          critical={true}
+                          className="p-3 w-12 h-12 rounded-xl"
+                          onAsyncClick={async () => {
+                            if (!confirm(`¿Eliminar la campaña "${camp.name}"? Esta acción no se puede deshacer.`)) {
+                              throw new Error('Cancelado');
                             }
+                            return await deleteCampaign(camp.id);
                           }}
-                          title="Eyectar campaña de la red"
-                          className="p-3 bg-gray-900/50 border border-gray-700 text-gray-500 hover:bg-rose-500/10 hover:border-rose-500 hover:text-rose-500 rounded-xl transition-all flex items-center justify-center"
+                          onSuccess={() => {
+                            loadData();
+                            notifyChange('CAMPAIGNS');
+                          }}
                         >
                           <Trash2 className="w-5 h-5" />
-                        </button>
+                        </AntigravityButton>
                      </div>
                   </div>
                 </div>

@@ -22,6 +22,7 @@ import {
 import clsx from 'clsx';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns'>('payroll');
@@ -220,15 +221,16 @@ export default function FinancePage() {
                           </div>
                         </td>
                         <td className="px-8 py-6 text-center">
-                          <button 
-                            onClick={() => handlePay(item.driverId, item.totalAmount)}
-                            className="bg-tad-yellow text-black px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:bg-yellow-400 hover:shadow-md shadow-sm"
+                          <AntigravityButton
+                            actionName="process_payment"
+                            critical={true}
+                            variant="primary"
+                            className="w-full sm:w-auto"
+                            onAsyncClick={() => handlePay(item.driverId, item.totalAmount)}
                           >
-                            <span className="flex items-center justify-center gap-2">
-                               <RefreshCcw className="w-4 h-4 transition-transform duration-500 hover:rotate-180" />
-                               Procesar
-                            </span>
-                          </button>
+                            <RefreshCcw className="w-4 h-4" />
+                            Procesar
+                          </AntigravityButton>
                         </td>
                       </tr>
                     ))}

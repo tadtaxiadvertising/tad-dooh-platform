@@ -207,8 +207,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Environmental Glows */}
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
         
-        {/* Global Control Bar */}
-        <header className="h-20 shrink-0 flex items-center justify-between px-4 md:px-10 border-b border-white-[0.03] backdrop-blur-3xl bg-zinc-900/20 z-30 w-full shadow-2xl">
+        {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
+        <header className="h-20 shrink-0 flex items-center justify-between px-4 md:px-10 border-b border-white-[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/10 z-30 w-full shadow-2xl relative overflow-hidden">
+           {/* Subtle glass light leak */}
+           <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
           <div className="flex items-center gap-4 flex-1">
             <button 
               className="lg:hidden p-2 text-zinc-400 hover:text-white"

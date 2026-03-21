@@ -199,11 +199,23 @@ export class DriversService {
       _sum: { amount: true }
     });
 
+    // 4. Comisiones por referidos (RD$500 por cada chofer activo referido)
+    const referralsCount = await this.prisma.driver.count({
+      where: { 
+        referredBy: driver.id,
+        status: 'ACTIVE',
+        subscriptionPaid: true
+      }
+    });
+    const referralEarnings = referralsCount * 500;
+
     return {
       driverName: driver.fullName,
       taxiNumber: driver.taxiNumber || driver.taxiPlate || 'S/N',
       adsPlayed,
       projectedEarnings,
+      referralEarnings,
+      referralsCount,
       activeAds: activeAdsCount,
       totalPaid: totalPaid._sum.amount || 0,
       lastPayment: lastPayment ? {

@@ -385,6 +385,10 @@
                     <div class="label">Último Pago</div>
                     <div class="value" id="last-pay-val">—</div>
                 </div>
+                <div class="wallet-sub">
+                    <div class="label">Referidos (RD$)</div>
+                    <div class="value" id="referral-bal-val">RD$ 0</div>
+                </div>
             </div>
         </div>
 
@@ -405,6 +409,13 @@
                 <div class="stat-info">
                     <div class="label">Pautas Activas</div>
                     <div class="value" id="active-ads-val">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🤝</div>
+                <div class="stat-info">
+                    <div class="label">Red de Referidos</div>
+                    <div class="value" id="referral-count-val">0</div>
                 </div>
             </div>
         </div>
@@ -484,10 +495,20 @@
                 // Update UI
                 document.getElementById('driver-name-header').textContent = data.driverName;
                 document.getElementById('driver-name-val').textContent = data.driverName;
-                document.getElementById('balance-val').textContent = data.projectedEarnings.toLocaleString();
+                
+                // Balance total includes Projected (Ads) + Referral commissions
+                const totalBalance = data.projectedEarnings + (data.referralEarnings || 0);
+                document.getElementById('balance-val').textContent = totalBalance.toLocaleString();
+                
                 document.getElementById('total-paid-val').textContent = `RD$ ${data.totalPaid.toLocaleString()}`;
                 document.getElementById('ads-played-val').textContent = data.adsPlayed.toLocaleString();
                 document.getElementById('active-ads-val').textContent = data.activeAds;
+                
+                // Show Referral Commissions if any
+                const referralVal = data.referralEarnings || 0;
+                document.getElementById('referral-bal-val').textContent = `RD$ ${referralVal.toLocaleString()}`;
+                document.getElementById('referral-count-val').textContent = data.referralsCount || 0;
+
                 document.getElementById('taxi-number-val').textContent = data.taxiNumber;
                 
                 if (data.lastPayment) {

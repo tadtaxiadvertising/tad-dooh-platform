@@ -9,7 +9,12 @@ function cn(...inputs: ClassValue[]) {
 }
 
 interface AntigravityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  onAsyncClick: () => Promise<any>;
+  /** Primary action. Both aliases accepted (refactor-proof). */
+  onAsyncClick?: () => Promise<any>;
+  /** @legacy alias for onAsyncClick, kept for backward compat after Nodo→Pantalla refactor */
+  onPantallaClick?: () => Promise<any>;
+  /** @legacy alias for onAsyncClick */
+  onNodoClick?: () => Promise<any>;
   loadingText?: string;
   actionName: string;
   critical?: boolean;
@@ -21,7 +26,9 @@ interface AntigravityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   children,
   onAsyncClick,
-  loadingText = "Procesando...",
+  onPantallaClick,
+  onNodoClick,
+  loadingText = 'Procesando...',
   className,
   actionName,
   critical = false,
@@ -29,33 +36,63 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   onError,
   variant = 'primary',
   disabled,
+  id,
   ...props
 }) => {
   const { executeAction, isPending } = useTADAction();
 
+  // Resolve the action from any alias — onAsyncClick > onPantallaClick > onNodoClick
+  const resolvedAction = onAsyncClick ?? onPantallaClick ?? onNodoClick;
+
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    executeAction(onAsyncClick, {
+    /**
+     * CRITICAL FIX: stopPropagation prevents the click from bubbling
+     * to MapContainer or Spotlight overlays that call onClearSelection().
+     * Without this, clicking a button inside the map overlay would
+     * simultaneously clear the fleet selection.
+     */
+    e.stopPropagation();
+
+    if (!resolvedAction) {
+      // Telemetry: log which element is covering the button at cursor position
+      const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
+      console.error(
+        `[AntigravityButton] ⚠️ No action bound for button id="${id ?? actionName}".`,
+        '\nElement at click point:', elementAtPoint,
+        '\nAction props received:', { onAsyncClick, onPantallaClick, onNodoClick }
+      );
+      return;
+    }
+
+    executeAction(resolvedAction, {
       actionName,
       critical,
       onSuccess,
-      onError
+      onError,
     });
   };
 
-  const variants = {
-    primary: 'bg-tad-yellow text-black hover:bg-white border-tad-yellow shadow-[0_4px_20px_rgba(250,212,0,0.15)]',
+  const variants: Record<string, string> = {
+    primary:   'bg-tad-yellow text-black hover:bg-white border-tad-yellow shadow-[0_4px_20px_rgba(250,212,0,0.15)]',
     secondary: 'bg-zinc-900 text-white hover:bg-zinc-800 border-white/10',
-    danger: 'bg-rose-600 text-white hover:bg-rose-700 border-rose-500/10',
-    ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 border-transparent'
+    danger:    'bg-rose-600 text-white hover:bg-rose-700 border-rose-500/10',
+    ghost:     'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 border-transparent',
   };
 
   return (
     <button
+      id={id}
       onClick={handleClick}
-      disabled={isPending || disabled}
+      disabled={isPending || disabled || !resolvedAction}
       className={cn(
-        'relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border',
+        'relative z-[60]',
+        'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px]',
+        'transition-all duration-300 active:scale-95',
+        'disabled:opacity-50 disabled:cursor-not-allowed border',
+        // CRITICAL: pointer-events-auto ensures the button is always clickable
+        // even when a parent has pointer-events-none
+        'pointer-events-auto',
         variants[variant],
         className
       )}

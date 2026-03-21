@@ -23,37 +23,40 @@ export class SyncService {
     // 2. Validar suscripción vía Driver o via Subscription entity
     const driver = device.driver;
     
-    // Si no hay driver, verificamos si hay campañas globales al menos
-    // pero usualmente requerimos un driver activo para auditoría
-    if (!driver || driver.status !== 'ACTIVE') {
-      // Fallback: Permitir solo si hay campañas globales y device está activo
-      // Pero por ahora seguimos la regla estricta de conductor
-      throw new HttpException('DEVICE_NOT_LINKED_TO_ACTIVE_DRIVER', HttpStatus.FORBIDDEN);
-    }
+    // Si no hay driver, permitimos solo campañas GLOBALES (no segmentadas)
+    // Esto es vital para el primer encendido (Out-of-the-box experience)
+    const isDriverActive = driver && driver.status === 'ACTIVE';
+    const isDriverPaid = (driver && driver.subscriptionPaid);
+    
+    let hasValidSubscription = isDriverPaid;
 
-    if (!driver.subscriptionPaid) {
-      // Intentar ver si tiene suscripción activa en tabla subscriptions
+    if (!hasValidSubscription) {
+      // Intentar ver si tiene suscripción activa en tabla subscriptions (independiente del driver)
       const sub = await this.prisma.subscription.findUnique({
         where: { deviceId }
       });
-      const isSubActive = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
-      
-      if (!isSubActive) {
-        throw new HttpException('SUBSCRIPTION_PAYMENT_REQUIRED', HttpStatus.PAYMENT_REQUIRED);
-      }
+      hasValidSubscription = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
     }
 
     // 3. Obtener campañas activas
+    // Filtro inteligente: 
+    // - Si hay suscripción + driver: recibe TODO (Global + Segmentado)
+    // - Si NO hay driver o pago: recibe solo campañas GLOBALES (demo/promociones internas)
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: {
-        active: true, // Usar active: true en lugar de status: 'ACTIVE' si es el campo correcto
+        active: true,
         startDate: { lte: new Date() },
         endDate: { gte: new Date() },
         OR: [
           { targetAll: true },
           { isGlobal: true },
-          { targetDrivers: { some: { id: driver.id } } },
-          { devices: { some: { device_id: device.id } } }
+          // Solo si hay driver, traemos lo segmentado para ese driver/device
+          ...(isDriverActive ? [
+            { targetDrivers: { some: { id: driver.id } } },
+            { devices: { some: { device_id: device.id } } }
+          ] : []),
+          // Si el device está asignado directamente a una campaña v1
+          { targets: { some: { deviceId } } }
         ]
       },
       include: {

@@ -66,6 +66,7 @@
 | `DriversModule` | `drivers.controller.ts` | `GET /`, `POST /`, `PUT /:id/subscription`, `/check-access` | ✅ Funcional |
 | `AdvertisersModule` | `advertisers.controller.ts` | `GET /`, `POST /` | ✅ Funcional |
 | `MediaModule` | `media.controller.ts` | `GET /`, `POST /upload`, `GET /:id/status` | ✅ Funcional |
+| `SyncModule` | `sync.controller.ts` | `GET /api/sync/:deviceId` (Público) | ✅ Operativo |
 | `FinanceModule` | `finance.controller.ts` | `/payroll`, `/payroll/pay`, `/report/*`, `/export/*`, `/invoice/:id` | ✅ Funcional |
 | `AnalyticsModule` | `analytics.controller.ts` | `/top-taxis`, `/hourly`, `/recent-plays`, **`/qr-scan`** | ✅ Funcional |
 | `DeviceModule` | `device.controller.ts` | `/sync`, `/heartbeat`, `/command/:id/ack`, `/:id/profile`, `/:id/campaigns` | ✅ Funcional |

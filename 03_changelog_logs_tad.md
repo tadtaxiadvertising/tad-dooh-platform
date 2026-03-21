@@ -152,6 +152,22 @@
 
 ---
 
+## 📅 21 de Marzo, 2026 (Sync Module & Offline Orchestration v5.0)
+
+### 🔄 SYNC: Módulo de Sincronización Determinista
+
+- **Backend Sync Engine**: Implementado `SyncModule` en NestJS que genera un manifiesto JSON preciso para cada tablet.
+- **Dynamic Targeting**: El motor ahora evalúa si una campaña es global, por conductor o vinculada directamente al hardware (`DeviceCampaign`), garantizando que cada tablet descargue solo lo necesario.
+- **Subscription Guard integration**: El endpoint `/api/sync/:deviceId` valida en tiempo real si el conductor tiene el pago de RD$6,000 al día, bloqueando la descarga si hay mora.
+
+### 📦 STORAGE: OfflineSyncManager (Service Worker Level)
+
+- **Cache Storage API**: Implementada la clase `OfflineSyncManager` directamente en el player HTML. Maneja la descarga bit-a-bit de videos y la purga automática de archivos obsoletos para ahorrar espacio en la tablet.
+- **Deterministic Playlist**: La playlist se guarda en `localStorage` sincronizada con la caché de medios, permitiendo reproducción 100% offline sin parpadeos.
+- **Native Injection**: El orquestador de sincronización fue inyectado directamente en `index.html` y `player.html` para acceso inmediato desde la consola de desarrollador para pruebas en campo.
+
+---
+
 ## 🏦 [FINANCIAL_LOG] - TAD Intelligence Module v1.0
 
 ### **Estado Actual del Balance** (Corte: 20 de Marzo, 2026)

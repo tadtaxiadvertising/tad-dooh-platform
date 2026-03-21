@@ -28,7 +28,8 @@ export class SyncService {
         OR: [
           { targetAll: true },
           { isGlobal: true },
-          { targetDrivers: { some: { id: driver.id } } }
+          { targetDrivers: { some: { id: driver.id } } },
+          { devices: { some: { device: { deviceId } } } }
         ],
         // Optimización: Solo traer campañas vigentes en fecha
         startDate: { lte: new Date() },

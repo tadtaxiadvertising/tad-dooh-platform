@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, NotFoundException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CampaignService } from './campaign.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
@@ -272,7 +272,36 @@ export class CampaignController {
     });
   }
 
-  // 5. Delete a campaign
+  // 5. Link existing media to a campaign (key for content distribution)
+  @Post(':id/link-media')
+  async linkMediaToCampaign(
+    @Param('id') campaignId: string,
+    @Body('mediaId') mediaId: string
+  ) {
+    if (!mediaId) throw new NotFoundException('mediaId is required');
+    const updated = await this.prisma.media.update({
+      where: { id: mediaId },
+      data: { campaign_id: campaignId },
+    });
+    Logger.log(`[CONTENT_DIST] Linked media ${mediaId} → campaign ${campaignId}`);
+    return { success: true, media: updated };
+  }
+
+  // 5.1. Unlink media from a campaign
+  @Post(':id/unlink-media')
+  async unlinkMediaFromCampaign(
+    @Param('id') campaignId: string,
+    @Body('mediaId') mediaId: string
+  ) {
+    if (!mediaId) throw new NotFoundException('mediaId is required');
+    const updated = await this.prisma.media.update({
+      where: { id: mediaId, campaign_id: campaignId },
+      data: { campaign_id: null },
+    });
+    return { success: true, media: updated };
+  }
+
+  // 6. Delete a campaign
   @Delete(':id')
   async deleteCampaign(@Param('id') id: string) {
     // Delete related records first

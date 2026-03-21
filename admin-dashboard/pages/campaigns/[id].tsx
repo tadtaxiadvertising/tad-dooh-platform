@@ -83,7 +83,7 @@ export default function CampaignDetailPage() {
     id: m.id,
     type: 'VIDEO',
     filename: m.filename || m.originalFilename || 'video.mp4',
-    url: m.url || m.cdnUrl,
+    url: m.url || m.cdnUrl || '',
     fileSize: Number(m.fileSize || 0),
     duration: m.durationSeconds || 15,
     createdAt: m.createdAt
@@ -263,9 +263,12 @@ export default function CampaignDetailPage() {
               <p className="text-gray-500 font-bold uppercase tracking-wider text-xs max-w-sm leading-relaxed mb-6">
                 No hay activos asignados a esta campaña.
               </p>
-              <Link href="/media" className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-6 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all">
-                Ir al Vault
-              </Link>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" /> Distribuir Contenido
+              </button>
             </div>
           )}
 

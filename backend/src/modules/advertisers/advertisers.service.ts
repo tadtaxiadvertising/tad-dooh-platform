@@ -50,7 +50,7 @@ export class AdvertisersService {
 
   async remove(id: string) {
     // Delete related campaigns first to avoid FK constraint issues
-    await this.prisma.campaign.deleteMany({ where: { advertiser_id: id } });
+    await this.prisma.campaign.deleteMany({ where: { advertiserId: id } });
     return this.prisma.advertiser.delete({
       where: { id }
     });

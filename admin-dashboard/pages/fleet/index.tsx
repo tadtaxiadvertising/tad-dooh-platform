@@ -6,6 +6,7 @@ import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, S
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceModal from '../../components/DeviceModal';
+import DeviceHubModal from '../../components/DeviceHubModal';
 import { notifyChange } from '../../lib/sync-channel';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
@@ -87,7 +88,9 @@ export default function FleetPage() {
   const [toast, setToast] = useState<string | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHubOpen, setIsHubOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
+  const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
 
   useEffect(() => {
     if (router.query.search) {
@@ -139,6 +142,11 @@ export default function FleetPage() {
   }, [activeTab, loadInventory, loadAlerts]);
 
   const handleCommand = async (deviceId: string, type: string) => {
+    if (type === 'HUB') {
+      setSelectedHubId(deviceId);
+      setIsHubOpen(true);
+      return;
+    }
     setCommanding(deviceId);
     try {
       await sendCommand(deviceId, type);
@@ -532,6 +540,12 @@ export default function FleetPage() {
         device={selectedDevice}
       />
 
+      <DeviceHubModal 
+        isOpen={isHubOpen}
+        onClose={() => setIsHubOpen(false)}
+        deviceId={selectedHubId || ''}
+      />
+
       {toast && (
         <div className="fixed bottom-10 right-10 z-[100] bg-zinc-900 border border-tad-yellow/40 text-tad-yellow px-8 py-4 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-right-20">
            <div className="flex items-center gap-3">
@@ -585,10 +599,13 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
   const maxSlots = device.max_slots || 15;
 
   return (
-    <div className={clsx(
-      "bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-tad-yellow/30 transition-all group relative overflow-hidden",
-      device.is_online ? "ring-1 ring-tad-yellow/10" : ""
-    )}>
+    <div 
+      onClick={() => onCommand(device.id, 'HUB')}
+      className={clsx(
+        "bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-tad-yellow/30 transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98]",
+        device.is_online ? "ring-1 ring-tad-yellow/10" : ""
+      )}
+    >
       {/* GLOW BACKGROUND */}
       {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-tad-yellow/10 transition-all" />}
 

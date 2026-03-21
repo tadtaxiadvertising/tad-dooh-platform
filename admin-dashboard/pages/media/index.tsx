@@ -344,12 +344,8 @@ export default function MediaPage() {
                     actionName="delete_media"
                     critical={true}
                     className="absolute top-4 right-4 w-10 h-10 p-0 rounded-xl"
-                    onAsyncClick={async () => {
-                      if (!confirm('¿Purgar permanentemente este activo de la bóveda?')) {
-                        throw new Error('Cancelado por el usuario');
-                      }
-                      return await deleteMedia(file.id);
-                    }}
+                    confirmMessage="¿Purgar permanentemente este activo de la bóveda?"
+                    onAsyncClick={async () => await deleteMedia(file.id)}
                     onSuccess={() => {
                       loadData();
                       notifyChange('MEDIA');

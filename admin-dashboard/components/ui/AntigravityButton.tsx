@@ -9,15 +9,13 @@ function cn(...inputs: ClassValue[]) {
 }
 
 interface AntigravityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Primary action. Both aliases accepted (refactor-proof). */
+  /** Primary action. */
   onAsyncClick?: () => Promise<any>;
-  /** @legacy alias for onAsyncClick, kept for backward compat after Nodo→Pantalla refactor */
-  onPantallaClick?: () => Promise<any>;
-  /** @legacy alias for onAsyncClick */
-  onNodoClick?: () => Promise<any>;
   loadingText?: string;
   actionName: string;
   critical?: boolean;
+  /** If provided, will show a native confirm() dialog before executing the action. */
+  confirmMessage?: string;
   onSuccess?: () => void;
   onError?: (err: any) => void;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -26,12 +24,11 @@ interface AntigravityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   children,
   onAsyncClick,
-  onPantallaClick,
-  onNodoClick,
   loadingText = 'Procesando...',
   className,
   actionName,
   critical = false,
+  confirmMessage,
   onSuccess,
   onError,
   variant = 'primary',
@@ -41,32 +38,23 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
 }) => {
   const { executeAction, isPending } = useTADAction();
 
-  // Resolve the action from any alias — onAsyncClick > onPantallaClick > onNodoClick
-  const resolvedAction = onAsyncClick ?? onPantallaClick ?? onNodoClick;
-
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    /**
-     * CRITICAL FIX: stopPropagation prevents the click from bubbling
-     * to MapContainer or Spotlight overlays that call onClearSelection().
-     * Without this, clicking a button inside the map overlay would
-     * simultaneously clear the fleet selection.
-     */
     e.stopPropagation();
 
-    console.log(`[Antigravity] ⚡ Desplegando acción: ${actionName}`, { critical, hasAction: !!resolvedAction });
-    
-    if (!resolvedAction) {
-      // Telemetry: log which element is covering the button at cursor position
-      const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
-      console.warn(
-        `[AntigravityButton] ⚠️ No hay acción vinculada para: "${id ?? actionName}".`,
-        '\nElemento en punto de clic:', elementAtPoint
-      );
+    if (!onAsyncClick) {
+      console.warn(`[AntigravityButton] ⚠️ No hay acción vinculada para: "${id ?? actionName}".`);
       return;
     }
 
-    executeAction(resolvedAction, {
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+       console.log(`[Antigravity] 🛑 Acción cancelada por el usuario: ${actionName}`);
+       return;
+    }
+
+    console.log(`[Antigravity] ⚡ Desplegando acción determinística: ${actionName}`, { critical });
+    
+    executeAction(onAsyncClick, {
       actionName,
       critical,
       onSuccess,

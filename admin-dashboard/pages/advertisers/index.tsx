@@ -245,12 +245,8 @@ export default function AdvertisersPage() {
                       actionName="delete_advertiser"
                       critical={true}
                       className="w-8 h-8 p-0 rounded-lg"
-                      onAsyncClick={async () => {
-                        if (!confirm(`¿Eliminar la cuenta de "${advertiser.companyName}" y todos sus vínculos?`)) {
-                           throw new Error('Cancelado');
-                        }
-                        return await deleteAdvertiser(advertiser.id);
-                      }}
+                      confirmMessage={`¿Eliminar la cuenta de "${advertiser.companyName}" y todos sus vínculos?`}
+                      onAsyncClick={async () => await deleteAdvertiser(advertiser.id)}
                       onSuccess={() => {
                         loadAdvertisers();
                         notifyChange('ADVERTISERS');

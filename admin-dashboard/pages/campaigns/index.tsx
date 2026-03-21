@@ -206,12 +206,8 @@ export default function CampaignsPage() {
                           actionName="delete_campaign"
                           critical={true}
                           className="p-3 w-12 h-12 rounded-xl"
-                          onAsyncClick={async () => {
-                            if (!confirm(`¿Eliminar la campaña "${camp.name}"? Esta acción no se puede deshacer.`)) {
-                              throw new Error('Cancelado');
-                            }
-                            return await deleteCampaign(camp.id);
-                          }}
+                          confirmMessage={`¿Eliminar la campaña "${camp.name}"? Esta acción no se puede deshacer.`}
+                          onAsyncClick={async () => await deleteCampaign(camp.id)}
                           onSuccess={() => {
                             loadData();
                             notifyChange('CAMPAIGNS');

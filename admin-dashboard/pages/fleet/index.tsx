@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import api, { sendCommand, deleteDevice, updateDeviceProfile, getDeviceProfile } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio, Clock } from 'lucide-react';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, Plus, X, User as UserIcon, CarFront, Edit2, Check, AlertTriangle, ShieldCheck, Cpu, ArrowRight, Radio, Clock, Copy, ExternalLink, Link2 } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceSlotsInfo from '../../components/DeviceSlotsInfo';
@@ -22,8 +22,48 @@ interface FleetDevice {
   max_slots: number;
   player_status?: string;
   last_seen?: string;
-  city?: string; // Fallback for filtering
+  city?: string;
   storage_free?: string;
+}
+
+// Helper: obtiene la base URL del API de producción
+const getApiBase = () => {
+  if (typeof window === 'undefined') return '';
+  const stored = (window as unknown as Record<string, string>).TAD_API_URL;
+  if (stored) return stored;
+  // En producción usa la URL del backend desplegado en EasyPanel
+  return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+};
+
+const getSyncUrl = (deviceId: string) => `${getApiBase()}/sync/${deviceId}`;
+
+function CopyButton({ value, label = 'URL' }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title={`Copiar ${label}`}
+      className={clsx(
+        'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border shrink-0',
+        copied
+          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+          : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-tad-yellow/10 hover:border-tad-yellow/30 hover:text-tad-yellow'
+      )}
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {copied ? 'Copiado' : label}
+    </button>
+  );
 }
 
 export default function FleetPage() {
@@ -368,6 +408,29 @@ export default function FleetPage() {
               </div>
 
               <div className="mt-auto border-t border-gray-700/50 pt-5 flex flex-col gap-4 relative z-10">
+                {/* Content Manifest URL — Lo más importante para la tablet */}
+                <div className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <Link2 className="w-3 h-3 text-tad-yellow" /> Sync URL
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <CopyButton value={getSyncUrl(device.device_id)} label="URL" />
+                      <a
+                        href={getSyncUrl(device.device_id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        title="Abrir Manifest en nueva pestaña"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-zinc-400 hover:bg-tad-yellow/10 hover:border-tad-yellow/30 hover:text-tad-yellow transition-all"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Test
+                      </a>
+                    </div>
+                  </div>
+                  <p className="text-[9px] font-mono text-zinc-600 truncate">/sync/{device.device_id}</p>
+                </div>
+
                 <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
@@ -598,8 +661,40 @@ export default function FleetPage() {
                  </div>
               </div>
 
-              <div className="p-4 bg-gray-900/80 border-t border-gray-700/50 text-center">
-                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">© TAD DOOH OS v4.2</p>
+              <div className="p-5 bg-gray-900/80 border-t border-gray-700/50">
+                {/* === CONTENT MANIFEST URLS === */}
+                <div className="mb-4 space-y-2">
+                  <p className="text-[9px] font-black text-tad-yellow uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <Link2 className="w-3 h-3" /> URLs de Contenido del Nodo
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 bg-black/60 border border-white/5 rounded-xl p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Sync Manifest (API)</p>
+                        <p className="text-[10px] font-mono text-zinc-300 truncate">{getSyncUrl(selectedProfile.device_id)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <CopyButton value={getSyncUrl(selectedProfile.device_id)} label="Copiar" />
+                        <a
+                          href={getSyncUrl(selectedProfile.device_id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-zinc-400 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 transition-all"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Abrir
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 bg-black/60 border border-white/5 rounded-xl p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Consola Tablet (DevID)</p>
+                        <p className="text-[10px] font-mono text-zinc-300 truncate">window.OfflineSyncManager.synchronize('{selectedProfile.device_id}')</p>
+                      </div>
+                      <CopyButton value={`window.OfflineSyncManager.synchronize('${selectedProfile.device_id}')`} label="Copiar" />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest text-center">© TAD DOOH OS v5.0</p>
               </div>
            </div>
         </div>

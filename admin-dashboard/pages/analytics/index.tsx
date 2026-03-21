@@ -87,10 +87,10 @@ export default function AnalyticsPage() {
   }, [loadData]);
 
   const sectors = useMemo(() => [
-    { label: "Santo Domingo Centro (Polígono)", perc: 65, color: "yellow" },
-    { label: "Santo Domingo Este", perc: 20, color: "white" },
-    { label: "Santo Domingo Norte", perc: 10, color: "white" },
-    { label: "Haina / Industrial", perc: 5, color: "white" }
+    { label: "Santiago (STI Fleet)", perc: 45, color: "yellow" },
+    { label: "Santo Domingo Centro (Polígono)", perc: 40, color: "white" },
+    { label: "Santo Domingo Este", perc: 10, color: "white" },
+    { label: "Norte / Otros", perc: 5, color: "white" }
   ], []);
 
   return (
@@ -475,13 +475,6 @@ function StatsCard({ icon, label, value, sub, trend, color, loading, delay }: {
 }
 
 function SectorRow({ label, perc, color }: { label: string; perc: number; color: string }) {
-   const widthClassMap: Record<number, string> = {
-      65: 'w-[65%]',
-      20: 'w-[20%]',
-      10: 'w-[10%]',
-      5: 'w-[5%]'
-   };
-
    return (
       <div className="space-y-1.5 group/row">
          <div className="flex justify-between items-end">
@@ -492,9 +485,9 @@ function SectorRow({ label, perc, color }: { label: string; perc: number; color:
             <div 
                className={clsx(
                  "h-full rounded-full transition-all duration-1000",
-                 color === 'yellow' ? 'bg-tad-yellow shadow-[0_0_8px_#fad400]' : 'bg-gray-600',
-                 widthClassMap[perc] || 'w-0'
+                 color === 'yellow' ? 'bg-tad-yellow shadow-[0_0_8px_#fad400]' : 'bg-gray-600'
                )} 
+               style={{ width: `${perc}%` }}
             />
          </div>
       </div>

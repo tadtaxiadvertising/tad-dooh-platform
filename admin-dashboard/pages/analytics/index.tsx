@@ -481,15 +481,24 @@ function SectorRow({ label, perc, color }: { label: string; perc: number; color:
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
             <span className={clsx("text-[10px] font-bold", color === 'yellow' ? 'text-tad-yellow' : 'text-gray-500')}>{perc}%</span>
          </div>
-         <div className="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
-            <div 
-               className={clsx(
-                 "h-full rounded-full transition-all duration-1000",
-                 color === 'yellow' ? 'bg-tad-yellow shadow-[0_0_8px_#fad400]' : 'bg-gray-600'
-               )} 
-               style={{ width: `${perc}%` }}
-            />
+         <div className="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden relative">
+            <div className={clsx("sector-bar", color === 'yellow' ? 'bg-yellow' : 'bg-gray')} />
          </div>
+         <style jsx>{`
+            .sector-bar {
+               height: 100%;
+               border-radius: 9999px;
+               transition: width 1s ease-in-out;
+               width: ${perc}%;
+            }
+            .bg-yellow {
+               background-color: #fad400;
+               box-shadow: 0 0 8px #fad400;
+            }
+            .bg-gray {
+               background-color: #4b5563;
+            }
+         `}</style>
       </div>
    );
 }

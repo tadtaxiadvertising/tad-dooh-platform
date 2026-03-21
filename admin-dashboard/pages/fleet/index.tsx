@@ -213,9 +213,9 @@ export default function FleetPage() {
       {activeTab === 'monitoring' && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard label="Total Nodos" value={fleetData?.total || 0} icon={Server} color="text-white" />
-            <StatCard label="En Línea" value={fleetData?.online || 0} icon={Wifi} color="text-emerald-500" />
-            <StatCard label="Fuera de Línea" value={fleetData?.offline || 0} icon={WifiOff} color="text-rose-500" />
+            <StatCard label="Total Nodos" value={Array.isArray(fleetData) ? fleetData.length : (fleetData?.total || 0)} icon={Server} color="text-white" />
+            <StatCard label="En Línea" value={Array.isArray(fleetData) ? fleetData.filter(d => d.is_online).length : (fleetData?.online || 0)} icon={Wifi} color="text-emerald-500" />
+            <StatCard label="Fuera de Línea" value={Array.isArray(fleetData) ? fleetData.filter(d => !d.is_online).length : (fleetData?.offline || 0)} icon={WifiOff} color="text-rose-500" />
             <StatCard label="Recatando Datos" value={isLoadingFleet ? '...' : 'ACTIVE'} icon={RefreshCcw} color="text-tad-yellow" />
           </div>
 
@@ -273,7 +273,7 @@ export default function FleetPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.03]">
-                    {(isLoadingFleet ? [1,2,3,4,5] : (fleetData?.devices || [])).filter((d: any) => {
+                    {(isLoadingFleet ? [1,2,3,4,5] : (Array.isArray(fleetData) ? fleetData : [])).filter((d: any) => {
                       if (isLoadingFleet) return true;
                       const matchSearch = d.device_id.toLowerCase().includes(search.toLowerCase()) || (d.taxi_number || '').toLowerCase().includes(search.toLowerCase());
                       if (filter === 'all') return matchSearch;

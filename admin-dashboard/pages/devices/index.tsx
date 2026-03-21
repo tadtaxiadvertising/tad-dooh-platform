@@ -238,8 +238,20 @@ export default function DevicesPage() {
                     </div>
                     <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden border border-gray-700/30">
                        <div 
-                         className={clsx("h-full rounded-full transition-all duration-1000", storagePct > 80 ? "bg-rose-500" : "bg-tad-yellow")} 
-                         style={{ width: `${storagePct}%` }} 
+                         className={clsx(
+                           "h-full rounded-full transition-all duration-1000", 
+                           storagePct > 80 ? "bg-rose-500" : "bg-tad-yellow",
+                           storagePct >= 100 ? "w-full" :
+                           storagePct >= 90 ? "w-[90%]" :
+                           storagePct >= 80 ? "w-[80%]" :
+                           storagePct >= 70 ? "w-[70%]" :
+                           storagePct >= 60 ? "w-[60%]" :
+                           storagePct >= 50 ? "w-[50%]" :
+                           storagePct >= 40 ? "w-[40%]" :
+                           storagePct >= 30 ? "w-[30%]" :
+                           storagePct >= 20 ? "w-[20%]" :
+                           storagePct >= 10 ? "w-[10%]" : "w-0"
+                         )}
                        />
                     </div>
                   </div>

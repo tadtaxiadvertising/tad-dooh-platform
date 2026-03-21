@@ -36,7 +36,16 @@ const getApiBase = () => {
 };
 
 const getSyncUrl = (deviceId: string) => `${getApiBase()}/sync/${deviceId}`;
-const getTelemetryUrl = (deviceId: string) => `https://proyecto-ia-tad-portal.rewvid.easypanel.host/${deviceId}`;
+const getGpsPlayerUrl = () => {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin; // Same domain as dashboard
+  return `${origin}/driver-gps.html`; // Served from tablet-player via EasyPanel
+};
+const getTelemetryUrl = (deviceId: string) => {
+  // Points to the new driver-gps.html page, pre-filling the deviceId via URL query param
+  const base = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
+  return `${base}/driver-gps.html?deviceId=${deviceId}`;
+};
 
 function CopyButton({ value, label = 'URL' }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);

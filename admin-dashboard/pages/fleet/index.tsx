@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/router';
 import useSWR from 'swr';
 import api, { sendCommand, getDevices, getOfflineDevices } from '../../services/api';
 import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw } from 'lucide-react';
@@ -78,6 +79,7 @@ function CopyButton({ value, label = 'URL' }: { value: string; label?: string })
 }
 
 export default function FleetPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'monitoring' | 'alerts' | 'inventory'>('monitoring');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
@@ -86,6 +88,12 @@ export default function FleetPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
+
+  useEffect(() => {
+    if (router.query.search) {
+      setSearch(router.query.search as string);
+    }
+  }, [router.query.search]);
 
   // ⚡ Monitoring Data
   const { data: fleetData, mutate: mutateFleet, isLoading: isLoadingFleet, error: fleetError } = useSWR('/fleet/summary', fetcher, {

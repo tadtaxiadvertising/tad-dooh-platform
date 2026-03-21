@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TAD DRIVER — Business Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --yellow: #FFD400;
+            --yellow-glow: rgba(255, 212, 0, 0.3);
+            --bg: #080808;
+            --card: #121212;
+            --border: rgba(255,255,255,0.08);
+            --text: #FFFFFF;
+            --muted: #888;
+            --green: #22C55E;
+            --red: #EF4444;
+            --orange: #F97316;
+            --blue: #3B82F6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            width: 100%;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ── */
+        .header {
+            padding: 24px 20px 20px;
+            background: linear-gradient(to bottom, rgba(255,212,0,0.05) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 48px; height: 48px;
+            background: var(--yellow);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 25px var(--yellow-glow);
+            font-weight: 900;
+            font-size: 16px;
+            color: #000;
+            transform: rotate(-2deg);
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ── Content Layout ── */
+        .content {
+            padding: 0 20px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── Section Title ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .section-header h2 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+            color: var(--muted);
+        }
+
+        /* ── Wallet Card (Highlight) ── */
+        .wallet-card {
+            background: linear-gradient(135deg, #181818 0%, #0d0d0d 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .wallet-card::after {
+            content: '';
+            position: absolute;
+            top: -50px; right: -50px;
+            width: 150px; height: 150px;
+            background: var(--yellow);
+            filter: blur(80px);
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .balance-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .balance-amount {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--yellow);
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .balance-amount span { font-size: 20px; color: var(--text); opacity: 0.5; }
+
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .wallet-sub {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .wallet-sub .label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+        .wallet-sub .value { font-size: 16px; font-weight: 800; }
+
+        /* ── Stats Grid ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-info .label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .stat-info .value {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        /* ── Tracking Area (Compact) ── */
+        .tracking-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tracking-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .tracking-info h3 { font-size: 15px; font-weight: 800; }
+        .tracking-info p { font-size: 12px; color: var(--muted); }
+
+        .tracking-switch {
+            width: 60px; height: 32px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tracking-switch.active { background: var(--yellow); }
+
+        .switch-knob {
+            width: 24px; height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tracking-switch.active .switch-knob { transform: translateX(28px); background: #000; }
+
+        /* ── Info Rows ── */
+        .info-list {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .info-row {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-row:last-child { border-bottom: none; }
+
+        .info-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+        .info-value { font-size: 14px; font-weight: 800; }
+        .info-value.green { color: var(--green); }
+
+        /* ── Action Bar ── */
+        .btn-sync {
+            width: 100%;
+            padding: 20px;
+            border-radius: 18px;
+            border: none;
+            background: var(--yellow);
+            color: #000;
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px var(--yellow-glow);
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-sync:active { transform: scale(0.98); }
+
+        /* ── Map (Visual context) ── */
+        .map-preview {
+            width: 100%;
+            height: 140px;
+            background: #1a1a1a;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map-iframe { width: 100%; height: 100%; border: none; filter: brightness(0.6) grayscale(0.5); pointer-events: none; }
+
+        /* ── Activity Bottom Sheet (Simplified) ── */
+        .activity-log {
+            padding: 0 4px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #444;
+            max-height: 80px;
+            overflow-y: hidden;
+        }
+
+        .safe-bottom { height: env(safe-area-inset-bottom, 20px); }
+
+        /* ── Loading Overlay ── */
+        #loader {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="logo-mark">TAD</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="logo-mark">TAD</div>
+            <div class="brand-text">
+                <h1>TAD DRIVER</h1>
+                <div id="driver-name-header" style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase;">Cargando...</div>
+            </div>
+        </div>
+        <div class="status-pill">
+            <div class="status-dot"></div>
+            <span id="status-text">ACTIVO</span>
+        </div>
+    </header>
+
+    <div class="content">
+        
+        <!-- Section: Billetera -->
+        <div class="section-header">
+            <h2>Mi Billetera</h2>
+        </div>
+        <div class="wallet-card">
+            <div class="balance-main">
+                <div class="balance-label">Ganancias Proyectadas</div>
+                <div class="balance-amount"><span>RD$</span><span id="balance-val">0</span></div>
+            </div>
+            <div class="wallet-grid">
+                <div class="wallet-sub">
+                    <div class="label">Total Recibido</div>
+                    <div class="value" id="total-paid-val">RD$ 0</div>
+                </div>
+                <div class="wallet-sub">
+                    <div class="label">Último Pago</div>
+                    <div class="value" id="last-pay-val">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Rendimiento -->
+        <div class="section-header">
+            <h2>Rendimiento</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-info">
+                    <div class="label">Ads Transmitidos</div>
+                    <div class="value" id="ads-played-val">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📺</div>
+                <div class="stat-info">
+                    <div class="label">Pautas Activas</div>
+                    <div class="value" id="active-ads-val">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Perfil & Info -->
+        <div class="section-header">
+            <h2>Información de Unidad</h2>
+        </div>
+        <div class="info-list">
+            <div class="info-row">
+                <span class="info-label">Chofer</span>
+                <span class="info-value" id="driver-name-val">Cargando...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Matrícula Unidad</span>
+                <span class="info-value" id="taxi-number-val">...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Suscripción</span>
+                <span class="info-value green" id="sub-status-val">VÁLIDA</span>
+            </div>
+        </div>
+
+        <!-- Section: Tracking -->
+        <div class="section-header">
+            <h2>Tracking GPS</h2>
+        </div>
+        <div class="tracking-card">
+            <div class="tracking-info">
+                <h3>Ubicación en vivo</h3>
+                <p id="tracking-status">Inactivo</p>
+            </div>
+            <div class="tracking-switch" id="track-toggle" onclick="toggleTracking()">
+                <div class="switch-knob"></div>
+            </div>
+        </div>
+
+        <!-- Map Mini -->
+        <div class="map-preview">
+            <iframe id="map-iframe" title="Gps Preview" src="about:blank"></iframe>
+        </div>
+
+        <div class="activity-log" id="activity-log"></div>
+
+        <!-- Sync Button -->
+        <button class="btn-sync" onclick="syncData()">
+            <span>🔄</span> ACTUALIZAR DATOS
+        </button>
+
+        <div class="safe-bottom"></div>
+    </div>
+
+    <script>
+        // CONFIG
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('deviceId') || localStorage.getItem('tad_gps_device_id');
+        const defaultServer = 'http://10.0.0.112:3000';
+        const server = localStorage.getItem('tad_gps_server') || defaultServer;
+
+        let isTracking = false;
+        let watchId = null;
+        let gpsTimer = null;
+
+        // AUTH & INIT
+        async function syncData() {
+            if (!deviceId) return alert("ID de dispositivo no encontrado. Use el link del panel.");
+            
+            try {
+                const res = await fetch(`${server}/api/drivers/tablet/${deviceId}/hub`);
+                if (!res.ok) throw new Error("Error cargando datos del hub");
+                const data = await res.json();
+                
+                // Update UI
+                document.getElementById('driver-name-header').textContent = data.driverName;
+                document.getElementById('driver-name-val').textContent = data.driverName;
+                document.getElementById('balance-val').textContent = data.projectedEarnings.toLocaleString();
+                document.getElementById('total-paid-val').textContent = `RD$ ${data.totalPaid.toLocaleString()}`;
+                document.getElementById('ads-played-val').textContent = data.adsPlayed.toLocaleString();
+                document.getElementById('active-ads-val').textContent = data.activeAds;
+                document.getElementById('taxi-number-val').textContent = data.taxiNumber;
+                
+                if (data.lastPayment) {
+                    const date = new Date(data.lastPayment.date).toLocaleDateString();
+                    document.getElementById('last-pay-val').textContent = `RD$ ${data.lastPayment.amount} (${date})`;
+                } else {
+                    document.getElementById('last-pay-val').textContent = "Ninguno";
+                }
+
+                document.getElementById('sub-status-val').textContent = data.subscriptionPaid ? "VÁLIDA" : "PENDIENTE";
+                document.getElementById('sub-status-val').className = `info-value ${data.subscriptionPaid ? 'green' : 'red'}`;
+                
+                document.getElementById('loader').classList.add('hidden');
+                addLog('✓ Datos actualizados');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loader').classList.add('hidden');
+                addLog('! Error de conexión');
+            }
+        }
+
+        // GPS LOGIC
+        function toggleTracking() {
+            const toggle = document.getElementById('track-toggle');
+            if (!isTracking) {
+                startTracking(toggle);
+            } else {
+                stopTracking(toggle);
+            }
+        }
+
+        function startTracking(toggle) {
+            if (!navigator.geolocation) return alert("GPS no disponible");
+            
+            isTracking = true;
+            toggle.classList.add('active');
+            document.getElementById('tracking-status').textContent = "Transmitiendo...";
+            
+            watchId = navigator.geolocation.watchPosition((pos) => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.002},${lat-0.002},${lng+0.002},${lat+0.002}&layer=mapnik&marker=${lat},${lng}`;
+                document.getElementById('map-iframe').src = mapUrl;
+                
+                // Save last pos for timer
+                window.lastPos = { lat, lng };
+            }, (err) => {
+                addLog('! GPS Error: ' + err.code);
+            }, { enableHighAccuracy: true });
+
+            gpsTimer = setInterval(async () => {
+                if (!window.lastPos) return;
+                try {
+                    await fetch(`${server}/api/analytics/external-gps`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceId, ...window.lastPos })
+                    });
+                    addLog(`> GPS OK: ${window.lastPos.lat.toFixed(4)}, ${window.lastPos.lng.toFixed(4)}`);
+                } catch(e) {}
+            }, 10000);
+
+            addLog('* Tracking GPS iniciado');
+            requestWakeLock();
+        }
+
+        function stopTracking(toggle) {
+            isTracking = false;
+            toggle.classList.remove('active');
+            document.getElementById('tracking-status').textContent = "Inactivo";
+            
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (gpsTimer) clearInterval(gpsTimer);
+            addLog('* Tracking GPS detenido');
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            log.innerHTML = `[${time}] ${msg}<br>` + log.innerHTML;
+        }
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try { await navigator.wakeLock.request('screen'); } catch(e) {}
+            }
+        }
+
+        // INIT
+        if (deviceId) {
+            localStorage.setItem('tad_gps_device_id', deviceId);
+            syncData();
+        } else {
+            document.getElementById('loader').classList.add('hidden');
+            alert("Acceda desde el panel administrativo para vincular su cuenta.");
+        }
+
+        // Auto refresh cards every 5 min
+        setInterval(syncData, 300000);
+    </script>
+</body>
+</html>

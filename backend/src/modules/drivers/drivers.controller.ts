@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Param, Body, BadRequestException } from '@nestjs/common';
 import { DriversService } from './drivers.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('drivers')
 export class DriversController {
@@ -92,5 +93,18 @@ export class DriversController {
   @Get('tablet/:tabletId/access')
   async checkTabletAccess(@Param('tabletId') tabletId: string) {
     return this.driversService.checkTabletAccess(tabletId);
+  }
+
+  /**
+   * GET /api/drivers/tablet/:tabletId/hub — Datos de negocio para el portal del chofer
+   */
+  @Public() // El portal del chofer usa solo el ID del hardware para autenticarse
+  @Get('tablet/:tabletId/hub')
+  async getDriverHub(@Param('tabletId') tabletId: string) {
+    try {
+      return await this.driversService.getDriverHubData(tabletId);
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
   }
 }

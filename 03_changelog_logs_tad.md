@@ -170,3 +170,5 @@
 ### **Historial de Movimientos:**
 
 - `2026-03-20`: **INIT** | Configuración inicial del módulo de inteligencia financiera y activación del Libro Mayor (Ledger).
+- `2026-03-21`: **UPDATE** | Implementación de Facturas Comerciales Premium (Dark Mode HTML/PDF) con cálculos de ITBIS dinámicos para auditoría de campañas.
+- `2026-03-21`: **UPDATE** | Refactorización de descargas Seguras HTTP/Axios para evadir errores de autorización (401) en exportación de reportes CSV. Integración de esquema en producción vía `npx prisma db push`.

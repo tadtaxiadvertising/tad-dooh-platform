@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, ShieldCheck, CreditCard, Radio } from 'lucide-react';
+import Link from 'next/link';
+import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, ShieldCheck, CreditCard, Radio, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
 import { getDrivers, updateDriverSubscription } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
@@ -247,10 +248,15 @@ export default function DriversPage() {
                       <td className="px-8 py-6 text-center">
                         {driver.deviceId ? (
                           <div className={"inline-flex flex-col items-center animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                <span className="text-[9px] font-bold text-emerald-500 uppercase">ENLAZADO</span>
-                             </div>
+                             <Link 
+                                href={`/fleet?search=${driver.deviceId}`}
+                                className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all group/link"
+                                title="Ver Pantalla en Monitoreo"
+                             >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] group-hover/link:bg-black" />
+                                <span className="text-[9px] font-bold uppercase">ENLAZADO</span>
+                                <ExternalLink className="w-2.5 h-2.5 ml-1" />
+                             </Link>
                              <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.deviceId.slice(0, 10)}...</span>
                           </div>
                         ) : (

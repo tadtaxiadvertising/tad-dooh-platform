@@ -36,9 +36,11 @@ export const useTADAction = () => {
       // Telemetry log for critical actions (NON-BLOCKING)
       if (options.critical) {
         supabase.from('analytics_events').insert([{
-          type: 'CRITICAL_ACTION',
+          event_type: 'CRITICAL_ACTION',
+          device_id: 'ADMIN_CONSOLE',
           event_data: { action: options.actionName, status: 'SUCCESS' },
-          created_at: new Date().toISOString()
+          occurred_at: new Date().toISOString(),
+          received_at: new Date().toISOString()
         }]).then(({ error }) => {
           if (error) console.warn('Telemetry error (success log):', error);
         });
@@ -59,9 +61,11 @@ export const useTADAction = () => {
       // Telemetry log for failure (NON-BLOCKING)
       if (options.critical) {
         supabase.from('analytics_events').insert([{
-          type: 'CRITICAL_ACTION',
+          event_type: 'CRITICAL_ACTION',
+          device_id: 'ADMIN_CONSOLE',
           event_data: { action: options.actionName, status: 'FAILURE', error: err.message },
-          created_at: new Date().toISOString()
+          occurred_at: new Date().toISOString(),
+          received_at: new Date().toISOString()
         }]).then(({ error }) => {
           if (error) console.warn('Telemetry error (failure log):', error);
         });

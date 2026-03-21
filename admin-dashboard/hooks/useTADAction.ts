@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../services/supabaseClient';
 
 interface ActionOptions {
   onSuccess?: () => void;
@@ -33,8 +33,8 @@ export const useTADAction = () => {
       if (options.critical) {
         await supabase.from('analytics_events').insert([{
           type: 'CRITICAL_ACTION',
-          eventData: { action: options.actionName, status: 'SUCCESS' },
-          createdAt: new Date().toISOString()
+          event_data: { action: options.actionName, status: 'SUCCESS' },
+          created_at: new Date().toISOString()
         }]);
       }
 
@@ -42,14 +42,20 @@ export const useTADAction = () => {
       if (options.onSuccess) options.onSuccess();
       return result;
     } catch (err: any) {
+      // Silent handling for manual cancellations
+      if (err.message === 'Cancelado por el usuario' || err.message === 'Cancelado') {
+        setIsPending(false);
+        return;
+      }
+
       console.error(`Error en la acción ${options.actionName}:`, err);
       
       // Telemetry log for failure
       if (options.critical) {
         await supabase.from('analytics_events').insert([{
           type: 'CRITICAL_ACTION',
-          eventData: { action: options.actionName, status: 'FAILURE', error: err.message },
-          createdAt: new Date().toISOString()
+          event_data: { action: options.actionName, status: 'FAILURE', error: err.message },
+          created_at: new Date().toISOString()
         }]);
       }
 

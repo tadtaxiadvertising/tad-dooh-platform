@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTADAction } from '@/hooks/useTADAction';
+import { useTADAction } from '../../hooks/useTADAction';
 import { Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';

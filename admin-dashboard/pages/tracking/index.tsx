@@ -265,21 +265,32 @@ export default function TrackingPage() {
          </button>
       </div>
 
-      {/* OVERLAY: FLEET SIDEBAR (POSICIONADO A LA DERECHA) */}
-      <div className="absolute top-0 bottom-0 right-0 z-30 pointer-events-none flex items-center">
-         <div className={clsx(
-           "h-full w-[400px] bg-black/85 backdrop-blur-3xl border-l border-white/5 shadow-[-30px_0_60px_rgba(0,0,0,0.6)] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] pointer-events-auto flex relative",
-           sidebarOpen ? "translate-x-0" : "translate-x-full"
-         )}>
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-24 bg-black/85 backdrop-blur-2xl border-y border-l border-white/5 rounded-l-2xl flex items-center justify-center text-tad-yellow/40 hover:text-tad-yellow transition-all group shadow-xl"
+      {/* OVERLAY: FLEET SIDEBAR (RIGHT SIDE) */}
+      {/* IMPORTANT: outer wrapper is pointer-events-none so the map stays interactive.
+          The inner panel uses pointer-events-auto explicitly. */}
+      <div className="absolute top-0 bottom-0 right-0 z-30 flex items-center pointer-events-none">
+         <div
+           onClick={(e) => e.stopPropagation()}
+           className={clsx(
+             "h-full w-[400px] bg-black/85 backdrop-blur-3xl border-l border-white/5 shadow-[-30px_0_60px_rgba(0,0,0,0.6)]",
+             "transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]",
+             // pointer-events-auto is critical: overrides parent pointer-events-none
+             "pointer-events-auto flex relative",
+             sidebarOpen ? "translate-x-0" : "translate-x-full"
+           )}
+         >
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // prevent bubbling to map's click handler
+                setSidebarOpen(!sidebarOpen);
+              }}
+              className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-24 bg-black/85 backdrop-blur-2xl border-y border-l border-white/5 rounded-l-2xl flex items-center justify-center text-tad-yellow/40 hover:text-tad-yellow transition-all group shadow-xl pointer-events-auto"
             >
                {sidebarOpen ? <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" /> : <ChevronDown className="w-5 h-5 -rotate-90 group-hover:-translate-x-0.5 transition-transform" />}
             </button>
 
-            <FleetSidebar 
-              isOpen={true} 
+            <FleetSidebar
+              isOpen={true}
               onClose={() => setSidebarOpen(false)}
               vehicles={filteredFleet}
               searchQuery={search}

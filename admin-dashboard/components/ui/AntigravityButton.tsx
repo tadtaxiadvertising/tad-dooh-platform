@@ -91,10 +91,10 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   };
 
   const variants: Record<string, string> = {
-    primary:   'bg-tad-yellow text-black hover:bg-white border-tad-yellow shadow-[0_4px_20px_rgba(250,212,0,0.15)]',
-    secondary: 'bg-zinc-900 text-white hover:bg-zinc-800 border-white/10',
-    danger:    'bg-rose-600 text-white hover:bg-rose-700 border-rose-500/10',
-    ghost:     'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 border-transparent',
+    primary:   'bg-tad-yellow text-black hover:bg-white border-tad-yellow shadow-[0_0_20px_rgba(250,212,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]',
+    secondary: 'bg-zinc-900 text-white hover:bg-zinc-800 border-white/10 hover:border-white/30 backdrop-blur-md',
+    danger:    'bg-gradient-to-r from-rose-600 to-rose-700 text-white hover:from-rose-500 hover:to-rose-600 border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.2)]',
+    ghost:     'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 border-transparent hover:border-white/10',
   };
 
   return (
@@ -105,26 +105,36 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
       onClick={handleClick}
       disabled={isPending || disabled || !onAsyncClick}
       className={cn(
-        'relative z-[100] !pointer-events-auto', // Elevación máxima y eventos forzados
-        'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px]',
-        'transition-all duration-300 active:scale-95',
-        'disabled:opacity-50 disabled:cursor-not-allowed border',
-        isConfirming ? 'bg-amber-500 text-black border-white animate-pulse' : variants[variant],
+        'group relative z-[100] !pointer-events-auto',
+        'inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-[1.25rem] font-black uppercase tracking-[0.15em] text-[10px]',
+        'transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1)',
+        'active:scale-[0.97] active:brightness-90',
+        'disabled:opacity-40 disabled:cursor-not-allowed border-2',
+        isConfirming 
+          ? 'bg-gradient-to-br from-amber-400 via-rose-500 to-rose-600 text-white border-white shadow-[0_0_40px_rgba(244,63,94,0.6)] animate-[pulse_1s_infinite]' 
+          : variants[variant],
         className
       )}
     >
-      {isPending ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>{loadingText}</span>
-        </>
-      ) : isConfirming ? (
-        <>
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>[!] CONFIRMAR</span>
-        </>
-      ) : (
-        children
+      <div className="flex items-center gap-2.5 relative z-10">
+        {isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin stroke-[3px]" />
+            <span className="animate-pulse">{loadingText}</span>
+          </>
+        ) : isConfirming ? (
+          <>
+            <AlertTriangle className="w-4 h-4 shrink-0 animate-bounce" />
+            <span className="drop-shadow-sm">¿ESTÁS SEGURO? CONFIRMAR</span>
+          </>
+        ) : (
+          children
+        )}
+      </div>
+
+      {/* Glossy overlay effect */}
+      {!isPending && !isConfirming && (
+        <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-[1.1rem]" />
       )}
     </button>
   );

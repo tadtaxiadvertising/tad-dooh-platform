@@ -256,7 +256,6 @@ export class FleetService {
                     phone: phone,
                     licensePlate: placa,
                     taxiNumber: placa,
-                    deviceId: deviceId, // Vincular
                     status: 'ACTIVE'
                   }
                 }

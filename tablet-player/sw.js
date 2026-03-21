@@ -1,12 +1,13 @@
-// sw.js - TAD Player Service Worker v3.1 (TAD Terminal Ready)
+// sw.js - TAD Player Service Worker v3.3 (Mixed Content Firewall)
 // CAMBIAR el nombre del caché fuerza al navegador a descartar todo lo viejo
-const CACHE_NAME = 'tad-terminal-cache-v3.1';
+const CACHE_NAME = 'tad-terminal-cache-v3.3';
 const SUPABASE_STORAGE_DOMAIN = 'ltdcdhqixvbpdcitthqf.supabase.co';
 
 // APP SHELL: Archivos críticos para que la app cargue 100% offline
 const APP_SHELL = [
     '/',
     '/index.html',
+    '/tad-driver.html',
     'https://unpkg.com/@tailwindcss/browser@4',
     'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
     'https://cdn.jsdelivr.net/npm/lucide-react@0.469.0/dist/umd/lucide-react.min.js'
@@ -44,6 +45,36 @@ self.addEventListener('activate', (event) => {
 // Gestionar todas las peticiones (Fetch)
 self.addEventListener('fetch', (event) => {
     const requestUrl = new URL(event.request.url);
+
+    // 🛡️ SECURITY PATCH: Prevent Mixed Content Errors
+    // If we are on a secure origin (production), intercept and block/upgrade insecure backend calls
+    if (self.location.protocol === 'https:' && requestUrl.protocol === 'http:') {
+        // Specifically block/redirect local dev IP calls to production
+        if (requestUrl.hostname.startsWith('10.') || requestUrl.hostname === 'localhost') {
+            console.warn('[SW] Blocking insecure local-IP fetch on HTTPS origin:', requestUrl.href);
+            
+            // Rewrite the URL to use the production API counterpart if it's an API call
+            if (requestUrl.pathname.startsWith('/api')) {
+                const PROD_API = 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+                const secureUrl = PROD_API + requestUrl.pathname + requestUrl.search;
+                console.log('[SW] Upgrading to secure API:', secureUrl);
+                event.respondWith(fetch(secureUrl, {
+                    method: event.request.method,
+                    headers: event.request.headers,
+                    body: event.request.method !== 'GET' ? event.request.body : undefined,
+                    mode: 'cors'
+                }));
+                return;
+            }
+        }
+        
+        // Generic upgrade attempt for other backend calls
+        if (requestUrl.hostname.includes('easypanel.host')) {
+             const secureUrl = event.request.url.replace('http:', 'https:');
+             event.respondWith(fetch(secureUrl));
+             return;
+        }
+    }
 
     // ESTRATEGIA 1: Cache-First para Media (Videos/Imágenes de Supabase)
     const isMediaFile = requestUrl.pathname.match(/\.(mp4|webm|png|jpg|jpeg|svg|webp)$/);

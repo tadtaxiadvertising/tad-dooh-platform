@@ -207,64 +207,100 @@ export class FleetService {
 
   async registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string) {
     const crypto = require('crypto');
-    // Si proveen un ID, validamos su formato, de lo contrario generamos
     let deviceId = providedDeviceId?.trim();
     if (!deviceId) {
       deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
     }
     
-    // 1. Verificar si el dispositivo ya existe (ej: la tablet ya se auto-registró)
-    const existing = await this.prisma.device.findUnique({
-      where: { deviceId },
-      include: { driver: true }
-    });
+    // 1. Verificar simultáneamente Dispositivo y Driver (por ID o por Teléfono generado)
+    const phone = 'PH-' + deviceId;
+    
+    const [existingDevice, existingDriver] = await Promise.all([
+      this.prisma.device.findUnique({
+        where: { deviceId },
+        include: { driver: true }
+      }),
+      this.prisma.driver.findFirst({
+        where: { 
+          OR: [
+            { deviceId },
+            { phone }
+          ]
+        }
+      })
+    ]);
 
-    if (existing) {
-      // Si existe, actualizamos el vehículo y le vinculamos/actualizamos el chofer
+    // Lógica de Unión (Upsert):
+    // Si ya existe el dispositivo, lo actualizamos.
+    if (existingDevice) {
       const updated = await this.prisma.device.update({
         where: { deviceId },
         data: {
           taxiNumber: placa,
           status: 'ACTIVE',
-          driver: existing.driver ? {
-            update: {
-              fullName: nombreChofer,
-              licensePlate: placa,
-              taxiNumber: placa,
-            }
-          } : {
-            create: {
-              fullName: nombreChofer,
-              phone: 'PH-' + deviceId, // Bypass par scale-test
-              licensePlate: placa,
-              taxiNumber: placa,
-            }
+          driver: existingDevice.driver 
+            ? {
+                update: {
+                  fullName: nombreChofer,
+                  licensePlate: placa,
+                  taxiNumber: placa,
+                  status: 'ACTIVE'
+                }
+              }
+            : {
+                // Si el dispositivo no tiene driver pero encontramos uno huérfano con este ID/Phone
+                connectOrCreate: {
+                  where: { phone },
+                  create: {
+                    fullName: nombreChofer,
+                    phone: phone,
+                    licensePlate: placa,
+                    taxiNumber: placa,
+                    deviceId: deviceId, // Vincular
+                    status: 'ACTIVE'
+                  }
+                }
+              }
+        }
+      });
+      return { success: true, device_id: updated.deviceId, driver_name: nombreChofer, linked: true };
+    }
+
+    // 2. Si el dispositivo es nuevo pero el driver ya existía (ej: registro manual previo del chofer)
+    if (existingDriver) {
+      const device = await this.prisma.device.create({
+        data: {
+          deviceId,
+          status: 'ACTIVE',
+          taxiNumber: placa,
+          driver: {
+            connect: { id: existingDriver.id }
           }
         }
       });
-      return { 
-        success: true, 
-        device_id: updated.deviceId,
-        driver_name: nombreChofer,
-        taxi_number: placa,
-        linked_to_existing: true
-      };
+      // Actualizar datos del driver vinculado
+      await this.prisma.driver.update({
+        where: { id: existingDriver.id },
+        data: { fullName: nombreChofer, status: 'ACTIVE', deviceId }
+      });
+      return { success: true, device_id: device.deviceId, driver_name: nombreChofer, linked_driver: true };
     }
 
-    // 2. Si no existe, lo creamos desde cero
+    // 3. Creación total desde cero
     const device = await this.prisma.device.create({
       data: {
         deviceId,
         status: 'ACTIVE',
         taxiNumber: placa,
-        appVersion: '2.1.3',
+        appVersion: '3.0.0',
         lastSeen: new Date(),
         driver: {
           create: {
             fullName: nombreChofer,
-            phone: 'PH-' + deviceId,
+            phone: phone,
             licensePlate: placa,
             taxiNumber: placa,
+            status: 'ACTIVE'
           }
         }
       }
@@ -274,8 +310,7 @@ export class FleetService {
       success: true, 
       device_id: device.deviceId,
       driver_name: nombreChofer,
-      taxi_number: placa,
-      linked_to_existing: false
+      new_registration: true
     };
   }
 

@@ -36,6 +36,7 @@ const getApiBase = () => {
 };
 
 const getSyncUrl = (deviceId: string) => `${getApiBase()}/sync/${deviceId}`;
+const getPassengerUrl = (deviceId: string) => `https://proyecto-ia-tad-portal.rewvid.easypanel.host/${deviceId}`;
 
 function CopyButton({ value, label = 'URL' }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -412,7 +413,7 @@ export default function FleetPage() {
                 <div className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                      <Link2 className="w-3 h-3 text-tad-yellow" /> Sync URL
+                      <Link2 className="w-3 h-3 text-tad-yellow" /> Sync URL (Tablet)
                     </span>
                     <div className="flex items-center gap-1">
                       <CopyButton value={getSyncUrl(device.device_id)} label="URL" />
@@ -420,15 +421,34 @@ export default function FleetPage() {
                         href={getSyncUrl(device.device_id)}
                         target="_blank"
                         rel="noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        title="Abrir Manifest en nueva pestaña"
                         className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-zinc-400 hover:bg-tad-yellow/10 hover:border-tad-yellow/30 hover:text-tad-yellow transition-all"
                       >
                         <ExternalLink className="w-3 h-3" /> Test
                       </a>
                     </div>
                   </div>
-                  <p className="text-[9px] font-mono text-zinc-600 truncate">/sync/{device.device_id}</p>
+                  <p className="text-[9px] font-mono text-zinc-600 truncate">{getSyncUrl(device.device_id).split('api/')[1] || '/sync/...'}</p>
+                </div>
+
+                {/* Tracking / Passenger URL — Lo que ve el pasajero */}
+                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <Radio className="w-3 h-3 animate-pulse" /> Portal Pasajero
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <CopyButton value={getPassengerUrl(device.device_id)} label="URL" />
+                      <a
+                        href={getPassengerUrl(device.device_id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Ver
+                      </a>
+                    </div>
+                  </div>
+                  <p className="text-[9px] font-mono text-emerald-600/60 truncate italic">Seguimiento celular pasajeros</p>
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
@@ -680,6 +700,23 @@ export default function FleetPage() {
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-zinc-400 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 transition-all"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Abrir
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 bg-black/60 border border-white/5 rounded-xl p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Portal Seguimiento Pasajero (QR)</p>
+                        <p className="text-[10px] font-mono text-emerald-400 truncate">{getPassengerUrl(selectedProfile.device_id)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <CopyButton value={getPassengerUrl(selectedProfile.device_id)} label="Copiar" />
+                        <a
+                          href={getPassengerUrl(selectedProfile.device_id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-all"
                         >
                           <ExternalLink className="w-3 h-3" /> Abrir
                         </a>

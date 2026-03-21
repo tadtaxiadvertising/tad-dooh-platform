@@ -159,96 +159,119 @@ export default function DevicesPage() {
             const id = device.device_id || device.deviceId || 'Unknown';
             const plate = device.taxi_number || device.taxiNumber || '—';
             const battery = device.battery_level ?? device.batteryLevel ?? null;
-            const version = device.app_version || device.appVersion || '—';
+            const version = device.appVersion || device.app_version || '—';
             const lastSeen = device.last_seen || device.lastSeen;
+            const driverName = (device as any).driver_name || 'Sin Asignar';
+            const storageUsed = (device as any).storage_used;
+            const storageTotal = (device as any).storage_total;
+            const storagePct = storageUsed && storageTotal ? Math.round((storageUsed / storageTotal) * 100) : 0;
+            const city = (device as any).city || 'N/A';
+            const fleet = (device as any).fleet || 'TAD Core';
+            const lastPlayback = (device as any).last_playback;
 
             return (
               <div 
                 key={id} 
                 className={clsx(
-                  'group relative bg-gray-800/40 backdrop-blur-xl border rounded-3xl p-6 transition-all duration-500 hover:shadow-md hover:-translate-y-1 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both overflow-hidden',
-                  health === 'critical' ? 'border-rose-500/20' : health === 'warning' ? 'border-amber-500/20' : 'border-gray-700/50 hover:border-tad-yellow/30',
+                  'group relative bg-gray-800/40 backdrop-blur-xl border rounded-3xl p-7 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both overflow-hidden',
+                  health === 'critical' ? 'border-rose-500/30 shadow-[0_10px_40px_rgba(244,63,94,0.1)]' : health === 'warning' ? 'border-amber-500/30' : 'border-gray-700/50 hover:border-tad-yellow/40',
                   idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
                 )}
               >
                 {/* Visual Accent */}
                 <div className={clsx(
-                  "absolute top-0 right-0 w-24 h-24 blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity duration-700",
+                  "absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-0 group-hover:opacity-30 transition-opacity duration-700",
                   health === 'critical' ? 'bg-rose-500' : health === 'warning' ? 'bg-amber-400' : 'bg-tad-yellow'
                 )} />
 
-                <div className="flex items-start justify-between mb-6 relative z-10">
-                  <div className="space-y-1.5">
+                <div className="flex items-start justify-between mb-8 relative z-10">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                       <Zap className={clsx("w-4 h-4", health === 'critical' ? 'text-rose-500' : 'text-tad-yellow')} />
-                       <p className="text-xs font-bold text-white tracking-widest uppercase group-hover:text-tad-yellow transition-colors">{id.slice(0, 8)}</p>
+                       <div className={clsx("w-2 h-2 rounded-full", device.status === 'online' ? "bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" : "bg-gray-600")} />
+                       <p className="text-sm font-black text-white tracking-widest uppercase group-hover:text-tad-yellow transition-colors">{id.slice(0, 8)}</p>
                     </div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                       <ShieldCheck className="w-3 h-3" /> PLACA: <span className="text-gray-300">{plate}</span>
+                    <p className="text-[10px] text-tad-yellow font-black uppercase tracking-[0.2em] flex items-center gap-1.5">
+                       {driverName}
                     </p>
+                    <div className="flex items-center gap-3 mt-2">
+                       <span className="text-[9px] px-2 py-0.5 bg-gray-900/50 border border-gray-700/50 rounded text-gray-400 font-bold uppercase tracking-widest">{plate}</span>
+                       <span className="text-[9px] px-2 py-0.5 bg-gray-900/50 border border-gray-700/50 rounded text-gray-400 font-bold uppercase tracking-widest">{city}</span>
+                    </div>
                   </div>
                   
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { setSelectedDevice(device); setIsModalOpen(true); }}
-                      title="Sincronizar Pantalla"
-                      className="w-8 h-8 bg-gray-900 border border-gray-700 hover:border-tad-yellow hover:text-tad-yellow rounded-xl flex items-center justify-center text-gray-500 transition-all shadow-sm"
+                      title="Configurar Nodo"
+                      className="w-10 h-10 bg-gray-900/80 border border-gray-700 hover:border-tad-yellow hover:text-tad-yellow rounded-2xl flex items-center justify-center text-gray-500 transition-all shadow-lg group/btn"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Cpu className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
                     </button>
-                    <div className={clsx(
-                      'px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest h-fit border shadow-sm',
-                      device.status === 'online' 
-                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 flex items-center gap-1.5' 
-                        : 'bg-gray-900 text-gray-500 border-gray-700 flex items-center gap-1.5'
-                    )}>
-                      <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" : "bg-gray-500")} />
-                      {device.status === 'online' ? 'ON' : 'OFF'}
-                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-6 relative z-10">
-                  <div className="bg-gray-900/50 rounded-xl p-3 border border-gray-700/50">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Battery className={clsx('w-3.5 h-3.5', battery !== null && battery < 20 ? 'text-rose-500 animate-pulse' : 'text-gray-500')} />
-                      <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Energía</span>
+                <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                  <div className="bg-gray-900/50 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 group-hover:bg-gray-900/80 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Battery className={clsx('w-4 h-4', battery !== null && battery < 20 ? 'text-rose-500 animate-pulse' : 'text-gray-500')} />
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Energía</span>
                     </div>
-                    <p className="text-lg font-bold text-white leading-none">{battery !== null ? `${battery}%` : '—'}</p>
+                    <p className="text-xl font-black text-white leading-none">{battery !== null ? `${battery}%` : '—'}</p>
                   </div>
-                  <div className="bg-gray-900/50 rounded-xl p-3 border border-gray-700/50">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <HardDrive className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Firmware</span>
+
+                  <div className="bg-gray-900/50 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 group-hover:bg-gray-900/80 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="w-4 h-4 text-gray-500" />
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Uptime</span>
                     </div>
-                    <p className="text-lg font-bold text-white leading-none">v{version}</p>
+                    <p className="text-xl font-black text-white leading-none">v{version.replace('v', '')}</p>
                   </div>
-                  <div className="col-span-2 bg-gray-900/50 rounded-xl p-4 border border-gray-700/50 flex items-center justify-between">
+
+                  {/* Storage Progress Bar */}
+                  <div className="col-span-2 bg-gray-900/50 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 group-hover:bg-gray-900/80 transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-gray-500" />
+                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Almacenamiento Local</span>
+                      </div>
+                      <span className={clsx("text-[10px] font-black", storagePct > 80 ? "text-rose-500" : "text-gray-300")}>{storagePct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden border border-gray-700/30">
+                       <div 
+                         className={clsx("h-full rounded-full transition-all duration-1000", storagePct > 80 ? "bg-rose-500" : "bg-tad-yellow")} 
+                         style={{ width: `${storagePct}%` }} 
+                       />
+                    </div>
+                  </div>
+
+                  {/* Fleet & Location */}
+                  <div className="col-span-2 bg-gray-900/50 backdrop-blur-md rounded-2xl p-4 border border-gray-700/50 group-hover:bg-gray-900/80 transition-all flex items-center justify-between">
                      <div className="flex items-center gap-2">
-                       <Clock className="w-4 h-4 text-gray-500" />
-                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Actividad</span>
+                       <Server className="w-4 h-4 text-gray-500" />
+                       <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{fleet}</span>
                      </div>
-                     <p className="text-[10px] font-bold text-white uppercase tracking-widest">
-                       {lastSeen ? formatDistanceToNow(new Date(lastSeen)).toUpperCase() : 'N/A'}
-                     </p>
+                     <div className="text-right">
+                        <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">Último Playback</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                           {lastPlayback ? formatDistanceToNow(new Date(lastPlayback)).toUpperCase() : 'N/A'}
+                        </p>
+                     </div>
                   </div>
                 </div>
 
                 <div className={clsx(
-                  'mt-auto pt-4 border-t flex items-center justify-between relative z-10',
+                  'mt-auto pt-5 border-t flex items-center justify-between relative z-10',
                   health === 'critical' ? 'border-rose-500/20' : health === 'warning' ? 'border-amber-500/20' : 'border-gray-700/50'
                 )}>
-                  <div className="flex items-center gap-2">
-                    <div className={clsx(
-                      'w-1.5 h-1.5 rounded-full shadow-sm',
-                      health === 'healthy' ? 'bg-emerald-500' : health === 'warning' ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
-                    )} />
-                    <span className={clsx(
-                      'text-[9px] font-bold uppercase tracking-widest',
-                      health === 'healthy' ? 'text-emerald-500' : health === 'warning' ? 'text-amber-400' : 'text-rose-500'
-                    )}>
-                      {health === 'healthy' ? 'Asignado' : health === 'warning' ? 'Alerta' : 'Desconectado'}
-                    </span>
+                  <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                     <Clock className="w-3.5 h-3.5" />
+                     Visto {lastSeen ? formatDistanceToNow(new Date(lastSeen)).toUpperCase() : 'N/A'}
+                  </div>
+                  <div className={clsx(
+                    'px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg border',
+                    health === 'healthy' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : health === 'warning' ? 'bg-amber-400/10 text-amber-400 border-amber-400/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                  )}>
+                    {health === 'healthy' ? 'Sincronizado' : health === 'warning' ? 'Alerta' : 'Desconectado'}
                   </div>
                 </div>
               </div>

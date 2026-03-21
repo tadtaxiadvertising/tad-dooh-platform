@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTADAction } from '../../hooks/useTADAction';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -38,6 +38,15 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   ...props
 }) => {
   const { executeAction, isPending } = useTADAction();
+  const [isConfirming, setIsConfirming] = React.useState(false);
+
+  // Auto-reset confirmation state after 4 seconds of inactivity
+  React.useEffect(() => {
+    if (isConfirming) {
+      const timer = setTimeout(() => setIsConfirming(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirming]);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -54,21 +63,30 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
       return;
     }
 
-    if (confirmMessage && !window.confirm(confirmMessage)) {
-       console.log(`[Antigravity] 🛑 Acción cancelada por el usuario: ${actionName}`);
+    // New internal confirmation flow instead of window.confirm
+    if (confirmMessage && !isConfirming) {
+       setIsConfirming(true);
+       console.log(`[Antigravity] 🛡️ Solicitando confirmación para: ${actionName}`);
        return;
     }
 
     console.log(`[Antigravity] ⚡ Desplegando acción determinística: ${actionName}`, { critical, isPending });
     
-    // Feedback visual inmediato adicional para confirmar que se recibió el gesto
+    // Feedback visual inmediato
     toast.info(`Iniciando: ${actionName.replace(/_/g, ' ')}...`, { duration: 1500 });
+    setIsConfirming(false); // Clear confirmation state upon execution
 
     executeAction(onAsyncClick, {
       actionName,
       critical,
-      onSuccess,
-      onError,
+      onSuccess: () => {
+        setIsConfirming(false);
+        if (onSuccess) onSuccess();
+      },
+      onError: (err) => {
+        setIsConfirming(false);
+        if (onError) onError(err);
+      },
     });
   };
 
@@ -91,7 +109,7 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
         'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px]',
         'transition-all duration-300 active:scale-95',
         'disabled:opacity-50 disabled:cursor-not-allowed border',
-        variants[variant],
+        isConfirming ? 'bg-amber-500 text-black border-white animate-pulse' : variants[variant],
         className
       )}
     >
@@ -99,6 +117,11 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
         <>
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>{loadingText}</span>
+        </>
+      ) : isConfirming ? (
+        <>
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>[!] CONFIRMAR</span>
         </>
       ) : (
         children

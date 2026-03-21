@@ -20,29 +20,66 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // ============================================
-// SIMPLE SVG MARKER — Clean, performant, no Tailwind dependency
+// TAXI PIN MARKER — Pin shape with white taxi ID label
 // ============================================
 const COLORS: Record<string, string> = {
-  active: '#fad400',
-  offline: '#6b7280',
-  unpaid: '#ef4444',
+  active:  '#fad400',
+  offline: '#52525b',
+  unpaid:  '#ef4444',
 };
 
-const createIcon = (status: string, selected: boolean) => {
-  const c = COLORS[status] || COLORS.offline;
-  const r = selected ? 10 : 7;
-  const s = selected ? 36 : 26;
-  const glow = selected ? `<circle cx="${s/2}" cy="${s/2}" r="${r+6}" fill="${c}" opacity=".2"><animate attributeName="r" values="${r+6};${r+10};${r+6}" dur="2s" repeatCount="indefinite"/></circle>` : '';
+// label = taxi number e.g. "T-01", trimmed to fit
+const createIcon = (status: string, selected: boolean, label = '') => {
+  const fill   = COLORS[status] || COLORS.offline;
+  const stroke = selected ? '#ffffff' : 'rgba(0,0,0,0.4)';
+  const sw     = selected ? 2.5 : 1.5;
+  // Pin total size. Selected is bigger.
+  const W = selected ? 52 : 40;
+  const H = selected ? 64 : 50;
+  // Circle radius inside pin head
+  const R = selected ? 17 : 13;
+  // Center of circle (top section of teardrop)
+  const cx = W / 2;
+  const cy = R + 4;
+  // Tip of the pin (bottom point)
+  const tipY = H - 2;
+  // Short label (max 4 chars to fit)
+  const short = label ? label.replace(/^TAD[-_]?/i, '').replace(/TADSTI[-_]?/i, '').substring(0, 5) : '?';
+  const fs = selected ? 9 : 7;
+
+  const glowAnim = selected
+    ? `<circle cx="${cx}" cy="${cy}" r="${R + 8}" fill="${fill}" opacity="0.25">
+        <animate attributeName="r" values="${R+6};${R+14};${R+6}" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.25;0.05;0.25" dur="2s" repeatCount="indefinite"/>
+       </circle>`
+    : '';
+
+  // Teardrop path: circle top + converging lines to tip
+  const leftX  = cx - R * 0.7;
+  const rightX = cx + R * 0.7;
+  const baseY  = cy + R * 0.9;
 
   return L.divIcon({
     className: '',
-    html: `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
-      ${glow}
-      <circle cx="${s/2}" cy="${s/2}" r="${r}" fill="${c}" stroke="#fff" stroke-width="2"/>
+    html: `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.6))">
+      ${glowAnim}
+      <!-- Pin body: circle + triangle point -->
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+      <polygon points="${leftX},${baseY} ${rightX},${baseY} ${cx},${tipY}"
+               fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>
+      <!-- Taxi icon: simple car silhouette (top-down from Segoe / Unicode) -->
+      <text x="${cx}" y="${cy + fs * 0.38}" 
+            text-anchor="middle" dominant-baseline="middle"
+            font-family="system-ui,sans-serif" font-size="${fs}" font-weight="800"
+            fill="#ffffff" letter-spacing="-0.5">${short}</text>
+      <!-- Small status dot at top-right of circle -->
+      <circle cx="${cx + R - 3}" cy="${cy - R + 3}" r="3.5"
+              fill="${status === 'active' ? '#22c55e' : status === 'unpaid' ? '#f97316' : '#94a3b8'}"
+              stroke="#000" stroke-width="1"/>
     </svg>`,
-    iconSize: [s, s],
-    iconAnchor: [s / 2, s / 2],
-    popupAnchor: [0, -(s / 2)],
+    iconSize:    [W, H],
+    iconAnchor:  [W / 2, H],
+    popupAnchor: [0, -H],
   });
 };
 
@@ -175,11 +212,12 @@ const MapView: React.FC<MapViewProps> = ({
               const sel = selectedId === loc.deviceId;
               const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
 
+              const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
               return (
                 <Marker
                   key={loc.deviceId || i}
                   position={[loc.lastLat, loc.lastLng]}
-                  icon={createIcon(status, sel)}
+                  icon={createIcon(status, sel, label)}
                   zIndexOffset={sel ? 1000 : 0}
                 >
                   <Popup className="popup-clean" offset={[0, -12]}>

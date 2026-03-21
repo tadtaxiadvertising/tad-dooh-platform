@@ -20,12 +20,16 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // ============================================
-// CUSTOM MINIMALIST MARKER ICON
+// CUSTOM MINIMALIST MARKER ICON (IMPROVED SIZE)
 // ============================================
-const createMinimalistIcon = (status: 'active' | 'offline' | 'unpaid', isSelected: boolean) => {
+const createMinimalistIcon = (status: 'active' | 'offline' | 'unpaid', isSelected: boolean, zoom: number) => {
   const color = status === 'active' ? '#fad400' : status === 'unpaid' ? '#ef4444' : '#94a3b8';
   const shadow = status === 'active' ? 'rgba(250,212,0,0.6)' : status === 'unpaid' ? 'rgba(239,68,68,0.6)' : 'rgba(148,163,184,0.4)';
-  const size = isSelected ? 40 : 30;
+  
+  // Scale size based on zoom to avoid "tiny dots" when zooming in
+  const baseSize = zoom > 15 ? 45 : zoom > 12 ? 30 : 20;
+  const size = isSelected ? baseSize * 1.4 : baseSize;
+  const dotSize = zoom > 15 ? 18 : zoom > 12 ? 14 : 10;
   
   return L.divIcon({
     className: 'custom-minimalist-marker',
@@ -41,7 +45,7 @@ const createMinimalistIcon = (status: 'active' | 'offline' | 'unpaid', isSelecte
         
         <!-- Central Dot -->
         <div class="relative rounded-full border-2 border-white shadow-lg transition-all duration-500" 
-             style="background: ${color}; z-index: 10; width: ${isSelected ? '16px' : '14px'}; height: ${isSelected ? '16px' : '14px'};"></div>
+             style="background: ${color}; z-index: 10; width: ${isSelected ? dotSize + 4 : dotSize}px; height: ${isSelected ? dotSize + 4 : dotSize}px;"></div>
 
         <!-- Spotlight Pointer -->
         ${isSelected ? `
@@ -72,13 +76,7 @@ interface MapLocation {
   lastLat?: number;
   lastLng?: number;
   isOnline?: boolean;
-  city?: string;
-  driverName?: string;
-  plate?: string;
-  batteryLevel?: number | null;
-  lastSeen?: string | null;
   subscriptionStatus?: string;
-  speed?: number;
 }
 
 interface MapViewProps {
@@ -94,13 +92,17 @@ interface MapViewProps {
   onSyncCommand?: (v: MapLocation) => void;
 }
 
-function MapController({ center, zoom, onMapClick }: { center: [number, number], zoom: number, onMapClick: () => void }) {
+function MapController({ center, zoom, onMapClick, onZoomChange }: { center: [number, number], zoom: number, onMapClick: () => void, onZoomChange: (z: number) => void }) {
   const map = useMap();
   
   useEffect(() => {
     map.on('click', onMapClick);
-    return () => { map.off('click', onMapClick); };
-  }, [map, onMapClick]);
+    map.on('zoomend', () => onZoomChange(map.getZoom()));
+    return () => { 
+      map.off('click', onMapClick); 
+      map.off('zoomend');
+    };
+  }, [map, onMapClick, onZoomChange]);
 
   useEffect(() => {
     const currentCenter = map.getCenter();
@@ -115,11 +117,22 @@ function MapController({ center, zoom, onMapClick }: { center: [number, number],
   return null;
 }
 
+// NEON PROVINCE COLORS
+const NEON_COLORS = [
+  '#fad400', // Yellow
+  '#00f2ff', // Cyan
+  '#ff00ff', // Magenta
+  '#39ff14', // Neon Green
+  '#ff3131', // Neon Red
+  '#bc13fe', // Neon Purple
+  '#00d4ff'  // Sky Blue
+];
+
 const MapView: React.FC<MapViewProps> = ({ 
   locations = [], 
   heatmapData = [], 
   center = [18.4861, -69.9312], 
-  zoom = 13,
+  zoom: initialZoom = 13,
   mode = 'live',
   selectedId = null,
   recentPath = [],
@@ -129,6 +142,7 @@ const MapView: React.FC<MapViewProps> = ({
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [provincesGeoJSON, setProvincesGeoJSON] = useState<any>(null);
+  const [currentZoom, setCurrentZoom] = useState(initialZoom);
 
   useEffect(() => {
     setIsMounted(true);
@@ -138,7 +152,6 @@ const MapView: React.FC<MapViewProps> = ({
       .catch(err => console.error('GeoJSON Load failed:', err));
   }, []);
 
-  // Format recent path for Leaflet Polyline
   const trailCoordinates = useMemo(() => {
     if (!recentPath || recentPath.length < 2) return [];
     return recentPath.map(p => [p.latitude, p.longitude] as [number, number]);
@@ -160,7 +173,7 @@ const MapView: React.FC<MapViewProps> = ({
 
       <MapContainer 
         center={center} 
-        zoom={zoom} 
+        zoom={initialZoom} 
         maxZoom={19}
         minZoom={7}
         style={{ height: '100%', width: '100%', background: '#070707' }}
@@ -174,17 +187,28 @@ const MapView: React.FC<MapViewProps> = ({
         />
         
         <ZoomControl position="bottomright" />
-        <MapController center={center} zoom={zoom} onMapClick={() => onClearSelection?.()} />
+        <MapController 
+          center={center} 
+          zoom={initialZoom} 
+          onMapClick={() => onClearSelection?.()} 
+          onZoomChange={(z) => setCurrentZoom(z)}
+        />
 
         {provincesGeoJSON && (
            <GeoJSON 
              data={provincesGeoJSON} 
-             style={{
-               color: '#fad400',
-               weight: 2,
-               opacity: selectedId ? 0.1 : 0.4,
-               fillOpacity: 0,
-               dashArray: '5, 10'
+             style={(feature) => {
+               // Assign a stable neon color based on feature index or name
+               const idx = provincesGeoJSON.features?.indexOf(feature) || 0;
+               const neonColor = NEON_COLORS[idx % NEON_COLORS.length];
+               
+               return {
+                 color: neonColor,
+                 weight: 3,
+                 opacity: selectedId ? 0.2 : 0.6,
+                 fillOpacity: 0,
+                 dashArray: '5, 10'
+               };
              }}
            />
         )}
@@ -194,24 +218,11 @@ const MapView: React.FC<MapViewProps> = ({
            <>
               <Polyline 
                 positions={trailCoordinates} 
-                pathOptions={{ 
-                  color: '#fad400', 
-                  weight: 8, 
-                  opacity: 0.1, 
-                  lineCap: 'round',
-                  lineJoin: 'round'
-                }} 
+                pathOptions={{ color: '#fad400', weight: 8, opacity: 0.1, lineCap: 'round', lineJoin: 'round' }} 
               />
               <Polyline 
                 positions={trailCoordinates} 
-                pathOptions={{ 
-                  color: '#fad400', 
-                  weight: 2, 
-                  opacity: 0.6, 
-                  dashArray: '5, 10',
-                  lineCap: 'round',
-                  lineJoin: 'round'
-                }} 
+                pathOptions={{ color: '#fad400', weight: 2, opacity: 0.6, dashArray: '5, 10', lineCap: 'round', lineJoin: 'round' }} 
               />
            </>
         )}
@@ -227,7 +238,9 @@ const MapView: React.FC<MapViewProps> = ({
               if (!loc.lastLat || !loc.lastLng) return null;
               const isSelected = selectedId === loc.deviceId;
               const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
-              const icon = createMinimalistIcon(status, isSelected);
+              
+              // Key change here: passing currentZoom to keep icons visible when zooming in
+              const icon = createMinimalistIcon(status, isSelected, currentZoom);
 
               return (
                 <Marker 

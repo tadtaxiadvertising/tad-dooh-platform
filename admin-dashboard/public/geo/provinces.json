@@ -1,120 +1,35 @@
 {
- "type": "Feature",
- "properties": {
-  "name": "Dominican Republic",
-  "code": "DOM",
-  "group": "Countries"
- },
- "geometry": {
-  "type": "Polygon",
-  "coordinates": [
-   [
-    [
-     -71.712361,
-     19.714456
-    ],
-    [
-     -71.587304,
-     19.884911
-    ],
-    [
-     -70.806706,
-     19.880286
-    ],
-    [
-     -70.214365,
-     19.622885
-    ],
-    [
-     -69.950815,
-     19.648
-    ],
-    [
-     -69.76925,
-     19.293267
-    ],
-    [
-     -69.222126,
-     19.313214
-    ],
-    [
-     -69.254346,
-     19.015196
-    ],
-    [
-     -68.809412,
-     18.979074
-    ],
-    [
-     -68.317943,
-     18.612198
-    ],
-    [
-     -68.689316,
-     18.205142
-    ],
-    [
-     -69.164946,
-     18.422648
-    ],
-    [
-     -69.623988,
-     18.380713
-    ],
-    [
-     -69.952934,
-     18.428307
-    ],
-    [
-     -70.133233,
-     18.245915
-    ],
-    [
-     -70.517137,
-     18.184291
-    ],
-    [
-     -70.669298,
-     18.426886
-    ],
-    [
-     -70.99995,
-     18.283329
-    ],
-    [
-     -71.40021,
-     17.598564
-    ],
-    [
-     -71.657662,
-     17.757573
-    ],
-    [
-     -71.708305,
-     18.044997
-    ],
-    [
-     -71.687738,
-     18.31666
-    ],
-    [
-     -71.945112,
-     18.6169
-    ],
-    [
-     -71.701303,
-     18.785417
-    ],
-    [
-     -71.624873,
-     19.169838
-    ],
-    [
-     -71.712361,
-     19.714456
-    ]
-   ]
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Distrito Nacional", "id": "DN" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.98, 18.44], [-69.89, 18.44], [-69.89, 18.51], [-69.98, 18.51], [-69.98, 18.44]]] } },
+    { "type": "Feature", "properties": { "name": "Santiago", "id": "ST" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.85, 19.35], [-70.55, 19.35], [-70.55, 19.58], [-70.85, 19.58], [-70.85, 19.35]]] } },
+    { "type": "Feature", "properties": { "name": "La Altagracia", "id": "LA" }, "geometry": { "type": "Polygon", "coordinates": [[[-68.60, 18.25], [-68.10, 18.25], [-68.10, 18.75], [-68.60, 18.75], [-68.60, 18.25]]] } },
+    { "type": "Feature", "properties": { "name": "Puerto Plata", "id": "PP" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.15, 19.65], [-70.35, 19.65], [-70.35, 19.98], [-71.15, 19.98], [-71.15, 19.65]]] } },
+    { "type": "Feature", "properties": { "name": "Santo Domingo", "id": "SD" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.15, 18.35], [-69.65, 18.35], [-69.65, 18.68], [-70.15, 18.68], [-70.15, 18.35]]] } },
+    { "type": "Feature", "properties": { "name": "La Romana", "id": "LR" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.05, 18.35], [-68.85, 18.35], [-68.85, 18.55], [-69.05, 18.55], [-69.05, 18.35]]] } },
+    { "type": "Feature", "properties": { "name": "San Pedro de Macorís", "id": "SPM" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.40, 18.40], [-69.15, 18.40], [-69.15, 18.60], [-69.40, 18.60], [-69.40, 18.40]]] } },
+    { "type": "Feature", "properties": { "name": "Duarte", "id": "DU" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.30, 19.10], [-69.80, 19.10], [-69.80, 19.40], [-70.30, 19.40], [-70.30, 19.10]]] } },
+    { "type": "Feature", "properties": { "name": "La Vega", "id": "VE" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.75, 18.80], [-70.35, 18.80], [-70.35, 19.25], [-70.75, 19.25], [-70.75, 18.80]]] } },
+    { "type": "Feature", "properties": { "name": "Espaillat", "id": "ES" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.60, 19.40], [-70.30, 19.40], [-70.30, 19.75], [-70.60, 19.75], [-70.60, 19.40]]] } },
+    { "type": "Feature", "properties": { "name": "Monseñor Nouel", "id": "MN" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.55, 18.80], [-70.25, 18.80], [-70.25, 19.05], [-70.55, 19.05], [-70.55, 18.80]]] } },
+    { "type": "Feature", "properties": { "name": "Sánchez Ramírez", "id": "SR" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.25, 18.90], [-69.90, 18.90], [-69.90, 19.15], [-70.25, 19.15], [-70.25, 18.90]]] } },
+    { "type": "Feature", "properties": { "name": "Peravia", "id": "PE" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.55, 18.15], [-70.25, 18.15], [-70.25, 18.45], [-70.55, 18.45], [-70.55, 18.15]]] } },
+    { "type": "Feature", "properties": { "name": "San Cristóbal", "id": "SC" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.35, 18.30], [-70.05, 18.30], [-70.05, 18.70], [-70.35, 18.70], [-70.35, 18.30]]] } },
+    { "type": "Feature", "properties": { "name": "Azua", "id": "AZ" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.00, 18.30], [-70.50, 18.30], [-70.50, 18.80], [-71.00, 18.80], [-71.00, 18.30]]] } },
+    { "type": "Feature", "properties": { "name": "Barahona", "id": "BA" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.30, 17.80], [-71.00, 17.80], [-71.00, 18.35], [-71.30, 18.35], [-71.30, 17.80]]] } },
+    { "type": "Feature", "properties": { "name": "San Juan", "id": "SJU" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.60, 18.60], [-71.00, 18.60], [-71.00, 19.20], [-71.60, 19.20], [-71.60, 18.60]]] } },
+    { "type": "Feature", "properties": { "name": "Monte Cristi", "id": "MC" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.80, 19.60], [-71.30, 19.60], [-71.30, 19.95], [-71.80, 19.95], [-71.80, 19.60]]] } },
+    { "type": "Feature", "properties": { "name": "Samaná", "id": "SAM" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.60, 19.10], [-69.15, 19.10], [-69.15, 19.40], [-69.60, 19.40], [-69.60, 19.10]]] } },
+    { "type": "Feature", "properties": { "name": "Hato Mayor", "id": "HM" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.45, 18.60], [-69.20, 18.60], [-69.20, 19.05], [-69.45, 19.05], [-69.45, 18.60]]] } },
+    { "type": "Feature", "properties": { "name": "El Seibo", "id": "ES" }, "geometry": { "type": "Polygon", "coordinates": [[[-69.20, 18.60], [-68.90, 18.60], [-68.90, 19.05], [-69.20, 19.05], [-69.20, 18.60]]] } },
+    { "type": "Feature", "properties": { "name": "Monte Plata", "id": "MP" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.00, 18.65], [-69.60, 18.65], [-69.60, 19.05], [-70.00, 19.05], [-70.00, 18.65]]] } },
+    { "type": "Feature", "properties": { "name": "María Trinidad Sánchez", "id": "MTS" }, "geometry": { "type": "Polygon", "coordinates": [[[-70.15, 19.25], [-69.75, 19.25], [-69.75, 19.65], [-70.15, 19.65], [-70.15, 19.25]]] } },
+    { "type": "Feature", "properties": { "name": "Santiago Rodríguez", "id": "SRO" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.50, 19.30], [-71.10, 19.30], [-71.10, 19.60], [-71.50, 19.60], [-71.50, 19.30]]] } },
+    { "type": "Feature", "properties": { "name": "Valverde", "id": "VA" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.15, 19.55], [-70.90, 19.55], [-70.90, 19.70], [-71.15, 19.70], [-71.15, 19.55]]] } },
+    { "type": "Feature", "properties": { "name": "Independencia", "id": "IN" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.95, 18.25], [-71.45, 18.25], [-71.45, 18.65], [-71.95, 18.65], [-71.95, 18.25]]] } },
+    { "type": "Feature", "properties": { "name": "Bahoruco", "id": "BAH" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.60, 18.45], [-71.20, 18.45], [-71.20, 18.65], [-71.60, 18.65], [-71.60, 18.45]]] } },
+    { "type": "Feature", "properties": { "name": "Pedernales", "id": "PN" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.80, 17.50], [-71.35, 17.50], [-71.35, 18.20], [-71.80, 18.20], [-71.80, 17.50]]] } },
+    { "type": "Feature", "properties": { "name": "Dajabón", "id": "DA" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.80, 19.25], [-71.55, 19.25], [-71.55, 19.70], [-71.80, 19.70], [-71.80, 19.25]]] } },
+    { "type": "Feature", "properties": { "name": "Elias Piña", "id": "EP" }, "geometry": { "type": "Polygon", "coordinates": [[[-71.85, 18.75], [-71.55, 18.75], [-71.55, 19.30], [-71.85, 19.30], [-71.85, 18.75]]] } }
   ]
- },
- "_id": "dominican republic"
 }

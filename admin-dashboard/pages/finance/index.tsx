@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getInvoiceUrl, getCampaignExportUrl, getPayrollExportUrl, getCampaignReportUrl, getFinancialSummary, getFinancialLedger } from '../../services/api';
+import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getFinancialSummary, getFinancialLedger, downloadPayrollCsv, downloadCampaignReport, openInvoiceHtml } from '../../services/api';
 import { 
   AlertTriangle,
   Receipt,
@@ -349,17 +349,15 @@ export default function FinancePage() {
                         </td>
                         <td className="px-8 py-6">
                           <div className="flex items-center justify-center gap-2">
-                             <a 
-                              href={getInvoiceUrl(camp.campaignId)} 
-                              target="_blank" 
-                              rel="noreferrer"
+                             <button 
+                              onClick={() => openInvoiceHtml(camp.campaignId)}
                               className="w-10 h-10 inline-flex items-center justify-center bg-gray-900 text-gray-400 rounded-xl hover:bg-tad-yellow hover:text-black transition-all border border-gray-700/50 shadow-sm"
                               title="Invoice"
                              >
                                <Receipt className="w-4 h-4" />
-                             </a>
+                             </button>
                              <button 
-                              onClick={() => window.open(getCampaignReportUrl(camp.campaignId), '_blank')}
+                              onClick={() => downloadCampaignReport(camp.campaignId)}
                               className="w-10 h-10 inline-flex items-center justify-center bg-gray-900 text-gray-400 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-gray-700/50 shadow-sm"
                                title="Report"
                              >
@@ -453,7 +451,7 @@ export default function FinancePage() {
                   </p>
                   <div className="flex flex-wrap gap-4">
                       <button 
-                          onClick={() => window.open(getPayrollExportUrl(), '_blank')}
+                          onClick={() => downloadPayrollCsv()}
                           className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-gray-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all border border-gray-700/50 hover:border-gray-500"
                       >
                           <Download className="w-4 h-4" /> Exportar Ledger

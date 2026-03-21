@@ -12,16 +12,14 @@ const NAVIGATION_GROUPS = [
     label: 'Operaciones',
     items: [
       { name: 'Resumen', href: '/', icon: LayoutDashboard },
-      { name: 'Monitoreo de Flota', href: '/fleet', icon: CarFront },
+      { name: 'Pantallas TAD', href: '/fleet', icon: Tablet },
       { name: 'Rastreo GPS', href: '/tracking', icon: Navigation },
-      { name: 'Alertas y Purgas', href: '/fleet/offline', icon: MonitorOff },
     ],
   },
   {
     label: 'Red y Socios',
     items: [
       { name: 'Conductores y Suscripciones', href: '/drivers', icon: IdCard },
-      { name: 'Inventario de Pantallas', href: '/devices', icon: Tablet },
     ],
   },
   {

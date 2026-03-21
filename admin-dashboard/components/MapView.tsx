@@ -1,11 +1,14 @@
+// admin-dashboard/components/MapView.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { VehiclePopup } from './ui/VehiclePopup';
-import ReactDOMServer from 'react-dom/server';
-import { Tablet, Navigation, CarFront } from 'lucide-react';
-import clsx from 'clsx';
+import dynamic from 'next/dynamic';
+
+const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
@@ -14,47 +17,52 @@ const DefaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
-
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // ============================================
-// CUSTOM MARKER ICON GENERATOR
+// CUSTOM MINIMALIST MARKER ICON
 // ============================================
-const createVehicleIcon = (status: 'active' | 'offline' | 'unpaid') => {
+const createMinimalistIcon = (status: 'active' | 'offline' | 'unpaid', isSelected: boolean) => {
   const color = status === 'active' ? '#fad400' : status === 'unpaid' ? '#ef4444' : '#94a3b8';
+  const shadow = status === 'active' ? 'rgba(250,212,0,0.6)' : status === 'unpaid' ? 'rgba(239,68,68,0.6)' : 'rgba(148,163,184,0.4)';
+  const size = isSelected ? 40 : 30;
   
   return L.divIcon({
-    className: 'custom-vehicle-marker',
+    className: 'custom-minimalist-marker',
     html: `
-      <div class="relative flex items-center justify-center" style="width: 50px; height: 50px;">
-        <!-- Pin Shape -->
-        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid ${color}; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></div>
+      <div class="relative flex items-center justify-center transition-all duration-500" style="width: ${size}px; height: ${size}px;">
+        <!-- Glowing Pulse (Selected or Active) -->
+        ${(status === 'active' || isSelected) ? `
+          <div class="absolute inset-0 rounded-full animate-ping" style="background: ${color}; opacity: ${isSelected ? 0.5 : 0.3}; animation-duration: ${isSelected ? '1.5s' : '2.5s'};"></div>
+        ` : ''}
         
-        <!-- Main Circular Container -->
-        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; border: 3px solid ${color}; box-shadow: 0 8px 25px rgba(0,0,0,0.25); z-index: 10;">
-           <div style="width: 30px; height: 30px; background: ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"></path>
-                <circle cx="7" cy="17" r="2"></circle>
-                <circle cx="17" cy="17" r="2"></circle>
-              </svg>
-           </div>
-        </div>
+        <!-- Outer Aura -->
+        <div class="absolute inset-0 rounded-full shadow-[0_0_20px_${shadow}]" style="background: ${color}; opacity: ${isSelected ? 0.3 : 0.15};"></div>
+        
+        <!-- Central Dot -->
+        <div class="relative rounded-full border-2 border-white shadow-lg transition-all duration-500" 
+             style="background: ${color}; z-index: 10; width: ${isSelected ? '16px' : '14px'}; height: ${isSelected ? '16px' : '14px'};"></div>
 
-        <!-- Active Aura -->
-        ${status === 'active' ? `
-          <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 50%; background: ${color}; opacity: 0.5; animation: ping-glow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <!-- Spotlight Pointer -->
+        ${isSelected ? `
+           <div class="absolute -bottom-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white"></div>
         ` : ''}
       </div>
-      <style>
-        @keyframes ping-glow {
-          75%, 100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
-        }
-      </style>
     `,
-    iconSize: [50, 60],
-    iconAnchor: [25, 60],
-    popupAnchor: [0, -55],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+};
+
+const createClusterCustomIcon = (cluster: any) => {
+  const count = cluster.getChildCount();
+  return L.divIcon({
+    html: `<div class="flex items-center justify-center w-10 h-10 rounded-full bg-black/80 border-2 border-tad-yellow text-tad-yellow text-xs font-black shadow-[0_0_20px_rgba(250,212,0,0.4)] backdrop-blur-md transition-transform hover:scale-110 duration-300">
+            ${count}
+          </div>`,
+    className: 'custom-cluster-icon',
+    iconSize: L.point(40, 40, true),
   });
 };
 
@@ -75,42 +83,34 @@ interface MapLocation {
 
 interface MapViewProps {
   locations: MapLocation[];
-  heatmapData?: unknown[];
+  heatmapData?: any[];
   center?: [number, number];
   zoom?: number;
   mode?: 'live' | 'heatmap';
+  selectedId?: string | null;
+  recentPath?: any[];
+  onClearSelection?: () => void;
   onViewHistory?: (v: MapLocation) => void;
   onSyncCommand?: (v: MapLocation) => void;
 }
 
-// pilot pilot geofencing zones
-const GEOFENCING_ZONES = [
-  {
-    name: 'Piloto Santiago @STI',
-    coords: [
-      [19.4627, -70.7303],
-      [19.4939, -70.6726],
-      [19.4589, -70.6479],
-      [19.4283, -70.7049],
-    ] as [number, number][],
-    color: '#fad400'
-  },
-  {
-     name: 'Piloto Puerto Plata @POP',
-     coords: [
-       [19.7891, -70.7161],
-       [19.8051, -70.6750],
-       [19.7820, -70.6690],
-       [19.7710, -70.7050],
-     ] as [number, number][],
-     color: '#60a5fa'
-  }
-];
-
-function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
+function MapController({ center, zoom, onMapClick }: { center: [number, number], zoom: number, onMapClick: () => void }) {
   const map = useMap();
+  
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 1.5 });
+    map.on('click', onMapClick);
+    return () => { map.off('click', onMapClick); };
+  }, [map, onMapClick]);
+
+  useEffect(() => {
+    const currentCenter = map.getCenter();
+    const distance = L.latLng(center).distanceTo(currentCenter);
+
+    if (distance < 100000) { 
+        map.flyTo(center, zoom, { duration: 1.5, easeLinearity: 0.25, animate: true });
+    } else {
+        map.setView(center, zoom, { animate: false });
+    }
   }, [center, zoom, map]);
   return null;
 }
@@ -121,78 +121,133 @@ const MapView: React.FC<MapViewProps> = ({
   center = [18.4861, -69.9312], 
   zoom = 13,
   mode = 'live',
+  selectedId = null,
+  recentPath = [],
+  onClearSelection,
   onViewHistory,
   onSyncCommand
 }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [provincesGeoJSON, setProvincesGeoJSON] = useState<any>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    fetch('/geo/provinces.json')
+      .then(res => res.json())
+      .then(data => setProvincesGeoJSON(data))
+      .catch(err => console.error('GeoJSON Load failed:', err));
   }, []);
 
-  if (!isMounted) return <div className="w-full h-full bg-slate-50 animate-pulse flex items-center justify-center">
-    <Navigation className="w-10 h-10 text-slate-200 animate-spin" />
-  </div>;
+  // Format recent path for Leaflet Polyline
+  const trailCoordinates = useMemo(() => {
+    if (!recentPath || recentPath.length < 2) return [];
+    return recentPath.map(p => [p.latitude, p.longitude] as [number, number]);
+  }, [recentPath]);
+
+  if (!isMounted) return (
+    <div className="w-full h-full bg-[#070707] flex items-center justify-center">
+       <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-tad-yellow/20 border-t-tad-yellow rounded-full animate-spin" />
+          <p className="text-[10px] font-black text-tad-yellow uppercase tracking-widest animate-pulse">Initializing Master Console Map...</p>
+       </div>
+    </div>
+  );
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative group">
+      {/* SPOTLIGHT OVERLAY */}
+      <div className={`absolute inset-0 bg-black/40 z-[1] pointer-events-none transition-opacity duration-1000 ${selectedId ? 'opacity-100' : 'opacity-0'}`} />
+
       <MapContainer 
         center={center} 
         zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#f8fafc' }}
+        maxZoom={19}
+        minZoom={7}
+        style={{ height: '100%', width: '100%', background: '#070707' }}
         zoomControl={false}
         className="z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
           className="map-tiles-filter"
         />
         
         <ZoomControl position="bottomright" />
-        <MapController center={center} zoom={zoom} />
+        <MapController center={center} zoom={zoom} onMapClick={() => onClearSelection?.()} />
 
-        {GEOFENCING_ZONES.map((zone, i) => (
-           <Polygon 
-             key={i} 
-             positions={zone.coords} 
-             pathOptions={{ 
-               color: zone.color, 
-               fillColor: zone.color, 
-               fillOpacity: 0.1, 
-               weight: 3, 
-               dashArray: '8, 8' 
+        {provincesGeoJSON && (
+           <GeoJSON 
+             data={provincesGeoJSON} 
+             style={{
+               color: '#fad400',
+               weight: 2,
+               opacity: selectedId ? 0.1 : 0.4,
+               fillOpacity: 0,
+               dashArray: '5, 10'
              }}
-           >
-              <Popup className="zone-popup">
-                 <div className="px-3 py-1 bg-white shadow-xl rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-black uppercase text-slate-800 tracking-widest leading-none">{zone.name}</span>
-                 </div>
-              </Popup>
-           </Polygon>
-        ))}
+           />
+        )}
 
-        {mode === 'live' && locations.map((loc, idx) => {
-          if (!loc.lastLat || !loc.lastLng) return null;
-          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
-          const icon = createVehicleIcon(status);
+        {/* VEHICLE RECENT TRAIL (Glow Path) */}
+        {selectedId && trailCoordinates.length > 0 && (
+           <>
+              <Polyline 
+                positions={trailCoordinates} 
+                pathOptions={{ 
+                  color: '#fad400', 
+                  weight: 8, 
+                  opacity: 0.1, 
+                  lineCap: 'round',
+                  lineJoin: 'round'
+                }} 
+              />
+              <Polyline 
+                positions={trailCoordinates} 
+                pathOptions={{ 
+                  color: '#fad400', 
+                  weight: 2, 
+                  opacity: 0.6, 
+                  dashArray: '5, 10',
+                  lineCap: 'round',
+                  lineJoin: 'round'
+                }} 
+              />
+           </>
+        )}
 
-          return (
-            <Marker 
-              key={loc.deviceId || idx} 
-              position={[loc.lastLat, loc.lastLng]}
-              icon={icon}
-            >
-              <Popup className="custom-popup-premium" offset={[0, -15]}>
-                <VehiclePopup 
-                  device={loc as any} 
-                  onViewHistory={() => onViewHistory?.(loc)}
-                  onSyncCommand={() => onSyncCommand?.(loc)}
-                />
-              </Popup>
-            </Marker>
-          );
-        })}
+        {mode === 'live' && (
+          <MarkerClusterGroup
+            chunkedLoading
+            iconCreateFunction={createClusterCustomIcon}
+            maxClusterRadius={50}
+            showCoverageOnHover={false}
+          >
+            {locations.map((loc, idx) => {
+              if (!loc.lastLat || !loc.lastLng) return null;
+              const isSelected = selectedId === loc.deviceId;
+              const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
+              const icon = createMinimalistIcon(status, isSelected);
+
+              return (
+                <Marker 
+                  key={loc.deviceId || idx} 
+                  position={[loc.lastLat, loc.lastLng]}
+                  icon={icon}
+                  zIndexOffset={isSelected ? 1000 : 0}
+                >
+                  <Popup className="custom-popup-premium" offset={[0, isSelected ? -20 : -10]}>
+                    <VehiclePopup 
+                      device={loc as any} 
+                      onViewHistory={() => onViewHistory?.(loc)}
+                      onSyncCommand={() => onSyncCommand?.(loc)}
+                    />
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MarkerClusterGroup>
+        )}
 
         {mode === 'heatmap' && heatmapData.map((point: any, idx) => (
            <Marker 
@@ -200,7 +255,7 @@ const MapView: React.FC<MapViewProps> = ({
              position={[point.lat, point.lng]}
              icon={L.divIcon({
                 className: 'heat-dot',
-                html: `<div style="background: linear-gradient(to bottom, #fad400, #f87171); width: 24px; height: 24px; border-radius: 50%; filter: blur(4px); opacity: 0.5;"></div>`,
+                html: `<div style="background: linear-gradient(to bottom, #fad400, #f87171); width: 24px; height: 24px; border-radius: 50%; filter: blur(6px); opacity: 0.4;"></div>`,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
              })}
@@ -209,14 +264,34 @@ const MapView: React.FC<MapViewProps> = ({
       </MapContainer>
 
       <style jsx global>{`
-        .map-tiles-filter { filter: saturate(1.1) brightness(1.02); }
+        .map-tiles-filter { filter: contrast(1.1) brightness(0.9) saturate(0.8); transition: filter 1s ease; }
+        ${selectedId ? '.map-tiles-filter { filter: contrast(1.1) brightness(0.5) saturate(0.5); }' : ''}
         .custom-popup-premium .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .custom-popup-premium .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .custom-popup-premium .leaflet-popup-tip-container { display: none !important; }
-        .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #f8fafc !important; }
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; margin: 30px !important; }
-        .leaflet-control-zoom a { background: #fff !important; color: #000 !important; border: 1px solid rgba(0,0,0,0.05) !important; width: 44px !important; height: 44px !important; line-height: 44px !important; border-radius: 12px !important; margin-bottom: 8px !important; transition: all 0.3s; }
-        .leaflet-control-zoom a:hover { background: #fad400 !important; color: #000 !important; border-color: #fad400 !important; transform: scale(1.05); }
+        .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #070707 !important; border-radius: 0 !important; }
+        
+        .leaflet-control-zoom { border: none !important; margin: 30px !important; }
+        .leaflet-control-zoom-in, .leaflet-control-zoom-out { 
+           background: rgba(0,0,0,0.85) !important; 
+           color: #fad400 !important; 
+           border: 1px solid rgba(255,255,255,0.05) !important; 
+           width: 44px !important; 
+           height: 44px !important; 
+           line-height: 44px !important; 
+           border-radius: 12px !important; 
+           margin-bottom: 8px !important; 
+           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+           backdrop-filter: blur(12px);
+           font-weight: black !important;
+        }
+        .leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover { 
+           background: #fad400 !important; 
+           color: #000 !important; 
+           border-color: #fad400 !important; 
+           transform: translateY(-2px);
+           box-shadow: 0 10px 25px rgba(250,212,0,0.3);
+        }
       `}</style>
     </div>
   );

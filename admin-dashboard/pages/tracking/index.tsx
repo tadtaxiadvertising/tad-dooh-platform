@@ -168,7 +168,12 @@ export default function TrackingPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#070707] font-sans selection:bg-tad-yellow selection:text-black overflow-hidden selection:bg-opacity-30">
+    <div className="-mx-8 -my-8 lg:-mx-10 lg:-my-10 h-[calc(100vh-5rem)] bg-[#070707] font-sans selection:bg-tad-yellow selection:text-black overflow-hidden relative">
+      {/* 
+        CRITICAL: This page is rendered inside Layout's <main>. 
+        We use negative margins to cancel Layout's padding and fill the viewport.
+        Position: relative (NOT fixed) prevents ghost layers on navigation.
+      */}
       {/* FULLSCREEN MAP BACKGROUND */}
       <div className={clsx(
          "absolute inset-0 z-0 transition-all duration-500 ease-in-out",

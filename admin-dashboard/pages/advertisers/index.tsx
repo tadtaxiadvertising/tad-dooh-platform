@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Phone, Mail, DollarSign, TrendingUp, Building2, Activity, UserPlus, FileSpreadsheet, Zap, Shield, Briefcase, ChevronRight } from 'lucide-react';
+import { Search, Phone, Mail, DollarSign, TrendingUp, Building2, Activity, UserPlus, FileSpreadsheet, Zap, Shield, Briefcase, ChevronRight, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
-import { getAdvertisers } from '../../services/api';
+import { getAdvertisers, deleteAdvertiser } from '../../services/api';
 import { AdvertiserModal } from '../../components/AdvertiserModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
 export default function AdvertisersPage() {
   const [advertisers, setAdvertisers] = useState<{ 
@@ -230,13 +231,33 @@ export default function AdvertisersPage() {
                       </div>
                     </div>
                   </div>
-                  <div className={clsx(
-                    "px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm",
-                    advertiser.status === 'ACTIVE' 
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                      : 'bg-gray-900 text-gray-500 border-gray-700/50'
-                  )}>
-                    {advertiser.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className={clsx(
+                      "px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm",
+                      advertiser.status === 'ACTIVE' 
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                        : 'bg-gray-900 text-gray-500 border-gray-700/50'
+                    )}>
+                      {advertiser.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                    </div>
+                    <AntigravityButton
+                      variant="danger"
+                      actionName="delete_advertiser"
+                      critical={true}
+                      className="w-8 h-8 p-0 rounded-lg"
+                      onAsyncClick={async () => {
+                        if (!confirm(`¿Eliminar la cuenta de "${advertiser.companyName}" y todos sus vínculos?`)) {
+                           throw new Error('Cancelado');
+                        }
+                        return await deleteAdvertiser(advertiser.id);
+                      }}
+                      onSuccess={() => {
+                        loadAdvertisers();
+                        notifyChange('ADVERTISERS');
+                      }}
+                    >
+                       <Trash2 className="w-3.5 h-3.5" />
+                    </AntigravityButton>
                   </div>
                 </div>
 

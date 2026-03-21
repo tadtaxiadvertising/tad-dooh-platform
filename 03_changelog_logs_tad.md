@@ -1,4 +1,26 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
+ 
+## 📅 20 de Marzo, 2026 (Antigravity Sync & Deterministic UI v5.0)
+
+### ⚛️ ENGINE: Antigravity Sync (Real-time Liquidity)
+
+- **Supabase Realtime v2**: Implementación del hook `useAntigravity` que escucha cambios `INSERT/UPDATE/DELETE` en tablas críticas (`pantallas`, `conductores`, `campañas`, `pagos`).
+- **Cache Invalidation**: Integración con TanStack Query v5 para invalidación selectiva de queries mediante `queryClient.invalidateQueries`.
+- **Cross-Tab Sync**: Uso de `BroadcastChannel` para sincronizar el estado entre múltiples pestañas del navegador sin recargas.
+
+### 🔘 UI: Deterministic Interaction (AntigravityButton)
+
+- **Click-Through Fix**: Migración masiva de botones críticos en `media`, `advertisers`, `finance` y `campaigns` al componente `AntigravityButton`.
+- **Priority Layering**: Forzada de `z-index: 60` y `pointer-events: auto` para garantizar que los botones siempre respondan, incluso bajo el efecto de Spotlight o overlays de sistema.
+- **Optimistic Logic**: Feedback visual instantáneo y manejo de estados pendientes (`isPending`) para eliminar la sensación de "clics muertos".
+
+### 🗺️ MAPS: Fidelity & Global Navigation
+
+- **Teardrop Markers**: Rediseño de pines de taxi con forma de gota de alta visibilidad, IDs en blanco de alto contraste y anillos de estado codificados por colores (activo, offline, falta de pago).
+- **Tracking Fix**: Resolvimos el bug de navegación de la página de rastreo; eliminada la propiedad `fixed inset-0` que bloqueaba el resto del dashboard, sustituyéndola por un contenedor relativo perfectamente integrado en el Layout.
+- **Glass Header**: Reestilizado el header global con `backdrop-blur-3xl` y `bg-black/10` para permitir la visualización de la telemetría del mapa por debajo de la interfaz de consulta.
+
+---
 
 ## 📅 20 de Marzo, 2026 (Master Console v4.5: Spotlight & Trails)
 

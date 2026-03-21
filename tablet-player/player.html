@@ -290,5 +290,70 @@
             setInterval(heartbeat, 60000);
         })();
     </script>
+<script>
+// ============================================
+// TAD SYNC V5 — OFFLINE SYNC MANAGER
+// ============================================
+const CACHE_NAME = 'tad-media-v5';
+
+class OfflineSyncManager {
+  static async synchronize(deviceId) {
+    try {
+      console.log(`[TAD Sync] Iniciando sincronización para dispositivo: ${deviceId}`);
+      
+      const SERVER_URL = localStorage.getItem('tad_server_url') || 'https://api.tad.com.do';
+      const response = await fetch(`${SERVER_URL}/api/sync/${deviceId}`);
+      
+      if (!response.ok) {
+        if (response.status === 402) console.error('[TAD Sync] ⛔ Suscripción no pagada (Error 402).');
+        if (response.status === 403) console.error('[TAD Sync] ⛔ Dispositivo Inactivo (Error 403).');
+        return false;
+      }
+      
+      const manifest = await response.json();
+      const serverPlaylist = manifest.playlist;
+      const serverUrls = serverPlaylist.map(item => item.url);
+
+      const cache = await caches.open(CACHE_NAME);
+      const cachedRequests = await cache.keys();
+      const cachedUrls = cachedRequests.map(req => req.url);
+
+      let hasChanges = false;
+
+      for (const item of serverPlaylist) {
+        if (!cachedUrls.includes(item.url)) {
+          console.log(`[TAD Sync] ⬇️ Descargando nuevo medio: ${item.campaignId}`);
+          try {
+            await cache.add(item.url);
+            hasChanges = true;
+          } catch (err) {
+            console.error(`[TAD Sync] Error descargando ${item.url}:`, err);
+          }
+        }
+      }
+
+      for (const cachedReq of cachedRequests) {
+        if (!serverUrls.includes(cachedReq.url)) {
+          console.log(`[TAD Sync] 🗑️ Eliminando medio obsoleto: ${cachedReq.url}`);
+          await cache.delete(cachedReq);
+          hasChanges = true;
+        }
+      }
+
+      localStorage.setItem('tad_active_playlist', JSON.stringify(serverPlaylist));
+      localStorage.setItem('tad_last_sync', new Date().toISOString());
+
+      console.log(`[TAD Sync] ✅ Sincronización completada. Total videos activos: ${serverPlaylist.length}`);
+      return hasChanges;
+
+    } catch (error) {
+      console.error('[TAD Sync] ❌ Fallo crítico en sincronización:', error);
+      return false;
+    }
+  }
+}
+
+window.OfflineSyncManager = OfflineSyncManager;
+</script>
 </body>
 </html>

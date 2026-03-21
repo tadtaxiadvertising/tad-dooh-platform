@@ -208,12 +208,44 @@ export const createAdvertiser = (data: Record<string, unknown>) => api.post('/ad
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
 export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
-// URLs de export usan /api/proxy en producción o directo en dev
+// URLs de export (Legacy, deprecating soon for authenticated methods below)
 const getProxyBase = () => typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api/proxy' : 'http://localhost:3000/api';
 export const getPayrollExportUrl = (month?: string) => `${getProxyBase()}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
 export const getCampaignExportUrl = () => `${getProxyBase()}/finance/export/campaigns.csv`;
 export const getCampaignReportUrl = (id: string) => `${getProxyBase()}/finance/export/campaign/${id}.csv`;
 export const getInvoiceUrl = (id: string, print = false) => `${getProxyBase()}/finance/invoice/${id}${print ? '?print=true' : ''}`;
+
+// Authenticated Downloads
+const triggerDownload = (data: BlobPart, filename: string, type: string) => {
+  const blob = new Blob([data], { type });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export const downloadPayrollCsv = async (month?: string) => {
+  const res = await api.get(`/finance/export/payroll.csv${month ? `?month=${month}` : ''}`, { responseType: 'blob' });
+  triggerDownload(res.data, `payroll-${month || 'current'}.csv`, 'text/csv');
+};
+
+export const downloadCampaignReport = async (id: string) => {
+  const res = await api.get(`/finance/export/campaign/${id}.csv`, { responseType: 'blob' });
+  triggerDownload(res.data, `campaign-${id}.csv`, 'text/csv');
+};
+
+export const openInvoiceHtml = async (id: string) => {
+  const res = await api.get(`/finance/invoice/${id}`, { responseType: 'text' });
+  const newWindow = window.open('', '_blank');
+  if (newWindow) {
+    newWindow.document.write(res.data);
+    newWindow.document.close();
+  }
+};
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 export const recordFinancialTransaction = (data: Record<string, unknown>) => api.post('/finance/transactions', data).then(res => res.data);

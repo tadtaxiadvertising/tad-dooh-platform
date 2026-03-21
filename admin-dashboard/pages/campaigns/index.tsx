@@ -60,7 +60,7 @@ export default function CampaignsPage() {
                setSuccessMsg('SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.');
                setTimeout(() => setSuccessMsg(''), 3000);
              }}
-             className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-tad-yellow hover:text-tad-yellow transition-all text-gray-500 shadow-sm flex items-center gap-2 group"
+             className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-[#FFD400] hover:text-[#FFD400] transition-all text-gray-500 shadow-sm flex items-center gap-2 group"
            >
              <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Revalidar Clúster</span>
@@ -68,7 +68,7 @@ export default function CampaignsPage() {
         </div>
         <Link 
           href="/campaigns/new"
-          className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md shrink-0"
+          className="bg-[#FFD400] text-black px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#e6be00] transition-all shadow-md shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
            Nueva Campaña
@@ -78,27 +78,27 @@ export default function CampaignsPage() {
       {/* Primary IQ Metrics Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { icon: Megaphone, label: 'Campañas Globales', value: campaigns.length, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
-          { icon: Zap, label: 'Impactos Activos', value: campaigns.filter(c => c.active).length, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
-          { icon: Target, label: 'Alcance Red', value: '4.2M+', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-          { icon: Activity, label: 'Integridad Link', value: 'Nominal', color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-white/10' },
+          { icon: Megaphone, label: 'Campañas Globales', value: campaigns.length, color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
+          { icon: Zap, label: 'Impactos Activos', value: campaigns.filter(c => c.active).length, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
+          { icon: Target, label: 'Alcance Red', value: '4.2M+', color: 'text-emerald-500', borderColor: 'border-emerald-500/40', iconColor: 'text-emerald-500' },
+          { icon: Activity, label: 'Integridad Link', value: 'Nominal', color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
         ].map((s, i) => (
           <div 
             key={i} 
             className={clsx(
-              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-sm hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
+              "bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] group relative overflow-hidden transition-all duration-300 shadow-sm flex flex-col justify-between hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
               i === 0 ? 'delay-0' : i === 1 ? 'delay-50' : i === 2 ? 'delay-100' : 'delay-150'
             )}
           >
              <div className="flex justify-between items-start mb-6">
-                <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bgColor, s.border, s.color)}>
-                   <s.icon className="w-5 h-5" />
-                </div>
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
+                 <div className={clsx("p-2.5 rounded-2xl border bg-transparent", s.borderColor, s.iconColor)}>
+                    <s.icon className="w-5 h-5" />
+                 </div>
+                 <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
              </div>
              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{s.label}</p>
-                <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none mt-1", s.color)}>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+                <h3 className={clsx("text-4xl font-black tracking-tighter leading-none mt-1", s.color)}>
                   {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
                 </h3>
              </div>

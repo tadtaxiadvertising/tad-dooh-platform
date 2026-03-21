@@ -561,15 +561,24 @@ export default function FleetPage() {
 
 function StatCard({ label, value, icon: Icon, color, glow }: { label: string; value: string | number; icon: any; color: string; glow?: boolean }) {
   return (
-    <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 p-8 rounded-3xl group hover:border-white/10 transition-all shadow-xl relative overflow-hidden">
+    <div className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300">
       <div className="flex justify-between items-start mb-6">
-        <div className={clsx("p-3.5 rounded-2xl bg-white/5 border border-white/5", color, glow && "shadow-[0_0_20px_rgba(255,212,0,0.1)]")}>
-          <Icon className="w-5 h-5 shadow-2xl" />
+        <div className={clsx("p-2.5 rounded-2xl border bg-transparent", 
+           color === 'text-tad-yellow' ? 'border-[#FFD400]/40 text-[#FFD400]' : 
+           color === 'text-emerald-500' ? 'border-emerald-500/40 text-emerald-500' : 'border-white/20 text-zinc-400',
+           glow && "shadow-[0_0_20px_rgba(255,212,0,0.15)]"
+        )}>
+          <Icon className="w-5 h-5" />
         </div>
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
       </div>
-      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-2">{label}</p>
-      <h3 className={clsx("text-4xl font-black tracking-tighter italic", color, glow && "text-shadow-glow")}>{value}</h3>
-      <div className={clsx("absolute bottom-0 left-0 h-1 bg-current opacity-0 group-hover:opacity-10 transition-opacity w-full", color)} />
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+      <h3 className={clsx("text-4xl font-black tracking-tighter leading-none", 
+         color === 'text-tad-yellow' ? 'text-[#FFD400]' : color, 
+         glow && "text-shadow-glow"
+      )}>
+         {typeof value === 'number' && value < 10 ? `0${value}` : value}
+      </h3>
     </div>
   );
 }

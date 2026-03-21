@@ -363,7 +363,7 @@ export default function CampaignDetailPage() {
                                href={`https://proyecto-ia-tad-portal.rewvid.easypanel.host/${device.deviceId}`}
                                target="_blank"
                                rel="noreferrer"
-                               title="Portal Pasajero"
+                               title="Telemetría Chofer (GPS / PWA)"
                                className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-all"
                              >
                                 <Share2 className="w-3.5 h-3.5" />

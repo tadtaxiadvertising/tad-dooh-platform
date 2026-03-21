@@ -1,12 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, ShieldCheck, CreditCard, Radio, ExternalLink } from 'lucide-react';
+import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation } from 'lucide-react';
 import clsx from 'clsx';
 import { getDrivers, updateDriverSubscription } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import WhatsAppButton from '../../components/ui/WhatsAppButton';
+
+// Helper: obtiene la base URL del API de producción
+const getApiBase = () => {
+  if (typeof window === 'undefined') return '';
+  // @ts-ignore
+  const stored = (window as unknown as Record<string, string>).TAD_API_URL;
+  if (stored) return stored;
+  // En producción usa la URL del backend desplegado en EasyPanel
+  return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+};
+
+const getTelemetryUrl = (deviceId: string) => {
+  // Points to the new tad-driver.html business hub, pre-filling the deviceId and server via URL
+  const base = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
+  const api = getApiBase();
+  return `${base}/tad-driver.html?deviceId=${deviceId}&server=${encodeURIComponent(api)}`;
+};
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<{ 
@@ -25,7 +42,6 @@ export default function DriversPage() {
     licensePlate?: string;
   }[]>([]);
   const [loading, setLoading] = useState(true);
-// error state removed as per linting rules
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'blocked' | 'unpaid'>('all');
@@ -300,6 +316,26 @@ export default function DriversPage() {
                       </td>
                       <td className="px-8 py-6">
                         <div className={"flex items-center gap-3 justify-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                          {driver.deviceId && (
+                            <>
+                              <a 
+                                href={getTelemetryUrl(driver.deviceId)} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                title="Ver Hub del Conductor (TAD DRIVE)"
+                                className="p-2.5 rounded-xl transition-all border border-blue-400/20 bg-blue-400/5 text-blue-400 hover:bg-blue-400 hover:text-white flex items-center justify-center shadow-sm"
+                              >
+                                <Smartphone className="w-4 h-4" />
+                              </a>
+                              <Link 
+                                href={`/tracking?search=${driver.deviceId}`}
+                                title="Rastrear GPS en Tiempo Real"
+                                className="p-2.5 rounded-xl transition-all border border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black flex items-center justify-center shadow-sm"
+                              >
+                                <Navigation className="w-4 h-4" />
+                              </Link>
+                            </>
+                          )}
                           <button 
                             onClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
                             className={clsx(
@@ -338,8 +374,8 @@ export default function DriversPage() {
                             <div className="flex items-center gap-3 mb-4">
                                <div className="p-2 bg-tad-yellow/10 rounded-lg">
                                   <Tablet className="w-4 h-4 text-tad-yellow" />
-                               </div>
-                               <h4 className="text-white font-bold uppercase tracking-widest text-xs">Integración de Hardware</h4>
+                                </div>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Integración de Hardware</h4>
                             </div>
                             <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                               <div>
@@ -361,95 +397,72 @@ export default function DriversPage() {
                             </div>
                           </div>
 
-                          {/* Propagation Engine */}
+                          {/* Business Analytics */}
                           <div className="space-y-4">
                             <div className="flex items-center gap-3 mb-4">
-                               <div className="p-2 bg-blue-500/10 rounded-lg">
-                                  <Zap className="w-4 h-4 text-blue-400" />
-                               </div>
-                               <h4 className="text-white font-bold uppercase tracking-widest text-xs">Emisiones & Analytics</h4>
+                               <div className="p-2 bg-gray-800 rounded-lg">
+                                  <Zap className="w-4 h-4 text-white" />
+                                </div>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Rendimiento Operativo</h4>
                             </div>
-                            <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 relative overflow-hidden group/m">
-                              <Zap className="w-20 h-20 text-tad-yellow/5 absolute -right-4 -bottom-4 rotate-12 transition-transform duration-700 group-hover/m:scale-110" />
-                              <div className="flex justify-between items-end mb-4 relative z-10">
-                                <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Campañas Activas</p>
-                                   <h5 className="text-white font-bold text-3xl tracking-tight">{driver.activeAds || 12}</h5>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Proyección Mensual</p>
-                                   <h5 className="text-tad-yellow font-bold text-xl tracking-tight">RD$ {driver.projectedEarnings?.toLocaleString() || '14,200'}</h5>
-                                </div>
-                              </div>
-                              <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden mb-2">
-                                <div className="h-full bg-tad-yellow w-[68%] shadow-[0_0_10px_#fad400] animate-pulse"></div>
-                              </div>
-                              <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                                 <span>Uso de Datos</span>
-                                 <span>12.8 GB / 15.0 GB</span>
-                              </div>
+                            <div className="grid grid-cols-1 gap-4">
+                               <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 flex justify-between items-center group/item hover:border-gray-500 transition-colors">
+                                  <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5 group-hover/item:text-gray-300 transition-colors">Anuncios Transmitidos</p>
+                                    <h5 className="text-xl font-bold text-white tracking-widest">--</h5>
+                                  </div>
+                                  <ShieldCheck className="w-8 h-8 text-gray-700" />
+                               </div>
+                               <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
+                                  <div>
+                                    <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado</p>
+                                    <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ 0.00</h5>
+                                  </div>
+                                  <CreditCard className="w-8 h-8 text-tad-yellow/20" />
+                               </div>
                             </div>
                           </div>
 
-                          {/* Vault Documentation */}
+                          {/* Compliance Panel */}
                           <div className="space-y-4">
                             <div className="flex items-center gap-3 mb-4">
-                               <div className="p-2 bg-purple-500/10 rounded-lg">
-                                  <ShieldCheck className="w-4 h-4 text-purple-400" />
-                               </div>
-                               <h4 className="text-white font-bold uppercase tracking-widest text-xs">Documentos & Credenciales</h4>
+                               <div className="p-2 bg-emerald-500/10 rounded-lg">
+                                  <IdCard className="w-4 h-4 text-emerald-500" />
+                                </div>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Cumplimiento / Legal</h4>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 hover:border-gray-500 transition-colors">
-                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Cédula</p>
-                                 <p className="text-white font-bold text-xs font-mono">{driver.cedula || '402-2342...-2'}</p>
-                              </div>
-                              <div className="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 hover:border-gray-500 transition-colors">
-                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Licencia</p>
-                                 <p className="text-white font-bold text-xs font-mono">{driver.licensePlate || 'B-9002241'}</p>
-                              </div>
-                              <button className="col-span-2 py-3 bg-gray-900 hover:bg-tad-yellow hover:text-black border border-gray-700/50 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm mt-1">
-                                Ver Expediente Completo
-                              </button>
+                            <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
+                               <div>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Expediente Digital</p>
+                                  <div className="flex gap-2">
+                                     <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Contrato</button>
+                                     <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Seguro</button>
+                                  </div>
+                               </div>
+                               <button className="w-full bg-tad-yellow text-black font-black text-[9px] uppercase tracking-[0.2em] py-3 rounded-xl hover:scale-[1.02] transition-transform shadow-md">Auditar Expediente Completo</button>
                             </div>
                           </div>
-
                         </div>
                       </td>
                     </tr>
-                   )}
+                    )}
                   </React.Fragment>
                 ))}
               </tbody>
             </table>
           </div>
-          
-          {!loading && filtered.length === 0 && (
-            <div className="py-40 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-700">
-               <div className="w-20 h-20 bg-gray-900/50 rounded-3xl flex items-center justify-center mb-8 shadow-sm border border-gray-700/50">
-                  <UserX className="w-10 h-10 text-gray-600" />
-               </div>
-               <h3 className="text-2xl font-bold text-gray-500 uppercase tracking-widest mb-3">Sin Resultados</h3>
-               <p className="text-gray-500 font-bold uppercase tracking-widest text-xs max-w-sm">
-                  No se encontraron coincidencias para &quot;{search}&quot;.
-               </p>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Footer System Info */}
-      <div className="mt-16 py-8 border-t border-gray-800 flex flex-col items-center justify-center opacity-60 text-center">
-         <ShieldCheck className="w-8 h-8 text-gray-600 mb-4" />
-         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">TAD CREW MGMT • CORE v4.5</p>
-         <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-1.5">© 2026 TAD DOMINICANA • TODOS LOS DERECHOS RESERVADOS</p>
-      </div>
-
       <DriverModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={loadDrivers} 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          loadDrivers();
+          notifyChange('CONDUCTORES');
+        }}
       />
+
     </div>
   );
 }

@@ -1,5 +1,6 @@
 // admin-dashboard/pages/tracking/index.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/router';
 import {
   Navigation, MapPin, Activity, Search, RefreshCw,
   Battery, ChevronDown, ChevronRight, Gauge as Speedometer, Signal,
@@ -61,6 +62,7 @@ interface TrackingDriver {
 }
 
 export default function TrackingPage() {
+  const router = useRouter();
   const [view, setView] = useState<'summary' | 'log' | 'map'>('map');
   const [summary, setSummary] = useState<TrackingDriver[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -69,6 +71,13 @@ export default function TrackingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (router.query.search) {
+      setSearch(router.query.search as string);
+    }
+  }, [router.query.search]);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mapMode, setMapMode] = useState<'live' | 'heatmap'>('live');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -104,6 +113,7 @@ export default function TrackingPage() {
     }
   }, [view]);
 
+  // Sync with other tabs
   useTabSync('DEVICES', loadData);
 
   useEffect(() => {
@@ -169,16 +179,8 @@ export default function TrackingPage() {
 
   return (
     <div className="-mx-8 -my-8 lg:-mx-10 lg:-my-10 h-[calc(100vh-5rem)] bg-[#070707] font-sans selection:bg-tad-yellow selection:text-black overflow-hidden relative">
-      {/* 
-        CRITICAL: This page is rendered inside Layout's <main>. 
-        We use negative margins to cancel Layout's padding and fill the viewport.
-        Position: relative (NOT fixed) prevents ghost layers on navigation.
-      */}
       {/* FULLSCREEN MAP BACKGROUND */}
-      <div className={clsx(
-         "absolute inset-0 z-0 transition-all duration-500 ease-in-out",
-         headerCollapsed ? "top-0 h-full" : "top-0 h-full"
-      )}>
+      <div className="absolute inset-0 z-0 h-full">
          {!loading && !error && view === 'map' ? (
                <MapView 
                   locations={filteredFleet} 
@@ -271,22 +273,19 @@ export default function TrackingPage() {
       </div>
 
       {/* OVERLAY: FLEET SIDEBAR (RIGHT SIDE) */}
-      {/* IMPORTANT: outer wrapper is pointer-events-none so the map stays interactive.
-          The inner panel uses pointer-events-auto explicitly. */}
       <div className="absolute top-0 bottom-0 right-0 z-30 flex items-center pointer-events-none">
          <div
            onClick={(e) => e.stopPropagation()}
            className={clsx(
              "h-full w-[400px] bg-black/85 backdrop-blur-3xl border-l border-white/5 shadow-[-30px_0_60px_rgba(0,0,0,0.6)]",
              "transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]",
-             // pointer-events-auto is critical: overrides parent pointer-events-none
              "pointer-events-auto flex relative",
              sidebarOpen ? "translate-x-0" : "translate-x-full"
            )}
          >
             <button
               onClick={(e) => {
-                e.stopPropagation(); // prevent bubbling to map's click handler
+                e.stopPropagation();
                 setSidebarOpen(!sidebarOpen);
               }}
               className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-24 bg-black/85 backdrop-blur-2xl border-y border-l border-white/5 rounded-l-2xl flex items-center justify-center text-tad-yellow/40 hover:text-tad-yellow transition-all group shadow-xl pointer-events-auto"

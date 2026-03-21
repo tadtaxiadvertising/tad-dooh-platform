@@ -400,6 +400,7 @@ model Driver {
   deviceId         String?   @unique @map("device_id") // FK to Device.deviceId
   subscriptionPaid Boolean   @default(false) @map("subscription_paid")
   subscriptionEnd  DateTime? @map("subscription_end")
+  referredBy       String?   @map("referred_by")
   status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
   onboardedAt      DateTime  @default(now()) @map("onboarded_at")
   blockedAt        DateTime? @map("blocked_at")
@@ -411,10 +412,39 @@ model Driver {
   campaigns     Campaign[]
   payrollPayments PayrollPayment[]
   locations     DriverLocation[]
+  
+  // Financial Intelligence: Referral tracking
+  referredByDriver Driver?   @relation("DriverReferrals", fields: [referredBy], references: [id])
+  referrals        Driver[]   @relation("DriverReferrals")
 
   @@map("drivers")
   @@index([status])
   @@index([phone])
+}
+
+// ============================================
+// FINANCIAL INTELLIGENCE (Libro Mayor)
+// ============================================
+
+model FinancialTransaction {
+  id            String   @id @default(uuid())
+  type          String   // INCOMING, OUTGOING
+  category      String   // SUSCRIPCION, PUBLICIDAD, HARDWARE, REFERIDOS, SERVER, OTROS
+  amount        Float    // Gross amount
+  netAmount     Float    @map("net_amount") // Amount after taxes/retentions
+  taxAmount     Float    @map("tax_amount") // ITBIS 18% or other taxes
+  status        String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  entityId      String?  @map("entity_id") // ID of Driver, Advertiser, etc.
+  reference     String?  @unique
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("financial_transactions")
+  @@index([type])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============================================

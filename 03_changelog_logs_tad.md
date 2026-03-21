@@ -1,5 +1,5 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
- 
+
 ## 📅 20 de Marzo, 2026 (Antigravity Sync & Deterministic UI v5.0)
 
 ### ⚛️ ENGINE: Antigravity Sync (Real-time Liquidity)
@@ -151,3 +151,22 @@
 - **SOP**: Creado un nuevo manual operativo `04_flujo_operativo_tad.md` que detalla el ciclo completo desde el onboarding del conductor hasta la liquidación financiera de RD$500/anuncio.
 
 ---
+
+## 🏦 [FINANCIAL_LOG] - TAD Intelligence Module v1.0
+
+### **Estado Actual del Balance** (Corte: 20 de Marzo, 2026)
+
+- **MRR (Ingresos Recurrentes):** RD$ 0.00 (Esperando activación de primera flota)
+- **Burn Rate:** RD$ 0.00 (Operación base)
+- **Neto Acumulado:** RD$ 0.00
+
+### **Reglas de Negocio Aplicadas:**
+
+1. **Suscripción Base:** RD$ 6,000 / mes por taxi.
+2. **ITBIS:** 18% aplicado a todos los Ingresos (Suscripciones y Publicidad).
+3. **Retención Referidos:** 10% del Neto retenido para el Referidor (si aplica).
+4. **Pago a Conductores:** RD$ 500 / pauta activa / mes.
+
+### **Historial de Movimientos:**
+
+- `2026-03-20`: **INIT** | Configuración inicial del módulo de inteligencia financiera y activación del Libro Mayor (Ledger).

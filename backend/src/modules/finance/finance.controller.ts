@@ -113,4 +113,37 @@ export class FinanceController {
     res.setHeader('Content-Disposition', `attachment; filename=campaign-${id}.csv`);
     return res.status(HttpStatus.OK).send(csv);
   }
+  /**
+   * FINANCIAL INTELLIGENCE: Registers a new financial transaction (Income/Expense).
+   */
+  @Post('transactions')
+  async recordTransaction(
+    @Body() data: { 
+      type: string; 
+      category: string; 
+      amount: number; 
+      entityId?: string; 
+      reference?: string; 
+      note?: string; 
+      status?: string;
+    }
+  ) {
+    return this.financeService.recordTransaction(data);
+  }
+
+  /**
+   * FINANCIAL INTELLIGENCE: Returns MRR, Burn Rate and net projections.
+   */
+  @Get('summary')
+  async getSummary() {
+    return this.financeService.getFinancialSummary();
+  }
+
+  /**
+   * FINANCIAL INTELLIGENCE: Returns the general ledger (last 50 transactions).
+   */
+  @Get('ledger')
+  async getLedger() {
+    return this.financeService.getLedger();
+  }
 }

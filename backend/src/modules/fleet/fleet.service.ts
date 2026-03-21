@@ -18,10 +18,24 @@ export class FleetService {
         batteryLevel: true,
         playerStatus: true,
         storageFree: true,
+        storageUsed: true,
+        storageTotal: true,
+        appVersion: true,
         status: true,
         city: true,
+        fleet: true,
         lastHeartbeat: true,
+        lastPlayback: true,
+        driver: {
+          select: {
+            fullName: true,
+            id: true,
+          }
+        }
       },
+      orderBy: {
+        lastSeen: 'desc',
+      }
     });
 
     const now = new Date();
@@ -43,7 +57,11 @@ export class FleetService {
         battery_level: d.batteryLevel,
         player_status: d.playerStatus,
         storage_free: d.storageFree,
-        is_online: isOnline
+        storage_used: d.storageUsed ? Number(d.storageUsed) : null,
+        storage_total: d.storageTotal ? Number(d.storageTotal) : null,
+        is_online: isOnline,
+        driver_name: d.driver?.fullName || 'Sín Conductor',
+        last_playback: d.lastPlayback,
       };
     });
   }

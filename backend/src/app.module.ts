@@ -11,6 +11,7 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { AdvertisersModule } from './modules/advertisers/advertisers.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { SyncModule } from './modules/sync/sync.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SupabaseModule } from './modules/supabase/supabase.module';
@@ -65,6 +66,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
     DriversModule,
     AdvertisersModule,
     FinanceModule,
+    SyncModule,
   ],
   providers: [
     // Global JWT guard — protects ALL routes by default

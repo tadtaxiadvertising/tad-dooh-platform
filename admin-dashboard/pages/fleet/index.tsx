@@ -42,9 +42,10 @@ const getGpsPlayerUrl = () => {
   return `${origin}/tad-driver.html`; // Served from tablet-player via EasyPanel
 };
 const getTelemetryUrl = (deviceId: string) => {
-  // Points to the new tad-driver.html business hub, pre-filling the deviceId via URL query param
+  // Points to the new tad-driver.html business hub, pre-filling the deviceId and server via URL
   const base = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
-  return `${base}/tad-driver.html?deviceId=${deviceId}`;
+  const api = getApiBase();
+  return `${base}/tad-driver.html?deviceId=${deviceId}&server=${encodeURIComponent(api)}`;
 };
 
 function CopyButton({ value, label = 'URL' }: { value: string; label?: string }) {

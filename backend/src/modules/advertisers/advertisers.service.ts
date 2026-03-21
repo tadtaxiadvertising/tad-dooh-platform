@@ -47,4 +47,12 @@ export class AdvertisersService {
       data
     });
   }
+
+  async remove(id: string) {
+    // Delete related campaigns first to avoid FK constraint issues
+    await this.prisma.campaign.deleteMany({ where: { advertiser_id: id } });
+    return this.prisma.advertiser.delete({
+      where: { id }
+    });
+  }
 }

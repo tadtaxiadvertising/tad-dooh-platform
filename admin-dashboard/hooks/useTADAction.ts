@@ -17,8 +17,12 @@ export const useTADAction = () => {
     asyncFn: () => Promise<any>,
     options: ActionOptions
   ) => {
-    if (isPending) return;
+    if (isPending) {
+      console.warn(`[TADAction] ⏳ Ignorando acción "${options.actionName}" porque hay otra en curso.`);
+      return;
+    }
 
+    console.log(`[TADAction] 🚀 Ejecutando: ${options.actionName}`);
     setIsPending(true);
 
     // Optimistic UI update
@@ -29,13 +33,15 @@ export const useTADAction = () => {
     try {
       const result = await asyncFn();
 
-      // Telemetry log for critical actions
+      // Telemetry log for critical actions (NON-BLOCKING)
       if (options.critical) {
-        await supabase.from('analytics_events').insert([{
+        supabase.from('analytics_events').insert([{
           type: 'CRITICAL_ACTION',
           event_data: { action: options.actionName, status: 'SUCCESS' },
           created_at: new Date().toISOString()
-        }]);
+        }]).then(({ error }) => {
+          if (error) console.warn('Telemetry error (success log):', error);
+        });
       }
 
       toast.success(`${options.actionName} completado`);
@@ -50,13 +56,15 @@ export const useTADAction = () => {
 
       console.error(`Error en la acción ${options.actionName}:`, err);
       
-      // Telemetry log for failure
+      // Telemetry log for failure (NON-BLOCKING)
       if (options.critical) {
-        await supabase.from('analytics_events').insert([{
+        supabase.from('analytics_events').insert([{
           type: 'CRITICAL_ACTION',
           event_data: { action: options.actionName, status: 'FAILURE', error: err.message },
           created_at: new Date().toISOString()
-        }]);
+        }]).then(({ error }) => {
+          if (error) console.warn('Telemetry error (failure log):', error);
+        });
       }
 
       toast.error(`Error en ${options.actionName}: ${err.message || 'Error desconocido'}`);

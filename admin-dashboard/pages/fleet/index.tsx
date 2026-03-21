@@ -208,6 +208,8 @@ export default function FleetPage() {
     return matchesSearch && matchesFilter;
   });
 
+  const isSearching = search.trim().length > 0;
+
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
       {/* Background Decor */}

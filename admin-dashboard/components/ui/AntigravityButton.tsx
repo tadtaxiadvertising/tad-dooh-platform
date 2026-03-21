@@ -74,7 +74,7 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
       id={id}
       type="button"
       onClick={handleClick}
-      disabled={isPending || disabled || !resolvedAction}
+      disabled={isPending || disabled || !onAsyncClick}
       className={cn(
         'relative z-[100] !pointer-events-auto', // Elevación máxima y eventos forzados
         'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px]',

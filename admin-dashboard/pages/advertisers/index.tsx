@@ -6,6 +6,7 @@ import { AdvertiserModal } from '../../components/AdvertiserModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import WhatsAppButton from '../../components/ui/WhatsAppButton';
 
 export default function AdvertisersPage() {
   const [advertisers, setAdvertisers] = useState<{ 
@@ -258,16 +259,19 @@ export default function AdvertisersPage() {
                 </div>
 
                 <div className="space-y-4 mb-8 bg-gray-900/50 p-6 rounded-2xl border border-gray-700/50">
-                  {[
-                    { icon: Mail, value: advertiser.email || 'SIN DATOS' },
-                    { icon: Phone, value: advertiser.phone || 'SIN DATOS' },
-                    { icon: TrendingUp, value: advertiser.contactName || 'SIN CONTACTO' }
-                  ].map((info, ii) => (
-                    <div key={ii} className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
-                      <info.icon className="w-4 h-4 text-tad-yellow shrink-0" />
-                      <span className="truncate">{info.value}</span>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                    <Mail className="w-4 h-4 text-tad-yellow shrink-0" />
+                    <span className="truncate">{advertiser.email || 'SIN DATOS'}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                    <Phone className="w-4 h-4 text-tad-yellow shrink-0" />
+                    <span className="truncate">{advertiser.phone || 'SIN DATOS'}</span>
+                    <WhatsAppButton phone={advertiser.phone} name={advertiser.companyName} className="scale-75 origin-left ml-[-8px]" />
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                    <TrendingUp className="w-4 h-4 text-tad-yellow shrink-0" />
+                    <span className="truncate">{advertiser.contactName || 'SIN CONTACTO'}</span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-700/50 mt-auto relative items-center">

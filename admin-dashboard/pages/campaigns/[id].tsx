@@ -119,6 +119,16 @@ export default function CampaignDetailPage() {
         
         <div className="flex items-center gap-4 bg-gray-800/40 p-1.5 rounded-2xl border border-gray-700/50 backdrop-blur-xl shadow-lg shrink-0">
            <button 
+             onClick={() => {
+               fetchCampaign();
+               fetchAssignedDevices();
+             }}
+             title="Sincronizar Datos"
+             className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-tad-yellow hover:text-tad-yellow text-gray-500 transition-all shadow-sm"
+           >
+             <RefreshCcw className={clsx("w-4 h-4", (loading || loadingDevices) && "animate-spin")} />
+           </button>
+           <button 
              onClick={async () => {
                 if (!confirm(`¿Eliminar la campaña "${campaign.name}"? Esta acción no se puede deshacer.`)) return;
                 try {

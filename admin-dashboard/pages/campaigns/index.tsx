@@ -1,16 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getCampaigns, deleteCampaign } from '../../services/api';
-import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download } from 'lucide-react';
+import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download, RefreshCcw } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import clsx from 'clsx';
 import DeviceSelectorModal from '../../components/DeviceSelectorModal';
+import { CampaignModal } from '../../components/CampaignModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { getMedia } from '../../services/api';
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; devices?: string[] }[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; media?: { id: string }[]; devices?: string[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<{ id: string; name: string; devices?: string[] } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,7 +52,20 @@ export default function CampaignsPage() {
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Broadcasting / Campaign Orchestrator</p>
       </div>
 
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+           <button 
+             onClick={() => {
+               loadData();
+               setSuccessMsg('SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.');
+               setTimeout(() => setSuccessMsg(''), 3000);
+             }}
+             className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-tad-yellow hover:text-tad-yellow transition-all text-gray-500 shadow-sm flex items-center gap-2 group"
+           >
+             <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
+             <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Revalidar Clúster</span>
+           </button>
+        </div>
         <Link 
           href="/campaigns/new"
           className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md shrink-0"
@@ -100,7 +115,7 @@ export default function CampaignsPage() {
             const startDate = new Date(camp.startDate || camp.start_date || '');
             const endDate = new Date(camp.endDate || camp.end_date || '');
             const isLive = camp.active && now >= startDate && now <= endDate;
-            const assetCount = camp.mediaAssets?.length || 0;
+            const assetCount = (camp.mediaAssets?.length || 0) + (camp.media?.length || 0);
             const totalDuration = (camp.mediaAssets || []).reduce((sum: number, a: { duration?: number }) => sum + (a.duration || 0), 0);
 
             return (
@@ -189,10 +204,10 @@ export default function CampaignsPage() {
                             setSelectedCampaign(camp);
                             setModalOpen(true);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 bg-gray-900/50 border border-gray-700 hover:bg-tad-yellow hover:border-tad-yellow hover:text-black text-gray-400 font-bold text-[10px] uppercase tracking-wider py-3 rounded-xl transition-all shadow-sm"
+                          className="flex-1 flex items-center justify-center gap-2 bg-tad-yellow/10 border border-tad-yellow/20 hover:bg-tad-yellow hover:text-black text-tad-yellow font-bold text-[10px] uppercase tracking-wider py-3 rounded-xl transition-all shadow-sm group/btn"
                         >
-                          <Share2 className="w-4 h-4" />
-                          Expandir
+                          <Zap className="w-4 h-4 group-hover/btn:animate-pulse" />
+                          Despliegue
                         </button>
                         <Link 
                           href={`/campaigns/${camp.id}`}
@@ -241,15 +256,15 @@ export default function CampaignsPage() {
       </div>
 
       {selectedCampaign && (
-        <DeviceSelectorModal 
+        <CampaignModal 
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           campaignId={selectedCampaign.id}
           campaignName={selectedCampaign.name}
-          initialSelected={selectedCampaign.devices || []}
           onSuccess={() => {
+            loadData();
             notifyChange('CAMPAIGNS');
-            setSuccessMsg(`DIFUSIÓN DE "${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`);
+            setSuccessMsg(`"${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`);
             setTimeout(() => setSuccessMsg(''), 5000);
           }}
         />

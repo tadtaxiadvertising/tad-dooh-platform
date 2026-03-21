@@ -54,13 +54,14 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
      */
     e.stopPropagation();
 
+    console.log(`[Antigravity] ⚡ Desplegando acción: ${actionName}`, { critical, hasAction: !!resolvedAction });
+    
     if (!resolvedAction) {
       // Telemetry: log which element is covering the button at cursor position
       const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
-      console.error(
-        `[AntigravityButton] ⚠️ No action bound for button id="${id ?? actionName}".`,
-        '\nElement at click point:', elementAtPoint,
-        '\nAction props received:', { onAsyncClick, onPantallaClick, onNodoClick }
+      console.warn(
+        `[AntigravityButton] ⚠️ No hay acción vinculada para: "${id ?? actionName}".`,
+        '\nElemento en punto de clic:', elementAtPoint
       );
       return;
     }
@@ -83,16 +84,14 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   return (
     <button
       id={id}
+      type="button"
       onClick={handleClick}
       disabled={isPending || disabled || !resolvedAction}
       className={cn(
-        'relative z-[60]',
+        'relative z-[100] !pointer-events-auto', // Elevación máxima y eventos forzados
         'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px]',
         'transition-all duration-300 active:scale-95',
         'disabled:opacity-50 disabled:cursor-not-allowed border',
-        // CRITICAL: pointer-events-auto ensures the button is always clickable
-        // even when a parent has pointer-events-none
-        'pointer-events-auto',
         variants[variant],
         className
       )}

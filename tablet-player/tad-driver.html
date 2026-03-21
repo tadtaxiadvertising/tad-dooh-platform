@@ -475,9 +475,23 @@
         const defaultServer = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
         const serverFromUrl = urlParams.get('server');
         
-        // Prioritize URL, then localStorage, then default
-        const server = serverFromUrl || localStorage.getItem('tad_gps_server') || defaultServer;
-        if (serverFromUrl) localStorage.setItem('tad_gps_server', serverFromUrl);
+        // 🛡️ SANITIZER: Prevent Mixed Content Errors (HTTPS vs HTTP)
+        let server = serverFromUrl || localStorage.getItem('tad_gps_server') || defaultServer;
+        
+        // If we are on HTTPS, the server MUST be HTTPS
+        if (window.location.protocol === 'https:' && server.startsWith('http:')) {
+            // Special case: if it's a local IP from the previous dev test, discard it and use default
+            if (server.includes('10.0.0.112')) {
+                console.warn("Discarding local dev IP in favor of production API");
+                server = defaultServer;
+            } else {
+                // Try to upgrade to https 
+                server = server.replace('http:', 'https:');
+            }
+        }
+        
+        // Final save to fix polluted localStorage
+        localStorage.setItem('tad_gps_server', server);
 
         let isTracking = false;
         let watchId = null;

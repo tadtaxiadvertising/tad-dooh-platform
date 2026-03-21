@@ -24,10 +24,11 @@
 3. **Telemetría:** La tablet informa su estado (Batería, Almacenamiento, Conexión) cada 30 segundos. El dashboard refleja esto en tiempo real mediante el `SyncChannel`.
 4. **Reproducción:** La tablet reproduce el mix publicitario localmente. Si detecta que el conductor no tiene suscripción activa (`SUSPENDED`), bloquea la pantalla.
 
-## 5. Cierre Financiero y Liquidación (Financial Settlement)
-1. **Auditoría de Emisión:** El sistema calcula las impresiones y tiempo de exposición basado en los logs de GPS y reproducción.
-2. **Liquidación de Nómina:** En Gestión Económica (/finance), se genera la nómina mensual. Cada conductor recibe RD$500 por cada campaña activa que haya transmitido satisfactoriamente.
-3. **Pago:** El administrador registra el pago con una referencia bancaria, cerrando el ciclo mensual.
+## 5. Cierre Financiero y Comercial (Financial & Commercial Settlement)
+1. **Auditoría de Emisión:** El sistema calcula las impresiones y tiempo de exposición basado en los logs de GPS y reproducción para asegurar impactos garantizados.
+2. **Facturación a Clientes (Invoice):** El administrador genera la Factura Comercial (Premium HTML) y el Reporte de Pauta (CSV) desde el módulo de finanzas para enviarlos al Cliente final, aplicando el 18% de ITBIS de manera automatizada.
+3. **Liquidación de Nómina:** En Gestión Económica (/finance), se aprueba la nómina mensual y se descarga el Reporte de Nómina. Cada conductor activo recibe RD$500 por cada campaña asignada que haya transmitido satisfactoriamente.
+4. **Pago y Retenciones:** El administrador procesa y registra los pagos con referencias bancarias. El sistema efectúa automáticamente las retenciones de referidos (10% si aplica) cerrando el ciclo mensual en el Libro Mayor.
 
 ## 6. Mantenimiento y Dashboard Responsive
 1. **Acceso Multi-Dispositivo:** El Dashboard administrativo está optimizado para dispositivos móviles y tabletas, permitiendo al personal de campo cerrar unidades o sincronizar flotas desde cualquier ubicación sin necesidad de una PC estacionaria.

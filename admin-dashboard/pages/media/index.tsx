@@ -240,7 +240,7 @@ export default function MediaPage() {
       <div className="flex justify-end mb-6">
         <button 
           onClick={() => setShowUploadModal(true)}
-          className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md group shrink-0"
+          className="bg-[#FFD400] text-black px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#e6be00] transition-all shadow-md group shrink-0"
         >
           <CloudUpload className="w-4 h-4 group-hover:scale-110 transition-transform" />
           Importar Asset
@@ -257,19 +257,19 @@ export default function MediaPage() {
       {/* Main Stats Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {[
-           { label: 'Activos en Bóveda', value: media.length, icon: Film, color: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
-           { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'text-tad-yellow', bg: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
-           { label: 'Integridad Global', value: '100%', icon: ShieldCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
+           { label: 'Activos en Bóveda', value: media.length, icon: Film, color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
+           { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
+           { label: 'Integridad Global', value: '100%', icon: ShieldCheck, color: 'text-emerald-500', borderColor: 'border-emerald-500/40', iconColor: 'text-emerald-500' }
         ].map((s, i) => (
-           <div key={i} className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative overflow-hidden shadow-sm">
-              <div className="flex justify-between items-start mb-4">
-                 <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", s.bg, s.border, s.color)}>
+           <div key={i} className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300">
+              <div className="flex justify-between items-start mb-6">
+                 <div className={clsx("p-2.5 rounded-2xl border bg-transparent", s.borderColor, s.iconColor)}>
                     <s.icon className="w-5 h-5" />
                  </div>
-                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
               </div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
-              <h3 className={clsx("text-3xl lg:text-4xl font-bold tracking-tight leading-none", s.color)}>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+              <h3 className={clsx("text-4xl font-black tracking-tighter leading-none", s.color)}>
                 {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
               </h3>
            </div>

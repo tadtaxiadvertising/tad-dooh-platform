@@ -275,37 +275,34 @@ function StatsCard({ icon, label, value, sub, trend, color, delay }: {
     return (
       <div 
         className={clsx(
-          "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:-translate-y-1 hover:border-gray-600 transition-all duration-300 shadow-sm flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 fill-mode-both home-stats-card"
+          "bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] group relative overflow-hidden transition-all duration-300 flex flex-col hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both home-stats-card"
         )}
       >
          <style jsx>{`
            .home-stats-card { animation-delay: ${delay}ms; }
          `}</style>
-         <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/[0.02] blur-3xl -z-10" />
          
          <div className="flex justify-between items-start mb-6">
             <div className={clsx(
-              "p-3 rounded-2xl border shadow-sm transition-all duration-300", 
-              color === 'yellow' ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow' : 'bg-gray-900 border-gray-700 text-white'
+              "p-2.5 rounded-2xl border bg-transparent", 
+              color === 'yellow' ? 'border-[#FFD400]/40 text-[#FFD400]' : 'border-white/20 text-zinc-400'
             )}>
                {icon}
             </div>
-            <span className={clsx(
-              "text-[10px] font-bold px-3 py-1 rounded-full border tracking-widest uppercase", 
-              color === 'yellow' ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.2)]' : 'bg-gray-800 border-gray-700 text-gray-400'
-            )}>
-               {trend}
-            </span>
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
          </div>
          
          <div className="mt-auto">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{label}</p>
-            <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-3">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+            <h3 className={clsx(
+               "text-4xl font-black tracking-tighter leading-none mb-3",
+               color === 'yellow' ? 'text-[#FFD400]' : 'text-white'
+            )}>
                {typeof value === 'number' && value < 10 ? `0${value}` : value}
             </h3>
             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 bg-tad-yellow rounded-full shadow-[0_0_5px_#fad400] animate-pulse" />
-               <p className="text-xs font-medium text-gray-400">{sub}</p>
+               <div className={clsx("w-1.5 h-1.5 rounded-full", color === 'yellow' ? "bg-[#FFD400]" : "bg-white/50")} />
+               <p className="text-xs font-medium text-gray-500">{sub}</p>
             </div>
          </div>
       </div>

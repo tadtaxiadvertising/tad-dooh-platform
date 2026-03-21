@@ -1,5 +1,19 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+## 📅 20 de Marzo, 2026 (Infraestructura de Medios & GPS Master UI)
+
+### 🚀 MEDIA: Subida Robusta de Videos (200MB+)
+- **Timeout Progresivo**: Incrementado el tiempo de espera de Axios a **300,000ms** (5 min) específicamente para el endpoint de media, evitando cortes en archivos pesados sobre EasyPanel.
+- **DTO Flex**: Refactorizado `AddMediaAssetDto` en el backend para permitir campos opcionales (`checksum`, `fileSize`). Esto previene el error 400 si el frontend no procesa los metadatos a tiempo durante el triple handshake.
+- **Asynchronously decoupling**: El modal de carga ahora separa la subida física del registro en campaña, permitiendo que el video se guarde en la librería global incluso si falla la vinculación inmediata.
+
+### 🗺️ GPS: Restauración Dark Mode Premium
+- **Fidelity Map**: Revertido el cambio a mapa claro. El Rastreo GPS ahora luce nuevamente el **Dark Mode High-Contrast** (`CartoDB DarkMatter`) optimizado para la pantalla de control Master.
+- **Marker Aura**: Mejorada la visibilidad de las unidades activas con un aura animada unificada con el branding amarillo `#FAD400`.
+
+### 🔐 AUTH: Sesión y Resiliencia
+- **401 Interceptor**: Mejorada la alerta de sesión expirada para evitar bloqueos del modal de carga. Ahora el sistema detecta la falta de token y solicita recarga manual de forma amigable.
+
 ## 📅 20 de Marzo, 2026 (Business Rules & UX/UI Responsive v4.5)
 
 ### 📱 RESPONSIVIDAD Y LAYOUT GLOBAL

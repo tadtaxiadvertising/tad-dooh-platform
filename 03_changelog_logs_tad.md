@@ -1,4 +1,17 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
+603 
+604 ## 📅 20 de Marzo, 2026 (Master Console v4.5: Spotlight & Trails)
+605 
+606 ### 🌟 MAPS: Spotlight Táctico (Foco de Unidad)
+607 - **Efecto de Atenuación**: Al seleccionar una unidad, el resto de la interfaz y el mapa se oscurecen (`backdrop-blur` + `brightness-50`), centrando la atención visual en el vehículo y su telemetría.
+608 - **Highlight Dinámico**: El marcador de la unidad seleccionada aumenta de tamaño (`30px` → `40px`) y gana un puntero táctico de alta precisión.
+609 - **Interacción de Limpieza**: Clic en cualquier zona vacía del mapa restaura el brillo global y limpia la selección.
+610 
+611 ### ⚡ TRACKING: Motion Trails (Ruta de Resplandor)
+612 - **Glow Path**: Implementación de estelas de luz neón que muestran los últimos 5 puntos de GPS del vehículo seleccionado.
+613 - **Radar Style**: La ruta combina un núcleo punteado táctico con un aura de resplandor amarillo branding (`#FAD400`), permitiendo visualizar la trayectoria reciente de un vistazo.
+614 - **Optimización de API**: Integrado `getDeviceRecentPath` para alimentar el trail solo bajo demanda, optimizando el consumo de datos.
+615 
 
 ## 📅 20 de Marzo, 2026 (Infraestructura de Medios & GPS Master UI)
 

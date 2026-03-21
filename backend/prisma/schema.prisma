@@ -541,3 +541,23 @@ model DriverLocation {
   @@index([driverId, timestamp]) // Optimización para resumen diario
   @@index([driverId])
 }
+
+// ============================================
+// NOTIFICATIONS (Alertas del sistema)
+// ============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, CRITICAL, SUCCESS
+  category  String   @default("SYSTEM") // SYSTEM, DEVICE, CAMPAIGN, FINANCE
+  read      Boolean  @default(false)
+  entityId  String?  @map("entity_id") // ID del Dispositivo, Campaña, etc.
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("notifications")
+  @@index([read])
+  @@index([category])
+  @@index([createdAt])
+}

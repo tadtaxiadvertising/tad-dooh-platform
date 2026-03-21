@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PlaybackEventDto } from './dto/playback-event.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -14,8 +14,11 @@ export class AnalyticsService {
   } = {};
 
   private readonly CACHE_TTL = 30000; // 30 seconds
-
-  constructor(private readonly prisma: PrismaService) {}
+  
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService
+  ) {}
 
   async ingestEvent(dto: any) {
     this.logger.log(`Ingesting analytics event for device: ${dto.deviceId}`);
@@ -33,6 +36,17 @@ export class AnalyticsService {
           lastSeen: new Date(),
         },
       });
+    }
+
+    // Alertas Críticas (Conexión Alertas -> Notificaciones)
+    if (['low_battery', 'sync_failed', 'storage_fail'].includes(dto.eventType)) {
+       await this.notifications.createAlert({
+         title: `Alerta Técnica: ${dto.eventType.toUpperCase()}`,
+         message: `El dispositivo ${dto.deviceId} reportó un evento crítico.`,
+         type: 'CRITICAL',
+         category: 'DEVICE',
+         entityId: dto.deviceId
+       });
     }
 
     return this.prisma.analyticsEvent.create({

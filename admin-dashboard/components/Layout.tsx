@@ -5,6 +5,7 @@ import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, C
 import clsx from 'clsx';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from './AuthProvider';
+import NotificationCenter from './NotificationCenter';
 
 const NAVIGATION_GROUPS = [
   {
@@ -252,24 +253,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
              </div>
 
-             <div className="flex items-center gap-6">
-                <button className="relative group" title="Signal Alerts">
-                    <div className="p-3 bg-zinc-900/40 rounded-xl border border-white-[0.03] group-hover:border-tad-yellow/30 transition-all duration-500 text-zinc-500 group-hover:text-tad-yellow">
-                       <Bell className="w-4.5 h-4.5" />
-                       <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-tad-yellow rounded-full border border-black shadow-[0_0_5px_#fad400]" />
+              <div className="flex items-center gap-6">
+                 <NotificationCenter />
+                 <div className="flex items-center gap-4 group cursor-pointer">
+                    <div className="text-right hidden sm:block">
+                       <p className="text-[10px] font-bold text-white uppercase tracking-wider mb-0.5">Admin_Terminal</p>
+                       <p className="text-[8px] font-bold text-tad-yellow uppercase tracking-widest opacity-80">Level_SSS</p>
                     </div>
-                </button>
-                <div className="flex items-center gap-4 group cursor-pointer">
-                   <div className="text-right hidden sm:block">
-                      <p className="text-[10px] font-bold text-white uppercase tracking-wider mb-0.5">Admin_Terminal</p>
-                      <p className="text-[8px] font-bold text-tad-yellow uppercase tracking-widest opacity-80">Level_SSS</p>
-                   </div>
-                   <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white-[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 p-0.5 relative overflow-hidden shadow-lg">
-                      <User className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-tad-yellow translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                   </div>
-                </div>
-             </div>
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white-[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 p-0.5 relative overflow-hidden shadow-lg">
+                       <User className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
+                       <div className="absolute bottom-0 left-0 w-full h-0.5 bg-tad-yellow translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </div>
+                 </div>
+              </div>
           </div>
         </header>
         

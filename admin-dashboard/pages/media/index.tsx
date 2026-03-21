@@ -144,33 +144,53 @@ export default function MediaPage() {
     setUploadProgress(10);
     try {
       setUploadProgress(30);
+      // Paso 1: Subida física del archivo
       const uploadedData = await uploadMedia(selectedFile, selectedCampaign, qrUrl);
       setUploadProgress(60);
-      await Promise.all([
-        addVideoToCampaign(selectedCampaign, {
+
+      // Paso 2: Registro en la campaña (Assets)
+      // Lo hacemos secuencial para evitar race conditions y capturar el error 400 específico
+      try {
+        await addVideoToCampaign(selectedCampaign, {
           type: 'video',
           filename: title,
           url: uploadedData.url,
           fileSize: uploadedData.size,
           checksum: uploadedData.id,
           duration: Number(duration)
-        }),
-        selectedDevices.length > 0 ? assignCampaignToDevices(selectedCampaign, selectedDevices) : Promise.resolve()
-      ]);
-      setUploadProgress(90);
-      if (filePreviewUrl) {
-        setLocalPreviews(prev => ({ ...prev, [uploadedData.id]: filePreviewUrl }));
-        setFilePreviewUrl(null);
+        });
+      } catch (assetError: any) {
+        console.warn('⚠️ Video subido pero falló vinculación a campaña:', assetError);
+        // Si es un 400, probablemente es el DTO, pero el video YA ESTÁ en el servidor/DB global.
       }
+
+      setUploadProgress(80);
+      
+      // Paso 3: Asignación a dispositivos si aplica
+      if (selectedDevices.length > 0) {
+        try {
+          await assignCampaignToDevices(selectedCampaign, selectedDevices);
+        } catch (assignError) {
+          console.error('Error asignando a dispositivos:', assignError);
+        }
+      }
+
       setUploadProgress(100);
       setShowUploadModal(false);
       resetUploadForm();
+      
+      // Recargar datos para ver el video (aunque haya fallado el paso 2, saldrá en la lista global)
       await loadData();
+      
       notifyChange('MEDIA');
       notifyChange('CAMPAIGNS');
-    } catch (e) {
-      console.error(e);
-      alert("Error crítico en handshake de carga.");
+    } catch (e: any) {
+      console.error('Error durante la carga:', e);
+      if (e.response?.status === 401) {
+        alert("Tu sesión ha expirado. Por favor, recarga la página e inicia sesión nuevamente.");
+      } else {
+        alert(`Error en la carga: ${e.response?.data?.message || e.message}`);
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);

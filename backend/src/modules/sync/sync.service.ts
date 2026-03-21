@@ -1,9 +1,13 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SyncService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService
+  ) {}
 
   async getDeviceManifest(deviceId: string) {
     // 1. Validar hardware primero (Device)
@@ -13,10 +17,24 @@ export class SyncService {
     });
 
     if (!device) {
+      await this.notifications.createAlert({
+        title: 'Intento de Sincronización Fallido',
+        message: `Un dispositivo desconocido (${deviceId}) intentó sincronizar contenido.`,
+        type: 'WARNING',
+        category: 'DEVICE',
+        entityId: deviceId
+      });
       throw new HttpException('DEVICE_NOT_FOUND_IN_CLUSTER', HttpStatus.NOT_FOUND);
     }
 
     if (device.status !== 'ACTIVE') {
+      await this.notifications.createAlert({
+        title: 'Dispositivo Inactivo',
+        message: `El dispositivo ${device.taxiNumber || deviceId} está intentando sincronizar pero su estado es ${device.status}.`,
+        type: 'CRITICAL',
+        category: 'DEVICE',
+        entityId: deviceId
+      });
       throw new HttpException('DEVICE_DEACTIVATED', HttpStatus.FORBIDDEN);
     }
 

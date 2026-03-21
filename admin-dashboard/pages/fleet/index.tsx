@@ -216,6 +216,12 @@ export default function FleetPage() {
          <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
+      {/* Focus Mode Wrapper - Collapses on Search */}
+      <div className={clsx(
+                "transition-all duration-700 ease-in-out origin-top",
+                isSearching ? "max-h-0 opacity-0 overflow-hidden pointer-events-none mb-0 scale-95" : "max-h-[1200px] opacity-100 mb-8 scale-100"
+      )}>
+
       {/* Page Context Transition */}
       <div className="flex items-center gap-3 mb-8 opacity-60 pt-6">
         <div className="w-8 h-px bg-white/20" />
@@ -281,6 +287,7 @@ export default function FleetPage() {
              </div>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Filter & Search Nexus */}

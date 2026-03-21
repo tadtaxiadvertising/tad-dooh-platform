@@ -586,9 +586,9 @@ function StatCard({ label, value, icon: Icon, color, glow }: { label: string; va
 function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommanding }: any) {
   if (isLoading) {
     return (
-      <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 h-[340px] animate-pulse">
+      <div className="bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 h-[340px] animate-pulse">
         <div className="flex justify-between mb-8">
-           <div className="w-10 h-10 bg-white/5 rounded-xl" />
+           <div className="w-10 h-10 bg-white/5 rounded-2xl" />
            <div className="w-16 h-4 bg-white/5 rounded-lg" />
         </div>
         <div className="space-y-4">
@@ -611,46 +611,46 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
     <div 
       onClick={() => onCommand(device.id, 'HUB')}
       className={clsx(
-        "bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-tad-yellow/30 transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98]",
-        device.is_online ? "ring-1 ring-tad-yellow/10" : ""
+        "bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 hover:border-[#FFD400]/30 transition-all duration-300 group relative overflow-hidden cursor-pointer active:scale-[0.98] animate-in fade-in slide-in-from-bottom-8",
+        device.is_online ? "ring-1 ring-[#FFD400]/10" : ""
       )}
     >
       {/* GLOW BACKGROUND */}
-      {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-tad-yellow/10 transition-all" />}
+      {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400]/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#FFD400]/10 transition-all duration-500" />}
 
       <div className="flex justify-between items-start mb-6">
         <div className={clsx(
-          "p-3 rounded-xl border transition-all",
-          device.is_online ? "bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow" : "bg-white/5 border-white/5 text-zinc-600"
+          "p-2.5 rounded-2xl border bg-transparent transition-all",
+          device.is_online ? "border-[#FFD400]/40 text-[#FFD400]" : "border-white/20 text-zinc-400"
         )}>
           <Tablet className="w-5 h-5" />
         </div>
         <div className={clsx(
-          "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border",
-          device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-zinc-800/50 text-zinc-600 border-white/5"
+          "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
+          device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
         )}>
           {device.is_online ? '• Online' : '• Offline'}
         </div>
       </div>
 
       <div className="mb-6">
-        <h4 className="text-lg font-black text-white tracking-tighter uppercase group-hover:text-tad-yellow transition-colors">{device.device_id}</h4>
-        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-1">SN: {device.taxi_number || 'STI-0000'}</p>
+        <h4 className="text-xl font-black text-white tracking-tighter uppercase group-hover:text-[#FFD400] transition-colors duration-300">{device.device_id}</h4>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">SN: {device.taxi_number || 'STI-0000'}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-y-4 gap-x-6 mb-6">
-        <TelemetryMini label="BATERIA" value={`${battery}%`} icon={Battery} color={battery < 20 ? 'text-rose-500' : 'text-emerald-500'} />
+        <TelemetryMini label="BATERÍA" value={`${battery}%`} icon={Battery} color={battery < 20 ? 'text-rose-500' : 'text-emerald-500'} />
         <TelemetryMini label="VAULT" value={storage} icon={HardDrive} />
         <TelemetryMini label="CIUDAD" value={city} icon={MapPin} />
-        <TelemetryMini label="STREAM" value={stream.toUpperCase()} icon={Activity} color={stream === 'playing' ? 'text-tad-yellow' : 'text-zinc-600'} />
+        <TelemetryMini label="STREAM" value={stream.toUpperCase()} icon={Activity} color={stream === 'playing' ? 'text-[#FFD400]' : 'text-slate-500'} />
       </div>
 
-      <div className="mb-8 p-4 bg-black/40 rounded-2xl border border-white/5">
+      <div className="mb-8 p-4 bg-black/40 rounded-[16px] border border-white/[0.05]">
         <div className="flex justify-between items-end mb-2">
-          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Capacidad de Inventario</span>
+          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Capacidad de Inventario</span>
           <span className="text-[9px] font-black text-white italic">{slots} / {maxSlots}</span>
         </div>
-        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-[#111317] rounded-full overflow-hidden border border-white/[0.05]">
           <div className="progress-bar h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
         </div>
         <style jsx>{`
@@ -665,15 +665,15 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
 
       <div className="flex gap-2">
          <button 
-           onClick={() => onCommand(device.device_id, 'RELOAD')} 
+           onClick={(e) => { e.stopPropagation(); onCommand(device.device_id, 'RELOAD'); }} 
            disabled={isCommanding}
-           className="flex-1 py-3 bg-white/5 text-[9px] font-black uppercase tracking-widest text-zinc-500 rounded-xl hover:bg-white text-black transition-all disabled:opacity-50"
+           className="flex-1 py-3 bg-white/[0.03] border border-white/[0.05] text-[9px] font-black uppercase tracking-widest text-slate-400 rounded-xl hover:bg-white hover:text-black transition-all disabled:opacity-50"
          >
            {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
          </button>
          <button 
-           onClick={onConfigure}
-           className="flex-1 py-3 bg-white/5 text-[9px] font-black uppercase tracking-widest text-zinc-500 rounded-xl hover:bg-white text-black transition-all"
+           onClick={(e) => { e.stopPropagation(); onConfigure(); }}
+           className="flex-1 py-3 bg-white/[0.03] border border-white/[0.05] text-[9px] font-black uppercase tracking-widest text-slate-400 rounded-xl hover:bg-[#FFD400] hover:text-black hover:border-transparent transition-all"
          >
            Sync
          </button>
@@ -682,12 +682,12 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
   );
 }
 
-function TelemetryMini({ label, value, icon: Icon, color = "text-zinc-400" }: any) {
+function TelemetryMini({ label, value, icon: Icon, color = "text-slate-400" }: any) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 border-l-2 border-white/[0.05] pl-3">
       <div className="flex items-center gap-1.5">
-        <Icon className="w-3 h-3 text-zinc-600" />
-        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{label}</span>
+        <Icon className="w-3 h-3 text-slate-600" />
+        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{label}</span>
       </div>
       <p className={clsx("text-[10px] font-black tracking-tight", color)}>{value}</p>
     </div>

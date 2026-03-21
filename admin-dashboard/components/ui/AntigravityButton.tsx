@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTADAction } from '../../hooks/useTADAction';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -42,8 +43,14 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    if (isPending) {
+       console.warn(`[Antigravity] 🛑 Esperando a que termine la acción anterior: ${actionName}`);
+       return;
+    }
+
     if (!onAsyncClick) {
-      console.warn(`[AntigravityButton] ⚠️ No hay acción vinculada para: "${id ?? actionName}".`);
+      toast.error(`Error interno: "${actionName}" no tiene una función vinculada.`);
+      console.error(`[AntigravityButton] ⚠️ No hay acción vinculada para: "${id ?? actionName}".`);
       return;
     }
 
@@ -52,8 +59,11 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
        return;
     }
 
-    console.log(`[Antigravity] ⚡ Desplegando acción determinística: ${actionName}`, { critical });
+    console.log(`[Antigravity] ⚡ Desplegando acción determinística: ${actionName}`, { critical, isPending });
     
+    // Feedback visual inmediato adicional para confirmar que se recibió el gesto
+    toast.info(`Iniciando: ${actionName.replace(/_/g, ' ')}...`, { duration: 1500 });
+
     executeAction(onAsyncClick, {
       actionName,
       critical,
@@ -71,6 +81,7 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
 
   return (
     <button
+      {...props}
       id={id}
       type="button"
       onClick={handleClick}
@@ -83,7 +94,6 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
         variants[variant],
         className
       )}
-      {...props}
     >
       {isPending ? (
         <>

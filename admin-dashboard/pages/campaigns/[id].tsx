@@ -351,14 +351,32 @@ export default function CampaignDetailPage() {
                           </div>
                        </div>
 
-                       <div className="flex items-center justify-between pt-4 border-t border-gray-700/50 relative z-10">
+                       <div className="flex items-center justify-between pt-4 border-t border-gray-700/50 relative z-10 gap-2">
                           <span className={clsx(
-                             "text-[10px] font-bold px-3 py-1 rounded-lg border tracking-wider",
+                             "text-[10px] font-bold px-3 py-1 rounded-lg border tracking-wider shrink-0",
                              device.assignment_type === 'GLOBAL' ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20"
                           )}>
                              {device.assignment_type || 'DIRECT'} CLUSTER
                           </span>
-                          <span className="text-[10px] font-bold text-gray-500 tracking-wider font-mono">{device.assigned_at ? format(new Date(device.assigned_at), 'dd-MM-yy') : '---'}</span>
+                          <div className="flex items-center gap-1.5 ml-auto">
+                             <a 
+                               href={`https://proyecto-ia-tad-portal.rewvid.easypanel.host/${device.deviceId}`}
+                               target="_blank"
+                               rel="noreferrer"
+                               title="Portal Pasajero"
+                               className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-all"
+                             >
+                                <Share2 className="w-3.5 h-3.5" />
+                             </a>
+                             <Link 
+                               href={`/fleet?search=${device.deviceId}`}
+                               title="Ver en Flota"
+                               className="p-1.5 bg-gray-900 border border-gray-700 text-gray-400 hover:text-white rounded-lg transition-all"
+                             >
+                                <Target className="w-3.5 h-3.5" />
+                             </Link>
+                          </div>
+                          <span className="text-[9px] font-bold text-gray-500 tracking-wider font-mono shrink-0">{device.assigned_at ? format(new Date(device.assigned_at), 'dd-MM-yy') : '---'}</span>
                        </div>
                     </div>
                   );

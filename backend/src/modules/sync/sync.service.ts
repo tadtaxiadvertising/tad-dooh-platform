@@ -27,32 +27,38 @@ export class SyncService {
         status: 'ACTIVE',
         OR: [
           { targetAll: true },
-          { drivers: { some: { id: driver.id } } }
+          { isGlobal: true },
+          { targetDrivers: { some: { id: driver.id } } }
         ],
         // Optimización: Solo traer campañas vigentes en fecha
         startDate: { lte: new Date() },
         endDate: { gte: new Date() }
       },
-      select: {
-        id: true,
-        mediaUrl: true,
-        checksum: true,
-        duration: true,
-        updatedAt: true
+      include: {
+        media: true
+      }
+    });
+
+    const playlist = [];
+    activeCampaigns.forEach(c => {
+      if (c.media && c.media.length > 0) {
+        c.media.forEach(m => {
+          playlist.push({
+            campaignId: c.id,
+            url: m.url || m.cdnUrl || '',
+            checksum: m.hashMd5 || m.hash || 'no-checksum',
+            duration: m.durationSeconds || 30, // 30s por defecto según reglas TAD
+            version: new Date(c.updatedAt).getTime() 
+          });
+        });
       }
     });
 
     // 3. Formatear manifiesto determinístico
     return {
       timestamp: new Date().toISOString(),
-      count: activeCampaigns.length,
-      playlist: activeCampaigns.map(c => ({
-        campaignId: c.id,
-        url: c.mediaUrl,
-        checksum: c.checksum,
-        duration: c.duration || 30, // 30s por defecto según reglas TAD
-        version: new Date(c.updatedAt).getTime() 
-      }))
+      count: playlist.length,
+      playlist
     };
   }
 }

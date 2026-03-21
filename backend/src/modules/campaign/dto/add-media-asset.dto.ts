@@ -2,8 +2,8 @@ import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class AddMediaAssetDto {
   @IsString()
-  @IsNotEmpty()
-  type: string;
+  @IsOptional()
+  type?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -14,11 +14,12 @@ export class AddMediaAssetDto {
   url: string;
 
   @IsNumber()
-  fileSize: number;
+  @IsOptional()
+  fileSize?: number;
 
   @IsString()
-  @IsNotEmpty()
-  checksum: string;
+  @IsOptional()
+  checksum?: string;
 
   @IsNumber()
   @IsOptional()

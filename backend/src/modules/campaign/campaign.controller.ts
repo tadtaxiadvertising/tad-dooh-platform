@@ -23,7 +23,13 @@ export class CampaignController {
 
   @Post(':id/assets')
   async addMediaAsset(@Param('id') id: string, @Body() dto: AddMediaAssetDto) {
-    return this.campaignService.addMediaAsset(id, dto);
+    console.log(`[CAMPAIGN_ASSETS] Linking to ${id}:`, JSON.stringify(dto));
+    try {
+      return await this.campaignService.addMediaAsset(id, dto);
+    } catch (e) {
+      console.error(`[CAMPAIGN_ASSETS] Failed: ${e.message}`);
+      throw e;
+    }
   }
 
   @Post(':id/upload')

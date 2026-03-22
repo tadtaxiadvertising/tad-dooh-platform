@@ -23,12 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── 1. Leer sesión inicial desde el storage (síncrono en el SDK de Supabase)
     if (!supabase) return; // Safely exit if Supabase couldn't be initialized (SSR)
 
+    const isPublic = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
+
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       setSession(session);
       setLoading(false);
 
       // Solo redirigir al login si NO estamos ya en él
-      if (!session && !PUBLIC_PATHS.includes(router.pathname)) {
+      if (!session && !isPublic) {
         router.replace('/login');
       }
     });
@@ -60,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── 3. Pantalla de carga premium (bloquea renders que dispararían kick-outs)
-  if (loading && !PUBLIC_PATHS.includes(router.pathname)) {
+  const isPublicPage = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
+  if (loading && !isPublicPage) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-black gap-4">
         <div className="relative">

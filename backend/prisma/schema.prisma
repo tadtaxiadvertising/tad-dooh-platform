@@ -510,6 +510,13 @@ model Advertiser {
   contactName String     @map("contact_name")
   email       String     @unique
   phone       String?
+  // Redes y contacto comercial para el Perfil QR
+  whatsapp    String?
+  instagram   String?
+  facebook    String?
+  websiteUrl  String?    @map("website_url")
+  productsData String?   @map("products_data") @default("[]") // JSON string con [{name, price, img, link}]
+
   status      String     @default("ACTIVE")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")

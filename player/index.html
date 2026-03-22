@@ -36,6 +36,45 @@
         width: 100%;
         height: 100%;
       }
+      .flex { display: flex; }
+      .flex-col { flex-direction: column; }
+      .items-center { align-items: center; }
+      .justify-center { justify-content: center; }
+      .text-center { text-align: center; }
+      .w-full { width: 100%; }
+      .h-full { height: 100%; }
+      .mb-10 { margin-bottom: 2.5rem; }
+      .mt-16 { margin-top: 4rem; }
+      .p-12 { padding: 3rem; }
+      .text-5xl { font-size: 3rem; }
+      .text-2xl { font-size: 1.5rem; }
+      .text-sm { font-size: 0.875rem; }
+      .font-black { font-weight: 900; }
+      .font-bold { font-weight: 700; }
+      .uppercase { text-transform: uppercase; }
+      .tracking-widest { letter-spacing: 0.1em; }
+      .text-tad-yellow { color: #FFD400; }
+      .bg-tad-yellow { background-color: #FFD400; }
+      .text-white { color: #FFFFFF; }
+      .text-gray-400 { color: #9CA3AF; }
+      
+      #intermission-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+        display: none;
+      }
+      .intermission-content {
+        animation: fadeIn 0.8s ease-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      #qr-container.v-hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
@@ -50,7 +89,32 @@
       controlsList="nodownload"
     ></video>
     
-    <div id="qr-container">
+    <!-- Transición de Anunciante (5s Intermission) -->
+    <div id="intermission-screen">
+      <div class="intermission-content flex flex-col items-center justify-center h-full w-full bg-gradient-to-br from-gray-900 to-black text-white p-12">
+        <div class="mb-10 text-center">
+          <p id="intermission-brand-label" class="text-tad-yellow text-sm font-black uppercase tracking-[0.5em] mb-4">Próximo Anuncio</p>
+          <h2 id="intermission-advertiser-name" class="text-5xl font-black tracking-tighter uppercase leading-tight">Cargando...</h2>
+        </div>
+
+        <div class="relative group">
+          <div class="absolute -inset-4 bg-tad-yellow/20 blur-2xl rounded-full group-hover:bg-tad-yellow/30 transition-all duration-1000"></div>
+          <div class="relative bg-white p-10 rounded-[3rem] shadow-[0_20px_80px_rgba(0,0,0,0.8)] border border-white/10">
+            <img id="intermission-qr" src="" alt="Menu QR" class="w-[350px] h-[350px]" />
+          </div>
+        </div>
+
+        <div class="mt-16 text-center max-w-2xl">
+          <h3 class="text-2xl font-bold mb-4">Escanea para conocer más</h3>
+          <p class="text-gray-400 text-lg">Descubre nuestro menú, contáctanos por WhatsApp y síguenos en redes sociales.</p>
+        </div>
+
+        <div id="intermission-timer-bar" class="fixed bottom-0 left-0 h-2 bg-tad-yellow w-0 transition-all duration-[5000ms] ease-linear"></div>
+      </div>
+    </div>
+
+    <!-- El antiguo QR overlay se mantiene oculto -->
+    <div id="qr-container" class="v-hidden">
       <img id="qr-code" src="" alt="Scan" />
     </div>
     

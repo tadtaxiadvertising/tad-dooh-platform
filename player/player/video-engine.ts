@@ -7,12 +7,14 @@ export interface VideoAsset {
   id: string;
   url: string;
   duration: number;
-  qrUrl?: string; // Link de la marca (ej: tad.do/promo)
+  qrUrl?: string;
   campaignId?: string;
+  advertiserId?: string;
+  advertiserName?: string;
 }
 
 export class VideoEngine {
-  private element: HTMLVideoElement;
+  private player: HTMLVideoElement | null;
   private qrContainer: HTMLElement | null;
   private qrImageElement: HTMLImageElement | null;
   private playlist: VideoAsset[] = [];
@@ -21,23 +23,38 @@ export class VideoEngine {
   private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
   public playerStatus: "playing" | "error" | "stopped" = "stopped";
 
-  constructor(videoElementId: string, deviceId: string) {
-    this.element = document.getElementById(videoElementId) as HTMLVideoElement;
-    this.qrContainer = document.getElementById('qr-container');
-    this.qrImageElement = document.getElementById('qr-code') as HTMLImageElement;
+  private intermissionScreen: HTMLElement | null;
+  private intermissionQr: HTMLImageElement | null;
+  private intermissionName: HTMLElement | null;
+  private intermissionTimerBar: HTMLElement | null;
+
+  constructor(deviceId: string) {
     this.deviceId = deviceId;
+    this.player = document.querySelector('#tad-player');
+    this.qrContainer = document.querySelector('#qr-container');
+    this.qrImageElement = document.querySelector('#qr-code') as HTMLImageElement;
     
-    // Auto cycle
-    this.element.addEventListener("ended", this.onVideoEnded.bind(this));
-    this.element.addEventListener("error", this.onPlaybackError.bind(this));
-    this.element.addEventListener("playing", () => {
-      this.playerStatus = "playing";
-      this.resetWatchdog();
-    });
+    // Intermission Elements
+    this.intermissionScreen = document.querySelector('#intermission-screen');
+    this.intermissionQr = document.querySelector('#intermission-qr') as HTMLImageElement;
+    this.intermissionName = document.querySelector('#intermission-advertiser-name');
+    this.intermissionTimerBar = document.querySelector('#intermission-timer-bar');
+
+    if (this.player) {
+      this.player.onended = () => this.handleTransition();
+      this.player.onerror = (e) => {
+        console.error('Player Error:', e);
+        this.onPlaybackError();
+      };
+      this.player.addEventListener("playing", () => {
+        this.playerStatus = "playing";
+        this.resetWatchdog();
+      });
+    }
   }
 
-  public setPlaylist(videos: VideoAsset[]) {
-    this.playlist = videos;
+  public setPlaylist(assets: VideoAsset[]) {
+    this.playlist = assets;
     this.currentIndex = 0;
     if (this.playlist.length > 0) {
       this.playNext();
@@ -46,67 +63,90 @@ export class VideoEngine {
     }
   }
 
+  private async handleTransition() {
+    clearTimeout(this.watchdogTimer!);
+    
+    // Track playback of JUST finished video
+    const playedVideo = this.playlist[this.currentIndex];
+    this.trackPlayback(playedVideo);
+
+    // Ciclo al siguiente
+    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+    const nextVideo = this.playlist[this.currentIndex];
+
+    // Mostrar Intermission (5s) antes de playNext
+    if (nextVideo && this.intermissionScreen && this.intermissionQr) {
+      await this.showIntermission(nextVideo);
+    }
+    
+    this.playNext();
+  }
+
+  private async showIntermission(video: VideoAsset): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.intermissionScreen || !this.intermissionQr) return resolve();
+
+      // Configurar Marca
+      if (this.intermissionName) {
+        this.intermissionName.textContent = video.advertiserName || 'TAD Advertiser';
+      }
+
+      // Enlace al Perfil Público (Proxy Dashboard)
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const dashboardBase = isLocal ? "http://localhost:3001" : "https://proyecto-ia-tad-dashboard.rewvid.easypanel.host";
+      const profileLink = `${dashboardBase}/p/${video.advertiserId || 'default'}`;
+
+      QRCode.toDataURL(profileLink, {
+        width: 400,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' }
+      }).then(url => {
+        if (this.intermissionQr) this.intermissionQr.src = url;
+      });
+
+      this.intermissionScreen.style.display = 'block';
+      
+      if (this.intermissionTimerBar) {
+        this.intermissionTimerBar.style.transition = 'none';
+        this.intermissionTimerBar.style.width = '0%';
+        setTimeout(() => {
+          if (this.intermissionTimerBar) {
+            this.intermissionTimerBar.style.transition = 'width 5s linear';
+            this.intermissionTimerBar.style.width = '100%';
+          }
+        }, 50);
+      }
+
+      setTimeout(() => {
+        if (this.intermissionScreen) this.intermissionScreen.style.display = 'none';
+        resolve();
+      }, 5000);
+    });
+  }
+
   private async playNext() {
     if (this.playlist.length === 0) return;
-    
     const currentVideo = this.playlist[this.currentIndex];
-    
-    // ============================================
-    // QR CODE DYNAMIC OVERLAY
-    // ============================================
-    if (currentVideo.qrUrl && this.qrContainer && this.qrImageElement) {
-      try {
-        // Enlace de tracking con Proxy del Backend
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiBase = isLocal ? "http://localhost:3000/api" : "https://proyecto-ia-tad-api.rewvid.easypanel.host/api";
-        const trackingLink = `${apiBase}/analytics/qr-scan?campaignId=${currentVideo.campaignId || 'manual'}&deviceId=${this.deviceId}`;
-        
-        // Generar QR (Negro sobre blanco)
-        const qrDataUrl = await QRCode.toDataURL(trackingLink, {
-          margin: 1,
-          width: 300,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
+    if (!currentVideo || !this.player) return;
 
-        this.qrImageElement.src = qrDataUrl;
-        this.qrContainer.style.display = 'block';
-        this.qrContainer.style.opacity = '1';
-      } catch (qrErr) {
-        console.warn("QR Generation failed: ", qrErr);
-        this.qrContainer.style.display = 'none';
-      }
-    } else if (this.qrContainer) {
-      this.qrContainer.style.display = 'none';
-    }
+    if (this.qrContainer) this.qrContainer.style.display = 'none';
 
     try {
-      // Decode through Service Worker / Cache API allowing local >50MB fallback looping
       const localObjectURL = await VideoCache.getVideoSource(currentVideo.url);
-      
-      this.element.src = localObjectURL;
-      this.element.load();
-      await this.element.play();
-      
+      this.player.src = localObjectURL;
+      await this.player.play();
       this.playerStatus = "playing";
       this.resetWatchdog();
-
-    } catch (e) {
-      console.error(`Playback failed for video ${currentVideo.id}`, e);
+    } catch (err) {
+      console.error('Playback stall:', err);
       this.onPlaybackError();
     }
   }
 
-  private async onVideoEnded() {
-    clearTimeout(this.watchdogTimer!);
-    const playedVideo = this.playlist[this.currentIndex];
-    
-    // Proof of play payload
+  private async trackPlayback(video: VideoAsset) {
     const payload = {
       device_id: this.deviceId,
-      video_id: playedVideo.id,
+      video_id: video.id,
       timestamp: new Date().toISOString()
     };
 
@@ -116,27 +156,19 @@ export class VideoEngine {
     } else {
       EventQueue.saveToQueue(payload);
     }
-
-    // Loop
-    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
-    this.playNext();
   }
 
   private onPlaybackError() {
     this.playerStatus = "error";
-    console.error("Critical HTML5 playback rendering stall");
-    // Skip to next video rather than hanging forever avoiding burn-in or black screens
     this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
     setTimeout(() => this.playNext(), 2000);
   }
 
   private resetWatchdog() {
     if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
-    
-    // Hard stall threshold - if no "playing" / "ended" trips inside 2 minutes
     this.watchdogTimer = setTimeout(() => {
       this.playerStatus = "error";
-      console.warn("Watchdog interval tripped - Player stagnant for 2 consecutive minutes without state resets"); 
+      console.warn("Watchdog tripped");
     }, 120000);
   }
 }

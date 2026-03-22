@@ -515,6 +515,8 @@ model Advertiser {
   instagram   String?
   facebook    String?
   websiteUrl  String?    @map("website_url")
+  pedidosYaUrl String?   @map("pedidos_ya_url")
+  uberEatsUrl  String?   @map("uber_eats_url")
   productsData String?   @map("products_data") @default("[]") // JSON string con [{name, price, img, link}]
 
   category    String?    @default("General")

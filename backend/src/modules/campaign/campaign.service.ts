@@ -150,7 +150,7 @@ export class CampaignService {
         include: {
           mediaAssets: true,
           media: true,
-          advertiser: true,
+          advertiserRef: true,
         },
         orderBy: {
           updatedAt: 'desc',
@@ -169,7 +169,7 @@ export class CampaignService {
           include: {
             mediaAssets: true,
             media: true,
-            advertiser: true,
+            advertiserRef: true,
           },
           orderBy: { updatedAt: 'desc' }
         });
@@ -193,8 +193,8 @@ export class CampaignService {
         url: ma.url || ma.cdnUrl || '',
         duration: Number(ma.duration || 30),
         qrUrl: campaign.targetUrl || ma.qrUrl || null,
-        advertiserId: campaign.advertiser?.id || null,
-        advertiserName: campaign.advertiser?.companyName || campaign.advertiserId || 'TAD Advertiser'
+        advertiserId: campaign.advertiserRef?.id || campaign.advertiserId || null,
+        advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser'
       });
 
       if ((campaign as any).mediaAssets) {

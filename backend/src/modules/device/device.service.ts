@@ -15,6 +15,7 @@ export class DeviceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly campaignService: CampaignService,
+    private readonly financeService: FinanceService,
   ) {}
 
   /**
@@ -138,7 +139,7 @@ export class DeviceService {
       return { blocked: false };
     }
 
-    // Suscripción expirada → bloquear
+    // Suscripción expirada → bloquear y notificar
     if (sub.validUntil < new Date()) {
       this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${sub.validUntil.toISOString()}`);
       
@@ -147,12 +148,23 @@ export class DeviceService {
         data: { status: 'EXPIRED' },
       });
 
+      // 🔥 Trigger automatic notification protocol
+      try {
+        await this.financeService.notifyMorosidad(deviceId);
+      } catch (e) {
+        this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
+      }
+
       return { blocked: true, reason: 'payment_overdue' };
     }
 
     // Suscripción inactiva por otra razón
     if (sub.status !== 'ACTIVE') {
       this.logger.warn(`⛔ Device ${deviceId}: subscription status is ${sub.status}`);
+      
+      // Also notify if it's inactive (e.g. cancelled) but they still try to sync
+      await this.financeService.notifyMorosidad(deviceId);
+
       return { blocked: true, reason: 'inactive_subscription' };
     }
 

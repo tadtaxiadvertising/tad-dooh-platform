@@ -6,7 +6,14 @@
     "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:offline": "playwright test tests/e2e/offline-resilience.spec.ts --project=offline-resilience",
+    "test:e2e:auth": "playwright test tests/e2e/auth-kiosk-flow.spec.ts",
+    "test:e2e:gps": "playwright test tests/e2e/gps-batch-sync.spec.ts",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:ci": "playwright test --reporter=github"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",

@@ -4,6 +4,7 @@ import { AuthProvider } from '../components/AuthProvider';
 import Layout from '../components/Layout';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { PaymentLockOverlay } from '../components/ui/PaymentLockOverlay';
 import { useAntigravity } from '@/hooks/useAntigravity';
 import { useState } from 'react';
 
@@ -52,6 +53,7 @@ export default function App(props: AppProps) {
     <QueryClientProvider client={queryClient}>
       <AppWrapper {...props} queryClient={queryClient} />
       <Toaster richColors position="top-right" theme="dark" />
+      <PaymentLockOverlay />
     </QueryClientProvider>
   );
 }

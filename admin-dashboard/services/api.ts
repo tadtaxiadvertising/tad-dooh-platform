@@ -74,6 +74,12 @@ api.interceptors.response.use(
       });
     }
 
+    if (error.response?.status === 402) {
+      const { usePaymentStore } = require('../store/usePaymentStore');
+      const message = error.response?.data?.message || 'Suscripción de RD$6,000 pendiente';
+      usePaymentStore.getState().setLock(true, message);
+    }
+
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('tad_admin_token');
       localStorage.removeItem('tad_admin_user');

@@ -30,7 +30,7 @@ const getBaseURL = () => {
     : (process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
 };
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
@@ -180,6 +180,7 @@ export const uploadCampaignMedia = async (campaignId: string, file: File) => {
 
 export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) =>
   api.post('/media/register-mock', data).then(res => res.data);
+export const deleteMedia = (id: string) => api.delete(`/media/${id}`).then(res => res.data);
 
 // Analytics
 export const getAnalyticsSummary = () => api.get('/analytics/summary').then(res => res.data);

@@ -1,14 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
-const PdfPrinter = require('pdfmake');
+const pdfmake = require('pdfmake');
 
 @Injectable()
-export class InvoiceService {
+export class InvoiceService implements OnModuleInit {
   private readonly logger = new Logger(InvoiceService.name);
-  private printer: any;
 
-  constructor() {
-    // Fonts configuration para PDFMake (usaremos fuentes estándar del SO o embebidas)
+  onModuleInit() {
+    // Fonts configuration para PDFMake 0.3.x (API de Instancia)
     const fonts = {
       Helvetica: {
         normal: 'Helvetica',
@@ -17,7 +16,7 @@ export class InvoiceService {
         bolditalics: 'Helvetica-BoldOblique'
       }
     };
-    this.printer = new PdfPrinter(fonts);
+    pdfmake.setFonts(fonts);
   }
 
   /**
@@ -86,22 +85,14 @@ export class InvoiceService {
       }
     };
 
-    return new Promise((resolve, reject) => {
-      try {
-        const pdfDoc = this.printer.createPdfKitDocument(docDefinition);
-        let chunks: any[] = [];
-        
-        pdfDoc.on('data', (chunk) => { chunks.push(chunk); });
-        pdfDoc.on('end', () => {
-          const result = Buffer.concat(chunks);
-          this.logger.log(`TAD-SRE: Liquidación PDF generada para chofer ${driverData.chofer}`);
-          resolve(result);
-        });
-        pdfDoc.end();
-      } catch (e) {
-        this.logger.error('Error al generar PDF de Factura:', e);
-        reject(e);
-      }
-    });
+    try {
+      const pdfDoc = pdfmake.createPdf(docDefinition);
+      const result = await pdfDoc.getBuffer();
+      this.logger.log(`TAD-SRE: Liquidación PDF generada para chofer ${driverData.chofer}`);
+      return result;
+    } catch (e) {
+      this.logger.error('Error al generar PDF de Factura:', e);
+      throw e;
+    }
   }
 }

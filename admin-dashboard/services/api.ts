@@ -284,6 +284,8 @@ export const getAdvertisers = () => api.get('/advertisers').then(res => res.data
 export const createAdvertiser = (data: any) => api.post('/advertisers', data).then(res => res.data);
 export const updateAdvertiser = (id: string, data: any) => api.patch(`/advertisers/${id}`, data).then(res => res.data);
 export const deleteAdvertiser = (id: string) => api.delete(`/advertisers/${id}`).then(res => res.data);
+export const getAdvertiserHub = () => api.get('/campaigns/advertiser/hub').then(res => res.data);
+export const getAdvertiserPublicProfile = (id: string) => api.get(`/campaigns/advertiser/${id}/profile`).then(res => res.data);
 
 // Device Profile
 export const getDeviceProfile = (deviceId: string) => api.get(`/devices/${deviceId}/profile`).then(res => res.data);

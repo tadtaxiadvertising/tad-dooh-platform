@@ -1,12 +1,18 @@
-import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus, Inject, forwardRef } from '@nestjs/common';
 import { Response } from 'express';
 import { AnalyticsService } from './analytics.service';
-import { PlaybackEventDto } from './dto/playback-event.dto';
+import { InvoiceService } from '../finance/invoice.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('analytics')
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => InvoiceService))
+    private readonly invoiceService: InvoiceService,
+  ) {}
 
   // ============================================
   // QR SCAN TRACKING — Redirect Proxy
@@ -75,6 +81,27 @@ export class AnalyticsController {
   @Get('heatmap')
   async getHeatmap() {
     return this.analyticsService.getPlaybackHeatmap();
+  }
+
+  @Get('campaign/:id/weekly')
+  async getWeeklyCampaignAnalytics(@Param('id') campaignId: string) {
+    return this.analyticsService.getWeeklyCampaignMetrics(campaignId);
+  }
+
+  @Get('campaign/:id/weekly/pdf')
+  async downloadWeeklyPdf(@Param('id') id: string, @Res() res: Response) {
+    const campaign = await this.prisma.campaign.findUnique({ where: { id } });
+    if (!campaign) return res.status(404).send('Campaña no encontrada');
+
+    const data = await this.analyticsService.getWeeklyCampaignMetrics(id);
+    const pdf = await this.invoiceService.generateWeeklyPerformancePDF(campaign, data);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=Reporte_Semanal_${campaign.name}.pdf`,
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
   }
 
   @Public() // El celular del chofer no tiene el JWT del admin dashboard

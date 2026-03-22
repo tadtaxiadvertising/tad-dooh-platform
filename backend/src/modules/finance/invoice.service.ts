@@ -189,4 +189,40 @@ export class InvoiceService implements OnModuleInit {
     const pdfDoc = pdfmake.createPdf(docDefinition);
     return await pdfDoc.getBuffer();
   }
+
+  /**
+   * Genera un reporte de rendimiento semanal para anunciantes.
+   */
+  async generateWeeklyPerformancePDF(campaign: any, data: any[]): Promise<Buffer> {
+    const total = data.reduce((s, d) => s + d.impressions, 0);
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: 'REPORTE SEMANAL DE IMPACTOS', style: 'p_header', color: '#FFD400', bold: true, fontSize: 18 },
+        { text: `Campaña: ${campaign.name}`, style: 'p_subheader', bold: true, fontSize:14 },
+        { text: `Anunciante: ${campaign.advertiser}`, fontSize: 10 },
+        { text: '\n' },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Día', bold: true, fillColor: '#f2f2f2' }, { text: 'Impactos', bold: true, fillColor: '#f2f2f2' }],
+              ...data.map(d => [d.day, d.impressions.toLocaleString()]),
+              [{ text: 'TOTAL SEMANA', bold: true }, { text: total.toLocaleString(), bold: true, color: '#FFD400' }]
+            ]
+          }
+        },
+        { text: '\n\n' },
+        { text: 'METODOLOGÍA DE CONTEO:', bold: true, fontSize: 10 },
+        { text: 'Los impactos se calculan en base a confirmaciones de reproducción enviadas por las tablets TAD al finalizar cada clip (Confirm-Play Event).', fontSize: 9, color: 'gray' }
+      ],
+      styles: { 
+        p_header: { margin: [0, 0, 0, 10] },
+        p_subheader: { margin: [0, 5, 0, 5] }
+      }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
 }

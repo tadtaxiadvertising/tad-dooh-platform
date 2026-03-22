@@ -262,6 +262,11 @@ export const downloadDriverInvoicePdf = async (driverId: string) => {
   const res = await api.get(`/sheets/invoice/${driverId}`, { responseType: 'blob' });
   triggerDownload(res.data, `TAD_Factura_${driverId}.pdf`, 'application/pdf');
 };
+
+export const downloadWeeklyCampaignPdf = async (id: string, name: string) => {
+  const res = await api.get(`/analytics/campaign/${id}/weekly/pdf`, { responseType: 'blob' });
+  triggerDownload(res.data, `Reporte_Semanal_${name}.pdf`, 'application/pdf');
+};
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 export const recordFinancialTransaction = (data: Record<string, unknown>) => api.post('/finance/transactions', data).then(res => res.data);

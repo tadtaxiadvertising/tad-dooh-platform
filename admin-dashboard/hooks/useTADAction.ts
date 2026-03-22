@@ -10,6 +10,35 @@ interface ActionOptions {
   actionName: string;
 }
 
+/**
+ * Registra un evento de telemetría de forma silenciosa.
+ * Si falla (ej. RLS 403, sin permisos), simplemente lo ignora —
+ * la telemetría NUNCA debe bloquear la acción principal del usuario.
+ */
+async function logTelemetry(
+  actionName: string,
+  status: 'SUCCESS' | 'FAILURE',
+  errorMsg?: string
+) {
+  try {
+    const { error } = await supabase.from('analytics_events').insert([{
+      event_type: 'CRITICAL_ACTION',
+      device_id: 'ADMIN_CONSOLE',
+      event_data: { action: actionName, status, ...(errorMsg ? { error: errorMsg } : {}) },
+      occurred_at: new Date().toISOString(),
+      received_at: new Date().toISOString(),
+    }]);
+
+    // 403 = RLS block (tabla sin política de INSERT para anon)
+    // Silenciamos silenciosamente estos errores para no llenar la consola de advertencias
+    if (error && error.code !== '42501' && !error.message?.includes('permission denied')) {
+      console.warn('[Telemetry] Unexpected error:', error);
+    }
+  } catch {
+    // Absorb completely — telemetry must never throw
+  }
+}
+
 export const useTADAction = () => {
   const [isPending, setIsPending] = useState(false);
 
@@ -33,17 +62,9 @@ export const useTADAction = () => {
     try {
       const result = await asyncFn();
 
-      // Telemetry log for critical actions (NON-BLOCKING)
+      // Telemetría no-bloqueante (silenciosa si RLS bloquea)
       if (options.critical) {
-        supabase.from('analytics_events').insert([{
-          event_type: 'CRITICAL_ACTION',
-          device_id: 'ADMIN_CONSOLE',
-          event_data: { action: options.actionName, status: 'SUCCESS' },
-          occurred_at: new Date().toISOString(),
-          received_at: new Date().toISOString()
-        }]).then(({ error }) => {
-          if (error) console.warn('Telemetry error (success log):', error);
-        });
+        logTelemetry(options.actionName, 'SUCCESS');
       }
 
       toast.success(`${options.actionName} completado`);
@@ -57,18 +78,10 @@ export const useTADAction = () => {
       }
 
       console.error(`Error en la acción ${options.actionName}:`, err);
-      
-      // Telemetry log for failure (NON-BLOCKING)
+
+      // Telemetría de fallo (también silenciosa)
       if (options.critical) {
-        supabase.from('analytics_events').insert([{
-          event_type: 'CRITICAL_ACTION',
-          device_id: 'ADMIN_CONSOLE',
-          event_data: { action: options.actionName, status: 'FAILURE', error: err.message },
-          occurred_at: new Date().toISOString(),
-          received_at: new Date().toISOString()
-        }]).then(({ error }) => {
-          if (error) console.warn('Telemetry error (failure log):', error);
-        });
+        logTelemetry(options.actionName, 'FAILURE', err.message);
       }
 
       toast.error(`Error en ${options.actionName}: ${err.message || 'Error desconocido'}`);

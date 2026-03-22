@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
+import { QRCodeCanvas } from 'qrcode.react';
 import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia, deleteMedia } from '../../services/api';
-import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu, Trash2 } from 'lucide-react';
+import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu, Trash2, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
@@ -13,15 +14,19 @@ import clsx from 'clsx';
 const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 export default function MediaPage() {
-  const [media, setMedia] = useState<{ id: string; url: string; filename: string; originalFilename?: string; size?: number; mime?: string; qrUrl?: string; createdAt?: string }[]>([]);
+  const [media, setMedia] = useState<{ id: string; url: string; filename: string; originalFilename?: string; size?: number; mime?: string; qrUrl?: string; createdAt?: string; campaignId?: string }[]>([]);
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; mediaAssets?: { checksum: string; url: string }[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [previewQr, setPreviewQr] = useState<string | null>(null);
+  const [previewCampaignId, setPreviewCampaignId] = useState<string | null>(null);
+
   const [mediaStatus, setMediaStatus] = useState<Record<string, { active_devices?: string[] }>>({});
   
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
@@ -299,7 +304,12 @@ export default function MediaPage() {
                 {/* Preview Surface */}
                 <div 
                   className="aspect-video bg-gray-900 relative overflow-hidden cursor-pointer group/surface"
-                  onClick={() => { setPreviewUrl(videoUrl); setPreviewTitle(displayName); }}
+                  onClick={() => { 
+                    setPreviewUrl(videoUrl); 
+                    setPreviewTitle(displayName);
+                    setPreviewQr(file.qrUrl || null);
+                    setPreviewCampaignId(file.campaignId || 'manual');
+                  }}
                 >
                   {isVideo ? (
                     <video 
@@ -507,6 +517,21 @@ export default function MediaPage() {
             </div>
             <div className="bg-black rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl aspect-video relative group ring-1 ring-white/5">
               <video src={previewUrl} controls autoPlay className="w-full h-full object-contain" />
+              
+              {/* QR Code Overlay Simulation */}
+              {previewQr && (
+                <div className="absolute bottom-[5%] right-[5%] w-[12%] aspect-square bg-white p-[0.6%] rounded-[8%] shadow-2xl animate-in fade-in zoom-in-50 duration-700 delay-500 fill-mode-both z-10 flex items-center justify-center">
+                  <QRCodeCanvas 
+                    value={`https://proyecto-ia-tad-api.rewvid.easypanel.host/analytics/qr-scan?campaignId=${previewCampaignId}&deviceId=PREVIEW-MODE`}
+                    size={256}
+                    level="H"
+                    includeMargin={false}
+                    className="w-full h-full"
+                  />
+                  <div className="absolute -top-3 -left-3 bg-tad-yellow text-black text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg border border-white/20">LIVE_QR</div>
+                </div>
+              )}
+
               <div className="absolute inset-x-0 bottom-0 h-1 bg-gray-900/50 backdrop-blur-sm">
                  <div className="h-full bg-tad-yellow w-full shadow-[0_0_10px_#fad400]" />
               </div>

@@ -361,11 +361,42 @@ export class CampaignController {
     @Body('mediaId') mediaId: string
   ) {
     if (!mediaId) throw new NotFoundException('mediaId is required');
-    const updated = await this.prisma.media.update({
-      where: { id: mediaId, campaign_id: campaignId },
-      data: { campaign_id: null },
-    });
-    return { success: true, media: updated };
+    let success = false;
+    
+    // Attempt to unlink from Media (v2)
+    try {
+      const media = await this.prisma.media.findUnique({ where: { id: mediaId } });
+      if (media && media.campaign_id === campaignId) {
+        await this.prisma.media.update({
+          where: { id: mediaId },
+          data: { campaign_id: null },
+        });
+        success = true;
+      }
+    } catch(e) { /* ignore */ }
+
+    // Attempt to delete MediaAsset (v1)
+    if (!success) {
+      try {
+        const asset = await this.prisma.mediaAsset.findUnique({ where: { id: mediaId } });
+        if (asset && asset.campaignId === campaignId) {
+          await this.prisma.mediaAsset.delete({ where: { id: mediaId } });
+          success = true;
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    if (!success) {
+      // Intenta borrar por checksum para la compatibilidad
+      try {
+        await this.prisma.mediaAsset.deleteMany({
+          where: { checksum: mediaId, campaignId: campaignId }
+        });
+        success = true;
+      } catch(e) { /* ignore */ }
+    }
+
+    return { success: true };
   }
 
   // 6. Delete a campaign

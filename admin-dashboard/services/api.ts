@@ -194,10 +194,6 @@ export const getDriverStats = () => api.get('/drivers/stats').then(res => res.da
 export const createDriver = (data: Record<string, unknown>) => api.post('/drivers', data).then(res => res.data);
 export const updateDriverSubscription = (id: string, data: Record<string, unknown>) => api.put(`/drivers/${id}/subscription`, data).then(res => res.data);
 
-// Advertisers
-export const getAdvertisers = () => api.get('/advertisers').then(res => res.data);
-export const createAdvertiser = (data: Record<string, unknown>) => api.post('/advertisers', data).then(res => res.data);
-
 // Finance
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
@@ -284,7 +280,9 @@ export const deleteCampaign = (id: string) => api.delete(`/campaigns/${id}`).the
 export const createDevice = (data: Record<string, unknown>) => api.post('/devices', data).then(res => res.data);
 export const updateDevice = (id: string, data: Record<string, unknown>) => api.put(`/devices/${id}`, data).then(res => res.data);
 export const deleteDevice = (deviceId: string) => api.delete(`/devices/${deviceId}`).then(res => res.data);
-export const deleteMedia = (id: string) => api.post(`/media/${id}/delete`).then(res => res.data);
+export const getAdvertisers = () => api.get('/advertisers').then(res => res.data);
+export const createAdvertiser = (data: any) => api.post('/advertisers', data).then(res => res.data);
+export const updateAdvertiser = (id: string, data: any) => api.patch(`/advertisers/${id}`, data).then(res => res.data);
 export const deleteAdvertiser = (id: string) => api.delete(`/advertisers/${id}`).then(res => res.data);
 
 // Device Profile

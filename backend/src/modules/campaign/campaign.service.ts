@@ -150,6 +150,7 @@ export class CampaignService {
         include: {
           mediaAssets: true,
           media: true,
+          advertiser: true,
         },
         orderBy: {
           updatedAt: 'desc',
@@ -168,6 +169,7 @@ export class CampaignService {
           include: {
             mediaAssets: true,
             media: true,
+            advertiser: true,
           },
           orderBy: { updatedAt: 'desc' }
         });
@@ -183,28 +185,23 @@ export class CampaignService {
 
     const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
+      // Mapeamos a VideoAsset (v2)
+      const mapMediaAsset = (ma: any) => ({
+        id: ma.id || ma.checksum,
+        campaignId: campaign.id,
+        filename: ma.filename || ma.name || 'video.mp4',
+        url: ma.url || ma.cdnUrl || '',
+        duration: Number(ma.duration || 30),
+        qrUrl: campaign.targetUrl || ma.qrUrl || null,
+        advertiserId: campaign.advertiser?.id || null,
+        advertiserName: campaign.advertiser?.companyName || campaign.advertiserId || 'TAD Advertiser'
+      });
+
       if ((campaign as any).mediaAssets) {
-        mediaAssets.push(...(campaign as any).mediaAssets.map((ma: any) => ({
-          ...ma,
-          qrUrl: campaign.targetUrl || ma.qrUrl || null,
-          campaignId: campaign.id
-        })));
+        mediaAssets.push(...(campaign as any).mediaAssets.map(mapMediaAsset));
       }
       if ((campaign as any).media) {
-        // Adapt Media to MediaAsset interface for backward compatibility with tablet
-        mediaAssets.push(...(campaign as any).media.map((m: any) => ({
-          id: m.id,
-          campaignId: m.campaign_id || campaign.id,
-          type: 'VIDEO',
-          filename: m.filename || m.name || 'unknown.mp4',
-          url: m.url || m.cdnUrl || '',
-          fileSize: Number(m.size || m.fileSize || 0),
-          checksum: m.hash || m.hashMd5 || 'no-checksum',
-          duration: Number(m.durationSeconds || 0),
-          qrUrl: campaign.targetUrl || m.qrUrl || null,
-          version: 1,
-          createdAt: m.createdAt
-        })));
+        mediaAssets.push(...(campaign as any).media.map(mapMediaAsset));
       }
     }
 

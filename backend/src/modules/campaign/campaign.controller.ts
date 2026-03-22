@@ -16,6 +16,27 @@ export class CampaignController {
     private readonly mediaService: MediaService
   ) {}
 
+  @Public() // Perfil público accesible desde QR (Escaner de pasajero)
+  @Get('advertiser/:id/profile')
+  async getAdvertiserProfile(@Param('id') id: string) {
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        companyName: true,
+        contactName: true,
+        whatsapp: true,
+        instagram: true,
+        facebook: true,
+        websiteUrl: true,
+        productsData: true,
+      }
+    });
+
+    if (!advertiser) throw new NotFoundException('Anunciante no encontrado');
+    return advertiser;
+  }
+
   @Post()
   async createCampaign(@Body() dto: CreateCampaignDto) {
     return this.campaignService.createCampaign(dto);

@@ -16,13 +16,22 @@ export default function AdvertisersPage() {
     email?: string; 
     phone?: string; 
     status: string; 
-    campaigns?: { id: string; status: string; budget?: number }[] 
+    campaigns?: { id: string; status: string; budget?: number }[];
+    whatsapp?: string;
+    websiteUrl?: string;
+    instagram?: string;
   }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAdvertiser, setSelectedAdvertiser] = useState<any>(null);
+
+  const openConfig = (advertiser: any) => {
+    setSelectedAdvertiser(advertiser);
+    setIsModalOpen(true);
+  };
 
   const loadAdvertisers = useCallback(async () => {
     setLoading(true);
@@ -119,7 +128,7 @@ export default function AdvertisersPage() {
              Exportar CRM
            </button>
            <button 
-             onClick={() => setIsModalOpen(true)}
+             onClick={() => { setSelectedAdvertiser(null); setIsModalOpen(true); }}
              className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md"
            >
              <UserPlus className="h-4 w-4" />
@@ -215,66 +224,62 @@ export default function AdvertisersPage() {
                 key={advertiser.id} 
                 className={clsx(
                   "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 hover:border-gray-500 transition-all duration-500 hover:shadow-lg flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
+                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : idx === 5 ? 'delay-250' : ''
                 )}
               >
                 
                 <div className="flex items-start justify-between mb-8">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700/50 to-gray-900 rounded-2xl flex items-center justify-center border border-gray-700/50 shadow-md group-hover:rotate-3 transition-all">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700/50 to-gray-900 rounded-2xl flex items-center justify-center border border-gray-700/50 shadow-md group-hover:rotate-3 transition-all cursor-pointer" onClick={() => openConfig(advertiser)}>
                        <span className="text-2xl font-bold text-gray-300 relative z-10">{(advertiser.companyName || 'A').charAt(0)}</span>
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-white tracking-tight uppercase leading-none mb-2 group-hover:text-tad-yellow transition-colors">{advertiser.companyName}</h4>
                       <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700/50 w-fit">
                          <Shield className="w-3 h-3 text-gray-500" />
-                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cuenta Activa</p>
+                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Socio Estratégico</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <div className={clsx(
-                      "px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm",
+                      "px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest shadow-sm",
                       advertiser.status === 'ACTIVE' 
                         ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
                         : 'bg-gray-900 text-gray-500 border-gray-700/50'
                     )}>
                       {advertiser.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                     </div>
-                    <AntigravityButton
-                      variant="danger"
-                      actionName="delete_advertiser"
-                      critical={true}
-                      className="w-8 h-8 p-0 rounded-lg"
-                      confirmMessage={`¿Eliminar la cuenta de "${advertiser.companyName}" y todos sus vínculos?`}
-                      onAsyncClick={async () => await deleteAdvertiser(advertiser.id)}
-                      onSuccess={() => {
-                        loadAdvertisers();
-                        notifyChange('ADVERTISERS');
-                      }}
-                    >
-                       <Trash2 className="w-3.5 h-3.5" />
-                    </AntigravityButton>
                   </div>
                 </div>
 
                 <div className="space-y-4 mb-8 bg-gray-900/50 p-6 rounded-2xl border border-gray-700/50">
-                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                  <div className="flex items-center gap-4 text-xs text-zinc-400 font-bold tracking-widest uppercase">
                     <Mail className="w-4 h-4 text-tad-yellow shrink-0" />
                     <span className="truncate">{advertiser.email || 'SIN DATOS'}</span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                  <div className="flex items-center gap-4 text-xs text-zinc-400 font-bold tracking-widest uppercase">
                     <Phone className="w-4 h-4 text-tad-yellow shrink-0" />
                     <span className="truncate">{advertiser.phone || 'SIN DATOS'}</span>
                     <WhatsAppButton phone={advertiser.phone} name={advertiser.companyName} className="scale-75 origin-left ml-[-8px]" />
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-400 font-bold tracking-widest uppercase">
+                  <div className="flex items-center gap-4 text-xs text-zinc-400 font-bold tracking-widest uppercase">
                     <TrendingUp className="w-4 h-4 text-tad-yellow shrink-0" />
                     <span className="truncate">{advertiser.contactName || 'SIN CONTACTO'}</span>
                   </div>
+                  
+                  {/* QR Profile Snapshot */}
+                  <div className="pt-2 border-t border-white/[0.05] mt-2 space-y-2">
+                     <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">QR Nexus Status</p>
+                     <div className="flex gap-2">
+                        {advertiser.whatsapp && <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]" title="WhatsApp Configurado" />}
+                        {advertiser.websiteUrl && <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_#3b82f6]" title="Web Configurada" />}
+                        {advertiser.instagram && <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_5px_#f43f5e]" title="Instagram Configurado" />}
+                     </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-700/50 mt-auto relative items-center">
+                <div className="grid grid-cols-2 gap-4 mt-auto relative items-center mb-6">
                   <div>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Campañas Mág.</p>
                     <div className="flex items-center gap-2">
@@ -286,6 +291,26 @@ export default function AdvertisersPage() {
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Inversión (RD$)</p>
                     <h5 className="text-xl font-bold text-emerald-500 leading-none truncate">{totalSpend.toLocaleString()}</h5>
                   </div>
+                </div>
+
+                <div className="flex gap-2 border-t border-white/5 pt-6">
+                  <button 
+                    onClick={() => openConfig(advertiser)}
+                    className="flex-1 bg-white/[0.05] hover:bg-tad-yellow hover:text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Configurar Perfil
+                  </button>
+                  <AntigravityButton
+                    variant="danger"
+                    actionName="delete_advertiser"
+                    critical={true}
+                    className="w-12 h-12 p-0 rounded-xl bg-rose-500/10 hover:bg-rose-500"
+                    confirmMessage={`¿Eliminar cuenta de "${advertiser.companyName}"?`}
+                    onAsyncClick={async () => await deleteAdvertiser(advertiser.id)}
+                    onSuccess={() => { loadAdvertisers(); notifyChange('ADVERTISERS'); }}
+                  >
+                     <Trash2 className="w-4 h-4" />
+                  </AntigravityButton>
                 </div>
               </div>
             );
@@ -300,7 +325,7 @@ export default function AdvertisersPage() {
                 El sistema no registra cuentas corporativas.
              </p>
              <button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => { setSelectedAdvertiser(null); setIsModalOpen(true); }}
                 className="bg-gray-800/50 hover:bg-tad-yellow hover:text-black text-gray-400 px-10 py-4 rounded-xl border border-gray-700/50 hover:border-transparent text-xs font-bold uppercase tracking-widest transition-all shadow-md"
              >
                 <span className="relative z-10">Nuevo Registro</span>
@@ -311,7 +336,8 @@ export default function AdvertisersPage() {
 
       <AdvertiserModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        initialData={selectedAdvertiser}
+        onClose={() => { setIsModalOpen(false); setSelectedAdvertiser(null); }}
         onSuccess={() => {
           loadAdvertisers();
           notifyChange('ADVERTISERS');

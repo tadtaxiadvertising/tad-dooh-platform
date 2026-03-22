@@ -285,6 +285,7 @@ export default function NewCampaignPage() {
                     </div>
                   </div>
                </div>
+            </div>
 
             <div className="pt-10 flex flex-col items-center border-t border-gray-700/50">
                <button 

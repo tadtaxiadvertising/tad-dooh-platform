@@ -5,6 +5,7 @@ import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { CampaignService } from '../campaign/campaign.service';
+import { FinanceService } from '../finance/finance.service';
 
 const MAX_SLOTS_PER_DEVICE = 15;
 

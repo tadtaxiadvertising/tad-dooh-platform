@@ -240,6 +240,28 @@ export const openInvoiceHtml = async (id: string) => {
     newWindow.document.close();
   }
 };
+
+// --- AUTHENTICATED PDF DOWNLOADS ---
+
+export const downloadCampaignPdf = async (id: string, name: string) => {
+  const res = await api.get(`/finance/report/campaign/${id}/pdf`, { responseType: 'blob' });
+  triggerDownload(res.data, `Certificado_Exhibicion_${name}.pdf`, 'application/pdf');
+};
+
+export const downloadFleetPdf = async () => {
+  const res = await api.get(`/finance/report/fleet/pdf`, { responseType: 'blob' });
+  triggerDownload(res.data, 'TAD_Inventario_Flota.pdf', 'application/pdf');
+};
+
+export const downloadTransactionPdf = async (id: string) => {
+  const res = await api.get(`/finance/transaction/${id}/pdf`, { responseType: 'blob' });
+  triggerDownload(res.data, `Recibo_Transaccion_${id.substring(0,8)}.pdf`, 'application/pdf');
+};
+
+export const downloadDriverInvoicePdf = async (driverId: string) => {
+  const res = await api.get(`/sheets/invoice/${driverId}`, { responseType: 'blob' });
+  triggerDownload(res.data, `TAD_Factura_${driverId}.pdf`, 'application/pdf');
+};
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
 export const recordFinancialTransaction = (data: Record<string, unknown>) => api.post('/finance/transactions', data).then(res => res.data);

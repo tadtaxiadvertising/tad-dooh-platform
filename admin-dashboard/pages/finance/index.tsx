@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getFinancialSummary, getFinancialLedger, downloadPayrollCsv, downloadCampaignReport, openInvoiceHtml } from '../../services/api';
 import { 
   AlertTriangle,
@@ -134,14 +135,22 @@ export default function FinancePage() {
           </button>
         </div>
 
-        <AntigravityButton
-           actionName="new_transaction"
-           variant="secondary"
-           onClick={() => alert('Consola de Registro Rápido: Use el comando de voz o el terminal de Inteligencia Financiera.')}
-        >
-          <RefreshCcw className="w-4 h-4" />
-          Nuevo Registro
-        </AntigravityButton>
+        <div className="flex items-center gap-4">
+          <Link 
+              href="/finance/exports"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all bg-gray-900 border border-gray-700 text-gray-400 hover:text-white hover:border-tad-yellow"
+          >
+            <FileBarChart className="w-4 h-4" /> Centro de Exportación
+          </Link>
+          <AntigravityButton
+            actionName="new_transaction"
+            variant="secondary"
+            onClick={() => alert('Consola de Registro Rápido: Use el comando de voz o el terminal de Inteligencia Financiera.')}
+          >
+            <RefreshCcw className="w-4 h-4" />
+            Nuevo Registro
+          </AntigravityButton>
+        </div>
       </div>
 
       {error && (

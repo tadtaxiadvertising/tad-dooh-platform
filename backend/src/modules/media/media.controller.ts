@@ -3,6 +3,7 @@ import {
   Controller, 
   Post, 
   Get, 
+  Delete,
   UseInterceptors, 
   UploadedFile, 
   BadRequestException,
@@ -75,6 +76,13 @@ export class MediaController {
     });
   }
 
+  // ✅ Método HTTP estándar — Axios / fetch DELETE
+  @Delete(':id')
+  async deleteMedia(@Param('id') id: string) {
+    return this.mediaService.deleteFile(id);
+  }
+
+  // Compatibilidad retroactiva con player tablets antiguas que usan POST
   @Post(':id/delete')
   async deleteMediaAlt(@Param('id') id: string) {
     return this.mediaService.deleteFile(id);

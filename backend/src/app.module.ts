@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SupabaseModule } from './modules/supabase/supabase.module';
+import { SheetsModule } from './modules/sheets/sheets.module';
 import { AuthService } from './modules/auth/auth.service';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
@@ -69,6 +70,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
     FinanceModule,
     SyncModule,
     NotificationsModule,
+    SheetsModule,
   ],
   providers: [
     // Global JWT guard — protects ALL routes by default

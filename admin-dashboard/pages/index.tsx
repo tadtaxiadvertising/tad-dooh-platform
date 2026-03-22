@@ -12,7 +12,9 @@ export default function Home() {
     online: 0,
     campaigns: 0,
     activeCampaigns: 0,
-    media: 0
+    media: 0,
+    totalScans: 0,
+    ctr: 0
   });
   const [chartData, setChartData] = useState<{ name: string; val: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,11 +25,12 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const [devices, campaigns, media, hourly] = await Promise.all([
+      const [devices, campaigns, media, hourly, analytics] = await Promise.all([
         getDevices(), 
         getCampaigns(), 
         getMedia(), 
-        getHourlyPlays()
+        getHourlyPlays(),
+        getAnalyticsSummary()
       ]);
       
       setStats({
@@ -35,7 +38,9 @@ export default function Home() {
         online: Array.isArray(devices) ? (devices as { status: string }[]).filter((d) => d.status === 'online').length : 0,
         campaigns: Array.isArray(campaigns) ? campaigns.length : 0,
         activeCampaigns: Array.isArray(campaigns) ? (campaigns as { active: boolean }[]).filter((c) => c.active).length : 0,
-        media: Array.isArray(media) ? media.length : 0
+        media: Array.isArray(media) ? media.length : 0,
+        totalScans: analytics?.totalScans || 0,
+        ctr: analytics?.ctr || 0
       });
 
       if (Array.isArray(hourly) && hourly.length > 0) {
@@ -83,7 +88,7 @@ export default function Home() {
           { icon: <CarFront className="w-5 h-5" />, label: "Pantallas Activos", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
           { icon: <Megaphone className="w-5 h-5" />, label: "Campañas", value: stats.campaigns, sub: `${stats.activeCampaigns} Streams`, trend: "Live", color: "white" },
           { icon: <CloudUpload className="w-5 h-5" />, label: "Archivos", value: stats.media, sub: "Optimizados", trend: "Sync", color: "yellow" },
-          { icon: <Activity className="w-5 h-5" />, label: "Confiabilidad", value: "99.9%", sub: "38ms Latency", trend: "Nominal", color: "white" }
+          { icon: <Zap className="w-5 h-5" />, label: "Escaneos QR", value: stats.totalScans.toLocaleString(), sub: `${stats.ctr.toFixed(2)}% CTR`, trend: "Conversion", color: "white" }
         ].map((s, i) => (
           <StatsCard key={i} {...s} delay={i * 50} />
         ))}

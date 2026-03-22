@@ -18,11 +18,33 @@
         height: 100%;
         object-fit: cover;
       }
+      #qr-container {
+        position: fixed;
+        bottom: 50px;
+        right: 50px;
+        width: 140px; 
+        height: 140px;
+        background: white;
+        padding: 6px;
+        border-radius: 12px;
+        display: none; 
+        z-index: 1000;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        transition: opacity 0.5s ease;
+      }
+      #qr-container img {
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
   <body>
     <!-- Main loop player, muted to bypass browser auto-play policies -->
     <video id="tad-player" autoplay muted playsinline></video>
+    
+    <div id="qr-container">
+      <img id="qr-code" src="" alt="Scan" />
+    </div>
     
     <!-- Entry script loaded conditionally per Vite standard -->
     <script type="module" src="/index.ts"></script>

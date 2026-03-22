@@ -184,7 +184,11 @@ export class CampaignService {
     const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
       if ((campaign as any).mediaAssets) {
-        mediaAssets.push(...(campaign as any).mediaAssets);
+        mediaAssets.push(...(campaign as any).mediaAssets.map((ma: any) => ({
+          ...ma,
+          qrUrl: campaign.targetUrl || ma.qrUrl || null,
+          campaignId: campaign.id
+        })));
       }
       if ((campaign as any).media) {
         // Adapt Media to MediaAsset interface for backward compatibility with tablet
@@ -197,6 +201,7 @@ export class CampaignService {
           fileSize: Number(m.size || m.fileSize || 0),
           checksum: m.hash || m.hashMd5 || 'no-checksum',
           duration: Number(m.durationSeconds || 0),
+          qrUrl: campaign.targetUrl || m.qrUrl || null,
           version: 1,
           createdAt: m.createdAt
         })));

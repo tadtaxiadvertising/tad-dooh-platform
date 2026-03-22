@@ -1,3 +1,4 @@
+import QRCode from 'qrcode';
 import { EventQueue } from '../storage/event-queue';
 import { sendPlaybackEvent } from '../api/playback';
 import { VideoCache } from '../storage/video-cache';
@@ -6,10 +7,14 @@ export interface VideoAsset {
   id: string;
   url: string;
   duration: number;
+  qrUrl?: string; // Link de la marca (ej: tad.do/promo)
+  campaignId?: string;
 }
 
 export class VideoEngine {
   private element: HTMLVideoElement;
+  private qrContainer: HTMLElement | null;
+  private qrImageElement: HTMLImageElement | null;
   private playlist: VideoAsset[] = [];
   private currentIndex = 0;
   private deviceId: string;
@@ -18,6 +23,8 @@ export class VideoEngine {
 
   constructor(videoElementId: string, deviceId: string) {
     this.element = document.getElementById(videoElementId) as HTMLVideoElement;
+    this.qrContainer = document.getElementById('qr-container');
+    this.qrImageElement = document.getElementById('qr-code') as HTMLImageElement;
     this.deviceId = deviceId;
     
     // Auto cycle
@@ -44,6 +51,37 @@ export class VideoEngine {
     
     const currentVideo = this.playlist[this.currentIndex];
     
+    // ============================================
+    // QR CODE DYNAMIC OVERLAY
+    // ============================================
+    if (currentVideo.qrUrl && this.qrContainer && this.qrImageElement) {
+      try {
+        // Enlace de tracking con Proxy del Backend
+        // Cambiar la URL base según corresponda a tu API de producción
+        const apiBase = "https://proyecto-ia-tad-api.rewvid.easypanel.host";
+        const trackingLink = `${apiBase}/analytics/qr-scan?campaignId=${currentVideo.campaignId || 'manual'}&deviceId=${this.deviceId}`;
+        
+        // Generar QR (Negro sobre blanco)
+        const qrDataUrl = await QRCode.toDataURL(trackingLink, {
+          margin: 1,
+          width: 300,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        this.qrImageElement.src = qrDataUrl;
+        this.qrContainer.style.display = 'block';
+        this.qrContainer.style.opacity = '1';
+      } catch (qrErr) {
+        console.warn("QR Generation failed: ", qrErr);
+        this.qrContainer.style.display = 'none';
+      }
+    } else if (this.qrContainer) {
+      this.qrContainer.style.display = 'none';
+    }
+
     try {
       // Decode through Service Worker / Cache API allowing local >50MB fallback looping
       const localObjectURL = await VideoCache.getVideoSource(currentVideo.url);

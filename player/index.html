@@ -40,7 +40,15 @@
   </head>
   <body>
     <!-- Main loop player, muted to bypass browser auto-play policies -->
-    <video id="tad-player" autoplay muted playsinline></video>
+    <video 
+      id="tad-player" 
+      autoplay 
+      muted 
+      playsinline 
+      webkit-playsinline 
+      disablePictureInPicture
+      controlsList="nodownload"
+    ></video>
     
     <div id="qr-container">
       <img id="qr-code" src="" alt="Scan" />

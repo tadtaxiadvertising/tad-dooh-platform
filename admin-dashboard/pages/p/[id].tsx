@@ -5,7 +5,7 @@ import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+import { getAdvertiserPublicProfile } from '../../services/api';
 
 export default function PublicProfilePage() {
   const router = useRouter();
@@ -18,8 +18,8 @@ export default function PublicProfilePage() {
     if (!id) return;
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${API_URL}/campaigns/advertiser/${id}/profile`);
-        setAdvertiser(res.data);
+        const data = await getAdvertiserPublicProfile(id as string);
+        setAdvertiser(data);
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError(true);

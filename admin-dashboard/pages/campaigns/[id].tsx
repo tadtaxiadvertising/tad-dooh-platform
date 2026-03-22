@@ -330,7 +330,16 @@ export default function CampaignDetailPage() {
                         try {
                           const { unlinkMediaFromCampaign } = await import('../../services/api');
                           await unlinkMediaFromCampaign(campaign.id, asset.id);
-                          fetchCampaign();
+                          
+                          // Optimistic update for immediate feedback
+                          setCampaign(prev => {
+                            if (!prev) return prev;
+                            return {
+                              ...prev,
+                              mediaAssets: (prev.mediaAssets || []).filter((m: any) => m.id !== asset.id),
+                              media: (prev.media || []).filter((m: any) => m.id !== asset.id)
+                            };
+                          });
                         } catch (err: any) {
                           alert('Error desvinculando activo: ' + err.message);
                         }
@@ -457,7 +466,9 @@ export default function CampaignDetailPage() {
                                   try {
                                     const { removeCampaignFromDevice } = await import('../../services/api');
                                     await removeCampaignFromDevice(device.deviceId, campaign.id);
-                                    fetchAssignedDevices();
+                                    
+                                    // Optimistic update
+                                    setAssignedDevices(prev => prev.filter(d => d.deviceId !== device.deviceId));
                                   } catch (err: any) {
                                     alert('Error desasignando pantalla: ' + err.message);
                                   }

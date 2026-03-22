@@ -25,34 +25,38 @@ export class DeviceAdminController {
   // Quitar un anuncio de un taxi específico
   @Delete(':deviceId/campaigns/:campaignId')
   async removeCampaignFromDevice(
-    @Param('deviceId') deviceId: string, // Este es el UUID (Device.id)
+    @Param('deviceId') paramDeviceId: string,
     @Param('campaignId') campaignId: string
   ) {
-    // Para borrar en PlaylistItem necesitamos el hardware deviceId
-    const device = await this.prisma.device.findUnique({
-      where: { id: deviceId },
-      select: { deviceId: true }
+    // Find device by either UUID or Hardware ID
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: paramDeviceId }, { deviceId: paramDeviceId }] },
+      select: { id: true, deviceId: true }
     });
+
+    if (!device) {
+      return { success: false, message: 'Dispositivo no encontrado' };
+    }
 
     // 1. Borramos en la tabla v2
-    await this.prisma.deviceCampaign.delete({
-      where: {
-        device_id_campaign_id: {
-          device_id: deviceId,
+    try {
+      await this.prisma.deviceCampaign.deleteMany({
+        where: {
+          device_id: device.id,
           campaign_id: campaignId,
         },
-      },
-    });
+      });
+    } catch(e) {}
 
-    // 2. Intentamos borrar en la tabla v1 (legacy) si existe el hardware ID
-    if (device?.deviceId) {
+    // 2. Intentamos borrar en la tabla v1 (legacy)
+    try {
       await this.prisma.playlistItem.deleteMany({
         where: {
           campaignId: campaignId,
           deviceId: device.deviceId
         }
       });
-    }
+    } catch(e) {}
 
     return { success: true, message: 'Campaña removida del dispositivo exitosamente' };
   }

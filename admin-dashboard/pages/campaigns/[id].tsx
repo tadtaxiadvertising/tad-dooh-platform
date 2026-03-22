@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { getCampaignById, getCampaignDevices } from '../../services/api';
-import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download } from 'lucide-react';
+import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -285,7 +285,7 @@ export default function CampaignDetailPage() {
             <h2 className="text-xl font-black text-white uppercase tracking-tight">
               Vault <span className="text-tad-yellow">Multimedia</span>
             </h2>
-            <Link href="/media" className="text-xs font-bold text-gray-400 hover:text-tad-yellow transition-colors uppercase tracking-wider leading-none flex items-center gap-2 bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl">
+            <Link href={`/media?openUpload=true&campaignId=${campaign.id}`} className="text-xs font-bold text-gray-400 hover:text-tad-yellow transition-colors uppercase tracking-wider leading-none flex items-center gap-2 bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl shadow-sm">
                Inyectar Activos <ArrowLeft className="w-3 h-3 rotate-180" />
             </Link>
           </div>
@@ -322,6 +322,24 @@ export default function CampaignDetailPage() {
                           {asset.type}
                        </div>
                     </div>
+                    {/* Botón para Desvincular Activo */}
+                    <button 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!confirm('¿Desvincular este activo de la campaña? El activo NO será borrado del sistema, solo de esta campaña.')) return;
+                        try {
+                          const { unlinkMediaFromCampaign } = await import('../../services/api');
+                          await unlinkMediaFromCampaign(campaign.id, asset.id);
+                          fetchCampaign();
+                        } catch (err: any) {
+                          alert('Error desvinculando activo: ' + err.message);
+                        }
+                      }}
+                      title="Desvincular activo"
+                      className="absolute top-3 left-3 p-2 bg-rose-500/80 hover:bg-rose-500 backdrop-blur-md rounded-lg border border-rose-500/50 text-white transition-all opacity-0 group-hover/asset:opacity-100 shadow-md"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
 
                   <div className="p-5">
@@ -432,6 +450,23 @@ export default function CampaignDetailPage() {
                              {device.assignment_type || 'DIRECT'} CLUSTER
                           </span>
                           <div className="flex items-center gap-1.5 ml-auto">
+                              <button
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  if (!confirm('¿Desasignar esta pantalla de la campaña actual?')) return;
+                                  try {
+                                    const { removeCampaignFromDevice } = await import('../../services/api');
+                                    await removeCampaignFromDevice(device.deviceId, campaign.id);
+                                    fetchAssignedDevices();
+                                  } catch (err: any) {
+                                    alert('Error desasignando pantalla: ' + err.message);
+                                  }
+                                }}
+                                title="Desasignar pantalla"
+                                className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg transition-all"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
                              <a 
                                href={`https://proyecto-ia-tad-portal.rewvid.easypanel.host/${device.deviceId}`}
                                target="_blank"

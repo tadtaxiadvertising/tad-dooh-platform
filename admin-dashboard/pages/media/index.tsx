@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -70,8 +71,22 @@ export default function MediaPage() {
   });
   
   const devices = Array.isArray(fleetSummary) ? fleetSummary : [];
+  
+  const router = useRouter();
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Check URL query parameters for auto-opening modal and auto-selecting campaign
+  useEffect(() => {
+    if (router.isReady) {
+      if (router.query.openUpload === 'true') {
+        setShowUploadModal(true);
+      }
+      if (router.query.campaignId) {
+        setSelectedCampaign(router.query.campaignId as string);
+      }
+    }
+  }, [router.isReady, router.query]);
 
   useEffect(() => {
     if (media.length === 0) return;

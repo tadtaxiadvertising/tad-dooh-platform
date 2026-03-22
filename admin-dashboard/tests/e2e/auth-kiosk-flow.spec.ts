@@ -114,9 +114,7 @@ test.describe('Autenticación Supabase — Admin Dashboard', () => {
 
     // ✅ No debe haber blank/white screen
     const pageContent = await page.locator('body').textContent();
-    expect(pageContent?.length).toBeGreaterThan(50,
-      'Pantalla en blanco detectada tras login fallido.'
-    );
+    expect(pageContent?.length, 'Pantalla en blanco detectada tras login fallido.').toBeGreaterThan(50);
   });
 
   test('3.3 — Sesión Supabase persiste tras F5 (refresh token no expira silenciosamente)', async ({ page }) => {
@@ -138,7 +136,7 @@ test.describe('Autenticación Supabase — Admin Dashboard', () => {
       );
     }
 
-    expect(redirectedToLogin, 'La sesión no debe perderse al refrescar la página').toBe(false);
+    expect(redirectedToLogin, '[AUTH_002] La sesión no debe perderse al refrescar la página').toBe(false);
     console.log(`✅ Sesión persistente: ${urlAfterLogin} → ${urlAfterRefresh}`);
   });
 
@@ -232,13 +230,11 @@ test.describe('Kill-Switch — Regla de Negocio 402 (RD$6,000)', () => {
       const zIndex = await overlay.evaluate((el) =>
         parseInt(window.getComputedStyle(el).zIndex || '0')
       );
-      expect(zIndex).toBeGreaterThan(100,
-        'El overlay debe tener z-index > 100 para cubrir todos los elementos del dashboard.'
-      );
+      expect(zIndex, 'El overlay debe tener z-index > 100 para cubrir todos los elementos del dashboard.').toBeGreaterThan(100);
 
       const { width, height } = await overlay.boundingBox() || { width: 0, height: 0 };
-      expect(width).toBeGreaterThan(1000, 'El overlay debe cubrir el ancho completo de la pantalla.');
-      expect(height).toBeGreaterThan(600, 'El overlay debe cubrir el alto completo de la pantalla.');
+      expect(width, 'El overlay debe cubrir el ancho completo de la pantalla.').toBeGreaterThan(1000);
+      expect(height, 'El overlay debe cubrir el alto completo de la pantalla.').toBeGreaterThan(600);
 
       console.log(`✅ Overlay cubre pantalla completa: ${width}x${height}px, z-index: ${zIndex}`);
     }
@@ -270,19 +266,19 @@ test.describe('Modo Kiosco — Comportamiento FullyKiosk Android', () => {
     console.log('📐 Body dimensions:', bodyStyles);
 
     // ✅ No debe haber scroll horizontal (indicador de elementos que se salen)
-    expect(bodyStyles.bodyWidth).toBeLessThanOrEqual(bodyStyles.windowWidth + 5,
-      `[KIOSK_002] Scroll horizontal detectado: bodyWidth(${bodyStyles.bodyWidth}) > windowWidth(${bodyStyles.windowWidth}). ` +
-      'El pasajero podría scrollear fuera del player.'
-    );
+    expect(
+      bodyStyles.bodyWidth,
+      `[KIOSK_002] Scroll horizontal detectado: bodyWidth(${bodyStyles.bodyWidth}) > windowWidth(${bodyStyles.windowWidth}). El pasajero podría scrollear fuera del player.`
+    ).toBeLessThanOrEqual(bodyStyles.windowWidth + 5);
 
-    // ✅ El contenedo principal debe ocupar la pantalla completa
+    // ✅ El contenido principal debe ocupar la pantalla completa
     const mainContent = page.locator('main, [data-testid="main-content"], #__next > div').first();
     if (await mainContent.count() > 0) {
       const { width } = await mainContent.boundingBox() || { width: 0 };
-      expect(width).toBeGreaterThan(1200,
-        `[KIOSK_001] El contenido principal no ocupa el ancho completo: ${width}px. ` +
-        'Verificar que no hay padding o margin excesivo en el layout principal.'
-      );
+      expect(
+        width,
+        `[KIOSK_001] El contenido principal no ocupa el ancho completo: ${width}px. Verificar padding/margin en el layout principal.`
+      ).toBeGreaterThan(1200);
     }
   });
 
@@ -339,9 +335,9 @@ test.describe('Modo Kiosco — Comportamiento FullyKiosk Android', () => {
     console.log(`🎨 Elementos con TAD Yellow: ${tadYellowElements.length}`);
     tadYellowElements.forEach(e => console.log(`  → ${e}`));
 
-    expect(tadYellowElements.length).toBeGreaterThan(0,
-      '[AUTH_004] No se encontraron elementos con el color TAD Yellow en la página de login. ' +
-      'Verificar que globals.css aplica correctamente #FFD400.'
-    );
+    expect(
+      tadYellowElements.length,
+      '[AUTH_004] No se encontraron elementos con el color TAD Yellow en la página de login. Verificar que globals.css aplica correctamente #FFD400.'
+    ).toBeGreaterThan(0);
   });
 });

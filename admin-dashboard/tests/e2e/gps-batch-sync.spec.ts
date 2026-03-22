@@ -165,19 +165,14 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
       );
     } else {
       // Si hubo sync, verificar que fue en batch (no N+1)
-      expect(syncRequests.length).toBeLessThanOrEqual(2,
-        `[GPS_001] N+1 Requests detectados: ${syncRequests.length} requests de sync. ` +
-        'El player debe agrupar TODOS los eventos en un solo payload.'
-      );
+      expect(syncRequests.length, `[GPS_001] N+1 Requests detectados: ${syncRequests.length} requests de sync. El player debe agrupar TODOS los eventos en un solo payload.`).toBeLessThanOrEqual(2);
 
       // Verificar que el payload contiene el array de eventos
       const firstPayload = syncRequests[0]?.body as Record<string, unknown>;
       if (firstPayload?.events) {
         const eventsInPayload = (firstPayload.events as unknown[]).length;
         console.log(`✅ Batch payload con ${eventsInPayload} eventos. Correcto!`);
-        expect(eventsInPayload).toBeGreaterThan(1,
-          'El batch debe contener múltiples eventos, no solo 1.'
-        );
+        expect(eventsInPayload, 'El batch debe contener múltiples eventos, no solo 1.').toBeGreaterThan(1);
       } else {
         console.warn(
           '⚠️  El payload no contiene una propiedad "events". ' +
@@ -225,10 +220,7 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
 
     console.log(`📦 Eventos en IndexedDB tras recarga: ${remainingEvents}`);
 
-    expect(remainingEvents).toBeGreaterThan(0,
-      '[GPS_002] ALERTA: Los eventos offline se perdieron tras recargar la página. ' +
-      'Verificar que se usa IndexedDB (persistente) y NO sessionStorage (volátil).'
-    );
+    expect(remainingEvents, '[GPS_002] ALERTA: Los eventos offline se perdieron tras recargar la página. Verificar que se usa IndexedDB (persistente) y NO sessionStorage (volátil).').toBeGreaterThan(0);
   });
 
   // ────────────────────────────────────────────────────────────────
@@ -281,10 +273,7 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
       console.log(`✅ Sync completado en 3G. Payload size: ${(syncPayloadSize / 1024).toFixed(2)} KB`);
 
       // Verificamos que el payload no excede 1MB (evitar timeout en VPS)
-      expect(syncPayloadSize).toBeLessThan(1_048_576,
-        `[GPS_003] Payload demasiado grande: ${(syncPayloadSize / 1024).toFixed(2)} KB. ` +
-        'Considerar paginación del batch o compresión gzip.'
-      );
+      expect(syncPayloadSize, `[GPS_003] Payload demasiado grande: ${(syncPayloadSize / 1024).toFixed(2)} KB. Considerar paginación del batch o compresión gzip.`).toBeLessThan(1_048_576);
     } else {
       console.warn(
         '⚠️  [GPS_004] El sync NO se completó en 3G dentro del timeout de 15s. ' +

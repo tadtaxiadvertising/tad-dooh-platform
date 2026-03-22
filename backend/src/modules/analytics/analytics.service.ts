@@ -298,4 +298,39 @@ export class AnalyticsService {
       },
     });
   }
+  /**
+   * Obtiene métricas semanales detalladas (día por día) para una campaña.
+   */
+  async getWeeklyCampaignMetrics(campaignId: string) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const events = await this.prisma.playbackEvent.findMany({
+      where: {
+        campaignId,
+        timestamp: { gte: sevenDaysAgo },
+        eventType: 'play_confirm'
+      },
+      select: { timestamp: true }
+    });
+
+    const dailyData: Record<string, number> = {};
+    // Inicializar últimos 7 días con 0
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dailyData[d.toLocaleDateString('es-DO')] = 0;
+    }
+
+    events.forEach(e => {
+      const day = new Date(e.timestamp).toLocaleDateString('es-DO');
+      if (dailyData[day] !== undefined) {
+        dailyData[day]++;
+      }
+    });
+
+    return Object.entries(dailyData)
+      .map(([day, impressions]) => ({ day, impressions }))
+      .reverse(); // De más antiguo a más reciente
+  }
 }

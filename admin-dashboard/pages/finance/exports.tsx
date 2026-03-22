@@ -6,7 +6,8 @@ import {
 import Link from 'next/link';
 import { 
   getCampaigns, getDevices, getFinancialLedger,
-  downloadCampaignPdf, downloadFleetPdf, downloadTransactionPdf
+  downloadCampaignPdf, downloadFleetPdf, downloadTransactionPdf,
+  downloadWeeklyCampaignPdf
 } from '../../services/api';
 
 export default function ExportsPage() {
@@ -94,13 +95,22 @@ export default function ExportsPage() {
                       <h4 className="font-bold text-white text-sm">{c.name}</h4>
                       <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">{c.advertiser}</p>
                     </div>
-                    <button 
-                      onClick={() => downloadCampaignPdf(c.id, c.name)}
-                      className="p-3 bg-zinc-800 text-tad-yellow rounded-xl hover:bg-tad-yellow hover:text-black transition-all group-hover:scale-110"
-                      title="Descargar Certificado POP"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={() => downloadWeeklyCampaignPdf(c.id, c.name)}
+                        className="p-3 bg-zinc-800 text-emerald-400 rounded-xl hover:bg-emerald-500 hover:text-white transition-all group-hover:scale-110"
+                        title="Reporte Semanal (PDF)"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => downloadCampaignPdf(c.id, c.name)}
+                        className="p-3 bg-zinc-800 text-tad-yellow rounded-xl hover:bg-tad-yellow hover:text-black transition-all group-hover:scale-110"
+                        title="Certificado POP Total"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

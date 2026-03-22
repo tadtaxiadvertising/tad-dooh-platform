@@ -1,12 +1,57 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { InvoiceService } from './invoice.service';
 
 @Injectable()
 export class FinanceService {
   private readonly logger = new Logger(FinanceService.name);
   private readonly PAY_PER_AD = 500; // RD$500 per active ad
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly invoiceService: InvoiceService
+  ) {}
+
+  /**
+   * Proceso de Notificación Automática por Morosidad (Regla 402)
+   */
+  async notifyMorosidad(deviceId: string) {
+    this.logger.warn(`🚨 [FINANCE_ALERT] Triggering Morosidad Protocol for Device: ${deviceId}`);
+
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId },
+      include: { driver: true }
+    });
+
+    if (!device) return;
+
+    // 1. Generar la Factura SOS (PDF)
+    const pdfBuffer = await this.invoiceService.generateDebtInvoicePDF({
+      deviceId: device.deviceId,
+      chofer: device.driver?.fullName || 'Socio TAD',
+      placa: device.taxiNumber
+    });
+
+    // 2. Simular Envío (Email / WhatsApp)
+    // En una implementación real, aquí llamaríamos a un MailService o WhatsAppService
+    this.logger.log(`📧 [EMAIL_SIMULATOR] Enviando Factura de RD$6,000 a: ${device.driver?.phone || 'admin@tad.do'}`);
+    this.logger.log(`📄 [PDF_ATTACHMENT] Certificado de Morosidad generado: ${pdfBuffer.length} bytes`);
+
+    // 3. Registrar el intento de cobro en el Ledger
+    await (this.prisma as any).financialTransaction.create({
+      data: {
+        type: 'INCOMING',
+        category: 'SUSCRIPCION',
+        status: 'PENDING',
+        amount: 6000,
+        entityId: device.driver?.id,
+        reference: `REGLA-402-${deviceId.substring(0,8)}`,
+        note: `Factura de morosidad generada automáticamente por Kill-Switch.`
+      }
+    });
+
+    return { success: true, pdfGenerated: true, notified: true };
+  }
 
   /**
    * Calculates the monthly payroll for all drivers.
@@ -326,7 +371,7 @@ export class FinanceService {
 
     // Advanced Business Rule: If it's a subscription payment, check for referral retention
     if (data.category === 'SUSCRIPCION' && data.entityId) {
-      const driver = await this.prisma.driver.findUnique({
+      const driver = await (this.prisma.driver as any).findUnique({
         where: { id: data.entityId },
         select: { referredBy: true }
       });
@@ -340,7 +385,7 @@ export class FinanceService {
       }
     }
 
-    return this.prisma.financialTransaction.create({
+    return (this.prisma as any).financialTransaction.create({
       data: {
         type: data.type,
         category: data.category,
@@ -372,7 +417,7 @@ export class FinanceService {
     const monthStart = new Date();
     monthStart.setDate(1);
     
-    const monthlyExpenses = await this.prisma.financialTransaction.aggregate({
+    const monthlyExpenses = await (this.prisma as any).financialTransaction.aggregate({
       where: {
         type: 'OUTGOING',
         createdAt: { gte: monthStart }
@@ -396,7 +441,7 @@ export class FinanceService {
    * Returns the ledger (historical transactions)
    */
   async getLedger() {
-    return this.prisma.financialTransaction.findMany({
+    return (this.prisma as any).financialTransaction.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50
     });

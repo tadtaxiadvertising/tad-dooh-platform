@@ -97,6 +97,47 @@ export class InvoiceService implements OnModuleInit {
   }
 
   /**
+   * Genera una factura de morosidad (RD$6,000) por suscripción vencida.
+   */
+  async generateDebtInvoicePDF(driverData: any): Promise<Buffer> {
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        {
+          columns: [
+            { text: 'TAD DOOH - PROTOCOLO DE MOROSIDAD', color: '#FF0000', fontSize: 24, bold: true },
+            { text: `Ref: SOS-${driverData.deviceId?.substring(0,6) || 'N/A'}\n${new Date().toLocaleDateString()}`, alignment: 'right', fontSize: 10 }
+          ]
+        },
+        { text: '\nAVISO DE SUSPENSIÓN DE SERVICIO', style: 'header', color: '#AA0000' },
+        { text: '\nEstimado Colaborador:', style: 'subheader' },
+        { text: 'Nuestro sistema ha detectado una anomalía en su estado de cuenta. De acuerdo a la Regla de Negocio 402, su suscripción anual de RD$6,000.00 se encuentra vencida o pendiente de pago.', margin: [0, 10, 0, 10] },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Concepto', bold: true, fillColor: '#FFEEEE' }, { text: 'Monto (RD$)', bold: true, fillColor: '#FFEEEE' }],
+              ['Suscripción Anual Plataforma TAD (SRE)', { text: '6,000.00', bold: true, color: '#FF0000' }],
+              ['Mora por Retraso', '0.00'],
+              [{ text: 'TOTAL PENDIENTE', bold: true, alignment: 'right' }, { text: 'RD$ 6,000.00', bold: true, color: '#FF0000' }]
+            ]
+          }
+        },
+        { text: '\n⚠️ ACCIÓN REQUERIDA:', style: 'subheader', color: '#FF0000' },
+        { text: 'Para reactivar su terminal y continuar generando ingresos por pauta publicitaria, debe regularizar su balance. Una vez realizado el pago, el Kill-Switch se desactivará automáticamente en un plazo de 15 minutos.', margin: [0, 10, 0, 10] },
+        { text: '\nCanales de Pago:', bold: true },
+        { text: '• Transferencia: Banco Popular - Cuenta 802-XXXXXXX\n• Link de Pago: https://tad.do/pagos\n• WhatsApp Soporte: +1 (809) XXX-XXXX', fontSize: 10, margin: [0, 5, 0, 0] },
+      ],
+      styles: {
+        header: { fontSize: 18, bold: true, alignment: 'center' },
+        subheader: { fontSize: 14, bold: true }
+      }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
+
+  /**
    * Genera un Certificado de Exhibición Publicitaria para Anunciantes.
    */
   async generateCampaignProofOfPlayPDF(campaignData: any, metrics: any): Promise<Buffer> {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getDevices, getCampaigns, getMedia, getHourlyPlays } from '../services/api';
+import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary } from '../services/api';
 import { Activity, CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Server, Radio, AlertTriangle, ArrowUpRight, BarChart3 } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useTabSync } from '../hooks/useTabSync';

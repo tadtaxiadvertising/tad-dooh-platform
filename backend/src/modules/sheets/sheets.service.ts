@@ -20,7 +20,32 @@ export class SheetsService implements OnModuleInit {
 
   private async connectToGoogleSheets() {
     try {
-      const creds = require(this.CREDENTIALS_PATH);
+      let creds;
+      
+      // 1. Intentar cargar desde Variable de Entorno (Prioridad para EasyPanel/Docker)
+      const envCreds = process.env.GOOGLE_SHEETS_CREDS_JSON;
+      if (envCreds) {
+          try {
+              // Puede estar en Base64 o JSON plano
+              creds = envCreds.startsWith('{') ? JSON.parse(envCreds) : JSON.parse(Buffer.from(envCreds, 'base64').toString());
+              this.logger.log('🔐 TAD-SRE: Credenciales cargadas desde Environment Variable.');
+          } catch (e) {
+              this.logger.error('🚨 Error parseando GOOGLE_SHEETS_CREDS_JSON: ' + e.message);
+          }
+      }
+
+      // 2. Si no hay env, intentar cargar desde archivo físico (Local fallback)
+      if (!creds) {
+          try {
+              creds = require(this.CREDENTIALS_PATH);
+              this.logger.log('📂 TAD-SRE: Credenciales cargadas desde archivo físico.');
+          } catch (e) {
+              this.logger.error('🚨 No se encontró archivo de credenciales en: ' + this.CREDENTIALS_PATH);
+          }
+      }
+
+      if (!creds) throw new Error('No se encontraron credenciales de Google Sheets (Service Account).');
+
       const serviceAccountAuth = new JWT({
         email: creds.client_email,
         key: creds.private_key,

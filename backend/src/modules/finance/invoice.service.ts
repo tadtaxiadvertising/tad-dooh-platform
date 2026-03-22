@@ -194,32 +194,51 @@ export class InvoiceService implements OnModuleInit {
    * Genera un reporte de rendimiento semanal para anunciantes.
    */
   async generateWeeklyPerformancePDF(campaign: any, data: any[]): Promise<Buffer> {
-    const total = data.reduce((s, d) => s + d.impressions, 0);
+    const totalImpressions = data.reduce((s, d) => s + d.impressions, 0);
+    const totalScans = data.reduce((s, d) => s + d.scans, 0);
+    const totalCtr = totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0;
+
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: 'Helvetica' },
       content: [
-        { text: 'REPORTE SEMANAL DE IMPACTOS', style: 'p_header', color: '#FFD400', bold: true, fontSize: 18 },
+        { text: 'REPORTE SEMANAL DE RENDIMIENTO', style: 'p_header', color: '#FFD400', bold: true, fontSize: 18 },
         { text: `Campaña: ${campaign.name}`, style: 'p_subheader', bold: true, fontSize:14 },
-        { text: `Anunciante: ${campaign.advertiser}`, fontSize: 10 },
-        { text: '\n' },
+        { text: `Anunciante: ${campaign.advertiser}`, fontSize: 10, margin: [0, 0, 0, 10] },
         {
           table: {
             headerRows: 1,
-            widths: ['*', 'auto'],
+            widths: ['*', 'auto', 'auto', 'auto'],
             body: [
-              [{ text: 'Día', bold: true, fillColor: '#f2f2f2' }, { text: 'Impactos', bold: true, fillColor: '#f2f2f2' }],
-              ...data.map(d => [d.day, d.impressions.toLocaleString()]),
-              [{ text: 'TOTAL SEMANA', bold: true }, { text: total.toLocaleString(), bold: true, color: '#FFD400' }]
+              [
+                { text: 'Día', bold: true, fillColor: '#f2f2f2' }, 
+                { text: 'Impactos', bold: true, fillColor: '#f2f2f2' },
+                { text: 'Escaneos QR', bold: true, fillColor: '#f2f2f2' },
+                { text: 'CTR (%)', bold: true, fillColor: '#f2f2f2' }
+              ],
+              ...data.map(d => [
+                d.day, 
+                d.impressions.toLocaleString(),
+                d.scans.toLocaleString(),
+                `${d.ctr.toFixed(2)}%`
+              ]),
+              [
+                { text: 'RESUMEN SEMANAL', bold: true, fillColor: '#FFF9C4' }, 
+                { text: totalImpressions.toLocaleString(), bold: true, fillColor: '#FFF9C4' },
+                { text: totalScans.toLocaleString(), bold: true, fillColor: '#FFF9C4' },
+                { text: `${totalCtr.toFixed(2)}%`, bold: true, color: '#E65100', fillColor: '#FFF9C4' }
+              ]
             ]
           }
         },
         { text: '\n\n' },
-        { text: 'METODOLOGÍA DE CONTEO:', bold: true, fontSize: 10 },
-        { text: 'Los impactos se calculan en base a confirmaciones de reproducción enviadas por las tablets TAD al finalizar cada clip (Confirm-Play Event).', fontSize: 9, color: 'gray' }
+        { text: 'DEFINICIONES TÉCNICAS:', bold: true, fontSize: 10 },
+        { text: '• Impactos: Reproducciones completas confirmadas por hardware.', fontSize: 9, color: 'gray' },
+        { text: '• Escaneos QR: Interacciones registradas vía el Proxy de Tracking TAD.', fontSize: 9, color: 'gray' },
+        { text: '• CTR (Click-Through Rate): Porcentaje de impactos que terminaron en un escaneo.', fontSize: 9, color: 'gray' }
       ],
       styles: { 
         p_header: { margin: [0, 0, 0, 10] },
-        p_subheader: { margin: [0, 5, 0, 5] }
+        p_subheader: { margin: [0, 5, 0, 2] }
       }
     };
     const pdfDoc = pdfmake.createPdf(docDefinition);

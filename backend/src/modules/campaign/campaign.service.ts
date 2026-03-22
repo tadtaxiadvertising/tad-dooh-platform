@@ -22,6 +22,7 @@ export class CampaignService {
         targetImpressions: dto.target_impressions || 0,
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : true,
+        category: dto.category || 'General',
         whatsapp: dto.whatsapp,
         instagram: dto.instagram,
         facebook: dto.facebook,

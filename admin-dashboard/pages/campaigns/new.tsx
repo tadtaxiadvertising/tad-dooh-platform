@@ -14,6 +14,7 @@ export default function NewCampaignPage() {
     end_date: '',
     target_impressions: 1000,
     active: true,
+    category: 'General',
     whatsapp: '',
     instagram: '',
     facebook: '',
@@ -130,6 +131,25 @@ export default function NewCampaignPage() {
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm"
                       placeholder="EJ. 500000"
                     />
+                  </div>
+                </div>
+
+                <div className="group/field relative">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Categoría de Segmentación</label>
+                  <div className="relative">
+                    <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
+                    <select 
+                      value={form.category}
+                      onChange={e => setForm({...form, category: e.target.value})}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all shadow-sm appearance-none"
+                    >
+                      <option value="General">GENERAL</option>
+                      <option value="Restaurante">RESTAURANTE</option>
+                      <option value="Entretenimiento">ENTRETENIMIENTO</option>
+                      <option value="Salud">SALUD / BIENESTAR</option>
+                      <option value="Servicios">SERVICIOS</option>
+                      <option value="Retail">RETAIL / TIENDAS</option>
+                    </select>
                   </div>
                 </div>
               </div>

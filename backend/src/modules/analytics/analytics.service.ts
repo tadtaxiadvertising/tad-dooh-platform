@@ -305,32 +305,58 @@ export class AnalyticsService {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const events = await this.prisma.playbackEvent.findMany({
+    // Obtener IDs de videos ligados a la campaña (buscamos en ambas tablas v1 y v2)
+    const [videos, assets] = await Promise.all([
+      this.prisma.video.findMany({ where: { campaignId }, select: { id: true } }),
+      this.prisma.mediaAsset.findMany({ where: { campaignId }, select: { id: true } })
+    ]);
+    const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
+
+    // 1. Obtener Impresiones (play_confirm) filtradas por esos videos
+    const playEvents = await this.prisma.playbackEvent.findMany({
       where: {
-        campaignId,
+        videoId: { in: videoIds },
         timestamp: { gte: sevenDaysAgo },
         eventType: 'play_confirm'
       },
       select: { timestamp: true }
     });
 
-    const dailyData: Record<string, number> = {};
+    // 2. Obtener Escaneos QR (QR_SCAN) - Esto sí tiene campaignId en el modelo AnalyticsEvent
+    const scanEvents = await this.prisma.analyticsEvent.findMany({
+      where: {
+        campaignId,
+        occurredAt: { gte: sevenDaysAgo },
+        eventType: 'QR_SCAN'
+      },
+      select: { occurredAt: true }
+    });
+
+    const dailyData: Record<string, { impressions: number; scans: number }> = {};
     // Inicializar últimos 7 días con 0
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      dailyData[d.toLocaleDateString('es-DO')] = 0;
+      dailyData[d.toLocaleDateString('es-DO')] = { impressions: 0, scans: 0 };
     }
 
-    events.forEach(e => {
+    playEvents.forEach(e => {
       const day = new Date(e.timestamp).toLocaleDateString('es-DO');
-      if (dailyData[day] !== undefined) {
-        dailyData[day]++;
-      }
+      if (dailyData[day]) dailyData[day].impressions++;
+    });
+
+    scanEvents.forEach(e => {
+      const day = new Date(e.occurredAt).toLocaleDateString('es-DO');
+      if (dailyData[day]) dailyData[day].scans++;
     });
 
     return Object.entries(dailyData)
-      .map(([day, impressions]) => ({ day, impressions }))
+      .map(([day, stats]) => ({ 
+        day, 
+        impressions: stats.impressions, 
+        scans: stats.scans,
+        ctr: stats.impressions > 0 ? (stats.scans / stats.impressions) * 100 : 0
+      }))
       .reverse(); // De más antiguo a más reciente
   }
 }

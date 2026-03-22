@@ -57,8 +57,8 @@ export class VideoEngine {
     if (currentVideo.qrUrl && this.qrContainer && this.qrImageElement) {
       try {
         // Enlace de tracking con Proxy del Backend
-        // Cambiar la URL base según corresponda a tu API de producción
-        const apiBase = "https://proyecto-ia-tad-api.rewvid.easypanel.host";
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const apiBase = isLocal ? "http://localhost:3000/api" : "https://proyecto-ia-tad-api.rewvid.easypanel.host/api";
         const trackingLink = `${apiBase}/analytics/qr-scan?campaignId=${currentVideo.campaignId || 'manual'}&deviceId=${this.deviceId}`;
         
         // Generar QR (Negro sobre blanco)

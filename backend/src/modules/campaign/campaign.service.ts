@@ -31,7 +31,7 @@ export class CampaignService {
         pedidosYaUrl: dto.pedidosYaUrl,
         uberEatsUrl: dto.uberEatsUrl,
         status: 'ACTIVE',
-      },
+      } as any,
     });
 
     if (dto.target_devices && dto.target_devices.length > 0) {
@@ -160,7 +160,7 @@ export class CampaignService {
             },
             { devices: { some: { device_id: deviceId } } },
           ]
-        },
+        } as any,
         include: {
           mediaAssets: true,
           media: true,

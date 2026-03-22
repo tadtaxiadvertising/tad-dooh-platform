@@ -156,17 +156,12 @@ test.describe('PWA Offline Resilience — Service Worker', () => {
     const videoCount = await page.locator('video').count();
     console.log(`ℹ️ Video elements en DOM: ${videoCount}`);
 
-    expect(videoCount).toBeLessThanOrEqual(3,
-      `Memory leak potencial: ${videoCount} elementos <video> detectados. ` +
-      'El player debe reutilizar un único elemento o máximo 2 (doble buffer).'
-    );
+    expect(videoCount, `Memory leak potencial: ${videoCount} elementos <video> detectados. El player debe reutilizar un único elemento o máximo 2 (doble buffer).`).toBeLessThanOrEqual(3);
 
     // ✅ Verificamos cantidad de elementos totales (no debe haber crecimiento explosivo)
     const totalElements = await page.evaluate(() => document.querySelectorAll('*').length);
     console.log(`ℹ️ Total DOM elements: ${totalElements}`);
 
-    expect(totalElements).toBeLessThan(5000,
-      `DOM excesivamente grande: ${totalElements} elementos. Posible memory leak.`
-    );
+    expect(totalElements, `DOM excesivamente grande: ${totalElements} elementos. Posible memory leak.`).toBeLessThan(5000);
   });
 });

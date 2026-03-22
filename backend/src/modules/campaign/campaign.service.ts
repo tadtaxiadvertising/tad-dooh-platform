@@ -151,7 +151,13 @@ export class CampaignService {
           startDate: { lte: now },
           endDate: { gte: now },
           OR: [
-            { targetAll: true },
+            { 
+              targetAll: true,
+              OR: [
+                { targetCity: 'Global' },
+                { targetCity: deviceCity || 'Santo Domingo' }
+              ]
+            },
             { devices: { some: { device_id: deviceId } } },
           ]
         },

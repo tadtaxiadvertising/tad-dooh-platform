@@ -12,7 +12,8 @@ import {
   Instagram,
   ChevronRight,
   Search,
-  ArrowRight
+  ArrowRight,
+  Activity
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -23,6 +24,8 @@ interface Advertiser {
   whatsapp?: string;
   instagram?: string;
   websiteUrl?: string;
+  pedidosYaUrl?: string;
+  uberEatsUrl?: string;
 }
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -162,16 +165,38 @@ export default function AdvertiserHub() {
                     </Link>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {adv.whatsapp && (
                       <a 
                         href={`https://wa.me/${adv.whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center gap-2 p-3 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl transition-all"
+                        className="flex items-center justify-center gap-2 p-2.5 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-xl transition-all"
                       >
-                        <MessageCircle className="w-5 h-5 text-emerald-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500/80">WhatsApp</span>
+                        <MessageCircle className="w-4 h-4 text-emerald-500" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500/80">WS</span>
+                      </a>
+                    )}
+                    {adv.pedidosYaUrl && (
+                      <a 
+                        href={adv.pedidosYaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 p-2.5 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-xl transition-all"
+                      >
+                        <ShoppingBag className="w-4 h-4 text-red-500" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-red-500/80">PY</span>
+                      </a>
+                    )}
+                    {adv.uberEatsUrl && (
+                      <a 
+                        href={adv.uberEatsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 p-2.5 bg-emerald-400/5 hover:bg-emerald-400/10 border border-emerald-400/10 rounded-xl transition-all"
+                      >
+                        <Activity className="w-4 h-4 text-emerald-400" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400/80">Uber</span>
                       </a>
                     )}
                     {adv.instagram && (
@@ -179,21 +204,10 @@ export default function AdvertiserHub() {
                         href={`https://instagram.com/${adv.instagram.replace('@','')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center gap-2 p-3 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10 rounded-2xl transition-all"
+                        className="flex items-center justify-center gap-2 p-2.5 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10 rounded-xl transition-all"
                       >
-                        <Instagram className="w-5 h-5 text-pink-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-pink-500/80">Instagram</span>
-                      </a>
-                    )}
-                    {adv.websiteUrl && (
-                      <a 
-                        href={adv.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center gap-2 p-3 bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 rounded-2xl transition-all"
-                      >
-                        <ExternalLink className="w-5 h-5 text-blue-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-blue-500/80">Web</span>
+                        <Instagram className="w-4 h-4 text-pink-500" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-pink-500/80">IG</span>
                       </a>
                     )}
                   </div>

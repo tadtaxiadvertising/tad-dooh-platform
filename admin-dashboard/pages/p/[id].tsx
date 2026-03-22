@@ -96,7 +96,7 @@ export default function PublicProfilePage() {
         </section>
 
         {/* Primary Action Hub */}
-        <div className="grid grid-cols-2 gap-4 mb-8 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-100 fill-mode-both">
+        <div className="grid grid-cols-2 gap-4 mb-4 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-100 fill-mode-both">
            {advertiser.whatsapp && (
              <a 
                href={`https://wa.me/${advertiser.whatsapp}`}
@@ -120,6 +120,34 @@ export default function PublicProfilePage() {
              </a>
            )}
         </div>
+
+        {/* Delivery / Secondary Actions */}
+        {(advertiser.pedidosYaUrl || advertiser.uberEatsUrl) && (
+          <div className="grid grid-cols-2 gap-4 mb-8 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200 fill-mode-both">
+             {advertiser.pedidosYaUrl && (
+               <a 
+                 href={advertiser.pedidosYaUrl}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="bg-[#D0011B] hover:bg-[#b00117] p-4 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-xl shadow-red-500/10 transition-all active:scale-95 text-white"
+               >
+                  <ShoppingBag className="w-5 h-5" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">PedidosYa</span>
+               </a>
+             )}
+             {advertiser.uberEatsUrl && (
+               <a 
+                 href={advertiser.uberEatsUrl}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="bg-[#06C167] hover:bg-[#05a558] p-4 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-xl shadow-emerald-500/10 transition-all active:scale-95 text-white"
+               >
+                  <Activity className="w-5 h-5" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">Uber Eats</span>
+               </a>
+             )}
+          </div>
+        )}
 
         {/* Social Ecosystem */}
         <div className="grid grid-cols-2 gap-4 mb-12 animate-in fade-in duration-1000 delay-300 fill-mode-both">

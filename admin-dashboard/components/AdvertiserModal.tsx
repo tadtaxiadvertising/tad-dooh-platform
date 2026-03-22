@@ -19,6 +19,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     instagram: initialData?.instagram || '',
     facebook: initialData?.facebook || '',
     websiteUrl: initialData?.websiteUrl || '',
+    pedidosYaUrl: initialData?.pedidosYaUrl || '',
+    uberEatsUrl: initialData?.uberEatsUrl || '',
     category: initialData?.category || 'General',
     productsData: initialData?.productsData || '[]',
     status: initialData?.status || 'ACTIVE'
@@ -54,6 +56,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
           setFormData({ 
             companyName: '', contactName: '', email: '', phone: '', 
             whatsapp: '', instagram: '', facebook: '', websiteUrl: '', 
+            pedidosYaUrl: '', uberEatsUrl: '',
             category: 'General',
             productsData: '[]',
             status: 'ACTIVE' 
@@ -157,6 +160,16 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                 <div className="space-y-1">
                   <label htmlFor="websiteUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Sitio Web</label>
                   <input id="websiteUrl" name="websiteUrl" value={formData.websiteUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="pedidosYaUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pedidos Ya (URL)</label>
+                    <input id="pedidosYaUrl" name="pedidosYaUrl" value={formData.pedidosYaUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="uberEatsUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Uber Eats (URL)</label>
+                    <input id="uberEatsUrl" name="uberEatsUrl" value={formData.uberEatsUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                  </div>
                 </div>
               </div>
 

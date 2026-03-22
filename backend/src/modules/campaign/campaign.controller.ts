@@ -28,6 +28,8 @@ export class CampaignController {
         whatsapp: true,
         instagram: true,
         websiteUrl: true,
+        pedidosYaUrl: true,
+        uberEatsUrl: true,
       },
       orderBy: { companyName: 'asc' }
     });
@@ -47,12 +49,38 @@ export class CampaignController {
         instagram: true,
         facebook: true,
         websiteUrl: true,
+        pedidosYaUrl: true,
+        uberEatsUrl: true,
         productsData: true,
       }
     });
 
     if (!advertiser) throw new NotFoundException('Anunciante no encontrado');
-    return advertiser;
+
+    // Buscar si hay una campaña activa para este anunciante que tenga links personalizados
+    // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
+    const activeCampaign = await this.prisma.campaign.findFirst({
+      where: { 
+        advertiser: advertiser.companyName, // Basado en nombre por ahora (legacy mapping)
+        active: true,
+        startDate: { lte: new Date() },
+        endDate: { gte: new Date() },
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    // Si hay campaña, sobreescribimos los links del anunciante con los de la campaña (si existen en la campaña)
+    const profile = {
+      ...advertiser,
+      whatsapp: activeCampaign?.whatsapp || advertiser.whatsapp,
+      instagram: activeCampaign?.instagram || advertiser.instagram,
+      facebook: activeCampaign?.facebook || advertiser.facebook,
+      websiteUrl: activeCampaign?.websiteUrl || advertiser.websiteUrl,
+      pedidosYaUrl: activeCampaign?.pedidosYaUrl || advertiser.pedidosYaUrl,
+      uberEatsUrl: activeCampaign?.uberEatsUrl || advertiser.uberEatsUrl,
+    };
+
+    return profile;
   }
 
   @Post()

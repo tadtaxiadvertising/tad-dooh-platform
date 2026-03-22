@@ -31,4 +31,28 @@ export class CreateCampaignDto {
   @IsBoolean()
   @IsOptional()
   target_all?: boolean;
+
+  @IsString()
+  @IsOptional()
+  whatsapp?: string;
+
+  @IsString()
+  @IsOptional()
+  instagram?: string;
+
+  @IsString()
+  @IsOptional()
+  facebook?: string;
+
+  @IsString()
+  @IsOptional()
+  websiteUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  pedidosYaUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  uberEatsUrl?: string;
 }

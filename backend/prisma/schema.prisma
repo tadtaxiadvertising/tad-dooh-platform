@@ -112,6 +112,12 @@ model Campaign {
   targetImpressions Int @default(0) @map("target_impressions")
   budget      Float @default(0)
   targetUrl   String? @map("target_url") // URL de destino para QR Scan redirect
+  whatsapp    String?
+  instagram   String?
+  facebook    String?
+  websiteUrl  String? @map("website_url")
+  pedidosYaUrl String? @map("pedidos_ya_url")
+  uberEatsUrl  String? @map("uber_eats_url")
   createdById String?  @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt      @map("updated_at")

@@ -91,12 +91,12 @@ export class VideoEngine {
         this.intermissionName.textContent = video.advertiserName || 'TAD Advertiser';
       }
 
-      // Enlace al Perfil Público (Proxy Dashboard)
+      // Enlace al HUB de anunciantes (Menú segmentado)
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const dashboardBase = isLocal ? "http://localhost:3001" : "https://proyecto-ia-tad-dashboard.rewvid.easypanel.host";
-      const profileLink = `${dashboardBase}/p/${video.advertiserId || 'default'}`;
+      const hubLink = `${dashboardBase}/p?ref=${video.advertiserId || 'nexus'}`;
 
-      QRCode.toDataURL(profileLink, {
+      QRCode.toDataURL(hubLink, {
         width: 400,
         margin: 2,
         color: { dark: '#000000', light: '#FFFFFF' }

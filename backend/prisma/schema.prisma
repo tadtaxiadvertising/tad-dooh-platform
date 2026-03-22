@@ -517,6 +517,7 @@ model Advertiser {
   websiteUrl  String?    @map("website_url")
   productsData String?   @map("products_data") @default("[]") // JSON string con [{name, price, img, link}]
 
+  category    String?    @default("General")
   status      String     @default("ACTIVE")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
@@ -525,6 +526,7 @@ model Advertiser {
 
   @@map("advertisers")
   @@index([status])
+  @@index([category])
 }
 
 // ============================================

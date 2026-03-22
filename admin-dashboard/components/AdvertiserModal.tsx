@@ -19,6 +19,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     instagram: initialData?.instagram || '',
     facebook: initialData?.facebook || '',
     websiteUrl: initialData?.websiteUrl || '',
+    category: initialData?.category || 'General',
     productsData: initialData?.productsData || '[]',
     status: initialData?.status || 'ACTIVE'
   });
@@ -29,7 +30,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -52,7 +53,9 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
         if (!initialData) {
           setFormData({ 
             companyName: '', contactName: '', email: '', phone: '', 
-            whatsapp: '', instagram: '', facebook: '', websiteUrl: '', productsData: '[]',
+            whatsapp: '', instagram: '', facebook: '', websiteUrl: '', 
+            category: 'General',
+            productsData: '[]',
             status: 'ACTIVE' 
           });
         }
@@ -118,6 +121,23 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                       <label htmlFor="phone" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Teléfono</label>
                       <input id="phone" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
                    </div>
+                </div>
+                <div className="space-y-1">
+                   <label htmlFor="category" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Categoría / Segmento</label>
+                   <select 
+                     id="category" 
+                     name="category" 
+                     value={formData.category} 
+                     onChange={handleChange} 
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none"
+                   >
+                     <option value="General">General / Otros</option>
+                     <option value="Gastronomía">Gastronomía & Restaurantes</option>
+                     <option value="Retail">Retail & Tiendas</option>
+                     <option value="Servicios">Servicios & Salud</option>
+                     <option value="Entretenimiento">Entretenimiento & Eventos</option>
+                     <option value="Transporte">Transporte & Logística</option>
+                   </select>
                 </div>
               </div>
 

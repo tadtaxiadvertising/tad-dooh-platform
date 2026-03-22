@@ -16,6 +16,24 @@ export class CampaignController {
     private readonly mediaService: MediaService
   ) {}
 
+  @Public() // Catálogo público de marcas (Hub)
+  @Get('advertiser/hub')
+  async getAdvertiserHub() {
+    const advertisers = await this.prisma.advertiser.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        companyName: true,
+        category: true,
+        whatsapp: true,
+        instagram: true,
+        websiteUrl: true,
+      },
+      orderBy: { companyName: 'asc' }
+    });
+    return advertisers;
+  }
+
   @Public() // Perfil público accesible desde QR (Escaner de pasajero)
   @Get('advertiser/:id/profile')
   async getAdvertiserProfile(@Param('id') id: string) {

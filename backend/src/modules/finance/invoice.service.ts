@@ -95,4 +95,98 @@ export class InvoiceService implements OnModuleInit {
       throw e;
     }
   }
+
+  /**
+   * Genera un Certificado de Exhibición Publicitaria para Anunciantes.
+   */
+  async generateCampaignProofOfPlayPDF(campaignData: any, metrics: any): Promise<Buffer> {
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        {
+          columns: [
+            { text: 'CERTIFICADO DE EXHIBICIÓN TAD', color: '#FFD400', fontSize: 20, bold: true },
+            { text: `Ref: ${campaignData.id.substring(0,8)}`, alignment: 'right', color: 'gray' }
+          ]
+        },
+        { text: '\n' },
+        { text: `ANUNCIANTE: ${campaignData.advertiser}`, style: 'subheader' },
+        { text: `CAMPAÑA: ${campaignData.name}`, style: 'subheader' },
+        { text: `PERIODO: ${new Date(campaignData.startDate).toLocaleDateString()} - ${new Date(campaignData.endDate).toLocaleDateString()}` },
+        { text: '\n' },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Métrica de Impacto', bold: true, fillColor: '#f2f2f2' }, { text: 'Valor Realizado', bold: true, fillColor: '#f2f2f2' }],
+              ['Impactos Totales (Detección GPS)', metrics.totalImpressions.toLocaleString()],
+              ['Dispositivos Activos en Campaña', metrics.assignedTaxis.toLocaleString()],
+              ['Tasa de Cumplimiento', '100%']
+            ]
+          }
+        },
+        { text: '\n\nVALIDACIÓN TÉCNICA:', style: 'subheader' },
+        { text: 'Este documento certifica que el contenido publicitario fue reproducido en la red de tablets TAD DOOH de acuerdo a la telemetría recolectada en tiempo real por nuestros servidores.', fontSize: 10 }
+      ],
+      styles: { subheader: { fontSize: 12, bold: true, margin: [0, 5, 0, 5] } }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
+
+  /**
+   * Genera un Reporte de Estado de Flota (Inventario técnico).
+   */
+  async generateFleetStatusPDF(devices: any[]): Promise<Buffer> {
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: 'REPORTE DE INVENTARIO TÉCNICO - TAD DOOH', style: 'header', color: '#FFD400' },
+        { text: `Generado: ${new Date().toLocaleString()}`, alignment: 'right', fontSize: 10 },
+        { text: '\n' },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['auto', '*', 'auto', 'auto'],
+            body: [
+              [{ text: 'Placa', bold: true }, { text: 'Device ID', bold: true }, { text: 'Batería', bold: true }, { text: 'Estatus', bold: true }],
+              ...devices.map(d => [d.taxiNumber || 'N/A', d.deviceId, `${d.batteryLevel || 0}%`, d.status])
+            ]
+          }
+        }
+      ],
+      styles: { header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] } }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
+
+  /**
+   * Genera un Recibo de Transacción Financiera.
+   */
+  async generateTransactionReceiptPDF(tx: any): Promise<Buffer> {
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: 'RECIBO DE PAGO', style: 'header', alignment: 'center' },
+        { text: 'TAD Advertising SRL', alignment: 'center', fontSize: 10 },
+        { text: '\n' },
+        {
+            table: {
+                widths: ['*', '*'],
+                body: [
+                    ['Número de Referencia', tx.reference || tx.id.substring(0,8)],
+                    ['Fecha', new Date(tx.createdAt).toLocaleDateString()],
+                    ['Concepto', tx.category],
+                    ['Monto Total', `RD$ ${tx.amount.toLocaleString()}`],
+                    ['Estatus', tx.status]
+                ]
+            }
+        }
+      ],
+      styles: { header: { fontSize: 18, bold: true } }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
 }

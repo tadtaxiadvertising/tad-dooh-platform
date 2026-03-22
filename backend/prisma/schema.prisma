@@ -112,6 +112,7 @@ model Campaign {
   targetImpressions Int @default(0) @map("target_impressions")
   budget      Float @default(0)
   targetUrl   String? @map("target_url") // URL de destino para QR Scan redirect
+  category    String? @default("General")
   whatsapp    String?
   instagram   String?
   facebook    String?

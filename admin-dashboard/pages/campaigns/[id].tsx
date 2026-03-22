@@ -10,7 +10,33 @@ import { CampaignModal } from '../../components/CampaignModal';
 export default function CampaignDetailPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [campaign, setCampaign] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate: string; endDate: string; start_date?: string; end_date?: string; mediaAssets?: unknown[]; media?: unknown[]; priority?: number; version?: number; targetImpressions?: number; target_impressions?: number; createdAt?: string; targetCities?: string; status?: string; targetAll?: boolean } | null>(null);
+  const [campaign, setCampaign] = useState<{ 
+    id: string; 
+    name: string; 
+    advertiser: string; 
+    active: boolean; 
+    startDate: string; 
+    endDate: string; 
+    start_date?: string; 
+    end_date?: string; 
+    mediaAssets?: unknown[]; 
+    media?: unknown[]; 
+    priority?: number; 
+    version?: number; 
+    targetImpressions?: number; 
+    target_impressions?: number; 
+    createdAt?: string; 
+    targetCities?: string; 
+    status?: string; 
+    targetAll?: boolean;
+    category?: string;
+    whatsapp?: string;
+    instagram?: string;
+    facebook?: string;
+    websiteUrl?: string;
+    pedidosYaUrl?: string;
+    uberEatsUrl?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -166,12 +192,17 @@ export default function CampaignDetailPage() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-none mb-2">{campaign.name}</h1>
-              <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{campaign.advertiser}</p>
-                 </div>
-                 <div className="h-3 w-px bg-gray-600" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{campaign.advertiser}</p>
+                    </div>
+                    <div className="h-3 w-px bg-gray-600" />
+                    <div className="flex items-center gap-2 px-3 py-1 bg-tad-yellow/10 rounded-lg border border-tad-yellow/30">
+                        <Target className="w-3 h-3 text-tad-yellow" />
+                        <p className="text-[10px] text-tad-yellow font-black uppercase tracking-[0.2em]">{campaign.category || 'GENERAL'}</p>
+                    </div>
+                    <div className="h-3 w-px bg-gray-600" />
                  <p className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">ID_HASH: {campaign.id.slice(0, 10)}</p>
               </div>
             </div>
@@ -203,6 +234,48 @@ export default function CampaignDetailPage() {
              </div>
            ))}
         </div>
+
+        {/* Ecosistema de Conversión Links (NEW SECTION) */}
+        {(campaign.whatsapp || campaign.instagram || campaign.websiteUrl || campaign.pedidosYaUrl || campaign.uberEatsUrl) && (
+          <div className="p-6 border-t border-gray-700/50 bg-white/[0.01]">
+              <div className="flex items-center gap-3 mb-6">
+                  <Zap className="w-4 h-4 text-tad-yellow" />
+                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Protocolo de Conversión Activo</h3>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                  {campaign.whatsapp && (
+                      <div className="flex items-center gap-3 bg-gray-900/50 px-4 py-2 rounded-xl border border-gray-700/50">
+                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">WhatsApp:</span>
+                          <span className="text-xs font-bold text-white">{campaign.whatsapp}</span>
+                      </div>
+                  )}
+                  {campaign.instagram && (
+                      <div className="flex items-center gap-3 bg-gray-900/50 px-4 py-2 rounded-xl border border-gray-700/50">
+                          <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Insta:</span>
+                          <span className="text-xs font-bold text-white">{campaign.instagram}</span>
+                      </div>
+                  )}
+                  {campaign.websiteUrl && (
+                      <div className="flex items-center gap-3 bg-gray-900/50 px-4 py-2 rounded-xl border border-gray-700/50">
+                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Web:</span>
+                          <span className="text-xs font-bold text-white truncate max-w-[150px]">{campaign.websiteUrl}</span>
+                      </div>
+                  )}
+                  {campaign.pedidosYaUrl && (
+                      <div className="flex items-center gap-3 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/30">
+                          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">PedidosYa</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                      </div>
+                  )}
+                  {campaign.uberEatsUrl && (
+                      <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/30">
+                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Uber Eats</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      </div>
+                  )}
+              </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

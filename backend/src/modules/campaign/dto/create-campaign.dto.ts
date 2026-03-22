@@ -34,6 +34,10 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
+  category?: string;
+
+  @IsString()
+  @IsOptional()
   whatsapp?: string;
 
   @IsString()

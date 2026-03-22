@@ -10,15 +10,81 @@ import {
   UseGuards 
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
+import { InvoiceService } from './invoice.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 
 @Controller('finance')
 export class FinanceController {
-  constructor(private readonly financeService: FinanceService) {}
+  constructor(
+    private readonly financeService: FinanceService,
+    private readonly invoiceService: InvoiceService,
+    private readonly prisma: PrismaService
+  ) {}
+
+  /**
+   * PDF: Certificado de Exhibición (Proof of Play) para Anunciantes.
+   */
+  @Get('report/campaign/:id/pdf')
+  async downloadCampaignPdf(@Param('id') id: string, @Res() res: Response) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id },
+      include: { media:true }
+    });
+    if (!campaign) return res.status(404).send('Campaña no encontrada');
+
+    const impressions = await this.prisma.playbackEvent.count({
+      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+    });
+
+    const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
+      totalImpressions: impressions,
+      assignedTaxis: campaign.media.length * 5 // Mock/Simulated for PDF model
+    });
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=POP_${campaign.name}.pdf`,
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
+  }
+
+  /**
+   * PDF: Reporte de Inventario Técnico de Flota.
+   */
+  @Get('report/fleet/pdf')
+  async downloadFleetPdf(@Res() res: Response) {
+    const devices = await this.prisma.device.findMany();
+    const pdf = await this.invoiceService.generateFleetStatusPDF(devices);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename=TAD_Inventario_Flota.pdf',
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
+  }
+
+  /**
+   * PDF: Recibo de Transacción.
+   */
+  @Get('transaction/:id/pdf')
+  async downloadTransactionPdf(@Param('id') id: string, @Res() res: Response) {
+    const tx = await (this.prisma as any).financialTransaction.findUnique({ where: { id } });
+    if (!tx) return res.status(404).send('Transacción no encontrada');
+
+    const pdf = await this.invoiceService.generateTransactionReceiptPDF(tx);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=Recibo_${tx.id.substring(0,8)}.pdf`,
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
+  }
 
   /**
    * Calculates the payroll for all drivers for a specific month/year.
-   * Default to current month if not provided.
    */
   @Get('payroll')
   async getPayroll(
@@ -77,8 +143,8 @@ export class FinanceController {
     if (!html) {
       return res.status(HttpStatus.NOT_FOUND).json({ message: 'Campaign not found' });
     }
-    res.setHeader('Content-Type', 'text/html');
-    return res.status(HttpStatus.OK).send(html);
+    res.set('Content-Type', 'text/html');
+    res.status(HttpStatus.OK).send(html);
   }
 
   @Get('export/payroll.csv')
@@ -90,17 +156,17 @@ export class FinanceController {
     const m = month ? parseInt(month) : new Date().getMonth() + 1;
     const y = year ? parseInt(year) : new Date().getFullYear();
     const csv = await this.financeService.exportPayrollCsv(m, y);
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=payroll-${m}-${y}.csv`);
-    return res.status(HttpStatus.OK).send(csv);
+    res.set('Content-Type', 'text/csv');
+    res.set('Content-Disposition', `attachment; filename=payroll-${m}-${y}.csv`);
+    res.status(HttpStatus.OK).send(csv);
   }
 
   @Get('export/campaigns.csv')
   async exportCampaigns(@Res() res: Response) {
     const csv = await this.financeService.exportCampaignsCsv();
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=campaigns-billing.csv');
-    return res.status(HttpStatus.OK).send(csv);
+    res.set('Content-Type', 'text/csv');
+    res.set('Content-Disposition', 'attachment; filename=campaigns-billing.csv');
+    res.status(HttpStatus.OK).send(csv);
   }
 
   @Get('export/campaign/:id.csv')
@@ -109,9 +175,9 @@ export class FinanceController {
     @Res() res: Response
   ) {
     const csv = await this.financeService.exportCampaignCsv(id);
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=campaign-${id}.csv`);
-    return res.status(HttpStatus.OK).send(csv);
+    res.set('Content-Type', 'text/csv');
+    res.set('Content-Disposition', `attachment; filename=campaign-${id}.csv`);
+    res.status(HttpStatus.OK).send(csv);
   }
   /**
    * FINANCIAL INTELLIGENCE: Registers a new financial transaction (Income/Expense).

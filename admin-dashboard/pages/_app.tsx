@@ -10,7 +10,7 @@ import { useState } from 'react';
 const PUBLIC_PAGES = ['/login', '/check-in'];
 
 function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: QueryClient }) {
-  const isPublic = PUBLIC_PAGES.includes(router.pathname);
+  const isPublic = ['/login', '/check-in'].includes(router.pathname) || router.pathname.startsWith('/p');
   
   // Initialize Realtime Sync Hook
   useAntigravity();

@@ -130,6 +130,28 @@ export default function CheckIn() {
     error: null,
   });
 
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{title: string, msg: string, type: 'error' | 'info' | 'success'} | null>(null);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    
+    // Simulate slight delay for UX (loading state visibility)
+    await new Promise(r => setTimeout(r, 600));
+
+    if (!navigator.onLine) {
+      setToastMsg({
+        title: 'Modo Offline',
+        msg: 'Guardado localmente, se sincronizará luego (Sin Red)',
+        type: 'info'
+      });
+      setIsRetrying(false);
+      return;
+    }
+
+    window.location.reload();
+  };
+
   const formatTime = useCallback((iso: string | null) => {
     if (!iso) return '—';
     try {
@@ -213,13 +235,37 @@ export default function CheckIn() {
             </p>
 
             <button
-              onClick={() => window.location.reload()}
-              className="w-full bg-tad-yellow hover:bg-white text-black font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-md"
+              onClick={handleRetry}
+              disabled={isRetrying}
+              className="w-full bg-tad-yellow hover:bg-white text-black font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 group"
             >
-              Reintentar
+              {isRetrying ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-black" />
+                  <span>Verificando...</span>
+                </>
+              ) : (
+                <span>Reintentar</span>
+              )}
             </button>
           </div>
         </div>
+        
+        {/* Toast Notification Layer */}
+        {toastMsg && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] bg-gray-900 border border-t border-t-gray-800 rounded-2xl p-4 shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5">
+             <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <Database className="w-5 h-5 text-blue-500" />
+             </div>
+             <div>
+                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">{toastMsg.title}</p>
+                <p className="text-xs font-bold text-gray-300 leading-tight">{toastMsg.msg}</p>
+             </div>
+             <button title="Cerrar Notificación" aria-label="Cerrar Notificación" onClick={() => setToastMsg(null)} className="ml-auto w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition">
+                 <Ban className="w-4 h-4 text-gray-500" />
+             </button>
+          </div>
+        )}
       </div>
     );
   }

@@ -1,54 +1,127 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
 
-**Versión:** 1.2 (Auditoría v4.5)
-**Última Actualización:** 20 de Marzo, 2026 (14:00)
+**Versión:** 1.3 (Auditoría v4.6 - SRE Approved)
+**Última Actualización:** 21 de Marzo, 2026 (20:45)
 
-## 1. Onboarding de Conductor (Conductor Onboarding)
+> ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. Cualquier flujo manual que escape a este diagrama de arquitectura se considerará una vulnerabilidad crítica. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable.
 
-1. **Registro:** El administrador registra al nuevo conductor en el Dashboard (/drivers).
-2. **Validación Comercial:** Se verifica el pago de la cuota anual (RD$6,000). Sin este pago, el conductor permanece en estado `BLOCKED` o `UNPAID`.
-3. **PWA Mobile Gateway:** El conductor recibe un enlace (o escanea el QR en la oficina) para abrir `admin-dashboard/pages/check-in.tsx` en su celular personal. Este dispositivo actuará como el Gateway GPS.
+## 📍 CICLO DE VIDA DEL ANUNCIO Y OPERACIÓN DEL TAXI
 
-## 2. Configuración y Registro de Hardware (Hardware Setup)
-
-1. **Unidad/Tablet:** Se instala una tablet Android en el vehículo.
-2. **Vinculación:** En la página de Flota (/fleet), el administrador crea una "Nueva Unidad" vinculando el `device_id` de la tablet con el nombre del conductor y la placa del vehículo.
-3. **Emparejamiento:** El conductor escanea el QR generado por la tablet para activar el Mobile Gateway en su celular, vinculando su posición GPS a la unidad.
-
-## 3. Distribución de Contenido (Content Distribution)
-
-1. **Carga de Archivos:** Se suben los videos o imágenes en la sección de Contenido Multimedia (/media) a Supabase Storage.
-2. **Creación de Campaña:** Se crea la campaña asignando presupuesto, anunciante y fechas.
-3. **Targeting (Distribución):** Se eligen los conductores o zonas donde se emitirá la campaña (Zap Distribuir). Esto envía una notificación vía Supabase Realtime/API a las tablets indicando la actualización de su playlist.
-4. **Sincronización de Emergencia (Broadcast):** Si un dispositivo no actualiza su contenido automáticamente, el administrador puede usar el botón "Sync Integridad" desde `/fleet` para forzar un WAKE_UP_CALL masivo a través de Supabase Realtime.
-
-## 4. Operación en Calle (On-Street Operation)
-
-1. **Mobile Gateway:** El celular del conductor captura puntos GPS cada 10-30 segundos.
-2. **Batching:** Los puntos se acumulan localmente y se envían en lotes (batches) de 10 posiciones al backend para optimizar batería y datos.
-3. **Telemetría:** La tablet informa su estado (Batería, Almacenamiento, Conexión) cada 30 segundos. El dashboard refleja esto en tiempo real mediante el `SyncChannel`.
-4. **Reproducción:** La tablet reproduce el mix publicitario localmente. Si detecta que el conductor no tiene suscripción activa (`SUSPENDED`), bloquea la pantalla.
-
-## 5. Cierre Financiero y Comercial (Financial & Commercial Settlement)
-
-1. **Auditoría de Emisión:** El sistema calcula las impresiones y tiempo de exposición basado en los logs de GPS y reproducción para asegurar impactos garantizados.
-2. **Facturación a Clientes (Invoice):** El administrador genera la Factura Comercial (Premium HTML) y el Reporte de Pauta (CSV) desde el módulo de finanzas para enviarlos al Cliente final, aplicando el 18% de ITBIS de manera automatizada.
-3. **Liquidación de Nómina:** En Gestión Económica (/finance), se aprueba la nómina mensual y se descarga el Reporte de Nómina. Cada conductor activo recibe RD$500 por cada campaña asignada que haya transmitido satisfactoriamente.
-4. **Pago y Retenciones:** El administrador procesa y registra los pagos con referencias bancarias. El sistema efectúa automáticamente las retenciones de referidos (10% si aplica) cerrando el ciclo mensual en el Libro Mayor.
-
-## 6. Mantenimiento y Dashboard Responsive
-
-1. **Acceso Multi-Dispositivo:** El Dashboard administrativo está optimizado para dispositivos móviles y tabletas, permitiendo al personal de campo cerrar unidades o sincronizar flotas desde cualquier ubicación sin necesidad de una PC estacionaria.
-2. **Auditoría de Salud:** El administrador debe supervisar diariamente los estados "STABLE" y "OS Build" en la cabecera del sistema para garantizar que todos los nodos ejecutan la versión core v4.5.1 de TAD Node OS.
+El ecosistema se abstrae en 5 fases de alta disponibilidad, desde que ingresamos un conductor al sistema hasta que se emite la factura del anunciante. Todo ocurre en red, excepto cuando ocurre lo inevitable en RD (túnel 27 de febrero = 100% *Packet Loss*).
 
 ---
 
-## 7. Problemas Actuales y Alertas Críticas (Current Problems)
+### Fase 1 & 2: Registro Inicial y Emparejamiento de Hardware (Onboarding)
 
-- [x] **Error 500 (Table Not Found)**: Resuelto mediante `npx prisma db push` para sincronizar `financial_transactions`.
-- [ ] **Validación de Sync en Campo**: Pendiente verificar en tablet física que `OfflineSyncManager` descargue videos correctamente desde la API de producción.
-- [x] **Mapeo de Relaciones Sync**: Corregido mapeo de Prisma para incluir `targetDrivers` y `DeviceCampaign` en la generación de playlist.
-- [x] **Handshake Assets**: Corregida la subida de medios que fallaba por un segundo POST innecesario a `/assets`.
+El "Mobile Gateway" (celular del conductor con 4G) da vida a la tablet en el cabezal del asiento. La tablet es una tumba de hierro (`FullyKiosk`) aislada que depende del escaneo QR inicial para autenticarse.
+
+```mermaid
+sequenceDiagram
+    participant ADM as Admin (Dashboard)
+    participant BKN as Backend (NestJS)
+    participant MXT as Celular (Mobile Gateway)
+    participant TBL as Tablet (FullyKiosk)
+
+    Note over ADM, TBL: Fase 1: Creación y Pago de Cuota
+    ADM->>BKN: POST /drivers (Registra Chofer)
+    ADM->>BKN: PUT /drivers/subscription (Paga RD$ 6,000)
+    BKN-->>ADM: Chofer pasa a estado ACTIVE
+
+    Note over MXT, TBL: Fase 2: Handshake Físico (Emparejamiento)
+    TBL->>TBL: Genera Código QR [Device_ID interno]
+    MXT->>MXT: Escanea QR vía admin-dashboard/check-in
+    MXT->>BKN: Intenta vincular (Driver_ID + Device_ID)
+    alt Si Driver está BLOQUEADO
+        BKN--xMXT: HTTP 402 Payment Required (Rechazo)
+    else Si Driver está ACTIVO
+        BKN-->>MXT: HTTP 200 OK (Vinculación Establecida)
+        MXT->>TBL: Inicia Tracking GPS y Sincronizaciones futuras
+    end
+```
 
 ---
-TAD Advertising Systems — 2026
+
+### Fase 3: Distribución del Contenido (El Proceso de "Inyección")
+
+No subimos blobs de datos por el backend. Eso estrangularía un backend de 512MB RAM en Easypanel. Usamos "Direct Uploads" y luego asignamos apuntadores de medios.
+
+```mermaid
+graph TD
+    classDef red fill:#f96,stroke:#333,stroke-width:2px;
+    classDef green fill:#9f9,stroke:#333,stroke-width:2px;
+
+    DM[Dashboard Multimedia] -->|Upload Video Binario| S3[(Supabase Storage<br/>Bucket: campaign-videos)]
+    S3 -.->|Retorna S3_URL/CUID| DM
+    DM -->|POST /campaigns| DB[(Supabase DB<br/>Prisma ORM)]
+    
+    DB --> R1{Supabase Realtime}
+    R1 --> |Broadcast: WAKE_UP_CALL| T1[Tablet STI-001]
+    R1 --> |Broadcast: WAKE_UP_CALL| T2[Tablet SDQ-015]
+
+    T1 --> |Fetch Playlist JSON| DB
+    T1 --> |Pull Video Asset| S3
+```
+
+---
+
+### Fase 4: Operación en Calle (Resiliencia Extrema / Offline-First)
+
+El conductor viaja y su celular manda coordenadas. Si pierde conexión, hacemos "Batching". El backend NUNCA se inunda con peticiones unitarias de 100 taxis (reducción de I/O de red del 98%).
+
+```mermaid
+stateDiagram-v2
+    [*] --> MonitorGPS: Celular inicia PWA en 4G
+    
+    state MonitorGPS {
+        ConexiónEstable --> AcumulaLocal: Buffer = 10 puntos (Batching)
+        AcumulaLocal --> EnvíaBackend: POST /fleet/track-batch
+        EnvíaBackend --> ConexiónEstable: ACKs
+    }
+
+    state FalloDeRed {
+        RedCaida --> AcumulaLocalOffline: Buffer crece infinitamente en localStorage
+        AcumulaLocalOffline --> RecuperaSeñal: Detecta navigator.onLine == true
+        RecuperaSeñal --> EnvíaBackendMasivo: POST Payload Gigante
+    }
+
+    MonitorGPS --> FalloDeRed: Túnel o Zona Muerta
+    FalloDeRed --> MonitorGPS: Salida de Túnel
+```
+
+**Si la Respuesta del Backend al Celular es `HTTP 402` (Mora de pago):**
+El celular (Gateway) ejecuta la directiva **Kill-Switch**: La PWA destruye su Worker GPS y la pantalla advierte al pasajero/taxista.
+
+---
+
+### Fase 5: Cierre Financiero Implacable (Auditoría/Liquidación)
+
+Para evitar fraudes o discrepancias de "anuncios emitidos", liquidamos la nómina basados en impresiones efectivas.
+
+1. **El Motor:** La base de datos agrupa `AnalyticsEvent` (`playback_complete`).
+2. **Cáculo a Chofer:** `COUNT(campaign_id)` $\times$ `RD$500` (con techo máximo de 15 slots = RD$7,500).
+3. **Cálculo a Marca:** Subtotales $\times$ ITBIS 18% vía generador PDF.
+
+```mermaid
+sequenceDiagram
+    participant TBL as Fleet Tablets
+    participant BKN as Analytics Engine (NestJS)
+    participant FIN as Modulo Finanzas
+    participant EXT as CSV/PDF Export
+
+    TBL->>BKN: POST /analytics (Batch de 100+ repros)
+    BKN->>BKN: Filtra reproducciones nulas (duración < 5s)
+    
+    Note right of BKN: Al final de mes:
+    ADM->>FIN: Trigger "Liquidación Automática"
+    FIN->>BKN: Sumar plays per Campaign + Driver
+    BKN-->>FIN: Matriz de Pagos [Chofer X: RD$500]
+    FIN->>EXT: Emite Factura (Cliente) / Recibo Pago (Chofer)
+```
+
+---
+
+## 🛠️ PARCHES DE SRE ESTABLECIDOS
+
+* [x] **Timeout Limits**: Las transferencias multimedia ahora expiran a los 300s en Vercel/Easypanel.
+* [x] **Batching GPS 10:1**: Prohibidas las llamadas HTTP individuales desde el celular.
+* [x] **CORS Asesino**: El Header `x-device-id` ha sido bluelisted globalmente para evitar caídas en el handshake entre la app móvil y el gateway de NestJS.

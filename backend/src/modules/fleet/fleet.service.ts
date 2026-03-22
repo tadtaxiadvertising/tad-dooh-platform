@@ -67,38 +67,23 @@ export class FleetService {
   }
 
   async getFleetStats() {
-    const devices = await this.prisma.device.findMany({
-      select: {
-        lastSeen: true,
-        playerStatus: true,
-        status: true
-      }
-    });
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-    const now = new Date();
-    const thirtyMinMs = 30 * 60 * 1000;
-    
-    let online = 0;
-    let offline = 0;
-    let withErrors = 0;
-
-    devices.forEach((d) => {
-      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs;
-      if (isOnline) {
-        online++;
-      } else {
-        offline++;
-      }
-      
-      if (d.playerStatus && d.playerStatus !== 'playing') {
-        withErrors++;
-      }
-    });
+    // Executes parallel micro-queries in Supabase, leveraging indices
+    const [total, online, withErrors] = await Promise.all([
+      this.prisma.device.count(),
+      this.prisma.device.count({
+        where: { lastSeen: { gte: thirtyMinAgo } }
+      }),
+      this.prisma.device.count({
+        where: { playerStatus: { not: 'playing', notIn: [null, ''] } }
+      })
+    ]);
 
     return {
-      total: devices.length,
+      total,
       online,
-      offline,
+      offline: total - online,
       withErrors
     };
   }
@@ -119,8 +104,20 @@ export class FleetService {
   }
 
   async getOfflineDevices() {
-    const devices = await this.getFleetDevices();
-    return devices.filter(d => d.status === 'offline');
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    return this.prisma.device.findMany({
+      where: {
+        OR: [
+          { lastSeen: { lt: thirtyMinAgo } },
+          { lastSeen: null }
+        ]
+      },
+      select: {
+        deviceId: true,
+        taxiNumber: true,
+        lastSeen: true,
+      }
+    });
   }
 
   /**

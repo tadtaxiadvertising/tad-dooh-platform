@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { createCampaign } from '../../services/api';
-import { ArrowLeft, Save, Megaphone, Activity, Info, Zap, Calendar, Target, ShieldCheck, RefreshCcw, Globe, Radio } from 'lucide-react';
+import { ArrowLeft, Save, Megaphone, Activity, Info, Zap, Calendar, Target, ShieldCheck, RefreshCcw, Globe, Radio, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
 
@@ -15,6 +15,7 @@ export default function NewCampaignPage() {
     target_impressions: 1000,
     active: true,
     category: 'General',
+    target_city: 'Global',
     whatsapp: '',
     instagram: '',
     facebook: '',
@@ -139,6 +140,7 @@ export default function NewCampaignPage() {
                   <div className="relative">
                     <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
                     <select 
+                      title="Categoría de Segmentación"
                       value={form.category}
                       onChange={e => setForm({...form, category: e.target.value})}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all shadow-sm appearance-none"
@@ -149,6 +151,25 @@ export default function NewCampaignPage() {
                       <option value="Salud">SALUD / BIENESTAR</option>
                       <option value="Servicios">SERVICIOS</option>
                       <option value="Retail">RETAIL / TIENDAS</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="group/field relative">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Ciudad de Destino</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
+                    <select 
+                      title="Ciudad de Destino"
+                      value={form.target_city}
+                      onChange={e => setForm({...form, target_city: e.target.value})}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all shadow-sm appearance-none"
+                    >
+                      <option value="Global">GLOBAL_NET (Toda la red)</option>
+                      <option value="Santo Domingo">SANTO DOMINGO</option>
+                      <option value="Santiago">SANTIAGO</option>
+                      <option value="Punta Cana">PUNTA CANA</option>
+                      <option value="Puerto Plata">PUERTO PLATA</option>
                     </select>
                   </div>
                 </div>

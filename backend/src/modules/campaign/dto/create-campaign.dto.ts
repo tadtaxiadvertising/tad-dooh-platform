@@ -34,6 +34,10 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
+  target_city?: string;
+
+  @IsString()
+  @IsOptional()
   category?: string;
 
   @IsString()

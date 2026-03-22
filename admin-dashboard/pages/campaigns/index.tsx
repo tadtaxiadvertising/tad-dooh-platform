@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getCampaigns, deleteCampaign } from '../../services/api';
-import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download, RefreshCcw } from 'lucide-react';
+import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download, RefreshCcw, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import clsx from 'clsx';
@@ -12,7 +12,7 @@ import { AntigravityButton } from '../../components/ui/AntigravityButton';
 import { getMedia } from '../../services/api';
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; media?: { id: string }[]; devices?: string[] }[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; media?: { id: string }[]; devices?: string[]; category?: string; targetCity?: string; target_city?: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<{ id: string; name: string; devices?: string[] } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -151,6 +151,16 @@ export default function CampaignsPage() {
                          <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700">
                             <span className="w-1.5 h-1.5 rounded-full bg-tad-yellow" />
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{camp.advertiser}</p>
+                         </div>
+                         <div className="h-3 w-px bg-gray-600" />
+                         <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                            <Target className="w-3 h-3 text-tad-yellow" />
+                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{camp.category || 'GENERAL'}</p>
+                         </div>
+                         <div className="h-3 w-px bg-gray-600" />
+                         <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/40 rounded-lg border border-gray-800">
+                            <MapPin className="w-3 h-3 text-zinc-500" />
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{camp.targetCity || camp.target_city || 'GLOBAL'}</p>
                          </div>
                          <div className="h-3 w-px bg-gray-600" />
                          <p className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">ID: {camp.id.slice(0, 8)}</p>

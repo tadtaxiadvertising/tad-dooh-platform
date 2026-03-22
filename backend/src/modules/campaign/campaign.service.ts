@@ -22,6 +22,12 @@ export class CampaignService {
         targetImpressions: dto.target_impressions || 0,
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : true,
+        whatsapp: dto.whatsapp,
+        instagram: dto.instagram,
+        facebook: dto.facebook,
+        websiteUrl: dto.websiteUrl,
+        pedidosYaUrl: dto.pedidosYaUrl,
+        uberEatsUrl: dto.uberEatsUrl,
         status: 'ACTIVE',
       },
     });

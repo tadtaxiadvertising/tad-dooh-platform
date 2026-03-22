@@ -13,7 +13,13 @@ export default function NewCampaignPage() {
     start_date: '',
     end_date: '',
     target_impressions: 1000,
-    active: true
+    active: true,
+    whatsapp: '',
+    instagram: '',
+    facebook: '',
+    websiteUrl: '',
+    pedidosYaUrl: '',
+    uberEatsUrl: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -206,6 +212,79 @@ export default function NewCampaignPage() {
                 </div>
               </div>
             </div>
+
+            <div className="pt-10 flex flex-col items-center border-t border-gray-700/50">
+            </div>
+
+            {/* Ecosistema de Conversión (QR Hub) */}
+            <div className="space-y-6 pt-6 border-t border-white/5">
+               <div className="flex items-center gap-3 ml-2">
+                 <Zap className="w-4 h-4 text-tad-yellow" />
+                 <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Protocolo de Conversión (QR Hub)</h3>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/[0.02] p-8 rounded-3xl border border-white/5">
+                  <div className="space-y-6">
+                    <div className="group/field relative">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">WhatsApp de Ventas</label>
+                      <input 
+                        type="text" 
+                        value={form.whatsapp}
+                        onChange={e => setForm({...form, whatsapp: e.target.value})}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                        placeholder="8091112222"
+                      />
+                    </div>
+                    <div className="group/field relative">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Instagram (@usuario)</label>
+                      <input 
+                        type="text" 
+                        value={form.instagram}
+                        onChange={e => setForm({...form, instagram: e.target.value})}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                        placeholder="@marca"
+                      />
+                    </div>
+                    <div className="group/field relative">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Sitio Web</label>
+                      <input 
+                        type="text" 
+                        value={form.websiteUrl}
+                        onChange={e => setForm({...form, websiteUrl: e.target.value})}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="group/field relative">
+                      <label className="text-[10px] font-black text-red-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Pedidos Ya (Link)</label>
+                      <input 
+                        type="text" 
+                        value={form.pedidosYaUrl}
+                        onChange={e => setForm({...form, pedidosYaUrl: e.target.value})}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                        placeholder="https://pedidosya.com/..."
+                      />
+                    </div>
+                    <div className="group/field relative">
+                      <label className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Uber Eats (Link)</label>
+                      <input 
+                        type="text" 
+                        value={form.uberEatsUrl}
+                        onChange={e => setForm({...form, uberEatsUrl: e.target.value})}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                        placeholder="https://ubereats.com/..."
+                      />
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/5 mt-2">
+                       <p className="text-[10px] font-bold text-zinc-500 uppercase leading-relaxed">
+                         Estos enlaces aparecerán en el hub interactivo cuando el pasajero escanee el código QR de esta campaña.
+                       </p>
+                    </div>
+                  </div>
+               </div>
 
             <div className="pt-10 flex flex-col items-center border-t border-gray-700/50">
                <button 

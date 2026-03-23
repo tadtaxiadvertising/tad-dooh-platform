@@ -57,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white-[0.03] flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full",
+        "bg-zinc-900/90 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full shadow-2xl",
         isSidebarOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "lg:w-[88px]" : "lg:w-[280px]"
       )}>
@@ -100,11 +100,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {NAVIGATION_GROUPS.map((group, gi) => (
             <div key={group.label} className={clsx(gi > 0 && 'mt-8')}>
               <p className={clsx(
-                 "text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap", 
-                 isCollapsed ? "justify-center px-0 opacity-40" : "px-2 gap-4"
+                 "text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap px-2", 
+                 isCollapsed ? "justify-center px-0 opacity-40" : "gap-4"
               )}>
                  {!isCollapsed && <span className="transition-all duration-300">{group.label}</span>}
-                 {!isCollapsed && <span className="h-px flex-1 bg-white-[0.03]" />}
+                 {!isCollapsed && <span className="h-px flex-1 bg-white/5" />}
                  {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
               </p>
               <div className="space-y-1.5">
@@ -119,24 +119,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
-                        'group flex items-center text-xs font-bold rounded-xl transition-all relative tracking-wide border border-transparent',
+                        'group flex items-center text-[11px] font-black rounded-xl transition-all relative tracking-widest border border-transparent uppercase',
                         isActive
-                          ? 'bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20 shadow-[0_0_15px_rgba(255,212,0,0.05)]'
-                          : 'text-zinc-500 hover:text-white hover:bg-white/[0.03] hover:border-white/[0.05]',
-                        isCollapsed ? 'justify-center p-3' : 'px-4 py-3'
+                          ? 'bg-tad-yellow text-black shadow-[0_8px_20px_rgba(250,212,0,0.15)] border-tad-yellow/30'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10',
+                        isCollapsed ? 'justify-center p-3' : 'px-4 py-3.5'
                       )}
                     >
                       {isActive && (
-                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-tad-yellow rounded-r-full shadow-[0_0_8px_#fad400]" />
+                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-black rounded-r-full opacity-20" />
                       )}
                       
-                      <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-3.5 w-5 h-5")}>
-                         {isActive && <div className="absolute inset-0 bg-tad-yellow/20 blur-md rounded-full" />}
+                      <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-4 w-5 h-5")}>
                          <Icon
                            className={clsx(
                              'shrink-0 transition-all duration-500 relative z-10',
-                             isActive ? 'text-tad-yellow' : 'text-zinc-500 group-hover:text-zinc-300',
-                             isCollapsed ? 'w-5 h-5' : 'w-4.5 h-4.5'
+                             isActive ? 'text-black' : 'text-zinc-500 group-hover:text-zinc-300',
+                             isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
                            )}
                            aria-hidden="true"
                          />
@@ -168,25 +167,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(255,212,0,0.2)] group-hover:scale-105 transition-transform text-xs uppercase shrink-0">
                  {userEmail.slice(0, 2)}
               </div>
-              <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> SYS_ADMIN
+               <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                 <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5 italic">
+                    <ShieldCheck className="w-3 h-3 text-tad-yellow animate-pulse" /> SYSTEM_ROOT
                  </p>
-                 <p className="font-bold text-xs text-zinc-300 truncate tracking-tight">{userEmail}</p>
+                 <p className="font-black text-[11px] text-white truncate tracking-tight">{userEmail.toUpperCase()}</p>
               </div>
            </div>
-           
-           <button 
-             onClick={handleLogout}
-             title={isCollapsed ? "Cerrar Sesión" : undefined}
-             className={clsx(
-                "mt-2.5 flex items-center justify-center bg-transparent hover:bg-rose-500/10 text-zinc-600 hover:text-rose-500 rounded-xl border border-white-[0.05] hover:border-rose-500/30 transition-all",
-                isCollapsed ? "w-10 h-10" : "w-full py-2.5 gap-2 px-6"
-             )}
-           >
-             <LogIn className="w-4 h-4 rotate-180" />
-             {!isCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Desconectar</span>}
-           </button>
+                      <button 
+               onClick={handleLogout}
+               title={isCollapsed ? "Cerrar Sesión" : undefined}
+               className={clsx(
+                  "mt-4 flex items-center justify-center bg-zinc-950/60 hover:bg-rose-500 text-zinc-600 hover:text-white rounded-xl border border-white/5 hover:border-rose-500/50 transition-all shadow-inner",
+                  isCollapsed ? "w-10 h-10" : "w-full py-3 gap-3 px-6"
+               )}
+             >
+               <LogIn className="w-3.5 h-3.5 rotate-180" />
+               {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Disconnect</span>}
+             </button>
         </div>
       </aside>
 
@@ -208,13 +206,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="w-6 h-6" />
             </button>
-             <div className="relative group w-full max-w-lg hidden xl:block">
-                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all duration-500" />
-                <input 
-                  type="text" 
-                  placeholder="CONSULAR PANTALLA, PILOTO O CAMPAÑA..." 
-                  className="w-full bg-zinc-900/40 border border-white-[0.03] rounded-xl py-3 pl-12 pr-6 text-[10px] font-bold outline-none focus:border-tad-yellow/40 focus:bg-zinc-900/80 transition-all tracking-widest text-white uppercase placeholder:text-zinc-700"
-                />
+              <div className="relative group w-full max-w-lg hidden xl:block">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all duration-300" />
+                 <input 
+                   type="text" 
+                   placeholder="SEARCH PROTOCOL OR UNIT ID..." 
+                   className="w-full bg-zinc-900/40 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-[10px] font-black outline-none focus:border-tad-yellow/40 focus:bg-zinc-950/80 transition-all tracking-[0.2em] text-white uppercase placeholder:text-zinc-700 backdrop-blur-md shadow-inner"
+                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-30 group-focus-within:opacity-100 transition-opacity pointer-events-none">
                    <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">CTRL</span>
                    <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">K</span>
@@ -242,12 +240,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-6">
                  <NotificationCenter />
-                 <div className="flex items-center gap-4 group cursor-pointer">
+                 <div className="flex items-center gap-5 group cursor-pointer bg-zinc-950/40 px-5 py-2 rounded-2xl border border-white/5 hover:border-white/20 transition-all">
                     <div className="text-right hidden sm:block">
-                       <p className="text-[10px] font-bold text-white uppercase tracking-wider mb-0.5">Admin_Terminal</p>
-                       <p className="text-[8px] font-bold text-tad-yellow uppercase tracking-widest opacity-80">Level_SSS</p>
+                       <p className="text-[11px] font-black text-white uppercase tracking-tighter mb-0.5">Admin_Terminal</p>
+                       <p className="text-[9px] font-black text-tad-yellow uppercase tracking-widest opacity-80 italic">Level_SSS</p>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white-[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 p-0.5 relative overflow-hidden shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 relative overflow-hidden shadow-lg">
                        <User className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-tad-yellow translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                     </div>

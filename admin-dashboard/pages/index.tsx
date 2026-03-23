@@ -25,13 +25,27 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const [devices, campaigns, media, hourly, analytics] = await Promise.all([
+      // Usamos allSettled para evitar que una sola API fallida (ej. analytics o hourly) rompa todo el Home
+      const results = await Promise.allSettled([
         getDevices(), 
         getCampaigns(), 
         getMedia(), 
         getHourlyPlays(),
         getAnalyticsSummary()
       ]);
+      
+      const devices = results[0].status === 'fulfilled' ? results[0].value : [];
+      const campaigns = results[1].status === 'fulfilled' ? results[1].value : [];
+      const media = results[2].status === 'fulfilled' ? results[2].value : [];
+      const hourly = results[3].status === 'fulfilled' ? results[3].value : [];
+      const analytics = results[4].status === 'fulfilled' ? results[4].value : null;
+
+      // Reportar errores parciales en consola para debugging
+      results.forEach((res, i) => {
+        if (res.status === 'rejected') {
+          console.warn(`[DASHBOARD_PARTIAL_FAILURE] Endpoint ${i} falló:`, res.reason);
+        }
+      });
       
       setStats({
         devices: Array.isArray(devices) ? devices.length : 0,
@@ -51,9 +65,14 @@ export default function Home() {
           { name: '12:00', val: 0 },{ name: '16:00', val: 0 },{ name: '20:00', val: 0 },{ name: '23:59', val: 0 },
         ]);
       }
+      
+      // Si todo lo crítico falló (devices y campaigns), mostramos error
+      if (results[0].status === 'rejected' && results[1].status === 'rejected') {
+        setError("Falla crítica de sincronización con el núcleo central.");
+      }
     } catch (err) {
-      console.error("Dashboard Load Error:", err);
-      setError("Falla de sincronización con el núcleo central.");
+      console.error("Dashboard Global Error:", err);
+      setError("Falla total de red. Intentando reconectar...");
     } finally {
       setLoading(false);
     }

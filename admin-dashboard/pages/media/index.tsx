@@ -166,15 +166,21 @@ export default function MediaPage() {
     e.preventDefault();
     if (!selectedFile || !selectedCampaign || !title) return;
     setUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
+    
+    let uploadedData = null;
+    
     try {
-      setUploadProgress(30);
-      // Paso 1: Subida física del archivo
-      const uploadedData = await uploadMedia(selectedFile, selectedCampaign, qrUrl);
+      // FASE 1: Subida física del binario (Paso crítico)
+      setUploadProgress(15);
+      uploadedData = await uploadMedia(selectedFile, selectedCampaign, qrUrl);
       setUploadProgress(60);
+      
+      toast.info('Binario recibido por el servidor. Vinculando asset...', {
+         style: { background: '#111', color: '#FFD400', border: '1px solid #FFD400' }
+      });
 
-      // Paso 2: Registro en la campaña (Assets)
-      // Lo hacemos secuencial para evitar race conditions y capturar el error 400 específico
+      // FASE 2: Registro en la arquitectura de la campaña (Asset mapping)
       try {
         await addVideoToCampaign(selectedCampaign, {
           type: 'video',
@@ -184,42 +190,55 @@ export default function MediaPage() {
           checksum: uploadedData.id,
           duration: Number(duration)
         });
+        setUploadProgress(85);
       } catch (assetError: any) {
-        console.warn('⚠️ Video subido pero falló vinculación a campaña:', assetError);
-        // Si es un 400, probablemente es el DTO, pero el video YA ESTÁ en el servidor/DB global.
+        console.warn('⚠️ ERROR_ASSET_LINKING:', assetError);
+        // No lanzamos error aquí porque el video YA ESTÁ en el servidor. 
+        // El usuario puede vincularlo manualmente después.
+        toast.warning('Video en la bóveda, pero enlace a campaña pendiente.', { duration: 6000 });
       }
 
-      setUploadProgress(80);
-      
-      // Paso 3: Asignación a dispositivos si aplica
+      // FASE 3: Propagación a hardware seleccionado
       if (selectedDevices.length > 0) {
         try {
           await assignCampaignToDevices(selectedCampaign, selectedDevices);
+          setUploadProgress(95);
         } catch (assignError) {
-          console.error('Error asignando a dispositivos:', assignError);
+          console.error('Error en propagación de hardware:', assignError);
+          toast.error('Falla en la propagación inicial a las tablets.');
         }
       }
 
       setUploadProgress(100);
-      setShowUploadModal(false);
-      resetUploadForm();
       
-      // Recargar datos para ver el video (aunque haya fallado el paso 2, saldrá en la lista global)
-      await loadData();
-      toast.success('¡Video procesado e inyectado correctamente!');
-      
-      notifyChange('MEDIA');
-      notifyChange('CAMPAIGNS');
+      // ÉXITO TOTAL O PARCIAL CONTROLADO
+      setTimeout(() => {
+        setShowUploadModal(false);
+        resetUploadForm();
+        loadData();
+        toast.success('¡Ingesta multimedia completada con éxito!', {
+           icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
+        });
+        notifyChange('MEDIA');
+        notifyChange('CAMPAIGNS');
+      }, 500);
+
     } catch (e: any) {
-      console.error('Error durante la carga:', e);
+      console.error('CRITICAL_INGEST_FAILURE:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Error desconocido';
+      
       if (e.response?.status === 401) {
-        toast.error("Tu sesión ha expirado. Por favor, recarga y vuelve a intentarlo.");
+        toast.error("Credenciales expiradas. Por favor, inicie sesión nuevamente.");
+      } else if (e.response?.status === 413) {
+        toast.error("Archivo demasiado grande para el clúster actual.");
       } else {
-        toast.error(`Error en la carga: ${e.response?.data?.message || e.message}`);
+        toast.error(`Falla en ingesta: ${errorMsg}`);
       }
+      
+      // Retroceder progreso para feedback visual de error
+      setUploadProgress(prev => Math.max(0, prev - 20));
     } finally {
       setUploading(false);
-      setUploadProgress(0);
     }
   };
 
@@ -305,8 +324,8 @@ export default function MediaPage() {
       {/* Media Inventory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
         {loading ? (
-          Array.from({ length: 8 }).map(i => (
-            <div key={i} className="h-64 bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/30 flex flex-col p-5 gap-4 shadow-inner">
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={`skeleton-${i}`} className="h-64 bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/30 flex flex-col p-5 gap-4 shadow-inner">
                <div className="aspect-video bg-gray-700/20 rounded-2xl w-full" />
                <div className="h-4 bg-gray-700/20 rounded-full w-3/4" />
                <div className="h-3 bg-gray-700/10 rounded-full w-1/2" />

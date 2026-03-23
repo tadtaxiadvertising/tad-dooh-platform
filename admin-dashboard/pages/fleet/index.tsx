@@ -136,10 +136,12 @@ export default function FleetPage() {
     }
   }, []);
 
+  // Sincronización inteligente de pestañas
   useEffect(() => {
     if (activeTab === 'inventory') loadInventory();
     if (activeTab === 'alerts') loadAlerts();
-  }, [activeTab, loadInventory, loadAlerts]);
+    if (activeTab === 'monitoring') mutateFleet();
+  }, [activeTab, loadInventory, loadAlerts, mutateFleet]);
 
   const handleCommand = async (deviceId: string, type: string) => {
     if (type === 'HUB') {

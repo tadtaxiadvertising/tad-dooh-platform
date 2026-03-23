@@ -1,5 +1,27 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+## 📅 22 de Marzo, 2026 (Media Management & Telemetry Fixes v5.1)
+
+### 🚀 MEDIA: Eliminación y Gestión Robusta de Activos
+
+- **DELETE Endpoint Fix**: Se agregó el decorador `@Delete(':id')` en `MediaController` para soportar métodos HTTP DELETE estándar que antes devolvían 404.
+- **Unlink Media Graceful Degradation**: Refactorizado `unlinkMediaFromCampaign` en el backend para manejar la desvinculación de videos buscando inteligentemente en ambas tablas estructurales (`Media` v2 y `MediaAsset` v1), evitando colisiones y errores 500 al desconectar activos antiguos.
+- **Smart Modal Routing**: El botón "Inyectar Activos" en la vista de campaña ahora inyecta los parámetros `?openUpload=true&campaignId=...` en la URL, provocando que la bóveda multimedia abra automáticamente el modal con la campaña pre-seleccionada.
+- **Optimistic UI Updates**: Los botones de borrado de pantalla y desvinculación visualizan el cambio en la interfaz inmediatamente mediante mutaciones de estado en Next.js, sin esperar la recarga total del componente.
+
+### 🛡️ STABILITY: Telemetría Supabase y Hardware Mapping
+
+- **Row Level Security (RLS) Fix**: Se generó y aplicó un script SQL director a Supabase (`fix_analytics_events_rls.sql`) para otorgar permisos `INSERT` al rol `anon`, erradicando permanentemente el error `403 Forbidden` al enviar latidos de telemetría desde los reproductores web.
+- **Silent Telemetry Failsafe**: Refactorizado el hook `useTADAction` para capturar cualquier fallo de red o permisos al hacer logs, permitiendo que la aplicación continúe su flujo de interactividad primaria (como borrar, asignar, o reproducir) sin arrojar errores en cascada.
+- **Cross-ID Hardware Unassigning**: El endpoint `removeCampaignFromDevice` ahora puede recibir indistintamente el UUID interno de base de datos o el `deviceId` de hardware del NexGo/Tablet (`taxi-xyz`), resolviendo el bug visual donde la desasignación manual fallaba.
+
+### 🧪 QA: Playwright E2E TypeScript Compliance
+
+- **Assertion Syntax Update**: Se migraron más de 15 aserciones de pruebas E2E (en `auth-kiosk-flow.spec.ts`, `offline-resilience.spec.ts` y `gps-batch-sync.spec.ts`) desde la sintaxis rota de Jest hacia el formato oficial de Playwright `expect(value, 'message').matcher()`.
+- **E2E Build Isolation**: Separado el entorno de compilación TypeScript de Next.js creando un `tsconfig.json` dedicado para `tests/e2e`, evitando que Next.js ahogue las pruebas con verificaciones de módulo estricto.
+
+---
+
 ## 📅 20 de Marzo, 2026 (Antigravity Sync & Deterministic UI v5.0)
 
 ### ⚛️ ENGINE: Antigravity Sync (Real-time Liquidity)

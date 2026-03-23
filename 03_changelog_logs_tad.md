@@ -7,7 +7,7 @@
 - **DELETE Endpoint Fix**: Se agregó el decorador `@Delete(':id')` en `MediaController` para soportar métodos HTTP DELETE estándar que antes devolvían 404.
 - **Unlink Media Graceful Degradation**: Refactorizado `unlinkMediaFromCampaign` en el backend para manejar la desvinculación de videos buscando inteligentemente en ambas tablas estructurales (`Media` v2 y `MediaAsset` v1), evitando colisiones y errores 500 al desconectar activos antiguos.
 - **Smart Modal Routing**: El botón "Inyectar Activos" en la vista de campaña ahora inyecta los parámetros `?openUpload=true&campaignId=...` en la URL, provocando que la bóveda multimedia abra automáticamente el modal con la campaña pre-seleccionada.
-- **Optimistic UI Updates**: Los botones de borrado de pantalla y desvinculación visualizan el cambio en la interfaz inmediatamente mediante mutaciones de estado en Next.js, sin esperar la recarga total del componente.
+- **Optimistic UI Updates & Premium Toasts**: Los botones de borrado de pantalla y desvinculación visualizan el cambio en la interfaz de inmediato. Adicionalmente, se purgó el uso masivo de `window.alert()` y se migró el sistema global de errores interactivos (en Media y Campaigns) hacia notificaciones oscuras premium usando `React Sonner` (`toast.success` y `toast.error`), mitigando el bloqueo del hilo principal del DOM.
 
 ### 🛡️ STABILITY: Telemetría Supabase y Hardware Mapping
 

@@ -57,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white-[0.03] flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full",
+        "bg-[#050505] backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full shadow-[20px_0_50px_rgba(0,0,0,0.5)]",
         isSidebarOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "lg:w-[88px]" : "lg:w-[280px]"
       )}>
@@ -100,11 +100,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {NAVIGATION_GROUPS.map((group, gi) => (
             <div key={group.label} className={clsx(gi > 0 && 'mt-8')}>
               <p className={clsx(
-                 "text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap", 
+                 "text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap", 
                  isCollapsed ? "justify-center px-0 opacity-40" : "px-2 gap-4"
               )}>
                  {!isCollapsed && <span className="transition-all duration-300">{group.label}</span>}
-                 {!isCollapsed && <span className="h-px flex-1 bg-white-[0.03]" />}
+                 {!isCollapsed && <span className="h-px flex-1 bg-white/5" />}
                  {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
               </p>
               <div className="space-y-1.5">
@@ -119,10 +119,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
-                        'group flex items-center text-xs font-bold rounded-xl transition-all relative tracking-wide border border-transparent',
+                        'group flex items-center text-xs font-black rounded-xl transition-all relative tracking-wide border border-transparent',
                         isActive
-                          ? 'bg-tad-yellow/10 text-tad-yellow border-tad-yellow/20 shadow-[0_0_15px_rgba(255,212,0,0.05)]'
-                          : 'text-zinc-500 hover:text-white hover:bg-white/[0.03] hover:border-white/[0.05]',
+                          ? 'bg-tad-yellow text-black shadow-[0_10px_20px_rgba(255,212,0,0.15)] border-tad-yellow/20'
+                          : 'text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10',
                         isCollapsed ? 'justify-center p-3' : 'px-4 py-3'
                       )}
                     >
@@ -135,7 +135,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                          <Icon
                            className={clsx(
                              'shrink-0 transition-all duration-500 relative z-10',
-                             isActive ? 'text-tad-yellow' : 'text-zinc-500 group-hover:text-zinc-300',
+                             isActive ? 'text-black' : 'text-zinc-400 group-hover:text-white',
                              isCollapsed ? 'w-5 h-5' : 'w-4.5 h-4.5'
                            )}
                            aria-hidden="true"
@@ -168,25 +168,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(255,212,0,0.2)] group-hover:scale-105 transition-transform text-xs uppercase shrink-0">
                  {userEmail.slice(0, 2)}
               </div>
-              <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> SYS_ADMIN
+               <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+                 <p className="text-[9px] text-zinc-400 font-black uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3 h-3 text-tad-yellow" /> SYS_ADMIN
                  </p>
-                 <p className="font-bold text-xs text-zinc-300 truncate tracking-tight">{userEmail}</p>
+                 <p className="font-black text-xs text-white truncate tracking-tight">{userEmail}</p>
               </div>
            </div>
-           
-           <button 
-             onClick={handleLogout}
-             title={isCollapsed ? "Cerrar Sesión" : undefined}
-             className={clsx(
-                "mt-2.5 flex items-center justify-center bg-transparent hover:bg-rose-500/10 text-zinc-600 hover:text-rose-500 rounded-xl border border-white-[0.05] hover:border-rose-500/30 transition-all",
-                isCollapsed ? "w-10 h-10" : "w-full py-2.5 gap-2 px-6"
-             )}
-           >
-             <LogIn className="w-4 h-4 rotate-180" />
-             {!isCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Desconectar</span>}
-           </button>
+                      <button 
+               onClick={handleLogout}
+               title={isCollapsed ? "Cerrar Sesión" : undefined}
+               className={clsx(
+                  "mt-2.5 flex items-center justify-center bg-black hover:bg-rose-500 text-zinc-400 hover:text-white rounded-xl border border-white/5 hover:border-rose-500/50 transition-all shadow-lg",
+                  isCollapsed ? "w-10 h-10" : "w-full py-2.5 gap-2 px-6"
+               )}
+             >
+               <LogIn className="w-4 h-4 rotate-180" />
+               {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-widest">Desconectar</span>}
+             </button>
         </div>
       </aside>
 
@@ -208,13 +207,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="w-6 h-6" />
             </button>
-             <div className="relative group w-full max-w-lg hidden xl:block">
-                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all duration-500" />
-                <input 
-                  type="text" 
-                  placeholder="CONSULAR PANTALLA, PILOTO O CAMPAÑA..." 
-                  className="w-full bg-zinc-900/40 border border-white-[0.03] rounded-xl py-3 pl-12 pr-6 text-[10px] font-bold outline-none focus:border-tad-yellow/40 focus:bg-zinc-900/80 transition-all tracking-widest text-white uppercase placeholder:text-zinc-700"
-                />
+              <div className="relative group w-full max-w-lg hidden xl:block">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-tad-yellow transition-all duration-500" />
+                 <input 
+                   type="text" 
+                   placeholder="CONSULTAR PANTALLA, PILOTO O CAMPAÑA..." 
+                   className="w-full bg-black/60 border border-white/5 rounded-xl py-3 pl-12 pr-6 text-[10px] font-black outline-none focus:border-tad-yellow/40 focus:bg-black transition-all tracking-widest text-white uppercase placeholder:text-white/20"
+                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-30 group-focus-within:opacity-100 transition-opacity pointer-events-none">
                    <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">CTRL</span>
                    <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">K</span>
@@ -223,19 +222,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-8">
-             <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
+             <div className="flex items-center gap-8 pr-8 border-r border-white/5 hidden md:flex">
                 <div className="text-right">
-                   <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Status Red</p>
+                   <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Status Red</p>
                    <div className="flex items-center gap-2 justify-end">
-                      <span className="text-[10px] font-bold text-emerald-500 tracking-tight">STABLE</span>
-                      <Activity className="w-3 h-3 text-emerald-500/80 animate-pulse" />
+                      <span className="text-[10px] font-black text-emerald-500 tracking-tight">STABLE</span>
+                      <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
                    </div>
                 </div>
                 <div className="text-right">
-                   <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">OS Build</p>
+                   <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">OS Build</p>
                    <div className="flex items-center gap-2 justify-end">
-                        <span className="text-[10px] font-bold text-tad-yellow tracking-tight">V4.5.1</span>
-                      <Cpu className="w-3 h-3 text-tad-yellow/80" />
+                         <span className="text-[10px] font-black text-tad-yellow tracking-tight">V4.6.1</span>
+                      <Cpu className="w-3 h-3 text-tad-yellow" />
                    </div>
                 </div>
              </div>

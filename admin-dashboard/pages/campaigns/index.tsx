@@ -109,7 +109,19 @@ export default function CampaignsPage() {
       {/* Campaign Registry Surface */}
       <div className="space-y-6">
         {loading ? (
-          [1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/50" />)
+          [1,2,3,4].map((i) => (
+            <div key={i} className="h-[120px] bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/30 flex items-center p-6 gap-8 shadow-inner">
+               <div className="w-16 h-16 bg-gray-700/20 rounded-2xl shrink-0" />
+               <div className="flex-1 space-y-3">
+                  <div className="h-5 bg-gray-700/20 rounded-full w-1/3" />
+                  <div className="flex gap-4">
+                     <div className="h-3 bg-gray-700/10 rounded-full w-24" />
+                     <div className="h-3 bg-gray-700/10 rounded-full w-32" />
+                  </div>
+               </div>
+               <div className="w-48 h-12 bg-gray-700/20 rounded-xl" />
+            </div>
+          ))
         ) : campaigns.length > 0 ? (
           campaigns.map((camp, idx) => {
             const startDate = new Date(camp.startDate || camp.start_date || '');

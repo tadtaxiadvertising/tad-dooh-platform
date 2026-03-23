@@ -1,12 +1,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu } from 'lucide-react';
+import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from './AuthProvider';
 import NotificationCenter from './NotificationCenter';
 import { TADLogo } from './ui/TADLogo';
+import useSWR from 'swr';
+import api, { getDevices } from '../services/api';
+
+const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 const NAVIGATION_GROUPS = [
   {
@@ -34,6 +38,50 @@ const NAVIGATION_GROUPS = [
     ],
   },
 ];
+
+function FleetHealthStatus() {
+  const { data: devices, isLoading } = useSWR('/fleet/summary', fetcher, { 
+    refreshInterval: 60000 // Refrescar cada minuto
+  });
+
+  const healthScore = React.useMemo(() => {
+    if (!devices || !Array.isArray(devices) || devices.length === 0) return 0;
+    const totalBattery = devices.reduce((acc: number, d: any) => acc + (d.battery_level || d.batteryLevel || 0), 0);
+    return Math.round(totalBattery / devices.length);
+  }, [devices]);
+
+  const onlineCount = React.useMemo(() => {
+    if (!devices || !Array.isArray(devices)) return 0;
+    return devices.filter((d: any) => d.is_online).length;
+  }, [devices]);
+
+  if (isLoading) return <div className="w-20 h-8 bg-white/5 animate-pulse rounded-xl" />;
+
+  return (
+    <div className="flex items-center gap-6 pr-8 border-r border-white-[0.03] hidden lg:flex">
+       <div className="text-right">
+          <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Fleet Health</p>
+          <div className="flex items-center gap-2 justify-end">
+             <span className={clsx(
+               "text-[10px] font-bold tracking-tight",
+               healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
+             )}>{healthScore}% ENERGY</span>
+             <Battery className={clsx(
+               "w-3 h-3 transition-colors",
+               healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
+             )} />
+          </div>
+       </div>
+       <div className="text-right">
+          <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Active Nodes</p>
+          <div className="flex items-center gap-2 justify-end">
+             <span className="text-[10px] font-bold text-white tracking-tight">{onlineCount} / {devices?.length || 0}</span>
+             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
+          </div>
+       </div>
+    </div>
+  );
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -221,6 +269,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-8">
+             <FleetHealthStatus />
              <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
                 <div className="text-right">
                    <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Status Red</p>

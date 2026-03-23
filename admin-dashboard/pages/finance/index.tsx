@@ -216,9 +216,12 @@ export default function FinancePage() {
                   </thead>
                   <tbody className="divide-y divide-gray-700/50">
                     {loading && payroll.length === 0 ? (
-                      [1,2,3].map((_, i) => (
-                        <tr key={i} className="animate-pulse">
-                          <td colSpan={4} className="px-8 py-8"><div className="h-8 bg-gray-900/40 rounded-xl w-full border border-gray-700/50" /></td>
+                      [1,2,3,4,5].map((_, i) => (
+                        <tr key={i} className="animate-pulse border-b border-white/[0.02]">
+                          <td className="px-8 py-6"><div className="h-10 bg-white/5 rounded-xl w-48" /></td>
+                          <td className="px-8 py-6"><div className="h-12 bg-white/5 rounded-2xl w-24 mx-auto" /></td>
+                          <td className="px-8 py-6 text-right"><div className="h-10 bg-white/5 rounded-xl w-32 ml-auto" /></td>
+                          <td className="px-8 py-6 text-center"><div className="h-12 bg-white/5 rounded-[1.5rem] w-32 mx-auto" /></td>
                         </tr>
                       ))
                     ) : payroll.length === 0 ? (
@@ -234,7 +237,8 @@ export default function FinancePage() {
                         </td>
                       </tr>
                     ) : payroll.map((item, idx) => (
-                      <tr key={item.driverId} className="hover:bg-gray-900/40 transition-all group cursor-default">
+                      <tr key={item.driverId} className="hover:bg-white/[0.02] transition-all group cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-tad-yellow scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-500" />
                         <td className="px-8 py-6">
                           <div className={clsx("flex items-center gap-4 animate-in slide-in-from-left-4 duration-500 fill-mode-both", idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : 'delay-200')}>
                              <div className="w-12 h-12 rounded-xl bg-gray-900/80 flex items-center justify-center border border-gray-700/50 text-tad-yellow font-bold text-xl group-hover:border-tad-yellow/40 transition-all shadow-sm group-hover:-translate-y-1">
@@ -319,7 +323,8 @@ export default function FinancePage() {
                         </td>
                       </tr>
                     ) : campaignData.map((camp, idx) => (
-                      <tr key={camp.campaignId} className="hover:bg-gray-900/40 transition-all group cursor-default">
+                      <tr key={camp.campaignId} className="hover:bg-white/[0.02] transition-all group cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-tad-yellow scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-500" />
                         <td className="px-8 py-6">
                           <div className={clsx("flex items-center gap-4 animate-in slide-in-from-left-4 duration-500 fill-mode-both", idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : 'delay-200')}>
                              <div className="w-12 h-12 rounded-xl bg-gray-900/80 flex items-center justify-center border border-gray-700/50 group-hover:border-tad-yellow/30 transition-all shadow-sm group-hover:-translate-y-1">

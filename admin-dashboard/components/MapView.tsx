@@ -169,9 +169,6 @@ function GeofenceLayer() {
   );
 }
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
 const MapView: React.FC<MapViewProps> = ({
   locations = [],
   heatmapData = [],
@@ -187,6 +184,18 @@ const MapView: React.FC<MapViewProps> = ({
   const [ready, setReady] = useState(false);
 
   useEffect(() => { setReady(true); }, []);
+
+  // Función Ray-Casting para detectar punto en polígono
+  const isPointInPolygon = useCallback((lat: number, lng: number) => {
+    let intersect = false;
+    for (let i = 0, j = POLIGONO_CENTRAL.length - 1; i < POLIGONO_CENTRAL.length; j = i++) {
+      const xi = POLIGONO_CENTRAL[i][0], yi = POLIGONO_CENTRAL[i][1];
+      const xj = POLIGONO_CENTRAL[j][0], yj = POLIGONO_CENTRAL[j][1];
+      const intersectPoint = ((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+      if (intersectPoint) intersect = !intersect;
+    }
+    return intersect;
+  }, []);
 
   const trail = useMemo(() => {
     if (!recentPath || recentPath.length < 2) return [];
@@ -236,19 +245,23 @@ const MapView: React.FC<MapViewProps> = ({
             {locations.map((loc, i) => {
               if (!loc.lastLat || !loc.lastLng) return null;
               const sel = selectedId === loc.deviceId;
+              const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
               const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
+              
+              // Si está fuera de rango y online, forzamos alerta
+              const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
 
               const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
               return (
                 <Marker
                   key={loc.deviceId || i}
                   position={[loc.lastLat, loc.lastLng]}
-                  icon={createIcon(status, sel, label)}
+                  icon={createIcon(markerStatus, sel, label)}
                   zIndexOffset={sel ? 1000 : 0}
                 >
                   <Popup className="popup-clean" offset={[0, -12]}>
                     <VehiclePopup
-                      device={loc as any}
+                      device={{...loc, isOutsideFence: !inFence} as any}
                       onViewHistory={() => onViewHistory?.(loc)}
                       onSyncCommand={() => onSyncCommand?.(loc)}
                     />

@@ -56,6 +56,15 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
             <h4 className="text-[13px] font-black text-white uppercase tracking-tight mb-1 truncate">
               {device.driverName || "CONDUCTOR INDEFINIDO"}
             </h4>
+            
+            {/* ALERT: OUT OF RANGE */}
+            {(device as any).isOutsideFence && (
+              <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-500 animate-pulse">
+                <XCircle className="w-3 h-3" />
+                <span className="text-[8px] font-black uppercase tracking-widest">Fuera de Rango</span>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono font-black text-tad-yellow bg-tad-yellow/5 px-2 py-0.5 rounded-lg border border-tad-yellow/10">
                 {device.taxiNumber || "TAD-N/A"}

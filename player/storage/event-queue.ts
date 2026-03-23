@@ -1,4 +1,4 @@
-import { sendPlaybackEvent, PlaybackEvent } from '../api/playback';
+import { sendPlaybackBatch, PlaybackEvent } from '../api/playback';
 
 const QUEUE_KEY = "tad_playback_queue";
 
@@ -19,26 +19,20 @@ export class EventQueue {
   }
 
   static async flushQueue() {
-    if (!navigator.onLine) return; // Prevent draining if strictly offline
+    if (!navigator.onLine) return;
     
     const queue = this.getQueue();
     if (queue.length === 0) return;
 
-    // We can try to send them sequentially or we can batch them if backend supports it.
-    // The current endpoint /api/device/playback takes a single object. 
-    // Sending them loop by loop.
-    let remaining = [...queue];
-
-    for (const event of queue) {
-      if (!navigator.onLine) break; // connection dropped mid-flush
-      
-      const success = await sendPlaybackEvent(event);
-      if (success) {
-        remaining = remaining.filter(e => e !== event);
-      }
+    // TAREA GPS_001: Batching Implementation
+    // En lugar de enviar uno por uno, enviamos todo el lote en un solo POST /batch
+    const success = await sendPlaybackBatch(queue);
+    
+    if (success) {
+      this.clearQueue();
+      console.log(`Successfully flushed batch of ${queue.length} events.`);
+    } else {
+      console.warn(`Failed to flush batch of ${queue.length} events. Keeping in queue.`);
     }
-
-    // Save whatever couldn't be requested or if internet dropped
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
   }
 }

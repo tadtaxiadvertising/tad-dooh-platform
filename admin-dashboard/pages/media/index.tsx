@@ -10,6 +10,7 @@ import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 
 // Fetcher for SWR
 const fetcher = (url: string) => api.get(url).then(res => res.data);
@@ -133,7 +134,7 @@ export default function MediaPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== 'video/mp4') {
-      alert('Error: Solo se permiten archivos de video en formato MP4.');
+      toast.warning('Solo se permiten archivos de video en formato MP4.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -202,15 +203,16 @@ export default function MediaPage() {
       
       // Recargar datos para ver el video (aunque haya fallado el paso 2, saldrá en la lista global)
       await loadData();
+      toast.success('¡Video procesado e inyectado correctamente!');
       
       notifyChange('MEDIA');
       notifyChange('CAMPAIGNS');
     } catch (e: any) {
       console.error('Error durante la carga:', e);
       if (e.response?.status === 401) {
-        alert("Tu sesión ha expirado. Por favor, recarga la página e inicia sesión nuevamente.");
+        toast.error("Tu sesión ha expirado. Por favor, recarga y vuelve a intentarlo.");
       } else {
-        alert(`Error en la carga: ${e.response?.data?.message || e.message}`);
+        toast.error(`Error en la carga: ${e.response?.data?.message || e.message}`);
       }
     } finally {
       setUploading(false);
@@ -227,6 +229,7 @@ export default function MediaPage() {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('tad_admin_token')}` }
       });
       await loadData();
+      toast.success('Activo purgado de la bóveda');
       notifyChange('MEDIA');
     } catch (err) { console.error(err); }
   };
@@ -239,7 +242,7 @@ export default function MediaPage() {
       notifyChange('MEDIA');
     } catch (err) {
       console.error(err);
-      alert('Error actualizando URL satelital');
+      toast.error('Error actualizando URL satelital');
     }
   };
 

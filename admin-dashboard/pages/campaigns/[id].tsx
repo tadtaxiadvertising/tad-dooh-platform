@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import { CampaignModal } from '../../components/CampaignModal';
+import { toast } from 'sonner';
 
 export default function CampaignDetailPage() {
   const router = useRouter();
@@ -159,9 +160,10 @@ export default function CampaignDetailPage() {
                 if (!confirm(`¿Eliminar la campaña "${campaign.name}"? Esta acción no se puede deshacer.`)) return;
                 try {
                   await (await import('../../services/api')).deleteCampaign(campaign.id);
+                  toast.success(`Campaña "${campaign.name}" eliminada`);
                   router.push('/campaigns');
                 } catch (err: unknown) {
-                  alert('Error: ' + (err as Error).message);
+                  toast.error('Error: ' + (err as Error).message);
                 }
              }}
              className="px-6 py-2.5 bg-gray-900 border border-gray-700 hover:bg-rose-500 text-gray-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
@@ -340,8 +342,9 @@ export default function CampaignDetailPage() {
                               media: (prev.media || []).filter((m: any) => m.id !== asset.id)
                             };
                           });
+                          toast.success('Activo desvinculado de la campaña');
                         } catch (err: any) {
-                          alert('Error desvinculando activo: ' + err.message);
+                          toast.error('Error desvinculando activo: ' + err.message);
                         }
                       }}
                       title="Desvincular activo"
@@ -469,8 +472,9 @@ export default function CampaignDetailPage() {
                                     
                                     // Optimistic update
                                     setAssignedDevices(prev => prev.filter(d => d.deviceId !== device.deviceId));
+                                    toast.success('Pantalla desasignada correctamente');
                                   } catch (err: any) {
-                                    alert('Error desasignando pantalla: ' + err.message);
+                                    toast.error('Error desasignando pantalla: ' + err.message);
                                   }
                                 }}
                                 title="Desasignar pantalla"

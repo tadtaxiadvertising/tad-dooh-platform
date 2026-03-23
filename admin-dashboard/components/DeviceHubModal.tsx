@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal } from 'lucide-react';
+import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { getDeviceProfile, sendCommand, updateDeviceProfile } from '../services/api';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
@@ -130,7 +130,15 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                     <div className="flex flex-wrap gap-4">
                       <CommandBtn label="Reiniciar App" icon={RefreshCw} loading={commandLoading === 'RELOAD'} onClick={() => handleCommand('RELOAD')} />
                       <CommandBtn label="Forzar Sync" icon={Zap} loading={commandLoading === 'SYNC'} onClick={() => handleCommand('SYNC')} />
-                      <CommandBtn label="Subir Logs" icon={Terminal} loading={commandLoading === 'LOGS'} onClick={() => handleCommand('LOGS')} />
+                      <a 
+                        href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${profile.device_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-6 py-4 bg-tad-yellow border border-tad-yellow/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-black hover:scale-[1.02] transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Ver Transmisión en Vivo
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -284,21 +292,6 @@ function CommandBtn({ label, icon: Icon, loading, onClick }: any) {
 
 function LabelText({ label }: { label: string }) {
   return <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2">{label}</p>;
-}
-
-function CheckCircle2(props: any) {
-  return (
-    <svg 
-      {...props}
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" height="24" 
-      viewBox="0 0 24 24" fill="none" 
-      stroke="currentColor" strokeWidth="2" 
-      strokeLinecap="round" strokeLinejoin="round"
-    >
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
-    </svg>
-  );
 }
 
 function Trash2(props: any) {

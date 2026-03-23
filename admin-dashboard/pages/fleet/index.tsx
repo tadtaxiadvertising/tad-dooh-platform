@@ -329,6 +329,7 @@ export default function FleetPage() {
                         onCommand={handleCommand}
                         onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
                         isCommanding={commanding === device?.device_id}
+                        playerLink={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
                      />
                    ))}
                  </div>
@@ -671,12 +672,16 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
          >
            {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
          </button>
-         <button 
-           onClick={(e) => { e.stopPropagation(); onConfigure(); }}
-           className="flex-1 py-3 bg-white/[0.03] border border-white/[0.05] text-[9px] font-black uppercase tracking-widest text-slate-400 rounded-xl hover:bg-[#FFD400] hover:text-black hover:border-transparent transition-all"
+         <a 
+           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
+           target="_blank"
+           rel="noopener noreferrer"
+           onClick={(e) => e.stopPropagation()}
+           className="flex-1 py-3 bg-[#FFD400]/10 border border-[#FFD400]/20 text-[9px] font-black uppercase tracking-widest text-[#FFD400] rounded-xl hover:bg-[#FFD400] hover:text-black transition-all flex items-center justify-center gap-2"
          >
-           Sync
-         </button>
+           <ExternalLink className="w-3 h-3" />
+           Live
+         </a>
       </div>
     </div>
   );

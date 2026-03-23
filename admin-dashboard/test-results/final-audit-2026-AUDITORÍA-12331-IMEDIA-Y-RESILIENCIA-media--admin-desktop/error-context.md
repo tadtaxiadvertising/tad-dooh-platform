@@ -1,0 +1,1697 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - complementary [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+            - generic [ref=e13]:
+              - generic [ref=e14]: TAD
+              - generic [ref=e15]: Publicidad Digital en Taxis
+          - button "Alternar Menú" [ref=e16]:
+            - img [ref=e17]
+        - navigation [ref=e18]:
+          - generic [ref=e19]:
+            - paragraph [ref=e20]:
+              - generic [ref=e21]: Operaciones
+            - generic [ref=e23]:
+              - link "Resumen" [ref=e24] [cursor=pointer]:
+                - /url: /
+                - img [ref=e26]
+                - generic [ref=e31]: Resumen
+              - link "Pantallas TAD" [ref=e32] [cursor=pointer]:
+                - /url: /fleet
+                - img [ref=e34]
+                - generic [ref=e36]: Pantallas TAD
+              - link "Rastreo GPS" [ref=e37] [cursor=pointer]:
+                - /url: /tracking
+                - img [ref=e39]
+                - generic [ref=e41]: Rastreo GPS
+          - generic [ref=e42]:
+            - paragraph [ref=e43]:
+              - generic [ref=e44]: Red y Socios
+            - link "Conductores y Suscripciones" [ref=e47] [cursor=pointer]:
+              - /url: /drivers
+              - img [ref=e49]
+              - generic [ref=e53]: Conductores y Suscripciones
+          - generic [ref=e54]:
+            - paragraph [ref=e55]:
+              - generic [ref=e56]: Publicidad y Inteligencia
+            - generic [ref=e58]:
+              - link "Campañas" [ref=e59] [cursor=pointer]:
+                - /url: /campaigns
+                - img [ref=e61]
+                - generic [ref=e64]: Campañas
+              - link "Contenido Multimedia" [ref=e65] [cursor=pointer]:
+                - /url: /media
+                - img [ref=e69]
+                - generic [ref=e72]: Contenido Multimedia
+              - link "Marcas y Anunciantes" [ref=e73] [cursor=pointer]:
+                - /url: /advertisers
+                - img [ref=e75]
+                - generic [ref=e78]: Marcas y Anunciantes
+              - link "Ingresos y Pagos" [ref=e79] [cursor=pointer]:
+                - /url: /finance
+                - img [ref=e81]
+                - generic [ref=e84]: Ingresos y Pagos
+              - link "Inteligencia ROI" [ref=e85] [cursor=pointer]:
+                - /url: /analytics
+                - img [ref=e87]
+                - generic [ref=e89]: Inteligencia ROI
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: ad
+            - generic [ref=e93]:
+              - paragraph [ref=e94]:
+                - img [ref=e95]
+                - text: SYS_ADMIN
+              - paragraph [ref=e98]: admin@tad.do
+          - button "Desconectar" [ref=e99]:
+            - img [ref=e100]
+            - generic [ref=e103]: Desconectar
+      - generic [ref=e104]:
+        - banner [ref=e106]:
+          - generic [ref=e109]:
+            - img [ref=e110]
+            - textbox "CONSULAR PANTALLA, PILOTO O CAMPAÑA..." [ref=e113]
+            - generic:
+              - generic: CTRL
+              - generic: K
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - paragraph [ref=e117]: Status Red
+                - generic [ref=e118]:
+                  - generic [ref=e119]: STABLE
+                  - img [ref=e120]
+              - generic [ref=e122]:
+                - paragraph [ref=e123]: OS Build
+                - generic [ref=e124]:
+                  - generic [ref=e125]: V4.5.1
+                  - img [ref=e126]
+            - generic [ref=e129]:
+              - button "Centro de Alertas del Sistema" [ref=e131]:
+                - img [ref=e133]
+              - generic [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]:
+                  - paragraph [ref=e138]: Admin_Terminal
+                  - paragraph [ref=e139]: Level_SSS
+                - img [ref=e141]
+        - main [ref=e145]:
+          - generic [ref=e147]:
+            - paragraph [ref=e150]: Vault / Nexus Multimedia
+            - button "Importar Asset" [ref=e152]:
+              - img [ref=e153]
+              - text: Importar Asset
+            - generic [ref=e156]:
+              - generic [ref=e157]:
+                - img [ref=e160]
+                - paragraph [ref=e163]: Activos en Bóveda
+                - heading "04" [level=3] [ref=e164]
+              - generic [ref=e165]:
+                - img [ref=e168]
+                - paragraph [ref=e175]: Puntos de Difusión
+                - heading "00" [level=3] [ref=e176]
+              - generic [ref=e177]:
+                - img [ref=e180]
+                - paragraph [ref=e184]: Integridad Global
+                - heading "100%" [level=3] [ref=e185]
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188] [cursor=pointer]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e192]: IDLE
+                  - button [ref=e193]:
+                    - img [ref=e195]
+                - generic [ref=e198]:
+                  - generic [ref=e199]:
+                    - heading "grok-video-3a32b711-9061-4bd7-b872-ef7daac809ea.mp4" [level=4] [ref=e200]
+                    - paragraph [ref=e201]:
+                      - img [ref=e202]
+                      - text: VIDEO • 1.81 MB
+                  - generic [ref=e205]:
+                    - paragraph [ref=e206]:
+                      - img [ref=e207]
+                      - text: Campanãs Enlazadas
+                    - paragraph [ref=e211]: Sin Enlace
+                  - generic [ref=e212]:
+                    - paragraph [ref=e213]:
+                      - generic [ref=e214]:
+                        - img [ref=e215]
+                        - text: Enlace QR
+                      - generic [ref=e221]: ACTIVO
+                    - generic [ref=e222] [cursor=pointer]:
+                      - paragraph [ref=e223]: https://www.youtube.com/
+                      - img [ref=e225]
+                  - generic [ref=e227]:
+                    - generic [ref=e228]:
+                      - img [ref=e230]
+                      - generic [ref=e232]:
+                        - paragraph [ref=e233]: Registro
+                        - paragraph [ref=e234]: 20 Mar 26
+                    - generic [ref=e236]:
+                      - img [ref=e237]
+                      - generic [ref=e240]: Seguro
+              - generic [ref=e241]:
+                - generic [ref=e242] [cursor=pointer]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e246]: IDLE
+                  - button [ref=e247]:
+                    - img [ref=e249]
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - heading "grok-video-6fd0d442-b1b5-4aff-bbf4-4b7d1f8c8d5a (10).mp4" [level=4] [ref=e254]
+                    - paragraph [ref=e255]:
+                      - img [ref=e256]
+                      - text: VIDEO • 1.00 MB
+                  - generic [ref=e259]:
+                    - paragraph [ref=e260]:
+                      - img [ref=e261]
+                      - text: Campanãs Enlazadas
+                    - paragraph [ref=e265]: Sin Enlace
+                  - generic [ref=e266]:
+                    - paragraph [ref=e267]:
+                      - generic [ref=e268]:
+                        - img [ref=e269]
+                        - text: Enlace QR
+                      - generic [ref=e275]: ACTIVO
+                    - generic [ref=e276] [cursor=pointer]:
+                      - paragraph [ref=e277]: https://www.youtube.com/
+                      - img [ref=e279]
+                  - generic [ref=e281]:
+                    - generic [ref=e282]:
+                      - img [ref=e284]
+                      - generic [ref=e286]:
+                        - paragraph [ref=e287]: Registro
+                        - paragraph [ref=e288]: 19 Mar 26
+                    - generic [ref=e290]:
+                      - img [ref=e291]
+                      - generic [ref=e294]: Seguro
+              - generic [ref=e295]:
+                - generic [ref=e296] [cursor=pointer]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e300]: IDLE
+                  - button [ref=e301]:
+                    - img [ref=e303]
+                - generic [ref=e306]:
+                  - generic [ref=e307]:
+                    - heading "grok-video-3a32b711-9061-4bd7-b872-ef7daac809ea.mp4" [level=4] [ref=e308]
+                    - paragraph [ref=e309]:
+                      - img [ref=e310]
+                      - text: VIDEO • 1.81 MB
+                  - generic [ref=e313]:
+                    - paragraph [ref=e314]:
+                      - img [ref=e315]
+                      - text: Campanãs Enlazadas
+                    - paragraph [ref=e319]: Sin Enlace
+                  - generic [ref=e320]:
+                    - paragraph [ref=e321]:
+                      - generic [ref=e322]:
+                        - img [ref=e323]
+                        - text: Enlace QR
+                      - generic [ref=e329]: NO_LINK
+                    - generic [ref=e330] [cursor=pointer]:
+                      - paragraph [ref=e331]: Asignar destino...
+                      - img [ref=e333]
+                  - generic [ref=e335]:
+                    - generic [ref=e336]:
+                      - img [ref=e338]
+                      - generic [ref=e340]:
+                        - paragraph [ref=e341]: Registro
+                        - paragraph [ref=e342]: 19 Mar 26
+                    - generic [ref=e344]:
+                      - img [ref=e345]
+                      - generic [ref=e348]: Seguro
+              - generic [ref=e349]:
+                - generic [ref=e350] [cursor=pointer]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e354]: IDLE
+                  - button [ref=e355]:
+                    - img [ref=e357]
+                - generic [ref=e360]:
+                  - generic [ref=e361]:
+                    - heading "GeneraciÃ³n_de_Video_Promocional_Empresarial.mp4" [level=4] [ref=e362]
+                    - paragraph [ref=e363]:
+                      - img [ref=e364]
+                      - text: VIDEO • 3.68 MB
+                  - generic [ref=e367]:
+                    - paragraph [ref=e368]:
+                      - img [ref=e369]
+                      - text: Campanãs Enlazadas
+                    - paragraph [ref=e373]: Sin Enlace
+                  - generic [ref=e374]:
+                    - paragraph [ref=e375]:
+                      - generic [ref=e376]:
+                        - img [ref=e377]
+                        - text: Enlace QR
+                      - generic [ref=e383]: ACTIVO
+                    - generic [ref=e384] [cursor=pointer]:
+                      - paragraph [ref=e385]: https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/media
+                      - img [ref=e387]
+                  - generic [ref=e389]:
+                    - generic [ref=e390]:
+                      - img [ref=e392]
+                      - generic [ref=e394]:
+                        - paragraph [ref=e395]: Registro
+                        - paragraph [ref=e396]: 12 Mar 26
+                    - generic [ref=e398]:
+                      - img [ref=e399]
+                      - generic [ref=e402]: Seguro
+            - generic [ref=e405]:
+              - generic [ref=e406]:
+                - generic [ref=e407]:
+                  - img [ref=e409]
+                  - generic [ref=e412]:
+                    - heading "Nueva Ingesta" [level=3] [ref=e413]
+                    - paragraph [ref=e414]:
+                      - img [ref=e415]
+                      - text: Protocolo de Carga Nexus v4.2
+                - button "Cerrar modal" [ref=e417]:
+                  - img [ref=e418]
+              - generic [ref=e421]:
+                - generic [ref=e422]:
+                  - text: Origen de Datos
+                  - generic [ref=e423] [cursor=pointer]:
+                    - button "Choose File" [ref=e425]
+                    - img [ref=e427]
+                    - paragraph [ref=e429]: Seleccionar Master Digital
+                    - paragraph [ref=e430]: MP4 / WEBM • Máximo 200MB
+                - generic [ref=e431]:
+                  - generic [ref=e432]:
+                    - text: Nombre del Activo
+                    - textbox "IDENTIFICADOR_COMERCIAL_V" [ref=e433]
+                  - generic [ref=e434]:
+                    - text: Loop de Reproducción
+                    - combobox "Duración del loop" [ref=e435] [cursor=pointer]:
+                      - option "30 SEGUNDOS (Estándar)" [selected]
+                      - option "60 SEGUNDOS (Extendido)"
+                      - option "120 SEGUNDOS (Master)"
+                - generic [ref=e436]:
+                  - text: Call to Action (Enlace QR)
+                  - generic [ref=e437]:
+                    - img [ref=e439]
+                    - textbox "https://destino-comercial.com/nexus" [ref=e445]
+                - generic [ref=e446]:
+                  - text: Campaña de Destino
+                  - combobox "Campaña objetivo" [ref=e447] [cursor=pointer]:
+                    - option "-- VINCULAR A CLUSTER COMERCIAL --" [disabled] [selected]
+                    - option "TAD • TAD"
+                    - option "PROMO REGIONAL SANTIAGO • INMOBILIARIA LÓPEZ SANTIAGO"
+                    - option "PROMO REGIONAL SANTO DOMINGO • SUPERMERCADO VÁSQUEZ SANTO DOMINGO"
+                    - option "PROMO NACIONAL PRESIDENTE • SUPERMERCADO VÁSQUEZ SANTO DOMINGO"
+                - generic [ref=e448]:
+                  - generic [ref=e449]:
+                    - generic [ref=e450]: Distribución por Pantallas (Hardware)
+                    - generic [ref=e452]: 0 SELECCIONADOS
+                  - generic [ref=e453]:
+                    - generic [ref=e455] [cursor=pointer]:
+                      - img [ref=e457]
+                      - generic [ref=e460]:
+                        - paragraph [ref=e461]: STI0008
+                        - paragraph [ref=e464]: 10 DISPONIBLES
+                    - generic [ref=e466] [cursor=pointer]:
+                      - img [ref=e468]
+                      - generic [ref=e471]:
+                        - paragraph [ref=e472]: STI0047
+                        - paragraph [ref=e475]: 11 DISPONIBLES
+                    - generic [ref=e477] [cursor=pointer]:
+                      - img [ref=e479]
+                      - generic [ref=e482]:
+                        - paragraph [ref=e483]: SDQ0010
+                        - paragraph [ref=e486]: 8 DISPONIBLES
+                    - generic [ref=e488] [cursor=pointer]:
+                      - img [ref=e490]
+                      - generic [ref=e493]:
+                        - paragraph [ref=e494]: SDQ0011
+                        - paragraph [ref=e497]: 8 DISPONIBLES
+                    - generic [ref=e499] [cursor=pointer]:
+                      - img [ref=e501]
+                      - generic [ref=e504]:
+                        - paragraph [ref=e505]: SDQ0012
+                        - paragraph [ref=e508]: 8 DISPONIBLES
+                    - generic [ref=e510] [cursor=pointer]:
+                      - img [ref=e512]
+                      - generic [ref=e515]:
+                        - paragraph [ref=e516]: SDQ0013
+                        - paragraph [ref=e519]: 8 DISPONIBLES
+                    - generic [ref=e521] [cursor=pointer]:
+                      - img [ref=e523]
+                      - generic [ref=e526]:
+                        - paragraph [ref=e527]: SDQ0014
+                        - paragraph [ref=e530]: 9 DISPONIBLES
+                    - generic [ref=e532] [cursor=pointer]:
+                      - img [ref=e534]
+                      - generic [ref=e537]:
+                        - paragraph [ref=e538]: SDQ0015
+                        - paragraph [ref=e541]: 9 DISPONIBLES
+                    - generic [ref=e543] [cursor=pointer]:
+                      - img [ref=e545]
+                      - generic [ref=e548]:
+                        - paragraph [ref=e549]: SDQ0016
+                        - paragraph [ref=e552]: 9 DISPONIBLES
+                    - generic [ref=e554] [cursor=pointer]:
+                      - img [ref=e556]
+                      - generic [ref=e559]:
+                        - paragraph [ref=e560]: SDQ0017
+                        - paragraph [ref=e563]: 9 DISPONIBLES
+                    - generic [ref=e565] [cursor=pointer]:
+                      - img [ref=e567]
+                      - generic [ref=e570]:
+                        - paragraph [ref=e571]: SDQ0018
+                        - paragraph [ref=e574]: 9 DISPONIBLES
+                    - generic [ref=e576] [cursor=pointer]:
+                      - img [ref=e578]
+                      - generic [ref=e581]:
+                        - paragraph [ref=e582]: SDQ0019
+                        - paragraph [ref=e585]: 9 DISPONIBLES
+                    - generic [ref=e587] [cursor=pointer]:
+                      - img [ref=e589]
+                      - generic [ref=e592]:
+                        - paragraph [ref=e593]: SDQ0020
+                        - paragraph [ref=e596]: 9 DISPONIBLES
+                    - generic [ref=e598] [cursor=pointer]:
+                      - img [ref=e600]
+                      - generic [ref=e603]:
+                        - paragraph [ref=e604]: SDQ0021
+                        - paragraph [ref=e607]: 9 DISPONIBLES
+                    - generic [ref=e609] [cursor=pointer]:
+                      - img [ref=e611]
+                      - generic [ref=e614]:
+                        - paragraph [ref=e615]: SDQ0022
+                        - paragraph [ref=e618]: 9 DISPONIBLES
+                    - generic [ref=e620] [cursor=pointer]:
+                      - img [ref=e622]
+                      - generic [ref=e625]:
+                        - paragraph [ref=e626]: SDQ0023
+                        - paragraph [ref=e629]: 9 DISPONIBLES
+                    - generic [ref=e631] [cursor=pointer]:
+                      - img [ref=e633]
+                      - generic [ref=e636]:
+                        - paragraph [ref=e637]: SDQ0024
+                        - paragraph [ref=e640]: 9 DISPONIBLES
+                    - generic [ref=e642] [cursor=pointer]:
+                      - img [ref=e644]
+                      - generic [ref=e647]:
+                        - paragraph [ref=e648]: SDQ0025
+                        - paragraph [ref=e651]: 9 DISPONIBLES
+                    - generic [ref=e653] [cursor=pointer]:
+                      - img [ref=e655]
+                      - generic [ref=e658]:
+                        - paragraph [ref=e659]: SDQ0026
+                        - paragraph [ref=e662]: 9 DISPONIBLES
+                    - generic [ref=e664] [cursor=pointer]:
+                      - img [ref=e666]
+                      - generic [ref=e669]:
+                        - paragraph [ref=e670]: SDQ0027
+                        - paragraph [ref=e673]: 9 DISPONIBLES
+                    - generic [ref=e675] [cursor=pointer]:
+                      - img [ref=e677]
+                      - generic [ref=e680]:
+                        - paragraph [ref=e681]: SDQ0028
+                        - paragraph [ref=e684]: 9 DISPONIBLES
+                    - generic [ref=e686] [cursor=pointer]:
+                      - img [ref=e688]
+                      - generic [ref=e691]:
+                        - paragraph [ref=e692]: SDQ0029
+                        - paragraph [ref=e695]: 9 DISPONIBLES
+                    - generic [ref=e697] [cursor=pointer]:
+                      - img [ref=e699]
+                      - generic [ref=e702]:
+                        - paragraph [ref=e703]: SDQ0030
+                        - paragraph [ref=e706]: 9 DISPONIBLES
+                    - generic [ref=e708] [cursor=pointer]:
+                      - img [ref=e710]
+                      - generic [ref=e713]:
+                        - paragraph [ref=e714]: SDQ0031
+                        - paragraph [ref=e717]: 9 DISPONIBLES
+                    - generic [ref=e719] [cursor=pointer]:
+                      - img [ref=e721]
+                      - generic [ref=e724]:
+                        - paragraph [ref=e725]: SDQ0032
+                        - paragraph [ref=e728]: 9 DISPONIBLES
+                    - generic [ref=e730] [cursor=pointer]:
+                      - img [ref=e732]
+                      - generic [ref=e735]:
+                        - paragraph [ref=e736]: SDQ0033
+                        - paragraph [ref=e739]: 9 DISPONIBLES
+                    - generic [ref=e741] [cursor=pointer]:
+                      - img [ref=e743]
+                      - generic [ref=e746]:
+                        - paragraph [ref=e747]: SDQ0034
+                        - paragraph [ref=e750]: 9 DISPONIBLES
+                    - generic [ref=e752] [cursor=pointer]:
+                      - img [ref=e754]
+                      - generic [ref=e757]:
+                        - paragraph [ref=e758]: SDQ0001
+                        - paragraph [ref=e761]: 9 DISPONIBLES
+                    - generic [ref=e763] [cursor=pointer]:
+                      - img [ref=e765]
+                      - generic [ref=e768]:
+                        - paragraph [ref=e769]: SDQ0002
+                        - paragraph [ref=e772]: 9 DISPONIBLES
+                    - generic [ref=e774] [cursor=pointer]:
+                      - img [ref=e776]
+                      - generic [ref=e779]:
+                        - paragraph [ref=e780]: SDQ0003
+                        - paragraph [ref=e783]: 9 DISPONIBLES
+                    - generic [ref=e785] [cursor=pointer]:
+                      - img [ref=e787]
+                      - generic [ref=e790]:
+                        - paragraph [ref=e791]: SDQ0004
+                        - paragraph [ref=e794]: 9 DISPONIBLES
+                    - generic [ref=e796] [cursor=pointer]:
+                      - img [ref=e798]
+                      - generic [ref=e801]:
+                        - paragraph [ref=e802]: SDQ0005
+                        - paragraph [ref=e805]: 9 DISPONIBLES
+                    - generic [ref=e807] [cursor=pointer]:
+                      - img [ref=e809]
+                      - generic [ref=e812]:
+                        - paragraph [ref=e813]: SDQ0006
+                        - paragraph [ref=e816]: 9 DISPONIBLES
+                    - generic [ref=e818] [cursor=pointer]:
+                      - img [ref=e820]
+                      - generic [ref=e823]:
+                        - paragraph [ref=e824]: SDQ0007
+                        - paragraph [ref=e827]: 9 DISPONIBLES
+                    - generic [ref=e829] [cursor=pointer]:
+                      - img [ref=e831]
+                      - generic [ref=e834]:
+                        - paragraph [ref=e835]: SDQ0035
+                        - paragraph [ref=e838]: 9 DISPONIBLES
+                    - generic [ref=e840] [cursor=pointer]:
+                      - img [ref=e842]
+                      - generic [ref=e845]:
+                        - paragraph [ref=e846]: SDQ0036
+                        - paragraph [ref=e849]: 9 DISPONIBLES
+                    - generic [ref=e851] [cursor=pointer]:
+                      - img [ref=e853]
+                      - generic [ref=e856]:
+                        - paragraph [ref=e857]: SDQ0037
+                        - paragraph [ref=e860]: 9 DISPONIBLES
+                    - generic [ref=e862] [cursor=pointer]:
+                      - img [ref=e864]
+                      - generic [ref=e867]:
+                        - paragraph [ref=e868]: SDQ0038
+                        - paragraph [ref=e871]: 9 DISPONIBLES
+                    - generic [ref=e873] [cursor=pointer]:
+                      - img [ref=e875]
+                      - generic [ref=e878]:
+                        - paragraph [ref=e879]: SDQ0039
+                        - paragraph [ref=e882]: 9 DISPONIBLES
+                    - generic [ref=e884] [cursor=pointer]:
+                      - img [ref=e886]
+                      - generic [ref=e889]:
+                        - paragraph [ref=e890]: SDQ0040
+                        - paragraph [ref=e893]: 9 DISPONIBLES
+                    - generic [ref=e895] [cursor=pointer]:
+                      - img [ref=e897]
+                      - generic [ref=e900]:
+                        - paragraph [ref=e901]: STI0002
+                        - paragraph [ref=e904]: 10 DISPONIBLES
+                    - generic [ref=e906] [cursor=pointer]:
+                      - img [ref=e908]
+                      - generic [ref=e911]:
+                        - paragraph [ref=e912]: STI0003
+                        - paragraph [ref=e915]: 10 DISPONIBLES
+                    - generic [ref=e917] [cursor=pointer]:
+                      - img [ref=e919]
+                      - generic [ref=e922]:
+                        - paragraph [ref=e923]: TAD-D1A5
+                        - paragraph [ref=e926]: 11 DISPONIBLES
+                    - generic [ref=e928] [cursor=pointer]:
+                      - img [ref=e930]
+                      - generic [ref=e933]:
+                        - paragraph [ref=e934]: STI0015
+                        - paragraph [ref=e937]: 10 DISPONIBLES
+                    - generic [ref=e939] [cursor=pointer]:
+                      - img [ref=e941]
+                      - generic [ref=e944]:
+                        - paragraph [ref=e945]: STI0033
+                        - paragraph [ref=e948]: 11 DISPONIBLES
+                    - generic [ref=e950] [cursor=pointer]:
+                      - img [ref=e952]
+                      - generic [ref=e955]:
+                        - paragraph [ref=e956]: PUJ0001
+                        - paragraph [ref=e959]: 10 DISPONIBLES
+                    - generic [ref=e961] [cursor=pointer]:
+                      - img [ref=e963]
+                      - generic [ref=e966]:
+                        - paragraph [ref=e967]: PUJ0002
+                        - paragraph [ref=e970]: 10 DISPONIBLES
+                    - generic [ref=e972] [cursor=pointer]:
+                      - img [ref=e974]
+                      - generic [ref=e977]:
+                        - paragraph [ref=e978]: PUJ0003
+                        - paragraph [ref=e981]: 10 DISPONIBLES
+                    - generic [ref=e983] [cursor=pointer]:
+                      - img [ref=e985]
+                      - generic [ref=e988]:
+                        - paragraph [ref=e989]: PUJ0004
+                        - paragraph [ref=e992]: 10 DISPONIBLES
+                    - generic [ref=e994] [cursor=pointer]:
+                      - img [ref=e996]
+                      - generic [ref=e999]:
+                        - paragraph [ref=e1000]: PUJ0005
+                        - paragraph [ref=e1003]: 10 DISPONIBLES
+                    - generic [ref=e1005] [cursor=pointer]:
+                      - img [ref=e1007]
+                      - generic [ref=e1010]:
+                        - paragraph [ref=e1011]: PUJ0006
+                        - paragraph [ref=e1014]: 10 DISPONIBLES
+                    - generic [ref=e1016] [cursor=pointer]:
+                      - img [ref=e1018]
+                      - generic [ref=e1021]:
+                        - paragraph [ref=e1022]: PUJ0007
+                        - paragraph [ref=e1025]: 10 DISPONIBLES
+                    - generic [ref=e1027] [cursor=pointer]:
+                      - img [ref=e1029]
+                      - generic [ref=e1032]:
+                        - paragraph [ref=e1033]: PUJ0008
+                        - paragraph [ref=e1036]: 10 DISPONIBLES
+                    - generic [ref=e1038] [cursor=pointer]:
+                      - img [ref=e1040]
+                      - generic [ref=e1043]:
+                        - paragraph [ref=e1044]: PUJ0009
+                        - paragraph [ref=e1047]: 10 DISPONIBLES
+                    - generic [ref=e1049] [cursor=pointer]:
+                      - img [ref=e1051]
+                      - generic [ref=e1054]:
+                        - paragraph [ref=e1055]: PUJ0010
+                        - paragraph [ref=e1058]: 10 DISPONIBLES
+                    - generic [ref=e1060] [cursor=pointer]:
+                      - img [ref=e1062]
+                      - generic [ref=e1065]:
+                        - paragraph [ref=e1066]: PUJ0011
+                        - paragraph [ref=e1069]: 10 DISPONIBLES
+                    - generic [ref=e1071] [cursor=pointer]:
+                      - img [ref=e1073]
+                      - generic [ref=e1076]:
+                        - paragraph [ref=e1077]: PUJ0012
+                        - paragraph [ref=e1080]: 10 DISPONIBLES
+                    - generic [ref=e1082] [cursor=pointer]:
+                      - img [ref=e1084]
+                      - generic [ref=e1087]:
+                        - paragraph [ref=e1088]: PUJ0013
+                        - paragraph [ref=e1091]: 10 DISPONIBLES
+                    - generic [ref=e1093] [cursor=pointer]:
+                      - img [ref=e1095]
+                      - generic [ref=e1098]:
+                        - paragraph [ref=e1099]: PUJ0014
+                        - paragraph [ref=e1102]: 10 DISPONIBLES
+                    - generic [ref=e1104] [cursor=pointer]:
+                      - img [ref=e1106]
+                      - generic [ref=e1109]:
+                        - paragraph [ref=e1110]: PUJ0015
+                        - paragraph [ref=e1113]: 10 DISPONIBLES
+                    - generic [ref=e1115] [cursor=pointer]:
+                      - img [ref=e1117]
+                      - generic [ref=e1120]:
+                        - paragraph [ref=e1121]: PUJ0016
+                        - paragraph [ref=e1124]: 10 DISPONIBLES
+                    - generic [ref=e1126] [cursor=pointer]:
+                      - img [ref=e1128]
+                      - generic [ref=e1131]:
+                        - paragraph [ref=e1132]: PUJ0017
+                        - paragraph [ref=e1135]: 10 DISPONIBLES
+                    - generic [ref=e1137] [cursor=pointer]:
+                      - img [ref=e1139]
+                      - generic [ref=e1142]:
+                        - paragraph [ref=e1143]: PUJ0018
+                        - paragraph [ref=e1146]: 10 DISPONIBLES
+                    - generic [ref=e1148] [cursor=pointer]:
+                      - img [ref=e1150]
+                      - generic [ref=e1153]:
+                        - paragraph [ref=e1154]: PUJ0019
+                        - paragraph [ref=e1157]: 10 DISPONIBLES
+                    - generic [ref=e1159] [cursor=pointer]:
+                      - img [ref=e1161]
+                      - generic [ref=e1164]:
+                        - paragraph [ref=e1165]: PUJ0020
+                        - paragraph [ref=e1168]: 10 DISPONIBLES
+                    - generic [ref=e1170] [cursor=pointer]:
+                      - img [ref=e1172]
+                      - generic [ref=e1175]:
+                        - paragraph [ref=e1176]: POP0001
+                        - paragraph [ref=e1179]: 10 DISPONIBLES
+                    - generic [ref=e1181] [cursor=pointer]:
+                      - img [ref=e1183]
+                      - generic [ref=e1186]:
+                        - paragraph [ref=e1187]: POP0002
+                        - paragraph [ref=e1190]: 10 DISPONIBLES
+                    - generic [ref=e1192] [cursor=pointer]:
+                      - img [ref=e1194]
+                      - generic [ref=e1197]:
+                        - paragraph [ref=e1198]: POP0003
+                        - paragraph [ref=e1201]: 10 DISPONIBLES
+                    - generic [ref=e1203] [cursor=pointer]:
+                      - img [ref=e1205]
+                      - generic [ref=e1208]:
+                        - paragraph [ref=e1209]: POP0004
+                        - paragraph [ref=e1212]: 10 DISPONIBLES
+                    - generic [ref=e1214] [cursor=pointer]:
+                      - img [ref=e1216]
+                      - generic [ref=e1219]:
+                        - paragraph [ref=e1220]: POP0005
+                        - paragraph [ref=e1223]: 10 DISPONIBLES
+                    - generic [ref=e1225] [cursor=pointer]:
+                      - img [ref=e1227]
+                      - generic [ref=e1230]:
+                        - paragraph [ref=e1231]: POP0006
+                        - paragraph [ref=e1234]: 10 DISPONIBLES
+                    - generic [ref=e1236] [cursor=pointer]:
+                      - img [ref=e1238]
+                      - generic [ref=e1241]:
+                        - paragraph [ref=e1242]: POP0007
+                        - paragraph [ref=e1245]: 10 DISPONIBLES
+                    - generic [ref=e1247] [cursor=pointer]:
+                      - img [ref=e1249]
+                      - generic [ref=e1252]:
+                        - paragraph [ref=e1253]: POP0008
+                        - paragraph [ref=e1256]: 10 DISPONIBLES
+                    - generic [ref=e1258] [cursor=pointer]:
+                      - img [ref=e1260]
+                      - generic [ref=e1263]:
+                        - paragraph [ref=e1264]: POP0009
+                        - paragraph [ref=e1267]: 10 DISPONIBLES
+                    - generic [ref=e1269] [cursor=pointer]:
+                      - img [ref=e1271]
+                      - generic [ref=e1274]:
+                        - paragraph [ref=e1275]: POP0010
+                        - paragraph [ref=e1278]: 10 DISPONIBLES
+                    - generic [ref=e1280] [cursor=pointer]:
+                      - img [ref=e1282]
+                      - generic [ref=e1285]:
+                        - paragraph [ref=e1286]: STI0093
+                        - paragraph [ref=e1289]: 11 DISPONIBLES
+                    - generic [ref=e1291] [cursor=pointer]:
+                      - img [ref=e1293]
+                      - generic [ref=e1296]:
+                        - paragraph [ref=e1297]: STI0001
+                        - paragraph [ref=e1300]: 10 DISPONIBLES
+                    - generic [ref=e1302] [cursor=pointer]:
+                      - img [ref=e1304]
+                      - generic [ref=e1307]:
+                        - paragraph [ref=e1308]: TAD-89B0
+                        - paragraph [ref=e1311]: 11 DISPONIBLES
+                    - generic [ref=e1313] [cursor=pointer]:
+                      - img [ref=e1315]
+                      - generic [ref=e1318]:
+                        - paragraph [ref=e1319]: TAD-33F3
+                        - paragraph [ref=e1322]: 11 DISPONIBLES
+                    - generic [ref=e1324] [cursor=pointer]:
+                      - img [ref=e1326]
+                      - generic [ref=e1329]:
+                        - paragraph [ref=e1330]: SDQ0008
+                        - paragraph [ref=e1333]: 8 DISPONIBLES
+                    - generic [ref=e1335] [cursor=pointer]:
+                      - img [ref=e1337]
+                      - generic [ref=e1340]:
+                        - paragraph [ref=e1341]: TADSTI-0
+                        - paragraph [ref=e1344]: 11 DISPONIBLES
+                    - generic [ref=e1346] [cursor=pointer]:
+                      - img [ref=e1348]
+                      - generic [ref=e1351]:
+                        - paragraph [ref=e1352]: TADSTI-0
+                        - paragraph [ref=e1355]: 11 DISPONIBLES
+                    - generic [ref=e1357] [cursor=pointer]:
+                      - img [ref=e1359]
+                      - generic [ref=e1362]:
+                        - paragraph [ref=e1363]: SDQ0009
+                        - paragraph [ref=e1366]: 8 DISPONIBLES
+                    - generic [ref=e1368] [cursor=pointer]:
+                      - img [ref=e1370]
+                      - generic [ref=e1373]:
+                        - paragraph [ref=e1374]: TADSTI-0
+                        - paragraph [ref=e1377]: 11 DISPONIBLES
+                    - generic [ref=e1379] [cursor=pointer]:
+                      - img [ref=e1381]
+                      - generic [ref=e1384]:
+                        - paragraph [ref=e1385]: TADSTI-0
+                        - paragraph [ref=e1388]: 11 DISPONIBLES
+                    - generic [ref=e1390] [cursor=pointer]:
+                      - img [ref=e1392]
+                      - generic [ref=e1395]:
+                        - paragraph [ref=e1396]: TADSTI-0
+                        - paragraph [ref=e1399]: 11 DISPONIBLES
+                    - generic [ref=e1401] [cursor=pointer]:
+                      - img [ref=e1403]
+                      - generic [ref=e1406]:
+                        - paragraph [ref=e1407]: TADSTI-0
+                        - paragraph [ref=e1410]: 11 DISPONIBLES
+                    - generic [ref=e1412] [cursor=pointer]:
+                      - img [ref=e1414]
+                      - generic [ref=e1417]:
+                        - paragraph [ref=e1418]: TADSTI-0
+                        - paragraph [ref=e1421]: 11 DISPONIBLES
+                    - generic [ref=e1423] [cursor=pointer]:
+                      - img [ref=e1425]
+                      - generic [ref=e1428]:
+                        - paragraph [ref=e1429]: TADSTI-0
+                        - paragraph [ref=e1432]: 11 DISPONIBLES
+                    - generic [ref=e1434] [cursor=pointer]:
+                      - img [ref=e1436]
+                      - generic [ref=e1439]:
+                        - paragraph [ref=e1440]: TADSTI-0
+                        - paragraph [ref=e1443]: 11 DISPONIBLES
+                    - generic [ref=e1445] [cursor=pointer]:
+                      - img [ref=e1447]
+                      - generic [ref=e1450]:
+                        - paragraph [ref=e1451]: TADSTI-0
+                        - paragraph [ref=e1454]: 11 DISPONIBLES
+                    - generic [ref=e1456] [cursor=pointer]:
+                      - img [ref=e1458]
+                      - generic [ref=e1461]:
+                        - paragraph [ref=e1462]: TADSTI-0
+                        - paragraph [ref=e1465]: 11 DISPONIBLES
+                    - generic [ref=e1467] [cursor=pointer]:
+                      - img [ref=e1469]
+                      - generic [ref=e1472]:
+                        - paragraph [ref=e1473]: TADSTI-0
+                        - paragraph [ref=e1476]: 11 DISPONIBLES
+                    - generic [ref=e1478] [cursor=pointer]:
+                      - img [ref=e1480]
+                      - generic [ref=e1483]:
+                        - paragraph [ref=e1484]: TADSTI-0
+                        - paragraph [ref=e1487]: 11 DISPONIBLES
+                    - generic [ref=e1489] [cursor=pointer]:
+                      - img [ref=e1491]
+                      - generic [ref=e1494]:
+                        - paragraph [ref=e1495]: TADSTI-0
+                        - paragraph [ref=e1498]: 11 DISPONIBLES
+                    - generic [ref=e1500] [cursor=pointer]:
+                      - img [ref=e1502]
+                      - generic [ref=e1505]:
+                        - paragraph [ref=e1506]: TADSTI-0
+                        - paragraph [ref=e1509]: 11 DISPONIBLES
+                    - generic [ref=e1511] [cursor=pointer]:
+                      - img [ref=e1513]
+                      - generic [ref=e1516]:
+                        - paragraph [ref=e1517]: TADSTI-0
+                        - paragraph [ref=e1520]: 11 DISPONIBLES
+                    - generic [ref=e1522] [cursor=pointer]:
+                      - img [ref=e1524]
+                      - generic [ref=e1527]:
+                        - paragraph [ref=e1528]: TADSTI-0
+                        - paragraph [ref=e1531]: 11 DISPONIBLES
+                    - generic [ref=e1533] [cursor=pointer]:
+                      - img [ref=e1535]
+                      - generic [ref=e1538]:
+                        - paragraph [ref=e1539]: TADSTI-0
+                        - paragraph [ref=e1542]: 11 DISPONIBLES
+                    - generic [ref=e1544] [cursor=pointer]:
+                      - img [ref=e1546]
+                      - generic [ref=e1549]:
+                        - paragraph [ref=e1550]: TADSTI-0
+                        - paragraph [ref=e1553]: 11 DISPONIBLES
+                    - generic [ref=e1555] [cursor=pointer]:
+                      - img [ref=e1557]
+                      - generic [ref=e1560]:
+                        - paragraph [ref=e1561]: TADSTI-0
+                        - paragraph [ref=e1564]: 11 DISPONIBLES
+                    - generic [ref=e1566] [cursor=pointer]:
+                      - img [ref=e1568]
+                      - generic [ref=e1571]:
+                        - paragraph [ref=e1572]: TADSTI-0
+                        - paragraph [ref=e1575]: 11 DISPONIBLES
+                    - generic [ref=e1577] [cursor=pointer]:
+                      - img [ref=e1579]
+                      - generic [ref=e1582]:
+                        - paragraph [ref=e1583]: TADSTI-0
+                        - paragraph [ref=e1586]: 11 DISPONIBLES
+                    - generic [ref=e1588] [cursor=pointer]:
+                      - img [ref=e1590]
+                      - generic [ref=e1593]:
+                        - paragraph [ref=e1594]: TADSTI-0
+                        - paragraph [ref=e1597]: 11 DISPONIBLES
+                    - generic [ref=e1599] [cursor=pointer]:
+                      - img [ref=e1601]
+                      - generic [ref=e1604]:
+                        - paragraph [ref=e1605]: TADSTI-0
+                        - paragraph [ref=e1608]: 11 DISPONIBLES
+                    - generic [ref=e1610] [cursor=pointer]:
+                      - img [ref=e1612]
+                      - generic [ref=e1615]:
+                        - paragraph [ref=e1616]: TADSTI-0
+                        - paragraph [ref=e1619]: 11 DISPONIBLES
+                    - generic [ref=e1621] [cursor=pointer]:
+                      - img [ref=e1623]
+                      - generic [ref=e1626]:
+                        - paragraph [ref=e1627]: TADSTI-0
+                        - paragraph [ref=e1630]: 11 DISPONIBLES
+                    - generic [ref=e1632] [cursor=pointer]:
+                      - img [ref=e1634]
+                      - generic [ref=e1637]:
+                        - paragraph [ref=e1638]: TADSTI-0
+                        - paragraph [ref=e1641]: 11 DISPONIBLES
+                    - generic [ref=e1643] [cursor=pointer]:
+                      - img [ref=e1645]
+                      - generic [ref=e1648]:
+                        - paragraph [ref=e1649]: TADSTI-0
+                        - paragraph [ref=e1652]: 11 DISPONIBLES
+                    - generic [ref=e1654] [cursor=pointer]:
+                      - img [ref=e1656]
+                      - generic [ref=e1659]:
+                        - paragraph [ref=e1660]: TADSTI-0
+                        - paragraph [ref=e1663]: 11 DISPONIBLES
+                    - generic [ref=e1665] [cursor=pointer]:
+                      - img [ref=e1667]
+                      - generic [ref=e1670]:
+                        - paragraph [ref=e1671]: TADSTI-0
+                        - paragraph [ref=e1674]: 11 DISPONIBLES
+                    - generic [ref=e1676] [cursor=pointer]:
+                      - img [ref=e1678]
+                      - generic [ref=e1681]:
+                        - paragraph [ref=e1682]: TADSTI-0
+                        - paragraph [ref=e1685]: 11 DISPONIBLES
+                    - generic [ref=e1687] [cursor=pointer]:
+                      - img [ref=e1689]
+                      - generic [ref=e1692]:
+                        - paragraph [ref=e1693]: TADSTI-0
+                        - paragraph [ref=e1696]: 11 DISPONIBLES
+                    - generic [ref=e1698] [cursor=pointer]:
+                      - img [ref=e1700]
+                      - generic [ref=e1703]:
+                        - paragraph [ref=e1704]: TADSTI-0
+                        - paragraph [ref=e1707]: 11 DISPONIBLES
+                    - generic [ref=e1709] [cursor=pointer]:
+                      - img [ref=e1711]
+                      - generic [ref=e1714]:
+                        - paragraph [ref=e1715]: TADSTI-0
+                        - paragraph [ref=e1718]: 11 DISPONIBLES
+                    - generic [ref=e1720] [cursor=pointer]:
+                      - img [ref=e1722]
+                      - generic [ref=e1725]:
+                        - paragraph [ref=e1726]: TADSTI-0
+                        - paragraph [ref=e1729]: 11 DISPONIBLES
+                    - generic [ref=e1731] [cursor=pointer]:
+                      - img [ref=e1733]
+                      - generic [ref=e1736]:
+                        - paragraph [ref=e1737]: TADSTI-0
+                        - paragraph [ref=e1740]: 11 DISPONIBLES
+                    - generic [ref=e1742] [cursor=pointer]:
+                      - img [ref=e1744]
+                      - generic [ref=e1747]:
+                        - paragraph [ref=e1748]: TADSTI-0
+                        - paragraph [ref=e1751]: 11 DISPONIBLES
+                    - generic [ref=e1753] [cursor=pointer]:
+                      - img [ref=e1755]
+                      - generic [ref=e1758]:
+                        - paragraph [ref=e1759]: TADSTI-0
+                        - paragraph [ref=e1762]: 11 DISPONIBLES
+                    - generic [ref=e1764] [cursor=pointer]:
+                      - img [ref=e1766]
+                      - generic [ref=e1769]:
+                        - paragraph [ref=e1770]: TADSTI-0
+                        - paragraph [ref=e1773]: 11 DISPONIBLES
+                    - generic [ref=e1775] [cursor=pointer]:
+                      - img [ref=e1777]
+                      - generic [ref=e1780]:
+                        - paragraph [ref=e1781]: TADSTI-0
+                        - paragraph [ref=e1784]: 11 DISPONIBLES
+                    - generic [ref=e1786] [cursor=pointer]:
+                      - img [ref=e1788]
+                      - generic [ref=e1791]:
+                        - paragraph [ref=e1792]: TADSTI-0
+                        - paragraph [ref=e1795]: 11 DISPONIBLES
+                    - generic [ref=e1797] [cursor=pointer]:
+                      - img [ref=e1799]
+                      - generic [ref=e1802]:
+                        - paragraph [ref=e1803]: TADSTI-0
+                        - paragraph [ref=e1806]: 11 DISPONIBLES
+                    - generic [ref=e1808] [cursor=pointer]:
+                      - img [ref=e1810]
+                      - generic [ref=e1813]:
+                        - paragraph [ref=e1814]: TADSTI-0
+                        - paragraph [ref=e1817]: 11 DISPONIBLES
+                    - generic [ref=e1819] [cursor=pointer]:
+                      - img [ref=e1821]
+                      - generic [ref=e1824]:
+                        - paragraph [ref=e1825]: TADSTI-0
+                        - paragraph [ref=e1828]: 11 DISPONIBLES
+                    - generic [ref=e1830] [cursor=pointer]:
+                      - img [ref=e1832]
+                      - generic [ref=e1835]:
+                        - paragraph [ref=e1836]: TADSTI-0
+                        - paragraph [ref=e1839]: 11 DISPONIBLES
+                    - generic [ref=e1841] [cursor=pointer]:
+                      - img [ref=e1843]
+                      - generic [ref=e1846]:
+                        - paragraph [ref=e1847]: TADSTI-0
+                        - paragraph [ref=e1850]: 11 DISPONIBLES
+                    - generic [ref=e1852] [cursor=pointer]:
+                      - img [ref=e1854]
+                      - generic [ref=e1857]:
+                        - paragraph [ref=e1858]: TADSTI-0
+                        - paragraph [ref=e1861]: 11 DISPONIBLES
+                    - generic [ref=e1863] [cursor=pointer]:
+                      - img [ref=e1865]
+                      - generic [ref=e1868]:
+                        - paragraph [ref=e1869]: TADSTI-0
+                        - paragraph [ref=e1872]: 11 DISPONIBLES
+                    - generic [ref=e1874] [cursor=pointer]:
+                      - img [ref=e1876]
+                      - generic [ref=e1879]:
+                        - paragraph [ref=e1880]: TADSTI-0
+                        - paragraph [ref=e1883]: 11 DISPONIBLES
+                    - generic [ref=e1885] [cursor=pointer]:
+                      - img [ref=e1887]
+                      - generic [ref=e1890]:
+                        - paragraph [ref=e1891]: TADSTI-0
+                        - paragraph [ref=e1894]: 11 DISPONIBLES
+                    - generic [ref=e1896] [cursor=pointer]:
+                      - img [ref=e1898]
+                      - generic [ref=e1901]:
+                        - paragraph [ref=e1902]: TADSTI-0
+                        - paragraph [ref=e1905]: 11 DISPONIBLES
+                    - generic [ref=e1907] [cursor=pointer]:
+                      - img [ref=e1909]
+                      - generic [ref=e1912]:
+                        - paragraph [ref=e1913]: TADSTI-0
+                        - paragraph [ref=e1916]: 11 DISPONIBLES
+                    - generic [ref=e1918] [cursor=pointer]:
+                      - img [ref=e1920]
+                      - generic [ref=e1923]:
+                        - paragraph [ref=e1924]: TADSTI-0
+                        - paragraph [ref=e1927]: 11 DISPONIBLES
+                    - generic [ref=e1929] [cursor=pointer]:
+                      - img [ref=e1931]
+                      - generic [ref=e1934]:
+                        - paragraph [ref=e1935]: TADSTI-0
+                        - paragraph [ref=e1938]: 11 DISPONIBLES
+                    - generic [ref=e1940] [cursor=pointer]:
+                      - img [ref=e1942]
+                      - generic [ref=e1945]:
+                        - paragraph [ref=e1946]: TADSTI-0
+                        - paragraph [ref=e1949]: 11 DISPONIBLES
+                    - generic [ref=e1951] [cursor=pointer]:
+                      - img [ref=e1953]
+                      - generic [ref=e1956]:
+                        - paragraph [ref=e1957]: TADSTI-0
+                        - paragraph [ref=e1960]: 11 DISPONIBLES
+                    - generic [ref=e1962] [cursor=pointer]:
+                      - img [ref=e1964]
+                      - generic [ref=e1967]:
+                        - paragraph [ref=e1968]: TADSTI-0
+                        - paragraph [ref=e1971]: 11 DISPONIBLES
+                    - generic [ref=e1973] [cursor=pointer]:
+                      - img [ref=e1975]
+                      - generic [ref=e1978]:
+                        - paragraph [ref=e1979]: TADSTI-0
+                        - paragraph [ref=e1982]: 11 DISPONIBLES
+                    - generic [ref=e1984] [cursor=pointer]:
+                      - img [ref=e1986]
+                      - generic [ref=e1989]:
+                        - paragraph [ref=e1990]: TADSTI-0
+                        - paragraph [ref=e1993]: 11 DISPONIBLES
+                    - generic [ref=e1995] [cursor=pointer]:
+                      - img [ref=e1997]
+                      - generic [ref=e2000]:
+                        - paragraph [ref=e2001]: TADSTI-0
+                        - paragraph [ref=e2004]: 11 DISPONIBLES
+                    - generic [ref=e2006] [cursor=pointer]:
+                      - img [ref=e2008]
+                      - generic [ref=e2011]:
+                        - paragraph [ref=e2012]: TADSTI-0
+                        - paragraph [ref=e2015]: 11 DISPONIBLES
+                    - generic [ref=e2017] [cursor=pointer]:
+                      - img [ref=e2019]
+                      - generic [ref=e2022]:
+                        - paragraph [ref=e2023]: TADSTI-0
+                        - paragraph [ref=e2026]: 11 DISPONIBLES
+                    - generic [ref=e2028] [cursor=pointer]:
+                      - img [ref=e2030]
+                      - generic [ref=e2033]:
+                        - paragraph [ref=e2034]: TADSTI-0
+                        - paragraph [ref=e2037]: 11 DISPONIBLES
+                    - generic [ref=e2039] [cursor=pointer]:
+                      - img [ref=e2041]
+                      - generic [ref=e2044]:
+                        - paragraph [ref=e2045]: TADSTI-0
+                        - paragraph [ref=e2048]: 11 DISPONIBLES
+                    - generic [ref=e2050] [cursor=pointer]:
+                      - img [ref=e2052]
+                      - generic [ref=e2055]:
+                        - paragraph [ref=e2056]: TADSTI-0
+                        - paragraph [ref=e2059]: 11 DISPONIBLES
+                    - generic [ref=e2061] [cursor=pointer]:
+                      - img [ref=e2063]
+                      - generic [ref=e2066]:
+                        - paragraph [ref=e2067]: TADSTI-0
+                        - paragraph [ref=e2070]: 11 DISPONIBLES
+                    - generic [ref=e2072] [cursor=pointer]:
+                      - img [ref=e2074]
+                      - generic [ref=e2077]:
+                        - paragraph [ref=e2078]: TADSTI-0
+                        - paragraph [ref=e2081]: 11 DISPONIBLES
+                    - generic [ref=e2083] [cursor=pointer]:
+                      - img [ref=e2085]
+                      - generic [ref=e2088]:
+                        - paragraph [ref=e2089]: TADSTI-0
+                        - paragraph [ref=e2092]: 11 DISPONIBLES
+                    - generic [ref=e2094] [cursor=pointer]:
+                      - img [ref=e2096]
+                      - generic [ref=e2099]:
+                        - paragraph [ref=e2100]: TADSTI-0
+                        - paragraph [ref=e2103]: 11 DISPONIBLES
+                    - generic [ref=e2105] [cursor=pointer]:
+                      - img [ref=e2107]
+                      - generic [ref=e2110]:
+                        - paragraph [ref=e2111]: TADSTI-0
+                        - paragraph [ref=e2114]: 11 DISPONIBLES
+                    - generic [ref=e2116] [cursor=pointer]:
+                      - img [ref=e2118]
+                      - generic [ref=e2121]:
+                        - paragraph [ref=e2122]: TADSTI-0
+                        - paragraph [ref=e2125]: 11 DISPONIBLES
+                    - generic [ref=e2127] [cursor=pointer]:
+                      - img [ref=e2129]
+                      - generic [ref=e2132]:
+                        - paragraph [ref=e2133]: TADSTI-0
+                        - paragraph [ref=e2136]: 11 DISPONIBLES
+                    - generic [ref=e2138] [cursor=pointer]:
+                      - img [ref=e2140]
+                      - generic [ref=e2143]:
+                        - paragraph [ref=e2144]: TADSTI-0
+                        - paragraph [ref=e2147]: 11 DISPONIBLES
+                    - generic [ref=e2149] [cursor=pointer]:
+                      - img [ref=e2151]
+                      - generic [ref=e2154]:
+                        - paragraph [ref=e2155]: TADSTI-0
+                        - paragraph [ref=e2158]: 11 DISPONIBLES
+                    - generic [ref=e2160] [cursor=pointer]:
+                      - img [ref=e2162]
+                      - generic [ref=e2165]:
+                        - paragraph [ref=e2166]: TADSTI-0
+                        - paragraph [ref=e2169]: 11 DISPONIBLES
+                    - generic [ref=e2171] [cursor=pointer]:
+                      - img [ref=e2173]
+                      - generic [ref=e2176]:
+                        - paragraph [ref=e2177]: TADSTI-0
+                        - paragraph [ref=e2180]: 11 DISPONIBLES
+                    - generic [ref=e2182] [cursor=pointer]:
+                      - img [ref=e2184]
+                      - generic [ref=e2187]:
+                        - paragraph [ref=e2188]: TADSTI-0
+                        - paragraph [ref=e2191]: 11 DISPONIBLES
+                    - generic [ref=e2193] [cursor=pointer]:
+                      - img [ref=e2195]
+                      - generic [ref=e2198]:
+                        - paragraph [ref=e2199]: TADSTI-0
+                        - paragraph [ref=e2202]: 11 DISPONIBLES
+                    - generic [ref=e2204] [cursor=pointer]:
+                      - img [ref=e2206]
+                      - generic [ref=e2209]:
+                        - paragraph [ref=e2210]: TADSTI-0
+                        - paragraph [ref=e2213]: 11 DISPONIBLES
+                    - generic [ref=e2215] [cursor=pointer]:
+                      - img [ref=e2217]
+                      - generic [ref=e2220]:
+                        - paragraph [ref=e2221]: TADSTI-0
+                        - paragraph [ref=e2224]: 11 DISPONIBLES
+                    - generic [ref=e2226] [cursor=pointer]:
+                      - img [ref=e2228]
+                      - generic [ref=e2231]:
+                        - paragraph [ref=e2232]: TADSTI-0
+                        - paragraph [ref=e2235]: 11 DISPONIBLES
+                    - generic [ref=e2237] [cursor=pointer]:
+                      - img [ref=e2239]
+                      - generic [ref=e2242]:
+                        - paragraph [ref=e2243]: TADSTI-0
+                        - paragraph [ref=e2246]: 11 DISPONIBLES
+                    - generic [ref=e2248] [cursor=pointer]:
+                      - img [ref=e2250]
+                      - generic [ref=e2253]:
+                        - paragraph [ref=e2254]: TADSTI-0
+                        - paragraph [ref=e2257]: 11 DISPONIBLES
+                    - generic [ref=e2259] [cursor=pointer]:
+                      - img [ref=e2261]
+                      - generic [ref=e2264]:
+                        - paragraph [ref=e2265]: TADSTI-0
+                        - paragraph [ref=e2268]: 11 DISPONIBLES
+                    - generic [ref=e2270] [cursor=pointer]:
+                      - img [ref=e2272]
+                      - generic [ref=e2275]:
+                        - paragraph [ref=e2276]: TADSTI-0
+                        - paragraph [ref=e2279]: 11 DISPONIBLES
+                    - generic [ref=e2281] [cursor=pointer]:
+                      - img [ref=e2283]
+                      - generic [ref=e2286]:
+                        - paragraph [ref=e2287]: TADSTI-0
+                        - paragraph [ref=e2290]: 11 DISPONIBLES
+                    - generic [ref=e2292] [cursor=pointer]:
+                      - img [ref=e2294]
+                      - generic [ref=e2297]:
+                        - paragraph [ref=e2298]: TADSTI-0
+                        - paragraph [ref=e2301]: 11 DISPONIBLES
+                    - generic [ref=e2303] [cursor=pointer]:
+                      - img [ref=e2305]
+                      - generic [ref=e2308]:
+                        - paragraph [ref=e2309]: TADSTI-0
+                        - paragraph [ref=e2312]: 11 DISPONIBLES
+                    - generic [ref=e2314] [cursor=pointer]:
+                      - img [ref=e2316]
+                      - generic [ref=e2319]:
+                        - paragraph [ref=e2320]: TADSTI-0
+                        - paragraph [ref=e2323]: 11 DISPONIBLES
+                    - generic [ref=e2325] [cursor=pointer]:
+                      - img [ref=e2327]
+                      - generic [ref=e2330]:
+                        - paragraph [ref=e2331]: TADSTI-0
+                        - paragraph [ref=e2334]: 11 DISPONIBLES
+                    - generic [ref=e2336] [cursor=pointer]:
+                      - img [ref=e2338]
+                      - generic [ref=e2341]:
+                        - paragraph [ref=e2342]: TADSTI-0
+                        - paragraph [ref=e2345]: 11 DISPONIBLES
+                    - generic [ref=e2347] [cursor=pointer]:
+                      - img [ref=e2349]
+                      - generic [ref=e2352]:
+                        - paragraph [ref=e2353]: TADSTI-0
+                        - paragraph [ref=e2356]: 11 DISPONIBLES
+                    - generic [ref=e2358] [cursor=pointer]:
+                      - img [ref=e2360]
+                      - generic [ref=e2363]:
+                        - paragraph [ref=e2364]: TADSTI-0
+                        - paragraph [ref=e2367]: 11 DISPONIBLES
+                    - generic [ref=e2369] [cursor=pointer]:
+                      - img [ref=e2371]
+                      - generic [ref=e2374]:
+                        - paragraph [ref=e2375]: TADSTI-0
+                        - paragraph [ref=e2378]: 11 DISPONIBLES
+                    - generic [ref=e2380] [cursor=pointer]:
+                      - img [ref=e2382]
+                      - generic [ref=e2385]:
+                        - paragraph [ref=e2386]: TADSTI-0
+                        - paragraph [ref=e2389]: 11 DISPONIBLES
+                    - generic [ref=e2391] [cursor=pointer]:
+                      - img [ref=e2393]
+                      - generic [ref=e2396]:
+                        - paragraph [ref=e2397]: TADSTI-0
+                        - paragraph [ref=e2400]: 11 DISPONIBLES
+                    - generic [ref=e2402] [cursor=pointer]:
+                      - img [ref=e2404]
+                      - generic [ref=e2407]:
+                        - paragraph [ref=e2408]: TADSTI-0
+                        - paragraph [ref=e2411]: 11 DISPONIBLES
+                    - generic [ref=e2413] [cursor=pointer]:
+                      - img [ref=e2415]
+                      - generic [ref=e2418]:
+                        - paragraph [ref=e2419]: TADSTI-0
+                        - paragraph [ref=e2422]: 11 DISPONIBLES
+                    - generic [ref=e2424] [cursor=pointer]:
+                      - img [ref=e2426]
+                      - generic [ref=e2429]:
+                        - paragraph [ref=e2430]: TADSTI-0
+                        - paragraph [ref=e2433]: 11 DISPONIBLES
+                    - generic [ref=e2435] [cursor=pointer]:
+                      - img [ref=e2437]
+                      - generic [ref=e2440]:
+                        - paragraph [ref=e2441]: TADSTI-1
+                        - paragraph [ref=e2444]: 11 DISPONIBLES
+                    - generic [ref=e2446] [cursor=pointer]:
+                      - img [ref=e2448]
+                      - generic [ref=e2451]:
+                        - paragraph [ref=e2452]: STI0006
+                        - paragraph [ref=e2455]: 10 DISPONIBLES
+                    - generic [ref=e2457] [cursor=pointer]:
+                      - img [ref=e2459]
+                      - generic [ref=e2462]:
+                        - paragraph [ref=e2463]: STI0007
+                        - paragraph [ref=e2466]: 10 DISPONIBLES
+                    - generic [ref=e2468] [cursor=pointer]:
+                      - img [ref=e2470]
+                      - generic [ref=e2473]:
+                        - paragraph [ref=e2474]: STI0004
+                        - paragraph [ref=e2477]: 10 DISPONIBLES
+                    - generic [ref=e2479] [cursor=pointer]:
+                      - img [ref=e2481]
+                      - generic [ref=e2484]:
+                        - paragraph [ref=e2485]: STI0005
+                        - paragraph [ref=e2488]: 10 DISPONIBLES
+                    - generic [ref=e2490] [cursor=pointer]:
+                      - img [ref=e2492]
+                      - generic [ref=e2495]:
+                        - paragraph [ref=e2496]: STI0052
+                        - paragraph [ref=e2499]: 11 DISPONIBLES
+                    - generic [ref=e2501] [cursor=pointer]:
+                      - img [ref=e2503]
+                      - generic [ref=e2506]:
+                        - paragraph [ref=e2507]: STI0009
+                        - paragraph [ref=e2510]: 10 DISPONIBLES
+                    - generic [ref=e2512] [cursor=pointer]:
+                      - img [ref=e2514]
+                      - generic [ref=e2517]:
+                        - paragraph [ref=e2518]: STI0010
+                        - paragraph [ref=e2521]: 10 DISPONIBLES
+                    - generic [ref=e2523] [cursor=pointer]:
+                      - img [ref=e2525]
+                      - generic [ref=e2528]:
+                        - paragraph [ref=e2529]: STI0011
+                        - paragraph [ref=e2532]: 10 DISPONIBLES
+                    - generic [ref=e2534] [cursor=pointer]:
+                      - img [ref=e2536]
+                      - generic [ref=e2539]:
+                        - paragraph [ref=e2540]: STI0012
+                        - paragraph [ref=e2543]: 10 DISPONIBLES
+                    - generic [ref=e2545] [cursor=pointer]:
+                      - img [ref=e2547]
+                      - generic [ref=e2550]:
+                        - paragraph [ref=e2551]: STI0013
+                        - paragraph [ref=e2554]: 10 DISPONIBLES
+                    - generic [ref=e2556] [cursor=pointer]:
+                      - img [ref=e2558]
+                      - generic [ref=e2561]:
+                        - paragraph [ref=e2562]: STI0014
+                        - paragraph [ref=e2565]: 10 DISPONIBLES
+                    - generic [ref=e2567] [cursor=pointer]:
+                      - img [ref=e2569]
+                      - generic [ref=e2572]:
+                        - paragraph [ref=e2573]: STI0016
+                        - paragraph [ref=e2576]: 10 DISPONIBLES
+                    - generic [ref=e2578] [cursor=pointer]:
+                      - img [ref=e2580]
+                      - generic [ref=e2583]:
+                        - paragraph [ref=e2584]: STI0017
+                        - paragraph [ref=e2587]: 10 DISPONIBLES
+                    - generic [ref=e2589] [cursor=pointer]:
+                      - img [ref=e2591]
+                      - generic [ref=e2594]:
+                        - paragraph [ref=e2595]: STI0018
+                        - paragraph [ref=e2598]: 10 DISPONIBLES
+                    - generic [ref=e2600] [cursor=pointer]:
+                      - img [ref=e2602]
+                      - generic [ref=e2605]:
+                        - paragraph [ref=e2606]: STI0019
+                        - paragraph [ref=e2609]: 10 DISPONIBLES
+                    - generic [ref=e2611] [cursor=pointer]:
+                      - img [ref=e2613]
+                      - generic [ref=e2616]:
+                        - paragraph [ref=e2617]: STI0020
+                        - paragraph [ref=e2620]: 10 DISPONIBLES
+                    - generic [ref=e2622] [cursor=pointer]:
+                      - img [ref=e2624]
+                      - generic [ref=e2627]:
+                        - paragraph [ref=e2628]: STI0021
+                        - paragraph [ref=e2631]: 10 DISPONIBLES
+                    - generic [ref=e2633] [cursor=pointer]:
+                      - img [ref=e2635]
+                      - generic [ref=e2638]:
+                        - paragraph [ref=e2639]: STI0022
+                        - paragraph [ref=e2642]: 10 DISPONIBLES
+                    - generic [ref=e2644] [cursor=pointer]:
+                      - img [ref=e2646]
+                      - generic [ref=e2649]:
+                        - paragraph [ref=e2650]: STI0023
+                        - paragraph [ref=e2653]: 10 DISPONIBLES
+                    - generic [ref=e2655] [cursor=pointer]:
+                      - img [ref=e2657]
+                      - generic [ref=e2660]:
+                        - paragraph [ref=e2661]: STI0024
+                        - paragraph [ref=e2664]: 10 DISPONIBLES
+                    - generic [ref=e2666] [cursor=pointer]:
+                      - img [ref=e2668]
+                      - generic [ref=e2671]:
+                        - paragraph [ref=e2672]: STI0025
+                        - paragraph [ref=e2675]: 10 DISPONIBLES
+                    - generic [ref=e2677] [cursor=pointer]:
+                      - img [ref=e2679]
+                      - generic [ref=e2682]:
+                        - paragraph [ref=e2683]: STI0026
+                        - paragraph [ref=e2686]: 10 DISPONIBLES
+                    - generic [ref=e2688] [cursor=pointer]:
+                      - img [ref=e2690]
+                      - generic [ref=e2693]:
+                        - paragraph [ref=e2694]: STI0027
+                        - paragraph [ref=e2697]: 10 DISPONIBLES
+                    - generic [ref=e2699] [cursor=pointer]:
+                      - img [ref=e2701]
+                      - generic [ref=e2704]:
+                        - paragraph [ref=e2705]: STI0028
+                        - paragraph [ref=e2708]: 10 DISPONIBLES
+                    - generic [ref=e2710] [cursor=pointer]:
+                      - img [ref=e2712]
+                      - generic [ref=e2715]:
+                        - paragraph [ref=e2716]: STI0029
+                        - paragraph [ref=e2719]: 10 DISPONIBLES
+                    - generic [ref=e2721] [cursor=pointer]:
+                      - img [ref=e2723]
+                      - generic [ref=e2726]:
+                        - paragraph [ref=e2727]: STI0030
+                        - paragraph [ref=e2730]: 10 DISPONIBLES
+                    - generic [ref=e2732] [cursor=pointer]:
+                      - img [ref=e2734]
+                      - generic [ref=e2737]:
+                        - paragraph [ref=e2738]: STI0031
+                        - paragraph [ref=e2741]: 11 DISPONIBLES
+                    - generic [ref=e2743] [cursor=pointer]:
+                      - img [ref=e2745]
+                      - generic [ref=e2748]:
+                        - paragraph [ref=e2749]: STI0032
+                        - paragraph [ref=e2752]: 11 DISPONIBLES
+                    - generic [ref=e2754] [cursor=pointer]:
+                      - img [ref=e2756]
+                      - generic [ref=e2759]:
+                        - paragraph [ref=e2760]: STI0034
+                        - paragraph [ref=e2763]: 11 DISPONIBLES
+                    - generic [ref=e2765] [cursor=pointer]:
+                      - img [ref=e2767]
+                      - generic [ref=e2770]:
+                        - paragraph [ref=e2771]: STI0035
+                        - paragraph [ref=e2774]: 11 DISPONIBLES
+                    - generic [ref=e2776] [cursor=pointer]:
+                      - img [ref=e2778]
+                      - generic [ref=e2781]:
+                        - paragraph [ref=e2782]: STI0036
+                        - paragraph [ref=e2785]: 11 DISPONIBLES
+                    - generic [ref=e2787] [cursor=pointer]:
+                      - img [ref=e2789]
+                      - generic [ref=e2792]:
+                        - paragraph [ref=e2793]: STI0037
+                        - paragraph [ref=e2796]: 11 DISPONIBLES
+                    - generic [ref=e2798] [cursor=pointer]:
+                      - img [ref=e2800]
+                      - generic [ref=e2803]:
+                        - paragraph [ref=e2804]: STI0038
+                        - paragraph [ref=e2807]: 11 DISPONIBLES
+                    - generic [ref=e2809] [cursor=pointer]:
+                      - img [ref=e2811]
+                      - generic [ref=e2814]:
+                        - paragraph [ref=e2815]: STI0039
+                        - paragraph [ref=e2818]: 11 DISPONIBLES
+                    - generic [ref=e2820] [cursor=pointer]:
+                      - img [ref=e2822]
+                      - generic [ref=e2825]:
+                        - paragraph [ref=e2826]: STI0040
+                        - paragraph [ref=e2829]: 11 DISPONIBLES
+                    - generic [ref=e2831] [cursor=pointer]:
+                      - img [ref=e2833]
+                      - generic [ref=e2836]:
+                        - paragraph [ref=e2837]: STI0041
+                        - paragraph [ref=e2840]: 11 DISPONIBLES
+                    - generic [ref=e2842] [cursor=pointer]:
+                      - img [ref=e2844]
+                      - generic [ref=e2847]:
+                        - paragraph [ref=e2848]: STI0042
+                        - paragraph [ref=e2851]: 11 DISPONIBLES
+                    - generic [ref=e2853] [cursor=pointer]:
+                      - img [ref=e2855]
+                      - generic [ref=e2858]:
+                        - paragraph [ref=e2859]: STI0043
+                        - paragraph [ref=e2862]: 11 DISPONIBLES
+                    - generic [ref=e2864] [cursor=pointer]:
+                      - img [ref=e2866]
+                      - generic [ref=e2869]:
+                        - paragraph [ref=e2870]: STI0044
+                        - paragraph [ref=e2873]: 11 DISPONIBLES
+                    - generic [ref=e2875] [cursor=pointer]:
+                      - img [ref=e2877]
+                      - generic [ref=e2880]:
+                        - paragraph [ref=e2881]: STI0045
+                        - paragraph [ref=e2884]: 11 DISPONIBLES
+                    - generic [ref=e2886] [cursor=pointer]:
+                      - img [ref=e2888]
+                      - generic [ref=e2891]:
+                        - paragraph [ref=e2892]: STI0046
+                        - paragraph [ref=e2895]: 11 DISPONIBLES
+                    - generic [ref=e2897] [cursor=pointer]:
+                      - img [ref=e2899]
+                      - generic [ref=e2902]:
+                        - paragraph [ref=e2903]: STI0048
+                        - paragraph [ref=e2906]: 11 DISPONIBLES
+                    - generic [ref=e2908] [cursor=pointer]:
+                      - img [ref=e2910]
+                      - generic [ref=e2913]:
+                        - paragraph [ref=e2914]: STI0049
+                        - paragraph [ref=e2917]: 11 DISPONIBLES
+                    - generic [ref=e2919] [cursor=pointer]:
+                      - img [ref=e2921]
+                      - generic [ref=e2924]:
+                        - paragraph [ref=e2925]: STI0050
+                        - paragraph [ref=e2928]: 11 DISPONIBLES
+                    - generic [ref=e2930] [cursor=pointer]:
+                      - img [ref=e2932]
+                      - generic [ref=e2935]:
+                        - paragraph [ref=e2936]: STI0051
+                        - paragraph [ref=e2939]: 11 DISPONIBLES
+                    - generic [ref=e2941] [cursor=pointer]:
+                      - img [ref=e2943]
+                      - generic [ref=e2946]:
+                        - paragraph [ref=e2947]: STI0053
+                        - paragraph [ref=e2950]: 11 DISPONIBLES
+                    - generic [ref=e2952] [cursor=pointer]:
+                      - img [ref=e2954]
+                      - generic [ref=e2957]:
+                        - paragraph [ref=e2958]: STI0054
+                        - paragraph [ref=e2961]: 11 DISPONIBLES
+                    - generic [ref=e2963] [cursor=pointer]:
+                      - img [ref=e2965]
+                      - generic [ref=e2968]:
+                        - paragraph [ref=e2969]: STI0055
+                        - paragraph [ref=e2972]: 11 DISPONIBLES
+                    - generic [ref=e2974] [cursor=pointer]:
+                      - img [ref=e2976]
+                      - generic [ref=e2979]:
+                        - paragraph [ref=e2980]: STI0056
+                        - paragraph [ref=e2983]: 11 DISPONIBLES
+                    - generic [ref=e2985] [cursor=pointer]:
+                      - img [ref=e2987]
+                      - generic [ref=e2990]:
+                        - paragraph [ref=e2991]: STI0057
+                        - paragraph [ref=e2994]: 11 DISPONIBLES
+                    - generic [ref=e2996] [cursor=pointer]:
+                      - img [ref=e2998]
+                      - generic [ref=e3001]:
+                        - paragraph [ref=e3002]: STI0058
+                        - paragraph [ref=e3005]: 11 DISPONIBLES
+                    - generic [ref=e3007] [cursor=pointer]:
+                      - img [ref=e3009]
+                      - generic [ref=e3012]:
+                        - paragraph [ref=e3013]: STI0059
+                        - paragraph [ref=e3016]: 11 DISPONIBLES
+                    - generic [ref=e3018] [cursor=pointer]:
+                      - img [ref=e3020]
+                      - generic [ref=e3023]:
+                        - paragraph [ref=e3024]: STI0060
+                        - paragraph [ref=e3027]: 11 DISPONIBLES
+                    - generic [ref=e3029] [cursor=pointer]:
+                      - img [ref=e3031]
+                      - generic [ref=e3034]:
+                        - paragraph [ref=e3035]: STI0061
+                        - paragraph [ref=e3038]: 11 DISPONIBLES
+                    - generic [ref=e3040] [cursor=pointer]:
+                      - img [ref=e3042]
+                      - generic [ref=e3045]:
+                        - paragraph [ref=e3046]: STI0062
+                        - paragraph [ref=e3049]: 11 DISPONIBLES
+                    - generic [ref=e3051] [cursor=pointer]:
+                      - img [ref=e3053]
+                      - generic [ref=e3056]:
+                        - paragraph [ref=e3057]: STI0063
+                        - paragraph [ref=e3060]: 11 DISPONIBLES
+                    - generic [ref=e3062] [cursor=pointer]:
+                      - img [ref=e3064]
+                      - generic [ref=e3067]:
+                        - paragraph [ref=e3068]: STI0064
+                        - paragraph [ref=e3071]: 11 DISPONIBLES
+                    - generic [ref=e3073] [cursor=pointer]:
+                      - img [ref=e3075]
+                      - generic [ref=e3078]:
+                        - paragraph [ref=e3079]: STI0065
+                        - paragraph [ref=e3082]: 11 DISPONIBLES
+                    - generic [ref=e3084] [cursor=pointer]:
+                      - img [ref=e3086]
+                      - generic [ref=e3089]:
+                        - paragraph [ref=e3090]: STI0066
+                        - paragraph [ref=e3093]: 11 DISPONIBLES
+                    - generic [ref=e3095] [cursor=pointer]:
+                      - img [ref=e3097]
+                      - generic [ref=e3100]:
+                        - paragraph [ref=e3101]: STI0067
+                        - paragraph [ref=e3104]: 11 DISPONIBLES
+                    - generic [ref=e3106] [cursor=pointer]:
+                      - img [ref=e3108]
+                      - generic [ref=e3111]:
+                        - paragraph [ref=e3112]: STI0068
+                        - paragraph [ref=e3115]: 11 DISPONIBLES
+                    - generic [ref=e3117] [cursor=pointer]:
+                      - img [ref=e3119]
+                      - generic [ref=e3122]:
+                        - paragraph [ref=e3123]: STI0069
+                        - paragraph [ref=e3126]: 11 DISPONIBLES
+                    - generic [ref=e3128] [cursor=pointer]:
+                      - img [ref=e3130]
+                      - generic [ref=e3133]:
+                        - paragraph [ref=e3134]: STI0070
+                        - paragraph [ref=e3137]: 11 DISPONIBLES
+                    - generic [ref=e3139] [cursor=pointer]:
+                      - img [ref=e3141]
+                      - generic [ref=e3144]:
+                        - paragraph [ref=e3145]: STI0071
+                        - paragraph [ref=e3148]: 11 DISPONIBLES
+                    - generic [ref=e3150] [cursor=pointer]:
+                      - img [ref=e3152]
+                      - generic [ref=e3155]:
+                        - paragraph [ref=e3156]: STI0072
+                        - paragraph [ref=e3159]: 11 DISPONIBLES
+                    - generic [ref=e3161] [cursor=pointer]:
+                      - img [ref=e3163]
+                      - generic [ref=e3166]:
+                        - paragraph [ref=e3167]: STI0073
+                        - paragraph [ref=e3170]: 11 DISPONIBLES
+                    - generic [ref=e3172] [cursor=pointer]:
+                      - img [ref=e3174]
+                      - generic [ref=e3177]:
+                        - paragraph [ref=e3178]: STI0074
+                        - paragraph [ref=e3181]: 11 DISPONIBLES
+                    - generic [ref=e3183] [cursor=pointer]:
+                      - img [ref=e3185]
+                      - generic [ref=e3188]:
+                        - paragraph [ref=e3189]: STI0075
+                        - paragraph [ref=e3192]: 11 DISPONIBLES
+                    - generic [ref=e3194] [cursor=pointer]:
+                      - img [ref=e3196]
+                      - generic [ref=e3199]:
+                        - paragraph [ref=e3200]: STI0076
+                        - paragraph [ref=e3203]: 11 DISPONIBLES
+                    - generic [ref=e3205] [cursor=pointer]:
+                      - img [ref=e3207]
+                      - generic [ref=e3210]:
+                        - paragraph [ref=e3211]: STI0077
+                        - paragraph [ref=e3214]: 11 DISPONIBLES
+                    - generic [ref=e3216] [cursor=pointer]:
+                      - img [ref=e3218]
+                      - generic [ref=e3221]:
+                        - paragraph [ref=e3222]: STI0078
+                        - paragraph [ref=e3225]: 11 DISPONIBLES
+                    - generic [ref=e3227] [cursor=pointer]:
+                      - img [ref=e3229]
+                      - generic [ref=e3232]:
+                        - paragraph [ref=e3233]: STI0079
+                        - paragraph [ref=e3236]: 11 DISPONIBLES
+                    - generic [ref=e3238] [cursor=pointer]:
+                      - img [ref=e3240]
+                      - generic [ref=e3243]:
+                        - paragraph [ref=e3244]: STI0080
+                        - paragraph [ref=e3247]: 11 DISPONIBLES
+                    - generic [ref=e3249] [cursor=pointer]:
+                      - img [ref=e3251]
+                      - generic [ref=e3254]:
+                        - paragraph [ref=e3255]: STI0081
+                        - paragraph [ref=e3258]: 11 DISPONIBLES
+                    - generic [ref=e3260] [cursor=pointer]:
+                      - img [ref=e3262]
+                      - generic [ref=e3265]:
+                        - paragraph [ref=e3266]: STI0082
+                        - paragraph [ref=e3269]: 11 DISPONIBLES
+                    - generic [ref=e3271] [cursor=pointer]:
+                      - img [ref=e3273]
+                      - generic [ref=e3276]:
+                        - paragraph [ref=e3277]: STI0083
+                        - paragraph [ref=e3280]: 11 DISPONIBLES
+                    - generic [ref=e3282] [cursor=pointer]:
+                      - img [ref=e3284]
+                      - generic [ref=e3287]:
+                        - paragraph [ref=e3288]: STI0084
+                        - paragraph [ref=e3291]: 11 DISPONIBLES
+                    - generic [ref=e3293] [cursor=pointer]:
+                      - img [ref=e3295]
+                      - generic [ref=e3298]:
+                        - paragraph [ref=e3299]: STI0085
+                        - paragraph [ref=e3302]: 11 DISPONIBLES
+                    - generic [ref=e3304] [cursor=pointer]:
+                      - img [ref=e3306]
+                      - generic [ref=e3309]:
+                        - paragraph [ref=e3310]: STI0086
+                        - paragraph [ref=e3313]: 11 DISPONIBLES
+                    - generic [ref=e3315] [cursor=pointer]:
+                      - img [ref=e3317]
+                      - generic [ref=e3320]:
+                        - paragraph [ref=e3321]: STI0087
+                        - paragraph [ref=e3324]: 11 DISPONIBLES
+                    - generic [ref=e3326] [cursor=pointer]:
+                      - img [ref=e3328]
+                      - generic [ref=e3331]:
+                        - paragraph [ref=e3332]: STI0088
+                        - paragraph [ref=e3335]: 11 DISPONIBLES
+                    - generic [ref=e3337] [cursor=pointer]:
+                      - img [ref=e3339]
+                      - generic [ref=e3342]:
+                        - paragraph [ref=e3343]: STI0089
+                        - paragraph [ref=e3346]: 11 DISPONIBLES
+                    - generic [ref=e3348] [cursor=pointer]:
+                      - img [ref=e3350]
+                      - generic [ref=e3353]:
+                        - paragraph [ref=e3354]: STI0090
+                        - paragraph [ref=e3357]: 11 DISPONIBLES
+                    - generic [ref=e3359] [cursor=pointer]:
+                      - img [ref=e3361]
+                      - generic [ref=e3364]:
+                        - paragraph [ref=e3365]: STI0091
+                        - paragraph [ref=e3368]: 11 DISPONIBLES
+                    - generic [ref=e3370] [cursor=pointer]:
+                      - img [ref=e3372]
+                      - generic [ref=e3375]:
+                        - paragraph [ref=e3376]: STI0092
+                        - paragraph [ref=e3379]: 11 DISPONIBLES
+                    - generic [ref=e3381] [cursor=pointer]:
+                      - img [ref=e3383]
+                      - generic [ref=e3386]:
+                        - paragraph [ref=e3387]: STI0094
+                        - paragraph [ref=e3390]: 11 DISPONIBLES
+                    - generic [ref=e3392] [cursor=pointer]:
+                      - img [ref=e3394]
+                      - generic [ref=e3397]:
+                        - paragraph [ref=e3398]: STI0095
+                        - paragraph [ref=e3401]: 11 DISPONIBLES
+                    - generic [ref=e3403] [cursor=pointer]:
+                      - img [ref=e3405]
+                      - generic [ref=e3408]:
+                        - paragraph [ref=e3409]: STI0096
+                        - paragraph [ref=e3412]: 11 DISPONIBLES
+                    - generic [ref=e3414] [cursor=pointer]:
+                      - img [ref=e3416]
+                      - generic [ref=e3419]:
+                        - paragraph [ref=e3420]: STI0097
+                        - paragraph [ref=e3423]: 11 DISPONIBLES
+                    - generic [ref=e3425] [cursor=pointer]:
+                      - img [ref=e3427]
+                      - generic [ref=e3430]:
+                        - paragraph [ref=e3431]: STI0098
+                        - paragraph [ref=e3434]: 11 DISPONIBLES
+                    - generic [ref=e3436] [cursor=pointer]:
+                      - img [ref=e3438]
+                      - generic [ref=e3441]:
+                        - paragraph [ref=e3442]: STI0099
+                        - paragraph [ref=e3445]: 11 DISPONIBLES
+                    - generic [ref=e3447] [cursor=pointer]:
+                      - img [ref=e3449]
+                      - generic [ref=e3452]:
+                        - paragraph [ref=e3453]: STI0100
+                        - paragraph [ref=e3456]: 11 DISPONIBLES
+                - generic [ref=e3457]:
+                  - button "INICIAR PROTOCOLO DE INGESTA" [disabled] [ref=e3458]:
+                    - img [ref=e3459]
+                    - text: INICIAR PROTOCOLO DE INGESTA
+                  - paragraph [ref=e3462]: Al ejecutar el protocolo, el activo será verificado y propagado a los pantallas de red seleccionados automáticamente.
+          - generic [ref=e3463]:
+            - generic [ref=e3464]:
+              - img [ref=e3465]
+              - paragraph [ref=e3467]: TAD NODE OS v4.5.1 STABLE
+            - generic [ref=e3468]:
+              - paragraph [ref=e3469]: "ECOSYSTEM REVISION: 04"
+              - paragraph [ref=e3470]: © 2026 TECHNOLOGY ASSET DEPLOYMENT
+    - region "Notifications alt+T"
+  - alert [ref=e3471]
+```

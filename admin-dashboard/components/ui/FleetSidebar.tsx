@@ -31,32 +31,31 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-700 bg-black/60 backdrop-blur-3xl">
-      {/* Sidebar Header Section - Improved Contrast */}
-      <div className="p-8 border-b border-white/5 relative bg-gradient-to-br from-black to-zinc-950/20">
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-700 bg-[#0a0a0a]/95 backdrop-blur-2xl border-l border-white/[0.05]">
+      <div className="p-8 border-b border-white/[0.05] relative bg-gradient-to-br from-[#0c0c0c] to-black">
         <div className="flex items-start justify-between mb-8">
-           <div>
-              <p className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.4em] mb-1">Telemetry Monitor</p>
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter">
-                Control <span className="opacity-40">de Flota</span>
+           <div className="flex flex-col">
+              <span className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.5em] mb-2 leading-none">Telemetry Monitor</span>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-tad-yellow rounded-full shadow-[0_0_15px_rgba(250,212,0,0.4)]" />
+                Control <span className="text-zinc-600 font-bold">de Flota</span>
               </h3>
            </div>
            <button 
              onClick={onClose} 
              title="Cerrar Panel"
-             className="w-10 h-10 rounded-2xl bg-zinc-900/50 border border-white/5 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all active:scale-95"
+             className="w-12 h-12 rounded-2xl bg-zinc-900/40 border border-white/10 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all active:scale-95 group flex items-center justify-center shadow-xl"
            >
-              <X className="w-5 h-5 mx-auto" />
+              <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
            </button>
         </div>
 
-        {/* Search Input - Clean Geometry */}
         <div className="relative group mb-6">
-           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within:text-tad-yellow transition-colors" />
+           <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-all duration-300" />
            <input 
               type="search" 
               placeholder="IDENTIFICADOR O UNIDAD..." 
-              className="w-full bg-black/40 border border-white/5 focus:border-tad-yellow/40 rounded-2xl py-4 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest text-white outline-none placeholder:text-zinc-800 transition-all backdrop-blur-md shadow-inner"
+              className="w-full bg-black/60 border border-white/10 focus:border-tad-yellow/40 focus:ring-0 rounded-2xl py-5 pl-14 pr-6 text-[10px] font-black uppercase tracking-widest text-white outline-none placeholder:text-zinc-700 transition-all backdrop-blur-md shadow-2xl"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
            />
@@ -119,15 +118,19 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
         ))}
       </div>
 
-      {/* Footer System Status */}
-      <div className="p-8 bg-black/40 border-t border-white/5 flex items-center justify-between">
+      <div className="p-8 bg-black/60 border-t border-white/10 flex items-center justify-between backdrop-blur-3xl shadow-[0_-20px_40px_rgba(0,0,0,0.4)]">
          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Telemetry Active</span>
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_#10b981]" />
+            <div className="flex flex-col">
+               <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] leading-none mb-1">Telemetry Active</span>
+               <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Global Link OK</span>
+            </div>
          </div>
-         <p className="text-[10px] font-black text-white uppercase tracking-tighter">
-            {vehicles.length} <span className="text-zinc-700 ml-1 tracking-[0.2em]">UNIDADES</span>
-         </p>
+         <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            <p className="text-[11px] font-black text-white uppercase tracking-tighter">
+               {vehicles.length} <span className="text-tad-yellow ml-1 tracking-widest">UNIDADES</span>
+            </p>
+         </div>
       </div>
     </div>
   );
@@ -137,8 +140,10 @@ const FilterBtn = ({ active, onClick, label, count, color, icon }: any) => (
   <button 
     onClick={onClick}
     className={clsx(
-      "shrink-0 px-4 py-2.5 rounded-2xl border transition-all flex items-center gap-2.5 outline-none active:scale-95",
-      active ? "bg-tad-yellow border-tad-yellow text-black shadow-lg" : "bg-black/40 border-white/5 text-zinc-600 hover:border-white/10 hover:text-white"
+      "shrink-0 px-5 py-3 rounded-2xl border transition-all flex items-center gap-3 outline-none active:scale-95 shadow-lg relative group",
+      active 
+        ? "bg-tad-yellow border-tad-yellow text-black shadow-[0_8px_20px_rgba(250,212,0,0.15)] z-10" 
+        : "bg-[#111111] border-white/5 text-zinc-600 hover:border-white/20 hover:text-white"
     )}
   >
     <div className={clsx("transition-colors", active ? "opacity-100" : color ? "opacity-100 " + color : "opacity-30")}>{icon}</div>

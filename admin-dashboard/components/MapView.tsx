@@ -28,6 +28,14 @@ const COLORS: Record<string, string> = {
   unpaid:  '#ef4444',
 };
 
+// Coordenadas aproximadas del Polígono Central de Santo Domingo
+const POLIGONO_CENTRAL: [number, number][] = [
+  [18.4868, -69.9452], // Noroeste (Kennedy con Lincoln)
+  [18.4900, -69.9200], // Noreste (Kennedy con Gomez)
+  [18.4650, -69.9150], // Sureste (27 con Gomez)
+  [18.4630, -69.9400], // Suroeste (27 con Lincoln)
+];
+
 // label = taxi number e.g. "T-01", trimmed to fit
 const createIcon = (status: string, selected: boolean, label = '') => {
   const fill   = COLORS[status] || COLORS.offline;
@@ -146,6 +154,21 @@ function MapController({ center, zoom, onMapClick }: { center: [number, number];
   return null;
 }
 
+function GeofenceLayer() {
+  return (
+    <Polyline
+      positions={[...POLIGONO_CENTRAL, POLIGONO_CENTRAL[0]]}
+      pathOptions={{
+        color: '#fad400',
+        weight: 1,
+        dashArray: '10, 10',
+        fillColor: '#fad400',
+        fillOpacity: 0.03,
+      }}
+    />
+  );
+}
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -195,6 +218,9 @@ const MapView: React.FC<MapViewProps> = ({
 
         <ZoomControl position="bottomright" />
         <MapController center={center} zoom={zoom} onMapClick={handleClear} />
+        
+        {/* GEOFENCE LAYER — Cobertura Oficial */}
+        <GeofenceLayer />
 
         {/* TRAIL — shown when vehicle is selected */}
         {selectedId && trail.length > 0 && (

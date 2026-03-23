@@ -1,6 +1,5 @@
 import QRCode from 'qrcode';
 import { EventQueue } from '../storage/event-queue';
-import { sendPlaybackEvent } from '../api/playback';
 import { VideoCache } from '../storage/video-cache';
 
 export interface VideoAsset {
@@ -16,7 +15,6 @@ export interface VideoAsset {
 export class VideoEngine {
   private player: HTMLVideoElement | null;
   private qrContainer: HTMLElement | null;
-  private qrImageElement: HTMLImageElement | null;
   private playlist: VideoAsset[] = [];
   private currentIndex = 0;
   private deviceId: string;
@@ -32,7 +30,6 @@ export class VideoEngine {
     this.deviceId = deviceId;
     this.player = document.querySelector('#tad-player');
     this.qrContainer = document.querySelector('#qr-container');
-    this.qrImageElement = document.querySelector('#qr-code') as HTMLImageElement;
     
     // Intermission Elements
     this.intermissionScreen = document.querySelector('#intermission-screen');
@@ -150,11 +147,12 @@ export class VideoEngine {
       timestamp: new Date().toISOString()
     };
 
+    // TAREA GPS_001: Siempre encolar para permitir Batching
+    EventQueue.saveToQueue(payload);
+    
+    // Si hay red, intentar flush inmediato (batch)
     if (navigator.onLine) {
-      const ok = await sendPlaybackEvent(payload);
-      if (!ok) EventQueue.saveToQueue(payload);
-    } else {
-      EventQueue.saveToQueue(payload);
+      EventQueue.flushQueue();
     }
   }
 

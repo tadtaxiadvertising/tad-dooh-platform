@@ -6,19 +6,20 @@ export interface PlaybackEvent {
   timestamp: string;
 }
 
-export async function sendPlaybackEvent(event: PlaybackEvent): Promise<boolean> {
+export async function sendPlaybackBatch(events: PlaybackEvent[]): Promise<boolean> {
+  if (events.length === 0) return true;
   try {
-    const res = await fetch(`${API_URL}/device/playback`, {
+    const res = await fetch(`${API_URL}/device/playback/batch`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(event),
+      body: JSON.stringify({ events }),
     });
 
     return res.ok;
   } catch (error) {
-    console.error("Playback Event Error:", error);
+    console.error("Playback Batch Error:", error);
     return false;
   }
 }

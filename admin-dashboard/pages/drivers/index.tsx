@@ -45,6 +45,26 @@ export default function DriversPage() {
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'blocked' | 'unpaid'>('all');
+
+  // Recuperar filtros guardados al montar el componente
+  useEffect(() => {
+    const savedSearch = localStorage.getItem('tad_drivers_search');
+    const savedFilter = localStorage.getItem('tad_drivers_filter');
+    if (savedSearch) setSearch(savedSearch);
+    if (savedFilter) setFilter(savedFilter as any);
+  }, []);
+
+  // Persistir cambios en filtros
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    localStorage.setItem('tad_drivers_search', val);
+  };
+
+  const handleFilterChange = (val: 'all' | 'active' | 'blocked' | 'unpaid') => {
+    setFilter(val);
+    localStorage.setItem('tad_drivers_filter', val);
+  };
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -189,14 +209,14 @@ export default function DriversPage() {
                 placeholder="BUSCAR SOCIOS, PLACAS O PANTALLAS..."
                 className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <div className="flex p-1 bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner overflow-x-auto">
               {(['all', 'active', 'blocked', 'unpaid'] as const).map((f) => (
                 <button
                   key={f}
-                  onClick={() => setFilter(f)}
+                onClick={() => handleFilterChange(f)}
                   className={clsx(
                     "px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     filter === f 

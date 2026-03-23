@@ -78,9 +78,7 @@ export default function Home() {
     }
   }, []);
 
-  useTabSync('DEVICES', loadData);
-  useTabSync('CAMPAIGNS', loadData);
-  useTabSync('MEDIA', loadData);
+  useTabSync(['DEVICES', 'CAMPAIGNS', 'MEDIA', 'CONDUCTORES', 'FINANCE'], loadData);
 
   useEffect(() => {
     setMounted(true);

@@ -133,8 +133,11 @@ export default function MediaPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'video/mp4') {
-      toast.warning('Solo se permiten archivos de video en formato MP4.');
+    if (file.type !== 'video/mp4' && file.type !== 'video/webm') {
+      toast.error('ACCESO DENEGADO: Solo se permiten archivos de video en formato MP4 o WEBM.', {
+        style: { background: '#111', color: '#ef4444', border: '1px solid #ef4444' },
+        icon: <AlertTriangle className="w-4 h-4" />
+      });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -302,7 +305,14 @@ export default function MediaPage() {
       {/* Media Inventory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
         {loading ? (
-          [1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-gray-800/40 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/50" />)
+          Array.from({ length: 8 }).map(i => (
+            <div key={i} className="h-64 bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/30 flex flex-col p-5 gap-4 shadow-inner">
+               <div className="aspect-video bg-gray-700/20 rounded-2xl w-full" />
+               <div className="h-4 bg-gray-700/20 rounded-full w-3/4" />
+               <div className="h-3 bg-gray-700/10 rounded-full w-1/2" />
+               <div className="mt-auto h-8 bg-gray-700/10 rounded-xl w-full" />
+            </div>
+          ))
         ) : media.length > 0 ? (
           media.map((file, idx) => {
             const linkedCampaigns = getLinkedCampaigns(file.id);

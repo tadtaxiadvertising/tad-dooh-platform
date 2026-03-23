@@ -84,14 +84,20 @@ export default function Home() {
 
       {/* Primary Metrics Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {[
-          { icon: <CarFront className="w-5 h-5" />, label: "Pantallas Activos", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
-          { icon: <Megaphone className="w-5 h-5" />, label: "Campañas", value: stats.campaigns, sub: `${stats.activeCampaigns} Streams`, trend: "Live", color: "white" },
-          { icon: <CloudUpload className="w-5 h-5" />, label: "Archivos", value: stats.media, sub: "Optimizados", trend: "Sync", color: "yellow" },
-          { icon: <Zap className="w-5 h-5" />, label: "Escaneos QR", value: stats.totalScans.toLocaleString(), sub: `${stats.ctr.toFixed(2)}% CTR`, trend: "Conversion", color: "white" }
-        ].map((s, i) => (
-          <StatsCard key={i} {...s} delay={i * 50} />
-        ))}
+        {loading ? (
+             Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[180px] bg-white/5 rounded-[24px] animate-pulse border border-white/5" />
+             ))
+        ) : (
+          [
+            { icon: <CarFront className="w-5 h-5" />, label: "Pantallas Activas", value: stats.devices, sub: `${stats.online} Online`, trend: "Secure", color: "yellow" },
+            { icon: <Megaphone className="w-5 h-5" />, label: "Campañas", value: stats.campaigns, sub: `${stats.activeCampaigns} Streams`, trend: "Live", color: "white" },
+            { icon: <CloudUpload className="w-5 h-5" />, label: "Archivos", value: stats.media, sub: "Optimizados", trend: "Sync", color: "yellow" },
+            { icon: <Zap className="w-5 h-5" />, label: "Escaneos QR", value: stats.totalScans.toLocaleString(), sub: `${stats.ctr.toFixed(2)}% CTR`, trend: "Conversion", color: "white" }
+          ].map((s, i) => (
+            <StatsCard key={i} {...s} delay={i * 50} />
+          ))
+        )}
       </div>
 
       {error && (

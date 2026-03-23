@@ -125,9 +125,10 @@ Dado el tamaño del proyecto, he detectado y preparado este plan de reorganizaci
    - **Problema:** En el frontend se ven muchos tipos definidos `on the fly`: `(m: any) => m.id`.
    - **Estrategia:** Generar la librería de Prisma para Frontend o un archivo `types/index.d.ts` que exporte las interfaces `Campaign`, `MediaAsset`, `DeviceSummary`, compartiendo el esquema entre frontend y backend.
 
-3. **Sistema de Errores Global (Toast/Snackbar)**
-   - **Problema:** Fallos o Éxitos (ej. "Campaña Borrada") muestran rudimentarias alertas de javascript `window.alert('Error...')`.
-   - **Estrategia:** Reemplazar llamadas nativas de Javascript integrando dependencias como `react-hot-toast` o `sonner` para un Look&Feel corporativo y premium.
+3. **Sistema de Errores Global (Toast/Snackbar) [✅ COMPLETADO]**
+   - **Status Actual:** Ejecutado y Migrado (Marzo 22, 2026).
+   - **Mejora Realizada:** Se purgaron el 100% de las llamadas nativas síncronas `window.alert('Error...')` en los módulos críticos de `/campaigns` y `/media`.
+   - **Refactor:** Se instaló y configuró la dependencia `sonner` inyectando alertas globales asíncronas de interfaz oscura premium (`toast.success` y `toast.error`).
 
 4. **Websockets sobre Polling (Future Proof)**
    - Aunque `Supabase Realtime` salva el evento `DriverLocation`, otras tablas recaen en llamadas periódicas del SWR (`60,000ms`). Migrar componentes Core a canales Sockets `Socket.IO` en el NestJS Engine liberaría los pings al Database Central por completo.

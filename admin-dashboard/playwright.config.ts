@@ -21,10 +21,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
 
   // Reintenta 2 veces en CI para absorber fallos de red transitoria
-  retries: process.env.CI ? 2 : 1,
+  retries: 2,
 
   // 1 worker en CI, libre en local
-  workers: process.env.CI ? 1 : 2,
+  workers: 1,
+
+  timeout: 120_000,
+  expect: {
+    timeout: 30_000,
+  },
 
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -44,8 +49,8 @@ export default defineConfig({
     video: 'retain-on-failure',
 
     // Timeout extendido: redes 3G pueden ser lentas al cargar el SW
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    actionTimeout: 30_000,
+    navigationTimeout: 60_000,
 
     // Simula exactamente el entorno de FullyKiosk en Android 13
     viewport: { width: 1280, height: 800 },

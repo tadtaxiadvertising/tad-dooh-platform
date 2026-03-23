@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from './AuthProvider';
 import NotificationCenter from './NotificationCenter';
+import { TADLogo } from './ui/TADLogo';
 
 const NAVIGATION_GROUPS = [
   {
@@ -75,21 +76,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
            "px-6 mb-10 w-full flex items-center transition-all duration-500", 
            isCollapsed ? "justify-center" : "justify-between"
         )}>
-          <div className="flex items-center gap-4 group">
-            <div 
-               onClick={() => setIsCollapsed(!isCollapsed)}
-               className={clsx(
-                 "p-2.5 bg-tad-yellow rounded-xl shadow-[0_0_25px_rgba(255,212,0,0.15)] group-hover:shadow-[0_0_35px_rgba(255,212,0,0.25)] transition-all duration-500 shrink-0 cursor-pointer lg:hover:scale-105",
-                 isCollapsed ? "scale-100" : ""
-               )}
-            >
-              <Zap className="w-5 h-5 text-black fill-current" />
-            </div>
-            <div className={clsx("transition-all duration-300 overflow-hidden whitespace-nowrap", isCollapsed ? "opacity-0 w-0 hidden lg:block" : "opacity-100 w-auto")}>
-              <h1 className="text-xl font-bold tracking-tight text-white uppercase leading-none">
-                TAD <span className="text-tad-yellow">Node</span>
-              </h1>
-              <p className="text-[9px] text-zinc-500 font-bold tracking-[0.3em] mt-1.5 uppercase transition-colors group-hover:text-zinc-400">Master Console</p>
+          <div className="flex items-center group cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
+            <div className={clsx("transition-all duration-500", isCollapsed ? "flex justify-center w-full" : "ml-2")}>
+               <TADLogo className={clsx("transition-all duration-500", isCollapsed ? "h-10" : "h-14")} showText={!isCollapsed} />
             </div>
           </div>
           

@@ -129,8 +129,17 @@ export class VideoEngine {
     if (this.qrContainer) this.qrContainer.style.display = 'none';
 
     try {
-      const localObjectURL = await VideoCache.getVideoSource(currentVideo.url);
-      this.player.src = localObjectURL;
+      // TAREA SW_001 & SW_004: 
+      // 1. Obtener fuente (Caché local si existe)
+      const sourceURL = await VideoCache.getVideoSource(currentVideo.url);
+      
+      // 2. Limpieza de memoria (Revocar Blob URL anterior para evitar leaks en RAM)
+      const oldSrc = this.player.src;
+      if (oldSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(oldSrc);
+      }
+
+      this.player.src = sourceURL;
       await this.player.play();
       this.playerStatus = "playing";
       this.resetWatchdog();

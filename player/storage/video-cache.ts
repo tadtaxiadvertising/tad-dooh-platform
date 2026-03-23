@@ -3,64 +3,76 @@ const CACHE_NAME = 'tad-dooh-campaign-v1';
 export class VideoCache {
   
   /**
-   * Caches video blob chunks into the Browser's persistent Cache Storage. 
-   * Useful for loading video elements explicitly offline seamlessly with >50MB limitations overridden.
+   * Caches video assets into the Browser's persistent Cache Storage. 
+   * Pre-fetches all videos when a new campaign is received.
    */
   static async cacheVideos(videos: { id: string; url: string; duration: number }[]): Promise<boolean> {
     try {
       if (!('caches' in window)) {
-        console.warn('Cache API not supported in this browser. Offline playback may not work.');
+        console.warn('Cache API not supported in this browser.');
         return false;
       }
 
       const cache = await caches.open(CACHE_NAME);
-      const existingReqs = await cache.keys();
-      
+      const keys = await cache.keys();
       const newUrls = videos.map(v => v.url);
-      
-      // Delete obsolete videos not part of the active campaign sync payload
-      for (const req of existingReqs) {
-        if (!newUrls.includes(req.url)) {
-          await cache.delete(req);
+
+      // 1. Cleanup: Remove videos that are NO LONGER in the playlist
+      for (const request of keys) {
+        if (!newUrls.includes(request.url)) {
+          console.log(`🧹 Removing obsolete asset from cache: ${request.url}`);
+          await cache.delete(request);
         }
       }
 
-      // Download entirely new ones sequentially (to avoid hammering connection constraints)
+      // 2. Download: Add new videos to cache
       for (const url of newUrls) {
-        const cached = await cache.match(url);
-        if (!cached) {
-          console.log(`Downloading campaign asset: ${url}`);
-          // Re-fetch using cors ensuring the CDN allows media byte ranges
-          await cache.add(new Request(url, { mode: 'cors' }));
+        const match = await cache.match(url);
+        if (!match) {
+          console.log(`⬇️ Downloading & Caching: ${url}`);
+          try {
+            // Using { mode: 'no-cors' } is NOT recommended for media if you need to manipulate bits,
+            // but for simple <video src="..."> it works. Better with proper CORS.
+            const response = await fetch(url + '?cache_bust=' + Date.now());
+            if (response.ok) {
+                await cache.put(url, response);
+                console.log(`✅ Cached: ${url}`);
+            }
+          } catch (fetchErr) {
+            console.error(`❌ Failed to cache ${url}:`, fetchErr);
+          }
+        } else {
+            console.log(`📦 Asset already in cache: ${url}`);
         }
       }
 
       return true;
     } catch (err) {
-      console.error('Video caching failed', err);
-      return false; // Could trigger retry logic upward
+      console.error('Video caching pipeline failed:', err);
+      return false;
     }
   }
 
   /**
-   * Retrieves Blob URL mapped from a specific URL if present, or falls back to standard HTTP stream 
-   * if offline playback caching failed or skipped.
+   * Returns a local Blob URL if available in cache, otherwise returns the original URL.
    */
   static async getVideoSource(url: string): Promise<string> {
     try {
       if (!('caches' in window)) return url;
       
       const cache = await caches.open(CACHE_NAME);
-      const response = await cache.match(url);
+      const cachedResponse = await cache.match(url);
       
-      if (response) {
-        const blob = await response.blob();
+      if (cachedResponse) {
+        console.log(`🔋 Serving from Cache Storage: ${url}`);
+        const blob = await cachedResponse.blob();
         return URL.createObjectURL(blob);
       }
       
-      // Fallback
+      console.warn(`📡 Cache miss. Streaming from network: ${url}`);
       return url;
-    } catch {
+    } catch (err) {
+      console.error('Failed to retrieve from cache:', err);
       return url;
     }
   }

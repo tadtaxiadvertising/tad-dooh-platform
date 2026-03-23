@@ -11,7 +11,11 @@
         width: 100%;
         height: 100%;
         background-color: black;
-        overflow: hidden; /* Hide scrollbars for Full Kiosk */
+        overflow: hidden !important; /* TAREA KIOSK_002: Hard lock scroll */
+        position: fixed; /* Prevenir bounce en iOS/Android WebView */
+        touch-action: none; /* Bloquear gestos de sistema (deslizar para refrescar, zoom) */
+        user-select: none; /* Evitar que el pasajero seleccione texto */
+        -webkit-user-select: none;
       }
       #tad-player {
         width: 100%;

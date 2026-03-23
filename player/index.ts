@@ -6,15 +6,22 @@ import { Scheduler } from './scheduler/daily-sync';
     console.log("Initializing TAD DOOH Player Environment...");
 
     // Setup hardware identity natively
-    let deviceId = localStorage.getItem('tad_device_id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const forcedId = urlParams.get('deviceId');
+    
+    let deviceId = forcedId || localStorage.getItem('tad_device_id');
+    
     if (!deviceId) {
         deviceId = `taxi-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('tad_device_id', deviceId);
+    } else if (forcedId) {
+        // If forced via URL, we often want to persist it for this session/context
         localStorage.setItem('tad_device_id', deviceId);
     }
     console.log(`Mapping Node Identity: ${deviceId}`);
 
     // Register primary loop engine mapping onto DOM <video id="tad-player">
-    const engine = new VideoEngine('tad-player', deviceId);
+    const engine = new VideoEngine(deviceId);
     
     // Inject Scheduler 
     const schedule = new Scheduler(deviceId, engine);

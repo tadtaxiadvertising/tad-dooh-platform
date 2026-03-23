@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, User, Phone, IdCard, CreditCard, Tablet, Hash } from 'lucide-react';
+import { X, User, Phone, IdCard, CreditCard, Tablet, Hash, CheckCircle2, AlertTriangle } from 'lucide-react';
+import clsx from 'clsx';
 import { createDriver } from '../services/api';
 import { notifyChange } from '../lib/sync-channel';
 
@@ -20,7 +21,25 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     licensePlate: '',
     deviceId: '',
     subscriptionPaid: false,
+    deviceFound: null as boolean | null,
   });
+
+  const checkDevice = async (id: string) => {
+    if (!id) {
+      setFormData(prev => ({ ...prev, deviceId: '', deviceFound: null }));
+      return;
+    }
+    
+    try {
+      // Usamos getDevices para buscar si existe (Backend side check)
+      const { getDevices } = await import('../services/api');
+      const devices = await getDevices();
+      const exists = devices.some((d: any) => (d.deviceId || d.device_id) === id);
+      setFormData(prev => ({ ...prev, deviceId: id, deviceFound: exists }));
+    } catch (e) {
+      setFormData(prev => ({ ...prev, deviceId: id, deviceFound: null }));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -28,6 +47,12 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (formData.deviceId && formData.deviceFound === false) {
+      setError('EL ID DE TABLET NO EXISTE EN EL INVENTARIO. REGÍSTRELO PRIMERO EN LA SECCIÓN DE DISPOSITIVOS.');
+      setLoading(false);
+      return;
+    }
 
     try {
       await createDriver(formData);
@@ -43,6 +68,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
         licensePlate: '',
         deviceId: '',
         subscriptionPaid: false,
+        deviceFound: null,
       });
     } catch (err: unknown) {
       console.error('Error creating driver:', err);
@@ -146,11 +172,18 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
                 <input
                   type="text"
                   placeholder="Ej: TAD-XXXXXX"
-                  className="w-full bg-zinc-800 border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-tad-yellow transition-colors"
-                  value={formData.deviceId}
-                  onChange={e => setFormData({ ...formData, deviceId: e.target.value })}
+                  className={clsx(
+                    "w-full bg-zinc-800 border rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none transition-colors",
+                    formData.deviceFound === true ? "border-emerald-500/50" : 
+                    formData.deviceFound === false ? "border-rose-500/50" : "border-white/5 focus:border-tad-yellow"
+                  )}
                 />
+                {formData.deviceFound === true && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500 animate-in zoom-in" />}
+                {formData.deviceFound === false && <AlertTriangle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500 animate-in shake-x" />}
               </div>
+              {formData.deviceFound === false && (
+                <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">Dispositivo no localizado en el cluster.</p>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-6">

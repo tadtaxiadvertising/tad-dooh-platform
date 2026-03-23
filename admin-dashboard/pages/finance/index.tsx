@@ -38,23 +38,35 @@ export default function FinancePage() {
     setLoading(true);
     setError(null);
     try {
-      // Always load summary for the cards
-      const summaryData = await getFinancialSummary();
-      setSummary(summaryData);
+      // Carga paralela robusta
+      const results = await Promise.allSettled([
+        getFinancialSummary(),
+        activeTab === 'payroll' ? getAutoPayroll() :
+        activeTab === 'campaigns' ? getCampaignBilling() :
+        getFinancialLedger()
+      ]);
 
-      if (activeTab === 'payroll') {
-        const data = await getAutoPayroll();
-        setPayroll(data || []);
-      } else if (activeTab === 'campaigns') {
-        const data = await getCampaignBilling();
-        setCampaignData(data || []);
-      } else if (activeTab === 'ledger') {
-        const data = await getFinancialLedger();
-        setLedger(data || []);
+      // Procesar resumen (Crítico para cards)
+      if (results[0].status === 'fulfilled') {
+        setSummary(results[0].value);
+      } else {
+        console.warn('Resumen financiero no disponible:', results[0].reason);
       }
+
+      // Procesar datos de pestaña
+      if (results[1].status === 'fulfilled') {
+        const data = results[1].value || [];
+        if (activeTab === 'payroll') setPayroll(data);
+        else if (activeTab === 'campaigns') setCampaignData(data);
+        else setLedger(data);
+      } else {
+        console.error(`Fallo al cargar datos de ${activeTab}:`, results[1].reason);
+        setError(`INTERRUPCIÓN EN DATOS DE ${activeTab.toUpperCase()}.`);
+      }
+
     } catch (err) {
-      console.error('Finance load error:', err);
-      setError('ERROR DE ENLACE CON EL SERVIDOR DE TESORERÍA.');
+      console.error('Finance load fatal error:', err);
+      setError('COLAPSO TOTAL DE ENLACE FISCAL.');
     } finally {
       setLoading(false);
     }

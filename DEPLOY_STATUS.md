@@ -7,30 +7,33 @@
 ## ✅ COMPLETADO
 
 ### 1. Master Dashboard (Admin)
+
 | Item | Estado | Notas |
-|------|--------|-------|
+| --- | --- | --- |
 | **Código** | ✅ v5.1 UI | Optimistic Unlink/Delete UI |
 | **EasyPanel** | ✅ **EN LÍNEA** | Cross-Hardware Detach |
 | **Media Logic** | ✅ Enrutamiento Modal | URL params pre-filling campaigns |
 
 ### 2. Backend Engine (NestJS)
+
 | Item | Estado | Notas |
-|------|--------|-------|
+| --- | --- | --- |
 | **API Code** | ✅ NestJS 10+ | Eliminación Graceful (Media) |
 | **Deploy EP** | ✅ **EN LÍNEA** | tad-api endpoints activos |
 | **Supabase RLS**| ✅ Telemetría 100% | Políticas SQL anon fixeadas |
 
 ### 3. Tablet Player PWA
+
 | Item | Estado | URL |
-|------|--------|-----|
-| **Vercel Deploy** | ✅ **EN LÍNEA** | https://tad-tablet-player.vercel.app |
-| **Telemetry Play**| ✅ No-blocking | Falla silenciosa en hooks de error |
+| --- | --- | --- |
+| **Vercel Deploy** | ✅ **EN LÍNEA** | <https://tad-tablet-player.vercel.app> |
+| **Telemetry Play** | ✅ No-blocking | Falla silenciosa en hooks de error |
 
 ---
 
 ## 📊 RESUMEN DE PROGRESO
 
-```
+```text
 Proyecto Completo: 98%
 ├── Master Dashboard   ████████████████████░ 98%
 ├── Backend Engine     ████████████████████░ 98%
@@ -42,14 +45,14 @@ Proyecto Completo: 98%
 
 ## 🎯 PRÓXIMOS PASOS INMEDIATOS
 
-### Para Mendy (Hoy - 30 min):
+### Para Mendy (Hoy - 30 min)
 
 1. **Instalar Fully Kiosk** en tablet Android
-   - Download: https://www.fully-kiosk.de/
+   - Download: <https://www.fully-kiosk.de/>
    - Costo: ~$8 USD
 
 2. **Configurar URL**
-   - Start URL: https://tad-tablet-player.vercel.app
+   - Start URL: <https://tad-tablet-player.vercel.app>
 
 3. **Activar Kiosk Mode**
    - Settings → Kiosk Mode → Start on Boot: ON
@@ -59,7 +62,7 @@ Proyecto Completo: 98%
    - Verificar que cargue el player
    - Anotar device ID
 
-### Para Desarrollo (Esta semana):
+### Para Desarrollo (Esta semana)
 
 1. **Deploy Backend API**
    - Configurar PostgreSQL
@@ -80,18 +83,18 @@ Proyecto Completo: 98%
 ## 🔗 URLs IMPORTANTES
 
 | Servicio | URL |
-|----------|-----|
-| **Tablet Player** | https://tad-tablet-player.vercel.app |
-| **GitHub Repo** | https://github.com/tadtaxiadvertising/tad-dooh-platform |
-| **Vercel Dashboard** | https://vercel.com/tadtaxiadvertisings-projects/tad-tablet-player |
-| **Fully Kiosk** | https://www.fully-kiosk.de/ |
+| --- | --- |
+| **Tablet Player** | <https://tad-tablet-player.vercel.app> |
+| **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
+| **Vercel Dashboard** | <https://vercel.com/tadtaxiadvertisings-projects/tad-tablet-player> |
+| **Fully Kiosk** | <https://www.fully-kiosk.de/> |
 | **Documentación** | `docs/` en GitHub |
 
 ---
 
 ## 📞 CONTACTO
 
-**Soporte:** tad.taxiadvertising@gmail.com
+**Soporte:** <mailto:tad.taxiadvertising@gmail.com>
 
 **Documentación:** Ver carpeta `docs/` en GitHub
 

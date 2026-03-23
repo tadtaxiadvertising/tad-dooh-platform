@@ -1,6 +1,6 @@
 # 🚀 TAD DOOH Platform - Estado del Deploy
 
-**Última actualización:** 20 de Marzo, 2026 (22:45 UTC)
+**Última actualización:** 22 de Marzo, 2026 (03:30 UTC-4)
 
 ---
 
@@ -9,33 +9,33 @@
 ### 1. Master Dashboard (Admin)
 | Item | Estado | Notas |
 |------|--------|-------|
-| **Código** | ✅ v5.0 Antigravity | Real-time Postgres Sync |
-| **EasyPanel** | ✅ **EN LÍNEA** | Master UI + Sync Engine |
-| **Interacción** | ✅ Determinística | AntigravityButton v1.0 |
+| **Código** | ✅ v5.1 UI | Optimistic Unlink/Delete UI |
+| **EasyPanel** | ✅ **EN LÍNEA** | Cross-Hardware Detach |
+| **Media Logic** | ✅ Enrutamiento Modal | URL params pre-filling campaigns |
 
 ### 2. Backend Engine (NestJS)
 | Item | Estado | Notas |
 |------|--------|-------|
-| **API Code** | ✅ NestJS 10+ | NestJS Core v10.x |
-| **Deploy EP** | ✅ **EN LÍNEA** | tad-api service running |
-| **Realtime** | ✅ Supabase RLS | Postgres Webhooks active |
+| **API Code** | ✅ NestJS 10+ | Eliminación Graceful (Media) |
+| **Deploy EP** | ✅ **EN LÍNEA** | tad-api endpoints activos |
+| **Supabase RLS**| ✅ Telemetría 100% | Políticas SQL anon fixeadas |
 
 ### 3. Tablet Player PWA
 | Item | Estado | URL |
 |------|--------|-----|
 | **Vercel Deploy** | ✅ **EN LÍNEA** | https://tad-tablet-player.vercel.app |
-| **Offline Sync** | ✅ Funcional | Offline-first persistency |
+| **Telemetry Play**| ✅ No-blocking | Falla silenciosa en hooks de error |
 
 ---
 
 ## 📊 RESUMEN DE PROGRESO
 
 ```
-Proyecto Completo: 95%
-├── Master Dashboard   ███████████████████░ 95%
-├── Backend Engine     ███████████████████░ 95%
-├── Tablet Player PWA  ███████████████████░ 95%
-└── Infrastructure     ███████████████████░ 95%
+Proyecto Completo: 98%
+├── Master Dashboard   ████████████████████░ 98%
+├── Backend Engine     ████████████████████░ 98%
+├── Tablet Player PWA  ████████████████████░ 98%
+└── Infrastructure     ████████████████████░ 98%
 ```
 
 ---

@@ -148,13 +148,14 @@ export class CampaignService {
     });
 
     if (!device) {
-      console.warn(`⚠️ getActiveSyncVideos: Device ${deviceIdOrUuid} not found in cluster.`);
+      console.warn(`⚠️ getActiveSyncVideos: Device '${deviceIdOrUuid}' NOT FOUND in DB. Check if registerDevice was called first.`);
       return { version: 0, sync_hash: 'not-found', media_assets: [] };
     }
 
     const uuid = device.id;
     const hwId = device.deviceId;
     const city = deviceCity || device.city || 'Santo Domingo';
+    console.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}`);
 
     let activeCampaigns: any[] = [];
     
@@ -182,6 +183,7 @@ export class CampaignService {
         orderBy: { updatedAt: 'desc' }
       });
     } catch (primaryError) {
+      console.error(`❌ getActiveSyncVideos primary query failed: ${primaryError?.message}`);
       // Fallback
       activeCampaigns = await this.prisma.campaign.findMany({
         where: { active: true, targetAll: true },
@@ -190,7 +192,14 @@ export class CampaignService {
       });
     }
 
+    console.log(`📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`);
+    activeCampaigns.forEach(c => {
+      const assets = ((c as any).mediaAssets?.length || 0) + ((c as any).media?.length || 0);
+      console.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | mediaAssets=${(c as any).mediaAssets?.length || 0} | media=${(c as any).media?.length || 0} | devices=${(c as any).devices?.length || 0}`);
+    });
+
     if (!activeCampaigns || activeCampaigns.length === 0) {
+      console.warn(`⚠️ No active campaigns found for device ${hwId}. Check campaign dates, active flag, and device assignments.`);
       return { version: 0, sync_hash: 'empty', media_assets: [] };
     }
 

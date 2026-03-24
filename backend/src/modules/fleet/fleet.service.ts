@@ -1,3 +1,5 @@
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from '../device/device.service';
 
 @Injectable()
@@ -432,11 +434,11 @@ export class FleetService {
         },
       });
 
-      const countMap = new Map(counts.map((c) => [
+      const countMap = new Map(counts.map((c: any) => [
         c.driverId, 
         { 
-          count: c._count.id, 
-          avgSpeed: c._avg?.speed || 0 
+          count: (c._count as any).id, 
+          avgSpeed: (c._avg as any)?.speed || 0 
         }
       ]));
 
@@ -448,7 +450,7 @@ export class FleetService {
           driverId: { in: driverIds }
         }
       });
-      const totalMap = new Map(totalCounts.map((c) => [c.driverId, c._count.id]));
+      const totalMap = new Map(totalCounts.map((c: any) => [c.driverId, (c._count as any).id]));
 
       const now = new Date();
       const fiveMinMs = 5 * 60 * 1000;

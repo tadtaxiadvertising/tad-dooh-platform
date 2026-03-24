@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target, Library, Loader2, Link2, Unlink, Eye } from 'lucide-react';
+import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target, Library, Loader2, Link2, Unlink, Eye, Tablet } from 'lucide-react';
 import { getDrivers, getMedia, uploadCampaignMedia, assignDriversToCampaign, linkMediaToCampaign, unlinkMediaFromCampaign } from '../services/api';
 import clsx from 'clsx';
 
@@ -22,7 +22,7 @@ interface CampaignModalProps {
   onSuccess?: () => void;
 }
 
-type Tab = 'gallery' | 'upload' | 'segment';
+type Tab = 'gallery' | 'upload' | 'screens' | 'segment';
 
 export const CampaignModal = React.memo(function CampaignModal({
   isOpen,
@@ -51,6 +51,11 @@ export const CampaignModal = React.memo(function CampaignModal({
   const [targetAll, setTargetAll] = useState(true);
   const [savingSegment, setSavingSegment] = useState(false);
   const [segmentDone, setSegmentDone] = useState(false);
+  // Screens state
+  const [devices, setDevices] = useState<{ id: string; deviceId: string; taxiNumber?: string }[]>([]);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [savingScreens, setSavingScreens] = useState(false);
+  const [screensDone, setScreensDone] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -70,6 +75,12 @@ export const CampaignModal = React.memo(function CampaignModal({
     if (isOpen) {
       loadAllMedia();
       getDrivers().then(setDrivers).catch(console.error);
+      const { getDevices, getCampaignDevices } = require('../services/api');
+      getDevices().then(setDevices).catch(console.error);
+      getCampaignDevices(campaignId).then((data: any[]) => {
+          if (Array.isArray(data)) setSelectedDevices(data.map(d => d.id || d.deviceId));
+      }).catch(console.error);
+
       // Reset
       setFile(null);
       setPreviewUrl(null);
@@ -120,6 +131,21 @@ export const CampaignModal = React.memo(function CampaignModal({
     }
   };
 
+  const handleSaveScreens = async () => {
+    setSavingScreens(true);
+    try {
+      const { assignCampaignToDevices } = await import('../services/api');
+      await assignCampaignToDevices(campaignId, selectedDevices);
+      setScreensDone(true);
+      onSuccess?.();
+      setTimeout(() => setScreensDone(false), 2000);
+    } catch (e: any) {
+      console.error('Error guardando pantallas:', e);
+    } finally {
+      setSavingScreens(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
@@ -160,6 +186,7 @@ export const CampaignModal = React.memo(function CampaignModal({
   const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'gallery', label: 'Galería', icon: Library, badge: assignedMedia.length },
     { id: 'upload', label: 'Subir Video', icon: Upload },
+    { id: 'screens', label: 'Pantallas', icon: Tablet, badge: selectedDevices.length },
     { id: 'segment', label: 'Segmentar', icon: Target },
   ];
 
@@ -348,6 +375,70 @@ export const CampaignModal = React.memo(function CampaignModal({
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* ======= TAB: SCREENS ======= */}
+          {activeTab === 'screens' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pl-1">
+                 <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                    Vincular Hardware Directo ({selectedDevices.length})
+                 </h3>
+                 <button 
+                  onClick={() => setSelectedDevices([])}
+                  className="text-[9px] font-black text-rose-500 uppercase hover:text-rose-400 transition-colors"
+                 >
+                   Limpiar Todo
+                 </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                {devices.map(d => (
+                  <div
+                    key={d.id}
+                    onClick={() => setSelectedDevices(prev =>
+                      prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id]
+                    )}
+                    className={clsx(
+                      'p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer group/item',
+                      selectedDevices.includes(d.id)
+                        ? 'bg-tad-yellow/10 border-tad-yellow/40'
+                        : 'bg-white/5 border-white/5 hover:border-white/20'
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={clsx(
+                        'w-9 h-9 rounded-xl flex items-center justify-center transition-all',
+                        selectedDevices.includes(d.id) ? 'bg-tad-yellow text-black' : 'bg-zinc-900 text-zinc-500'
+                      )}>
+                        <Tablet className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className={clsx('text-xs font-bold uppercase truncate max-w-[120px]', selectedDevices.includes(d.id) ? 'text-white' : 'text-zinc-400')}>
+                          {d.deviceId}
+                        </p>
+                        <p className="text-[9px] text-zinc-600 font-bold uppercase">{d.taxiNumber || 'SIN PLACA'}</p>
+                      </div>
+                    </div>
+                    <div className={clsx(
+                      'w-5 h-5 rounded-md border flex items-center justify-center transition-all',
+                      selectedDevices.includes(d.id) ? 'bg-tad-yellow border-tad-yellow text-black' : 'border-white/10'
+                    )}>
+                      {selectedDevices.includes(d.id) && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                disabled={savingScreens}
+                onClick={handleSaveScreens}
+                className="w-full py-4 bg-tad-yellow hover:bg-yellow-400 disabled:opacity-30 transition-all rounded-2xl text-black font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(250,212,0,0.2)]"
+              >
+                {savingScreens ? <Loader2 className="w-5 h-5 animate-spin" /> : screensDone ? <CheckCircle2 className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+                {savingScreens ? 'Guardando...' : screensDone ? 'Sincronizado!' : 'Vincular Pantallas Seleccionadas'}
+              </button>
             </div>
           )}
 

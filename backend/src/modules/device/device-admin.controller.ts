@@ -7,15 +7,21 @@ export class DeviceAdminController {
 
   // Ver los anuncios asignados a un taxi específico
   @Get(':deviceId/campaigns')
-  async getDeviceCampaigns(@Param('deviceId') deviceId: string) {
+  async getDeviceCampaigns(@Param('deviceId') paramId: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: paramId }, { deviceId: paramId }] },
+      select: { id: true }
+    });
+
+    if (!device) return [];
+
     const assignments = await this.prisma.deviceCampaign.findMany({
-      where: { device_id: deviceId },
+      where: { device_id: device.id },
       include: {
-        campaign: true, // Traemos la data de la campaña
+        campaign: true, 
       },
     });
     
-    // Retornamos mapeado para facilitar la vida al frontend
     return assignments.map(a => ({
       ...a.campaign,
       assigned_at: a.assigned_at

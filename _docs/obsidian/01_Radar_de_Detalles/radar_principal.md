@@ -9,22 +9,24 @@ author: Antigravity AI
 
 Este documento es el registro de "bugs visuales", inconsistencias de flujo y mejoras de UX detectadas por Antigravity y Arismendy.
 
-### 🔴 PRIORIDAD ALTA (Bloqueo de Benchmark)
+### 🟢 COMPLETADO (Antigravity Protocol V1)
 
-- [ ] **Validación de Tablets en Registro de Drivers**: Actualmente, si se intenta registrar un Driver con un `deviceId` que no existe en el inventario, el Backend arroja un error 400 seco.
-  - *Mejora Sugerida*: El modal debe avisar que el ID no existe ANTES de enviar.
-- [ ] **Sincronización de Cash-Flow**: Las tarjetas de resumen (Cards de MRR/Ingresos) necesitan un trigger de refresco más agresivo al cambiar de pestaña.
-- [ ] **Persistencia de Filtros**: Al navegar entre 'Conductores' y 'Finanzas', los filtros de búsqueda se pierden.
+- [x] **Post-Purga 10x10 Base de datos limpia**: Se eliminaron 284 dispositivos remanentes e inconsistencias. Entorno en cero.
+- [x] **Validación de Tablets en Registro de Drivers**: Implementada verificación en tiempo real obligatoria en el Modal V2. 
+- [x] **Sincronización TabSync**: Sincronización proactiva BroadcastChannel 100% activa.
+- [x] **Bypass Upload (URL Firmada)**: Archivos multimedia se suben directo a Supabase. Node.js blindado (VPS Protegido).
+- [x] **Limits Docker (easypanel-spec)**: Límites de RAM a 512M en VPS y uso de Prisma Pooler puerto 6543 en EasyPanel.
+- [x] **Persistencia de Filtros**: Estados de UI y búsqueda en Drivers recuperables mediante localStorage.
 
 ### 🟡 PRIORIDAD MEDIA (Pulido Estético)
 
 - [ ] **Animación de Carga en Mapas**: El mapa de 'Tracking' tarda en pintar los marcadores. Necesitamos un Skeleton UI o un Spinner más suave.
 - [ ] **Iconografía en Nómina**: Algunos conductores no tienen la inicial del nombre centrada correctamente.
 
-### 🟢 PRÓXIMAS MEJORAS (Roadmap AI)
+### 🟡 PRÓXIMAS MEJORAS (Prueba de Campo)
 
-- [ ] **Pre-carga de Media**: Una barra de progreso global para cuando se suben videos de >200MB.
-- [ ] **Alertas de Desconexión**: Notificación push si una de las 10 tablets de la prueba pierde señal por >5 min.
+- [ ] **Alertas de Desconexión Globales**: Ver interrupciones en el Dashbard general.
+- [ ] **Sistema de Notificaciones UI (Tablets)**: Validar cómo reacciona el chófer al `TAD_UI_TOAST` de alerta de deuda (402).
 
 ---
 > [!TIP]

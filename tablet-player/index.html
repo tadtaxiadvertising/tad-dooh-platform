@@ -165,39 +165,9 @@
                 </div>
             </div>
             
-            <!-- No Content State (TAD NODE LOGO) -->
-            <div id="no-content-state" class="hidden absolute inset-0 flex items-center justify-center bg-mesh">
-                <div class="text-center w-full max-w-2xl px-8">
-                    <div class="mb-12 relative perspective-1000">
-                        <!-- Abstract "TAD NODE" Logo -->
-                        <div class="w-32 h-32 mx-auto bg-gradient-to-tr from-taxi-400 to-yellow-100 rounded-[2.5rem] rotate-[15deg] flex items-center justify-center shadow-[0_0_80px_rgba(255,212,0,0.3)] animate-pulse transition-transform hover:scale-110 duration-700">
-                            <div class="w-16 h-16 bg-black rounded-3xl -rotate-[15deg] flex items-center justify-center border border-white/10">
-                                <span class="text-taxi-400 font-black text-2xl tracking-tighter glow-yellow font-display">TAD</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 mb-10">
-                        <h2 class="text-4xl font-black text-white tracking-tighter uppercase italic font-display">
-                            Transmisor <span class="text-taxi-400">de Contenido</span>
-                        </h2>
-                        <div class="flex flex-col items-center gap-2">
-                            <p class="text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] font-display">Identificador de Nodo</p>
-                            <span id="node-id-display" class="bg-white/5 border border-white/10 px-6 py-2 rounded-xl text-taxi-400 font-black font-mono text-xl tracking-wider">--</span>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col items-center gap-6">
-                        <!-- QR Code for Driver Sync -->
-                        <div class="p-3 bg-white rounded-3xl shadow-[0_0_120px_rgba(255,212,0,0.15)] transition-all hover:scale-105 duration-500">
-                            <div id="sync-qrcode" class="p-2"></div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-zinc-400 font-black uppercase tracking-[0.3em] text-[8px] font-display mb-2">Escanear para Vincular GPS</p>
-                            <p id="node-public-url" class="text-[9px] text-zinc-600 font-mono font-bold">--</p>
-                        </div>
-                    </div>
-                </div>
+            <!-- No Content State: Pure black, no branding -->
+            <div id="no-content-state" class="hidden absolute inset-0 bg-black">
+                <!-- Intentionally blank: screen stays black when no content is assigned -->
             </div>
             
             <!-- Blocked State (Subscription Expired) -->
@@ -696,9 +666,7 @@
             
             showNoContent() {
                 this.hideAllStates();
-                const display = document.getElementById('node-id-display');
-                if (display) display.textContent = state.deviceId;
-                
+                // Pure black screen — no TAD branding visible on tablets
                 const container = document.getElementById('no-content-state');
                 if (container) container.classList.remove('hidden');
                 // Stop any current playback
@@ -708,6 +676,7 @@
                     this.video.load();
                 }
                 this.isPlaying = false;
+                console.log('⬛ No content assigned. Screen is black.');
             },
             
             showBlocked(reason) {

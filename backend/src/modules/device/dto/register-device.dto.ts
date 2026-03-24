@@ -12,4 +12,8 @@ export class RegisterDeviceDto {
   @IsString()
   @IsOptional()
   app_version?: string;
+
+  @IsString()
+  @IsOptional()
+  driver_id?: string;
 }

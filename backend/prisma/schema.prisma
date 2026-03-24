@@ -67,6 +67,7 @@ model Device {
   lastSyncAt    DateTime? @map("last_sync_at")
   lastOnline    DateTime? @map("last_online")
   lastSyncSuccess Boolean? @map("last_sync_success")
+  driverId      String?   @map("driver_id")
 
   events         AnalyticsEvent[]
   commands       DeviceCommand[]
@@ -75,8 +76,8 @@ model Device {
   playbackEvents  PlaybackEvent[]
   assignedCampaigns PlaylistItem[]
   campaigns      DeviceCampaign[]
-  driver          Driver?
-  subscription    Subscription?
+  driver          Driver?  @relation(fields: [driverId], references: [id])
+  subscriptions   Subscription[]
   locations       DriverLocation[]
   
   @@map("devices")
@@ -84,6 +85,7 @@ model Device {
   @@index([lastSync])
   @@index([city])
   @@index([lastSeen])
+  @@index([driverId])
 }
 
 
@@ -404,7 +406,6 @@ model Driver {
   licensePlate     String?   @map("license_plate")
   taxiPlate        String?   @unique @map("taxi_plate")
   taxiNumber       String?   @map("taxi_number")
-  deviceId         String?   @unique @map("device_id") // FK to Device.deviceId
   subscriptionPaid Boolean   @default(false) @map("subscription_paid")
   subscriptionEnd  DateTime? @map("subscription_end")
   referredBy       String?   @map("referred_by")
@@ -414,7 +415,7 @@ model Driver {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  device        Device?  @relation(fields: [deviceId], references: [deviceId])
+  devices       Device[]
   subscriptions Subscription[]
   campaigns     Campaign[]
   payrollPayments PayrollPayment[]
@@ -484,7 +485,7 @@ model PayrollPayment {
 model Subscription {
   id            String   @id @default(uuid())
   driverId      String   @map("driver_id")
-  deviceId      String?  @unique @map("device_id")
+  deviceId      String?  @map("device_id")
   plan          String   // ANNUAL, MONTHLY
   amount        Float    @default(6000.0)
   status        String   @default("PENDING") // ACTIVE, EXPIRED, PENDING

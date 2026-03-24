@@ -27,6 +27,9 @@ graph TD
         DB --> WS[TabSync / BroadcastChannel]
         WS --> DASH[Dashboard Metrics]
         WS --> FIN[Pestaña de Finanzas]
+        
+        DASH -- "Upload Bypass" --> SUPA[(Supabase Storage Direct)]
+        SUPA -- "URL Registrada" --> API
     end
 
     subgraph "Lógica de Negocio (Nómina)"
@@ -58,6 +61,14 @@ Gracias a la mejora del `BroadcastChannel`, si abres la pestaña de **Conductore
 1. Al registrar un driver en una ventana.
 2. La señal viaja por el canal local.
 3. El Dashboard se recalcula **sin refrescar la página**. ✨
+
+#### 3. Upload Bypass (Supabase P2P)
+
+Los videos publicitarios (ej. +200MB) **NUNCA** pasan por el backend en NestJS. El Dashboard obtiene una "URL Firmada" y sube temporalmente a Supabase Storage y sólo cruza metadata al final. *Node.js nunca colapsa de RAM.*
+
+#### 4. Tolerancia a Fallos (Tablets)
+
+Si una tablet (TAD-DEV) pierde red por más de XX horas o entra a un túnel, entra en modo **Cache-First** persistiendo en `localStorage` las campañas activas. Si debe cobro (402), despliega un alert box (`TAD_UI_TOAST`).
 
 #### 3. Integridad de Hardware
 

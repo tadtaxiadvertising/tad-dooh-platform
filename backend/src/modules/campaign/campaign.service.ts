@@ -145,7 +145,7 @@ export class CampaignService {
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
-      select: { id: true, deviceId: true, city: true }
+      select: { id: true, deviceId: true, city: true, driverId: true }
     });
 
     if (!device) {
@@ -156,7 +156,8 @@ export class CampaignService {
     const uuid = device.id;
     const hwId = device.deviceId;
     const city = deviceCity || device.city || 'Santo Domingo';
-    console.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}`);
+    const driverId = device.driverId;
+    console.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
 
     let activeCampaigns: any[] = [];
     
@@ -173,7 +174,9 @@ export class CampaignService {
             // Canal Directo (v2 UUID)
             { devices: { some: { device_id: uuid } } },
             // Canal Legacy (v1 Hardware ID)
-            { targets: { some: { deviceId: hwId } } }
+            { targets: { some: { deviceId: hwId } } },
+            // Canal Segmentado (v2 Segmentación por Conductor)
+            ...(driverId ? [{ targetDrivers: { some: { id: driverId } } }] : [])
           ]
         } as any,
         include: {

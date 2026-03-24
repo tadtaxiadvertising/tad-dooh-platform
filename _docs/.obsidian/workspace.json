@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01_Radar_de_Detalles/radar_principal.md",
+                "file": "05_Manual_Usuario_Administrativo/operaciones_diarias.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "radar_principal"
+              "title": "operaciones_diarias"
             }
           }
         ]
@@ -185,17 +185,23 @@
   },
   "active": "d8aaefb7f70a2455",
   "lastOpenFiles": [
+    "10_Estrategia_de_Mantenimiento_y_Updates/ciclo_de_vida_software.md",
+    "10_Estrategia_de_Mantenimiento_y_Updates",
+    "09_Disaster_Recovery/recuperacion_desastres.md",
+    "09_Disaster_Recovery",
+    "08_Arquitectura_Seguridad/matriz_de_seguridad.md",
+    "08_Arquitectura_Seguridad",
+    "04_Despliegue_y_DevOps/guia_de_despliegue.md",
+    "01_Radar_de_Detalles/radar_principal.md",
     "07_Hardware_y_Logistica/configuracion_tablets.md",
     "07_Hardware_y_Logistica",
     "06_Modelo_de_Negocio_y_Monetizacion/modelo_de_cobros.md",
     "06_Modelo_de_Negocio_y_Monetizacion",
     "05_Manual_Usuario_Administrativo/operaciones_diarias.md",
     "05_Manual_Usuario_Administrativo",
-    "04_Despliegue_y_DevOps/guia_de_despliegue.md",
     "04_Despliegue_y_DevOps",
     "index.md",
     "03_Roadmap_10x10/estado_actual_y_handover.md",
-    "02_Arquitectura_Estructural/flujo_de_datos.md",
-    "01_Radar_de_Detalles/radar_principal.md"
+    "02_Arquitectura_Estructural/flujo_de_datos.md"
   ]
 }

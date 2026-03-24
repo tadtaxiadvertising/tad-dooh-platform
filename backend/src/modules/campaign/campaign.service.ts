@@ -140,6 +140,7 @@ export class CampaignService {
    */
   async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
+    console.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
     
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
@@ -178,6 +179,7 @@ export class CampaignService {
         include: {
           mediaAssets: true,
           media: true,
+          videos: true,
           advertiserRef: true,
         },
         orderBy: { updatedAt: 'desc' }
@@ -187,15 +189,15 @@ export class CampaignService {
       // Fallback
       activeCampaigns = await this.prisma.campaign.findMany({
         where: { active: true, targetAll: true },
-        include: { mediaAssets: true, media: true },
+        include: { mediaAssets: true, media: true, videos: true },
         orderBy: { updatedAt: 'desc' }
       });
     }
 
     console.log(`📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`);
     activeCampaigns.forEach(c => {
-      const assets = ((c as any).mediaAssets?.length || 0) + ((c as any).media?.length || 0);
-      console.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | mediaAssets=${(c as any).mediaAssets?.length || 0} | media=${(c as any).media?.length || 0} | devices=${(c as any).devices?.length || 0}`);
+      const assetsCount = ((c as any).mediaAssets?.length || 0) + ((c as any).media?.length || 0) + ((c as any).videos?.length || 0);
+      console.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
     });
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
@@ -206,9 +208,9 @@ export class CampaignService {
     const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
       const mapMediaAsset = (ma: any) => ({
-        id: ma.id || ma.checksum,
+        id: ma.id || ma.checksum || `asset-${Math.random().toString(36).substr(2, 9)}`,
         campaignId: campaign.id,
-        filename: ma.filename || ma.name || 'video.mp4',
+        filename: ma.filename || ma.name || ma.title || 'video.mp4',
         url: ma.url || ma.cdnUrl || '',
         duration: Number(ma.duration || 30),
         qrUrl: campaign.targetUrl || ma.qrUrl || null,
@@ -218,6 +220,7 @@ export class CampaignService {
 
       if ((campaign as any).mediaAssets) mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));
       if ((campaign as any).media) mediaAssets.push(...campaign.media.map(mapMediaAsset));
+      if ((campaign as any).videos) mediaAssets.push(...campaign.videos.map(mapMediaAsset));
     }
 
     const MAX_SLOTS_PER_DEVICE = 15;

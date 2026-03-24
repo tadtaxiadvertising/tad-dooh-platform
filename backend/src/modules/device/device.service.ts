@@ -63,6 +63,7 @@ export class DeviceService {
         data: { 
           appVersion: dto.app_version,
           lastSeen: new Date(),
+          driverId: dto.driver_id ?? undefined,
         },
       });
     }
@@ -74,6 +75,7 @@ export class DeviceService {
         appVersion: dto.app_version,
         status: 'ACTIVE',
         lastSeen: new Date(),
+        driverId: dto.driver_id,
       },
     });
   }
@@ -125,51 +127,34 @@ export class DeviceService {
   }
 
   private async checkSubscriptionStatus(deviceId: string) {
-    const sub = await this.prisma.subscription.findUnique({
+    const device = await this.prisma.device.findUnique({
       where: { deviceId },
+      include: { driver: true }
     });
 
-    // GRACE PERIOD: Sin suscripción = acceso permitido (onboarding/piloto)
-    if (!sub) {
-      this.logger.log(`⚠️ Device ${deviceId}: Sin suscripción (grace period — acceso permitido).`);
+    if (!device || !device.driver) {
+      this.logger.log(`⚠️ Device ${deviceId}: Sin conductor vinculado (grace period).`);
       return { blocked: false };
     }
 
-    // Suscripción activa
-    if (sub.status === 'ACTIVE' && sub.validUntil >= new Date()) {
+    const { driver } = device;
+
+    // Validación basada en el registro consolidado del Driver
+    if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
       return { blocked: false };
     }
 
-    // Suscripción expirada → bloquear y notificar
-    if (sub.validUntil < new Date()) {
-      this.logger.warn(`⛔ Device ${deviceId}: subscription expired on ${sub.validUntil.toISOString()}`);
-      
-      await this.prisma.subscription.update({
-        where: { id: sub.id },
-        data: { status: 'EXPIRED' },
-      });
-
-      // 🔥 Trigger automatic notification protocol
-      try {
-        await this.financeService.notifyMorosidad(deviceId);
-      } catch (e) {
-        this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
-      }
-
-      return { blocked: true, reason: 'payment_overdue' };
-    }
-
-    // Suscripción inactiva por otra razón
-    if (sub.status !== 'ACTIVE') {
-      this.logger.warn(`⛔ Device ${deviceId}: subscription status is ${sub.status}`);
-      
-      // Also notify if it's inactive (e.g. cancelled) but they still try to sync
+    // Suscripción expirada o no pagada
+    this.logger.warn(`⛔ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada.`);
+    
+    // Trigger notification
+    try {
       await this.financeService.notifyMorosidad(deviceId);
-
-      return { blocked: true, reason: 'inactive_subscription' };
+    } catch (e) {
+      this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
     }
 
-    return { blocked: false };
+    return { blocked: true, reason: 'payment_overdue' };
   }
 
   async recordPlayback(dto: PlaybackConfirmationDto) {

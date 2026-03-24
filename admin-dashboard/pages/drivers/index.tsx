@@ -35,7 +35,7 @@ export default function DriversPage() {
     deviceId?: string; 
     status: string; 
     subscriptionPaid: boolean; 
-    device?: { deviceId: string };
+    devices?: { deviceId: string }[];
     activeAds?: number;
     projectedEarnings?: number;
     cedula?: string;
@@ -282,18 +282,18 @@ export default function DriversPage() {
                         </div>
                       </td>
                       <td className="px-8 py-6 text-center">
-                        {driver.deviceId ? (
+                        {driver.devices && driver.devices.length > 0 ? (
                           <div className={"inline-flex flex-col items-center animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
                              <Link 
-                                href={`/fleet?search=${driver.deviceId}`}
+                                href={`/fleet?search=${driver.devices[0].deviceId}`}
                                 className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all group/link"
-                                title="Ver Pantalla en Monitoreo"
+                                title={`Ver Pantallas (${driver.devices.length}) en Monitoreo`}
                              >
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] group-hover/link:bg-black" />
-                                <span className="text-[9px] font-bold uppercase">ENLAZADO</span>
+                                <span className="text-[9px] font-bold uppercase">{driver.devices.length > 1 ? `${driver.devices.length} PANTALLAS` : 'ENLAZADO'}</span>
                                 <ExternalLink className="w-2.5 h-2.5 ml-1" />
                              </Link>
-                             <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.deviceId.slice(0, 10)}...</span>
+                             <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.devices[0].deviceId.slice(0, 10)}...</span>
                           </div>
                         ) : (
                           <div className={"flex flex-col items-center opacity-50 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
@@ -336,10 +336,10 @@ export default function DriversPage() {
                       </td>
                       <td className="px-8 py-6">
                         <div className={"flex items-center gap-3 justify-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                          {driver.deviceId && (
+                          {driver.devices && driver.devices.length > 0 && (
                             <>
                               <a 
-                                href={getTelemetryUrl(driver.deviceId)} 
+                                href={getTelemetryUrl(driver.devices[0].deviceId)} 
                                 target="_blank" 
                                 rel="noreferrer" 
                                 title="Ver Hub del Conductor (TAD DRIVE)"
@@ -348,7 +348,7 @@ export default function DriversPage() {
                                 <Smartphone className="w-4 h-4" />
                               </a>
                               <Link 
-                                href={`/tracking?search=${driver.deviceId}`}
+                                href={`/tracking?search=${driver.devices[0].deviceId}`}
                                 title="Rastrear GPS en Tiempo Real"
                                 className="p-2.5 rounded-xl transition-all border border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black flex items-center justify-center shadow-sm"
                               >
@@ -399,8 +399,8 @@ export default function DriversPage() {
                             </div>
                             <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                               <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo</p>
-                                <p className="text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.deviceId || 'PENDIENTE_REGISTRO'}</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
+                                <p className="text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices && driver.devices.length > 0 ? driver.devices[0].deviceId : 'PENDIENTE_REGISTRO'}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>

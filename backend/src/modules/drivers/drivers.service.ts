@@ -61,7 +61,7 @@ export class DriversService {
   async findAll() {
     const drivers = await this.prisma.driver.findMany({
       include: { 
-        device: {
+        devices: {
           select: {
             id: true,
             deviceId: true,
@@ -94,7 +94,7 @@ export class DriversService {
     return this.prisma.driver.findUnique({
       where: { id },
       include: { 
-        device: true,
+        devices: true,
         subscriptions: { orderBy: { startDate: 'desc' } }
       }
     });
@@ -113,19 +113,27 @@ export class DriversService {
     subscriptionPaid?: boolean;
     subscriptionEnd?: Date;
   }) {
-    return this.prisma.driver.create({
+    const driver = await this.prisma.driver.create({
       data: {
         fullName: data.fullName,
         cedula: data.cedula,
         phone: data.phone,
         taxiPlate: data.taxiPlate,
         licensePlate: data.licensePlate,
-        deviceId: data.deviceId,
         subscriptionPaid: data.subscriptionPaid ?? false,
         subscriptionEnd: data.subscriptionEnd,
       },
-      include: { device: true }
+      include: { devices: true }
     });
+
+    if (data.deviceId) {
+      await this.prisma.device.update({
+        where: { deviceId: data.deviceId },
+        data: { driverId: driver.id }
+      }).catch(() => null);
+    }
+
+    return driver;
   }
 
   /**
@@ -230,10 +238,10 @@ export class DriversService {
    * Eliminar un chofer por ID (desvincula tablet automáticamente)
    */
   async remove(id: string) {
-    // Desvincular el device primero para evitar errores de FK
-    await this.prisma.driver.update({
-      where: { id },
-      data: { deviceId: null },
+    // Desvincular dispositivos primero
+    await this.prisma.device.updateMany({
+      where: { driverId: id },
+      data: { driverId: null },
     }).catch(() => null);
 
     return this.prisma.driver.delete({ where: { id } });
@@ -258,8 +266,8 @@ export class DriversService {
     await this.prisma.playlistItem.deleteMany().catch(() => null);
     await this.prisma.deviceCampaign.deleteMany().catch(() => null);
 
-    // Desvincular drivers de devices para romper FK circular
-    await this.prisma.driver.updateMany({ data: { deviceId: null } }).catch(() => null);
+    // Desvincular drivers de devices para romper FK
+    await this.prisma.device.updateMany({ data: { driverId: null } }).catch(() => null);
 
     // Borrar drivers y devices
     const deletedDrivers = await this.prisma.driver.deleteMany();

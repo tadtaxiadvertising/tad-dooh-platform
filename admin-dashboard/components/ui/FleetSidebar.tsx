@@ -31,8 +31,8 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-700 bg-[#0a0a0a]/95 backdrop-blur-2xl border-l border-white/[0.05]">
-      <div className="p-8 border-b border-white/[0.05] relative bg-gradient-to-br from-[#0c0c0c] to-black">
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-700 bg-[#171719] backdrop-blur-2xl border-l border-white/[0.05]">
+      <div className="p-8 border-b border-white/[0.05] relative bg-[#171719]">
         <div className="flex items-start justify-between mb-8">
            <div className="flex flex-col">
               <span className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.5em] mb-2 leading-none">Telemetry Monitor</span>
@@ -71,7 +71,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
       </div>
 
       {/* Vehicle List - Premium Hover and Hierarchy */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-3 custom-scrollbar bg-black/10">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-3 custom-scrollbar bg-[#171719]">
         {vehicles.length === 0 ? (
           <div className="py-24 text-center opacity-10">
              <MapPin className="ml-auto mr-auto mb-4 w-12 h-12" />
@@ -118,7 +118,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
         ))}
       </div>
 
-      <div className="p-8 bg-black/60 border-t border-white/10 flex items-center justify-between backdrop-blur-3xl shadow-[0_-20px_40px_rgba(0,0,0,0.4)]">
+      <div className="p-8 bg-[#171719] border-t border-white/10 flex items-center justify-between">
          <div className="flex items-center gap-3">
             <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_#10b981]" />
             <div className="flex flex-col">

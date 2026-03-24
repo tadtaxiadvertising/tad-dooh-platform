@@ -36,58 +36,66 @@ const POLIGONO_CENTRAL: [number, number][] = [
   [18.4630, -69.9400], // Suroeste (27 con Lincoln)
 ];
 
-// label = taxi number e.g. "T-01", trimmed to fit
+// Creates a top-down car SVG icon for Leaflet markers
 const createIcon = (status: string, selected: boolean, label = '') => {
   const fill   = COLORS[status] || COLORS.offline;
-  const stroke = selected ? '#ffffff' : 'rgba(0,0,0,0.4)';
-  const sw     = selected ? 2.5 : 1.5;
-  // Pin total size. Selected is bigger.
+  const stroke = selected ? '#ffffff' : 'rgba(0,0,0,0.5)';
   const W = selected ? 52 : 40;
   const H = selected ? 64 : 50;
-  // Circle radius inside pin head
-  const R = selected ? 17 : 13;
-  // Center of circle (top section of teardrop)
-  const cx = W / 2;
-  const cy = R + 4;
-  // Tip of the pin (bottom point)
-  const tipY = H - 2;
-  // Short label (max 4 chars to fit)
+  const scale = selected ? 1.3 : 1;
   const short = label ? label.replace(/^TAD[-_]?/i, '').replace(/TADSTI[-_]?/i, '').substring(0, 5) : '?';
-  const fs = selected ? 9 : 7;
 
   const glowAnim = selected
-    ? `<circle cx="${cx}" cy="${cy}" r="${R + 8}" fill="${fill}" opacity="0.25">
-        <animate attributeName="r" values="${R+6};${R+14};${R+6}" dur="2s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.25;0.05;0.25" dur="2s" repeatCount="indefinite"/>
+    ? `<circle cx="${W/2}" cy="${H/2}" r="${22 * scale}" fill="${fill}" opacity="0.2">
+        <animate attributeName="r" values="${18*scale};${26*scale};${18*scale}" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.2;0.04;0.2" dur="2s" repeatCount="indefinite"/>
        </circle>`
     : '';
 
-  // Teardrop path: circle top + converging lines to tip
-  const leftX  = cx - R * 0.7;
-  const rightX = cx + R * 0.7;
-  const baseY  = cy + R * 0.9;
+  // Top-down taxi car SVG (body + windshield + wheels)
+  const cx = W / 2;
+  const cy = H / 2;
+  const carW = 22 * (scale);
+  const carH = 34 * (scale);
+  const rx = carW / 2;
+  const ry = carH / 2;
+
+  const carSvg = `
+    <!-- Car body -->
+    <rect x="${cx - rx}" y="${cy - ry}" width="${carW}" height="${carH}" rx="${rx * 0.4}" ry="${rx * 0.4}"
+          fill="${fill}" stroke="${stroke}" stroke-width="${selected ? 2 : 1.5}"/>
+    <!-- Front windshield -->
+    <rect x="${cx - rx * 0.65}" y="${cy - ry + ry * 0.1}" width="${carW * 0.65}" height="${carH * 0.22}"
+          rx="2" fill="${status === 'offline' ? '#333' : 'rgba(0,0,0,0.55)'}" opacity="0.9"/>
+    <!-- Rear windshield -->
+    <rect x="${cx - rx * 0.65}" y="${cy + ry * 0.65}" width="${carW * 0.65}" height="${carH * 0.2}"
+          rx="2" fill="${status === 'offline' ? '#333' : 'rgba(0,0,0,0.55)'}" opacity="0.7"/>
+    <!-- Left wheels -->
+    <rect x="${cx - rx - 3}" y="${cy - ry + ry * 0.2}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
+    <rect x="${cx - rx - 3}" y="${cy + ry * 0.52}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
+    <!-- Right wheels -->
+    <rect x="${cx + rx - 2}" y="${cy - ry + ry * 0.2}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
+    <rect x="${cx + rx - 2}" y="${cy + ry * 0.52}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
+    <!-- Taxi label -->
+    <text x="${cx}" y="${cy + 1}"
+          text-anchor="middle" dominant-baseline="middle"
+          font-family="system-ui,sans-serif" font-size="${selected ? 8 : 6.5}" font-weight="900"
+          fill="#ffffff" letter-spacing="-0.5">${short}</text>
+    <!-- Status dot -->
+    <circle cx="${cx + rx - 1}" cy="${cy - ry + 5}" r="3.5"
+            fill="${status === 'active' ? '#22c55e' : status === 'unpaid' ? '#f97316' : '#94a3b8'}"
+            stroke="#000" stroke-width="1"/>
+  `;
 
   return L.divIcon({
     className: '',
-    html: `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.6))">
+    html: `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.7))">
       ${glowAnim}
-      <!-- Pin body: circle + triangle point -->
-      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
-      <polygon points="${leftX},${baseY} ${rightX},${baseY} ${cx},${tipY}"
-               fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>
-      <!-- Taxi icon: simple car silhouette (top-down from Segoe / Unicode) -->
-      <text x="${cx}" y="${cy + fs * 0.38}" 
-            text-anchor="middle" dominant-baseline="middle"
-            font-family="system-ui,sans-serif" font-size="${fs}" font-weight="800"
-            fill="#ffffff" letter-spacing="-0.5">${short}</text>
-      <!-- Small status dot at top-right of circle -->
-      <circle cx="${cx + R - 3}" cy="${cy - R + 3}" r="3.5"
-              fill="${status === 'active' ? '#22c55e' : status === 'unpaid' ? '#f97316' : '#94a3b8'}"
-              stroke="#000" stroke-width="1"/>
+      ${carSvg}
     </svg>`,
     iconSize:    [W, H],
-    iconAnchor:  [W / 2, H],
-    popupAnchor: [0, -H],
+    iconAnchor:  [W / 2, H / 2],
+    popupAnchor: [0, -H / 2 - 8],
   });
 };
 
@@ -205,7 +213,7 @@ const MapView: React.FC<MapViewProps> = ({
   const handleClear = useCallback(() => onClearSelection?.(), [onClearSelection]);
 
   if (!ready) return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
+    <div className="w-full h-full bg-[#171719] flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-tad-yellow/20 border-t-tad-yellow rounded-full animate-spin" />
     </div>
   );

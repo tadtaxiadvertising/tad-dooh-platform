@@ -837,134 +837,209 @@
         
         const sync = {
             syncRetryDelay: 30000,
-            
+            SYNC_CACHE_KEY: 'tad_playlist_cache',
+            SYNC_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours kill-switch TTL
+
+            // ── OFFLINE RESTORE ──
+            // Load last valid playlist from localStorage on boot
+            restoreFromCache() {
+                try {
+                    const raw = localStorage.getItem(this.SYNC_CACHE_KEY);
+                    if (!raw) return false;
+                    const cached = JSON.parse(raw);
+                    const age = Date.now() - (cached.savedAt || 0);
+
+                    if (age > this.SYNC_TTL_MS) {
+                        console.warn('⏳ Cached playlist expired (>24h). Kill-switch active.');
+                        player.showBlocked('Actualización de contenido requerida. Conéctese a internet.');
+                        return false;
+                    }
+
+                    if (cached.media_assets && cached.media_assets.length > 0) {
+                        console.log(`📂 Restored ${cached.media_assets.length} assets from local cache (age: ${Math.round(age/60000)}m)`);
+                        state.currentPlaylist = cached.media_assets;
+                        state.lastSyncHash = cached.sync_hash;
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Cache restore failed:', e);
+                }
+                return false;
+            },
+
+            // ── PERSIST ──
+            saveToCache(payload) {
+                try {
+                    localStorage.setItem(this.SYNC_CACHE_KEY, JSON.stringify({
+                        ...payload,
+                        savedAt: Date.now()
+                    }));
+                    console.log('💾 Playlist persisted to localStorage cache.');
+                } catch (e) {
+                    console.warn('⚠️ Failed to persist playlist:', e);
+                }
+            },
+
+            // ── MAIN SYNC ──
             async performSync() {
-                if (state.isSyncing) {
-                    console.log('⏳ Sync already in progress');
-                    return;
-                }
-                
+                if (state.isSyncing) { console.log('⏳ Sync in progress, skipping.'); return; }
+
                 if (!state.isOnline) {
-                    console.log('⏸️ Offline, skipping sync');
+                    console.log('⏸️ Offline — serving from local cache.');
+                    // Try to restore cache; if expired → block
+                    if (!this.restoreFromCache() && state.currentPlaylist.length === 0) {
+                        player.showNoContent();
+                    } else if (state.currentPlaylist.length > 0 && !player.isPlaying) {
+                        player.play(state.currentPlaylist[state.currentIndex]);
+                    }
                     return;
                 }
-                
+
                 state.isSyncing = true;
                 ui.updateStatus('sync');
-                
+
                 try {
-                    console.log(`🔄 Starting Delta Sync against ${CONFIG.SERVER_URL}...`);
-                    const lastHash = state.lastSyncHash || '';
-                    
+                    console.log(`🔄 [DELTA SYNC] → ${CONFIG.SERVER_URL}`);
+
                     const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/device/sync`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.authToken}`
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             deviceId: state.deviceId,
-                            lastHash: lastHash,
+                            lastHash: state.lastSyncHash || '',
                             batteryLevel: state.batteryLevel || 100,
                             lat: state.lat,
                             lng: state.lng
-                        })
+                        }),
+                        signal: AbortSignal.timeout(15000) // 15s timeout
                     });
-                    
+
                     if (!syncResponse.ok) {
                         if (syncResponse.status === 402 || syncResponse.status === 403) {
-                            player.showBlocked("Suscripción Pendiente: RD$6,000.00");
+                            console.warn('⛔ Payment required — kill-switch from server.');
+                            player.showBlocked('Suscripción pendiente: RD$6,000.00');
                             return;
                         }
-                        throw new Error(`Sync failed: ${syncResponse.status}`);
+                        throw new Error(`HTTP ${syncResponse.status}`);
                     }
-                    
+
                     const syncData = await syncResponse.json();
-                    
-                    // CHECK IF BLOCKED
-                    if (syncData.blocked) {
-                        console.warn('⛔ Device BLOCKED:', syncData.reason);
-                        player.showBlocked(syncData.reason);
-                        await analytics.uploadAll();
+
+                    // Server-side kill-switch
+                    if (syncData.killSwitch || syncData.blocked) {
+                        console.warn('⛔ Kill-switch active:', syncData.reason);
+                        player.showBlocked(syncData.reason || 'Cuenta suspendida. Contacta a TAD.');
                         return;
                     }
 
-                    // HANDLE DELTA SYNC
+                    // Delta check — no changes
                     if (syncData.update === false) {
-                        console.log('🔄 Delta Sync: No changes detected (hash matches).');
-                    } else if (syncData.media_assets) {
-                        console.log('📥 New campaign content received. Updating playlist.');
+                        console.log('✅ Delta sync: content is current (hash match).');
+                        // Refresh TTL in cache so 24h clock resets
+                        const existing = JSON.parse(localStorage.getItem(this.SYNC_CACHE_KEY) || '{}');
+                        this.saveToCache({ ...existing, sync_hash: syncData.sync_hash });
+
+                        // Resume playback if nothing is playing
+                        if (state.currentPlaylist.length > 0 && !player.isPlaying) {
+                            player.play(state.currentPlaylist[state.currentIndex]);
+                        }
+
+                    } else if (syncData.media_assets && syncData.media_assets.length > 0) {
+                        console.log(`📥 New payload: ${syncData.media_assets.length} assets.`);
+
                         state.currentPlaylist = syncData.media_assets;
                         state.currentIndex = 0;
-                        state.lastSyncHash = syncData.sync_hash;
+                        state.lastSyncHash  = syncData.sync_hash;
                         localStorage.setItem('tad_last_sync_hash', state.lastSyncHash);
-                        
-                        if (state.currentPlaylist.length > 0) {
-                            // HEAVY SYNC: Force pre-fetch of all assets to Cache Storage (SW)
-                            console.log('📦 Pre-fetching assets for offline use...');
-                            for (const asset of state.currentPlaylist) {
-                                try {
-                                    const assetUrl = asset.url || asset.src;
-                                    if (assetUrl) {
-                                        console.log(`   ⬇️ Fetching ${assetUrl}`);
-                                        await fetch(assetUrl, { mode: 'cors' });
-                                    }
-                                } catch (e) {
-                                    console.warn('   ⚠️ Pre-fetch failed for asset:', asset.id, e);
-                                }
-                            }
-                            console.log('✅ All assets synced to local cache.');
-                            
-                            // Visual Alert for Driver (if online triggered)
-                            if (syncData.update) {
-                                // We use a custom UI toast later, for now console and play
-                                console.log('✅ Sincronización completa. Puedes apagar tu Hotspot.');
-                            }
 
-                            player.play(state.currentPlaylist[0]);
+                        // Persist to cache (offline resilience)
+                        this.saveToCache({ media_assets: syncData.media_assets, sync_hash: syncData.sync_hash });
+
+                        // Background pre-fetch into Cache API for true offline use
+                        this._prefetchAssets(syncData.media_assets);
+
+                        // Start playback immediately
+                        player.play(state.currentPlaylist[0]);
+
+                        window.dispatchEvent(new CustomEvent('TAD_UI_TOAST', {
+                            detail: `✅ ${syncData.media_assets.length} campañas sincronizadas`
+                        }));
+
+                    } else {
+                        // Empty playlist from server
+                        console.warn('⚠️ Server returned empty media_assets.');
+
+                        // Still try to serve from local cache
+                        const restored = this.restoreFromCache();
+                        if (restored && state.currentPlaylist.length > 0) {
+                            console.log('📂 Serving stale cache while server has no content.');
+                            if (!player.isPlaying) player.play(state.currentPlaylist[state.currentIndex]);
                         } else {
-                            // NO CONTENT ASSIGNED — show TAD NODE logo (not test video!)
                             player.showNoContent();
                         }
-                    } else {
-                        // Response has no media_assets field at all → no content
-                        player.showNoContent();
                     }
-                    
-                    // HANDLE COMMANDS
-                    if (syncData.commands && syncData.commands.length > 0) {
-                        for (const command of syncData.commands) {
-                            try {
-                                await this.executeRemoteCommand(command);
-                            } catch (e) {
-                                console.error('Error executing command', command.id, e);
+
+                    // Execute remote commands (REBOOT, FORCE_SYNC, etc.)
+                    if (syncData.commands?.length > 0) {
+                        for (const cmd of syncData.commands) {
+                            try { await this.executeRemoteCommand(cmd); } catch (e) {
+                                console.error('❌ Command failed:', cmd.id, e);
                             }
                         }
                     }
 
                     await analytics.uploadAll();
-                    
+
                     state.lastSync = new Date().toISOString();
                     localStorage.setItem('tad_last_sync', state.lastSync);
-                    
-                    this.syncRetryDelay = 30000;
-                    console.log('✅ Sync process finished');
-                    
+                    this.syncRetryDelay = 30000; // Reset backoff on success
+
+                    console.log('✅ Sync complete.');
+
                 } catch (error) {
-                    console.error('❌ Sync error:', error);
-                    // On sync failure → show TAD NODE logo (NOT test playlist)
+                    console.error('❌ Sync failed:', error);
+
+                    // Graceful degradation: serve local cache instead of crashing
                     if (state.currentPlaylist.length === 0) {
-                        player.showNoContent();
+                        const restored = this.restoreFromCache();
+                        if (restored && state.currentPlaylist.length > 0) {
+                            console.log('📂 Failure fallback: serving from local cache.');
+                            player.play(state.currentPlaylist[0]);
+                        } else {
+                            player.showNoContent();
+                        }
                     }
+
+                    // Exponential backoff (max 10 min)
                     this.syncRetryDelay = Math.min(this.syncRetryDelay * 2, 10 * 60 * 1000);
-                    console.log(`🔄 Retrying in ${this.syncRetryDelay / 1000}s`);
+                    console.log(`🔁 Retrying in ${this.syncRetryDelay / 1000}s`);
                     setTimeout(() => this.performSync(), this.syncRetryDelay);
+
                 } finally {
                     state.isSyncing = false;
-                    ui.updateStatus('online');
+                    ui.updateStatus(state.isOnline ? 'online' : 'offline');
                 }
             },
-            
+
+            // ── BACKGROUND PREFETCH ──
+            async _prefetchAssets(assets) {
+                if (!('caches' in window)) return;
+                try {
+                    const cache = await caches.open('tad-media-v1');
+                    for (const asset of assets) {
+                        const url = asset.url || asset.src;
+                        if (!url) continue;
+                        const existing = await cache.match(url);
+                        if (!existing) {
+                            cache.add(url).catch(() => console.warn('⚠️ Cache miss:', url));
+                        }
+                    }
+                    console.log('📦 Background prefetch complete.');
+                } catch (e) {
+                    console.warn('⚠️ Prefetch error:', e);
+                }
+            },
+
             async executeRemoteCommand(command) {
                 console.log('📡 Executing remote command:', command.type, command.params);
                 let result = { success: true, timestamp: new Date().toISOString() };
@@ -1265,42 +1340,58 @@
                 }
             }
             
-            // 3. Initialize UI + Player + Watchdog
+            // 3. Init UI + Player + Watchdog
             ui.init();
             player.init();
             if (state.config.watchdogEnabled) watchdog.init();
-            
-            // 4. Show TAD NODE logo while waiting for sync
-            player.showNoContent();
-            
-            // 5. Attempt first sync (if it fails, stays on TAD NODE logo)
-            if (state.isOnline) {
-                try {
-                    await sync.performSync();
-                } catch (error) {
-                    console.warn('⚠️ Initial sync failed. Showing TAD NODE logo.');
-                    player.showNoContent();
-                }
+
+            // 4. OFFLINE-FIRST BOOT — restore local cache immediately
+            const cacheRestored = sync.restoreFromCache();
+            if (cacheRestored && state.currentPlaylist.length > 0) {
+                console.log('📂 Boot: serving from local cache while connecting...');
+                player.play(state.currentPlaylist[0]);
+            } else {
+                player.showNoContent();
             }
-            
-            // 6. Periodic sync check (every minute, checks if SYNC_INTERVAL has passed)
+
+            // 5. Sync now if online; otherwise wait for connectivity
+            if (state.isOnline) {
+                try { await sync.performSync(); }
+                catch (e) { console.warn('⚠️ Initial sync failed. Cached playlist active.'); }
+            } else {
+                console.log('📴 Device offline on boot. Serving cache until connectivity restored.');
+            }
+
+            // 6. Re-sync when device comes back online
+            window.addEventListener('online', () => {
+                state.isOnline = true;
+                console.log('🌐 Online! Triggering re-sync...');
+                sync.performSync();
+            });
+            window.addEventListener('offline', () => {
+                state.isOnline = false;
+                console.log('📴 Offline. Serving from local cache.');
+                ui.updateStatus('offline');
+            });
+
+            // 7. Periodic sync (every SYNC_INTERVAL, default 5 min)
             setInterval(() => {
+                if (!state.isOnline) return;
                 const now = Date.now();
-                const lastSync = new Date(state.lastSync).getTime();
-                
-                if (now - lastSync >= CONFIG.SYNC_INTERVAL) {
+                const lastSyncTime = state.lastSync ? new Date(state.lastSync).getTime() : 0;
+                if (now - lastSyncTime >= CONFIG.SYNC_INTERVAL) {
                     sync.performSync();
                 }
             }, 60 * 1000);
-            
-            console.log('✅ TAD Player v2.0 ready');
+
+            console.log('✅ TAD Player v3.0 (SRE Grade) ready.');
             console.log('📱 Device ID:', state.deviceId);
             console.log('🌐 Server:', CONFIG.SERVER_URL);
         }
-        
+
         // Start app
         init();
-        
+
         // Expose for debugging
         window.player = player;
         window.sync = sync;

@@ -242,16 +242,21 @@ export class DriversService {
   }
 
   /**
-   * PURGA TOTAL — Elimina TODOS los drivers y devices (solo para testing)
+   * PURGA TOTAL — Elimina TODOS los datos de prueba en orden correcto (FK safe)
    */
   async purgeAll() {
-    // 1. Desvincular todos los drivers de sus devices
-    await this.prisma.driver.updateMany({ data: { deviceId: null } });
+    // 1. Borrar tablas hijas primero para evitar errores de FK
+    await this.prisma.payrollPayment.deleteMany().catch(() => null);
+    await this.prisma.analyticsEvent.deleteMany().catch(() => null);
+    await this.prisma.subscription.deleteMany().catch(() => null);
 
-    // 2. Borrar todos los drivers
+    // 2. Desvincular devices de drivers (FK constraint)
+    await this.prisma.driver.updateMany({ data: { deviceId: null } }).catch(() => null);
+
+    // 3. Borrar todos los drivers
     const deletedDrivers = await this.prisma.driver.deleteMany();
 
-    // 3. Borrar todos los devices
+    // 4. Borrar todos los devices
     const deletedDevices = await this.prisma.device.deleteMany();
 
     return {

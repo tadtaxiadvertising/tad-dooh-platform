@@ -1250,9 +1250,10 @@
                 }
 
                 // Simulator Mode fallback
-                if (state.config.simulatorMode && !state.lat) {
-                    state.lat = 18.4861 + (Math.random() - 0.5) * 0.01;
-                    state.lng = -69.9312 + (Math.random() - 0.5) * 0.01;
+                if (state.config.simulatorMode) {
+                    // Simular ubicación en Santiago, RD para el piloto
+                    state.lat = 19.4517 + (Math.random() - 0.5) * 0.01;
+                    state.lng = -70.6970 + (Math.random() - 0.5) * 0.01;
                 }
                 
                 try {

@@ -41,7 +41,11 @@
 
     <!-- Waiting Screen: pure black, no branding visible to passengers -->
     <div id="waiting-screen">
-        <!-- Intentionally blank -->
+        <!-- Hidden debug info for SRE tracing, invisible to passengers -->
+        <div style="display:none">
+            <span id="node-id"></span>
+            <div class="status"></div>
+        </div>
     </div>
 
     <script>
@@ -49,7 +53,9 @@
         // TAD MINIMAL PLAYER — Zero Dependencies
         // ============================================
         (function() {
-            var SERVER = 'http://10.0.0.112:3000';
+            // Priority: URL Param > localStorage > Production URL
+            var urlParams = new URL(window.location.href).searchParams;
+            var SERVER = urlParams.get('apiUrl') || localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
             var SYNC_INTERVAL = 30000; // 30 seconds
             var deviceId = '';
             var playlist = [];

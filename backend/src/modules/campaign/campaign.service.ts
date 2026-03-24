@@ -155,7 +155,7 @@ export class CampaignService {
 
     const uuid = device.id;
     const hwId = device.deviceId;
-    const city = deviceCity || device.city || 'Santo Domingo';
+    const city = deviceCity || device.city || 'Santiago';
     const driverId = device.driverId;
     console.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
 

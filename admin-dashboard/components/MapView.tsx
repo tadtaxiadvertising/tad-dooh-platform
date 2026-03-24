@@ -28,12 +28,12 @@ const COLORS: Record<string, string> = {
   unpaid:  '#ef4444',
 };
 
-// Coordenadas aproximadas del Polígono Central de Santo Domingo
+// Coordenadas aproximadas del Centro de Santiago (Monumento y alrededores)
 const POLIGONO_CENTRAL: [number, number][] = [
-  [18.4868, -69.9452], // Noroeste (Kennedy con Lincoln)
-  [18.4900, -69.9200], // Noreste (Kennedy con Gomez)
-  [18.4650, -69.9150], // Sureste (27 con Gomez)
-  [18.4630, -69.9400], // Suroeste (27 con Lincoln)
+  [19.4630, -70.7050], // Noroeste
+  [19.4650, -70.6750], // Noreste
+  [19.4400, -70.6780], // Sureste
+  [19.4380, -70.7020], // Suroeste
 ];
 
 // Creates a top-down car SVG icon for Leaflet markers
@@ -180,7 +180,7 @@ function GeofenceLayer() {
 const MapView: React.FC<MapViewProps> = ({
   locations = [],
   heatmapData = [],
-  center = [18.4861, -69.9312],
+  center = [19.4544, -70.6923], // Santiago, RD
   zoom = 13,
   mode = 'live',
   selectedId = null,

@@ -15,4 +15,16 @@ export class HeartbeatDto {
   @IsString()
   @IsOptional()
   player_status?: string;
+
+  @IsNumber()
+  @IsOptional()
+  lat?: number;
+
+  @IsNumber()
+  @IsOptional()
+  lng?: number;
+
+  @IsString()
+  @IsOptional()
+  timestamp?: string;
 }

@@ -200,13 +200,11 @@ export class DriversService {
     });
 
     // 4. Comisiones por referidos (RD$500 por cada chofer activo referido)
-    const referralsCount = await this.prisma.driver.count({
-      where: { 
-        referredBy: driver.id,
-        status: 'ACTIVE',
-        subscriptionPaid: true
-      }
-    });
+    const referralsResult = await this.prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*) as count FROM drivers
+      WHERE referred_by = ${driver.id} AND status = 'ACTIVE' AND subscription_paid = true
+    `;
+    const referralsCount = Number(referralsResult[0]?.count ?? 0);
     const referralEarnings = referralsCount * 500;
 
     return {
@@ -242,21 +240,29 @@ export class DriversService {
   }
 
   /**
-   * PURGA TOTAL — Elimina TODOS los datos de prueba en orden correcto (FK safe)
+   * PURGA TOTAL — FK-safe según schema.prisma real
+   * Orden: tablas hijas → drivers → devices
    */
   async purgeAll() {
-    // 1. Borrar tablas hijas primero para evitar errores de FK
+    // Tablas que referencian a Driver (con onDelete: Cascade en schema)
+    await this.prisma.driverLocation.deleteMany().catch(() => null);
     await this.prisma.payrollPayment.deleteMany().catch(() => null);
-    await this.prisma.analyticsEvent.deleteMany().catch(() => null);
     await this.prisma.subscription.deleteMany().catch(() => null);
 
-    // 2. Desvincular devices de drivers (FK constraint)
+    // Tablas que referencian a Device directamente
+    await this.prisma.analyticsEvent.deleteMany().catch(() => null);
+    await this.prisma.deviceHeartbeat.deleteMany().catch(() => null);
+    await this.prisma.playbackEvent.deleteMany().catch(() => null);
+    await this.prisma.deviceCommand.deleteMany().catch(() => null);
+    await this.prisma.campaignMetric.deleteMany().catch(() => null);
+    await this.prisma.playlistItem.deleteMany().catch(() => null);
+    await this.prisma.deviceCampaign.deleteMany().catch(() => null);
+
+    // Desvincular drivers de devices para romper FK circular
     await this.prisma.driver.updateMany({ data: { deviceId: null } }).catch(() => null);
 
-    // 3. Borrar todos los drivers
+    // Borrar drivers y devices
     const deletedDrivers = await this.prisma.driver.deleteMany();
-
-    // 4. Borrar todos los devices
     const deletedDevices = await this.prisma.device.deleteMany();
 
     return {

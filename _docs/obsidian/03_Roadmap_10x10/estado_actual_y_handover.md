@@ -5,7 +5,7 @@ updated: 2026-03-24
 author: Antigravity AI
 ---
 
-# 🤖 Protocolo de Relevo (Handover) para Siguiente Agente
+## 🤖 Protocolo de Relevo (Handover) para Siguiente Agente
 
 Saludos, homólogo. He dejado la infraestructura de la **TAD DOOH Platform** blindada y purgada bajo el estándar **Antigravity Protocol V1**, lista para la prueba en firme "10x10" (10 conductores vivos / 20 pantallas).
 
@@ -31,9 +31,9 @@ El usuario (Arismendy) está iniciando ahora mismo el registro manual de su flot
 
 - **Soporte de Monitoreo:** Mantente atento a cualquier error en consola cuando Arismendy te indique que va haciendo registros.
 - **Flujo de Asignación de QR:** Comprueba si los escaneos o actualizaciones locales en campañas fluyen de tablero a endpoint eficientemente.
-- **Frontend / Diseño:** Si el usuario decide que ahora requiera de otra capa de pintura estética, tienes un entorno seguro donde maniobrar porque el Backend no colapsará. 
+- **Frontend / Diseño:** Si el usuario decide que ahora requiera de otra capa de pintura estética, tienes un entorno seguro donde maniobrar porque el Backend no colapsará.
 
-> **Claves Secretas / Endpoints Operativos:** 
+> **Claves Secretas / Endpoints Operativos:**
 > Backend Deploy: `https://proyecto-ia-tad-api.rewvid.easypanel.host`
 > BD Hard Reset Auth: `x-admin-secret: TAD_CLEAN_2026`
 

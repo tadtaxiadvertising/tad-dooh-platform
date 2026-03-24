@@ -521,12 +521,16 @@
             async startExperience() {
                 try {
                     // Unlock audio/video via user interaction
-                    this.video.muted = false; 
-                    this.video.play().catch(() => {
-                        console.log('Autoplay muted fallback requested');
-                        this.video.muted = true;
-                        this.video.play();
-                    });
+                    if (this.video) {
+                        this.video.muted = false; 
+                        this.video.play().catch(() => {
+                            console.log('Autoplay muted fallback requested');
+                            if (this.video) {
+                                this.video.muted = true;
+                                this.video.play();
+                            }
+                        });
+                    }
 
                     // Attempt Full Screen if supported
                     if (document.documentElement.requestFullscreen) {
@@ -692,8 +696,11 @@
             
             showNoContent() {
                 this.hideAllStates();
-                document.getElementById('no-content-device-id').textContent = state.deviceId;
-                document.getElementById('no-content-state').classList.remove('hidden');
+                const display = document.getElementById('node-id-display');
+                if (display) display.textContent = state.deviceId;
+                
+                const container = document.getElementById('no-content-state');
+                if (container) container.classList.remove('hidden');
                 // Stop any current playback
                 if (this.video) {
                     this.video.pause();
@@ -705,11 +712,16 @@
             
             showBlocked(reason) {
                 this.hideAllStates();
-                document.getElementById('blocked-device-id').textContent = state.deviceId;
+                const display = document.getElementById('blocked-device-id');
+                if (display) display.textContent = state.deviceId;
+                
                 if (reason) {
-                    document.getElementById('blocked-reason').textContent = reason;
+                    const reasonEl = document.getElementById('blocked-reason');
+                    if (reasonEl) reasonEl.textContent = reason;
                 }
-                document.getElementById('blocked-state').classList.remove('hidden');
+                
+                const container = document.getElementById('blocked-state');
+                if (container) container.classList.remove('hidden');
                 if (this.video) {
                     this.video.pause();
                     this.video.src = '';

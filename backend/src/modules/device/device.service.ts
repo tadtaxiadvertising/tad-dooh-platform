@@ -234,7 +234,7 @@ export class DeviceService {
     }
 
     // Capture device city for geofencing
-    const deviceCity = device.city || 'Santo Domingo';
+    const deviceCity = device.city || 'Santiago';
     const payload = await this.campaignService.getActiveSyncVideos(deviceId, deviceCity);
 
     // ============================================

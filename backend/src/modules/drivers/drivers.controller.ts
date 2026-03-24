@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Param, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException } from '@nestjs/common';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -106,5 +106,23 @@ export class DriversController {
     } catch (e) {
       throw new BadRequestException(e.message);
     }
+  }
+  /**
+   * DELETE /api/drivers/purge-all — Purge ALL drivers and devices (TEST ONLY)
+   */
+  @Post('purge-all')
+  async purgeAll(@Headers('x-admin-secret') secret: string) {
+    if (secret !== 'TAD_CLEAN_2026') {
+      throw new ForbiddenException('Unauthorized purge attempt');
+    }
+    return this.driversService.purgeAll();
+  }
+
+  /**
+   * DELETE /api/drivers/:id — Eliminar un chofer
+   */
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.driversService.remove(id);
   }
 }

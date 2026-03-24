@@ -226,5 +226,36 @@ export class DriversService {
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid
     };
+  /**
+   * Eliminar un chofer por ID (desvincula tablet automáticamente)
+   */
+  async remove(id: string) {
+    // Desvincular el device primero para evitar errores de FK
+    await this.prisma.driver.update({
+      where: { id },
+      data: { deviceId: null },
+    }).catch(() => null);
+
+    return this.prisma.driver.delete({ where: { id } });
+  }
+
+  /**
+   * PURGA TOTAL — Elimina TODOS los drivers y devices (solo para testing)
+   */
+  async purgeAll() {
+    // 1. Desvincular todos los drivers de sus devices
+    await this.prisma.driver.updateMany({ data: { deviceId: null } });
+
+    // 2. Borrar todos los drivers
+    const deletedDrivers = await this.prisma.driver.deleteMany();
+
+    // 3. Borrar todos los devices
+    const deletedDevices = await this.prisma.device.deleteMany();
+
+    return {
+      message: 'Base de datos limpiada exitosamente',
+      deletedDrivers: deletedDrivers.count,
+      deletedDevices: deletedDevices.count,
+    };
   }
 }

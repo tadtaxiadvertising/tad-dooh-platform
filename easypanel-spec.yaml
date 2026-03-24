@@ -1,0 +1,12 @@
+# easypanel-spec.yaml (Reference for Antigravity)
+# TAD DOOH PLATFORM - CONFIGURACIÓN DE ASFIXIA EN EASYPANEL
+services:
+  tad-api:
+    image: node:20-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Límite estricto de RAM para evitar caídas del VPS
+    env:
+      - NODE_OPTIONS="--max-old-space-size=400" # Fuerza al Garbage Collector de Node a actuar antes
+      - DATABASE_URL="postgresql://...:6543/postgres?connection_limit=5" # REGLA SRE: Forzar Pooler de Supabase (Puerto 6543)

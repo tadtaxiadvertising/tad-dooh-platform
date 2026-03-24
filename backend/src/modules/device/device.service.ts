@@ -25,27 +25,27 @@ export class DeviceService {
    */
   async getDeviceSlots(deviceId: string) {
     try {
-      // We query the sync payload to see how many slots are "taking up" the device currently
-      const syncData = await this.campaignService.getActiveSyncVideos(deviceId);
-      const assignedSlots = syncData.media_assets?.length || 0;
+      const device = await this.prisma.device.findUnique({ where: { deviceId } });
+      if (!device) throw new Error('Device not found');
+      
+      const payload = await this.campaignService.getActiveSyncVideos(deviceId, device.city || 'Santiago');
+      const occupied = payload.media_assets?.length || 0;
 
       return {
         device_id: deviceId,
         max_slots: MAX_SLOTS_PER_DEVICE,
-        assigned_slots: assignedSlots,
-        available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - assignedSlots),
-        usage_percentage: Math.round((assignedSlots / MAX_SLOTS_PER_DEVICE) * 100)
+        assigned_slots: occupied,
+        available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - occupied),
+        usage_percentage: Math.round((occupied / MAX_SLOTS_PER_DEVICE) * 100)
       };
     } catch (error) {
-      // Return safe defaults if DB query fails — never crash the fleet page with 500
-      this.logger.warn(`⚠️ getDeviceSlots(${deviceId}): DB error (returning defaults) — ${error?.message}`);
+      this.logger.warn(`⚠️ getDeviceSlots(${deviceId}): ${error?.message}`);
       return {
         device_id: deviceId,
         max_slots: MAX_SLOTS_PER_DEVICE,
         assigned_slots: 0,
         available_slots: MAX_SLOTS_PER_DEVICE,
-        usage_percentage: 0,
-        error: 'Could not fetch live slot data'
+        usage_percentage: 0
       };
     }
   }
@@ -78,6 +78,49 @@ export class DeviceService {
         driverId: dto.driver_id,
       },
     });
+  }
+
+  async getFleetStatusSummary() {
+    const now = new Date();
+
+    // 2. Fetch all devices and their individual slot data (using the unified counting method)
+    const devices = await this.prisma.device.findMany({
+      include: {
+        driver: {
+          select: { id: true, fullName: true, status: true, subscriptionPaid: true }
+        }
+      }
+    });
+
+    const thirtyMinMs = 30 * 60 * 1000;
+    
+    // Process in parallel to be fast
+    const fleetStatus = await Promise.all(devices.map(async d => {
+      const isOnline = d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs);
+      
+      // Call the unified slot counter
+      const slotsInfo = await this.getDeviceSlots(d.deviceId);
+
+      return {
+        id: d.id,
+        device_id: d.deviceId,
+        taxi_number: d.taxiNumber,
+        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
+        is_online: isOnline,
+        battery_level: d.batteryLevel,
+        occupied_slots: slotsInfo.assigned_slots,
+        available_slots: slotsInfo.available_slots,
+        max_slots: MAX_SLOTS_PER_DEVICE,
+        player_status: d.playerStatus,
+        last_seen: d.lastSeen,
+        city: d.city || 'Santiago',
+        driver_id: d.driver?.id || null,
+        driver_name: d.driver?.fullName || 'No asignado',
+        subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
+      };
+    }));
+
+    return fleetStatus;
   }
 
   async deviceHeartbeat(dto: HeartbeatDto) {

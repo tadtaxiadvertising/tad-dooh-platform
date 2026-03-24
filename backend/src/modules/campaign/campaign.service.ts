@@ -138,27 +138,40 @@ export class CampaignService {
   /**
    * Returns a payload of videos specifically assigned to this device (Manual Distribution)
    */
-  async getActiveSyncVideos(deviceId: string, deviceCity?: string) {
+  async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
     
+    // 1. Resolve Identity: Find the device by Hardware ID or UUID
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
+      select: { id: true, deviceId: true, city: true }
+    });
+
+    if (!device) {
+      console.warn(`⚠️ getActiveSyncVideos: Device ${deviceIdOrUuid} not found in cluster.`);
+      return { version: 0, sync_hash: 'not-found', media_assets: [] };
+    }
+
+    const uuid = device.id;
+    const hwId = device.deviceId;
+    const city = deviceCity || device.city || 'Santo Domingo';
+
     let activeCampaigns: any[] = [];
     
     try {
-      // Try the full query with all relations
+      // 2. Hybrid Query: Universal Campaigns + Geofencing + Manual (v1/v2) Assignments
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
           active: true,
           startDate: { lte: now },
           endDate: { gte: now },
           OR: [
-            { 
-              targetAll: true,
-              OR: [
-                { targetCity: 'Global' },
-                { targetCity: deviceCity || 'Santo Domingo' }
-              ]
-            },
-            { devices: { some: { device_id: deviceId } } },
+            // Canal Global
+            { targetAll: true, OR: [{ targetCity: 'Global' }, { targetCity: city }] },
+            // Canal Directo (v2 UUID)
+            { devices: { some: { device_id: uuid } } },
+            // Canal Legacy (v1 Hardware ID)
+            { targets: { some: { deviceId: hwId } } }
           ]
         } as any,
         include: {
@@ -166,31 +179,15 @@ export class CampaignService {
           media: true,
           advertiserRef: true,
         },
-        orderBy: {
-          updatedAt: 'desc',
-        }
+        orderBy: { updatedAt: 'desc' }
       });
     } catch (primaryError) {
-      // Fallback: simplified query without optional relations that may not exist
-      try {
-        activeCampaigns = await this.prisma.campaign.findMany({
-          where: {
-            active: true,
-            startDate: { lte: now },
-            endDate: { gte: now },
-            targetAll: true,
-          },
-          include: {
-            mediaAssets: true,
-            media: true,
-            advertiserRef: true,
-          },
-          orderBy: { updatedAt: 'desc' }
-        });
-      } catch (fallbackError) {
-        // Last resort: return empty payload
-        return { version: 0, sync_hash: 'error', media_assets: [] };
-      }
+      // Fallback
+      activeCampaigns = await this.prisma.campaign.findMany({
+        where: { active: true, targetAll: true },
+        include: { mediaAssets: true, media: true },
+        orderBy: { updatedAt: 'desc' }
+      });
     }
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
@@ -199,7 +196,6 @@ export class CampaignService {
 
     const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
-      // Mapeamos a VideoAsset (v2)
       const mapMediaAsset = (ma: any) => ({
         id: ma.id || ma.checksum,
         campaignId: campaign.id,
@@ -211,23 +207,14 @@ export class CampaignService {
         advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser'
       });
 
-      if ((campaign as any).mediaAssets) {
-        mediaAssets.push(...(campaign as any).mediaAssets.map(mapMediaAsset));
-      }
-      if ((campaign as any).media) {
-        mediaAssets.push(...(campaign as any).media.map(mapMediaAsset));
-      }
+      if ((campaign as any).mediaAssets) mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));
+      if ((campaign as any).media) mediaAssets.push(...campaign.media.map(mapMediaAsset));
     }
 
-    // ============================================
-    // SLOT LIMIT VALIDATION (MAX 15)
-    // ============================================
     const MAX_SLOTS_PER_DEVICE = 15;
     const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS_PER_DEVICE);
-
     const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum || 'no-checksum'}`).join('|');
     const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
-
     const latestUpdate = activeCampaigns[0].updatedAt.getTime();
 
     return {

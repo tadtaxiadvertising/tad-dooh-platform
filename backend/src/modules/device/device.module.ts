@@ -10,5 +10,6 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [CampaignModule, FinanceModule, PrismaModule],
   controllers: [DeviceController, DeviceAdminController],
   providers: [DeviceService],
+  exports: [DeviceService],
 })
 export class DeviceModule {}

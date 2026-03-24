@@ -9,7 +9,8 @@ import {
   BadRequestException,
   Body,
   Param,
-  Patch
+  Patch,
+  Query
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
@@ -17,6 +18,17 @@ import { MediaService } from './media.service';
 @Controller('media')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
+
+  @Get('upload-url')
+  async getUploadUrl(
+    @Query('fileName') fileName: string,
+    @Query('fileType') fileType: string
+  ) {
+    if (!fileName || !fileType) {
+      throw new BadRequestException('fileName and fileType are required query parameters');
+    }
+    return this.mediaService.generateUploadUrl(fileName, fileType);
+  }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {

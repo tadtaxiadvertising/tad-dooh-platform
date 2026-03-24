@@ -73,6 +73,29 @@ export class MediaService {
     }
   }
 
+  /**
+   * REGLA DE SEGURIDAD 07: Signed URL — El video NO pasa por NestJS RAM
+   * Genera una URL firmada válida por 15 minutos para subir directo a Supabase.
+   */
+  async generateUploadUrl(fileName: string, fileType: string) {
+    await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(() => {});
+    
+    const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+    const { data, error } = await this.supabase.storage
+      .from('ads-videos')
+      .createSignedUploadUrl(safeName);
+
+    if (error) throw new BadRequestException(`Storage Error: ${error.message}`);
+
+    const publicUrl = `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/ads-videos/${data.path}`;
+    
+    return {
+      uploadUrl: data.signedUrl,
+      path: data.path,
+      publicUrl,
+    };
+  }
+
   async registerFileMock(dto: { originalname: string; mimetype: string; size: number }) {
     const fileExt = extname(dto.originalname);
     const fileId = uuidv4();

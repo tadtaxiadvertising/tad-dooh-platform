@@ -226,6 +226,8 @@ export class DriversService {
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid
     };
+  }
+
   /**
    * Eliminar un chofer por ID (desvincula tablet automáticamente)
    */

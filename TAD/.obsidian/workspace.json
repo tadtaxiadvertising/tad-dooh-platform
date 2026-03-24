@@ -1,0 +1,216 @@
+{
+  "main": {
+    "id": "2df939d3a0b6d98f",
+    "type": "split",
+    "children": [
+      {
+        "id": "c83a9923bf319336",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a0a73d883cb29e38",
+            "type": "leaf",
+            "state": {
+              "type": "bases",
+              "state": {
+                "file": "Sin título 3.base",
+                "viewName": "Vista"
+              },
+              "icon": "lucide-table",
+              "title": "Sin título 3"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d6b875c4840ce483",
+    "type": "split",
+    "children": [
+      {
+        "id": "b6887f78c16da6aa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "487102a5e244bf75",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "193c600e2826437f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "181823d182c452e2",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "2712ff68863cff85",
+    "type": "split",
+    "children": [
+      {
+        "id": "0288f46d1b694049",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "814434d918b19c7e",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Sin título 3.base",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes de Sin título 3"
+            }
+          },
+          {
+            "id": "348b58f291ccabed",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Sin título 3.base",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes de Sin título 3"
+            }
+          },
+          {
+            "id": "03796c315965a9dd",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "bbb8aa18732a7860",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "aba6d8f6c250939a",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Sin título 3.base",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema de Sin título 3"
+            }
+          },
+          {
+            "id": "30251e6f1a2d3a66",
+            "type": "leaf",
+            "state": {
+              "type": "footnotes",
+              "state": {
+                "file": "Sin título 3.base"
+              },
+              "icon": "lucide-file-signature",
+              "title": "Notas al pie"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "publish:Publicar cambios...": false,
+      "obsidian-git:Open Git source control": false,
+      "chat-with-bard:New Gemini Chat": false,
+      "rss-dashboard:RSS dashboard": false,
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false,
+      "workspaces:Gestionar disposiciones de espacio de trabajo": false,
+      "zk-prefixer:Crear nueva nota única": false,
+      "audio-recorder:Iniciar/Detener la grabación": false,
+      "random-note:Abrir nota al azar": false,
+      "markdown-importer:Abrir el importador de Markdown": false
+    }
+  },
+  "active": "a0a73d883cb29e38",
+  "lastOpenFiles": [
+    "Sin título 2.base",
+    "Sin título 1.base",
+    "Bienvenido.md",
+    "Sin título 3.base",
+    "Sin título.canvas",
+    "2026-03-23.md",
+    "Sin título.base"
+  ]
+}

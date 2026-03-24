@@ -33,6 +33,17 @@ Bienvenido a la "Bóveda" (Vault) de Obsidian del proyecto **TAD Taxi Advertisin
 7. 📱 **[Configuración de Hardware (Tablets)](07_Hardware_y_Logistica/configuracion_tablets.md)**
    Logística para configurar las pantallas en los apoya-cabezas, inyectar el Device ID y tolerar apagones de internet.
 
+## 🛡️ Ecosistema y Estabilidad a Corto/Largo Plazo
+
+8. 🔒 **[Seguridad y Matriz (Tokens & Privacidad)](08_Arquitectura_Seguridad/matriz_de_seguridad.md)**
+   Esquema de las conexiones JWT, defensas en base de datos para borrados en bloque y políticas estrictas de Node-Cors.
+
+9. 🚨 **[Protocolo de Disaster Recovery (Contingencia)](09_Disaster_Recovery/recuperacion_desastres.md)**
+   Acciones obligatorias frente a caídas masivas en los servidores de EasyPanel o apagones del proveedor 4G/LTE de Taxis.
+
+10. ♻️ **[Estrategia SDLC Zero-Downtime y Mantenimiento](10_Estrategia_de_Mantenimiento_y_Updates/ciclo_de_vida_software.md)**
+   Reglas para los Despliegues Automáticos que previene dañar las iteraciones futuras mientras las tablets están pasando anuncios al aire.
+
 ---
 
 ## 🔑 Parámetros y Claves Rápidas

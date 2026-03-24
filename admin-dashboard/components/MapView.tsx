@@ -36,66 +36,117 @@ const POLIGONO_CENTRAL: [number, number][] = [
   [19.4380, -70.7020], // Suroeste
 ];
 
-// Creates a top-down car SVG icon for Leaflet markers
+// Creates a premium cyber-taxi icon
 const createIcon = (status: string, selected: boolean, label = '') => {
-  const fill   = COLORS[status] || COLORS.offline;
-  const stroke = selected ? '#ffffff' : 'rgba(0,0,0,0.5)';
-  const W = selected ? 52 : 40;
-  const H = selected ? 64 : 50;
-  const scale = selected ? 1.3 : 1;
-  const short = label ? label.replace(/^TAD[-_]?/i, '').replace(/TADSTI[-_]?/i, '').substring(0, 5) : '?';
+  const isActive = status === 'active';
+  const mainColor = isActive ? '#FFD400' : '#52525b';
+  const glow = isActive ? '0 0 15px rgba(255, 212, 0, 0.4)' : 'none';
+  const W = 48;
+  const H = 60;
+  const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
+  
+  const html = `
+    <div style="
+      position: relative;
+      width: ${W}px;
+      height: ${H}px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    ">
+      <!-- Outer Pulse Ring -->
+      ${isActive ? `
+        <div style="
+          position: absolute;
+          width: 32px;
+          height: 32px;
+          border: 2px solid ${mainColor};
+          border-radius: 50%;
+          animation: map-pulse 2s infinite ease-out;
+          opacity: 0;
+        "></div>
+      ` : ''}
 
-  const glowAnim = selected
-    ? `<circle cx="${W/2}" cy="${H/2}" r="${22 * scale}" fill="${fill}" opacity="0.2">
-        <animate attributeName="r" values="${18*scale};${26*scale};${18*scale}" dur="2s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.2;0.04;0.2" dur="2s" repeatCount="indefinite"/>
-       </circle>`
-    : '';
+      <!-- Car Body Stylized -->
+      <div style="
+        width: 28px;
+        height: 42px;
+        background: linear-gradient(135deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#3f3f46'} 100%);
+        border-radius: 8px;
+        border: 1.5px solid ${selected ? '#fff' : 'rgba(0,0,0,0.4)'};
+        box-shadow: ${glow}, inset 0 2px 4px rgba(255,255,255,0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+      ">
+        <!-- Windshield -->
+        <div style="
+          width: 20px;
+          height: 10px;
+          background: rgba(0,0,0,0.7);
+          border-radius: 3px;
+          margin-top: 4px;
+          box-shadow: inset 0 1px 2px rgba(255,255,255,0.1);
+        "></div>
+        
+        <!-- Label -->
+        <div style="
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Inter', sans-serif;
+          font-weight: 900;
+          font-size: 9px;
+          color: white;
+          letter-spacing: -0.5px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+          margin-top: -2px;
+        ">
+          ${short}
+        </div>
 
-  // Top-down taxi car SVG (body + windshield + wheels)
-  const cx = W / 2;
-  const cy = H / 2;
-  const carW = 22 * (scale);
-  const carH = 34 * (scale);
-  const rx = carW / 2;
-  const ry = carH / 2;
+        <!-- Rear Glass -->
+        <div style="
+          width: 18px;
+          height: 4px;
+          background: rgba(0,0,0,0.4);
+          border-radius: 2px;
+          margin-bottom: 2px;
+        "></div>
+      </div>
 
-  const carSvg = `
-    <!-- Car body -->
-    <rect x="${cx - rx}" y="${cy - ry}" width="${carW}" height="${carH}" rx="${rx * 0.4}" ry="${rx * 0.4}"
-          fill="${fill}" stroke="${stroke}" stroke-width="${selected ? 2 : 1.5}"/>
-    <!-- Front windshield -->
-    <rect x="${cx - rx * 0.65}" y="${cy - ry + ry * 0.1}" width="${carW * 0.65}" height="${carH * 0.22}"
-          rx="2" fill="${status === 'offline' ? '#333' : 'rgba(0,0,0,0.55)'}" opacity="0.9"/>
-    <!-- Rear windshield -->
-    <rect x="${cx - rx * 0.65}" y="${cy + ry * 0.65}" width="${carW * 0.65}" height="${carH * 0.2}"
-          rx="2" fill="${status === 'offline' ? '#333' : 'rgba(0,0,0,0.55)'}" opacity="0.7"/>
-    <!-- Left wheels -->
-    <rect x="${cx - rx - 3}" y="${cy - ry + ry * 0.2}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
-    <rect x="${cx - rx - 3}" y="${cy + ry * 0.52}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
-    <!-- Right wheels -->
-    <rect x="${cx + rx - 2}" y="${cy - ry + ry * 0.2}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
-    <rect x="${cx + rx - 2}" y="${cy + ry * 0.52}" width="5" height="${carH * 0.22}" rx="2" fill="#000" opacity="0.8"/>
-    <!-- Taxi label -->
-    <text x="${cx}" y="${cy + 1}"
-          text-anchor="middle" dominant-baseline="middle"
-          font-family="system-ui,sans-serif" font-size="${selected ? 8 : 6.5}" font-weight="900"
-          fill="#ffffff" letter-spacing="-0.5">${short}</text>
-    <!-- Status dot -->
-    <circle cx="${cx + rx - 1}" cy="${cy - ry + 5}" r="3.5"
-            fill="${status === 'active' ? '#22c55e' : status === 'unpaid' ? '#f97316' : '#94a3b8'}"
-            stroke="#000" stroke-width="1"/>
+      <!-- Arrow Indicator for Selected -->
+      ${selected ? `
+        <div style="
+          width: 0; 
+          height: 0; 
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 8px solid white;
+          position: absolute;
+          top: -12px;
+        "></div>
+      ` : ''}
+
+      <style>
+        @keyframes map-pulse {
+          0% { transform: scale(0.6); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+      </style>
+    </div>
   `;
 
   return L.divIcon({
     className: '',
-    html: `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.7))">
-      ${glowAnim}
-      ${carSvg}
-    </svg>`,
-    iconSize:    [W, H],
-    iconAnchor:  [W / 2, H / 2],
-    popupAnchor: [0, -H / 2 - 8],
+    html,
+    iconSize: [W, H],
+    iconAnchor: [W / 2, H / 2],
+    popupAnchor: [0, -H / 2],
   });
 };
 

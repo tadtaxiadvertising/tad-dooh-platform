@@ -1,9 +1,11 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { DeviceService } from '../device/device.service';
 
 @Injectable()
 export class FleetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly deviceService: DeviceService,
+  ) {}
 
   /**
    * Return all devices in the fleet, determining online/offline status logically.
@@ -560,71 +562,6 @@ export class FleetService {
    * Elimina la necesidad de 100+ peticiones individuales desde el frontend.
    */
   async getFleetStatusSummary() {
-    const now = new Date();
-    
-    // 1. Obtener conteo de campañas globales vigentes
-    const globalCampaignsCount = await this.prisma.campaign.count({
-      where: {
-        active: true,
-        targetAll: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-      }
-    });
-
-    // 2. Obtener todos los dispositivos con sus relaciones necesarias en un query optimizado
-    const devices = await this.prisma.device.findMany({
-      include: {
-        _count: {
-          select: {
-            campaigns: {
-              where: {
-                campaign: {
-                  active: true,
-                  startDate: { lte: now },
-                  endDate: { gte: now },
-                }
-              }
-            }
-          }
-        },
-        driver: {
-          select: {
-            id: true,
-            fullName: true,
-            status: true,
-            subscriptionPaid: true,
-          }
-        }
-      }
-    });
-
-    const thirtyMinMs = 30 * 60 * 1000;
-
-    return devices.map(d => {
-      const isOnline = d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs);
-      
-      // Slots ocupados = Globales + Específicos asignados
-      const assignedCount = d._count?.campaigns || 0;
-      const totalSlots = Math.min(15, globalCampaignsCount + assignedCount);
-
-      return {
-        id: d.id,
-        device_id: d.deviceId,
-        taxi_number: d.taxiNumber,
-        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
-        is_online: isOnline,
-        battery_level: d.batteryLevel,
-        occupied_slots: totalSlots,
-        max_slots: 15,
-        player_status: d.playerStatus,
-        last_seen: d.lastSeen,
-        city: d.city || 'Desconocido',
-        driver_id: d.driver?.id || null,
-        driver_name: d.driver?.fullName || 'No asignado',
-        subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
-      };
-    });
+    return this.deviceService.getFleetStatusSummary();
   }
 }
-

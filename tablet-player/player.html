@@ -33,6 +33,7 @@
             z-index: 2;
         }
         #waiting-screen.hidden { display: none; }
+        .debug-monitor { display: none; }
     </style>
 </head>
 <body>
@@ -42,7 +43,7 @@
     <!-- Waiting Screen: pure black, no branding visible to passengers -->
     <div id="waiting-screen">
         <!-- Hidden debug info for SRE tracing, invisible to passengers -->
-        <div style="display:none">
+        <div class="debug-monitor">
             <span id="node-id"></span>
             <div class="status"></div>
         </div>

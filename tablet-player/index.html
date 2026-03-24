@@ -490,35 +490,42 @@
             
             async startExperience() {
                 try {
+                    if (!this.video) return;
+
                     // Unlock audio/video via user interaction
-                    if (this.video) {
-                        this.video.muted = false; 
-                        this.video.play().catch(() => {
-                            console.log('Autoplay muted fallback requested');
-                            if (this.video) {
-                                this.video.muted = true;
-                                this.video.play();
+                    this.video.muted = true; // Keep muted to pass autoplay policy
+                    const playPromise = this.video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            // AbortError is expected when showNoContent() interrupts play — ignore
+                            if (e.name !== 'AbortError') {
+                                console.warn('▶️ Autoplay blocked:', e.message);
                             }
                         });
                     }
 
                     // Attempt Full Screen if supported
                     if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen();
+                        document.documentElement.requestFullscreen().catch(() => {});
                     }
 
                     // Hide start screen
-                    document.getElementById('start-state').classList.add('hidden');
+                    const startState = document.getElementById('start-state');
+                    if (startState) startState.classList.add('hidden');
                     
                     // Trigger first sync/play if content is ready
                     if (state.currentPlaylist.length > 0) {
                         this.play(state.currentPlaylist[state.currentIndex]);
                     } else {
+                        // No content: stay black, sync will handle it
                         this.showNoContent();
                         sync.performSync();
                     }
                 } catch (e) {
-                    console.error('Failure starting experience:', e);
+                    // Silently ignore AbortError on startExperience
+                    if (e.name !== 'AbortError') {
+                        console.error('Failure starting experience:', e);
+                    }
                 }
             },
             

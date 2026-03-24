@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CampaignService } from './campaign.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
@@ -81,6 +81,11 @@ export class CampaignController {
     };
 
     return profile;
+  }
+
+  @Patch(':id')
+  async updateCampaign(@Param('id') id: string, @Body() dto: any) {
+    return this.campaignService.updateCampaign(id, dto);
   }
 
   @Post()

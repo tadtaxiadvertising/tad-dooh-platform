@@ -11,6 +11,36 @@ export class CampaignService {
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
 
+  async updateCampaign(id: string, dto: any) {
+    const data: any = {};
+    if (dto.name) data.name = dto.name;
+    if (dto.advertiser) data.advertiser = dto.advertiser;
+    if (dto.start_date) data.startDate = new Date(dto.start_date);
+    if (dto.end_date) data.endDate = new Date(dto.end_date);
+    if (dto.active !== undefined) data.active = dto.active;
+    if (dto.target_all !== undefined) data.targetAll = dto.target_all;
+    if (dto.target_city) data.targetCity = dto.target_city;
+    if (dto.budget !== undefined) data.budget = Number(dto.budget);
+    if (dto.target_impressions !== undefined) data.targetImpressions = Number(dto.target_impressions);
+    if (dto.whatsapp !== undefined) data.whatsapp = dto.whatsapp;
+    if (dto.instagram !== undefined) data.instagram = dto.instagram;
+    if (dto.facebook !== undefined) data.facebook = dto.facebook;
+    if (dto.websiteUrl !== undefined) data.websiteUrl = dto.websiteUrl;
+    if (dto.pedidosYaUrl !== undefined) data.pedidosYaUrl = dto.pedidosYaUrl;
+    if (dto.uberEatsUrl !== undefined) data.uberEatsUrl = dto.uberEatsUrl;
+
+    const campaign = await this.prisma.campaign.update({
+      where: { id },
+      data,
+    });
+
+    if (dto.target_devices) {
+      await this.assignCampaignToDevices(id, dto.target_devices);
+    }
+
+    return campaign;
+  }
+
   async createCampaign(dto: CreateCampaignDto) {
     const campaign = await this.prisma.campaign.create({
       data: {
@@ -41,45 +71,43 @@ export class CampaignService {
     return campaign;
   }
 
-  async assignCampaignToDevices(campaignId: string, deviceIds: string[]) {
-    // 1. Fetch current status of targeted devices to respect 15-slot limit
+  async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {
+    // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
-       where: { deviceId: { in: deviceIds } },
+       where: { 
+         OR: [
+           { id: { in: idOrHwIds } },
+           { deviceId: { in: idOrHwIds } }
+         ]
+       },
        select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
     });
 
-    // 2. Identify available devices (less than 15 ads)
+    if (devices.length === 0 && idOrHwIds.length > 0) {
+      console.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
+    }
+
+    // 2. Identify available devices (respecting the 15-slot limit)
     const availableDevices = devices.filter(d => d._count.campaigns < 15);
     const skippedCount = devices.length - availableDevices.length;
     
-    if (skippedCount > 0) {
-      console.log(`⚠️ Skipping ${skippedCount} devices because they reached 15-slot limit.`);
-    }
+    // 3. TRANSACTIONAL UPDATE: Clean old and insert new
+    return await this.prisma.$transaction(async (tx) => {
+      // Clear all existing assignments for this campaign
+      await tx.playlistItem.deleteMany({ where: { campaignId } });
+      await tx.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
 
-    // 3. Clean old assignments for THIS campaign (v1 and v2)
-    await this.prisma.playlistItem.deleteMany({ where: { campaignId } });
-    await this.prisma.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
+      if (availableDevices.length === 0) return { count: 0, skipped: skippedCount };
 
-    // 4. Create new assignments for available devices
-    const dataV2 = availableDevices.map(d => ({
-      campaign_id: campaignId,
-      device_id: d.id
-    }));
+      // Create new assignments (V1 Legacy & V2 Core)
+      const dataV1 = availableDevices.map(d => ({ campaignId, deviceId: d.deviceId }));
+      const dataV2 = availableDevices.map(d => ({ campaign_id: campaignId, device_id: d.id }));
 
-    const dataV1 = availableDevices.map(d => ({
-      campaignId,
-      deviceId: d.deviceId
-    }));
+      await tx.playlistItem.createMany({ data: dataV1 });
+      await tx.deviceCampaign.createMany({ data: dataV2 });
 
-    if (dataV1.length > 0) {
-      await this.prisma.playlistItem.createMany({ data: dataV1 });
-    }
-    
-    if (dataV2.length > 0) {
-      await this.prisma.deviceCampaign.createMany({ data: dataV2 });
-    }
-    
-    return { count: dataV2.length, skipped: skippedCount };
+      return { count: availableDevices.length, skipped: skippedCount };
+    });
   }
 
   // Revenue Protector: Enforce 15-slot limit on single assignment

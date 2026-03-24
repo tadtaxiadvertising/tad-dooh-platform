@@ -116,7 +116,6 @@ export class DeviceAdminController {
     await this.prisma.deviceCampaign.deleteMany({ where: { device_id: uuid } });
     await this.prisma.playlistItem.deleteMany({ where: { deviceId: hwId } });
     await this.prisma.campaignMetric.deleteMany({ where: { deviceId: uuid } });
-    await this.prisma.driver.updateMany({ where: { deviceId: hwId }, data: { deviceId: null } });
     await this.prisma.device.delete({ where: { id: uuid } });
 
     return { success: true, message: `Dispositivo ${hwId} eliminado` };

@@ -14,7 +14,7 @@ export class SubscriptionGuard implements CanActivate {
 
     if (!deviceId) return true; // El AuthGuard global se encarga si falta identificación
 
-    const sub = await this.prisma.subscription.findUnique({
+    const sub = await this.prisma.subscription.findFirst({
       where: { deviceId: deviceId as string },
     });
 

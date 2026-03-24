@@ -191,8 +191,7 @@ export class FleetService {
           status: subscription.status,
           paid: !!subscription.paidAt,
           expiresAt: subscription.validUntil,
-        } : null
-,
+        } : null,
       };
     });
 
@@ -238,7 +237,7 @@ export class FleetService {
       this.prisma.driver.findFirst({
         where: { 
           OR: [
-            { deviceId },
+            { devices: { some: { deviceId } } },
             { phone }
           ]
         }
@@ -295,7 +294,7 @@ export class FleetService {
       // Actualizar datos del driver vinculado
       await this.prisma.driver.update({
         where: { id: existingDriver.id },
-        data: { fullName: nombreChofer, status: 'ACTIVE', deviceId }
+        data: { fullName: nombreChofer, status: 'ACTIVE' }
       });
       return { success: true, device_id: device.deviceId, driver_name: nombreChofer, linked_driver: true };
     }
@@ -393,11 +392,11 @@ export class FleetService {
    */
   async getTrackingSummary() {
     try {
-      // 1. Obtener todos los drivers con su tablet vinculada
+      // 1. Obtener todos los drivers con su(s) tablet(s) vinculada(s)
       const drivers = await this.prisma.driver.findMany({
-        where: { deviceId: { not: null } },
+        where: { devices: { some: {} } },
         include: {
-          device: {
+          devices: {
             select: {
               deviceId: true,
               taxiNumber: true,
@@ -470,12 +469,13 @@ export class FleetService {
           plate: d.taxiPlate || d.licensePlate,
           status: d.status,
           subscriptionPaid: d.subscriptionPaid,
-          device: d.device ? {
-            deviceId: d.device.deviceId,
-            taxiNumber: d.device.taxiNumber,
-            city: d.device.city,
-            batteryLevel: d.device.batteryLevel,
-            lastSeen: d.device.lastSeen,
+          devicesCount: d.devices.length,
+          device: d.devices[0] ? {
+            deviceId: d.devices[0].deviceId,
+            taxiNumber: d.devices[0].taxiNumber,
+            city: d.devices[0].city,
+            batteryLevel: d.devices[0].batteryLevel,
+            lastSeen: d.devices[0].lastSeen,
           } : null,
           tracking: {
             isActive,
@@ -521,7 +521,7 @@ export class FleetService {
     // Verificamos tanto el flag manual del chofer como la entidad Subscription
     const isPaidManual = device.driver.subscriptionPaid;
     
-    const sub = await this.prisma.subscription.findUnique({
+    const sub = await this.prisma.subscription.findFirst({
       where: { deviceId: data.deviceId },
     });
 

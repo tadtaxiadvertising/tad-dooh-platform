@@ -67,7 +67,7 @@ export class FinanceService {
 
     const drivers = await this.prisma.driver.findMany({
       include: {
-        device: {
+        devices: {
           include: {
             campaigns: true // explicitly assigned campaigns
           }
@@ -78,21 +78,26 @@ export class FinanceService {
     const payroll = drivers.map(driver => {
       let activeAdsCount = 0;
 
-      if (driver.device) {
-        const deviceCity = driver.device.city || 'Santo Domingo';
+      // Iterate over all devices for this driver
+      const eligibleCampaignSet = new Set<string>();
+
+      driver.devices.forEach(device => {
+        const deviceCity = device.city || 'Santo Domingo';
         
-        const eligibleCampaigns = activeCampaigns.filter(camp => {
+        activeCampaigns.forEach(camp => {
           const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
-          if (!matchesCity) return false;
+          if (!matchesCity) return;
 
           const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
-          const isExplicitlyAssigned = driver.device!.campaigns.some(dc => dc.campaign_id === camp.id);
+          const isExplicitlyAssigned = device.campaigns.some(dc => dc.campaign_id === camp.id);
           
-          return isTargetAll || isExplicitlyAssigned;
+          if (isTargetAll || isExplicitlyAssigned) {
+            eligibleCampaignSet.add(camp.id);
+          }
         });
+      });
 
-        activeAdsCount = eligibleCampaigns.length;
-      }
+      activeAdsCount = eligibleCampaignSet.size;
 
       const totalAmount = activeAdsCount * this.PAY_PER_AD;
 

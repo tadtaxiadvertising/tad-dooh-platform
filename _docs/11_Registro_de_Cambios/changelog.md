@@ -8,6 +8,21 @@ updated: 2026-03-24
 
 Este documento registra los hitos técnicos, correcciones de errores y nuevas funcionalidades implementadas en la plataforma, sirviendo como bitácora de ingeniería para el equipo y los Agentes IA.
 
+### 🚀 v5.2 - Benchmark 10x10 & Multi-screen Upgrade (24 Mar 2026)
+
+#### 🏗️ Arquitectura de Flota (Scale-Up)
+
+- **Upgrade 1:N (Driver to Devices)**: Refactorización total del esquema Prisma y controladores para permitir que un solo taxista gestione múltiples pantallas (ej: 2 tablets por vehículo) de forma nativa.
+- **Relación de Suscripción Centralizada**: Las validaciones de acceso (HTTP 402) ahora se consultan sobre el perfil del conductor, permitiendo una gestión financiera unificada para flotas multi-pantalla.
+
+#### 📊 Validación de Campo (Benchmark 10x10)
+
+- **Inyección Masiva Automatizada**: Registro exitoso de los primeros 10 socios "seed" con 20 dispositivos activos vinculados.
+- **Simulación de Tráfico Real**: Generación de heartbeats, coordenadas GPS dinámicas (Santo Domingo) e impresiones publicitarias para estresar el motor de analíticas.
+- **Sincronización del Libro Mayor**: Registro de RD$60,000 en ingresos por suscripciones anuales, validando la integridad contable del sistema de nómina.
+
+---
+
 ### 🚀 v5.1 - Media Management & Telemetry Fixes (22 Mar 2026)
 
 #### 🎞️ Gestión Multimedia

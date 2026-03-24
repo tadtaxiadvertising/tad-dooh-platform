@@ -50,7 +50,7 @@ export class SyncService {
 
     if (!hasValidSubscription) {
       // Intentar ver si tiene suscripción activa en tabla subscriptions (independiente del driver)
-      const sub = await this.prisma.subscription.findUnique({
+      const sub = await this.prisma.subscription.findFirst({
         where: { deviceId }
       });
       hasValidSubscription = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);

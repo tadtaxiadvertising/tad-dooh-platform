@@ -19,6 +19,20 @@ Bienvenido a la "Bóveda" (Vault) de Obsidian del proyecto **TAD Taxi Advertisin
 3. 🤖 **[Protocolo de Relevo (Handover AI)](03_Roadmap_10x10/estado_actual_y_handover.md)**
    El estado milimétrico de la base de datos y la arquitectura Node.js. **Todo nuevo Agente IA debe leer este documento antes de tocar código de este proyecto.**
 
+## 📘 Guías Operativas y Negocio
+
+4. 🚀 **[Guía de Despliegue y DevOps](04_Despliegue_y_DevOps/guia_de_despliegue.md)**
+   Documentación SRE del servidor, límites de asfixia en EasyPanel y configuración del Prisma Pooler.
+   
+5. 🛠️ **[Manual de Operaciones Administrativas](05_Manual_Usuario_Administrativo/operaciones_diarias.md)**
+   Paso a paso para tu día a día: cómo subir publicidades (Bypass), registrar conductores y gestionar deudas.
+
+6. 💰 **[Modelo de Negocio y Monetización](06_Modelo_de_Negocio_y_Monetizacion/modelo_de_cobros.md)**
+   Explicación de la arquitectura SaaS B2B, suscripciones en mora (HTTP-402) y matemáticas de la plataforma.
+
+7. 📱 **[Configuración de Hardware (Tablets)](07_Hardware_y_Logistica/configuracion_tablets.md)**
+   Logística para configurar las pantallas en los apoya-cabezas, inyectar el Device ID y tolerar apagones de internet.
+
 ---
 
 ## 🔑 Parámetros y Claves Rápidas

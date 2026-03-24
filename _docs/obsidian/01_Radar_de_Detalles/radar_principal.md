@@ -12,7 +12,7 @@ Este documento es el registro de "bugs visuales", inconsistencias de flujo y mej
 ### 🟢 COMPLETADO (Antigravity Protocol V1)
 
 - [x] **Post-Purga 10x10 Base de datos limpia**: Se eliminaron 284 dispositivos remanentes e inconsistencias. Entorno en cero.
-- [x] **Validación de Tablets en Registro de Drivers**: Implementada verificación en tiempo real obligatoria en el Modal V2. 
+- [x] **Validación de Tablets en Registro de Drivers**: Implementada verificación en tiempo real obligatoria en el Modal V2.
 - [x] **Sincronización TabSync**: Sincronización proactiva BroadcastChannel 100% activa.
 - [x] **Bypass Upload (URL Firmada)**: Archivos multimedia se suben directo a Supabase. Node.js blindado (VPS Protegido).
 - [x] **Limits Docker (easypanel-spec)**: Límites de RAM a 512M en VPS y uso de Prisma Pooler puerto 6543 en EasyPanel.

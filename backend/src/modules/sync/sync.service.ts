@@ -1,9 +1,10 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SyncService {
+  private readonly logger = new Logger(SyncService.name);
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService
@@ -60,40 +61,56 @@ export class SyncService {
     // Filtro inteligente: 
     // - Si hay suscripción + driver: recibe TODO (Global + Segmentado)
     // - Si NO hay driver o pago: recibe solo campañas GLOBALES (demo/promociones internas)
+    const now = new Date();
+    this.logger.log(`🕒 Sync [V5] Clock: ${now.toISOString()} | Device: ${deviceId}`);
+
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: {
         active: true,
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() },
+        startDate: { lte: now },
+        endDate: { gte: now },
         OR: [
           { targetAll: true },
           { isGlobal: true },
-          // Solo si hay driver, traemos lo segmentado para ese driver/device
+          // Canal Directo (v2 UUID) - ALWAYS CHECKED
+          { devices: { some: { device_id: device.id } } },
+          // Canal Legacy (v1 Hardware ID) - ALWAYS CHECKED
+          { targets: { some: { deviceId } } },
+          // Canal Segmentado (v2 Segmentación por Conductor)
           ...(isDriverActive ? [
-            { targetDrivers: { some: { id: driver.id } } },
-            { devices: { some: { device_id: device.id } } }
+            { targetDrivers: { some: { id: driver.id } } }
           ] : []),
-          // Si el device está asignado directamente a una campaña v1
-          { targets: { some: { deviceId } } }
         ]
       },
       include: {
         media: true,
-        mediaAssets: true
+        mediaAssets: true,
+        videos: true
       }
+    });
+
+    this.logger.log(`📊 Campaigns found (V5): ${activeCampaigns.length}`);
+    activeCampaigns.forEach(c => {
+      const assetsCount = (c.media?.length || 0) + (c.mediaAssets?.length || 0) + ((c as any).videos?.length || 0);
+      this.logger.log(`   📂 Campaign "${c.name}" [${c.id}] | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
     });
 
     const playlist = [];
     activeCampaigns.forEach(c => {
-      // Unificar Media y MediaAssets (v1 y v2)
-      const mediaList = [...(c.media || []), ...(c.mediaAssets || [])];
+      // Unificar Media, MediaAssets y Videos (v1, v2 y Hub)
+      const mediaList = [
+        ...(c.media || []), 
+        ...(c.mediaAssets || []),
+        ...((c as any).videos || [])
+      ];
       
       mediaList.forEach((m: any) => {
         playlist.push({
           id: m.id,
           campaignId: c.id,
+          filename: m.filename || m.name || m.title || 'video.mp4',
           url: m.url || m.cdnUrl || '',
-          checksum: m.hashMd5 || m.hash || 'no-checksum',
+          checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
           duration: m.duration || m.durationSeconds || 30,
           version: new Date(c.updatedAt || new Date()).getTime() 
         });

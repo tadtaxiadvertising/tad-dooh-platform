@@ -121,6 +121,27 @@
     <div id="qr-container" class="v-hidden">
       <img id="qr-code" src="" alt="Scan" />
     </div>
+
+    <!-- TAD UI Toast Container -->
+    <div id="tad-toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-rose-600/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.4)] z-[9000] font-black uppercase text-[10px] tracking-[0.2em] transition-all duration-500 opacity-0 pointer-events-none scale-95 border-2 border-rose-400/50 flex items-center gap-3">
+      <span id="tad-toast-msg">SISTEMA TAD</span>
+    </div>
+
+    <script>
+      window.addEventListener('TAD_UI_TOAST', (e) => {
+        const toast = document.getElementById('tad-toast');
+        const msg = document.getElementById('tad-toast-msg');
+        if (msg && toast) {
+          msg.innerText = e.detail;
+          toast.classList.remove('opacity-0', 'scale-95');
+          toast.classList.add('opacity-100', 'scale-100');
+          setTimeout(() => {
+            toast.classList.remove('opacity-100', 'scale-100');
+            toast.classList.add('opacity-0', 'scale-95');
+          }, 8000);
+        }
+      });
+    </script>
     
     <!-- Entry script loaded conditionally per Vite standard -->
     <script type="module" src="/index.ts"></script>

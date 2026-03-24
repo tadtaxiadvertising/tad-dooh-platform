@@ -158,24 +158,37 @@ export const getMedia = () => api.get('/media').then(res => res.data);
 export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
 export const updateMedia = (id: string, data: { qrUrl: string }) => api.patch(`/media/${id}`, data).then(res => res.data);
 export const uploadMedia = async (file: File, campaignId: string = 'general', qrUrl?: string) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('campaignId', campaignId);
-  if (qrUrl) formData.append('qrUrl', qrUrl);
+  // 1. Pedir URL firmada de subida al backend
+  const urlRes = await api.get(`/media/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${file.type}`);
+  const { uploadUrl, path, publicUrl } = urlRes.data;
 
-  const res = await api.post('/media/upload', formData, {
+  // 2. BYPASS: Subir directo a Supabase Storage (Node.js respira 🫁)
+  await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
     headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    timeout: 300000, // 5 min for 200MB uploads
+      'Content-Type': file.type,
+      'Cache-Control': 'max-age=3600'
+    }
+  });
+
+  // 3. Registrar el asset en la Base de Datos
+  const regRes = await api.post('/media/register-bypassed', {
+    filename: file.name,
+    contentType: file.type,
+    size: file.size,
+    campaignId,
+    storageKey: path,
+    publicUrl: publicUrl,
+    qrUrl
   });
 
   return {
-    id: res.data.id,
-    url: res.data.url,
-    size: res.data.size,
+    id: regRes.data.id,
+    url: regRes.data.url,
+    size: regRes.data.size,
     name: file.name,
-    path: `campaign-videos/${res.data.id}`
+    path: path
   };
 };
 

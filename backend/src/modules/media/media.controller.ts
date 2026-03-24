@@ -30,6 +30,14 @@ export class MediaController {
     return this.mediaService.generateUploadUrl(fileName, fileType);
   }
 
+  @Post('register-bypassed')
+  async registerBypassed(@Body() body: any) {
+    if (!body.filename || !body.storageKey || !body.publicUrl) {
+       throw new BadRequestException('Faltan campos (filename, storageKey, publicUrl)');
+    }
+    return this.mediaService.registerBypassedMedia(body);
+  }
+
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
     limits: {

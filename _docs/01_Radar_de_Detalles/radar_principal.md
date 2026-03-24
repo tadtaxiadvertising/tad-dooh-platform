@@ -12,11 +12,11 @@ Este documento es el registro de "bugs visuales", inconsistencias de flujo y mej
 ### 🟢 COMPLETADO (Antigravity Protocol V1)
 
 - [x] **Post-Purga 10x10 Base de datos limpia**: Se eliminaron 284 dispositivos remanentes e inconsistencias. Entorno en cero.
+- [x] **Upgrade Arquitectónico 1:N (Multiscreen)**: Sistema ahora soporta múltiples pantallas por taxi de forma nativa.
+- [x] **Benchmark 10x10 Inyectado**: 10 socios, 20 pantallas y RD$60,000 en suscripciones validadas en el Libro Mayor.
 - [x] **Validación de Tablets en Registro de Drivers**: Implementada verificación en tiempo real obligatoria en el Modal V2.
 - [x] **Sincronización TabSync**: Sincronización proactiva BroadcastChannel 100% activa.
 - [x] **Bypass Upload (URL Firmada)**: Archivos multimedia se suben directo a Supabase. Node.js blindado (VPS Protegido).
-- [x] **Limits Docker (easypanel-spec)**: Límites de RAM a 512M en VPS y uso de Prisma Pooler puerto 6543 en EasyPanel.
-- [x] **Persistencia de Filtros**: Estados de UI y búsqueda en Drivers recuperables mediante localStorage.
 
 ### 🟡 PRIORIDAD MEDIA (Pulido Estético)
 

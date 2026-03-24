@@ -335,7 +335,7 @@ export class CampaignController {
           set: body.driverIds.map(dId => ({ id: dId })),
         },
       },
-      include: { targetDrivers: { select: { id: true, fullName: true, deviceId: true } } }
+      include: { targetDrivers: { select: { id: true, fullName: true } } }
     });
   }
 

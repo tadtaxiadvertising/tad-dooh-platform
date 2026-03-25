@@ -20,7 +20,7 @@
     html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,sans-serif;overflow-x:hidden}
 
     /* NAV TABS */
-    .nav-tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,8,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+    .nav-tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,8,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
     .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 4px;border:none;background:transparent;color:var(--muted);transition:color .2s;font-family:inherit}
     .nav-tab.active{color:var(--y)}
     .nav-tab svg{width:22px;height:22px}
@@ -32,7 +32,7 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
     /* HEADER */
-    .top-bar{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(8,8,8,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 16px 0;display:flex;align-items:center;justify-content:space-between;height:calc(64px + env(safe-area-inset-top,0))}
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(8,8,8,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 16px 0;display:flex;align-items:center;justify-content:space-between;height:calc(64px + env(safe-area-inset-top,0))}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{width:40px;height:40px;background:var(--y);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#000;box-shadow:0 0 20px var(--yg)}
     .brand-name{font-size:17px;font-weight:900;letter-spacing:-.5px}
@@ -127,7 +127,7 @@
     .irow-v.yellow{color:var(--y)}
 
     /* STITCH MODAL */
-    .modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+    .modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
     .modal-bg.open{opacity:1;pointer-events:all}
     .modal-sheet{background:#111;border:1px solid var(--border);border-radius:28px 28px 0 0;padding:28px 20px calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;transform:translateY(40px);transition:transform .3s}
     .modal-bg.open .modal-sheet{transform:none}
@@ -170,12 +170,22 @@
     .empty{text-align:center;padding:40px 20px;color:var(--muted)}
     .empty-icon{font-size:40px;margin-bottom:12px}
     .empty p{font-size:13px}
+    /* STAT ICON COLORS */
+    .stat-icon-yellow{background:rgba(255,212,0,.1)}
+    .stat-icon-blue{background:rgba(59,130,246,.1)}
+    .stat-icon-green{background:rgba(34,197,94,.1)}
+    .stat-icon-purple{background:rgba(168,85,247,.1)}
+    /* MISC */
+    .wstat-v-pending{color:var(--orange)}
+    .gps-chart-card{padding:16px}
+    .btn-confirm-mt{margin-top:16px}
+    .loader-logo{width:52px;height:52px;border-radius:16px;font-size:17px}
   </style>
 </head>
 <body>
 
 <div id="loader">
-  <div class="logo" style="width:52px;height:52px;border-radius:16px;font-size:17px">TAD</div>
+  <div class="logo loader-logo">TAD</div>
   <div class="spinner"></div>
   <div class="loader-txt">Cargando perfil...</div>
 </div>
@@ -216,7 +226,7 @@
       </div>
       <div class="wstat">
         <div class="wstat-l">Pend.</div>
-        <div class="wstat-v" id="w-pending" style="color:var(--orange)">RD$ 0</div>
+        <div class="wstat-v wstat-v-pending" id="w-pending">RD$ 0</div>
       </div>
     </div>
     <button class="btn-withdraw" id="btn-withdraw" onclick="openWithdraw()">
@@ -256,7 +266,7 @@
   <div class="sec-label">Rendimiento Hoy</div>
   <div class="stats2">
     <div class="stat-box">
-      <div class="stat-icon" style="background:rgba(255,212,0,.1)">🔥</div>
+      <div class="stat-icon stat-icon-yellow">🔥</div>
       <div>
         <div class="stat-lbl">Anuncios</div>
         <div class="stat-val" id="t-ads">0</div>
@@ -264,7 +274,7 @@
       </div>
     </div>
     <div class="stat-box">
-      <div class="stat-icon" style="background:rgba(59,130,246,.1)">📡</div>
+      <div class="stat-icon stat-icon-blue">📡</div>
       <div>
         <div class="stat-lbl">Latidos</div>
         <div class="stat-val" id="t-hb">0</div>
@@ -272,7 +282,7 @@
       </div>
     </div>
     <div class="stat-box">
-      <div class="stat-icon" style="background:rgba(34,197,94,.1)">⏱️</div>
+      <div class="stat-icon stat-icon-green">⏱️</div>
       <div>
         <div class="stat-lbl">Uptime</div>
         <div class="stat-val" id="t-uptime">0h</div>
@@ -280,7 +290,7 @@
       </div>
     </div>
     <div class="stat-box">
-      <div class="stat-icon" style="background:rgba(168,85,247,.1)">📺</div>
+      <div class="stat-icon stat-icon-purple">📺</div>
       <div>
         <div class="stat-lbl">Pautas Activas</div>
         <div class="stat-val" id="t-active">0</div>
@@ -290,7 +300,7 @@
   </div>
 
   <div class="sec-label">Actividad GPS (últimos 7 días)</div>
-  <div class="gps-card" style="padding:16px">
+  <div class="gps-card gps-chart-card">
     <div class="chart-bars" id="chart-bars"></div>
   </div>
 </div>
@@ -370,7 +380,7 @@
       </div>
       <div class="field">
         <label>Banco Destino</label>
-        <select id="wd-bank">
+        <select id="wd-bank" title="Banco Destino" aria-label="Banco Destino">
           <option value="">Selecciona tu banco...</option>
           <option value="BHD">BHD León</option>
           <option value="BANRESERVAS">Banreservas</option>
@@ -396,7 +406,7 @@
       </svg>
       <span>Pagos procesados de forma segura por Stitch</span>
     </div>
-    <button class="btn-confirm" id="btn-confirm-wd" onclick="confirmWithdraw()" style="margin-top:16px">
+    <button class="btn-confirm btn-confirm-mt" id="btn-confirm-wd" onclick="confirmWithdraw()">
       Confirmar Retiro
     </button>
     <button class="btn-cancel" onclick="closeWithdraw()">Cancelar</button>

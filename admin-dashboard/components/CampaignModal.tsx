@@ -468,7 +468,7 @@ export const CampaignModal = React.memo(function CampaignModal({
                   <div className="space-y-3">
                     {[
                       { val: true, icon: Zap, label: 'Transmisión Global', sub: 'Todos los taxis activos de la red' },
-                      { val: false, icon: Users, label: 'Selección Exclusiva', sub: 'Solo conductores seleccionados' },
+                      { val: false, icon: Users, label: 'Selección Exclusiva', sub: 'Solo TAD DRIVERS seleccionados' },
                     ].map(opt => (
                       <div
                         key={String(opt.val)}
@@ -497,7 +497,7 @@ export const CampaignModal = React.memo(function CampaignModal({
                   {!targetAll && (
                     <div className="space-y-2">
                       <label className="text-[10px] text-zinc-500 font-black uppercase tracking-widest pl-1">
-                        Conductores ({selectedDrivers.length} seleccionados)
+                        TAD DRIVERS ({selectedDrivers.length} seleccionados)
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                         {drivers.map(d => (

@@ -24,7 +24,7 @@ const NAVIGATION_GROUPS = [
   {
     label: 'Red y Socios',
     items: [
-      { name: 'Conductores y Suscripciones', href: '/drivers', icon: IdCard },
+      { name: 'TAD Drivers y Suscripciones', href: '/drivers', icon: IdCard },
     ],
   },
   {

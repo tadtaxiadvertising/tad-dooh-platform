@@ -54,7 +54,7 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
           
           <div className="min-w-0">
             <h4 className="text-[13px] font-black text-white uppercase tracking-tight mb-1 truncate">
-              {device.driverName || "CONDUCTOR INDEFINIDO"}
+              {device.driverName || "TAD DRIVER INDEFINIDO"}
             </h4>
             
             {/* ALERT: OUT OF RANGE */}

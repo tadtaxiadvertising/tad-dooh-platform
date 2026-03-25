@@ -80,7 +80,7 @@ export default function DriversPage() {
     }
   }, []);
 
-  useTabSync('CONDUCTORES', loadDrivers);
+  useTabSync('TAD_DRIVERS', loadDrivers);
 
   useEffect(() => {
     loadDrivers();
@@ -96,7 +96,7 @@ export default function DriversPage() {
         }
         return d;
       }));
-      notifyChange('CONDUCTORES');
+      notifyChange('TAD_DRIVERS');
     } catch (err: unknown) {
       console.error(err);
       alert('Error crítico en actualización de credenciales.');
@@ -479,7 +479,7 @@ export default function DriversPage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           loadDrivers();
-          notifyChange('CONDUCTORES');
+          notifyChange('TAD_DRIVERS');
         }}
       />
 

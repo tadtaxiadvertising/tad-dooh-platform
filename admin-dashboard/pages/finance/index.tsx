@@ -220,7 +220,7 @@ export default function FinancePage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-900/40 border-b border-gray-700/50">
-                      <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Conductor</th>
+                      <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">TAD DRIVER</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Impactos Verificados</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-right">Liquidación</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Acciones</th>

@@ -1,5 +1,5 @@
-// sw.js - TAD Player Service Worker v3.5 (Performance Optimized)
-const CACHE_NAME = 'tad-terminal-cache-v3.5';
+// sw.js - TAD Player Service Worker v5.3 (GPS Precision + Ghost Playback Kill-Switch)
+const CACHE_NAME = 'tad-terminal-cache-v5.3';
 const SUPABASE_STORAGE_DOMAIN = 'ltdcdhqixvbpdcitthqf.supabase.co';
 
 // APP SHELL: Core files for 100% offline boot
@@ -15,7 +15,7 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    console.log('[TAD SW 3.5] Installing App Shell...');
+    console.log('[TAD SW 5.3] Installing App Shell...');
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(APP_SHELL);
@@ -29,7 +29,7 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        console.log('[TAD SW 3.5] Purging old cache:', cache);
+                        console.log('[TAD SW 5.3] Purging old cache:', cache);
                         return caches.delete(cache);
                     }
                 })

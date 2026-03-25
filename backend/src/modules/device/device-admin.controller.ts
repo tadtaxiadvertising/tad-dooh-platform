@@ -1,8 +1,10 @@
-import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('devices')
 export class DeviceAdminController {
+  private readonly logger = new Logger(DeviceAdminController.name);
+
   constructor(private prisma: PrismaService) {}
 
   // Ver los anuncios asignados a un taxi específico

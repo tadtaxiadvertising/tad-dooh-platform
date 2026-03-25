@@ -1,4 +1,4 @@
-export type TabSyncEvent = 'DEVICES' | 'CONDUCTORES' | 'CAMPAIGNS' | 'FINANCE' | 'MEDIA' | 'ADVERTISERS';
+export type TabSyncEvent = 'DEVICES' | 'TAD_DRIVERS' | 'CAMPAIGNS' | 'FINANCE' | 'MEDIA' | 'ADVERTISERS';
 
 const CHANNEL_NAME = 'tad_dashboard_sync';
 

@@ -194,7 +194,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {/* Driver Info */}
                       <div className="space-y-4">
-                        <LabelText label="Conductor Asociado" />
+                        <LabelText label="TAD DRIVER Asociado" />
                         <div className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 flex items-center gap-5">
                           <div className="w-16 h-16 bg-tad-yellow text-black rounded-full flex items-center justify-center shadow-2xl">
                             <User className="w-8 h-8" />

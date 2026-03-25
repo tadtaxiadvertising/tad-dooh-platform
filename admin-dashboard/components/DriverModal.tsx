@@ -56,7 +56,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
 
     try {
       await createDriver(formData);
-      notifyChange('CONDUCTORES');
+      notifyChange('TAD_DRIVERS');
       onSuccess();
       onClose();
       // Reset form
@@ -74,7 +74,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
       console.error('Error creating driver:', err);
       const errorMsg = err instanceof Error && 'response' in err 
         ? (err as { response: { data: { message: string | string[] } } }).response.data.message 
-        : (err instanceof Error ? err.message : 'Error al registrar el conductor. Verifique que el teléfono o cédula no estén duplicados.');
+        : (err instanceof Error ? err.message : 'Error al registrar el TAD DRIVER. Verifique que el teléfono o cédula no estén duplicados.');
       setError(Array.isArray(errorMsg) ? errorMsg.join(', ') : (errorMsg || 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -87,7 +87,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
         <div className="flex items-center justify-between p-6 border-b border-white/5 bg-zinc-900/50">
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <User className="w-5 h-5 text-tad-yellow" />
-            Registrar Nuevo <span className="text-tad-yellow">Conductor</span>
+            Registrar Nuevo <span className="text-tad-yellow">TAD DRIVER</span>
           </h2>
           <button 
             onClick={onClose} 

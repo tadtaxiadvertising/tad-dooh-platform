@@ -71,7 +71,8 @@ export class FinanceService {
           include: {
             campaigns: true // explicitly assigned campaigns
           }
-        }
+        },
+        referrals: true // Get drivers referred by this partner
       }
     });
 
@@ -99,13 +100,23 @@ export class FinanceService {
 
       activeAdsCount = eligibleCampaignSet.size;
 
-      const totalAmount = activeAdsCount * this.PAY_PER_AD;
+      const baseCommission = 500; // Fixed monthly commission per active driver
+      
+      // Calculate referral commissions (500 per referral they brought in)
+      const referrals = driver.referrals ? driver.referrals.length : 0;
+      const referralBonus = referrals * 500;
+
+      const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
+      const totalAmount = baseCommission + adTransmissionIncome + referralBonus;
 
       return {
         driverId: driver.id,
-        driverName: driver.fullName,
+        driverName: driver.fullName || 'TAD DRIVER',
         taxiNumber: driver.taxiNumber,
         activeAds: activeAdsCount,
+        adIncome: adTransmissionIncome,
+        baseCommission,
+        referralBonus,
         totalAmount: totalAmount,
         currency: 'DOP'
       };
@@ -287,9 +298,9 @@ export class FinanceService {
    */
   async exportPayrollCsv(month: number, year: number) {
     const data = await this.calculateMonthlyPayroll(month, year);
-    let csv = 'ID Conductor,Nombre Conductor,Taxi,Ads Activos,Monto Liquidar\n';
+    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,Comision Fija,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
     data.forEach(d => {
-      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.activeAds},RD$ ${d.totalAmount}\n`;
+      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},RD$ ${d.baseCommission},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
     });
     return csv;
   }

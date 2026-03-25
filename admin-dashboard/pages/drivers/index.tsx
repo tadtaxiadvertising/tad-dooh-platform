@@ -435,7 +435,7 @@ export default function DriversPage() {
                                </div>
                                <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
                                   <div>
-                                    <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado</p>
+                                    <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado / Ingresos por Transmisión</p>
                                     <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ {driver.projectedEarnings ? driver.projectedEarnings.toLocaleString() : '0'}</h5>
                                   </div>
                                   <CreditCard className="w-8 h-8 text-tad-yellow/20" />

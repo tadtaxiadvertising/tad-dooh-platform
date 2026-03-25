@@ -186,19 +186,6 @@
                 </div>
             </div>
 
-            <!-- Start State (For browser auto-play policy) -->
-            <div id="start-state" class="absolute inset-0 z-[100] flex items-center justify-center bg-black">
-                <button 
-                    onclick="player.startExperience()" 
-                    class="group relative inline-flex items-center justify-center px-10 py-6 font-display font-black text-white bg-taxi-500 rounded-3xl shadow-[0_0_60px_rgba(255,212,0,0.4)] transition-all hover:scale-110 active:scale-95 duration-500"
-                >
-                    <span class="relative z-10 flex items-center gap-4 text-2xl uppercase tracking-tighter">
-                        <svg class="w-8 h-8 fill-black" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <span class="text-black">Comenzar</span>
-                    </span>
-                    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-3xl transition-opacity"></div>
-                </button>
-            </div>
         </main>
         
         <!-- Footer (oculto en kiosk mode) -->
@@ -1367,7 +1354,11 @@
         }
 
         // Start app
-        init();
+        init().then(() => {
+            setTimeout(() => {
+                if (window.player) player.startExperience();
+            }, 1000);
+        });
 
         // Expose for debugging
         window.player = player;

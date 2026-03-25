@@ -104,6 +104,7 @@ export class DeviceService {
       return {
         id: d.id,
         device_id: d.deviceId,
+        deviceId: d.deviceId,
         taxi_number: d.taxiNumber,
         status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
         is_online: isOnline,

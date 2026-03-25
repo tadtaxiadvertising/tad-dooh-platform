@@ -83,7 +83,7 @@ export default function TrackingPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [fleetFilter, setFleetFilter] = useState<'all' | 'active' | 'offline' | 'unpaid'>( 'all' );
-  const [mapCenter, setMapCenter] = useState<[number, number]>([18.4861, -69.9312]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([19.4544, -70.6923]);
   const [mapZoom, setMapZoom] = useState(13);
 
   const loadData = useCallback(async () => {

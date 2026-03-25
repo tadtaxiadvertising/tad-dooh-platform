@@ -40,6 +40,7 @@ export default function DriversPage() {
     projectedEarnings?: number;
     cedula?: string;
     licensePlate?: string;
+    referralBonus?: number;
   }[]>([]);
   const [loading, setLoading] = useState(true);
 

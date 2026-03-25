@@ -114,17 +114,44 @@ export class DeviceAdminController {
     const uuid = device.id;
     const hwId = device.deviceId;
 
-    // Clean up all related records
-    await this.prisma.playbackEvent.deleteMany({ where: { deviceId: hwId } });
-    await this.prisma.deviceHeartbeat.deleteMany({ where: { deviceId: hwId } });
-    await this.prisma.analyticsEvent.deleteMany({ where: { deviceId: hwId } });
-    await this.prisma.deviceCommand.deleteMany({ where: { deviceId: uuid } });
-    await this.prisma.deviceCampaign.deleteMany({ where: { device_id: uuid } });
-    await this.prisma.playlistItem.deleteMany({ where: { deviceId: hwId } });
-    await this.prisma.campaignMetric.deleteMany({ where: { deviceId: uuid } });
-    await this.prisma.device.delete({ where: { id: uuid } });
+    // Perform atomic deletion of all related telemetry and assignments
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Analytics & Metrics (References by UUID or Hardware ID)
+        await tx.analyticsEvent.deleteMany({ where: { deviceId: hwId } });
+        await tx.campaignMetric.deleteMany({ where: { deviceId: uuid } });
+        
+        // 2. Telemetry & Logs (References by Hardware ID)
+        await tx.playbackEvent.deleteMany({ where: { deviceId: hwId } });
+        await tx.deviceHeartbeat.deleteMany({ where: { deviceId: hwId } });
+        await tx.playlistItem.deleteMany({ where: { deviceId: hwId } });
+        await tx.driverLocation.deleteMany({ where: { deviceId: hwId } });
+        
+        // 3. Operational Data (References by UUID or Hardware ID)
+        await tx.deviceCommand.deleteMany({ where: { deviceId: uuid } });
+        await tx.deviceCampaign.deleteMany({ where: { device_id: uuid } });
+        await tx.subscription.deleteMany({ where: { deviceId: hwId } });
+        
+        // 4. Notifications (References by either ID in string field)
+        await tx.notification.deleteMany({ 
+          where: { 
+            OR: [
+              { entityId: uuid },
+              { entityId: hwId }
+            ] 
+          } 
+        });
 
-    return { success: true, message: `Dispositivo ${hwId} eliminado` };
+        // 5. Finally delete the device identity
+        await tx.device.delete({ where: { id: uuid } });
+
+        this.logger.log(`🗑️ Device ${hwId} (${uuid}) completely purged from system.`);
+        return { success: true, message: `Dispositivo ${hwId} eliminado correctamente` };
+      });
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to delete device ${hwId}: ${error.message}`);
+      throw new Error(`Error al eliminar nodo: ${error.message}`);
+    }
   }
 
   // Perfil completo del nodo (device + driver + campaigns)

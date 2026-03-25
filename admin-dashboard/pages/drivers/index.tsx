@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation } from 'lucide-react';
+import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, Users, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation } from 'lucide-react';
 import clsx from 'clsx';
 import { getDrivers, updateDriverSubscription } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
@@ -436,9 +436,16 @@ export default function DriversPage() {
                                <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
                                   <div>
                                     <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado</p>
-                                    <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ 0.00</h5>
+                                    <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ {driver.projectedEarnings ? driver.projectedEarnings.toLocaleString() : '0'}</h5>
                                   </div>
                                   <CreditCard className="w-8 h-8 text-tad-yellow/20" />
+                               </div>
+                               <div className="bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 flex justify-between items-center group/item hover:border-emerald-500/30 transition-colors">
+                                  <div>
+                                    <p className="text-[10px] text-emerald-500/60 uppercase font-bold tracking-widest mb-0.5">Comisiones por Referir Anunciantes</p>
+                                    <h5 className="text-xl font-bold text-emerald-500 tracking-widest">RD$ {driver.referralBonus ? driver.referralBonus.toLocaleString() : '0'}</h5>
+                                  </div>
+                                  <Users className="w-8 h-8 text-emerald-500/20" />
                                </div>
                             </div>
                           </div>

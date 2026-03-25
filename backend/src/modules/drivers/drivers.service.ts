@@ -70,6 +70,9 @@ export class DriversService {
             appVersion: true,
             lastSeen: true,
           }
+        },
+        referrals: {
+          select: { id: true, status: true, subscriptionPaid: true }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -80,11 +83,17 @@ export class DriversService {
       where: { status: 'ACTIVE' }
     });
 
-    return drivers.map(driver => ({
-      ...driver,
-      activeAds: activeAdsCount,
-      projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0
-    }));
+    return drivers.map(driver => {
+      // Logic for referrals: calculate active referrals paying subscription
+      const validReferrals = driver.referrals ? driver.referrals.filter(r => r.status === 'ACTIVE' && r.subscriptionPaid).length : 0;
+      
+      return {
+        ...driver,
+        activeAds: activeAdsCount,
+        projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0,
+        referralBonus: validReferrals * 500
+      };
+    });
   }
 
   /**

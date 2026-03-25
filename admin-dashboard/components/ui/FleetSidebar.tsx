@@ -92,7 +92,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
                    "w-12 h-12 rounded-2xl flex items-center justify-center border font-mono text-[11px] font-black transition-all bg-black shadow-inner",
                    v.isOnline ? "text-tad-yellow border-tad-yellow/40 group-hover/item:border-tad-yellow" : "text-zinc-800 border-white/5"
                  )}>
-                    {v.taxiNumber || "—"}
+                    {v.deviceId || v.taxiNumber || "—"}
                  </div>
                  <div className={clsx("absolute -right-1.5 -bottom-1.5 w-4 h-4 rounded-full border-4 border-black shadow-lg", getStatusColor(v))} />
                  {v.isOnline && <div className="absolute inset-0 rounded-2xl bg-tad-yellow/10 animate-pulse pointer-events-none" />}

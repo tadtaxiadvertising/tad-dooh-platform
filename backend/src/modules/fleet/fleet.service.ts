@@ -93,7 +93,7 @@ export class FleetService {
   }
 
   async getFleetMap() {
-    return this.prisma.device.findMany({
+    const devices = await this.prisma.device.findMany({
       select: {
         id: true,
         deviceId: true,
@@ -102,8 +102,47 @@ export class FleetService {
         lastSeen: true,
         lastLat: true,
         lastLng: true,
-        status: true
+        status: true,
+        driver: {
+          select: {
+            fullName: true,
+            taxiPlate: true,
+            status: true,
+            subscriptions: {
+              take: 1,
+              orderBy: { createdAt: 'desc' },
+              select: { status: true }
+            }
+          }
+        }
       }
+    });
+
+    const now = new Date();
+    const thirtyMinMs = 30 * 60 * 1000;
+
+    return devices.map(d => {
+      let isOnline = false;
+      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs) {
+        isOnline = true;
+      }
+      
+      const sub = d.driver?.subscriptions?.[0];
+      const subStatus = sub ? sub.status : 'PENDING';
+
+      return {
+        deviceId: d.deviceId,
+        taxiNumber: d.taxiNumber,
+        city: d.city,
+        lastSeen: d.lastSeen,
+        lastLat: d.lastLat,
+        lastLng: d.lastLng,
+        status: d.status,
+        isOnline,
+        driverName: d.driver?.fullName || null,
+        plate: d.driver?.taxiPlate || null,
+        subscriptionStatus: subStatus
+      };
     });
   }
 

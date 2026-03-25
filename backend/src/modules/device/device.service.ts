@@ -150,6 +150,8 @@ export class DeviceService {
           batteryLevel: dto.battery_level,
           storageFree: dto.storage_free,
           playerStatus: dto.player_status,
+          lastLat: dto.lat ?? undefined,
+          lastLng: dto.lng ?? undefined,
         },
       });
     }

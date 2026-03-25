@@ -421,9 +421,12 @@ model Driver {
   payrollPayments PayrollPayment[]
   locations     DriverLocation[]
   
-  // Financial Intelligence: Referral tracking
-  referredByDriver Driver?   @relation("DriverReferrals", fields: [referredBy], references: [id])
-  referrals        Driver[]   @relation("DriverReferrals")
+  // FINANCIAL INTELLIGENCE: Referral tracking
+  referredByDriver    Driver?   @relation("DriverReferrals", fields: [referredBy], references: [id])
+  referrals           Driver[]   @relation("DriverReferrals")
+  
+  // New: Advertiser referrals for commissions
+  referredAdvertisers Advertiser[] @relation("AdvertiserReferrals")
 
   @@map("drivers")
   @@index([status])
@@ -533,6 +536,10 @@ model Advertiser {
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   campaigns   Campaign[]
+  
+  // Link for driver commissions
+  referredBy  String?    @map("referred_by")
+  referrer    Driver?    @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
 
   @@map("advertisers")
   @@index([status])

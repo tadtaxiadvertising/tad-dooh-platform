@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Building2, User, Mail, Phone, Upload, CheckCircle2 } from 'lucide-react';
-import { createAdvertiser, updateAdvertiser } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { X, Building2, User, Mail, Phone, Upload, CheckCircle2, UserCheck } from 'lucide-react';
+import { createAdvertiser, updateAdvertiser, getDrivers } from '../services/api';
 
 interface AdvertiserModalProps {
   isOpen: boolean;
@@ -23,8 +23,23 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     uberEatsUrl: initialData?.uberEatsUrl || '',
     category: initialData?.category || 'General',
     productsData: initialData?.productsData || '[]',
-    status: initialData?.status || 'ACTIVE'
+    status: initialData?.status || 'ACTIVE',
+    referredBy: initialData?.referredBy || ''
   });
+
+  const [drivers, setDrivers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      try {
+        const data = await getDrivers();
+        setDrivers(data || []);
+      } catch (err) {
+        console.error('Error fetching drivers for referral list');
+      }
+    };
+    fetchDrivers();
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +155,23 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                      <option value="Servicios">Servicios & Salud</option>
                      <option value="Entretenimiento">Entretenimiento & Eventos</option>
                      <option value="Transporte">Transporte & Logística</option>
+                   </select>
+                </div>
+                <div className="space-y-1">
+                   <label htmlFor="referredBy" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <UserCheck className="w-3 h-3 text-tad-yellow" /> Referido por (TAD DRIVER)
+                   </label>
+                   <select 
+                     id="referredBy" 
+                     name="referredBy" 
+                     value={formData.referredBy} 
+                     onChange={handleChange} 
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none"
+                   >
+                     <option value="">-- Sin Referido / Directo --</option>
+                     {drivers.map(d => (
+                       <option key={d.id} value={d.id}>{d.fullName} ({d.taxiPlate || d.phone})</option>
+                     ))}
                    </select>
                 </div>
               </div>

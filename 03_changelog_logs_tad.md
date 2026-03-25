@@ -1,5 +1,43 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+## 📅 25 de Marzo, 2026 (Player Resilience & GPS Precision v5.3)
+
+### 👻 PLAYER: Ghost Playback & Stale Cache Kill-Switch
+
+- **Deterministic Content Removal**: Corregido el error crítico donde las tablets seguían reproduciendo anuncios obsoletos tras ser desvinculadas. El `sync` de `tablet-player/index.html` ahora purga automáticamente el `localStorage` y muestra "No Content" si el servidor devuelve cero anuncios.
+- **Video Engine Hard-Stop**: Actualizada la lógica de `player/player/video-engine.ts` para detener el elemento `<video>`, limpiar el `src` y liberar memoria RAM cuando la lista de reproducción se vacía.
+
+### 🛰️ TELEMETRY: Precision GPS Heartbeat
+
+- **Backend Location Sync**: Corregido el bug en `DeviceService.deviceHeartbeat` que ignoraba las coordenadas GPS del latido. Ahora todas las ubicaciones se actualizan en tiempo real en el Master Console (dashboard).
+- **Synchronous Geolocation Fetch**: Refactorizada la función `sendHeartbeat` en el reproductor para esperar (await) la posición del navegador antes de disparar el reporte, evitando que las unidades aparezcan con coordenadas nulas o centradas erróneamente en Santo Domingo.
+- **DailySync Telemetry (TS)**: Implementada la captura de latitud y longitud en la nueva arquitectura modular del player (`player/scheduler/daily-sync.ts`), unificando el rastreo en todas las versiones del hardware.
+
+---
+
+## 📅 25 de Marzo, 2026 (Referral Intelligence & Selective Management v5.2)
+
+### 📈 FINANCE: Inteligencia de Referidos y Auditoría
+
+- **Advertiser Referral Commissions**: Implementado el rastreo de referidos para anunciantes. Ahora los TAD DRIVERS reciben una comisión de **RD$ 500.00** por cada marca/anunciante que refieran a la plataforma.
+- **Backend Schema Evolution**: Actualizado `schema.prisma` para incluir la relación `referredBy` en `Advertiser` vinculada a `Driver`. Aplicado cambio en producción mediante `npx prisma db push`.
+- **Dynamic Payroll Tracking**: Refactorizado `FinanceService` y `DriversService` para computar automáticamente los bonos por referidos de conductores (RD$ 500) y de anunciantes (RD$ 500) en el cálculo de nómina mensual.
+- **High-Fidelity Audit Modal**: Nueva interfaz de auditoría en la lista de conductores que permite visualizar el desglose exacto de ingresos: Comisión Fija, Bono por Transmisión, Referidos Socios y Referidos Anunciantes.
+
+### 🎛️ MANAGEMENT: Gestión Selectiva de Hardware
+
+- **Selective Campaign Targeting**: Corregido el flujo de asignación manual de campañas en `CampaignModal`. Ahora se pueden seleccionar dispositivos específicos o conductores individuales, garantizando que el contenido se distribuya solo al hardware deseado.
+- **Device Hub Content Tab**: Introducida la pestaña "Contenido" en `DeviceHubModal`. Permite ver qué campañas están activas en una tablet específica y desvincularlas individualmente con un solo clic.
+- **Real-time Slot Analytics**: Corregido el contador de `occupied_slots` en el Hub de Dispositivos, permitiendo ver cuántos bloques de publicidad de los 15 disponibles están en uso actualmente.
+- **Accessibility & UX Fixes**: Resueltos errores de accesibilidad (ARIA/Titles) en el dashboard y mejorada la interactividad de los modales con feedback visual instantáneo.
+
+### 🚀 ADVERTISER: Hub de Gestión y Onboarding
+
+- **Referral Onboarding**: El `AdvertiserModal` ahora permite seleccionar al conductor que refirió a la marca durante el registro inicial, vinculando la comisión de forma determinista.
+- **Profile Subpages**: Verificación y pulido de la sub-página de anunciante donde se pueden gestionar métricas, subir contenido y lanzar campañas desde una vista centralizada.
+
+---
+
 ## 📅 22 de Marzo, 2026 (Media Management & Telemetry Fixes v5.1)
 
 ### 🚀 MEDIA: Eliminación y Gestión Robusta de Activos

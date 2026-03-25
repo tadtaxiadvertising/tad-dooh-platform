@@ -1,34 +1,37 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-03-20T13:55:00-04:00
+> **Última Actualización**: 2026-03-25T03:40:00-04:00
 
 ---
 
 ## 🌐 URLS DE PRODUCCIÓN
 
 | Recurso | URL |
-|---|---|
-| **Dashboard (Frontend)** | https://tad-dashboard.vercel.app |
-| **API (Backend)** | https://tad-api.vercel.app |
-| **Supabase Dashboard** | https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf |
-| **GitHub Repo** | https://github.com/tadtaxiadvertising/tad-dooh-platform |
-| **Swagger API Docs** | https://tad-api.vercel.app/docs (requiere servidor local) |
+| :--- | :--- |
+| **Dashboard (Frontend)** | <https://tad-dashboard.vercel.app> |
+| **API (Backend)** | <https://tad-api.vercel.app> |
+| **Supabase Dashboard** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
+| **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
+| **Swagger API Docs** | <https://tad-api.vercel.app/docs> (requiere servidor local) |
 
 ---
 
 ## 🔑 CREDENCIALES
 
 ### Login del Dashboard Admin
-```
+
+```text
 Email:    admin@tad.do
 Password: TadAdmin2026!
 ```
+
 - Autenticación vía **Supabase Auth** (signInWithPassword).
 - El backend valida el JWT de Supabase en cada request (excepto rutas `@Public()`).
 
 ### Supabase Project
-```
+
+```text
 PROJECT_ID:    ltdcdhqixvbpdcitthqf
 Region:        us-west-2 (AWS)
 SUPABASE_URL:  https://ltdcdhqixvbpdcitthqf.supabase.co
@@ -38,13 +41,15 @@ SERVICE_ROLE:  (ver archivo .env del backend → SUPABASE_SERVICE_ROLE_KEY)
 ```
 
 ### Base de Datos PostgreSQL
-```
+
+```text
 # Pooled Connection (para app/queries — puerto 6543)
 DATABASE_URL=(ver archivo backend/.env → DATABASE_URL)
 
 # Direct Connection (para migraciones/DDL — puerto 5432)
 DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 ```
+
 > ⚠️ Las credenciales reales están en `backend/.env`. NO commitear al repo.
 
 ---
@@ -52,8 +57,9 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 ## 🏗️ STACK TÉCNICO
 
 ### Frontend (admin-dashboard)
+
 | Layer | Tecnología | Versión |
-|---|---|---|
+| :--- | :--- | :--- |
 | Framework | Next.js (Pages Router) | 15.1.7 |
 | UI Library | React | 19.0.0 |
 | Styling | Tailwind CSS + PostCSS | 4.0.0 |
@@ -63,8 +69,9 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | Deployment | Vercel (Git integration) | Auto-deploy on push to `main` |
 
 ### Backend (backend)
+
 | Layer | Tecnología | Versión |
-|---|---|---|
+| :--- | :--- | :--- |
 | Framework | NestJS | 10.x |
 | ORM | Prisma Client | 5.22.0 |
 | Auth Guard | Custom `SupabaseAuthGuard` | — |
@@ -75,8 +82,9 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | Deployment | Vercel Serverless (`api/index.ts`) | — |
 
 ### Infraestructura
+
 | Service | Provider | Propósito |
-|---|---|---|
+| :--- | :--- | :--- |
 | Database | Supabase PostgreSQL | Persistencia de datos |
 | File Storage | Supabase Storage (`campaign-videos`) | Videos de campañas |
 | Authentication | Supabase Auth | Login email/password |
@@ -120,8 +128,9 @@ git add . && git commit -m "msg" && git push origin main
 ## 🚨 VARIABLES DE ENTORNO EN VERCEL
 
 ### Proyecto: tad-api (Backend)
+
 | Variable | Valor |
-|---|---|
+| :--- | :--- |
 | `DATABASE_URL` | (copiar de `backend/.env` → DATABASE_URL) |
 | `DIRECT_URL` | (copiar de `backend/.env` → DIRECT_URL) |
 | `SUPABASE_URL` | `https://ltdcdhqixvbpdcitthqf.supabase.co` |
@@ -130,8 +139,9 @@ git add . && git commit -m "msg" && git push origin main
 | `NODE_ENV` | `production` |
 
 ### Proyecto: tad-dashboard (Frontend)
+
 | Variable | Valor |
-|---|---|
+| :--- | :--- |
 | `NEXT_PUBLIC_API_URL` | `https://tad-api.vercel.app/api` |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://ltdcdhqixvbpdcitthqf.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (copiar de `admin-dashboard/.env.local` → NEXT_PUBLIC_SUPABASE_ANON_KEY) |
@@ -173,3 +183,6 @@ git add . && git commit -m "msg" && git push origin main
 5. **Cálculo de Comisión**: El pago de RD$500/mes para el chofer se desbloquea tras alcanzar 75% de "Attendance" (días con tracking activo durante horario laboral).
 6. **Restricción de Formato (Codecs)**: En el módulo de Multimedia (`/media`), se bloquea cualquier carga que no sea `video/mp4`. Esto garantiza compatibilidad nativa con el motor de renderizado de las tablets STI.
 7. **Broadcast de Sincronización**: La consola de administración (`/fleet`) tiene la capacidad de emitir un `WAKE_UP_CALL` vía el canal `fleet_sync` de Supabase Realtime para forzar una actualización inmediata de contenido en toda la flota activa.
+8. **Comisiones por Referidos (Advertiser Referral)**: Los conductores (TAD DRIVERS) que refieran marcas o anunciantes a la plataforma reciben una comisión de **RD$ 500.00** mensuales, calculada y liquidada automáticamente por el módulo de Inteligencia Financiera.
+9. **Transmisión Dinámica (Selective Targeting)**: Las campañas pueden ser asignadas globalmente, por ciudad o a dispositivos/conductores específicos. El motor de sincronización (`SyncModule`) orquesta los manifiestos JSON individuales para cada tablet basándose en estas reglas de segmentación.
+10. **Auditoría de Cumplimiento**: La plataforma genera un reporte de auditoría en tiempo real para cada conductor, desglosando la Comisión Fija (RD$500), Bono por Transmisión (RD$500/ad), Referidos de Socios (RD$500/driver) y Referidos de Anunciantes (RD$500/brand).

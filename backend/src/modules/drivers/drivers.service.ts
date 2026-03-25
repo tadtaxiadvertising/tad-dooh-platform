@@ -73,6 +73,9 @@ export class DriversService {
         },
         referrals: {
           select: { id: true, status: true, subscriptionPaid: true }
+        },
+        referredAdvertisers: {
+          select: { id: true, status: true }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -91,7 +94,10 @@ export class DriversService {
         ...driver,
         activeAds: activeAdsCount,
         projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0,
-        referralBonus: validReferrals * 500
+        referralBonus: validReferrals * 500,
+        advertiserReferralBonus: (driver.referredAdvertisers?.length || 0) * 500,
+        referralsCount: validReferrals,
+        advertiserReferralsCount: (driver.referredAdvertisers?.length || 0)
       };
     });
   }
@@ -181,7 +187,11 @@ export class DriversService {
   async getDriverHubData(deviceId: string) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
-      include: { driver: true }
+      include: { 
+        driver: {
+          include: { referredAdvertisers: true }
+        } 
+      }
     });
 
     if (!device || !device.driver) {
@@ -231,6 +241,8 @@ export class DriversService {
       projectedEarnings,
       referralEarnings,
       referralsCount,
+      advertiserReferralEarnings: (driver.referredAdvertisers?.length || 0) * 500,
+      advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
       activeAds: activeAdsCount,
       totalPaid: totalPaid._sum.amount || 0,
       lastPayment: lastPayment ? {

@@ -56,7 +56,16 @@ export class VideoEngine {
     if (this.playlist.length > 0) {
       this.playNext();
     } else {
+      console.warn('Playlist empty, stopping playback...');
       this.playerStatus = "stopped";
+      if (this.player) {
+         this.player.pause();
+         this.player.src = '';
+         this.player.load();
+      }
+      if (this.intermissionScreen) {
+         this.intermissionScreen.style.display = 'block';
+      }
     }
   }
 

@@ -929,17 +929,14 @@
                         }));
 
                     } else {
-                        // Empty playlist from server
-                        console.warn('⚠️ Server returned empty media_assets.');
-
-                        // Still try to serve from local cache
-                        const restored = this.restoreFromCache();
-                        if (restored && state.currentPlaylist.length > 0) {
-                            console.log('📂 Serving stale cache while server has no content.');
-                            if (!player.isPlaying) player.play(state.currentPlaylist[state.currentIndex]);
-                        } else {
-                            player.showNoContent();
-                        }
+                        // Empty playlist from server — device has been unlinked or has no campaigns
+                        console.warn('⚠️ Server returned empty media_assets. Clearing playlist.');
+                        
+                        state.currentPlaylist = [];
+                        state.currentIndex = 0;
+                        localStorage.removeItem(this.SYNC_CACHE_KEY); // Purge stale cache
+                        
+                        player.showNoContent();
                     }
 
                     // Execute remote commands (REBOOT, FORCE_SYNC, etc.)
@@ -1230,10 +1227,20 @@
                 }
 
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition((pos) => {
+                    try {
+                        const pos = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 60000 
+                            });
+                        });
                         state.lat = pos.coords.latitude;
                         state.lng = pos.coords.longitude;
-                    }, null, { enableHighAccuracy: true });
+                        console.log('📍 Location updated:', state.lat, state.lng);
+                    } catch (e) {
+                        console.warn('📍 Geolocation failed or timed out:', e.message);
+                    }
                 }
 
                 // Simulator Mode fallback

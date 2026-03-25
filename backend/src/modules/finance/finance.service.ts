@@ -72,7 +72,8 @@ export class FinanceService {
             campaigns: true // explicitly assigned campaigns
           }
         },
-        referrals: true // Get drivers referred by this partner
+        referrals: true, // Get drivers referred by this partner
+        referredAdvertisers: true // Get advertisers referred by this partner
       }
     });
 
@@ -104,10 +105,14 @@ export class FinanceService {
       
       // Calculate referral commissions (500 per referral they brought in)
       const referrals = driver.referrals ? driver.referrals.length : 0;
-      const referralBonus = referrals * 500;
+      const driverReferralBonus = referrals * 500;
+
+      // Calculate advertiser referral commissions (500 per advertiser they brought in)
+      const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
+      const advertiserReferralBonus = advertiserReferrals * 500;
 
       const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-      const totalAmount = baseCommission + adTransmissionIncome + referralBonus;
+      const totalAmount = baseCommission + adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
 
       return {
         driverId: driver.id,
@@ -116,7 +121,8 @@ export class FinanceService {
         activeAds: activeAdsCount,
         adIncome: adTransmissionIncome,
         baseCommission,
-        referralBonus,
+        referralBonus: driverReferralBonus,
+        advertiserReferralBonus,
         totalAmount: totalAmount,
         currency: 'DOP'
       };

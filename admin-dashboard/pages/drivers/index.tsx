@@ -68,6 +68,7 @@ export default function DriversPage() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAuditDriver, setSelectedAuditDriver] = useState<any>(null);
 
   const loadDrivers = useCallback(async () => {
     setLoading(true);
@@ -467,7 +468,12 @@ export default function DriversPage() {
                                      <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Seguro</button>
                                   </div>
                                </div>
-                               <button className="w-full bg-tad-yellow text-black font-black text-[9px] uppercase tracking-[0.2em] py-3 rounded-xl hover:scale-[1.02] transition-transform shadow-md">Auditar Expediente Completo</button>
+                               <button 
+                                  onClick={() => setSelectedAuditDriver(driver)}
+                                  className="w-full bg-tad-yellow text-black font-black text-[9px] uppercase tracking-[0.2em] py-3 rounded-xl hover:scale-[1.02] transition-transform shadow-md"
+                                >
+                                  Auditar Expediente Completo
+                                </button>
                             </div>
                           </div>
                         </div>
@@ -491,6 +497,107 @@ export default function DriversPage() {
         }}
       />
 
+      {/* Modern Audit Overlay */}
+      {selectedAuditDriver && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+           <div className="bg-zinc-950 border border-white/10 rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl relative">
+              
+              {/* Animated Header */}
+              <div className="p-10 border-b border-white/5 bg-gradient-to-br from-tad-yellow/20 via-transparent to-transparent">
+                 <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-6">
+                       <div className="w-20 h-20 rounded-full bg-tad-yellow flex items-center justify-center text-black shadow-[0_0_50px_rgba(255,212,0,0.3)]">
+                          <IdCard className="w-10 h-10" />
+                       </div>
+                       <div>
+                          <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
+                             Auditoría <span className="text-tad-yellow">TAD</span>
+                          </h2>
+                          <p className="text-[12px] text-zinc-500 font-bold uppercase tracking-[0.4em] mt-2">Certificado de Cumplimiento Oficial</p>
+                       </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedAuditDriver(null)}
+                      title="Cerrar Auditoría"
+                      aria-label="Cerrar Auditoría"
+                      className="p-4 bg-white/5 hover:bg-white/10 rounded-3xl text-zinc-500 hover:text-white transition-all"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                 </div>
+              </div>
+
+              {/* Data Grid */}
+              <div className="p-10 space-y-8">
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
+                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">TAD DRIVER</p>
+                       <p className="text-xl font-black text-white uppercase italic">{selectedAuditDriver.fullName}</p>
+                    </div>
+                    <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
+                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">Estado de Transmisión</p>
+                       <p className="text-xl font-black text-emerald-500 uppercase italic">Activo y Operativo</p>
+                    </div>
+                 </div>
+
+                 <div className="space-y-4">
+                    <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">Desglose Mensual de Ingresos</h3>
+                    <div className="space-y-3">
+                       <AuditLine label="Comisión Fija TAD DRIVER" value="RD$ 500.00" />
+                       <AuditLine label="Bono por Transmisión (Ads)" value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`} info={`${selectedAuditDriver.activeAds || 0} campañas activas`} />
+                       <AuditLine label="Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos`} />
+                       <AuditLine 
+                          label="Comisión por Referir Anunciantes" 
+                          value={`RD$ ${((selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}.00`} 
+                          info={`${selectedAuditDriver.advertiserReferralsCount || 0} anunciantes referidos`} 
+                          highlight
+                       />
+                    </div>
+                    
+                    <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-end">
+                       <div>
+                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-loose">
+                             Estimado Mensual proyectado en base a la<br/>integración de hardware actual.
+                          </p>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Total Proyectado</p>
+                          <p className="text-5xl font-black text-white italic">
+                             RD$ { (500 + (selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString() }
+                          </p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Security Footer */}
+              <div className="p-10 bg-zinc-900/80 border-t border-white/5 flex items-center gap-4">
+                 <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-loose max-w-sm">
+                   Este reporte ha sido generado por el motor de inteligencia financiera de TAD PLATFORM. 
+                   El pago se liquida automáticamente el primer día de cada mes.
+                 </p>
+              </div>
+
+           </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function AuditLine({ label, value, info, highlight }: { label: string; value: string; info?: string; highlight?: boolean }) {
+  return (
+    <div className={clsx(
+      "flex items-center justify-between p-5 rounded-2xl border transition-all",
+      highlight ? "bg-tad-yellow/5 border-tad-yellow/20" : "bg-zinc-900 border-white/5"
+    )}>
+      <div>
+        <p className={clsx("text-[11px] font-black uppercase tracking-widest", highlight ? "text-tad-yellow" : "text-white")}>{label}</p>
+        {info && <p className="text-[8px] text-zinc-600 font-bold uppercase mt-1 tracking-widest">{info}</p>}
+      </div>
+      <p className={clsx("text-lg font-black italic", highlight ? "text-tad-yellow" : "text-white")}>{value}</p>
     </div>
   );
 }

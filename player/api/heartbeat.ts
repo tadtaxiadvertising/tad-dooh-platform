@@ -4,7 +4,9 @@ export async function sendHeartbeat(
   deviceId: string,
   batteryLevel: number | null,
   storageFree: string | null,
-  playerStatus: string
+  playerStatus: string,
+  lat?: number | null,
+  lng?: number | null
 ): Promise<boolean> {
   try {
     const res = await fetch(`${API_URL}/device/heartbeat`, {
@@ -17,6 +19,8 @@ export async function sendHeartbeat(
         battery_level: batteryLevel,
         storage_free: storageFree,
         player_status: playerStatus,
+        lat,
+        lng,
       }),
     });
 

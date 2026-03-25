@@ -96,12 +96,32 @@ export class Scheduler {
         }
       }
 
+      let lat: number | null = null;
+      let lng: number | null = null;
+      
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              enableHighAccuracy: true,
+              timeout: 10000 
+            });
+          });
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        } catch (e) {
+          console.warn('Geolocation capture failed for heartbeat');
+        }
+      }
+
       // Check Engine watchdog/status logically mapping anomalies natively.
       await sendHeartbeat(
         this.deviceId,
         batteryLevel,
         storageFree,
-        this.engine.playerStatus
+        this.engine.playerStatus,
+        lat,
+        lng
       );
   }
 

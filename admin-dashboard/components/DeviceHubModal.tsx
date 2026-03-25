@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2 } from 'lucide-react';
-import { getDeviceProfile, sendCommand, updateDeviceProfile } from '../services/api';
+import { getDeviceProfile, sendCommand, updateDeviceProfile, deleteDevice, removeCampaignFromDevice } from '../services/api';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -39,11 +39,37 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
     setCommandLoading(type);
     try {
       await sendCommand(deviceId, type);
-      // Feedback visual
     } catch (err) {
       alert('Error al enviar comando');
     } finally {
       setTimeout(() => setCommandLoading(null), 1000);
+    }
+  };
+
+  const handleDeleteDevice = async () => {
+    if (!window.confirm('¿ELIMINAR ESTE NODO PERMANENTEMENTE? Esta acción purgará toda la telemetría y vínculos.')) return;
+    setLoading(true);
+    try {
+      await deleteDevice(deviceId);
+      onClose();
+      window.location.reload(); // Refresh fleet page
+    } catch (err: any) {
+      alert('Error eliminando nodo: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnlinkCampaign = async (campaignId: string) => {
+    if (!window.confirm('¿Quitar esta campaña de este taxi?')) return;
+    try {
+      // Find hardware ID from profile to use the correct API param
+      const hwId = profile.device_id;
+      await removeCampaignFromDevice(hwId, campaignId);
+      // Refresh content list
+      loadProfile();
+    } catch (err: any) {
+      alert('Error desvinculando campaña: ' + err.message);
     }
   };
 
@@ -164,7 +190,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
 
                    <div className="grid grid-cols-1 gap-4">
                       {(profile.campaigns || []).map((camp: any) => (
-                        <div key={camp.id} className="bg-zinc-900/50 border border-white/5 p-6 rounded-[24px] flex items-center justify-between group hover:border-tad-yellow/30 transition-all">
+                         <div key={camp.id} className="bg-zinc-900/50 border border-white/5 p-6 rounded-[24px] flex items-center justify-between group hover:border-tad-yellow/30 transition-all">
                           <div className="flex items-center gap-5">
                             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500 group-hover:text-tad-yellow transition-colors">
                               <Play className="w-5 h-5" />
@@ -174,9 +200,18 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{camp.advertiser || 'Anunciante Interno'}</p>
                             </div>
                           </div>
-                          <span className="text-[10px] font-black text-zinc-500 bg-black/40 px-4 py-2 rounded-xl group-hover:text-white transition-colors">
-                            VIGENTE DESDE {camp.assigned_at ? new Date(camp.assigned_at).toLocaleDateString() : 'N/A'}
-                          </span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-black text-zinc-500 bg-black/40 px-4 py-2 rounded-xl group-hover:text-white transition-colors">
+                              VIGENTE DESDE {camp.assigned_at ? new Date(camp.assigned_at).toLocaleDateString() : 'N/A'}
+                            </span>
+                            <button 
+                              onClick={() => handleUnlinkCampaign(camp.id)}
+                              className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                              title="Desvincular campaña"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                       {(!profile.campaigns || profile.campaigns.length === 0) && (
@@ -240,7 +275,11 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
 
                    <div className="pt-8 border-t border-white/5">
                       <h3 className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4">Zona de Peligro</h3>
-                      <button className="flex items-center justify-center gap-3 px-8 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-500 hover:text-white transition-all">
+                      <button 
+                        onClick={handleDeleteDevice}
+                        disabled={loading}
+                        className="flex items-center justify-center gap-3 px-8 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
+                      >
                         <Trash2 className="w-4 h-4" /> Desvincular Nodo Permanentemente
                       </button>
                    </div>

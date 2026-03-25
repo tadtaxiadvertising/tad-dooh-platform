@@ -9,7 +9,8 @@ import {
   unlinkMediaFromCampaign,
   getDevices,
   getCampaignDevices,
-  assignCampaignToDevices
+  assignCampaignToDevices,
+  getCampaignById
 } from '../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -87,19 +88,34 @@ export const CampaignModal = React.memo(function CampaignModal({
       loadAllMedia();
       getDrivers().then(setDrivers).catch(console.error);
       getDevices().then(setDevices).catch(console.error);
-      getCampaignDevices(campaignId).then((data: any[]) => {
-          if (Array.isArray(data)) setSelectedDevices(data.map(d => d.id));
+      
+      // Initialize state from existing campaign data
+      getCampaignById(campaignId).then(camp => {
+        if (camp) {
+          setTargetAll(camp.targetAll ?? true);
+          if (camp.targetDrivers) {
+            setSelectedDrivers(camp.targetDrivers.map((d: any) => d.id));
+          }
+        }
       }).catch(console.error);
 
-      // Reset
+      getCampaignDevices(campaignId).then((data: any[]) => {
+          if (Array.isArray(data)) {
+            // Use internal ID (UUID) for consistency in the UI state
+            setSelectedDevices(data.map(d => d.id));
+          }
+      }).catch(console.error);
+
+      // Reset UI states
       setFile(null);
       setPreviewUrl(null);
       setUploadDone(false);
       setUploadError(null);
       setSegmentDone(false);
+      setScreensDone(false);
       setActiveTab('gallery');
     }
-  }, [isOpen, loadAllMedia]);
+  }, [isOpen, campaignId, loadAllMedia]);
 
   if (!isOpen) return null;
 
@@ -396,6 +412,14 @@ export const CampaignModal = React.memo(function CampaignModal({
                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                     Vincular Hardware Directo ({selectedDevices.length})
                  </h3>
+                 {targetAll && (
+                    <div className="p-3 bg-tad-yellow/10 border border-tad-yellow/20 rounded-xl flex items-center gap-3 mb-2 animate-in slide-in-from-top-2">
+                      <Zap className="w-4 h-4 text-tad-yellow" />
+                      <p className="text-[9px] text-tad-yellow font-black uppercase tracking-widest leading-none">
+                        Transmisión Global Activa: Esta campaña se emite en toda la red independientemente de esta lista.
+                      </p>
+                    </div>
+                  )}
                  <button 
                   onClick={() => setSelectedDevices([])}
                   className="text-[9px] font-black text-rose-500 uppercase hover:text-rose-400 transition-colors"

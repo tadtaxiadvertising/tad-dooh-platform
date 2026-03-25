@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target, Library, Loader2, Link2, Unlink, Eye, Tablet } from 'lucide-react';
-import { getDrivers, getMedia, uploadCampaignMedia, assignDriversToCampaign, linkMediaToCampaign, unlinkMediaFromCampaign } from '../services/api';
+import { 
+  getDrivers, 
+  getMedia, 
+  uploadCampaignMedia, 
+  assignDriversToCampaign, 
+  linkMediaToCampaign, 
+  unlinkMediaFromCampaign,
+  getDevices,
+  getCampaignDevices,
+  assignCampaignToDevices
+} from '../services/api';
+import { toast } from 'sonner';
 import clsx from 'clsx';
 
 interface MediaItem {
@@ -75,10 +86,9 @@ export const CampaignModal = React.memo(function CampaignModal({
     if (isOpen) {
       loadAllMedia();
       getDrivers().then(setDrivers).catch(console.error);
-      const { getDevices, getCampaignDevices } = require('../services/api');
       getDevices().then(setDevices).catch(console.error);
       getCampaignDevices(campaignId).then((data: any[]) => {
-          if (Array.isArray(data)) setSelectedDevices(data.map(d => d.id || d.deviceId));
+          if (Array.isArray(data)) setSelectedDevices(data.map(d => d.id));
       }).catch(console.error);
 
       // Reset
@@ -134,13 +144,14 @@ export const CampaignModal = React.memo(function CampaignModal({
   const handleSaveScreens = async () => {
     setSavingScreens(true);
     try {
-      const { assignCampaignToDevices } = await import('../services/api');
       await assignCampaignToDevices(campaignId, selectedDevices);
       setScreensDone(true);
+      toast.success('Configuración de pantallas actualizada en la red');
       onSuccess?.();
       setTimeout(() => setScreensDone(false), 2000);
     } catch (e: any) {
       console.error('Error guardando pantallas:', e);
+      toast.error('Fallo en la sincronización de hardware: ' + e.message);
     } finally {
       setSavingScreens(false);
     }

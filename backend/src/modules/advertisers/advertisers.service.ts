@@ -20,7 +20,13 @@ export class AdvertisersService {
     return this.prisma.advertiser.findUnique({
       where: { id },
       include: {
-        campaigns: true
+        campaigns: {
+          include: {
+            metrics: true,
+            media: true,
+            targetDrivers: true,
+          }
+        }
       }
     });
   }

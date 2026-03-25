@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { createCampaign } from '../../services/api';
 import { ArrowLeft, Save, Megaphone, Activity, Info, Zap, Calendar, Target, ShieldCheck, RefreshCcw, Globe, Radio, MapPin } from 'lucide-react';
@@ -24,6 +24,15 @@ export default function NewCampaignPage() {
     uberEatsUrl: ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (router.isReady && router.query.advertiser) {
+      setForm(prev => ({
+        ...prev,
+        advertiser: router.query.advertiser as string
+      }));
+    }
+  }, [router.isReady, router.query.advertiser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

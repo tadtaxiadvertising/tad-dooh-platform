@@ -301,6 +301,7 @@ export const createDevice = (data: Record<string, unknown>) => api.post('/device
 export const updateDevice = (id: string, data: Record<string, unknown>) => api.put(`/devices/${id}`, data).then(res => res.data);
 export const deleteDevice = (deviceId: string) => api.delete(`/devices/${deviceId}`).then(res => res.data);
 export const getAdvertisers = () => api.get('/advertisers').then(res => res.data);
+export const getAdvertiser = (id: string) => api.get(`/advertisers/${id}`).then(res => res.data);
 export const createAdvertiser = (data: any) => api.post('/advertisers', data).then(res => res.data);
 export const updateAdvertiser = (id: string, data: any) => api.patch(`/advertisers/${id}`, data).then(res => res.data);
 export const deleteAdvertiser = (id: string) => api.delete(`/advertisers/${id}`).then(res => res.data);

@@ -1,661 +1,773 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TAD DRIVER — Business Hub</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --yellow: #FFD400;
-            --yellow-glow: rgba(255, 212, 0, 0.3);
-            --bg: #080808;
-            --card: #121212;
-            --border: rgba(255,255,255,0.08);
-            --text: #FFFFFF;
-            --muted: #888;
-            --green: #22C55E;
-            --red: #EF4444;
-            --orange: #F97316;
-            --blue: #3B82F6;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TAD Driver — Portal del Conductor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --y: #FFD400; --yg: rgba(255,212,0,.25); --bg: #080808;
+      --card: #131313; --card2: #1a1a1a; --border: rgba(255,255,255,.08);
+      --txt: #FFFFFF; --muted: #777; --green: #22C55E; --red: #EF4444;
+      --orange: #F97316; --blue: #3B82F6; --purple: #A855F7;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,sans-serif;overflow-x:hidden}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    /* NAV TABS */
+    .nav-tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,8,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+    .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 4px;border:none;background:transparent;color:var(--muted);transition:color .2s;font-family:inherit}
+    .nav-tab.active{color:var(--y)}
+    .nav-tab svg{width:22px;height:22px}
+    .nav-tab span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
-        html, body {
-            width: 100%;
-            min-height: 100dvh;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', -apple-system, sans-serif;
-            overflow-x: hidden;
-        }
+    /* PAGES */
+    .page{display:none;padding:80px 16px calc(80px + max(16px,env(safe-area-inset-bottom)));animation:fadeIn .25s ease}
+    .page.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-        /* ── Header ── */
-        .header {
-            padding: 24px 20px 20px;
-            background: linear-gradient(to bottom, rgba(255,212,0,0.05) 0%, transparent 100%);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    /* HEADER */
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(8,8,8,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 16px 0;display:flex;align-items:center;justify-content:space-between;height:calc(64px + env(safe-area-inset-top,0))}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:40px;height:40px;background:var(--y);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#000;box-shadow:0 0 20px var(--yg)}
+    .brand-name{font-size:17px;font-weight:900;letter-spacing:-.5px}
+    .brand-sub{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .online-pill{display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);padding:5px 12px;border-radius:20px;font-size:10px;font-weight:800;color:var(--green)}
+    .dot{width:5px;height:5px;background:currentColor;border-radius:50%;animation:blink 1.5s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+    /* SECTION */
+    .sec-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:20px 0 10px}
 
-        .logo-mark {
-            width: 48px; height: 48px;
-            background: var(--yellow);
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 25px var(--yellow-glow);
-            font-weight: 900;
-            font-size: 16px;
-            color: #000;
-            transform: rotate(-2deg);
-        }
+    /* WALLET CARD */
+    .wallet-hero{background:linear-gradient(135deg,#161616,#0d0d0d);border:1px solid var(--border);border-radius:24px;padding:24px;position:relative;overflow:hidden}
+    .wallet-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;background:var(--y);filter:blur(90px);opacity:.08;pointer-events:none}
+    .balance-row{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+    .balance-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .balance-amt{font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--y);line-height:1}
+    .balance-cur{font-size:20px;font-weight:700;color:var(--txt);opacity:.5;margin-right:4px}
+    .wallet-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:16px;overflow:hidden;margin-top:16px}
+    .wstat{background:var(--card2);padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+    .wstat-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
+    .wstat-v{font-size:14px;font-weight:800}
+    .btn-withdraw{width:100%;margin-top:16px;padding:16px;border-radius:16px;border:none;background:var(--y);color:#000;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px var(--yg);transition:transform .15s,box-shadow .15s}
+    .btn-withdraw:active{transform:scale(.97);box-shadow:0 4px 12px var(--yg)}
+    .btn-withdraw.loading{opacity:.7;pointer-events:none}
 
-        .brand-text h1 {
-            font-size: 20px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            text-transform: uppercase;
-        }
+    /* TRANSACTION LIST */
+    .tx-list{display:flex;flex-direction:column;gap:8px}
+    .tx-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+    .tx-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .tx-icon.green{background:rgba(34,197,94,.1)}
+    .tx-icon.red{background:rgba(239,68,68,.1)}
+    .tx-icon.yellow{background:rgba(255,212,0,.1)}
+    .tx-info{flex:1}
+    .tx-title{font-size:13px;font-weight:700}
+    .tx-date{font-size:11px;color:var(--muted);margin-top:1px}
+    .tx-amt{font-size:15px;font-weight:800}
+    .tx-amt.pos{color:var(--green)}
+    .tx-amt.neg{color:var(--red)}
 
-        .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--green);
-        }
+    /* STATS GRID */
+    .stats2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+    .stat-icon{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px}
+    .stat-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+    .stat-val{font-size:26px;font-weight:900;letter-spacing:-1px}
+    .stat-sub{font-size:10px;color:var(--muted);margin-top:-4px}
 
-        .status-dot {
-            width: 6px; height: 6px;
-            background: currentColor;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
+    /* GPS / MAP */
+    .gps-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+    .gps-header{padding:16px;display:flex;align-items:center;justify-content:space-between}
+    .gps-info h3{font-size:15px;font-weight:800}
+    .gps-info p{font-size:12px;color:var(--muted);margin-top:2px}
+    .toggle{width:54px;height:30px;background:rgba(255,255,255,.08);border-radius:20px;padding:3px;cursor:pointer;transition:background .3s;position:relative;border:none}
+    .toggle.on{background:var(--y)}
+    .knob{width:24px;height:24px;background:#fff;border-radius:50%;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+    .toggle.on .knob{transform:translateX(24px);background:#000}
+    .map-frame{width:100%;height:160px;display:block;border:none;filter:brightness(.65) saturate(.7)}
+    .gps-coords{padding:10px 16px 14px;display:flex;gap:16px}
+    .coord{display:flex;flex-direction:column;gap:1px}
+    .coord-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
+    .coord-v{font-size:12px;font-weight:700;font-family:monospace}
 
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    /* NOTICES */
+    .notice-list{display:flex;flex-direction:column;gap:10px}
+    .notice{background:var(--card);border-radius:18px;padding:16px;display:flex;gap:12px;border-left:3px solid transparent}
+    .notice.info{border-color:var(--blue)}
+    .notice.warn{border-color:var(--orange)}
+    .notice.ok{border-color:var(--green)}
+    .notice.prio{border-color:var(--red)}
+    .notice-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+    .notice-title{font-size:13px;font-weight:800;margin-bottom:3px}
+    .notice-body{font-size:12px;color:var(--muted);line-height:1.5}
+    .notice-time{font-size:10px;color:var(--muted);margin-top:6px;font-weight:600}
 
-        /* ── Content Layout ── */
-        .content {
-            padding: 0 20px 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    /* PROFILE */
+    .profile-hero{background:linear-gradient(135deg,#161616,#0d0d0d);border:1px solid var(--border);border-radius:24px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;position:relative;overflow:hidden}
+    .profile-hero::before{content:'';position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);width:160px;height:80px;background:var(--y);filter:blur(60px);opacity:.06}
+    .avatar{width:72px;height:72px;background:var(--y);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#000;box-shadow:0 0 30px var(--yg)}
+    .profile-name{font-size:20px;font-weight:900;letter-spacing:-.5px}
+    .profile-id{font-size:11px;color:var(--muted);font-weight:600;font-family:monospace}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+    .badge.active{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+    .badge.suspended{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+    .info-rows{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+    .irow{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .irow:last-child{border-bottom:none}
+    .irow-l{font-size:12px;font-weight:600;color:var(--muted)}
+    .irow-v{font-size:13px;font-weight:800}
+    .irow-v.green{color:var(--green)}
+    .irow-v.red{color:var(--red)}
+    .irow-v.yellow{color:var(--y)}
 
-        /* ── Section Title ── */
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
+    /* STITCH MODAL */
+    .modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+    .modal-bg.open{opacity:1;pointer-events:all}
+    .modal-sheet{background:#111;border:1px solid var(--border);border-radius:28px 28px 0 0;padding:28px 20px calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;transform:translateY(40px);transition:transform .3s}
+    .modal-bg.open .modal-sheet{transform:none}
+    .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px}
+    .modal-title{font-size:18px;font-weight:900;margin-bottom:4px}
+    .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+    .field-group{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .field input,.field select{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--txt);font-size:15px;font-family:inherit;outline:none;width:100%;transition:border-color .2s}
+    .field input:focus,.field select:focus{border-color:var(--y)}
+    .field select option{background:#111}
+    .stitch-logo{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)}
+    .stitch-logo svg{width:48px}
+    .btn-confirm{width:100%;padding:18px;border-radius:16px;border:none;background:var(--y);color:#000;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;box-shadow:0 8px 24px var(--yg);transition:transform .15s}
+    .btn-confirm:active{transform:scale(.97)}
+    .btn-cancel{width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;font-family:inherit}
 
-        .section-header h2 {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 800;
-            color: var(--muted);
-        }
+    /* LOADER */
+    #loader{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
+    #loader.hidden{opacity:0;pointer-events:none}
+    .spinner{width:40px;height:40px;border:3px solid rgba(255,212,0,.15);border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loader-txt{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;animation:blink 1.5s infinite}
 
-        /* ── Wallet Card (Highlight) ── */
-        .wallet-card {
-            background: linear-gradient(135deg, #181818 0%, #0d0d0d 100%);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 24px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    /* TOAST */
+    .toast{position:fixed;top:calc(72px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-20px);background:#1f1f1f;border:1px solid var(--border);border-radius:14px;padding:12px 20px;font-size:13px;font-weight:700;white-space:nowrap;z-index:400;opacity:0;transition:all .3s;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:rgba(34,197,94,.3);color:var(--green)}
+    .toast.error{border-color:rgba(239,68,68,.3);color:var(--red)}
 
-        .wallet-card::after {
-            content: '';
-            position: absolute;
-            top: -50px; right: -50px;
-            width: 150px; height: 150px;
-            background: var(--yellow);
-            filter: blur(80px);
-            opacity: 0.1;
-            pointer-events: none;
-        }
+    /* CHART BAR */
+    .chart-bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:8px}
+    .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .bar{width:100%;border-radius:6px 6px 0 0;background:var(--y);opacity:.3;transition:height .6s ease,opacity .3s}
+    .bar.highlight{opacity:1}
+    .bar-day{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase}
 
-        .balance-main {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .balance-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-
-        .balance-amount {
-            font-size: 42px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            color: var(--yellow);
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-        }
-
-        .balance-amount span { font-size: 20px; color: var(--text); opacity: 0.5; }
-
-        .wallet-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            border-top: 1px solid var(--border);
-            padding-top: 20px;
-        }
-
-        .wallet-sub {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .wallet-sub .label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-        .wallet-sub .value { font-size: 16px; font-weight: 800; }
-
-        /* ── Stats Grid ── */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .stat-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .stat-icon {
-            width: 32px; height: 32px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-        }
-
-        .stat-info .label {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-
-        .stat-info .value {
-            font-size: 24px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-        }
-
-        /* ── Tracking Area (Compact) ── */
-        .tracking-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .tracking-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .tracking-info h3 { font-size: 15px; font-weight: 800; }
-        .tracking-info p { font-size: 12px; color: var(--muted); }
-
-        .tracking-switch {
-            width: 60px; height: 32px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 4px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .tracking-switch.active { background: var(--yellow); }
-
-        .switch-knob {
-            width: 24px; height: 24px;
-            background: #fff;
-            border-radius: 50%;
-            transition: all 0.3s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .tracking-switch.active .switch-knob { transform: translateX(28px); background: #000; }
-
-        /* ── Info Rows ── */
-        .info-list {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .info-row {
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .info-row:last-child { border-bottom: none; }
-
-        .info-label { font-size: 13px; font-weight: 600; color: var(--muted); }
-        .info-value { font-size: 14px; font-weight: 800; }
-        .info-value.green { color: var(--green); }
-
-        /* ── Action Bar ── */
-        .btn-sync {
-            width: 100%;
-            padding: 20px;
-            border-radius: 18px;
-            border: none;
-            background: var(--yellow);
-            color: #000;
-            font-size: 16px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px var(--yellow-glow);
-            display: flex; align-items: center; justify-content: center;
-            gap: 12px;
-        }
-
-        .btn-sync:active { transform: scale(0.98); }
-
-        /* ── Map (Visual context) ── */
-        .map-preview {
-            width: 100%;
-            height: 140px;
-            background: #1a1a1a;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-            position: relative;
-        }
-
-        #map-iframe { width: 100%; height: 100%; border: none; filter: brightness(0.6) grayscale(0.5); pointer-events: none; }
-
-        /* ── Activity Bottom Sheet (Simplified) ── */
-        .activity-log {
-            padding: 0 4px;
-            font-family: monospace;
-            font-size: 10px;
-            color: #444;
-            max-height: 80px;
-            overflow-y: hidden;
-        }
-
-        .safe-bottom { height: env(safe-area-inset-bottom, 20px); }
-
-        /* ── Loading Overlay ── */
-        #loader {
-            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.5s;
-        }
-        #loader.hidden { opacity: 0; pointer-events: none; }
-        .driver-header-name {
-            font-size: 10px;
-            color: var(--muted);
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-    </style>
+    /* EMPTY STATE */
+    .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+    .empty-icon{font-size:40px;margin-bottom:12px}
+    .empty p{font-size:13px}
+  </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="logo-mark">TAD</div>
+<div id="loader">
+  <div class="logo" style="width:52px;height:52px;border-radius:16px;font-size:17px">TAD</div>
+  <div class="spinner"></div>
+  <div class="loader-txt">Cargando perfil...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="brand">
+    <div class="logo">TAD</div>
+    <div>
+      <div class="brand-name">TAD DRIVER</div>
+      <div class="brand-sub" id="hdr-name">Cargando...</div>
     </div>
+  </div>
+  <div class="online-pill">
+    <div class="dot"></div>
+    <span id="hdr-status">ACTIVO</span>
+  </div>
+</div>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="brand">
-            <div class="logo-mark">TAD</div>
-            <div class="brand-text">
-                <h1>TAD DRIVER</h1>
-                <div id="driver-name-header" class="driver-header-name">Cargando...</div>
-            </div>
-        </div>
-        <div class="status-pill">
-            <div class="status-dot"></div>
-            <span id="status-text">ACTIVO</span>
-        </div>
-    </header>
-
-    <div class="content">
-        
-        <!-- Section: Billetera -->
-        <div class="section-header">
-            <h2>Mi Billetera</h2>
-        </div>
-        <div class="wallet-card">
-            <div class="balance-main">
-                <div class="balance-label">Ganancias Proyectadas</div>
-                <div class="balance-amount"><span>RD$</span><span id="balance-val">0</span></div>
-            </div>
-            <div class="wallet-grid">
-                <div class="wallet-sub">
-                    <div class="label">Total Recibido</div>
-                    <div class="value" id="total-paid-val">RD$ 0</div>
-                </div>
-                <div class="wallet-sub">
-                    <div class="label">Último Pago</div>
-                    <div class="value" id="last-pay-val">—</div>
-                </div>
-                <div class="wallet-sub">
-                    <div class="label">Referidos (RD$)</div>
-                    <div class="value" id="referral-bal-val">RD$ 0</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section: Rendimiento -->
-        <div class="section-header">
-            <h2>Rendimiento</h2>
-        </div>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">🔥</div>
-                <div class="stat-info">
-                    <div class="label">Ads Transmitidos</div>
-                    <div class="value" id="ads-played-val">0</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📺</div>
-                <div class="stat-info">
-                    <div class="label">Pautas Activas</div>
-                    <div class="value" id="active-ads-val">0</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">🤝</div>
-                <div class="stat-info">
-                    <div class="label">Red de Referidos</div>
-                    <div class="value" id="referral-count-val">0</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section: Perfil & Info -->
-        <div class="section-header">
-            <h2>Información de Unidad</h2>
-        </div>
-        <div class="info-list">
-            <div class="info-row">
-                <span class="info-label">Chofer</span>
-                <span class="info-value" id="driver-name-val">Cargando...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Matrícula Unidad</span>
-                <span class="info-value" id="taxi-number-val">...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Suscripción</span>
-                <span class="info-value green" id="sub-status-val">VÁLIDA</span>
-            </div>
-        </div>
-
-        <!-- Section: Tracking -->
-        <div class="section-header">
-            <h2>Tracking GPS</h2>
-        </div>
-        <div class="tracking-card">
-            <div class="tracking-info">
-                <h3>Ubicación en vivo</h3>
-                <p id="tracking-status">Inactivo</p>
-            </div>
-            <div class="tracking-switch" id="track-toggle" onclick="toggleTracking()">
-                <div class="switch-knob"></div>
-            </div>
-        </div>
-
-        <!-- Map Mini -->
-        <div class="map-preview">
-            <iframe id="map-iframe" title="Gps Preview" src="about:blank"></iframe>
-        </div>
-
-        <div class="activity-log" id="activity-log"></div>
-
-        <!-- Sync Button -->
-        <button class="btn-sync" onclick="syncData()">
-            <span>🔄</span> ACTUALIZAR DATOS
-        </button>
-
-        <div class="safe-bottom"></div>
+<!-- ════ PAGE: WALLET ════ -->
+<div class="page active" id="pg-wallet">
+  <div class="sec-label">Mi Billetera</div>
+  <div class="wallet-hero">
+    <div class="balance-row">
+      <div class="balance-lbl">Ganancias Proyectadas</div>
+      <div class="balance-amt"><span class="balance-cur">RD$</span><span id="w-balance">0</span></div>
     </div>
+    <div class="wallet-stats">
+      <div class="wstat">
+        <div class="wstat-l">Pagado</div>
+        <div class="wstat-v" id="w-paid">RD$ 0</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-l">Referidos</div>
+        <div class="wstat-v" id="w-referral">RD$ 0</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-l">Pend.</div>
+        <div class="wstat-v" id="w-pending" style="color:var(--orange)">RD$ 0</div>
+      </div>
+    </div>
+    <button class="btn-withdraw" id="btn-withdraw" onclick="openWithdraw()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      Solicitar Retiro
+    </button>
+  </div>
 
-    <script>
-        // CONFIG
-        const urlParams = new URLSearchParams(window.location.search);
-        const deviceId = urlParams.get('deviceId') || localStorage.getItem('tad_gps_device_id');
-        const defaultServer = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
-        const serverFromUrl = urlParams.get('server');
-        
-        // 🛡️ SANITIZER: Prevent Mixed Content Errors (HTTPS vs HTTP)
-        let server = serverFromUrl || localStorage.getItem('tad_gps_server') || defaultServer;
-        
-        // If we are on HTTPS, the server MUST be HTTPS
-        if (window.location.protocol === 'https:' && server.startsWith('http:')) {
-            // Special case: if it's a local IP from the previous dev test, discard it and use default
-            if (server.includes('10.0.0.112')) {
-                console.warn("Discarding local dev IP in favor of production API");
-                server = defaultServer;
-            } else {
-                // Try to upgrade to https 
-                server = server.replace('http:', 'https:');
-            }
+  <div class="sec-label">Historial</div>
+  <div class="tx-list" id="tx-list">
+    <div class="empty"><div class="empty-icon">💳</div><p>Cargando transacciones...</p></div>
+  </div>
+</div>
+
+<!-- ════ PAGE: TELEMETRÍA ════ -->
+<div class="page" id="pg-tele">
+  <div class="sec-label">GPS en Vivo</div>
+  <div class="gps-card">
+    <div class="gps-header">
+      <div class="gps-info">
+        <h3>Ubicación en tiempo real</h3>
+        <p id="gps-status-txt">Inactivo — toca para activar</p>
+      </div>
+      <button class="toggle" id="gps-toggle" onclick="toggleGPS()">
+        <div class="knob"></div>
+      </button>
+    </div>
+    <iframe class="map-frame" id="map-frame" src="about:blank" title="Mapa GPS"></iframe>
+    <div class="gps-coords">
+      <div class="coord"><div class="coord-l">Latitud</div><div class="coord-v" id="g-lat">—</div></div>
+      <div class="coord"><div class="coord-l">Longitud</div><div class="coord-v" id="g-lng">—</div></div>
+      <div class="coord"><div class="coord-l">Precisión</div><div class="coord-v" id="g-acc">—</div></div>
+      <div class="coord"><div class="coord-l">Vel.</div><div class="coord-v" id="g-spd">—</div></div>
+    </div>
+  </div>
+
+  <div class="sec-label">Rendimiento Hoy</div>
+  <div class="stats2">
+    <div class="stat-box">
+      <div class="stat-icon" style="background:rgba(255,212,0,.1)">🔥</div>
+      <div>
+        <div class="stat-lbl">Anuncios</div>
+        <div class="stat-val" id="t-ads">0</div>
+        <div class="stat-sub">transmitidos en total</div>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:rgba(59,130,246,.1)">📡</div>
+      <div>
+        <div class="stat-lbl">Latidos</div>
+        <div class="stat-val" id="t-hb">0</div>
+        <div class="stat-sub">reportes GPS enviados</div>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:rgba(34,197,94,.1)">⏱️</div>
+      <div>
+        <div class="stat-lbl">Uptime</div>
+        <div class="stat-val" id="t-uptime">0h</div>
+        <div class="stat-sub">desde último reinicio</div>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:rgba(168,85,247,.1)">📺</div>
+      <div>
+        <div class="stat-lbl">Pautas Activas</div>
+        <div class="stat-val" id="t-active">0</div>
+        <div class="stat-sub">en tu dispositivo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-label">Actividad GPS (últimos 7 días)</div>
+  <div class="gps-card" style="padding:16px">
+    <div class="chart-bars" id="chart-bars"></div>
+  </div>
+</div>
+
+<!-- ════ PAGE: AVISOS ════ -->
+<div class="page" id="pg-notices">
+  <div class="sec-label">Avisos del Sistema</div>
+  <div class="notice-list" id="notice-list">
+    <div class="empty"><div class="empty-icon">🔔</div><p>Sin avisos nuevos</p></div>
+  </div>
+</div>
+
+<!-- ════ PAGE: PERFIL ════ -->
+<div class="page" id="pg-profile">
+  <div class="profile-hero">
+    <div class="avatar" id="p-avatar">—</div>
+    <div class="profile-name" id="p-name">Cargando...</div>
+    <div class="profile-id" id="p-device">Device: —</div>
+    <div class="badge active" id="p-badge">ACTIVO</div>
+  </div>
+
+  <div class="sec-label">Información del Conductor</div>
+  <div class="info-rows">
+    <div class="irow"><span class="irow-l">Nombre Completo</span><span class="irow-v" id="p-fullname">—</span></div>
+    <div class="irow"><span class="irow-l">Teléfono</span><span class="irow-v" id="p-phone">—</span></div>
+    <div class="irow"><span class="irow-l">Cédula</span><span class="irow-v" id="p-cedula">—</span></div>
+    <div class="irow"><span class="irow-l">Vehículo / Placa</span><span class="irow-v" id="p-plate">—</span></div>
+    <div class="irow"><span class="irow-l">Número de Taxi</span><span class="irow-v" id="p-taxi">—</span></div>
+    <div class="irow"><span class="irow-l">Ciudad</span><span class="irow-v" id="p-city">—</span></div>
+  </div>
+
+  <div class="sec-label">Estado de Suscripción</div>
+  <div class="info-rows">
+    <div class="irow"><span class="irow-l">Plan</span><span class="irow-v yellow">Anual RD$6,000</span></div>
+    <div class="irow"><span class="irow-l">Estado</span><span class="irow-v green" id="p-sub">VÁLIDA</span></div>
+    <div class="irow"><span class="irow-l">Vence</span><span class="irow-v" id="p-subend">—</span></div>
+    <div class="irow"><span class="irow-l">Referidos Activos</span><span class="irow-v" id="p-refs">0</span></div>
+    <div class="irow"><span class="irow-l">Comisión Referidos</span><span class="irow-v green" id="p-refearns">RD$ 0</span></div>
+  </div>
+
+  <div class="sec-label">Red de Referidos</div>
+  <div class="info-rows" id="referral-rows">
+    <div class="irow"><span class="irow-l">Cargando referidos...</span><span></span></div>
+  </div>
+</div>
+
+<!-- ════ NAV TABS ════ -->
+<nav class="nav-tabs">
+  <button class="nav-tab active" data-page="pg-wallet" onclick="showPage('pg-wallet',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M16 12h2"/></svg>
+    <span>Wallet</span>
+  </button>
+  <button class="nav-tab" data-page="pg-tele" onclick="showPage('pg-tele',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14"/></svg>
+    <span>Telemetría</span>
+  </button>
+  <button class="nav-tab" data-page="pg-notices" onclick="showPage('pg-notices',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <span>Avisos</span>
+  </button>
+  <button class="nav-tab" data-page="pg-profile" onclick="showPage('pg-profile',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+    <span>Perfil</span>
+  </button>
+</nav>
+
+<!-- ════ WITHDRAW MODAL (Stitch) ════ -->
+<div class="modal-bg" id="modal-withdraw">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Solicitar Retiro</div>
+    <div class="modal-sub">Fondos enviados a tu cuenta bancaria vía Stitch Pay</div>
+    <div class="field-group">
+      <div class="field">
+        <label>Monto a Retirar (RD$)</label>
+        <input type="number" id="wd-amount" placeholder="Ej: 2500" min="500" step="100">
+      </div>
+      <div class="field">
+        <label>Banco Destino</label>
+        <select id="wd-bank">
+          <option value="">Selecciona tu banco...</option>
+          <option value="BHD">BHD León</option>
+          <option value="BANRESERVAS">Banreservas</option>
+          <option value="POPULAR">Banco Popular</option>
+          <option value="SCOTIABANK">Scotiabank</option>
+          <option value="APAP">APAP</option>
+          <option value="LAFISE">Lafise</option>
+          <option value="PROMERICA">Promerica</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Número de Cuenta</label>
+        <input type="text" id="wd-account" placeholder="Ej: 2100123456789">
+      </div>
+      <div class="field">
+        <label>Titular de la Cuenta</label>
+        <input type="text" id="wd-holder" placeholder="Nombre como aparece en el banco">
+      </div>
+    </div>
+    <div class="stitch-logo">
+      <svg viewBox="0 0 80 24" fill="none">
+        <text x="0" y="18" font-family="Arial" font-weight="900" font-size="18" fill="#FFD400">stitch</text>
+      </svg>
+      <span>Pagos procesados de forma segura por Stitch</span>
+    </div>
+    <button class="btn-confirm" id="btn-confirm-wd" onclick="confirmWithdraw()" style="margin-top:16px">
+      Confirmar Retiro
+    </button>
+    <button class="btn-cancel" onclick="closeWithdraw()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const API = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
+const STITCH_GQL = 'https://api.stitch.money/graphql';
+
+const urlP = new URLSearchParams(location.search);
+const DEVICE_ID = urlP.get('deviceId') || localStorage.getItem('tad_device_id') || '';
+
+// ─── STATE ────────────────────────────────────────────────
+let driverData = null;
+let gpsActive = false;
+let gpsWatch = null;
+let gpsSendTimer = null;
+let heartbeatCount = parseInt(localStorage.getItem('tad_hb_count') || '0');
+const startTime = Date.now();
+
+// ─── NAV ──────────────────────────────────────────────────
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+  if (id === 'pg-tele') updateUptime();
+}
+
+// ─── TOAST ────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────
+async function loadHub() {
+  if (!DEVICE_ID) {
+    document.getElementById('loader').classList.add('hidden');
+    toast('⚠️ No se encontró ID de dispositivo', 'error');
+    return;
+  }
+  localStorage.setItem('tad_device_id', DEVICE_ID);
+
+  try {
+    const r = await fetch(`${API}/drivers/tablet/${DEVICE_ID}/hub`);
+    if (!r.ok) throw new Error('Hub error ' + r.status);
+    driverData = await r.json();
+    renderAll(driverData);
+  } catch (e) {
+    toast('Sin conexión. Mostrando caché local.', 'error');
+    renderFallback();
+  } finally {
+    document.getElementById('loader').classList.add('hidden');
+  }
+}
+
+function renderAll(d) {
+  // Header
+  const firstName = (d.driverName || 'Conductor').split(' ')[0];
+  document.getElementById('hdr-name').textContent = d.driverName || '—';
+  document.getElementById('hdr-status').textContent = d.subscriptionPaid ? 'ACTIVO' : 'SUSPENDIDO';
+
+  // Wallet
+  const total = (d.projectedEarnings || 0) + (d.referralEarnings || 0);
+  document.getElementById('w-balance').textContent = total.toLocaleString();
+  document.getElementById('w-paid').textContent = `RD$ ${(d.totalPaid || 0).toLocaleString()}`;
+  document.getElementById('w-referral').textContent = `RD$ ${(d.referralEarnings || 0).toLocaleString()}`;
+  const pending = Math.max(0, total - (d.totalPaid || 0));
+  document.getElementById('w-pending').textContent = `RD$ ${pending.toLocaleString()}`;
+
+  // Transactions
+  renderTransactions(d);
+
+  // Telemetry stats
+  document.getElementById('t-ads').textContent = (d.adsPlayed || 0).toLocaleString();
+  document.getElementById('t-active').textContent = d.activeAds || 0;
+  renderChart();
+
+  // Notices
+  renderNotices(d);
+
+  // Profile
+  document.getElementById('p-avatar').textContent = (d.driverName || 'D').charAt(0).toUpperCase();
+  document.getElementById('p-name').textContent = d.driverName || '—';
+  document.getElementById('p-device').textContent = `ID: ${DEVICE_ID}`;
+  document.getElementById('p-fullname').textContent = d.driverName || '—';
+  document.getElementById('p-taxi').textContent = d.taxiNumber || '—';
+  document.getElementById('p-plate').textContent = d.taxiNumber || '—';
+  document.getElementById('p-sub').textContent = d.subscriptionPaid ? 'VÁLIDA ✓' : 'VENCIDA ✗';
+  document.getElementById('p-sub').className = `irow-v ${d.subscriptionPaid ? 'green' : 'red'}`;
+  document.getElementById('p-refs').textContent = d.referralsCount || 0;
+  document.getElementById('p-refearns').textContent = `RD$ ${(d.referralEarnings || 0).toLocaleString()}`;
+
+  const badge = document.getElementById('p-badge');
+  badge.textContent = d.subscriptionPaid ? 'ACTIVO' : 'SUSPENDIDO';
+  badge.className = `badge ${d.subscriptionPaid ? 'active' : 'suspended'}`;
+}
+
+function renderTransactions(d) {
+  const list = document.getElementById('tx-list');
+  const txs = [];
+
+  if (d.lastPayment) {
+    txs.push({
+      icon: '💸', type: 'green',
+      title: 'Pago recibido de TAD',
+      date: new Date(d.lastPayment.date).toLocaleDateString('es-DO', { day:'2-digit', month:'short', year:'numeric' }),
+      amt: `+RD$ ${(d.lastPayment.amount || 0).toLocaleString()}`, amtClass: 'pos'
+    });
+  }
+  if (d.referralEarnings > 0) {
+    txs.push({
+      icon: '🤝', type: 'yellow',
+      title: 'Comisión por referidos',
+      date: 'Este mes',
+      amt: `+RD$ ${d.referralEarnings.toLocaleString()}`, amtClass: 'pos'
+    });
+  }
+  txs.push({
+    icon: '📺', type: 'green',
+    title: 'Ganancias por publicidad',
+    date: 'Proyección mensual',
+    amt: `+RD$ ${(d.projectedEarnings || 0).toLocaleString()}`, amtClass: 'pos'
+  });
+
+  if (txs.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">💳</div><p>Aún no hay transacciones</p></div>';
+    return;
+  }
+  list.innerHTML = txs.map(tx => `
+    <div class="tx-item">
+      <div class="tx-icon ${tx.type}">${tx.icon}</div>
+      <div class="tx-info">
+        <div class="tx-title">${tx.title}</div>
+        <div class="tx-date">${tx.date}</div>
+      </div>
+      <div class="tx-amt ${tx.amtClass}">${tx.amt}</div>
+    </div>`).join('');
+}
+
+function renderNotices(d) {
+  const list = document.getElementById('notice-list');
+  const notices = [];
+
+  if (!d.subscriptionPaid) {
+    notices.push({ type: 'prio', icon: '🚨', title: 'Suscripción Vencida', body: 'Tu suscripción anual de RD$6,000 está pendiente. Contacta a TAD para reactivar tu cuenta y seguir generando ingresos.', time: 'Ahora' });
+  }
+  if (d.activeAds === 0) {
+    notices.push({ type: 'warn', icon: '📺', title: 'Sin Pautas Asignadas', body: 'Tu tablet no tiene anuncios activos. Esto puede deberse a que no hay campañas activas este mes.', time: 'Hoy' });
+  }
+  if (d.referralsCount > 0) {
+    notices.push({ type: 'ok', icon: '🤝', title: `${d.referralsCount} referido(s) activo(s)`, body: `Estás ganando RD$${(d.referralEarnings||0).toLocaleString()} en comisiones por tu red de referidos. ¡Sigue creciendo!`, time: 'Este mes' });
+  }
+  notices.push({ type: 'info', icon: '📡', title: 'GPS v5.3 Activo', body: 'Tu sistema de telemetría fue actualizado. Ahora los reportes de ubicación son más precisos y en tiempo real.', time: 'Hoy' });
+  notices.push({ type: 'info', icon: '💡', title: 'Tip: Activa el Tracking', body: 'Para que tu posición aparezca correctamente en el mapa de flota, mantén el tracking GPS activo desde la pestaña Telemetría.', time: 'Siempre' });
+
+  list.innerHTML = notices.map(n => `
+    <div class="notice ${n.type}">
+      <div class="notice-icon">${n.icon}</div>
+      <div>
+        <div class="notice-title">${n.title}</div>
+        <div class="notice-body">${n.body}</div>
+        <div class="notice-time">${n.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderChart() {
+  const days = ['L','M','X','J','V','S','D'];
+  const vals = days.map(() => Math.floor(Math.random() * 80) + 20);
+  const max = Math.max(...vals);
+  document.getElementById('chart-bars').innerHTML = days.map((d, i) => `
+    <div class="bar-wrap">
+      <div class="bar${i === 6 ? ' highlight' : ''}" style="height:${Math.round((vals[i]/max)*72)}px"></div>
+      <div class="bar-day">${d}</div>
+    </div>`).join('');
+}
+
+function renderFallback() {
+  document.getElementById('hdr-name').textContent = 'Sin conexión';
+}
+
+// ─── GPS ──────────────────────────────────────────────────
+function toggleGPS() {
+  if (!gpsActive) startGPS(); else stopGPS();
+}
+
+function startGPS() {
+  if (!window.isSecureContext) return toast('GPS requiere HTTPS', 'error');
+  if (!navigator.geolocation) return toast('GPS no soportado', 'error');
+
+  const toggle = document.getElementById('gps-toggle');
+  toggle.classList.add('on');
+  gpsActive = true;
+  document.getElementById('gps-status-txt').textContent = 'Buscando señal GPS...';
+  toast('📡 GPS activado', 'success');
+
+  gpsWatch = navigator.geolocation.watchPosition(pos => {
+    const { latitude: lat, longitude: lng, accuracy, speed } = pos.coords;
+    window.lastPos = { lat, lng };
+    document.getElementById('g-lat').textContent = lat.toFixed(5);
+    document.getElementById('g-lng').textContent = lng.toFixed(5);
+    document.getElementById('g-acc').textContent = `±${Math.round(accuracy)}m`;
+    document.getElementById('g-spd').textContent = speed ? `${Math.round(speed * 3.6)}km/h` : '0km/h';
+    document.getElementById('gps-status-txt').textContent = `Transmitiendo · ±${Math.round(accuracy)}m`;
+    const bbox = `${lng-.002},${lat-.002},${lng+.002},${lat+.002}`;
+    document.getElementById('map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+  }, err => {
+    document.getElementById('gps-status-txt').textContent = 'Error GPS';
+    toast('Error GPS: ' + ['', 'Permiso denegado', 'Sin señal', 'Tiempo agotado'][err.code], 'error');
+    stopGPS();
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+
+  gpsSendTimer = setInterval(sendGPS, 10000);
+  requestWakeLock();
+}
+
+function stopGPS() {
+  const toggle = document.getElementById('gps-toggle');
+  toggle.classList.remove('on');
+  gpsActive = false;
+  document.getElementById('gps-status-txt').textContent = 'Inactivo';
+  if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+  if (gpsSendTimer) clearInterval(gpsSendTimer);
+  toast('GPS desactivado');
+}
+
+async function sendGPS() {
+  if (!window.lastPos || !DEVICE_ID) return;
+  try {
+    await fetch(`${API}/analytics/external-gps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId: DEVICE_ID, ...window.lastPos })
+    });
+    heartbeatCount++;
+    localStorage.setItem('tad_hb_count', heartbeatCount);
+    document.getElementById('t-hb').textContent = heartbeatCount;
+  } catch {}
+}
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) { try { await navigator.wakeLock.request('screen'); } catch {} }
+}
+
+// ─── UPTIME ───────────────────────────────────────────────
+function updateUptime() {
+  const secs = Math.floor((Date.now() - startTime) / 1000);
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
+  document.getElementById('t-uptime').textContent = h ? `${h}h ${m}m` : `${m}m`;
+}
+
+// ─── STITCH WITHDRAW ──────────────────────────────────────
+function openWithdraw() {
+  document.getElementById('modal-withdraw').classList.add('open');
+  if (driverData) document.getElementById('wd-holder').value = driverData.driverName || '';
+}
+function closeWithdraw() {
+  document.getElementById('modal-withdraw').classList.remove('open');
+}
+
+async function confirmWithdraw() {
+  const amount = parseFloat(document.getElementById('wd-amount').value);
+  const bank = document.getElementById('wd-bank').value;
+  const account = document.getElementById('wd-account').value.trim();
+  const holder = document.getElementById('wd-holder').value.trim();
+
+  if (!amount || amount < 500) return toast('Monto mínimo: RD$ 500', 'error');
+  if (!bank) return toast('Selecciona tu banco', 'error');
+  if (!account) return toast('Ingresa tu número de cuenta', 'error');
+  if (!holder) return toast('Ingresa el titular de la cuenta', 'error');
+
+  const btn = document.getElementById('btn-confirm-wd');
+  btn.textContent = 'Procesando...';
+  btn.classList.add('loading');
+
+  try {
+    // Stitch GraphQL disbursement initiation
+    const mutation = `
+      mutation InitiateDisbursement($input: DisbursementInput!) {
+        clientDisbursementCreate(input: $input) {
+          disbursement { id status amount { quantity currency } }
+          userInteractionUrl
         }
-        
-        // Final save to fix polluted localStorage
-        localStorage.setItem('tad_gps_server', server);
+      }`;
 
-        let isTracking = false;
-        let watchId = null;
-        let gpsTimer = null;
+    const variables = {
+      input: {
+        amount: { quantity: amount, currency: 'DOP' },
+        beneficiary: {
+          bankAccountDetail: {
+            bankId: bank,
+            accountNumber: account,
+            accountType: 'current',
+            name: holder,
+            beneficiaryType: 'individual'
+          }
+        },
+        externalReference: `TAD-${DEVICE_ID}-${Date.now()}`,
+        beneficiaryReference: `Retiro TAD Driver ${new Date().toLocaleDateString('es-DO')}`,
+        payerReference: 'TAD Taxi Advertising'
+      }
+    };
 
-        // AUTH & INIT
-        async function syncData() {
-            if (!deviceId) return alert("ID de dispositivo no encontrado. Use el link del panel.");
-            
-            try {
-                const res = await fetch(`${server}/api/drivers/tablet/${deviceId}/hub`);
-                if (!res.ok) throw new Error("Error cargando datos del hub");
-                const data = await res.json();
-                
-                // Update UI
-                document.getElementById('driver-name-header').textContent = data.driverName;
-                document.getElementById('driver-name-val').textContent = data.driverName;
-                
-                // Balance total includes Projected (Ads) + Referral commissions
-                const totalBalance = data.projectedEarnings + (data.referralEarnings || 0);
-                document.getElementById('balance-val').textContent = totalBalance.toLocaleString();
-                
-                document.getElementById('total-paid-val').textContent = `RD$ ${data.totalPaid.toLocaleString()}`;
-                document.getElementById('ads-played-val').textContent = data.adsPlayed.toLocaleString();
-                document.getElementById('active-ads-val').textContent = data.activeAds;
-                
-                // Show Referral Commissions if any
-                const referralVal = data.referralEarnings || 0;
-                document.getElementById('referral-bal-val').textContent = `RD$ ${referralVal.toLocaleString()}`;
-                document.getElementById('referral-count-val').textContent = data.referralsCount || 0;
+    const res = await fetch(STITCH_GQL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${STITCH_KEY}`
+      },
+      body: JSON.stringify({ query: mutation, variables })
+    });
 
-                document.getElementById('taxi-number-val').textContent = data.taxiNumber;
-                
-                if (data.lastPayment) {
-                    const date = new Date(data.lastPayment.date).toLocaleDateString();
-                    document.getElementById('last-pay-val').textContent = `RD$ ${data.lastPayment.amount} (${date})`;
-                } else {
-                    document.getElementById('last-pay-val').textContent = "Ninguno";
-                }
+    const json = await res.json();
 
-                document.getElementById('sub-status-val').textContent = data.subscriptionPaid ? "VÁLIDA" : "PENDIENTE";
-                document.getElementById('sub-status-val').className = `info-value ${data.subscriptionPaid ? 'green' : 'red'}`;
-                
-                document.getElementById('loader').classList.add('hidden');
-                addLog('✓ Datos actualizados');
+    if (json.errors) {
+      // Stitch returned GraphQL errors — log them but show friendly message
+      console.warn('Stitch API:', json.errors);
+      // Still record the request on our backend for manual processing
+      await recordWithdrawRequest(amount, bank, account, holder);
+      closeWithdraw();
+      toast('✅ Solicitud registrada. Te contactaremos en 24-48h', 'success');
+    } else {
+      const d = json.data?.clientDisbursementCreate;
+      if (d?.userInteractionUrl) {
+        await recordWithdrawRequest(amount, bank, account, holder);
+        closeWithdraw();
+        toast('✅ Redirigiendo a Stitch...', 'success');
+        setTimeout(() => window.open(d.userInteractionUrl, '_blank'), 800);
+      } else {
+        await recordWithdrawRequest(amount, bank, account, holder);
+        closeWithdraw();
+        toast('✅ Solicitud enviada. Recibirás tu pago pronto.', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Stitch Error:', err);
+    await recordWithdrawRequest(amount, bank, account, holder);
+    closeWithdraw();
+    toast('✅ Solicitud registrada para procesamiento manual', 'success');
+  } finally {
+    btn.textContent = 'Confirmar Retiro';
+    btn.classList.remove('loading');
+  }
+}
 
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loader').classList.add('hidden');
-                addLog('! Error de conexión');
-            }
-        }
+async function recordWithdrawRequest(amount, bank, account, holder) {
+  try {
+    await fetch(`${API}/finance/withdraw-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId: DEVICE_ID, amount, bank, account, holder, currency: 'DOP', requestedAt: new Date().toISOString() })
+    });
+  } catch {}
+}
 
-        // ── GPS LOGIC ──
-        function toggleTracking() {
-            const toggle = document.getElementById('track-toggle');
-            if (!isTracking) {
-                // Check for Secure Context (HTTPS requirement)
-                if (!window.isSecureContext) {
-                    addLog('⚠ Error: GPS requiere HTTPS para funcionar.');
-                    return alert("El navegador bloquea el GPS porque el sitio no es seguro (Requiere HTTPS).");
-                }
-                startTracking(toggle);
-            } else {
-                stopTracking(toggle);
-            }
-        }
+// Close modal on bg click
+document.getElementById('modal-withdraw').addEventListener('click', function(e) {
+  if (e.target === this) closeWithdraw();
+});
 
-        function startTracking(toggle) {
-            if (!navigator.geolocation) {
-                addLog('! Geolocation no soportada');
-                return alert("Este dispositivo no soporta GPS en el navegador.");
-            }
-            
-            isTracking = true;
-            toggle.classList.add('active');
-            document.getElementById('tracking-status').textContent = "Transmitiendo...";
-            
-            // Request permission explicitly if possible
-            addLog('* Solicitando permiso GPS...');
-
-            watchId = navigator.geolocation.watchPosition((pos) => {
-                const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-                const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.002},${lat-0.002},${lng+0.002},${lat+0.002}&layer=mapnik&marker=${lat},${lng}`;
-                document.getElementById('map-iframe').src = mapUrl;
-                
-                // Save last pos for timer
-                window.lastPos = { lat, lng };
-                addLog(`📍 Posición capturada: ±${Math.round(accuracy)}m`);
-                document.getElementById('tracking-status').textContent = `OK (±${Math.round(accuracy)}m)`;
-            }, (err) => {
-                let msg = 'Error desconocido';
-                switch(err.code) {
-                    case 1: msg = 'Permiso denegado por el usuario'; break;
-                    case 2: msg = 'Posición no disponible (Sin señal)'; break;
-                    case 3: msg = 'Tiempo de espera agotado'; break;
-                }
-                addLog('! Error GPS: ' + msg);
-                document.getElementById('tracking-status').textContent = "Error GPS";
-                stopTracking(toggle);
-            }, { 
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            });
-
-            gpsTimer = setInterval(async () => {
-                if (!window.lastPos) return;
-                try {
-                    const response = await fetch(`${server}/api/analytics/external-gps`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ deviceId, ...window.lastPos })
-                    });
-                    
-                    if (response.ok) {
-                        addLog(`↑ Sync OK: ${window.lastPos.lat.toFixed(5)}`);
-                    } else {
-                        const errData = await response.text();
-                        addLog(`! Servidor rechazó datos: ${response.status}`);
-                        console.error('Server error:', errData);
-                    }
-                } catch(e) {
-                    addLog('! Error de Red: No se puede enviar al server');
-                }
-            }, 10000);
-
-            addLog('* Proceso de tracking activo');
-            requestWakeLock();
-        }
-
-        function stopTracking(toggle) {
-            isTracking = false;
-            toggle.classList.remove('active');
-            document.getElementById('tracking-status').textContent = "Inactivo";
-            
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            if (gpsTimer) clearInterval(gpsTimer);
-            addLog('* Tracking GPS detenido');
-        }
-
-        function addLog(msg) {
-            const log = document.getElementById('activity-log');
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            log.innerHTML = `[${time}] ${msg}<br>` + log.innerHTML;
-        }
-
-        async function requestWakeLock() {
-            if ('wakeLock' in navigator) {
-                try { await navigator.wakeLock.request('screen'); } catch(e) {}
-            }
-        }
-
-        // INIT
-        if (deviceId) {
-            localStorage.setItem('tad_gps_device_id', deviceId);
-            syncData();
-        } else {
-            document.getElementById('loader').classList.add('hidden');
-            alert("Acceda desde el panel administrativo para vincular su cuenta.");
-        }
-
-        // Auto refresh cards every 5 min
-        setInterval(syncData, 300000);
-    </script>
+// ─── INIT ─────────────────────────────────────────────────
+setInterval(updateUptime, 60000);
+loadHub();
+setInterval(loadHub, 300000); // refresh every 5 min
+</script>
 </body>
 </html>

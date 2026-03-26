@@ -198,16 +198,9 @@ export default function MediaPage() {
         toast.warning('Video en la bóveda, pero enlace a campaña pendiente.', { duration: 6000 });
       }
 
-      // FASE 3: Propagación a hardware seleccionado
-      if (selectedDevices.length > 0) {
-        try {
-          await assignCampaignToDevices(selectedCampaign, selectedDevices);
-          setUploadProgress(95);
-        } catch (assignError) {
-          console.error('Error en propagación de hardware:', assignError);
-          toast.error('Falla en la propagación inicial a las tablets.');
-        }
-      }
+      // FASE 3: Delegada a nivel de campaña
+      // La asignación de pantallas ya no se hace por contenido, sino que hereda de la campaña.
+      setUploadProgress(95);
 
       setUploadProgress(100);
       
@@ -737,73 +730,7 @@ export default function MediaPage() {
                 </select>
               </div>
 
-              {/* Node Distribution Grid */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center px-1">
-                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Distribución por Pantallas (Hardware)</label>
-                   <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-tad-yellow uppercase tracking-widest bg-tad-yellow/10 px-3 py-1 rounded-full border border-tad-yellow/20">{selectedDevices.length} SELECCIONADOS</span>
-                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
-                   {swrLoading ? (
-                     <div className="col-span-full py-12 flex flex-col items-center gap-4">
-                        <div className="w-8 h-8 rounded-full border-2 border-tad-yellow animate-spin border-t-transparent shadow-[0_0_10px_#fad400]" />
-                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest animate-pulse">Sincronizando Hardware...</p>
-                     </div>
-                   ) : swrError ? (
-                     <div className="col-span-full text-center py-8">
-                        <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
-                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest">Error de Sincronización Telemetría</p>
-                     </div>
-                   ) : devices.map(device => {
-                      const count = device.occupied_slots || 0;
-                      const limit = device.max_slots || 15;
-                      const freeSlots = limit - count;
-                      const isSelected = selectedDevices.includes(device.device_id);
-                      const isFull = freeSlots <= 0;
 
-                      return (
-                        <div 
-                          key={device.device_id} 
-                          onClick={() => { 
-                            if (!isFull || isSelected) {
-                              setSelectedDevices(prev => 
-                                prev.includes(device.device_id) 
-                                ? prev.filter(id => id !== device.device_id) 
-                                : [...prev, device.device_id]
-                              );
-                            }
-                          }} 
-                          className={clsx(
-                            "p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group/dev shadow-sm",
-                            isSelected 
-                              ? "bg-tad-yellow/10 border-tad-yellow/40 ring-1 ring-tad-yellow/20" 
-                              : "bg-gray-800/40 border-gray-700/50 hover:border-gray-500",
-                            isFull && !isSelected && "opacity-40 cursor-not-allowed grayscale"
-                          )}
-                        >
-                           <div className="flex items-center gap-4 min-w-0">
-                              <div className={clsx(
-                                "p-2 rounded-xl transition-all shadow-sm", 
-                                isSelected ? "bg-tad-yellow text-black" : "bg-gray-900 text-gray-600 group-hover/dev:text-gray-400"
-                              )}>
-                                 <CheckCircle className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                 <p className="text-xs font-bold text-white truncate uppercase tracking-tight">{device.taxiNumber || device.name || device.device_id.slice(0, 8)}</p>
-                                 <div className="flex items-center gap-2 mt-1">
-                                    <div className={clsx("w-1.5 h-1.5 rounded-full", device.status === 'online' ? "bg-emerald-500 shadow-[0_0_5px_#10b981]" : "bg-gray-600")} />
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{freeSlots} DISPONIBLES</p>
-                                 </div>
-                              </div>
-                           </div>
-                           {isFull && <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />}
-                        </div>
-                      );
-                   })}
-                </div>
-              </div>
 
               {/* Action Section */}
               <div className="pt-6 pb-2">
@@ -822,7 +749,7 @@ export default function MediaPage() {
                   )}
                 </button>
                 <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-6 leading-relaxed">
-                   Al ejecutar el protocolo, el activo será verificado y propagado a los pantallas de red seleccionados automáticamente.
+                   Al ejecutar el protocolo, el activo será vinculado a la campaña. Las pantallas de la red recibirán el contenido basado en la configuración de la campaña.
                 </p>
               </div>
             </form>

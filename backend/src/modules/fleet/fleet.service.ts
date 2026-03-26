@@ -605,4 +605,22 @@ export class FleetService {
   async getFleetStatusSummary() {
     return this.deviceService.getFleetStatusSummary();
   }
+
+  /**
+   * Obtiene la ruta reciente (trail) de un dispositivo específico.
+   */
+  async getDeviceRecentPath(deviceId: string) {
+    const locations = await this.prisma.driverLocation.findMany({
+      where: { deviceId },
+      orderBy: { timestamp: 'desc' },
+      take: 60,
+      select: {
+        latitude: true,
+        longitude: true,
+        speed: true,
+        timestamp: true
+      }
+    });
+    return locations;
+  }
 }

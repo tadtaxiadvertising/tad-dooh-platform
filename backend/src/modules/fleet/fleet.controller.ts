@@ -59,6 +59,11 @@ export class FleetController {
     return this.fleetService.registerDeviceByAdmin(body.placa, body.driverName, body.deviceId);
   }
 
+  @Get('devices/:id/recent-path')
+  async getDeviceRecentPath(@Param('id') deviceId: string) {
+    return this.fleetService.getDeviceRecentPath(deviceId);
+  }
+
   @Get('tracking')
   async getTrackingData() {
     return this.fleetService.getTrackingData();

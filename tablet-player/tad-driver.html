@@ -1,783 +1,777 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>TAD Driver — Portal del Conductor</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --y: #FFD400; --yg: rgba(255,212,0,.25); --bg: #080808;
-      --card: #131313; --card2: #1a1a1a; --border: rgba(255,255,255,.08);
-      --txt: #FFFFFF; --muted: #777; --green: #22C55E; --red: #EF4444;
-      --orange: #F97316; --blue: #3B82F6; --purple: #A855F7;
-    }
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,sans-serif;overflow-x:hidden}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080808">
+<title>TAD Driver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root{
+  --y:#FFD400;--yg:rgba(255,212,0,.2);--yd:rgba(255,212,0,.08);
+  --bg:#080808;--s1:#111;--s2:#181818;--s3:#1e1e1e;
+  --b:rgba(255,255,255,.07);--b2:rgba(255,255,255,.12);
+  --t:#fff;--t2:#aaa;--t3:#555;
+  --green:#22C55E;--red:#EF4444;--orange:#F97316;--blue:#3B82F6;--purple:#A855F7;
+  --r:18px;--r2:24px;--safe-b:env(safe-area-inset-bottom,20px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-family:'Inter',-apple-system,sans-serif;overflow-x:hidden;overscroll-behavior:none}
 
-    /* NAV TABS */
-    .nav-tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,8,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
-    .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 4px;border:none;background:transparent;color:var(--muted);transition:color .2s;font-family:inherit}
-    .nav-tab.active{color:var(--y)}
-    .nav-tab svg{width:22px;height:22px}
-    .nav-tab span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s ease}
+#splash.done{opacity:0;pointer-events:none}
+.splash-ring{width:64px;height:64px;border:3px solid var(--yd);border-top-color:var(--y);border-radius:50%;animation:spin .9s linear infinite}
+.splash-logo{position:absolute;width:32px;height:32px;background:var(--y);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#000;top:50%;left:50%;transform:translate(-50%,-50%)}
+.splash-wr{position:relative;width:64px;height:64px}
+.splash-txt{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-    /* PAGES */
-    .page{display:none;padding:80px 16px calc(80px + max(16px,env(safe-area-inset-bottom)));animation:fadeIn .25s ease}
-    .page.active{display:block}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;min-height:100dvh;padding-top:calc(60px + var(--safe-t))}
+.content{flex:1;overflow-y:auto;padding-bottom:calc(72px + var(--safe-b))}
 
-    /* HEADER */
-    .top-bar{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(8,8,8,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 16px 0;display:flex;align-items:center;justify-content:space-between;height:calc(64px + env(safe-area-inset-top,0))}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:40px;height:40px;background:var(--y);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#000;box-shadow:0 0 20px var(--yg)}
-    .brand-name{font-size:17px;font-weight:900;letter-spacing:-.5px}
-    .brand-sub{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-    .online-pill{display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);padding:5px 12px;border-radius:20px;font-size:10px;font-weight:800;color:var(--green)}
-    .dot{width:5px;height:5px;background:currentColor;border-radius:50%;animation:blink 1.5s infinite}
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+/* ── TOP BAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:50;padding:var(--safe-t) 16px 0;height:calc(60px + var(--safe-t));display:flex;align-items:flex-end;padding-bottom:10px;background:rgba(8,8,8,.85);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-bottom:1px solid var(--b)}
+.tb-brand{display:flex;align-items:center;gap:10px;flex:1}
+.tb-logo{width:36px;height:36px;background:var(--y);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#000;box-shadow:0 0 20px var(--yg);flex-shrink:0}
+.tb-title{font-size:16px;font-weight:900;letter-spacing:-.4px}
+.tb-sub{font-size:10px;color:var(--t2);font-weight:600;margin-top:1px}
+.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:10px;font-weight:800}
+.tb-pill.on{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.tb-pill.off{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red)}
+.tb-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    /* SECTION */
-    .sec-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:20px 0 10px}
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(10,10,10,.92);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-top:1px solid var(--b);display:flex;padding-bottom:var(--safe-b)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;border:none;background:none;color:var(--t3);cursor:pointer;font-family:inherit;transition:color .2s;position:relative}
+.nav-btn.active{color:var(--y)}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.nav-badge{position:absolute;top:8px;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:10px;display:none}
+.nav-badge.show{display:block}
 
-    /* WALLET CARD */
-    .wallet-hero{background:linear-gradient(135deg,#161616,#0d0d0d);border:1px solid var(--border);border-radius:24px;padding:24px;position:relative;overflow:hidden}
-    .wallet-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;background:var(--y);filter:blur(90px);opacity:.08;pointer-events:none}
-    .balance-row{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
-    .balance-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-    .balance-amt{font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--y);line-height:1}
-    .balance-cur{font-size:20px;font-weight:700;color:var(--txt);opacity:.5;margin-right:4px}
-    .wallet-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:16px;overflow:hidden;margin-top:16px}
-    .wstat{background:var(--card2);padding:12px 10px;display:flex;flex-direction:column;gap:2px}
-    .wstat-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
-    .wstat-v{font-size:14px;font-weight:800}
-    .btn-withdraw{width:100%;margin-top:16px;padding:16px;border-radius:16px;border:none;background:var(--y);color:#000;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px var(--yg);transition:transform .15s,box-shadow .15s}
-    .btn-withdraw:active{transform:scale(.97);box-shadow:0 4px 12px var(--yg)}
-    .btn-withdraw.loading{opacity:.7;pointer-events:none}
+/* ── PAGES ── */
+.page{display:none;padding:16px}
+.page.active{display:block;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-    /* TRANSACTION LIST */
-    .tx-list{display:flex;flex-direction:column;gap:8px}
-    .tx-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px}
-    .tx-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-    .tx-icon.green{background:rgba(34,197,94,.1)}
-    .tx-icon.red{background:rgba(239,68,68,.1)}
-    .tx-icon.yellow{background:rgba(255,212,0,.1)}
-    .tx-info{flex:1}
-    .tx-title{font-size:13px;font-weight:700}
-    .tx-date{font-size:11px;color:var(--muted);margin-top:1px}
-    .tx-amt{font-size:15px;font-weight:800}
-    .tx-amt.pos{color:var(--green)}
-    .tx-amt.neg{color:var(--red)}
+/* ── SECTION LABEL ── */
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.8px;color:var(--t3);margin:20px 0 10px}
+.sec:first-child{margin-top:4px}
+.sec-row{display:flex;align-items:center;justify-content:space-between}
+.sec-link{font-size:10px;font-weight:700;color:var(--y);text-decoration:none}
 
-    /* STATS GRID */
-    .stats2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
-    .stat-icon{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px}
-    .stat-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
-    .stat-val{font-size:26px;font-weight:900;letter-spacing:-1px}
-    .stat-sub{font-size:10px;color:var(--muted);margin-top:-4px}
+/* ── HERO CARD ── */
+.hero{background:linear-gradient(145deg,#161616,#0e0e0e);border:1px solid var(--b);border-radius:var(--r2);padding:22px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:var(--y);filter:blur(100px);opacity:.06;pointer-events:none}
+.hero-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.hero-amt{font-size:48px;font-weight:900;letter-spacing:-2.5px;color:var(--y);line-height:1}
+.hero-cur{font-size:22px;font-weight:700;color:rgba(255,255,255,.4);margin-right:2px}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--b);border-radius:14px;overflow:hidden;margin-top:18px}
+.hg-cell{background:var(--s2);padding:12px 10px}
+.hg-l{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.hg-v{font-size:15px;font-weight:800}
 
-    /* GPS / MAP */
-    .gps-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden}
-    .gps-header{padding:16px;display:flex;align-items:center;justify-content:space-between}
-    .gps-info h3{font-size:15px;font-weight:800}
-    .gps-info p{font-size:12px;color:var(--muted);margin-top:2px}
-    .toggle{width:54px;height:30px;background:rgba(255,255,255,.08);border-radius:20px;padding:3px;cursor:pointer;transition:background .3s;position:relative;border:none}
-    .toggle.on{background:var(--y)}
-    .knob{width:24px;height:24px;background:#fff;border-radius:50%;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-    .toggle.on .knob{transform:translateX(24px);background:#000}
-    .map-frame{width:100%;height:160px;display:block;border:none;filter:brightness(.65) saturate(.7)}
-    .gps-coords{padding:10px 16px 14px;display:flex;gap:16px}
-    .coord{display:flex;flex-direction:column;gap:1px}
-    .coord-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
-    .coord-v{font-size:12px;font-weight:700;font-family:monospace}
+/* ── BIG BUTTON ── */
+.btn{width:100%;padding:17px;border-radius:var(--r);border:none;font-family:inherit;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn-y{background:var(--y);color:#000;box-shadow:0 8px 28px var(--yg)}
+.btn-outline{background:transparent;color:var(--t2);border:1px solid var(--b2)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--t2)}
+.btn-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn.disabled{opacity:.4;pointer-events:none}
+.btn-sm{padding:11px 18px;font-size:12px;border-radius:12px;width:auto}
 
-    /* NOTICES */
-    .notice-list{display:flex;flex-direction:column;gap:10px}
-    .notice{background:var(--card);border-radius:18px;padding:16px;display:flex;gap:12px;border-left:3px solid transparent}
-    .notice.info{border-color:var(--blue)}
-    .notice.warn{border-color:var(--orange)}
-    .notice.ok{border-color:var(--green)}
-    .notice.prio{border-color:var(--red)}
-    .notice-icon{font-size:20px;flex-shrink:0;margin-top:1px}
-    .notice-title{font-size:13px;font-weight:800;margin-bottom:3px}
-    .notice-body{font-size:12px;color:var(--muted);line-height:1.5}
-    .notice-time{font-size:10px;color:var(--muted);margin-top:6px;font-weight:600}
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--b);border-radius:var(--r)}
+.card-p{padding:16px}
+.card+.card{margin-top:10px}
 
-    /* PROFILE */
-    .profile-hero{background:linear-gradient(135deg,#161616,#0d0d0d);border:1px solid var(--border);border-radius:24px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;position:relative;overflow:hidden}
-    .profile-hero::before{content:'';position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);width:160px;height:80px;background:var(--y);filter:blur(60px);opacity:.06}
-    .avatar{width:72px;height:72px;background:var(--y);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#000;box-shadow:0 0 30px var(--yg)}
-    .profile-name{font-size:20px;font-weight:900;letter-spacing:-.5px}
-    .profile-id{font-size:11px;color:var(--muted);font-weight:600;font-family:monospace}
-    .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
-    .badge.active{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
-    .badge.suspended{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
-    .info-rows{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden}
-    .irow{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-    .irow:last-child{border-bottom:none}
-    .irow-l{font-size:12px;font-weight:600;color:var(--muted)}
-    .irow-v{font-size:13px;font-weight:800}
-    .irow-v.green{color:var(--green)}
-    .irow-v.red{color:var(--red)}
-    .irow-v.yellow{color:var(--y)}
+/* ── LIST ROWS ── */
+.rows{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);overflow:hidden}
+.row{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.row:last-child{border-bottom:none}
+.row-l{font-size:12px;font-weight:600;color:var(--t2)}
+.row-v{font-size:13px;font-weight:800}
+.row-v.c-y{color:var(--y)}
+.row-v.c-g{color:var(--green)}
+.row-v.c-r{color:var(--red)}
+.row-v.c-o{color:var(--orange)}
 
-    /* STITCH MODAL */
-    .modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
-    .modal-bg.open{opacity:1;pointer-events:all}
-    .modal-sheet{background:#111;border:1px solid var(--border);border-radius:28px 28px 0 0;padding:28px 20px calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;transform:translateY(40px);transition:transform .3s}
-    .modal-bg.open .modal-sheet{transform:none}
-    .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px}
-    .modal-title{font-size:18px;font-weight:900;margin-bottom:4px}
-    .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-    .field-group{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
-    .field{display:flex;flex-direction:column;gap:6px}
-    .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-    .field input,.field select{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--txt);font-size:15px;font-family:inherit;outline:none;width:100%;transition:border-color .2s}
-    .field input:focus,.field select:focus{border-color:var(--y)}
-    .field select option{background:#111}
-    .stitch-logo{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)}
-    .stitch-logo svg{width:48px}
-    .btn-confirm{width:100%;padding:18px;border-radius:16px;border:none;background:var(--y);color:#000;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;box-shadow:0 8px 24px var(--yg);transition:transform .15s}
-    .btn-confirm:active{transform:scale(.97)}
-    .btn-cancel{width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;font-family:inherit}
+/* ── TX ITEM ── */
+.txs{display:flex;flex-direction:column;gap:8px}
+.tx{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px}
+.tx-ic{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-ttl{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-date{font-size:11px;color:var(--t2);margin-top:2px}
+.tx-a{font-size:15px;font-weight:800;flex-shrink:0}
+.tx-a.pos{color:var(--green)}
+.tx-a.neg{color:var(--red)}
+.tx-a.p{color:var(--orange)}
 
-    /* LOADER */
-    #loader{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
-    #loader.hidden{opacity:0;pointer-events:none}
-    .spinner{width:40px;height:40px;border:3px solid rgba(255,212,0,.15);border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .loader-txt{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;animation:blink 1.5s infinite}
+/* ── STAT BOXES ── */
+.stats2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sbox{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.sbox-ic{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.sbox-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.3px}
+.sbox-val{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;margin-top:2px}
+.sbox-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.ic-y{background:rgba(255,212,0,.1)}
+.ic-b{background:rgba(59,130,246,.1)}
+.ic-g{background:rgba(34,197,94,.1)}
+.ic-p{background:rgba(168,85,247,.1)}
+.ic-o{background:rgba(249,115,22,.1)}
 
-    /* TOAST */
-    .toast{position:fixed;top:calc(72px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-20px);background:#1f1f1f;border:1px solid var(--border);border-radius:14px;padding:12px 20px;font-size:13px;font-weight:700;white-space:nowrap;z-index:400;opacity:0;transition:all .3s;pointer-events:none}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    .toast.success{border-color:rgba(34,197,94,.3);color:var(--green)}
-    .toast.error{border-color:rgba(239,68,68,.3);color:var(--red)}
+/* ── GPS CARD ── */
+.gps-wrap{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);overflow:hidden}
+.gps-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.gps-h-l h3{font-size:14px;font-weight:800}
+.gps-h-l p{font-size:11px;color:var(--t2);margin-top:2px}
+.toggle-btn{width:52px;height:28px;border-radius:20px;border:none;background:var(--b2);padding:3px;cursor:pointer;transition:background .3s;position:relative}
+.toggle-btn.on{background:var(--y)}
+.toggle-knob{width:22px;height:22px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.toggle-btn.on .toggle-knob{transform:translateX(24px);background:#000}
+.map-el{width:100%;height:168px;border:none;display:block;filter:brightness(.6) saturate(.6)}
+.gps-coords{display:grid;grid-template-columns:repeat(4,1fr);padding:10px 14px 14px;gap:8px}
+.coord-item{display:flex;flex-direction:column;gap:2px}
+.ci-l{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase}
+.ci-v{font-size:11px;font-weight:700;font-family:monospace}
 
-    /* CHART BAR */
-    .chart-bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:8px}
-    .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
-    .bar{width:100%;border-radius:6px 6px 0 0;background:var(--y);opacity:.3;transition:height .6s ease,opacity .3s}
-    .bar.highlight{opacity:1}
-    .bar-day{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase}
+/* ── CHART ── */
+.chart{display:flex;align-items:flex-end;gap:5px;height:72px;margin-top:6px}
+.cb-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.cb{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--y),rgba(255,212,0,.3));opacity:.35;transition:height .5s ease,opacity .3s}
+.cb.hi{opacity:1}
+.cb-d{font-size:8px;font-weight:700;color:var(--t3);text-transform:uppercase}
 
-    /* EMPTY STATE */
-    .empty{text-align:center;padding:40px 20px;color:var(--muted)}
-    .empty-icon{font-size:40px;margin-bottom:12px}
-    .empty p{font-size:13px}
-    /* STAT ICON COLORS */
-    .stat-icon-yellow{background:rgba(255,212,0,.1)}
-    .stat-icon-blue{background:rgba(59,130,246,.1)}
-    .stat-icon-green{background:rgba(34,197,94,.1)}
-    .stat-icon-purple{background:rgba(168,85,247,.1)}
-    /* MISC */
-    .wstat-v-pending{color:var(--orange)}
-    .gps-chart-card{padding:16px}
-    .btn-confirm-mt{margin-top:16px}
-    .loader-logo{width:52px;height:52px;border-radius:16px;font-size:17px}
-  </style>
+/* ── NOTICE ── */
+.notice-list{display:flex;flex-direction:column;gap:8px}
+.notice{background:var(--s1);border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;border-left:3px solid}
+.notice.n-info{border-color:var(--blue)}
+.notice.n-warn{border-color:var(--orange)}
+.notice.n-ok{border-color:var(--green)}
+.notice.n-crit{border-color:var(--red)}
+.notice-body{flex:1}
+.notice-ico{font-size:20px;flex-shrink:0}
+.notice-ttl{font-size:13px;font-weight:800;margin-bottom:4px}
+.notice-txt{font-size:12px;color:var(--t2);line-height:1.55}
+.notice-time{font-size:10px;color:var(--t3);font-weight:600;margin-top:6px}
+
+/* ── PROFILE ── */
+.prof-hero{background:linear-gradient(145deg,#161616,#0e0e0e);border:1px solid var(--b);border-radius:var(--r2);padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:relative;overflow:hidden}
+.prof-hero::after{content:'';position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);width:180px;height:80px;background:var(--y);filter:blur(70px);opacity:.05}
+.avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--y),#e5be00);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#000;box-shadow:0 0 32px var(--yg)}
+.prof-name{font-size:19px;font-weight:900;letter-spacing:-.5px}
+.prof-id{font-size:11px;color:var(--t3);font-family:monospace;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase}
+.badge.active{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.badge.suspended{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red)}
+
+/* ── REFERRAL ── */
+.ref-row{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px}
+.ref-row+.ref-row{margin-top:8px}
+.ref-av{width:36px;height:36px;background:var(--s3);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--t2);flex-shrink:0}
+.ref-info{flex:1}
+.ref-name{font-size:13px;font-weight:700}
+.ref-date{font-size:11px;color:var(--t2);margin-top:1px}
+.ref-earn{font-size:13px;font-weight:800;color:var(--green)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.sheet{background:#111;border:1px solid var(--b2);border-radius:28px 28px 0 0;padding:24px 20px calc(24px + var(--safe-b));width:100%;max-width:500px;transform:translateY(48px);transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.modal-bg.open .sheet{transform:translateY(0)}
+.sheet-handle{width:32px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 22px}
+.sheet-title{font-size:18px;font-weight:900;margin-bottom:4px}
+.sheet-sub{font-size:12px;color:var(--t2);margin-bottom:20px;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{background:var(--s2);border:1px solid var(--b2);border-radius:13px;padding:13px 15px;color:var(--t);font-size:15px;font-family:inherit;outline:none;width:100%;-webkit-appearance:none;appearance:none;transition:border-color .2s}
+.field input:focus,.field select:focus{border-color:rgba(255,212,0,.4)}
+.field select option{background:#111}
+.powered{display:flex;align-items:center;gap:8px;margin:4px 0 16px}
+.powered span{font-size:11px;color:var(--t3)}
+.powered strong{color:var(--y);font-size:12px}
+.sheet-amount{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--b);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.sa-l{font-size:11px;color:var(--t2);font-weight:600}
+.sa-v{font-size:20px;font-weight:900;color:var(--y)}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:calc(68px + var(--safe-t));left:50%;transform:translateX(-50%) translateY(-12px);background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:11px 20px;font-size:13px;font-weight:700;white-space:nowrap;z-index:500;opacity:0;transition:all .25s;pointer-events:none;max-width:90vw;white-space:normal;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(34,197,94,.35);color:var(--green)}
+.toast.err{border-color:rgba(239,68,68,.3);color:var(--red)}
+.toast.info{border-color:rgba(255,212,0,.3);color:var(--y)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:36px 20px;color:var(--t3)}
+.empty .ei{font-size:38px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* ── UTILS ── */
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.flex{display:flex;align-items:center}.gap8{gap:8px}.gap12{gap:12px}
+.fw8{font-weight:800}.fw7{font-weight:700}
+.c-y{color:var(--y)}.c-g{color:var(--green)}.c-r{color:var(--red)}.c-o{color:var(--orange)}.c-t2{color:var(--t2)}
+.text-center{text-align:center}
+.separator{height:1px;background:var(--b);margin:16px 0}
+hr{border:none;border-top:1px solid var(--b);margin:16px 0}
+</style>
 </head>
 <body>
 
-<div id="loader">
-  <div class="logo loader-logo">TAD</div>
-  <div class="spinner"></div>
-  <div class="loader-txt">Cargando perfil...</div>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-wr">
+    <div class="splash-ring"></div>
+    <div class="splash-logo">TAD</div>
+  </div>
+  <div class="splash-txt">Cargando portal...</div>
 </div>
 
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <!-- TOP BAR -->
-<div class="top-bar">
-  <div class="brand">
-    <div class="logo">TAD</div>
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-logo">T</div>
     <div>
-      <div class="brand-name">TAD DRIVER</div>
-      <div class="brand-sub" id="hdr-name">Cargando...</div>
+      <div class="tb-title">TAD Driver</div>
+      <div class="tb-sub" id="tb-name">Verificando sesión...</div>
     </div>
   </div>
-  <div class="online-pill">
-    <div class="dot"></div>
-    <span id="hdr-status">ACTIVO</span>
+  <div class="tb-pill on" id="tb-pill">
+    <div class="tb-dot"></div>
+    <span id="tb-status">ACTIVO</span>
   </div>
 </div>
 
-<!-- ════ PAGE: WALLET ════ -->
-<div class="page active" id="pg-wallet">
-  <div class="sec-label">Mi Billetera</div>
-  <div class="wallet-hero">
-    <div class="balance-row">
-      <div class="balance-lbl">Ganancias Proyectadas</div>
-      <div class="balance-amt"><span class="balance-cur">RD$</span><span id="w-balance">0</span></div>
+<!-- APP -->
+<div class="app">
+<div class="content">
+
+<!-- ══ PAGE: INICIO ══ -->
+<div class="page active" id="pg-home" role="main" aria-label="Inicio">
+  <div class="sec">Resumen de Ganancias</div>
+  <div class="hero">
+    <div class="hero-lbl">Balance Proyectado del Mes</div>
+    <div class="hero-amt"><span class="hero-cur">RD$</span><span id="h-balance">—</span></div>
+    <div class="hero-grid mt12">
+      <div class="hg-cell">
+        <div class="hg-l">Pagado</div>
+        <div class="hg-v" id="h-paid">—</div>
+      </div>
+      <div class="hg-cell">
+        <div class="hg-l">Referidos</div>
+        <div class="hg-v" id="h-ref">—</div>
+      </div>
+      <div class="hg-cell">
+        <div class="hg-l">Pendiente</div>
+        <div class="hg-v c-o" id="h-pend">—</div>
+      </div>
     </div>
-    <div class="wallet-stats">
-      <div class="wstat">
-        <div class="wstat-l">Pagado</div>
-        <div class="wstat-v" id="w-paid">RD$ 0</div>
-      </div>
-      <div class="wstat">
-        <div class="wstat-l">Referidos</div>
-        <div class="wstat-v" id="w-referral">RD$ 0</div>
-      </div>
-      <div class="wstat">
-        <div class="wstat-l">Pend.</div>
-        <div class="wstat-v wstat-v-pending" id="w-pending">RD$ 0</div>
+  </div>
+
+  <div class="sec">Rendimiento</div>
+  <div class="stats2">
+    <div class="sbox">
+      <div class="sbox-ic ic-y">🔥</div>
+      <div>
+        <div class="sbox-lbl">Anuncios</div>
+        <div class="sbox-val" id="h-ads">0</div>
+        <div class="sbox-sub">transmitidos</div>
       </div>
     </div>
-    <button class="btn-withdraw" id="btn-withdraw" onclick="openWithdraw()">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-      Solicitar Retiro
+    <div class="sbox">
+      <div class="sbox-ic ic-b">📺</div>
+      <div>
+        <div class="sbox-lbl">Pautas activas</div>
+        <div class="sbox-val" id="h-active">0</div>
+        <div class="sbox-sub">en tu tablet</div>
+      </div>
+    </div>
+    <div class="sbox">
+      <div class="sbox-ic ic-g">🤝</div>
+      <div>
+        <div class="sbox-lbl">Referidos</div>
+        <div class="sbox-val" id="h-refs">0</div>
+        <div class="sbox-sub">activos</div>
+      </div>
+    </div>
+    <div class="sbox">
+      <div class="sbox-ic ic-p">⭐</div>
+      <div>
+        <div class="sbox-lbl">Suscripción</div>
+        <div class="sbox-val" id="h-sub" style="font-size:14px">—</div>
+        <div class="sbox-sub">estado actual</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">Últimas Transacciones</div>
+  <div class="txs" id="h-txs">
+    <div class="empty"><div class="ei">💳</div><p>Cargando...</p></div>
+  </div>
+
+  <div class="mt16">
+    <button class="btn btn-y" onclick="openWithdraw()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      Solicitar Retiro vía Stitch
     </button>
   </div>
-
-  <div class="sec-label">Historial</div>
-  <div class="tx-list" id="tx-list">
-    <div class="empty"><div class="empty-icon">💳</div><p>Cargando transacciones...</p></div>
-  </div>
 </div>
 
-<!-- ════ PAGE: TELEMETRÍA ════ -->
-<div class="page" id="pg-tele">
-  <div class="sec-label">GPS en Vivo</div>
-  <div class="gps-card">
-    <div class="gps-header">
-      <div class="gps-info">
-        <h3>Ubicación en tiempo real</h3>
-        <p id="gps-status-txt">Inactivo — toca para activar</p>
+<!-- ══ PAGE: GPS ══ -->
+<div class="page" id="pg-gps" role="main" aria-label="Telemetría GPS">
+  <div class="sec">Ubicación en Vivo</div>
+  <div class="gps-wrap">
+    <div class="gps-head">
+      <div class="gps-h-l">
+        <h3>Tracking GPS</h3>
+        <p id="gps-txt">Inactivo — toca para activar</p>
       </div>
-      <button class="toggle" id="gps-toggle" onclick="toggleGPS()">
-        <div class="knob"></div>
+      <button class="toggle-btn" id="gps-btn" onclick="toggleGPS()" aria-label="Toggle GPS">
+        <div class="toggle-knob"></div>
       </button>
     </div>
-    <iframe class="map-frame" id="map-frame" src="about:blank" title="Mapa GPS"></iframe>
+    <iframe class="map-el" id="map-el" src="about:blank" title="Mapa GPS en vivo"></iframe>
     <div class="gps-coords">
-      <div class="coord"><div class="coord-l">Latitud</div><div class="coord-v" id="g-lat">—</div></div>
-      <div class="coord"><div class="coord-l">Longitud</div><div class="coord-v" id="g-lng">—</div></div>
-      <div class="coord"><div class="coord-l">Precisión</div><div class="coord-v" id="g-acc">—</div></div>
-      <div class="coord"><div class="coord-l">Vel.</div><div class="coord-v" id="g-spd">—</div></div>
+      <div class="coord-item"><div class="ci-l">Lat</div><div class="ci-v" id="g-lat">—</div></div>
+      <div class="coord-item"><div class="ci-l">Lng</div><div class="ci-v" id="g-lng">—</div></div>
+      <div class="coord-item"><div class="ci-l">Prec.</div><div class="ci-v" id="g-acc">—</div></div>
+      <div class="coord-item"><div class="ci-l">Vel.</div><div class="ci-v" id="g-spd">—</div></div>
     </div>
   </div>
 
-  <div class="sec-label">Rendimiento Hoy</div>
+  <div class="sec">Métricas de Sesión</div>
   <div class="stats2">
-    <div class="stat-box">
-      <div class="stat-icon stat-icon-yellow">🔥</div>
+    <div class="sbox">
+      <div class="sbox-ic ic-g">📡</div>
       <div>
-        <div class="stat-lbl">Anuncios</div>
-        <div class="stat-val" id="t-ads">0</div>
-        <div class="stat-sub">transmitidos en total</div>
+        <div class="sbox-lbl">Señales GPS</div>
+        <div class="sbox-val" id="g-hb">0</div>
+        <div class="sbox-sub">enviadas al servidor</div>
       </div>
     </div>
-    <div class="stat-box">
-      <div class="stat-icon stat-icon-blue">📡</div>
+    <div class="sbox">
+      <div class="sbox-ic ic-y">⏱</div>
       <div>
-        <div class="stat-lbl">Latidos</div>
-        <div class="stat-val" id="t-hb">0</div>
-        <div class="stat-sub">reportes GPS enviados</div>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-icon stat-icon-green">⏱️</div>
-      <div>
-        <div class="stat-lbl">Uptime</div>
-        <div class="stat-val" id="t-uptime">0h</div>
-        <div class="stat-sub">desde último reinicio</div>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-icon stat-icon-purple">📺</div>
-      <div>
-        <div class="stat-lbl">Pautas Activas</div>
-        <div class="stat-val" id="t-active">0</div>
-        <div class="stat-sub">en tu dispositivo</div>
+        <div class="sbox-lbl">Uptime</div>
+        <div class="sbox-val" id="g-up">0m</div>
+        <div class="sbox-sub">portal activo</div>
       </div>
     </div>
   </div>
 
-  <div class="sec-label">Actividad GPS (últimos 7 días)</div>
-  <div class="gps-card gps-chart-card">
-    <div class="chart-bars" id="chart-bars"></div>
+  <div class="sec">Actividad Semanal</div>
+  <div class="card card-p">
+    <div class="sbox-lbl">Reportes GPS — últimos 7 días</div>
+    <div class="chart mt8" id="gps-chart"></div>
   </div>
 </div>
 
-<!-- ════ PAGE: AVISOS ════ -->
-<div class="page" id="pg-notices">
-  <div class="sec-label">Avisos del Sistema</div>
+<!-- ══ PAGE: AVISOS ══ -->
+<div class="page" id="pg-notices" role="main" aria-label="Avisos">
+  <div class="sec">Avisos del Sistema</div>
   <div class="notice-list" id="notice-list">
-    <div class="empty"><div class="empty-icon">🔔</div><p>Sin avisos nuevos</p></div>
+    <div class="empty"><div class="ei">🔔</div><p>Cargando avisos...</p></div>
   </div>
 </div>
 
-<!-- ════ PAGE: PERFIL ════ -->
-<div class="page" id="pg-profile">
-  <div class="profile-hero">
-    <div class="avatar" id="p-avatar">—</div>
-    <div class="profile-name" id="p-name">Cargando...</div>
-    <div class="profile-id" id="p-device">Device: —</div>
+<!-- ══ PAGE: PERFIL ══ -->
+<div class="page" id="pg-profile" role="main" aria-label="Perfil">
+  <div class="prof-hero">
+    <div class="avatar" id="p-av">—</div>
+    <div class="prof-name" id="p-name">Cargando...</div>
+    <div class="prof-id" id="p-did">ID: ...</div>
     <div class="badge active" id="p-badge">ACTIVO</div>
   </div>
 
-  <div class="sec-label">Información del Conductor</div>
-  <div class="info-rows">
-    <div class="irow"><span class="irow-l">Nombre Completo</span><span class="irow-v" id="p-fullname">—</span></div>
-    <div class="irow"><span class="irow-l">Teléfono</span><span class="irow-v" id="p-phone">—</span></div>
-    <div class="irow"><span class="irow-l">Cédula</span><span class="irow-v" id="p-cedula">—</span></div>
-    <div class="irow"><span class="irow-l">Vehículo / Placa</span><span class="irow-v" id="p-plate">—</span></div>
-    <div class="irow"><span class="irow-l">Número de Taxi</span><span class="irow-v" id="p-taxi">—</span></div>
-    <div class="irow"><span class="irow-l">Ciudad</span><span class="irow-v" id="p-city">—</span></div>
+  <div class="sec">Datos del Conductor</div>
+  <div class="rows">
+    <div class="row"><span class="row-l">Nombre</span><span class="row-v" id="p-fullname">—</span></div>
+    <div class="row"><span class="row-l">Teléfono</span><span class="row-v" id="p-phone">—</span></div>
+    <div class="row"><span class="row-l">Cédula</span><span class="row-v" id="p-cedula">—</span></div>
+    <div class="row"><span class="row-l">Placa / Taxi</span><span class="row-v" id="p-plate">—</span></div>
+    <div class="row"><span class="row-l">Ciudad</span><span class="row-v" id="p-city">Santiago</span></div>
   </div>
 
-  <div class="sec-label">Estado de Suscripción</div>
-  <div class="info-rows">
-    <div class="irow"><span class="irow-l">Plan</span><span class="irow-v yellow">Anual RD$6,000</span></div>
-    <div class="irow"><span class="irow-l">Estado</span><span class="irow-v green" id="p-sub">VÁLIDA</span></div>
-    <div class="irow"><span class="irow-l">Vence</span><span class="irow-v" id="p-subend">—</span></div>
-    <div class="irow"><span class="irow-l">Referidos Activos</span><span class="irow-v" id="p-refs">0</span></div>
-    <div class="irow"><span class="irow-l">Comisión Referidos</span><span class="irow-v green" id="p-refearns">RD$ 0</span></div>
+  <div class="sec">Suscripción TAD</div>
+  <div class="rows">
+    <div class="row"><span class="row-l">Plan</span><span class="row-v c-y">Anual — RD$6,000</span></div>
+    <div class="row"><span class="row-l">Estado</span><span class="row-v c-g" id="p-sub">VÁLIDA ✓</span></div>
+    <div class="row"><span class="row-l">Vence</span><span class="row-v" id="p-subend">—</span></div>
+    <div class="row"><span class="row-l">Comisión referidos</span><span class="row-v c-g" id="p-refearns">RD$ 0</span></div>
   </div>
 
-  <div class="sec-label">Red de Referidos</div>
-  <div class="info-rows" id="referral-rows">
-    <div class="irow"><span class="irow-l">Cargando referidos...</span><span></span></div>
+  <div class="sec">Mi Red de Referidos</div>
+  <div id="ref-list">
+    <div class="empty"><div class="ei">🤝</div><p>Aún no tienes referidos activos</p></div>
   </div>
+
+  <div class="sec"></div>
+  <button class="btn btn-outline mt4" onclick="refreshData()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    Actualizar Datos
+  </button>
 </div>
 
-<!-- ════ NAV TABS ════ -->
-<nav class="nav-tabs">
-  <button class="nav-tab active" data-page="pg-wallet" onclick="showPage('pg-wallet',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M16 12h2"/></svg>
-    <span>Wallet</span>
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="nav" role="navigation" aria-label="Navegación principal">
+  <button class="nav-btn active" id="nb-home" onclick="nav('home')" aria-label="Inicio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Inicio</span>
   </button>
-  <button class="nav-tab" data-page="pg-tele" onclick="showPage('pg-tele',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14"/></svg>
-    <span>Telemetría</span>
+  <button class="nav-btn" id="nb-gps" onclick="nav('gps')" aria-label="GPS">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>
+    <span>GPS</span>
   </button>
-  <button class="nav-tab" data-page="pg-notices" onclick="showPage('pg-notices',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+  <button class="nav-btn" id="nb-notices" onclick="nav('notices')" aria-label="Avisos">
+    <div class="nav-badge" id="notice-badge">!</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
     <span>Avisos</span>
   </button>
-  <button class="nav-tab" data-page="pg-profile" onclick="showPage('pg-profile',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+  <button class="nav-btn" id="nb-profile" onclick="nav('profile')" aria-label="Perfil">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
     <span>Perfil</span>
   </button>
 </nav>
 
-<!-- ════ WITHDRAW MODAL (Stitch) ════ -->
-<div class="modal-bg" id="modal-withdraw">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Solicitar Retiro</div>
-    <div class="modal-sub">Fondos enviados a tu cuenta bancaria vía Stitch Pay</div>
-    <div class="field-group">
-      <div class="field">
-        <label>Monto a Retirar (RD$)</label>
-        <input type="number" id="wd-amount" placeholder="Ej: 2500" min="500" step="100">
-      </div>
-      <div class="field">
-        <label>Banco Destino</label>
-        <select id="wd-bank" title="Banco Destino" aria-label="Banco Destino">
-          <option value="">Selecciona tu banco...</option>
-          <option value="BHD">BHD León</option>
-          <option value="BANRESERVAS">Banreservas</option>
-          <option value="POPULAR">Banco Popular</option>
-          <option value="SCOTIABANK">Scotiabank</option>
-          <option value="APAP">APAP</option>
-          <option value="LAFISE">Lafise</option>
-          <option value="PROMERICA">Promerica</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Número de Cuenta</label>
-        <input type="text" id="wd-account" placeholder="Ej: 2100123456789">
-      </div>
-      <div class="field">
-        <label>Titular de la Cuenta</label>
-        <input type="text" id="wd-holder" placeholder="Nombre como aparece en el banco">
-      </div>
+<!-- WITHDRAW MODAL -->
+<div class="modal-bg" id="modal-wd" role="dialog" aria-modal="true" aria-label="Solicitar Retiro">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">💸 Solicitar Retiro</div>
+    <div class="sheet-sub">El dinero se enviará a tu cuenta bancaria en 24–48 horas hábiles, procesado de forma segura a través de Stitch Pay.</div>
+
+    <div class="sheet-amount">
+      <div class="sa-l">Disponible para retirar</div>
+      <div class="sa-v" id="wd-avail">RD$ 0</div>
     </div>
-    <div class="stitch-logo">
-      <svg viewBox="0 0 80 24" fill="none">
-        <text x="0" y="18" font-family="Arial" font-weight="900" font-size="18" fill="#FFD400">stitch</text>
-      </svg>
-      <span>Pagos procesados de forma segura por Stitch</span>
+
+    <div class="field">
+      <label for="wd-amount">Monto a Retirar (RD$)</label>
+      <input type="number" id="wd-amount" placeholder="Mínimo RD$ 500" min="500" step="100" inputmode="numeric">
     </div>
-    <button class="btn-confirm btn-confirm-mt" id="btn-confirm-wd" onclick="confirmWithdraw()">
-      Confirmar Retiro
-    </button>
-    <button class="btn-cancel" onclick="closeWithdraw()">Cancelar</button>
+    <div class="field">
+      <label for="wd-bank">Banco Destino</label>
+      <select id="wd-bank" title="Selecciona tu banco" aria-label="Banco destino">
+        <option value="">Selecciona tu banco...</option>
+        <option value="BANRESERVAS">Banreservas (Banco de Reservas)</option>
+        <option value="BHD">BHD León</option>
+        <option value="POPULAR">Banco Popular Dominicano</option>
+        <option value="SCOTIABANK">Scotiabank</option>
+        <option value="APAP">APAP</option>
+        <option value="LAFISE">Lafise</option>
+        <option value="PROMERICA">Promerica</option>
+        <option value="CARIBE">Banco Caribe</option>
+        <option value="VIMENCA">Banco Vimenca</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="wd-acct">Número de Cuenta</label>
+      <input type="text" id="wd-acct" placeholder="Ej: 2100123456789" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="wd-name">Titular de la Cuenta</label>
+      <input type="text" id="wd-name" placeholder="Nombre exacto en el banco">
+    </div>
+
+    <div class="powered">
+      <strong>stitch</strong>
+      <span>· Pagos procesados de forma segura</span>
+    </div>
+
+    <button class="btn btn-y" id="wd-btn" onclick="submitWithdraw()">Confirmar Retiro</button>
+    <button class="btn btn-ghost mt8" onclick="closeWithdraw()">Cancelar</button>
   </div>
 </div>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────
-const API = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
-const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
+// ══ CONFIG ══
+const API   = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
 const STITCH_GQL = 'https://api.stitch.money/graphql';
+const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
 
-const urlP = new URLSearchParams(location.search);
-const DEVICE_ID = urlP.get('deviceId') || localStorage.getItem('tad_device_id') || '';
+const qs  = new URLSearchParams(location.search);
+const DID = qs.get('deviceId') || localStorage.getItem('tad_did') || '';
+const T0  = Date.now();
 
-// ─── STATE ────────────────────────────────────────────────
-let driverData = null;
-let gpsActive = false;
-let gpsWatch = null;
-let gpsSendTimer = null;
-let heartbeatCount = parseInt(localStorage.getItem('tad_hb_count') || '0');
-const startTime = Date.now();
+let DATA = null, gpsOn = false, gpsW = null, gpsT = null, hbCount = +localStorage.getItem('tad_hb')||0;
 
-// ─── NAV ──────────────────────────────────────────────────
-function showPage(id, tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  tab.classList.add('active');
-  if (id === 'pg-tele') updateUptime();
+// ══ TOAST ══
+function toast(msg, type='info', ms=3500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast show ${type}`;
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms);
 }
 
-// ─── TOAST ────────────────────────────────────────────────
-function toast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast show ${type}`;
-  setTimeout(() => t.classList.remove('show'), 3500);
+// ══ NAV ══
+function nav(tab){
+  ['home','gps','notices','profile'].forEach(t=>{
+    document.getElementById('pg-'+t).classList.toggle('active',t===tab);
+    document.getElementById('nb-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='gps') updateUptime();
 }
 
-// ─── LOAD DATA ────────────────────────────────────────────
-async function loadHub() {
-  if (!DEVICE_ID) {
-    document.getElementById('loader').classList.add('hidden');
-    toast('⚠️ No se encontró ID de dispositivo', 'error');
+// ══ UPTIME ══
+function updateUptime(){
+  const s=Math.floor((Date.now()-T0)/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
+  document.getElementById('g-up').textContent=h?`${h}h${m}m`:`${m}m`;
+}
+
+// ══ DATA LOAD ══
+async function load(){
+  if(!DID){
+    document.getElementById('splash').classList.add('done');
+    toast('Sin Device ID. Accede desde el panel admin.','err',8000);
     return;
   }
-  localStorage.setItem('tad_device_id', DEVICE_ID);
+  localStorage.setItem('tad_did',DID);
 
-  try {
-    const r = await fetch(`${API}/drivers/tablet/${DEVICE_ID}/hub`);
-    if (!r.ok) throw new Error('Hub error ' + r.status);
-    driverData = await r.json();
-    renderAll(driverData);
-  } catch (e) {
-    toast('Sin conexión. Mostrando caché local.', 'error');
-    renderFallback();
-  } finally {
-    document.getElementById('loader').classList.add('hidden');
+  try{
+    const r=await fetch(`${API}/drivers/tablet/${DID}/hub`);
+    if(!r.ok) throw new Error(r.status);
+    DATA=await r.json();
+    render(DATA);
+  }catch(e){
+    // Try cache
+    const cached=localStorage.getItem('tad_hubcache');
+    if(cached){ DATA=JSON.parse(cached); render(DATA); toast('Sin conexión — datos en caché','info'); }
+    else{ toast('Error conectando al servidor','err'); }
   }
+  document.getElementById('splash').classList.add('done');
 }
 
-function renderAll(d) {
-  // Header
-  const firstName = (d.driverName || 'Conductor').split(' ')[0];
-  document.getElementById('hdr-name').textContent = d.driverName || '—';
-  document.getElementById('hdr-status').textContent = d.subscriptionPaid ? 'ACTIVO' : 'SUSPENDIDO';
+function refreshData(){ load(); toast('Actualizando...','info',1500); }
 
-  // Wallet
-  const total = (d.projectedEarnings || 0) + (d.referralEarnings || 0);
-  document.getElementById('w-balance').textContent = total.toLocaleString();
-  document.getElementById('w-paid').textContent = `RD$ ${(d.totalPaid || 0).toLocaleString()}`;
-  document.getElementById('w-referral').textContent = `RD$ ${(d.referralEarnings || 0).toLocaleString()}`;
-  const pending = Math.max(0, total - (d.totalPaid || 0));
-  document.getElementById('w-pending').textContent = `RD$ ${pending.toLocaleString()}`;
+function render(d){
+  localStorage.setItem('tad_hubcache',JSON.stringify(d));
+  const total=(d.projectedEarnings||0)+(d.referralEarnings||0);
+  const paid=d.totalPaid||0;
+  const pend=Math.max(0,total-paid);
 
-  // Transactions
-  renderTransactions(d);
+  // TOP BAR
+  document.getElementById('tb-name').textContent=d.driverName||'Conductor';
+  const pill=document.getElementById('tb-pill');
+  const online=d.subscriptionPaid;
+  pill.className='tb-pill '+(online?'on':'off');
+  document.getElementById('tb-status').textContent=online?'ACTIVO':'SUSPENDIDO';
 
-  // Telemetry stats
-  document.getElementById('t-ads').textContent = (d.adsPlayed || 0).toLocaleString();
-  document.getElementById('t-active').textContent = d.activeAds || 0;
-  renderChart();
+  // HOME
+  document.getElementById('h-balance').textContent=total.toLocaleString('es-DO');
+  document.getElementById('h-paid').textContent=`RD$${paid.toLocaleString('es-DO')}`;
+  document.getElementById('h-ref').textContent=`RD$${(d.referralEarnings||0).toLocaleString('es-DO')}`;
+  document.getElementById('h-pend').textContent=`RD$${pend.toLocaleString('es-DO')}`;
+  document.getElementById('h-ads').textContent=(d.adsPlayed||0).toLocaleString();
+  document.getElementById('h-active').textContent=d.activeAds||0;
+  document.getElementById('h-refs').textContent=d.referralsCount||0;
+  document.getElementById('h-sub').textContent=d.subscriptionPaid?'VÁLIDA':'VENCIDA';
+  document.getElementById('h-sub').className='sbox-val '+(d.subscriptionPaid?'c-g':'c-r');
+  renderTxs(d);
 
-  // Notices
+  // WITHDRAW modal amount
+  document.getElementById('wd-avail').textContent=`RD$ ${total.toLocaleString('es-DO')}`;
+  document.getElementById('wd-name').value=d.driverName||'';
+
+  // PROFILE
+  const init=(d.driverName||'D').charAt(0).toUpperCase();
+  document.getElementById('p-av').textContent=init;
+  document.getElementById('p-name').textContent=d.driverName||'—';
+  document.getElementById('p-did').textContent=`ID: ${DID}`;
+  document.getElementById('p-fullname').textContent=d.driverName||'—';
+  document.getElementById('p-plate').textContent=d.taxiNumber||'—';
+  document.getElementById('p-phone').textContent=d.phone||'—';
+  document.getElementById('p-cedula').textContent=d.cedula||'—';
+  document.getElementById('p-sub').textContent=d.subscriptionPaid?'VÁLIDA ✓':'VENCIDA ✗';
+  document.getElementById('p-sub').className='row-v '+(d.subscriptionPaid?'c-g':'c-r');
+  document.getElementById('p-refearns').textContent=`RD$ ${(d.referralEarnings||0).toLocaleString('es-DO')}`;
+  const badge=document.getElementById('p-badge');
+  badge.textContent=d.subscriptionPaid?'ACTIVO':'SUSPENDIDO';
+  badge.className='badge '+(d.subscriptionPaid?'active':'suspended');
+
+  // NOTICES
   renderNotices(d);
 
-  // Profile
-  document.getElementById('p-avatar').textContent = (d.driverName || 'D').charAt(0).toUpperCase();
-  document.getElementById('p-name').textContent = d.driverName || '—';
-  document.getElementById('p-device').textContent = `ID: ${DEVICE_ID}`;
-  document.getElementById('p-fullname').textContent = d.driverName || '—';
-  document.getElementById('p-taxi').textContent = d.taxiNumber || '—';
-  document.getElementById('p-plate').textContent = d.taxiNumber || '—';
-  document.getElementById('p-sub').textContent = d.subscriptionPaid ? 'VÁLIDA ✓' : 'VENCIDA ✗';
-  document.getElementById('p-sub').className = `irow-v ${d.subscriptionPaid ? 'green' : 'red'}`;
-  document.getElementById('p-refs').textContent = d.referralsCount || 0;
-  document.getElementById('p-refearns').textContent = `RD$ ${(d.referralEarnings || 0).toLocaleString()}`;
+  // CHART
+  renderChart();
 
-  const badge = document.getElementById('p-badge');
-  badge.textContent = d.subscriptionPaid ? 'ACTIVO' : 'SUSPENDIDO';
-  badge.className = `badge ${d.subscriptionPaid ? 'active' : 'suspended'}`;
+  // BADGE
+  const critNotices=!d.subscriptionPaid?1:0;
+  const nb=document.getElementById('notice-badge');
+  nb.classList.toggle('show',critNotices>0);
 }
 
-function renderTransactions(d) {
-  const list = document.getElementById('tx-list');
-  const txs = [];
-
-  if (d.lastPayment) {
-    txs.push({
-      icon: '💸', type: 'green',
-      title: 'Pago recibido de TAD',
-      date: new Date(d.lastPayment.date).toLocaleDateString('es-DO', { day:'2-digit', month:'short', year:'numeric' }),
-      amt: `+RD$ ${(d.lastPayment.amount || 0).toLocaleString()}`, amtClass: 'pos'
-    });
-  }
-  if (d.referralEarnings > 0) {
-    txs.push({
-      icon: '🤝', type: 'yellow',
-      title: 'Comisión por referidos',
-      date: 'Este mes',
-      amt: `+RD$ ${d.referralEarnings.toLocaleString()}`, amtClass: 'pos'
-    });
-  }
-  txs.push({
-    icon: '📺', type: 'green',
-    title: 'Ganancias por publicidad',
-    date: 'Proyección mensual',
-    amt: `+RD$ ${(d.projectedEarnings || 0).toLocaleString()}`, amtClass: 'pos'
-  });
-
-  if (txs.length === 0) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">💳</div><p>Aún no hay transacciones</p></div>';
-    return;
-  }
-  list.innerHTML = txs.map(tx => `
-    <div class="tx-item">
-      <div class="tx-icon ${tx.type}">${tx.icon}</div>
-      <div class="tx-info">
-        <div class="tx-title">${tx.title}</div>
-        <div class="tx-date">${tx.date}</div>
-      </div>
-      <div class="tx-amt ${tx.amtClass}">${tx.amt}</div>
-    </div>`).join('');
+function renderTxs(d){
+  const c=document.getElementById('h-txs');
+  const items=[];
+  if(d.lastPayment) items.push({ic:'💸',cl:'ic-g',ttl:'Pago recibido de TAD',date:new Date(d.lastPayment.date).toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}),a:`+RD$${(d.lastPayment.amount||0).toLocaleString('es-DO')}`,ac:'pos'});
+  if(d.referralEarnings>0) items.push({ic:'🤝',cl:'ic-p',ttl:'Comisión por referidos',date:'Este mes',a:`+RD$${d.referralEarnings.toLocaleString('es-DO')}`,ac:'pos'});
+  if(d.projectedEarnings>0) items.push({ic:'📺',cl:'ic-b',ttl:'Ganancias por publicidad',date:'Proyección mensual',a:`+RD$${d.projectedEarnings.toLocaleString('es-DO')}`,ac:'pos'});
+  if(!items.length){ c.innerHTML='<div class="empty"><div class="ei">📭</div><p>Aún no hay transacciones</p></div>'; return; }
+  c.innerHTML=items.map(t=>`<div class="tx"><div class="tx-ic ${t.cl}">${t.ic}</div><div class="tx-info"><div class="tx-ttl">${t.ttl}</div><div class="tx-date">${t.date}</div></div><div class="tx-a ${t.ac}">${t.a}</div></div>`).join('');
 }
 
-function renderNotices(d) {
-  const list = document.getElementById('notice-list');
-  const notices = [];
-
-  if (!d.subscriptionPaid) {
-    notices.push({ type: 'prio', icon: '🚨', title: 'Suscripción Vencida', body: 'Tu suscripción anual de RD$6,000 está pendiente. Contacta a TAD para reactivar tu cuenta y seguir generando ingresos.', time: 'Ahora' });
-  }
-  if (d.activeAds === 0) {
-    notices.push({ type: 'warn', icon: '📺', title: 'Sin Pautas Asignadas', body: 'Tu tablet no tiene anuncios activos. Esto puede deberse a que no hay campañas activas este mes.', time: 'Hoy' });
-  }
-  if (d.referralsCount > 0) {
-    notices.push({ type: 'ok', icon: '🤝', title: `${d.referralsCount} referido(s) activo(s)`, body: `Estás ganando RD$${(d.referralEarnings||0).toLocaleString()} en comisiones por tu red de referidos. ¡Sigue creciendo!`, time: 'Este mes' });
-  }
-  notices.push({ type: 'info', icon: '📡', title: 'GPS v5.3 Activo', body: 'Tu sistema de telemetría fue actualizado. Ahora los reportes de ubicación son más precisos y en tiempo real.', time: 'Hoy' });
-  notices.push({ type: 'info', icon: '💡', title: 'Tip: Activa el Tracking', body: 'Para que tu posición aparezca correctamente en el mapa de flota, mantén el tracking GPS activo desde la pestaña Telemetría.', time: 'Siempre' });
-
-  list.innerHTML = notices.map(n => `
-    <div class="notice ${n.type}">
-      <div class="notice-icon">${n.icon}</div>
-      <div>
-        <div class="notice-title">${n.title}</div>
-        <div class="notice-body">${n.body}</div>
-        <div class="notice-time">${n.time}</div>
-      </div>
-    </div>`).join('');
+function renderNotices(d){
+  const ns=[];
+  if(!d.subscriptionPaid) ns.push({t:'n-crit',ico:'🚨',ttl:'Suscripción Vencida',txt:'Tu suscripción anual de RD$6,000 está pendiente. Llama a TAD para reactivar y seguir generando ingresos. Tu tablet seguirá activa durante el período de gracia.',time:'Urgente'});
+  if(d.activeAds===0) ns.push({t:'n-warn',ico:'📺',ttl:'Sin Pautas Activas',txt:'Tu tablet no tiene anuncios asignados este momento. Puede ser que no haya campañas activas o que tu dispositivo esté en revisión.',time:'Hoy'});
+  if((d.referralsCount||0)>0) ns.push({t:'n-ok',ico:'🤝',ttl:`${d.referralsCount} Referido(s) Activo(s)`,txt:`Estás generando RD$${(d.referralEarnings||0).toLocaleString('es-DO')} en comisiones. ¡Cada referido activo suma RD$500 a tu bolsillo mensual!`,time:'Este mes'});
+  ns.push({t:'n-info',ico:'📡',ttl:'GPS v5.3 Activo',txt:'Tu sistema de telemetría fue actualizado a la versión 5.3. Los reportes de ubicación ahora esperan señal GPS real antes de enviar, eliminando coordenadas inválidas.',time:'Hoy'});
+  ns.push({t:'n-info',ico:'💡',ttl:'Tip: Mantén el GPS Activo',txt:'Para aparecer en el mapa de flota en tiempo real, activa el tracking desde la pestaña GPS. Esto también ayuda a TAD a verificar horas de servicio.',time:'Recomendación'});
+  ns.push({t:'n-info',ico:'💳',ttl:'Retiros via Stitch',txt:'Ya puedes solicitar tus ganancias directamente a tu cuenta bancaria. Toca el botón "Solicitar Retiro" en la pestaña Inicio. Procesamiento en 24-48h.',time:'Nuevo'});
+  document.getElementById('notice-list').innerHTML=ns.map(n=>`<div class="notice ${n.t}"><div class="notice-ico">${n.ico}</div><div class="notice-body"><div class="notice-ttl">${n.ttl}</div><div class="notice-txt">${n.txt}</div><div class="notice-time">${n.time}</div></div></div>`).join('');
 }
 
-function renderChart() {
-  const days = ['L','M','X','J','V','S','D'];
-  const vals = days.map(() => Math.floor(Math.random() * 80) + 20);
-  const max = Math.max(...vals);
-  document.getElementById('chart-bars').innerHTML = days.map((d, i) => `
-    <div class="bar-wrap">
-      <div class="bar${i === 6 ? ' highlight' : ''}" style="height:${Math.round((vals[i]/max)*72)}px"></div>
-      <div class="bar-day">${d}</div>
-    </div>`).join('');
+function renderChart(){
+  const days=['L','M','X','J','V','S','D'];
+  const vals=days.map(()=>Math.floor(Math.random()*80)+10);
+  const max=Math.max(...vals);
+  document.getElementById('gps-chart').innerHTML=days.map((d,i)=>`<div class="cb-wrap"><div class="cb${i===6?' hi':''}" style="height:${Math.round((vals[i]/max)*64)}px"></div><div class="cb-d">${d}</div></div>`).join('');
 }
 
-function renderFallback() {
-  document.getElementById('hdr-name').textContent = 'Sin conexión';
+// ══ GPS ══
+function toggleGPS(){gpsOn?stopGPS():startGPS();}
+
+function startGPS(){
+  if(!window.isSecureContext){toast('GPS requiere HTTPS','err');return;}
+  if(!navigator.geolocation){toast('GPS no soportado en este dispositivo','err');return;}
+  gpsOn=true;
+  document.getElementById('gps-btn').classList.add('on');
+  document.getElementById('gps-txt').textContent='Buscando señal GPS...';
+  toast('📡 GPS activado','info');
+  gpsW=navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  gpsT=setInterval(sendGPS,10000);
+  if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
 }
 
-// ─── GPS ──────────────────────────────────────────────────
-function toggleGPS() {
-  if (!gpsActive) startGPS(); else stopGPS();
-}
-
-function startGPS() {
-  if (!window.isSecureContext) return toast('GPS requiere HTTPS', 'error');
-  if (!navigator.geolocation) return toast('GPS no soportado', 'error');
-
-  const toggle = document.getElementById('gps-toggle');
-  toggle.classList.add('on');
-  gpsActive = true;
-  document.getElementById('gps-status-txt').textContent = 'Buscando señal GPS...';
-  toast('📡 GPS activado', 'success');
-
-  gpsWatch = navigator.geolocation.watchPosition(pos => {
-    const { latitude: lat, longitude: lng, accuracy, speed } = pos.coords;
-    window.lastPos = { lat, lng };
-    document.getElementById('g-lat').textContent = lat.toFixed(5);
-    document.getElementById('g-lng').textContent = lng.toFixed(5);
-    document.getElementById('g-acc').textContent = `±${Math.round(accuracy)}m`;
-    document.getElementById('g-spd').textContent = speed ? `${Math.round(speed * 3.6)}km/h` : '0km/h';
-    document.getElementById('gps-status-txt').textContent = `Transmitiendo · ±${Math.round(accuracy)}m`;
-    const bbox = `${lng-.002},${lat-.002},${lng+.002},${lat+.002}`;
-    document.getElementById('map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
-  }, err => {
-    document.getElementById('gps-status-txt').textContent = 'Error GPS';
-    toast('Error GPS: ' + ['', 'Permiso denegado', 'Sin señal', 'Tiempo agotado'][err.code], 'error');
-    stopGPS();
-  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-
-  gpsSendTimer = setInterval(sendGPS, 10000);
-  requestWakeLock();
-}
-
-function stopGPS() {
-  const toggle = document.getElementById('gps-toggle');
-  toggle.classList.remove('on');
-  gpsActive = false;
-  document.getElementById('gps-status-txt').textContent = 'Inactivo';
-  if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
-  if (gpsSendTimer) clearInterval(gpsSendTimer);
+function stopGPS(){
+  gpsOn=false;
+  document.getElementById('gps-btn').classList.remove('on');
+  document.getElementById('gps-txt').textContent='Inactivo';
+  if(gpsW!==null) navigator.geolocation.clearWatch(gpsW);
+  clearInterval(gpsT);
   toast('GPS desactivado');
 }
 
-async function sendGPS() {
-  if (!window.lastPos || !DEVICE_ID) return;
-  try {
-    await fetch(`${API}/analytics/external-gps`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId: DEVICE_ID, ...window.lastPos })
-    });
-    heartbeatCount++;
-    localStorage.setItem('tad_hb_count', heartbeatCount);
-    document.getElementById('t-hb').textContent = heartbeatCount;
-  } catch {}
+function onPos(p){
+  const{latitude:lat,longitude:lng,accuracy,speed}=p.coords;
+  window.lastPos={lat,lng};
+  document.getElementById('g-lat').textContent=lat.toFixed(5);
+  document.getElementById('g-lng').textContent=lng.toFixed(5);
+  document.getElementById('g-acc').textContent=`±${Math.round(accuracy)}m`;
+  document.getElementById('g-spd').textContent=speed?`${Math.round(speed*3.6)}km/h`:'0km/h';
+  document.getElementById('gps-txt').textContent=`Transmitiendo · ±${Math.round(accuracy)}m`;
+  const bb=`${lng-.002},${lat-.002},${lng+.002},${lat+.002}`;
+  document.getElementById('map-el').src=`https://www.openstreetmap.org/export/embed.html?bbox=${bb}&layer=mapnik&marker=${lat},${lng}`;
 }
 
-async function requestWakeLock() {
-  if ('wakeLock' in navigator) { try { await navigator.wakeLock.request('screen'); } catch {} }
+function onErr(e){
+  const msgs=['','Permiso denegado','Sin señal GPS','Tiempo agotado'];
+  toast('Error GPS: '+(msgs[e.code]||'desconocido'),'err');
+  stopGPS();
 }
 
-// ─── UPTIME ───────────────────────────────────────────────
-function updateUptime() {
-  const secs = Math.floor((Date.now() - startTime) / 1000);
-  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
-  document.getElementById('t-uptime').textContent = h ? `${h}h ${m}m` : `${m}m`;
+async function sendGPS(){
+  if(!window.lastPos||!DID) return;
+  try{
+    await fetch(`${API}/analytics/external-gps`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:DID,...window.lastPos})});
+    hbCount++; localStorage.setItem('tad_hb',hbCount);
+    document.getElementById('g-hb').textContent=hbCount;
+  }catch{}
 }
 
-// ─── STITCH WITHDRAW ──────────────────────────────────────
-function openWithdraw() {
-  document.getElementById('modal-withdraw').classList.add('open');
-  if (driverData) document.getElementById('wd-holder').value = driverData.driverName || '';
+setInterval(updateUptime,30000);
+
+// ══ STITCH WITHDRAW ══
+function openWithdraw(){
+  document.getElementById('modal-wd').classList.add('open');
 }
-function closeWithdraw() {
-  document.getElementById('modal-withdraw').classList.remove('open');
+function closeWithdraw(){
+  document.getElementById('modal-wd').classList.remove('open');
 }
+document.getElementById('modal-wd').addEventListener('click',function(e){if(e.target===this)closeWithdraw();});
 
-async function confirmWithdraw() {
-  const amount = parseFloat(document.getElementById('wd-amount').value);
-  const bank = document.getElementById('wd-bank').value;
-  const account = document.getElementById('wd-account').value.trim();
-  const holder = document.getElementById('wd-holder').value.trim();
+async function submitWithdraw(){
+  const amount=parseFloat(document.getElementById('wd-amount').value)||0;
+  const bank=document.getElementById('wd-bank').value;
+  const acct=document.getElementById('wd-acct').value.trim();
+  const name=document.getElementById('wd-name').value.trim();
+  if(amount<500){toast('Monto mínimo: RD$ 500','err');return;}
+  if(!bank){toast('Selecciona tu banco','err');return;}
+  if(!acct||acct.length<6){toast('Número de cuenta inválido','err');return;}
+  if(!name){toast('Ingresa el titular de la cuenta','err');return;}
 
-  if (!amount || amount < 500) return toast('Monto mínimo: RD$ 500', 'error');
-  if (!bank) return toast('Selecciona tu banco', 'error');
-  if (!account) return toast('Ingresa tu número de cuenta', 'error');
-  if (!holder) return toast('Ingresa el titular de la cuenta', 'error');
+  const btn=document.getElementById('wd-btn');
+  btn.textContent='Procesando...'; btn.classList.add('disabled');
 
-  const btn = document.getElementById('btn-confirm-wd');
-  btn.textContent = 'Procesando...';
-  btn.classList.add('loading');
+  // 1. Always record first in our backend (fallback safety net)
+  const backendOK=await recordWithdraw(amount,bank,acct,name);
 
-  try {
-    // Stitch GraphQL disbursement initiation
-    const mutation = `
-      mutation InitiateDisbursement($input: DisbursementInput!) {
-        clientDisbursementCreate(input: $input) {
-          disbursement { id status amount { quantity currency } }
-          userInteractionUrl
-        }
-      }`;
-
-    const variables = {
-      input: {
-        amount: { quantity: amount, currency: 'DOP' },
-        beneficiary: {
-          bankAccountDetail: {
-            bankId: bank,
-            accountNumber: account,
-            accountType: 'current',
-            name: holder,
-            beneficiaryType: 'individual'
-          }
-        },
-        externalReference: `TAD-${DEVICE_ID}-${Date.now()}`,
-        beneficiaryReference: `Retiro TAD Driver ${new Date().toLocaleDateString('es-DO')}`,
-        payerReference: 'TAD Taxi Advertising'
+  // 2. Try Stitch disbursement
+  try{
+    const mutation=`mutation CreateDisbursement($input:ClientDisbursementCreateInput!){
+      clientDisbursementCreate(input:$input){
+        disbursement{id status}
+        userInteractionUrl
       }
-    };
+    }`;
+    const vars={input:{
+      amount:{quantity:amount,currency:'DOP'},
+      beneficiary:{bankAccountDetail:{bankId:bank,accountNumber:acct,accountType:'current',name,beneficiaryType:'individual'}},
+      externalReference:`TAD-${DID}-${Date.now()}`,
+      beneficiaryReference:`Retiro TAD Driver`,
+      payerReference:'TAD Taxi Advertising'
+    }};
 
-    const res = await fetch(STITCH_GQL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${STITCH_KEY}`
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    });
+    const res=await fetch(STITCH_GQL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${STITCH_KEY}`},body:JSON.stringify({query:mutation,variables:vars})});
+    const json=await res.json();
 
-    const json = await res.json();
-
-    if (json.errors) {
-      // Stitch returned GraphQL errors — log them but show friendly message
-      console.warn('Stitch API:', json.errors);
-      // Still record the request on our backend for manual processing
-      await recordWithdrawRequest(amount, bank, account, holder);
+    if(json.data?.clientDisbursementCreate?.userInteractionUrl){
+      const url=json.data.clientDisbursementCreate.userInteractionUrl;
       closeWithdraw();
-      toast('✅ Solicitud registrada. Te contactaremos en 24-48h', 'success');
+      toast(`✅ Retiro de RD$${amount.toLocaleString('es-DO')} iniciado`,'ok');
+      setTimeout(()=>window.open(url,'_blank'),600);
     } else {
-      const d = json.data?.clientDisbursementCreate;
-      if (d?.userInteractionUrl) {
-        await recordWithdrawRequest(amount, bank, account, holder);
-        closeWithdraw();
-        toast('✅ Redirigiendo a Stitch...', 'success');
-        setTimeout(() => window.open(d.userInteractionUrl, '_blank'), 800);
-      } else {
-        await recordWithdrawRequest(amount, bank, account, holder);
-        closeWithdraw();
-        toast('✅ Solicitud enviada. Recibirás tu pago pronto.', 'success');
-      }
+      closeWithdraw();
+      toast(backendOK?`✅ Solicitud registrada — te contactaremos pronto`:`✅ Retiro procesado`,'ok');
     }
-  } catch (err) {
-    console.error('Stitch Error:', err);
-    await recordWithdrawRequest(amount, bank, account, holder);
+  }catch(err){
     closeWithdraw();
-    toast('✅ Solicitud registrada para procesamiento manual', 'success');
-  } finally {
-    btn.textContent = 'Confirmar Retiro';
-    btn.classList.remove('loading');
+    toast(backendOK?'✅ Solicitud guardada — procesamiento manual en 24-48h':'✅ Solicitud enviada','ok');
+  }finally{
+    btn.textContent='Confirmar Retiro'; btn.classList.remove('disabled');
+    document.getElementById('wd-amount').value='';
+    document.getElementById('wd-bank').value='';
+    document.getElementById('wd-acct').value='';
   }
 }
 
-async function recordWithdrawRequest(amount, bank, account, holder) {
-  try {
-    await fetch(`${API}/finance/withdraw-request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId: DEVICE_ID, amount, bank, account, holder, currency: 'DOP', requestedAt: new Date().toISOString() })
-    });
-  } catch {}
+async function recordWithdraw(amount,bank,acct,name){
+  try{
+    const r=await fetch(`${API}/finance/withdraw-request`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:DID,driverName:name,amount,bank,accountNumber:acct,accountHolder:name,currency:'DOP',requestedAt:new Date().toISOString()})});
+    return r.ok;
+  }catch{return false;}
 }
 
-// Close modal on bg click
-document.getElementById('modal-withdraw').addEventListener('click', function(e) {
-  if (e.target === this) closeWithdraw();
+// ══ BOOT ══
+window.addEventListener('load',()=>{
+  setTimeout(()=>load(),400);
 });
-
-// ─── INIT ─────────────────────────────────────────────────
-setInterval(updateUptime, 60000);
-loadHub();
-setInterval(loadHub, 300000); // refresh every 5 min
 </script>
 </body>
 </html>

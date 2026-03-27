@@ -64,7 +64,8 @@
     "rxjs": "^7.8.1",
     "uuid": "^9.0.1",
     "winston": "^3.19.0",
-    "zod": "^3.25.30"
+    "zod": "^3.25.30",
+    "axios": "^1.13.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
@@ -83,7 +84,6 @@
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
-    "axios": "^1.13.6",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

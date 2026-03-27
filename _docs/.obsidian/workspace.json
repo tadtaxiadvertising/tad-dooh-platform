@@ -183,8 +183,10 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "d8aaefb7f70a2455",
+  "active": "cc702150279abb06",
   "lastOpenFiles": [
+    "00_REQUERIMIENTOS_DESBLOQUEO.md",
+    "00_TAD_AGENT_PROTOCOL.md",
     "02_Arquitectura_Estructural/database_schema_overview.md",
     "01_Radar_de_Detalles/radar_principal.md",
     "05_Manual_Usuario_Administrativo/operaciones_diarias.md",

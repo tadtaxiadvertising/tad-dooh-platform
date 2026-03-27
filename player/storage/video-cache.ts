@@ -3,6 +3,23 @@ const CACHE_NAME = 'tad-dooh-campaign-v1';
 export class VideoCache {
   
   /**
+   * Checks if any video from the list is missing in the cache.
+   */
+  static async hasMissingAssets(videos: { url: string }[]): Promise<boolean> {
+    try {
+      if (!('caches' in window)) return true;
+      const cache = await caches.open(CACHE_NAME);
+      for (const v of videos) {
+        const match = await cache.match(v.url);
+        if (!match) return true;
+      }
+      return false;
+    } catch {
+      return true;
+    }
+  }
+
+  /**
    * Caches video assets into the Browser's persistent Cache Storage. 
    * Pre-fetches all videos when a new campaign is received.
    */
@@ -26,27 +43,46 @@ export class VideoCache {
       }
 
       // 2. Download: Add new videos to cache
+      let allSuccess = true;
       for (const url of newUrls) {
         const match = await cache.match(url);
         if (!match) {
           console.log(`⬇️ Downloading & Caching: ${url}`);
-          try {
-            // Using { mode: 'no-cors' } is NOT recommended for media if you need to manipulate bits,
-            // but for simple <video src="..."> it works. Better with proper CORS.
-            const response = await fetch(url + '?cache_bust=' + Date.now());
-            if (response.ok) {
+          let success = false;
+          let retries = 3;
+          
+          while (retries > 0 && !success) {
+            try {
+              const response = await fetch(url + '?v=' + Date.now(), { 
+                mode: 'cors',
+                credentials: 'omit' // Reduce header overhead for static assets
+              });
+              
+              if (response.ok) {
                 await cache.put(url, response);
                 console.log(`✅ Cached: ${url}`);
+                success = true;
+              } else {
+                throw new Error(`HTTP ${response.status}`);
+              }
+            } catch (err: any) {
+              retries--;
+              console.warn(`⚠️ Retry ${3-retries}/3 for ${url}:`, err.message);
+              if (retries > 0) await new Promise(r => setTimeout(r, 2000));
             }
-          } catch (fetchErr) {
-            console.error(`❌ Failed to cache ${url}:`, fetchErr);
+          }
+
+          if (!success) {
+            allSuccess = false;
+            console.error(`❌ Permanent failure for: ${url}`);
           }
         } else {
-            console.log(`📦 Asset already in cache: ${url}`);
+          // Verify if it's still valid/exists in Cache Storage specifically
+          console.log(`📦 Asset already in cache: ${url}`);
         }
       }
 
-      return true;
+      return allSuccess;
     } catch (err) {
       console.error('Video caching pipeline failed:', err);
       return false;

@@ -53,9 +53,14 @@ export class Scheduler {
     // 2. Poll the Campaign Payload mapping version states
     const syncData = await checkSync(this.deviceId);
     
-    // 3. Compare Version integer overrides logically
-    if (syncData && syncData.campaign_version !== this.currentVersion) {
-      console.log(`Receiving new Campaign (v${syncData.campaign_version}). Executing Blob Mapping.`);
+    // 3. Compare Version or check for missing local assets (Robustness for Offline)
+    const needsDownload = syncData && (
+      syncData.campaign_version !== this.currentVersion || 
+      await VideoCache.hasMissingAssets(syncData.videos)
+    );
+
+    if (needsDownload) {
+      console.log(`[SYNC] Campaign update or missing assets detected (v${syncData.campaign_version}). Synchronizing blobs...`);
       
       const success = await VideoCache.cacheVideos(syncData.videos);
       
@@ -63,10 +68,12 @@ export class Scheduler {
         this.currentVersion = syncData.campaign_version;
         localStorage.setItem('tad_active_campaign', JSON.stringify(syncData));
         this.engine.setPlaylist(syncData.videos as VideoAsset[]);
-        console.log('Campaign Sync Complete!');
+        console.log('[SYNC] Portfolio Synchronized via Cache API.');
+      } else {
+        console.warn('[SYNC] One or more assets failed to download. Will retry on next heartbeat/online event.');
       }
     } else {
-      console.log('No new campaigns available or currently fully up to date.');
+      console.log('[SYNC] Local cache is fully synchronized and up to date.');
     }
 
     // 4. End with Heartbeat verification over states

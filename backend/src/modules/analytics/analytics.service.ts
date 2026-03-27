@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { createUmamiClient } from '../../utils/umami';
 
 @Injectable()
 export class AnalyticsService {
@@ -358,5 +359,15 @@ export class AnalyticsService {
         ctr: stats.impressions > 0 ? (stats.scans / stats.impressions) * 100 : 0
       }))
       .reverse(); // De más antiguo a más reciente
+  }
+
+  async getExternalWebStats(websiteId: string) {
+    const umami = createUmamiClient();
+    if (!umami || !websiteId) return null;
+
+    const now = Date.now();
+    const startAt = now - 30 * 24 * 60 * 60 * 1000; // Last 30 days
+    
+    return umami.getWebsiteStats(websiteId, startAt, now);
   }
 }

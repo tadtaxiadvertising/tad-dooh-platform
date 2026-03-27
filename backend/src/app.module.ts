@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import * as zod from 'zod';
 import { DeviceModule } from './modules/device/device.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -38,6 +39,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
           PORT: zod.string().regex(/^\d+$/).default('3000'),
           NODE_ENV: zod.string().default('production'),
           CORS_ORIGIN: zod.string().default('*'),
+          UMAMI_API_TOKEN: zod.string().optional(),
         });
 
         const result = schema.safeParse(config);
@@ -78,6 +80,10 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
     {
       provide: APP_GUARD,
       useClass: SupabaseAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SentryInterceptor,
     },
   ],
 })

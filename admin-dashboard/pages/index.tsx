@@ -197,6 +197,7 @@ export default function Home() {
               description="Nodos distribuidos operando con sincronización atómica. Latencia de red: 24ms."
               progress={88}
               color="yellow"
+              uid="net"
             />
             <StitchedInfoCard 
               icon={<Layers className="text-blue-400" />}
@@ -205,6 +206,7 @@ export default function Home() {
               description="Verificación hash de activos multimedia completada. 0 fallos detectados."
               progress={99}
               color="blue"
+              uid="s3"
             />
           </div>
         </div>
@@ -248,10 +250,13 @@ export default function Home() {
 
 function StitchedStatsCard({ icon, label, value, sub, color, delay }: any) {
   return (
-    <div 
-      className="stitched-card p-8 flex flex-col justify-between min-h-[220px] group/card animate-in fade-in slide-in-from-bottom-12 fill-mode-both"
-      style={{ animationDelay: `${delay}ms` }}
-    >
+    <div className={clsx(
+      "stitched-card p-8 flex flex-col justify-between min-h-[220px] group/card animate-in fade-in slide-in-from-bottom-12 fill-mode-both",
+      `delay-${delay}`
+    )}>
+      <style jsx>{`
+        .stitched-card { animation-delay: ${delay}ms; }
+      `}</style>
       <div className="flex justify-between items-start">
         <div className={clsx(
           "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-500",
@@ -279,7 +284,7 @@ function StitchedStatsCard({ icon, label, value, sub, color, delay }: any) {
   );
 }
 
-function StitchedInfoCard({ icon, title, label, description, progress, color }: any) {
+function StitchedInfoCard({ icon, title, label, description, progress, color, uid }: any) {
   return (
     <div className="stitched-card p-8 group/info">
       <div className="flex items-center gap-4 mb-6">
@@ -300,13 +305,14 @@ function StitchedInfoCard({ icon, title, label, description, progress, color }: 
           <span className="text-xs font-black text-white">{progress}%</span>
         </div>
         <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-[2px]">
-          <div 
-            className={clsx(
-              "h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,212,0,0.1)]",
-              color === 'yellow' ? 'bg-tad-yellow' : 'bg-blue-500'
-            )}
-            style={{ width: `${progress}%` }}
-          />
+          <div className={clsx(
+            `progress-bar-${uid}`,
+            "h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,212,0,0.1)]",
+            color === 'yellow' ? 'bg-tad-yellow' : 'bg-blue-500'
+          )} />
+          <style jsx>{`
+            .progress-bar-${uid} { width: ${progress}%; }
+          `}</style>
         </div>
       </div>
     </div>

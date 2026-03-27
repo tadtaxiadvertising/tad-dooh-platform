@@ -79,15 +79,39 @@
         position: fixed;
         inset: 0;
         z-index: 2000;
-        background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+        background: radial-gradient(circle at center, #111111 0%, #000000 100%);
         display: none;
       }
       .intermission-content {
-        animation: fadeIn 0.8s ease-out;
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid rgba(255, 212, 0, 0.05); /* Stitched subtle border */
       }
       @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
+        from { opacity: 0; transform: translateY(20px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .qr-frame {
+        position: relative;
+        padding: 40px;
+        background: white;
+        border-radius: 4rem;
+        box-shadow: 
+          0 40px 100px rgba(0,0,0,0.8),
+          0 0 40px rgba(255, 212, 0, 0.1);
+        transform: perspective(1000px) rotateX(2deg);
+        transition: transform 0.5s ease;
+      }
+      .qr-frame::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: linear-gradient(45deg, #FFD400, transparent, #FFD400);
+        z-index: -1;
+        opacity: 0.3;
+      }
+      #intermission-timer-bar {
+        box-shadow: 0 0 20px rgba(255, 212, 0, 0.5);
       }
       #qr-container.v-hidden {
         display: none !important;
@@ -115,9 +139,9 @@
         </div>
 
         <div class="relative group">
-          <div class="absolute -inset-4 bg-tad-yellow/20 blur-2xl rounded-full group-hover:bg-tad-yellow/30 transition-all duration-1000"></div>
-          <div class="relative bg-white p-10 rounded-[3rem] shadow-[0_20px_80px_rgba(0,0,0,0.8)] border border-white/10">
-            <img id="intermission-qr" src="" alt="Menu QR" class="w-[350px] h-[350px]" />
+          <div class="absolute -inset-12 bg-tad-yellow/10 blur-[100px] rounded-full animate-pulse-soft"></div>
+          <div class="qr-frame">
+            <img id="intermission-qr" src="" alt="Menu QR" class="w-[380px] h-[380px]" />
           </div>
         </div>
 

@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TAD DOOH Player</title>
+    {/* Sentry Catch — Tablet Player */}
+    <script src="https://js.sentry-cdn.com/b786a0fa94eec198afb9e35ce84d16ea.min.js" crossorigin="anonymous"></script>
+    <script>
+      Sentry.onLoad(function() {
+        Sentry.init({
+          dsn: "https://b786a0fa94eec198afb9e35ce84d16ea@o4511114332143616.ingest.us.sentry.io/4511114334633984",
+          integrations: [Sentry.browserTracingIntegration()],
+          tracesSampleRate: 1.0,
+        });
+      });
+    </script>
     {/* Umami Analytics — Tablet Player */}
     <script async src="https://cloud.umami.is/script.js" data-website-id="f00863a7-7700-4e72-85ae-716f796edfc6"></script>
     <style>

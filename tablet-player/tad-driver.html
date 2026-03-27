@@ -8,6 +8,17 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080808">
 <title>TAD Driver</title>
+<!-- Sentry Catch — Driver Portal -->
+<script src="https://js.sentry-cdn.com/b786a0fa94eec198afb9e35ce84d16ea.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.onLoad(function() {
+    Sentry.init({
+      dsn: "https://b786a0fa94eec198afb9e35ce84d16ea@o4511114332143616.ingest.us.sentry.io/4511114334633984",
+      integrations: [Sentry.browserTracingIntegration()],
+      tracesSampleRate: 1.0,
+    });
+  });
+</script>
 <!-- Umami Analytics — Driver Portal -->
 <script async src="https://cloud.umami.is/script.js" data-website-id="fb3d34bb-e3bf-4c5e-b096-88b3adcfffbb"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">

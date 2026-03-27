@@ -11,11 +11,13 @@ Este documento registra los hitos técnicos, correcciones de errores y nuevas fu
 ### 🚀 v5.4 - PWA Driver Portal & Admin Workflow (26 Mar 2026)
 
 #### 📱 Portal de Conductores (PWA)
+
 - **Stitch Pay Integration**: Conexión GraphQL con la pasarela de pagos, permitiendo retiros seguros y retención de estado a prueba de fallos.
 - **Telemetría y GPS en Vivo**: Heartbeats integrados a OSM (OpenStreetMap) en el portal, garantizando seguimiento preciso directo al Dashboard.
 - **Dashboard del Conductor**: Tracking de ganancias, referidos y un modal "Tactical Deployment" nativo para la experiencia de los drivers.
 
 #### 🏗️ Admin Campaign Workflow
+
 - **Distribución de Hardware Estratégico**: Desacople total de la asignación de hardware durante la subida de multimedia. Las campañas ahora heredan sus pantallas a nivel "Despliegue Táctico" y no por video.
 - **Rastreo GPS y Mapa**: Corrección crítica de `react-leaflet` y agregación del endpoint `getDeviceRecentPath` para renderizar estelas en el mapa satelital del admin (dibujando los últimos 60 puntos recorridos).
 

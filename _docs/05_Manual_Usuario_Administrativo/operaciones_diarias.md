@@ -4,7 +4,7 @@ status: COMPLETO
 updated: 2026-03-26
 ---
 
-# 🛠️ Manual de Operaciones Administrativas y Soporte de Flotas
+## 🛠️ Manual de Operaciones Administrativas y Soporte de Flotas
 
 Esta guía de usuario explica de manera paso-a-paso la operatoria diaria para el administrador en jefe y operadores de nómina del Dashboard de TAD DOOH Platform.
 
@@ -26,7 +26,7 @@ Los clientes te enviarán master digitales (videos de hasta 200MB de peso, MP4 o
 
 1. Ingresa a la pantalla del **Nexus / Vault Multimedia** (Media).
 2. Da clic en **Importar Asset**.
-3. Arrastra el archivo. El Dashboard *no* descargará tu internet ni calentará a Node.js; se enrutará directo al Cloud Storage de Supabase.
+3. Arrastra el archivo. El Dashboard _no_ descargará tu internet ni calentará a Node.js; se enrutará directo al Cloud Storage de Supabase.
 4. Elijes la duración del Pautado Comercial (30, 60 o 120s estelares).
 5. Seleccionas también, si lo deseas, un código y URL interactiva `qrUrl` para Call-To-Action a los clientes (Ej. `wa.me/` para WhatsApps).
 6. **Vincular a Campaña:** Seleccionas la campaña a la que pertenece el arte. A partir de la versión 5.4, ya **NO** debes seleccionar pantallas individuales al subir el video.
@@ -59,6 +59,6 @@ Para evitar re-asignar pantallas cada vez que subes un video, el flujo opera de 
 Todas las pantallas deben RD$6,000 dominicanos a la plataforma cada mes. El estado financiero está monitorizado:
 
 - En la tab de **Finanzas** verás el deudómetro.
-- Si un conductor (Ojo, el `Device` en realidad) *NO* está al día, pasados los umbrales de gracia, el servidor de TAD (API) empezará a retornar estatus `402 Payment Required` al Player de las Tablets.
+- Si un conductor (Ojo, el `Device` en realidad) _NO_ está al día, pasados los umbrales de gracia, el servidor de TAD (API) empezará a retornar estatus `402 Payment Required` al Player de las Tablets.
 - Esto disparará automáticamente en la tablet en cuestión un mensaje rojo, bloqueando parte de la UI: `⚠️ SUSCRIPCIÓN VENCIDA (RD$6,000). El servicio publicitario podría suspenderse pronto.`
 - Para restaurar el servicio, un Administrador debe registrar un pago en la plataforma sobre la ID del Conductor.

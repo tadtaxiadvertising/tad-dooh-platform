@@ -13,7 +13,13 @@ export class LoggerMiddleware implements NestMiddleware {
 
     res.on('finish', () => {
       const { statusCode } = res;
-      this.logger.log(`${method} ${originalUrl} ${statusCode} - Device: ${deviceId}`);
+      const logLevel = statusCode >= 400 ? 'error' : 'log';
+      this.logger[logLevel](`${method} ${originalUrl} ${statusCode}`, { 
+        deviceId, 
+        method, 
+        url: originalUrl, 
+        statusCode 
+      });
     });
 
     next();

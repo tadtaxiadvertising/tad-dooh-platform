@@ -4,17 +4,23 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
+import { createWinstonLogger } from './utils/winston.logger';
+import { initializeSentry } from './utils/sentry';
 
 // Fix para serialización de BigInt
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
+// Initialize Sentry before anything else
+initializeSentry();
+
 async function bootstrap() {
   console.log('🚀 TAD DOOH API - Iniciando proceso de arranque...');
   
   try {
-    const app = await NestFactory.create(AppModule);
+    const logger = createWinstonLogger();
+    const app = await NestFactory.create(AppModule, { logger });
 
     // Config service
     const configService = app.get(ConfigService);

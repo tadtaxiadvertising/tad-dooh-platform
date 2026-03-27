@@ -62,3 +62,13 @@ Todas las pantallas deben RD$6,000 dominicanos a la plataforma cada mes. El esta
 - Si un conductor (Ojo, el `Device` en realidad) _NO_ está al día, pasados los umbrales de gracia, el servidor de TAD (API) empezará a retornar estatus `402 Payment Required` al Player de las Tablets.
 - Esto disparará automáticamente en la tablet en cuestión un mensaje rojo, bloqueando parte de la UI: `⚠️ SUSCRIPCIÓN VENCIDA (RD$6,000). El servicio publicitario podría suspenderse pronto.`
 - Para restaurar el servicio, un Administrador debe registrar un pago en la plataforma sobre la ID del Conductor.
+
+---
+
+## 🛠️ Soporte Técnico y Monitoreo (Sentry, BetterStack & Umami)
+
+La plataforma cuenta con herramientas de monitoreo profesional para garantizar el 100% de disponibilidad:
+
+1. **BetterStack (Logs):** Todos los eventos del sistema (registros, errores, heartbeats) se envían en tiempo real. Si algo falla, el equipo técnico puede ver la traza exacta.
+2. **Sentry (Crash Reports):** Si la aplicación o el dashboard sufren un error crítico, Sentry captura el estado exacto del navegador o servidor para su corrección inmediata.
+3. **Umami (Analítica Web):** Proporciona estadísticas de uso del Dashboard sin invadir la privacidad, permitiendo optimizar las herramientas más usadas por los administradores.

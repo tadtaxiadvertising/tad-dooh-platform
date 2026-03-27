@@ -1,7 +1,7 @@
 ---
 title: Manual de Operaciones Administrativas
 status: COMPLETO
-updated: 2026-03-24
+updated: 2026-03-26
 ---
 
 # 🛠️ Manual de Operaciones Administrativas y Soporte de Flotas
@@ -29,7 +29,28 @@ Los clientes te enviarán master digitales (videos de hasta 200MB de peso, MP4 o
 3. Arrastra el archivo. El Dashboard *no* descargará tu internet ni calentará a Node.js; se enrutará directo al Cloud Storage de Supabase.
 4. Elijes la duración del Pautado Comercial (30, 60 o 120s estelares).
 5. Seleccionas también, si lo deseas, un código y URL interactiva `qrUrl` para Call-To-Action a los clientes (Ej. `wa.me/` para WhatsApps).
-6. **Despliegue Hardware (Propagación):** Al instante, marcas las tablets receptoras o pides que baje a todo el ecosistema (Flotilla completa).
+6. **Vincular a Campaña:** Seleccionas la campaña a la que pertenece el arte. A partir de la versión 5.4, ya **NO** debes seleccionar pantallas individuales al subir el video.
+
+---
+
+## 🎯 Despliegue Táctico (Asignación Global de Campañas a Pantallas)
+
+Para evitar re-asignar pantallas cada vez que subes un video, el flujo opera de forma macro a nivel de la campaña:
+
+1. Ve a la pestaña **Campañas** y elige la campaña.
+2. Da clic en **"Despliegue Táctico"** (Botón amarillo en la cabecera de la campaña).
+3. Ve a la pestaña **"Pantallas"** o **"Segmentar"**.
+4. Elige si quieres transmisión global (todos los taxis) o selección exclusiva de pantallas específicas.
+5. Guarda la asignación. ¡Listo! Todos los videos dentro de la campaña se distribuirán automáticamente a este clúster geográfico/pantallas.
+
+---
+
+## 🗺️ Monitoreo de Rutas (Mapa de Rastreos GPS)
+
+1. Clicca en la pestaña **Rastreo (Tracking)**.
+2. Verás el **Tactical Map**, un render interactivo con todos los taxis representados mediante íconos personalizados.
+3. Si la unidad sale del límite establecido (Santiago/Polígono Central), su indicador cambiará a rojo (alerta geofence).
+4. Dale clic a una unidad para ver de inmediato una estela amarilla (TAD-Yellow trail). La estela representa visualmente **los últimos 60 puntos recorridos** por el hardware gracias al algoritmo avanzado `getDeviceRecentPath`.
 
 ---
 

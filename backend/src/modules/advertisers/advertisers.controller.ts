@@ -10,6 +10,14 @@ export class AdvertisersController {
     return this.advertisersService.findAll();
   }
 
+  @Post('login')
+  async login(@Body() body: { email: string; password?: string }) {
+    if (!body.email || !body.password) {
+      throw new BadRequestException('email and password are required');
+    }
+    return this.advertisersService.login(body.email, body.password);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const adv = await this.advertisersService.findOne(id);

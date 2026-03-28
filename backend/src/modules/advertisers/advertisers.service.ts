@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AdvertisersService {
@@ -36,18 +38,28 @@ export class AdvertisersService {
     contactName: string;
     email: string;
     phone?: string;
+    password?: string;
   }) {
+    let hashedPassword = null;
+    if (data.password) {
+      hashedPassword = await bcrypt.hash(data.password, 10);
+    }
+
     return this.prisma.advertiser.create({
       data: {
         companyName: data.companyName,
         contactName: data.contactName,
         email: data.email,
         phone: data.phone,
+        password: hashedPassword,
       }
     });
   }
 
   async update(id: string, data: any) {
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
     return this.prisma.advertiser.update({
       where: { id },
       data
@@ -119,6 +131,36 @@ export class AdvertisersService {
         impressions: c.metrics.reduce((acc, curr) => acc + curr.totalImpressions, 0),
         media: c.media.map(m => ({ id: m.id, url: m.url, type: m.mimeType, name: m.name }))
       }))
+    };
+  }
+
+  // PORTAL LOGIN
+  async login(email: string, pass: string) {
+    const user = await this.prisma.advertiser.findUnique({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    let isMatch = false;
+    if (user.password) {
+      isMatch = await bcrypt.compare(pass, user.password);
+    } else {
+      // For legacy advertisers, maybe we let them login with a default pass? Or require them to set it up.
+      // Better to just throw.
+      throw new UnauthorizedException('Debe configurar su contraseña con el administrador primero.');
+    }
+
+    if (!isMatch) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    const payload = { sub: user.id, email: user.email, role: 'advertiser' };
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'tad-super-secret-key-2024', { expiresIn: '7d' });
+
+    return {
+      access_token: token,
+      advertiserId: user.id,
+      name: user.companyName
     };
   }
 }

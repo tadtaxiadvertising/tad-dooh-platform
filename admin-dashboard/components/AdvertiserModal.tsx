@@ -136,6 +136,12 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                       <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
                    </div>
                    <div className="space-y-1">
+                      <label htmlFor="password" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contraseña (Acceso Portal)</label>
+                      <input id="password" type="password" name="password" placeholder={initialData ? "Dejar vacío para no cambiar" : "Contraseña"} value={(formData as any).password || ''} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
                       <label htmlFor="phone" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Teléfono</label>
                       <input id="phone" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
                    </div>

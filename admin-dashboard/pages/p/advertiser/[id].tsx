@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  Plus
+  Plus,
+  LogOut
 } from 'lucide-react';
 import { getAdvertiserPortalData } from '../../../services/api';
 import clsx from 'clsx';
@@ -29,14 +30,41 @@ export default function AdvertiserPortal() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'analytics' | 'content'>('analytics');
 
+  const handleLogout = () => {
+    localStorage.removeItem('tad_advertiser_token');
+    localStorage.removeItem('tad_advertiser_id');
+    router.push('/p/advertiser/login');
+  };
+
   useEffect(() => {
-    if (id) {
-      getAdvertiserPortalData(id as string)
-        .then(setData)
-        .catch(console.error)
-        .finally(() => setLoading(false));
+    // SECURITY: Ensure only authorized admins or the specific advertiser can view this portal
+    if (typeof window !== 'undefined') {
+      const adminToken = localStorage.getItem('tad_admin_token');
+      const advToken = localStorage.getItem('tad_advertiser_token');
+      const advId = localStorage.getItem('tad_advertiser_id');
+
+      if (!adminToken) {
+        if (!advToken || advId !== id) {
+          router.replace('/p/advertiser/login');
+          return;
+        }
+      }
+
+      if (id) {
+        getAdvertiserPortalData(id as string)
+          .then(setData)
+          .catch(() => {
+            // Failed to load data, maybe token expired or ID invalid
+            if (!adminToken) {
+              localStorage.removeItem('tad_advertiser_token');
+              localStorage.removeItem('tad_advertiser_id');
+              router.replace('/p/advertiser/login');
+            }
+          })
+          .finally(() => setLoading(false));
+      }
     }
-  }, [id]);
+  }, [id, router]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
@@ -53,7 +81,7 @@ export default function AdvertiserPortal() {
       <div className="bg-zinc-900/50 border border-white/5 p-12 rounded-[2.5rem] space-y-4">
         <h1 className="text-2xl font-black uppercase italic">Enlace No Válido</h1>
         <p className="text-zinc-500 text-sm">El acceso a este portal ha caducado o es incorrecto.</p>
-        <button onClick={() => router.push('/')} className="px-8 py-3 bg-tad-yellow text-black font-black uppercase text-[10px] tracking-widest rounded-2xl">Volver al Inicio</button>
+        <button onClick={() => { localStorage.removeItem('tad_advertiser_token'); router.push('/p/advertiser/login'); }} className="px-8 py-3 bg-tad-yellow text-black font-black uppercase text-[10px] tracking-widest rounded-2xl">Volver al Inicio</button>
       </div>
     </div>
   );
@@ -253,6 +281,8 @@ export default function AdvertiserPortal() {
            <FloatButton icon={<Upload className="w-4 h-4" />} active={activeTab === 'content'} onClick={() => setActiveTab('content')} />
            <div className="w-px h-6 bg-white/10 mx-2 self-center" />
            <FloatButton icon={<ExternalLink className="w-4 h-4" />} onClick={() => window.open('https://tad.do', '_blank')} />
+           <div className="w-px h-6 bg-white/10 mx-2 self-center" />
+           <FloatButton icon={<LogOut className="w-4 h-4" />} onClick={handleLogout} />
         </div>
       </div>
     </div>

@@ -6,7 +6,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { VehiclePopup } from './ui/VehiclePopup';
-import { Sun, Moon } from 'lucide-react';
 import clsx from 'clsx';
 import dynamic from 'next/dynamic';
 
@@ -197,6 +196,7 @@ interface MapViewProps {
   mode?: 'live' | 'heatmap';
   selectedId?: string | null;
   recentPath?: any[];
+  mapTheme?: 'dark' | 'light';
   onClearSelection?: () => void;
   onViewHistory?: (v: MapLocation) => void;
   onSyncCommand?: (v: MapLocation) => void;
@@ -248,24 +248,16 @@ const MapView: React.FC<MapViewProps> = ({
   mode = 'live',
   selectedId = null,
   recentPath = [],
+  mapTheme = 'dark',
   onClearSelection,
   onViewHistory,
   onSyncCommand,
 }) => {
   const [ready, setReady] = useState(false);
-  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => { 
     setReady(true); 
-    const savedTheme = localStorage.getItem('tad_map_theme') as 'dark' | 'light';
-    if (savedTheme) setMapTheme(savedTheme);
   }, []);
-
-  const toggleTheme = () => {
-    const newTheme = mapTheme === 'dark' ? 'light' : 'dark';
-    setMapTheme(newTheme);
-    localStorage.setItem('tad_map_theme', newTheme);
-  };
 
   // Función Ray-Casting para detectar punto en polígono
   const isPointInPolygon = useCallback((lat: number, lng: number) => {
@@ -392,16 +384,7 @@ const MapView: React.FC<MapViewProps> = ({
         <div className="absolute bottom-8 right-24 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
       </div>
 
-      {/* Theme Switcher Button */}
-      <div className="absolute top-8 right-8 z-[1001]">
-         <button 
-           onClick={toggleTheme}
-           title={`Switch to ${mapTheme === 'dark' ? 'Light' : 'Dark'} mode`}
-           className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl flex items-center justify-center text-zinc-400 hover:text-tad-yellow hover:border-tad-yellow/50 transition-all active:scale-90"
-         >
-           {mapTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-         </button>
-      </div>
+      {/* MAP THEME TOGGLE is now managed by parent page — button removed from MapView */}
 
       <style jsx global>{`
         .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }

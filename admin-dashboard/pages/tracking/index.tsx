@@ -5,7 +5,8 @@ import {
   Navigation, MapPin, Activity, Search, RefreshCw,
   Battery, ChevronDown, ChevronRight, Gauge as Speedometer, Signal,
   AlertTriangle, Smartphone, Tablet, ExternalLink, Clock,
-  Filter, Smartphone as Phone, Map as MapIcon, Layers, ChevronUp
+  Filter, Smartphone as Phone, Map as MapIcon, Layers, ChevronUp,
+  Sun, Moon
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getTrackingSummary, getTrackingData, getFleetLocations, getHeatmapData, getDeviceRecentPath } from '../../services/api';
@@ -85,6 +86,18 @@ export default function TrackingPage() {
   const [fleetFilter, setFleetFilter] = useState<'all' | 'active' | 'offline' | 'unpaid'>( 'all' );
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.4544, -70.6923]);
   const [mapZoom, setMapZoom] = useState(13);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('tad_map_theme') as 'dark' | 'light') || 'dark';
+    }
+    return 'dark';
+  });
+
+  const toggleMapTheme = () => {
+    const next = mapTheme === 'dark' ? 'light' : 'dark';
+    setMapTheme(next);
+    localStorage.setItem('tad_map_theme', next);
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -188,6 +201,7 @@ export default function TrackingPage() {
                   mode={mapMode}
                   center={mapCenter}
                   zoom={mapZoom}
+                  mapTheme={mapTheme}
                   selectedId={selectedVehicleId}
                   recentPath={recentPath}
                   onClearSelection={() => {
@@ -206,7 +220,16 @@ export default function TrackingPage() {
          ) : null}
       </div>
 
-      {/* OVERLAY: COLLAPSABLE HEADER DESIGN */}
+      {/* MAP THEME TOGGLE — always visible, high z-index */}
+      <div className="absolute bottom-8 right-8 z-[50]">
+        <button
+          onClick={toggleMapTheme}
+          title={mapTheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+          className="w-12 h-12 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-center text-zinc-400 hover:text-tad-yellow hover:border-tad-yellow/40 transition-all active:scale-90"
+        >
+          {mapTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+      </div>
       <div className={clsx(
          "absolute top-0 left-0 right-0 z-30 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform",
          headerCollapsed ? "-translate-y-full" : "translate-y-0"

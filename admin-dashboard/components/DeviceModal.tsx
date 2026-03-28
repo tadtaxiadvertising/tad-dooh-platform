@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Tablet, X, Check, AlertCircle, Save, Trash2, MapPin, Hash } from 'lucide-react';
-
+import React, { useState, useEffect, useCallback } from 'react';
+import { Tablet, X, Check, AlertCircle, Save, Trash2, MapPin, Hash, User } from 'lucide-react';
 import { createDevice, updateDevice, deleteDevice } from '../services/api';
 
 interface DeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  device?: { id?: string; device_id?: string; deviceId?: string; taxi_number?: string; taxiNumber?: string; city?: string; status?: string } | null; // If present, we are editing
+  device?: { id?: string; device_id?: string; deviceId?: string; taxi_number?: string; taxiNumber?: string; city?: string; status?: string } | null;
 }
 
 const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess, device }: DeviceModalProps) {
@@ -20,34 +19,40 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
   });
 
   const [drivers, setDrivers] = useState<any[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-        status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE'),
-        driverId: (device as any).driverId || (device as any).driver?.id || ''
-      });
-    } else {
-      setFormData({
-        deviceId: '',
-        taxiNumber: '',
-        city: 'Santiago',
-        status: 'ACTIVE',
-        driverId: ''
-      });
+  const loadDrivers = useCallback(async () => {
+    try {
+      const { getDrivers } = await import('../services/api');
+      const data = await getDrivers();
+      setDrivers(data || []);
+    } catch (err) {}
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (device) {
+        setFormData({
+          deviceId: device.device_id || device.deviceId || '',
+          taxiNumber: device.taxi_number || device.taxiNumber || '',
+          city: device.city || 'Santiago',
+          status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE'),
+          driverId: (device as any).driverId || (device as any).driver?.id || ''
+        });
+      } else {
+        setFormData({
+          deviceId: '',
+          taxiNumber: '',
+          city: 'Santiago',
+          status: 'ACTIVE',
+          driverId: ''
+        });
+      }
+      loadDrivers();
+      setError(null);
     }
-    
-    // Load drivers for selection
-    const loadDrivers = async () => {
-      try {
-        const { getDrivers } = await import('../services/api');
-        const data = await getDrivers();
-        setDrivers(data || []);
-      } catch (err) {}
-    };
-    loadDrivers();
-    setError(null);
-  }, [device, isOpen]);
+  }, [device, isOpen, loadDrivers]);
 
   if (!isOpen) return null;
 
@@ -58,7 +63,6 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
 
     try {
       if (device) {
-        // Find UUID for update if device_id is hardware string
         const id = device.id || device.device_id || ''; 
         if (!id) throw new Error('Identificador de dispositivo no encontrado');
         await updateDevice(id, formData);
@@ -114,7 +118,6 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
             onClick={onClose} 
             className="text-zinc-500 hover:text-white transition-colors"
             title="Cerrar modal"
-            aria-label="Cerrar modal"
           >
             <X className="w-6 h-6" />
           </button>
@@ -129,7 +132,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
           )}
 
           <div className="space-y-4">
-            {/* Hardware ID - Static if editing */}
+            {/* Hardware ID */}
             <div>
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1">
                 ID Tablet (Hardware)
@@ -141,7 +144,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                   disabled={!!device}
                   required
                   placeholder="Ej: TADSTI-001"
-                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow transition-all disabled:opacity-50"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow transition-all disabled:opacity-50 text-sm"
                   value={formData.deviceId}
                   onChange={e => setFormData({ ...formData, deviceId: e.target.value.toUpperCase() })}
                 />
@@ -158,30 +161,42 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                 <input
                   type="text"
                   placeholder="Ej: T-123"
-                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow transition-all"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow transition-all text-sm"
                   value={formData.taxiNumber}
                   onChange={e => setFormData({ ...formData, taxiNumber: e.target.value.toUpperCase() })}
                 />
               </div>
             </div>
 
+            {/* City */}
+            <div>
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1">
+                Ciudad / Ubicación
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                <select
+                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer text-sm"
+                  value={formData.city}
+                  onChange={e => setFormData({ ...formData, city: e.target.value })}
+                >
+                  <option value="Santo Domingo">Santo Domingo</option>
+                  <option value="Santiago">Santiago</option>
+                  <option value="Punta Cana">Punta Cana</option>
+                  <option value="Puerto Plata">Puerto Plata</option>
                 </select>
               </div>
             </div>
 
             {/* Driver Assignment */}
             <div className="pt-2">
-              <label 
-                htmlFor="driver-select"
-                className="text-[10px] font-black text-tad-yellow uppercase tracking-widest block mb-2 px-1"
-              >
+              <label className="text-[10px] font-black text-tad-yellow uppercase tracking-widest block mb-2 px-1">
                 Asignar Conductor (OPCIONAL)
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-tad-yellow/40" />
                 <select
-                  id="driver-select"
-                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer text-sm"
                   value={formData.driverId}
                   onChange={e => setFormData({ ...formData, driverId: e.target.value })}
                 >
@@ -203,8 +218,6 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                 onClick={handleDelete}
                 disabled={loading}
                 className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-4 px-6 rounded-2xl border border-red-500/20 transition-all active:scale-95"
-                title="Eliminar dispositivo"
-                aria-label="Eliminar dispositivo"
               >
                 <Trash2 className="w-5 h-5" />
               </button>

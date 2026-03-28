@@ -43,6 +43,31 @@
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.webmanifest">
+
+    <!-- 🛡️ SENTRY & RESILIENCE PACKAGE (SANTIAGO) -->
+    <script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" integrity="sha384-69x3D3N7B3qW3B3N7B3qW3B3N7B3qW3B3N7B3qW3B3N7B3qW3B3N7B3qW3B3" crossorigin="anonymous"></script>
+    <script>
+      (function() {
+        const DSN = "https://b786a0fa94eec198afb9e35ce84d16ea@o4511114332143616.ingest.us.sentry.io/4511114334633984";
+        if (typeof Sentry !== 'undefined') {
+          Sentry.init({
+            dsn: DSN,
+            integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+            tracesSampleRate: 1.0,
+            replaysSessionSampleRate: 0.1,
+            replaysOnErrorSampleRate: 1.0,
+            initialScope: {
+              tags: { 
+                "app": "tad-player-v2", 
+                "region": "santiago",
+                "env": "production" 
+              }
+            }
+          });
+          console.log("🛡️ Sentry Active (Santiago Resilience Mode)");
+        }
+      })();
+    </script>
     
     <style>
         body {
@@ -596,6 +621,12 @@
                 console.error('❌ Video error:', error);
                 this.retryCount++;
                 
+                if (typeof Sentry !== 'undefined') {
+                    Sentry.captureException(new Error(`MediaError: ${error.message || 'Video failed'}`), {
+                        tags: { type: 'video_load_error', media_url: this.video?.src }
+                    });
+                }
+
                 if (this.retryCount >= this.maxRetries) {
                     this.showError('Error al reproducir video. Saltando al siguiente...');
                     
@@ -1205,6 +1236,28 @@
                 const now = Date.now();
                 const inactiveTime = now - this.lastActivity;
                 
+                // 🕵️ Santiago Resilience: Detect Frozen Playback
+                if (player.isPlaying && player.video) {
+                    const currentPos = player.video.currentTime;
+                    if (this.lastVideoPos === currentPos && !player.video.paused) {
+                        this.frozenSeconds = (this.frozenSeconds || 0) + 60; // Check runs every 60s
+                        if (this.frozenSeconds >= 120) { // 2 minutes frozen
+                            console.error('❄️ Santiago Watchdog: Frozen Playback detected!');
+                            if (typeof Sentry !== 'undefined') {
+                                Sentry.captureMessage(`Reproducción Congelada: ${state.deviceId}`, {
+                                    level: 'error',
+                                    tags: { type: 'frozen_video', media: player.video.src }
+                                });
+                            }
+                            player.retry();
+                            this.frozenSeconds = 0;
+                        }
+                    } else {
+                        this.frozenSeconds = 0;
+                    }
+                    this.lastVideoPos = currentPos;
+                }
+
                 if (inactiveTime > 10 * 60 * 1000) {
                     if (!player.isPlaying && state.currentPlaylist.length > 0) {
                         console.log('⚠️ Watchdog: Video not playing, restarting...');

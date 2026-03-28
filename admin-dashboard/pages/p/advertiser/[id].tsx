@@ -17,11 +17,13 @@ import {
   Clock,
   ExternalLink,
   Plus,
-  LogOut
+  LogOut,
+  Image as ImageIcon
 } from 'lucide-react';
-import { getAdvertiserPortalData } from '../../../services/api';
+import { getAdvertiserPortalData, uploadMedia, addVideoToCampaign } from '../../../services/api';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
 
 export default function AdvertiserPortal() {
   const router = useRouter();
@@ -29,6 +31,20 @@ export default function AdvertiserPortal() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'analytics' | 'content'>('analytics');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const loadData = () => {
+    if (id) {
+      getAdvertiserPortalData(id as string)
+        .then(setData)
+        .catch(() => {
+          // Fallback logic
+        })
+        .finally(() => setLoading(false));
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('tad_advertiser_token');
@@ -65,6 +81,48 @@ export default function AdvertiserPortal() {
       }
     }
   }, [id, router]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'video/mp4' && file.type !== 'video/webm' && !file.type.startsWith('image/')) {
+      alert('Solo se permiten archivos MP4, WEBM o Imágenes.');
+      return;
+    }
+    if (!data?.campaigns?.[0]?.id) {
+      alert('No tienes una campaña activa para vincular este archivo.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(10);
+    try {
+      const campaignId = data.campaigns[0].id;
+      const uploadedData = await uploadMedia(file, campaignId);
+      setUploadProgress(70);
+
+      await addVideoToCampaign(campaignId, {
+        type: file.type.startsWith('image/') ? 'image' : 'video',
+        filename: file.name,
+        url: uploadedData.url,
+        fileSize: file.size,
+        checksum: uploadedData.id,
+        duration: 30
+      });
+      setUploadProgress(100);
+      
+      setTimeout(() => {
+        alert('Contenido actualizado correctamente. Esperando validación del sistema.');
+        loadData();
+        setUploading(false);
+      }, 1000);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error al subir el archivo: ' + (err.message || 'Intente nuevamente'));
+      setUploading(false);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
@@ -221,9 +279,23 @@ export default function AdvertiserPortal() {
                    <h3 className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.4em] mb-1">Media Management</h3>
                    <h2 className="text-2xl font-black uppercase italic">Playlist <span className="text-zinc-500">v4</span></h2>
                 </div>
-                <button className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow hover:text-black transition-all">
-                  <Upload className="w-4 h-4" />
-                  Actualizar Contenido
+                <input type="file" ref={fileInputRef} className="hidden" accept="video/mp4, video/webm, image/*" onChange={handleFileSelect} />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow hover:text-black transition-all disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <div className="flex items-center gap-2">
+                       <Activity className="w-4 h-4 animate-spin" />
+                       Subiendo... {uploadProgress}%
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Actualizar Contenido
+                    </>
+                  )}
                 </button>
               </div>
 

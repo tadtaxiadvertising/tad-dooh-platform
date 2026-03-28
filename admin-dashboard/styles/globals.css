@@ -213,3 +213,26 @@ body {
   animation: shimmer 2s infinite;
 }
 
+/* ============================================================
+   LEAFLET MAP — Critical overrides for Next.js environment
+   ============================================================ */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  font-family: 'Inter', 'Outfit', sans-serif !important;
+  background: #0a0a0b !important;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(1) !important;
+}
+
+/* Map scan animation for tracking page overlay */
+@keyframes map-scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(900%); }
+}
+
+.animate-map-scan {
+  animation: map-scan 6s linear infinite;
+}

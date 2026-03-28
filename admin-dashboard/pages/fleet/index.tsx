@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
-import api, { sendCommand, getDevices, getOfflineDevices } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw } from 'lucide-react';
+import api, { sendCommand, getDevices, getOfflineDevices, getPendingDevices, approvePendingDevice, rejectPendingDevice } from '../../services/api';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw, ShieldAlert, ShieldCheck, XCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceModal from '../../components/DeviceModal';
@@ -81,7 +81,7 @@ function CopyButton({ value, label = 'URL' }: { value: string; label?: string })
 
 export default function FleetPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'monitoring' | 'alerts' | 'inventory'>('monitoring');
+  const [activeTab, setActiveTab] = useState<'monitoring' | 'alerts' | 'inventory' | 'pending'>('monitoring');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [commanding, setCommanding] = useState<string | null>(null);
@@ -112,6 +112,10 @@ export default function FleetPage() {
   const [offlineDevices, setOfflineDevices] = useState<{ device_id: string; last_seen?: string }[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
 
+  // 🛡️ Pending Approvals
+  const [pendingDevicesList, setPendingDevicesList] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+
   const loadInventory = useCallback(async () => {
     setLoadingInventory(true);
     try {
@@ -136,12 +140,25 @@ export default function FleetPage() {
     }
   }, []);
 
+  const loadPending = useCallback(async () => {
+    setLoadingPending(true);
+    try {
+      const data = await getPendingDevices();
+      setPendingDevicesList(data);
+    } catch (e) {
+      console.error('Pending error:', e);
+    } finally {
+      setLoadingPending(false);
+    }
+  }, []);
+
   // Sincronización inteligente de pestañas
   useEffect(() => {
     if (activeTab === 'inventory') loadInventory();
     if (activeTab === 'alerts') loadAlerts();
+    if (activeTab === 'pending') loadPending();
     if (activeTab === 'monitoring') mutateFleet();
-  }, [activeTab, loadInventory, loadAlerts, mutateFleet]);
+  }, [activeTab, loadInventory, loadAlerts, loadPending, mutateFleet]);
 
   const handleCommand = async (deviceId: string, type: string) => {
     if (type === 'HUB') {
@@ -177,6 +194,7 @@ export default function FleetPage() {
     { id: 'monitoring', name: 'Monitoreo', icon: Activity },
     { id: 'alerts', name: 'Alertas', icon: Bell },
     { id: 'inventory', name: 'Inventario', icon: LayoutGrid },
+    { id: 'pending', name: 'Pendientes', icon: ShieldAlert },
   ];
 
   const getDeviceHealth = (d: FleetDevice) => {
@@ -265,7 +283,7 @@ export default function FleetPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={clsx(
-              "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
+              "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 relative",
               activeTab === tab.id 
                 ? "bg-zinc-800 text-tad-yellow shadow-inner" 
                 : "text-zinc-600 hover:text-zinc-400"
@@ -273,6 +291,11 @@ export default function FleetPage() {
           >
             <tab.icon className="w-4 h-4" />
             {tab.name}
+            {tab.id === 'pending' && pendingDevicesList.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] text-white">
+                {pendingDevicesList.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -541,6 +564,106 @@ export default function FleetPage() {
               </table>
             </div>
            </div>
+        </div>
+      )}
+
+      {activeTab === 'pending' && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-zinc-950/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="p-8 border-b border-tad-yellow/20 bg-tad-yellow/5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-tad-yellow/10 rounded-2xl text-tad-yellow shadow-[0_0_20px_rgba(255,212,0,0.1)]">
+                  <ShieldAlert className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-white font-black uppercase tracking-tighter text-xl italic">Aprobación Pendiente</h3>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Dispositivos que intentan ingresar a la red auditada</p>
+                </div>
+              </div>
+              <button 
+                onClick={loadPending}
+                className="px-6 py-2.5 bg-tad-yellow/10 text-tad-yellow border border-tad-yellow/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow hover:text-black transition-all flex items-center gap-2"
+              >
+                <RefreshCw className={clsx("w-3 h-3", loadingPending && "animate-spin")} />
+                Actualizar
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-white/5">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-zinc-500 uppercase tracking-widest">ID Reportado (Hardware)</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-zinc-500 uppercase tracking-widest">Versión Cliente</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-zinc-500 uppercase tracking-widest">Primer Contacto</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-zinc-500 uppercase tracking-widest">Acciones (Control Total)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {(loadingPending ? [1,2,3] : pendingDevicesList).map((device: any, i) => (
+                    <tr key={device.deviceId || i} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
+                        {loadingPending ? <div className="h-4 w-24 bg-white/5 animate-pulse rounded" /> : device.deviceId}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
+                         {loadingPending ? <div className="h-4 w-20 bg-white/5 animate-pulse rounded" /> : device.appVersion || 'Desconocida'}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
+                        {loadingPending ? <div className="h-4 w-40 bg-white/5 animate-pulse rounded" /> : (device.lastSeen ? new Date(device.lastSeen).toLocaleString().toUpperCase() : 'SIN REGISTRO')}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        {loadingPending ? <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" /> : (
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await approvePendingDevice(device.deviceId);
+                                  setToast('Dispositivo Aprobado');
+                                  loadPending();
+                                  mutateFleet(); // refresca dashboard si cambia
+                                } catch (e) {
+                                  alert('Error aprobando dispositivo');
+                                }
+                              }}
+                              className="px-4 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl transition-all"
+                            >
+                              <ShieldCheck className="w-3 h-3" />
+                              Aprobar
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`)) return;
+                                try {
+                                  await rejectPendingDevice(device.deviceId);
+                                  setToast('Dispositivo Rechazado');
+                                  loadPending();
+                                } catch (e) {
+                                  alert('Error rechazando dispositivo');
+                                }
+                              }}
+                              className="px-4 py-1.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl transition-all"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {pendingDevicesList.length === 0 && !loadingPending && (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-32 text-center">
+                        <CheckCircle2 className="w-16 h-16 text-emerald-500/20 mx-auto mb-6" />
+                        <h3 className="text-xl font-black text-emerald-500 uppercase tracking-widest mb-2 italic">Sin Solicitudes Pendientes</h3>
+                        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest max-w-sm mx-auto leading-loose">No hay tablets nuevas intentando ingresar a la flota auditada en este momento.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

@@ -68,23 +68,48 @@ export class DeviceService {
       });
     }
 
-    this.logger.log(`Registering new device: ${dto.device_id}`);
+    this.logger.log(`Registering new device (PENDING approval): ${dto.device_id}`);
     return this.prisma.device.create({
       data: {
         deviceId: dto.device_id,
         appVersion: dto.app_version,
-        status: 'ACTIVE',
+        status: 'PENDING',          // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
         driverId: dto.driver_id,
       },
     });
   }
 
+  /** Returns all devices that have PENDING approval — for the admin dashboard. */
+  async getPendingDevices() {
+    return this.prisma.device.findMany({
+      where: { status: 'PENDING' },
+      orderBy: { lastSeen: 'desc' },
+      select: { id: true, deviceId: true, appVersion: true, lastSeen: true },
+    });
+  }
+
+  /** Admin approves a device — sets it ACTIVE so it can join the fleet. */
+  async approveDevice(deviceId: string) {
+    this.logger.log(`✅ Admin approved device: ${deviceId}`);
+    return this.prisma.device.update({
+      where: { deviceId },
+      data: { status: 'ACTIVE' },
+    });
+  }
+
+  /** Admin rejects/deletes a phantom device. */
+  async rejectDevice(deviceId: string) {
+    this.logger.warn(`🗑️ Admin rejected device: ${deviceId}`);
+    return this.prisma.device.delete({ where: { deviceId } });
+  }
+
   async getFleetStatusSummary() {
     const now = new Date();
 
-    // 2. Fetch all devices and their individual slot data (using the unified counting method)
+    // Only show ACTIVE devices in the fleet — PENDING devices are excluded
     const devices = await this.prisma.device.findMany({
+      where: { status: { not: 'PENDING' } },
       include: {
         driver: {
           select: { id: true, fullName: true, status: true, subscriptionPaid: true }
@@ -131,17 +156,28 @@ export class DeviceService {
     });
 
     if (!device) {
-      this.logger.warn(`Heartbeat received for unknown device: ${dto.device_id}, auto-registering.`);
-      device = await this.prisma.device.create({
+      // 🔒 Unknown device: register as PENDING (not ACTIVE) and block content
+      this.logger.warn(`Heartbeat from unknown device: ${dto.device_id}. Registering as PENDING — awaiting admin approval.`);
+      await this.prisma.device.create({
         data: {
           deviceId: dto.device_id,
-          status: 'ACTIVE',
+          status: 'PENDING',
           lastSeen: new Date(),
           batteryLevel: dto.battery_level,
           storageFree: dto.storage_free,
           playerStatus: dto.player_status,
         },
       });
+      // Return blocked so the tablet does not receive content
+      return { success: true, blocked: true, reason: 'awaiting_approval' };
+    } else if (device.status === 'PENDING') {
+      // Device exists but is still awaiting admin approval
+      this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
+      await this.prisma.device.update({
+        where: { deviceId: dto.device_id },
+        data: { lastSeen: new Date() },
+      });
+      return { success: true, blocked: true, reason: 'awaiting_approval' };
     } else {
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
@@ -230,6 +266,16 @@ export class DeviceService {
 
   async syncDeviceCampaigns(dto: SyncDeviceDto) {
     const { deviceId, lat, lng, batteryLevel, lastHash } = dto;
+
+    // 🔒 Block sync for PENDING devices
+    const deviceCheck = await this.prisma.device.findUnique({ where: { deviceId } });
+    if (!deviceCheck) {
+      return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
+    }
+    if (deviceCheck.status === 'PENDING') {
+      this.logger.log(`⏳ Sync blocked for PENDING device: ${deviceId}`);
+      return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
+    }
 
     // 1. Update Telemetry & Health
     const device = await this.prisma.device.update({

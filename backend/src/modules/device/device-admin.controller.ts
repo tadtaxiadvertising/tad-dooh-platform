@@ -1,11 +1,35 @@
 import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceService } from './device.service';
 
 @Controller('devices')
 export class DeviceAdminController {
   private readonly logger = new Logger(DeviceAdminController.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private deviceService: DeviceService,
+  ) {}
+
+  // ─── PENDING DEVICE APPROVAL QUEUE ──────────────────────────────────────────
+
+  /** List all devices awaiting admin approval */
+  @Get('pending')
+  getPendingDevices() {
+    return this.deviceService.getPendingDevices();
+  }
+
+  /** Admin approves a device → sets it ACTIVE */
+  @Post(':deviceId/approve')
+  approveDevice(@Param('deviceId') deviceId: string) {
+    return this.deviceService.approveDevice(deviceId);
+  }
+
+  /** Admin rejects a device → deletes it */
+  @Delete(':deviceId/reject')
+  rejectDevice(@Param('deviceId') deviceId: string) {
+    return this.deviceService.rejectDevice(deviceId);
+  }
 
   // Ver los anuncios asignados a un taxi específico
   @Get(':deviceId/campaigns')

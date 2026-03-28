@@ -522,6 +522,7 @@ model Advertiser {
   companyName String     @map("company_name")
   contactName String     @map("contact_name")
   email       String     @unique
+  password    String?    // For advertiser portal login
   phone       String?
   // Redes y contacto comercial para el Perfil QR
   whatsapp    String?

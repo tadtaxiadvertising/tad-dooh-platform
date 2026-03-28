@@ -298,8 +298,8 @@ const MapView: React.FC<MapViewProps> = ({
           key={mapTheme}
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
           url={mapTheme === 'dark' 
-            ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_all/{z}/{x}/{y}{r}.png"
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           }
           maxZoom={18}
         />

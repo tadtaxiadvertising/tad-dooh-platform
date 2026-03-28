@@ -167,6 +167,41 @@ export class DriversService {
   }
 
   /**
+   * Assign a hardware device to a driver
+   */
+  async assignDevice(driverId: string, deviceId: string) {
+    const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
+    if (!driver) throw new Error('Chofer no encontrado');
+
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ deviceId }, { id: deviceId }] }
+    });
+    if (!device) throw new Error('Dispositivo no encontrado en el inventario');
+
+    // Remove any existing bindings this driver has
+    await this.prisma.device.updateMany({
+      where: { driverId },
+      data: { driverId: null }
+    });
+
+    // Assign the new device
+    return this.prisma.device.update({
+      where: { id: device.id },
+      data: { driverId }
+    });
+  }
+
+  /**
+   * Unlink a hardware device from a driver
+   */
+  async unlinkDevice(driverId: string) {
+    return this.prisma.device.updateMany({
+      where: { driverId },
+      data: { driverId: null }
+    });
+  }
+
+  /**
    * Estadísticas generales de la red de choferes
    */
   async getStats() {

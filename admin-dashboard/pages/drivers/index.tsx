@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, Users, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation } from 'lucide-react';
+import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, Users, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation, X, XCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
-import { getDrivers, updateDriverSubscription } from '../../services/api';
+import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
@@ -69,6 +69,41 @@ export default function DriversPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAuditDriver, setSelectedAuditDriver] = useState<any>(null);
+
+  const [assigningDeviceId, setAssigningDeviceId] = useState<string>('');
+  const [savingDevice, setSavingDevice] = useState(false);
+
+  const handleAssignDevice = async (driverId: string) => {
+    if (!assigningDeviceId.trim()) {
+      alert("Por favor ingrese el ID de la tablet.");
+      return;
+    }
+    setSavingDevice(true);
+    try {
+      await assignDeviceToDriver(driverId, assigningDeviceId.trim());
+      await loadDrivers();
+      notifyChange('TAD_DRIVERS');
+    } catch (e: any) {
+       alert("Error al asignar: " + (e.response?.data?.message || e.message));
+    } finally {
+      setSavingDevice(false);
+      setAssigningDeviceId('');
+    }
+  };
+
+  const handleUnlinkDevice = async (driverId: string) => {
+    if (!window.confirm("¿Seguro que deseas desvincular esta pantalla actual?")) return;
+    setSavingDevice(true);
+    try {
+      await unlinkDeviceFromDriver(driverId);
+      await loadDrivers();
+      notifyChange('TAD_DRIVERS');
+    } catch (e: any) {
+       alert("Error al desvincular: " + (e.response?.data?.message || e.message));
+    } finally {
+      setSavingDevice(false);
+    }
+  };
 
   const loadDrivers = useCallback(async () => {
     setLoading(true);
@@ -402,7 +437,36 @@ export default function DriversPage() {
                             <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                               <div>
                                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
-                                <p className="text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices && driver.devices.length > 0 ? driver.devices[0].deviceId : 'PENDIENTE_REGISTRO'}</p>
+                                {driver.devices && driver.devices.length > 0 ? (
+                                  <div className="flex gap-2">
+                                     <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices[0].deviceId}</p>
+                                     <button 
+                                       onClick={() => handleUnlinkDevice(driver.id)}
+                                       title="Desvincular Pantalla"
+                                       disabled={savingDevice}
+                                       className="p-2 border border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
+                                     >
+                                        <RefreshCw className="w-4 h-4" />
+                                     </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-2">
+                                     <input 
+                                       type="text"
+                                       value={assigningDeviceId}
+                                       onChange={(e) => setAssigningDeviceId(e.target.value.toUpperCase())}
+                                       placeholder="TAD-XXXXX"
+                                       className="flex-1 bg-gray-900 border border-gray-700/50 text-white font-mono text-xs p-2.5 rounded-lg focus:border-tad-yellow outline-none uppercase"
+                                     />
+                                     <button 
+                                       onClick={() => handleAssignDevice(driver.id)}
+                                       disabled={savingDevice || !assigningDeviceId}
+                                       className="px-3 bg-tad-yellow text-black font-black uppercase text-[9px] rounded-lg tracking-widest disabled:opacity-50"
+                                     >
+                                        Vincular
+                                     </button>
+                                  </div>
+                                )}
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>

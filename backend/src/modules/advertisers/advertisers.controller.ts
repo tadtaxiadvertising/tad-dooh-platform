@@ -18,6 +18,14 @@ export class AdvertisersController {
     return this.advertisersService.login(body.email, body.password);
   }
 
+  @Post('recover-password')
+  async recoverPassword(@Body() body: { email: string }) {
+    if (!body.email) {
+      throw new BadRequestException('Email is required for password recovery');
+    }
+    return this.advertisersService.recoverPassword(body.email);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const adv = await this.advertisersService.findOne(id);

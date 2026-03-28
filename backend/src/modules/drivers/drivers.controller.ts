@@ -87,6 +87,26 @@ export class DriversController {
   }
 
   /**
+   * POST /api/drivers/:id/assign-device — Asignar pantalla al chofer
+   */
+  @Post(':id/assign-device')
+  async assignDevice(
+    @Param('id') id: string,
+    @Body() body: { deviceId: string }
+  ) {
+    if (!body.deviceId) throw new BadRequestException('deviceId es requerido');
+    return this.driversService.assignDevice(id, body.deviceId);
+  }
+
+  /**
+   * POST /api/drivers/:id/unlink-device — Desvincular pantalla
+   */
+  @Post(':id/unlink-device')
+  async unlinkDevice(@Param('id') id: string) {
+    return this.driversService.unlinkDevice(id);
+  }
+
+  /**
    * GET /api/drivers/tablet/:tabletId/access — Verificar acceso de tablet
    * Usado por la PWA/FullyKiosk para saber si debe bloquear la pantalla.
    */

@@ -15,28 +15,37 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
     deviceId: '',
     taxiNumber: '',
     city: 'Santiago',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    driverId: ''
   });
+
+  const [drivers, setDrivers] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (device) {
-      setFormData({
-        deviceId: device.device_id || device.deviceId || '',
-        taxiNumber: device.taxi_number || device.taxiNumber || '',
-        city: device.city || 'Santiago',
-        status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE')
+        status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE'),
+        driverId: (device as any).driverId || (device as any).driver?.id || ''
       });
     } else {
       setFormData({
         deviceId: '',
         taxiNumber: '',
         city: 'Santiago',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        driverId: ''
       });
     }
+    
+    // Load drivers for selection
+    const loadDrivers = async () => {
+      try {
+        const { getDrivers } = await import('../services/api');
+        const data = await getDrivers();
+        setDrivers(data || []);
+      } catch (err) {}
+    };
+    loadDrivers();
     setError(null);
   }, [device, isOpen]);
 
@@ -156,27 +165,32 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
               </div>
             </div>
 
-            {/* City */}
-            <div>
+                </select>
+              </div>
+            </div>
+
+            {/* Driver Assignment */}
+            <div className="pt-2">
               <label 
-                htmlFor="city-select"
-                className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1"
+                htmlFor="driver-select"
+                className="text-[10px] font-black text-tad-yellow uppercase tracking-widest block mb-2 px-1"
               >
-                Ciudad / Ubicación
+                Asignar Conductor (OPCIONAL)
               </label>
               <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-tad-yellow/40" />
                 <select
-                  id="city-select"
-                  title="Seleccionar ciudad"
+                  id="driver-select"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer"
-                  value={formData.city}
-                  onChange={e => setFormData({ ...formData, city: e.target.value })}
+                  value={formData.driverId}
+                  onChange={e => setFormData({ ...formData, driverId: e.target.value })}
                 >
-                  <option value="Santo Domingo">Santo Domingo</option>
-                  <option value="Santiago">Santiago</option>
-                  <option value="Punta Cana">Punta Cana</option>
-                  <option value="Puerto Plata">Puerto Plata</option>
+                  <option value="">-- Sin conductor asignado --</option>
+                  {drivers.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.fullName} {d.taxiNumber ? `(${d.taxiNumber})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

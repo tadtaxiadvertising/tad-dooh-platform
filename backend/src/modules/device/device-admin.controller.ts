@@ -116,7 +116,7 @@ export class DeviceAdminController {
   @Put(':id')
   async updateDevice(
     @Param('id') id: string,
-    @Body() data: { taxiNumber?: string, city?: string, status?: string }
+    @Body() data: { taxiNumber?: string, city?: string, status?: string, driverId?: string | null }
   ) {
     return this.prisma.device.update({
       where: { id },
@@ -124,7 +124,9 @@ export class DeviceAdminController {
         taxiNumber: data.taxiNumber,
         city: data.city,
         status: data.status,
-      }
+        ...(data.driverId !== undefined && { driverId: data.driverId }),
+      },
+      include: { driver: true }
     });
   }
 

@@ -11,6 +11,9 @@ export default function AdvertiserLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -31,6 +34,26 @@ export default function AdvertiserLogin() {
     }
   };
 
+  const handleRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Por favor ingrese su correo corporativo.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/advertisers/recover-password', { email });
+      setRecoverySent(true);
+    } catch (err: any) {
+      // Don't leak if email exists or not, just always show success usually, 
+      // but for internal app we can show the error.
+      setError(err.response?.data?.message || 'Error al solicitar recuperación. Contacte a soporte.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-white selection:bg-tad-yellow selection:text-black font-sans">
       <Head>
@@ -44,53 +67,96 @@ export default function AdvertiserLogin() {
           <div className="w-16 h-16 bg-tad-yellow/10 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-sm border border-tad-yellow/20">
              <Building2 className="w-8 h-8 text-tad-yellow" />
           </div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter">Portal de Marcas</h1>
-          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-loose">Acceso Exclusivo para Anunciantes TAD</p>
+          <h1 className="text-3xl font-black uppercase italic tracking-tighter">{isForgotPassword ? 'Recuperar Acceso' : 'Portal de Marcas'}</h1>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-loose">
+            {isForgotPassword ? 'Te enviaremos las instrucciones' : 'Acceso Exclusivo para Anunciantes TAD'}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6 relative z-10 mt-8">
-          {error && (
-            <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] uppercase font-black tracking-widest text-center">
-              {error}
-            </div>
-          )}
-          
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Correo Corporativo</label>
-              <input 
-                type="email" 
-                required 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="email@empresa.com"
-                className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow/50 transition-all"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Acceso Seguro</label>
-              <input 
-                type="password" 
-                required 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••••"
-                className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow/50 transition-all"
-              />
-            </div>
+        {recoverySent ? (
+          <div className="space-y-6 relative z-10 mt-8 text-center animate-in fade-in zoom-in duration-500">
+             <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-3xl text-sm font-bold leading-relaxed shadow-inner">
+               Hemos enviado un enlace de recuperación segura a <span className="text-white">{email}</span>. Revisa tu bandeja de entrada o spam.
+             </div>
+             <button 
+               onClick={() => { setIsForgotPassword(false); setRecoverySent(false); }}
+               className="mt-6 text-[10px] text-zinc-500 font-black uppercase tracking-widest hover:text-tad-yellow transition-colors"
+             >
+               Volver al Login
+             </button>
           </div>
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
-          >
-            {loading ? 'Validando Nexus...' : (
-              <>Ingresar al Radar <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" /></>
+        ) : (
+          <form onSubmit={isForgotPassword ? handleRecovery : handleLogin} className="space-y-6 relative z-10 mt-8">
+            {error && (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] uppercase font-black tracking-widest text-center animate-shake">
+                {error}
+              </div>
             )}
-          </button>
-        </form>
+            
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Correo Corporativo</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="email@empresa.com"
+                  className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow/50 transition-all"
+                />
+              </div>
+              
+              {!isForgotPassword && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center pr-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Acceso Seguro</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsForgotPassword(true); setError(null); }}
+                      className="text-[9px] text-zinc-600 font-black uppercase tracking-widest hover:text-tad-yellow transition-colors"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                  <input 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••••"
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow/50 transition-all"
+                  />
+                </div>
+              )}
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+            >
+              {loading ? (isForgotPassword ? 'Enviando...' : 'Validando Nexus...') : (
+                isForgotPassword ? (
+                  <>Enviar Enlace <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" /></>
+                ) : (
+                  <>Ingresar al Radar <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" /></>
+                )
+              )}
+            </button>
+
+            {isForgotPassword && (
+               <div className="text-center mt-6">
+                 <button 
+                   type="button" 
+                   onClick={() => { setIsForgotPassword(false); setError(null); }}
+                   className="text-[9px] text-zinc-500 font-black uppercase tracking-widest hover:text-white transition-colors"
+                 >
+                   Cancelar y volver al Login
+                 </button>
+               </div>
+            )}
+          </form>
+        )}
         
         <div className="text-center pt-8 border-t border-white/5 relative z-10">
           <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-[0.2em]">TAD DOOH NETWORK &copy; {new Date().getFullYear()}</p>

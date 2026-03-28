@@ -94,7 +94,7 @@ export class DriversService {
         ...driver,
         activeAds: activeAdsCount,
         projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0,
-        referralBonus: validReferrals * 500,
+        referralBonus: validReferrals * 500, // This is the ONLY commission/bonus per driver referral
         advertiserReferralBonus: (driver.referredAdvertisers?.length || 0) * 500,
         referralsCount: validReferrals,
         advertiserReferralsCount: (driver.referredAdvertisers?.length || 0)

@@ -607,9 +607,8 @@ export default function DriversPage() {
                  <div className="space-y-4">
                     <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">Desglose Mensual de Ingresos</h3>
                     <div className="space-y-3">
-                       <AuditLine label="Comisión Fija TAD DRIVER" value="RD$ 500.00" />
                        <AuditLine label="Bono por Transmisión (Ads)" value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`} info={`${selectedAuditDriver.activeAds || 0} campañas activas`} />
-                       <AuditLine label="Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos`} />
+                       <AuditLine label="Comisión por Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos activos`} />
                        <AuditLine 
                           label="Comisión por Referir Anunciantes" 
                           value={`RD$ ${((selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}.00`} 
@@ -627,7 +626,7 @@ export default function DriversPage() {
                        <div className="text-right">
                           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Total Proyectado</p>
                           <p className="text-5xl font-black text-white italic">
-                             RD$ { (500 + (selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString() }
+                             RD$ { ((selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString() }
                           </p>
                        </div>
                     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Phone, Mail, DollarSign, TrendingUp, Building2, Activity, UserPlus, FileSpreadsheet, Zap, Shield, Briefcase, ChevronRight, Trash2 } from 'lucide-react';
+import { Search, Phone, Mail, DollarSign, TrendingUp, Building2, Activity, UserPlus, FileSpreadsheet, Zap, Shield, Briefcase, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
 import { getAdvertisers, deleteAdvertiser } from '../../services/api';
 import { AdvertiserModal } from '../../components/AdvertiserModal';
@@ -298,8 +298,16 @@ export default function AdvertisersPage() {
                     onClick={() => openConfig(advertiser)}
                     className="flex-1 bg-white/[0.05] hover:bg-tad-yellow hover:text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                   >
-                    <Zap className="w-3.5 h-3.5" /> Configurar Perfil
+                    <Zap className="w-3.5 h-3.5" /> Configurar
                   </button>
+                  <a 
+                    href={`/p/advertiser/${advertiser.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-tad-yellow/10 border border-tad-yellow/20 hover:bg-tad-yellow hover:text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-tad-yellow"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Ver Portal
+                  </a>
                   <AntigravityButton
                     variant="danger"
                     actionName="delete_advertiser"

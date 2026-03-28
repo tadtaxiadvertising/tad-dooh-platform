@@ -14,27 +14,32 @@ const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 const NAVIGATION_GROUPS = [
   {
-    label: 'Operaciones',
+    label: 'Centro de Control',
     items: [
-      { name: 'Resumen', href: '/', icon: LayoutDashboard },
-      { name: 'Pantallas TAD', href: '/fleet', icon: Tablet },
-      { name: 'Rastreo GPS', href: '/tracking', icon: Navigation },
+      { name: 'Resumen General', href: '/', icon: LayoutDashboard },
+      { name: 'Monitor de Pantallas', href: '/fleet', icon: Tablet },
+      { name: 'Geolocalización', href: '/tracking', icon: Navigation },
     ],
   },
   {
-    label: 'Red y Socios',
+    label: 'Gestión Táctica',
     items: [
-      { name: 'TAD Drivers y Suscripciones', href: '/drivers', icon: IdCard },
+      { name: 'Socios Conductores', href: '/drivers', icon: IdCard },
+      { name: 'Anunciantes & Marcas', href: '/advertisers', icon: Briefcase },
     ],
   },
   {
-    label: 'Publicidad y Inteligencia',
+    label: 'Playlist & Ads',
     items: [
-      { name: 'Campañas', href: '/campaigns', icon: Megaphone },
-      { name: 'Contenido Multimedia', href: '/media', icon: CloudUpload },
-      { name: 'Marcas y Anunciantes', href: '/advertisers', icon: Briefcase },
-      { name: 'Ingresos y Pagos', href: '/finance', icon: Wallet },
-      { name: 'Inteligencia ROI', href: '/analytics', icon: BarChart3 },
+      { name: 'Campañas Activas', href: '/campaigns', icon: Megaphone },
+      { name: 'Biblioteca Multimedia', href: '/media', icon: CloudUpload },
+    ],
+  },
+  {
+    label: 'Resultados & ROI',
+    items: [
+      { name: 'Finanzas & Pagos', href: '/finance', icon: Wallet },
+      { name: 'Analítica de Impacto', href: '/analytics', icon: BarChart3 },
     ],
   },
 ];

@@ -316,5 +316,6 @@ export const updateDeviceProfile = (deviceId: string, data: Record<string, unkno
 export const getTrackingData = () => api.get('/fleet/tracking').then(res => res.data);
 export const getTrackingSummary = () => api.get('/fleet/tracking/summary').then(res => res.data);
 export const getDeviceRecentPath = (deviceId: string) => api.get(`/fleet/devices/${deviceId}/recent-path`).then(res => res.data);
+export const getAdvertiserPortalData = (id: string) => api.get(`/advertisers/${id}/portal`).then(res => res.data);
 
 export default api;

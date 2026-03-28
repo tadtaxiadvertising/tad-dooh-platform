@@ -14,6 +14,7 @@ export class AnalyticsService {
     hourly?: { data: any; expiry: number };
   } = {};
 
+  private deviceExistsCache = new Set<string>();
   private readonly CACHE_TTL = 30000; // 30 seconds
   
   constructor(
@@ -22,21 +23,22 @@ export class AnalyticsService {
   ) {}
 
   async ingestEvent(dto: any) {
-    this.logger.log(`Ingesting analytics event for device: ${dto.deviceId}`);
-    
-    // Ensure device exists
-    let device = await this.prisma.device.findUnique({
-      where: { deviceId: dto.deviceId },
-    });
-
-    if (!device) {
-      device = await this.prisma.device.create({
-        data: {
-          deviceId: dto.deviceId,
-          status: 'ACTIVE',
-          lastSeen: new Date(),
-        },
+    // 🔥 Optimization: Skip DB check if we already know this device exists in this session
+    if (!this.deviceExistsCache.has(dto.deviceId)) {
+      let device = await this.prisma.device.findUnique({
+        where: { deviceId: dto.deviceId },
       });
+
+      if (!device) {
+        device = await this.prisma.device.create({
+          data: {
+            deviceId: dto.deviceId,
+            status: 'ACTIVE',
+            lastSeen: new Date(),
+          },
+        });
+      }
+      this.deviceExistsCache.add(dto.deviceId);
     }
 
     // Alertas Críticas (Conexión Alertas -> Notificaciones)

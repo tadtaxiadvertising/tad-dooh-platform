@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { getCampaignById, getCampaignDevices } from '../../services/api';
-import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X } from 'lucide-react';
+import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X, Monitor } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -490,6 +490,15 @@ export default function CampaignDetailPage() {
                                className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-all"
                              >
                                 <Share2 className="w-3.5 h-3.5" />
+                             </a>
+                             <a 
+                               href={`https://proyecto-ia-tad-player.rewvid.easypanel.host/?deviceId=${device.deviceId}`}
+                               target="_blank"
+                               rel="noreferrer"
+                               title="Monitor en Vivo (Transmisión Actual)"
+                               className="p-1.5 bg-tad-yellow/10 border border-tad-yellow/20 text-tad-yellow rounded-lg hover:bg-tad-yellow hover:text-black transition-all"
+                             >
+                                <Monitor className="w-3.5 h-3.5" />
                              </a>
                              <Link 
                                href={`/fleet?search=${device.deviceId}`}

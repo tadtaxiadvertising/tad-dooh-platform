@@ -162,9 +162,15 @@ export default function AdvertiserPortal() {
                       <div key={i} className="flex-1 space-y-2">
                         <div 
                            className={clsx(
-                             "w-full bg-white/5 border-t border-tad-yellow/30 relative group/bar h-[var(--h)]"
+                             "w-full bg-white/5 border-t border-tad-yellow/30 relative group/bar transition-all duration-1000",
+                             h === 40 && "h-[40%]",
+                             h === 65 && "h-[65%]",
+                             h === 45 && "h-[45%]",
+                             h === 85 && "h-[85%]",
+                             h === 95 && "h-[95%]",
+                             h === 75 && "h-[75%]",
+                             h === 80 && "h-[80%]"
                            )}
-                           style={{ '--h': `${h}%` } as React.CSSProperties}
                         >
                            <div className="absolute inset-x-0 bottom-0 bg-tad-yellow/20 h-0 transition-all group-hover/bar:h-full" />
                         </div>

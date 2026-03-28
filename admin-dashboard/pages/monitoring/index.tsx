@@ -111,7 +111,7 @@ export default function MonitoringPage() {
         ))}
       </div>
 
-      {/* EMBEDDED ANALYTICS SECTION */}
+      {/* ANALYTICS PANEL — replaced iframe with direct link to avoid X-Frame-Options 404s */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
@@ -123,19 +123,33 @@ export default function MonitoringPage() {
           </div>
         </div>
 
-        <div className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden border border-white/5 bg-zinc-950 shadow-2xl">
-          <iframe 
-            src={`https://cloud.umami.is/share/${UMAMI_ID}`}
-            className="w-full h-full border-0 grayscale hover:grayscale-0 transition-all duration-700 opacity-90 hover:opacity-100"
-            title="Umami Analytics Dashboard"
-          />
-          
-          <div className="absolute inset-0 bg-transparent pointer-events-none border-[12px] border-[#09090b] rounded-[2.5rem]" />
-          
-          {/* Fallback info */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-black/80 px-4 py-1 rounded-full border border-white/5 backdrop-blur-md">
-            Si el panel no carga, activa el "Share Link" en tu consola de Umami
+        <div className="card-premium p-10 flex flex-col md:flex-row items-center gap-10">
+          {/* Icon */}
+          <div className="w-24 h-24 shrink-0 bg-blue-500/10 rounded-3xl flex items-center justify-center border border-blue-500/20">
+            <BarChart3 className="w-12 h-12 text-blue-400" />
           </div>
+
+          {/* Info */}
+          <div className="flex-1 space-y-3">
+            <h3 className="text-xl font-bold">Umami Analytics Cloud</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
+              Las analíticas de uso de la plataforma se registran en Umami Cloud. Haz clic en el botón para abrirlas en una nueva pestaña. Asegúrate de que el <span className="text-white font-bold">Share Link</span> esté activado para el sitio <code className="bg-zinc-800 text-tad-yellow px-1 rounded text-xs">{UMAMI_ID}</code>.
+            </p>
+            <div className="flex items-center gap-2 text-xs text-zinc-600 font-mono">
+              <span className="text-emerald-400">●</span> Website ID: {UMAMI_ID}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <a
+            href={`https://cloud.umami.is/websites/${UMAMI_ID}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-2 px-6 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold rounded-2xl transition-all duration-300 hover:scale-105"
+          >
+            <ExternalLink className="w-4 h-4" />
+            ABRIR EN UMAMI
+          </a>
         </div>
       </div>
 

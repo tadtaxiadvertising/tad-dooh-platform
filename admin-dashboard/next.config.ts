@@ -65,12 +65,13 @@ export default withSentryConfig(nextConfig, {
     enabled: true,
   },
 
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  tunnelRoute: "/monitoring",
+  // Route browser requests to Sentry through a dedicated Next.js API route.
+  // IMPORTANT: Do NOT use '/monitoring' here — that conflicts with the Auditoría page.
+  tunnelRoute: "/api/sentry-tunnel",
 
-  // Hide source maps to reduce bundle size
+  // Removes uploaded source maps from the production bundle to reduce bundle size
   sourcemaps: {
-     hideSourceMaps: true,
+     deleteSourcemapsAfterUpload: true,
   },
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size

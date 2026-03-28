@@ -142,6 +142,9 @@ export const getFleetLocations = () => api.get('/fleet/map').then(res => res.dat
 export const getDeviceCampaigns = (deviceId: string) => api.get(`/devices/${deviceId}/campaigns`).then(res => res.data);
 export const removeCampaignFromDevice = (deviceId: string, campaignId: string) => api.delete(`/devices/${deviceId}/campaigns/${campaignId}`).then(res => res.data);
 export const getCampaignDevices = (campaignId: string) => api.get(`/campaigns/${campaignId}/devices`).then(res => res.data);
+export const getPendingDevices = () => api.get('/devices/pending').then(res => res.data);
+export const approvePendingDevice = (deviceId: string) => api.post(`/devices/${deviceId}/approve`).then(res => res.data);
+export const rejectPendingDevice = (deviceId: string) => api.delete(`/devices/${deviceId}/reject`).then(res => res.data);
 
 // Campaigns
 export const getCampaigns = () => api.get('/campaigns').then(res => res.data);

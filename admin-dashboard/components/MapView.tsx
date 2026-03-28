@@ -7,6 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { VehiclePopup } from './ui/VehiclePopup';
 import { Sun, Moon } from 'lucide-react';
+import clsx from 'clsx';
 import dynamic from 'next/dynamic';
 
 const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });

@@ -161,6 +161,18 @@ export default function FleetPage() {
     }
   };
 
+  const handleDeleteDevice = async (id: string) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta pantalla? Se perderán todos sus vínculos.')) return;
+    try {
+      await api.delete(`/devices/${id}`);
+      setToast('Pantalla eliminada exitosamente');
+      mutateFleet();
+      if (activeTab === 'inventory') loadInventory();
+    } catch (err) {
+      alert('Error eliminando dispositivo');
+    }
+  };
+
   const tabs = [
     { id: 'monitoring', name: 'Monitoreo', icon: Activity },
     { id: 'alerts', name: 'Alertas', icon: Bell },
@@ -329,7 +341,8 @@ export default function FleetPage() {
                         device={device}
                         isLoading={isLoadingFleet}
                         onCommand={handleCommand}
-                        onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
+                                                 onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
+                         onDelete={() => handleDeleteDevice(device.id)}
                         isCommanding={commanding === device?.device_id}
                         playerLink={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
                      />
@@ -586,7 +599,7 @@ function StatCard({ label, value, icon: Icon, color, glow }: { label: string; va
   );
 }
 
-function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommanding }: any) {
+function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, isCommanding }: any) {
   if (isLoading) {
     return (
       <div className="bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 h-[340px] animate-pulse">
@@ -621,18 +634,37 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, isCommandin
       {/* GLOW BACKGROUND */}
       {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400]/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#FFD400]/10 transition-all duration-500" />}
 
-      <div className="flex justify-between items-start mb-6">
+       <div className="flex justify-between items-start mb-6">
         <div className={clsx(
           "p-2.5 rounded-2xl border bg-transparent transition-all",
           device.is_online ? "border-[#FFD400]/40 text-[#FFD400]" : "border-white/20 text-zinc-400"
         )}>
           <Tablet className="w-5 h-5" />
         </div>
-        <div className={clsx(
-          "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
-          device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
-        )}>
-          {device.is_online ? '• Online' : '• Offline'}
+        
+        <div className="flex items-center gap-2">
+           <button 
+             onClick={(e) => { e.stopPropagation(); onConfigure(); }}
+             title="Editar Configuración"
+             aria-label="Editar Configuración"
+             className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-[#FFD400] hover:border-[#FFD400]/30 transition-all"
+           >
+             <Edit2 className="w-4 h-4" />
+           </button>
+           <button 
+             onClick={(e) => { e.stopPropagation(); onDelete(); }}
+             title="Eliminar Pantalla"
+             aria-label="Eliminar Pantalla"
+             className="p-2 rounded-xl bg-rose-500/5 border border-rose-500/10 text-rose-500/40 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+           >
+             <Trash2 className="w-4 h-4" />
+           </button>
+           <div className={clsx(
+             "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ml-2",
+             device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
+           )}>
+             {device.is_online ? '• Online' : '• Offline'}
+           </div>
         </div>
       </div>
 

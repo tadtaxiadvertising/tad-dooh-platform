@@ -364,6 +364,8 @@ model PlaybackEvent {
 
   @@map("playback_events")
   @@index([deviceId])
+  @@index([timestamp])
+  @@index([videoId])
 }
 
 model MediaAsset {

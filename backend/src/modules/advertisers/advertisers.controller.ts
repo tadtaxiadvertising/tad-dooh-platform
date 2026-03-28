@@ -39,4 +39,11 @@ export class AdvertisersController {
   async delete(@Param('id') id: string) {
     return this.advertisersService.remove(id);
   }
+
+  @Get(':id/portal')
+  async getPortal(@Param('id') id: string) {
+    const data = await this.advertisersService.getPortalData(id);
+    if (!data) throw new BadRequestException('Anunciante no encontrado');
+    return data;
+  }
 }

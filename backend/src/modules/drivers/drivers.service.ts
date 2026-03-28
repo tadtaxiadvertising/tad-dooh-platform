@@ -77,7 +77,7 @@ export class DriversService {
         referredAdvertisers: {
           select: { id: true, status: true }
         }
-      },
+      } as any,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -224,9 +224,9 @@ export class DriversService {
       where: { deviceId },
       include: { 
         driver: {
-          include: { referredAdvertisers: true }
+          include: { referredAdvertisers: true } as any
         } 
-      }
+      } as any
     });
 
     if (!device || !device.driver) {

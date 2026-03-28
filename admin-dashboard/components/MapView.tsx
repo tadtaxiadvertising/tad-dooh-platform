@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { VehiclePopup } from './ui/VehiclePopup';
+import { Sun, Moon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
@@ -251,8 +252,19 @@ const MapView: React.FC<MapViewProps> = ({
   onSyncCommand,
 }) => {
   const [ready, setReady] = useState(false);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
 
-  useEffect(() => { setReady(true); }, []);
+  useEffect(() => { 
+    setReady(true); 
+    const savedTheme = localStorage.getItem('tad_map_theme') as 'dark' | 'light';
+    if (savedTheme) setMapTheme(savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = mapTheme === 'dark' ? 'light' : 'dark';
+    setMapTheme(newTheme);
+    localStorage.setItem('tad_map_theme', newTheme);
+  };
 
   // Función Ray-Casting para detectar punto en polígono
   const isPointInPolygon = useCallback((lat: number, lng: number) => {
@@ -290,8 +302,12 @@ const MapView: React.FC<MapViewProps> = ({
         zoomControl={false}
       >
         <TileLayer
+          key={mapTheme}
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+          url={mapTheme === 'dark' 
+            ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_all/{z}/{x}/{y}{r}.png"
+          }
           maxZoom={18}
         />
 
@@ -354,20 +370,36 @@ const MapView: React.FC<MapViewProps> = ({
       </MapContainer>
 
       {/* NEW: HIGH-TECH OVERLAYS */}
-      <div className="absolute inset-0 pointer-events-none z-[1000]">
+      <div className={clsx(
+        "absolute inset-0 pointer-events-none z-[1000] transition-opacity duration-700",
+        mapTheme === 'light' ? 'opacity-30' : 'opacity-100'
+      )}>
         {/* Vignette Blur / Fade to Dashboard (Softer centering) */}
         <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.95)] opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         
         {/* Animated Scanline (Subtle) */}
-        <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
+        {mapTheme === 'dark' && (
+          <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
+        )}
         
         {/* Corner Accents */}
         <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-white/10 rounded-tl-2xl" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl" />
+        <div className="absolute top-8 right-16 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl" />
         <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-white/10 rounded-bl-2xl" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
+        <div className="absolute bottom-8 right-24 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
+      </div>
+
+      {/* Theme Switcher Button */}
+      <div className="absolute top-8 right-8 z-[1001]">
+         <button 
+           onClick={toggleTheme}
+           title={`Switch to ${mapTheme === 'dark' ? 'Light' : 'Dark'} mode`}
+           className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl flex items-center justify-center text-zinc-400 hover:text-tad-yellow hover:border-tad-yellow/50 transition-all active:scale-90"
+         >
+           {mapTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+         </button>
       </div>
 
       <style jsx global>{`

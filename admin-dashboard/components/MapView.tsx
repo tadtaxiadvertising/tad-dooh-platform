@@ -40,9 +40,9 @@ const POLIGONO_CENTRAL: [number, number][] = [
 const createIcon = (status: string, selected: boolean, label = '') => {
   const isActive = status === 'active';
   const mainColor = isActive ? '#FFD400' : '#52525b';
-  const glow = isActive ? '0 0 15px rgba(255, 212, 0, 0.4)' : 'none';
-  const W = 48;
-  const H = 60;
+  const glow = isActive ? '0 0 25px rgba(255, 212, 0, 0.6)' : 'none';
+  const W = 52;
+  const H = 64;
   const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
   
   const html = `
@@ -54,88 +54,87 @@ const createIcon = (status: string, selected: boolean, label = '') => {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+      perspective: 1000px;
     ">
-      <!-- Outer Pulse Ring -->
+      <!-- Radar Pulse Ring -->
       ${isActive ? `
-        <div style="
-          position: absolute;
-          width: 32px;
-          height: 32px;
-          border: 2px solid ${mainColor};
-          border-radius: 50%;
-          animation: map-pulse 2s infinite ease-out;
-          opacity: 0;
-        "></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}"></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}; animation-delay: 0.8s;"></div>
       ` : ''}
 
-      <!-- Car Body Stylized -->
+      <!-- 3D-Look Car Container -->
       <div style="
-        width: 28px;
-        height: 42px;
-        background: linear-gradient(135deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#3f3f46'} 100%);
-        border-radius: 8px;
-        border: 1.5px solid ${selected ? '#fff' : 'rgba(0,0,0,0.4)'};
-        box-shadow: ${glow}, inset 0 2px 4px rgba(255,255,255,0.2);
+        width: 30px;
+        height: 44px;
+        background: linear-gradient(145deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#27272a'} 100%);
+        border-radius: 10px;
+        border: 2px solid ${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
+        box-shadow: ${glow}, 0 10px 20px rgba(0,0,0,0.5);
         display: flex;
         flex-direction: column;
         align-items: center;
-        overflow: hidden;
+        justify-content: space-between;
+        padding: 4px 0;
+        transform: ${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
       ">
-        <!-- Windshield -->
-        <div style="
-          width: 20px;
-          height: 10px;
-          background: rgba(0,0,0,0.7);
-          border-radius: 3px;
-          margin-top: 4px;
-          box-shadow: inset 0 1px 2px rgba(255,255,255,0.1);
-        "></div>
+        <!-- Roof/Antenna Detail -->
+        <div style="width: 12px; height: 1.5px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
         
-        <!-- Label -->
+        <!-- Center ID Label -->
         <div style="
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           font-family: 'Inter', sans-serif;
-          font-weight: 900;
-          font-size: 9px;
-          color: white;
+          font-weight: 950;
+          font-size: 10px;
+          color: ${isActive ? 'white' : '#71717a'};
           letter-spacing: -0.5px;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-          margin-top: -2px;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+          transform: skew(-5deg);
         ">
           ${short}
         </div>
 
-        <!-- Rear Glass -->
+        <!-- Light Bar / Tail lights -->
         <div style="
-          width: 18px;
-          height: 4px;
-          background: rgba(0,0,0,0.4);
+          width: 22px; 
+          height: 3px; 
+          background: ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
           border-radius: 2px;
-          margin-bottom: 2px;
+          box-shadow: ${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
         "></div>
       </div>
 
-      <!-- Arrow Indicator for Selected -->
+      <!-- Arrow Indicator for Selected (Cyber style) -->
       ${selected ? `
         <div style="
-          width: 0; 
-          height: 0; 
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-bottom: 8px solid white;
+          width: 2px; 
+          height: 12px; 
+          background: white;
+          box-shadow: 0 0 10px white;
           position: absolute;
-          top: -12px;
+          top: -20px;
+          animation: map-float 1.5s infinite ease-in-out;
         "></div>
       ` : ''}
 
       <style>
+        .map-pulse-ring {
+          position: absolute;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          animation: map-pulse 2.5s infinite linear;
+          opacity: 0;
+        }
         @keyframes map-pulse {
-          0% { transform: scale(0.6); opacity: 1; }
-          100% { transform: scale(2.5); opacity: 0; }
+          0% { transform: scale(0.6); opacity: 0; }
+          20% { opacity: 0.8; }
+          100% { transform: scale(3.5); opacity: 0; }
+        }
+        @keyframes map-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
         }
       </style>
     </div>
@@ -152,10 +151,21 @@ const createIcon = (status: string, selected: boolean, label = '') => {
 
 const createClusterIcon = (cluster: any) => {
   const n = cluster.getChildCount();
+  const size = n < 10 ? 44 : n < 50 ? 52 : 64;
   return L.divIcon({
-    html: `<svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#111" stroke="#fad400" stroke-width="2"/><text x="20" y="24" text-anchor="middle" fill="#fad400" font-size="12" font-weight="bold">${n}</text></svg>`,
+    html: `
+      <div style="position: relative; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; inset: 0; background: rgba(250,212,0,0.1); border: 2.5px solid #fad400; border-radius: 50%; box-shadow: 0 0 20px rgba(250,212,0,0.3); animation: cluster-spin 10s infinite linear;"></div>
+        <div style="position: relative; font-family: 'Inter', sans-serif; font-weight: 950; font-size: 13px; color: #fad400; text-shadow: 0 0 10px rgba(250,212,0,0.5);">${n}</div>
+        <style>
+          @keyframes cluster-spin {
+             from { transform: rotate(0deg); } to { transform: rotate(360deg); }
+          }
+        </style>
+      </div>
+    `,
     className: '',
-    iconSize: L.point(40, 40, true),
+    iconSize: L.point(size, size, true),
   });
 };
 
@@ -274,14 +284,15 @@ const MapView: React.FC<MapViewProps> = ({
       <MapContainer
         center={center}
         zoom={zoom}
-        maxZoom={19}
+        maxZoom={18}
         minZoom={7}
-        style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
+        style={{ height: '100%', width: '100%', background: '#0a0a0b' }}
         zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+          maxZoom={18}
         />
 
         <ZoomControl position="bottomright" />
@@ -342,23 +353,51 @@ const MapView: React.FC<MapViewProps> = ({
         ))}
       </MapContainer>
 
+      {/* NEW: HIGH-TECH OVERLAYS */}
+      <div className="absolute inset-0 pointer-events-none z-[1000]">
+        {/* Vignette Blur / Fade to Dashboard (Softer centering) */}
+        <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.95)] opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
+        
+        {/* Animated Scanline (Subtle) */}
+        <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
+        
+        {/* Corner Accents */}
+        <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-white/10 rounded-tl-2xl" />
+        <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl" />
+        <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-white/10 rounded-bl-2xl" />
+        <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
+      </div>
+
       <style jsx global>{`
         .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }
         .popup-clean .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .popup-clean .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .popup-clean .leaflet-popup-tip-container { display: none !important; }
-        .leaflet-control-zoom { border: none !important; margin: 20px !important; }
+        .leaflet-control-zoom { border: none !important; margin: 30px !important; }
         .leaflet-control-zoom a {
           background: rgba(10,10,10,.9) !important;
           color: #fad400 !important;
           border: 1px solid rgba(255,255,255,.06) !important;
-          width: 40px !important; height: 40px !important; line-height: 40px !important;
-          border-radius: 10px !important;
-          margin-bottom: 6px !important;
-          font-weight: 700 !important;
-          transition: background .2s, color .2s;
+          width: 44px !important; height: 44px !important; line-height: 44px !important;
+          border-radius: 12px !important;
+          margin-bottom: 8px !important;
+          font-weight: 900 !important;
+          transition: all .3s;
+          backdrop-blur: 10px;
         }
-        .leaflet-control-zoom a:hover { background: #fad400 !important; color: #000 !important; }
+        .leaflet-control-zoom a:hover { 
+          background: #fad400 !important; 
+          color: #000 !important; 
+          transform: translateY(-2px);
+          shadow: 0 10px 20px rgba(250,212,0,0.3);
+        }
+        
+        @keyframes map-scan {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(800% ); }
+        }
       `}</style>
     </div>
   );

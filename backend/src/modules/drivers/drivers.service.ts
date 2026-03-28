@@ -86,9 +86,10 @@ export class DriversService {
       where: { status: 'ACTIVE' }
     });
 
-    return drivers.map(driver => {
+    return drivers.map(d => {
+      const driver = d as any;
       // Logic for referrals: calculate active referrals paying subscription
-      const validReferrals = driver.referrals ? driver.referrals.filter(r => r.status === 'ACTIVE' && r.subscriptionPaid).length : 0;
+      const validReferrals = driver.referrals ? driver.referrals.filter((r: any) => r.status === 'ACTIVE' && r.subscriptionPaid).length : 0;
       
       return {
         ...driver,
@@ -233,7 +234,7 @@ export class DriversService {
       throw new Error('Dispositivo no vinculado a un chofer.');
     }
 
-    const { driver } = device;
+    const driver = device.driver as any;
 
     // 1. Conteo de anuncios reproducidos (confirmados)
     const adsPlayed = await this.prisma.analyticsEvent.count({
@@ -279,7 +280,7 @@ export class DriversService {
       advertiserReferralEarnings: (driver.referredAdvertisers?.length || 0) * 500,
       advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
       activeAds: activeAdsCount,
-      totalPaid: totalPaid._sum.amount || 0,
+      totalPaid: (totalPaid as any)._sum.amount || 0,
       lastPayment: lastPayment ? {
         amount: lastPayment.amount,
         status: lastPayment.status,

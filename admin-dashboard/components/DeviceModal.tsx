@@ -176,6 +176,8 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                 <select
+                  title="Seleccionar ciudad"
+                  aria-label="Seleccionar ciudad"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer text-sm"
                   value={formData.city}
                   onChange={e => setFormData({ ...formData, city: e.target.value })}
@@ -196,6 +198,8 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-tad-yellow/40" />
                 <select
+                  title="Asignar conductor"
+                  aria-label="Asignar conductor"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-tad-yellow transition-all appearance-none cursor-pointer text-sm"
                   value={formData.driverId}
                   onChange={e => setFormData({ ...formData, driverId: e.target.value })}
@@ -217,6 +221,8 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                 type="button"
                 onClick={handleDelete}
                 disabled={loading}
+                title="Eliminar dispositivo"
+                aria-label="Eliminar dispositivo"
                 className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-4 px-6 rounded-2xl border border-red-500/20 transition-all active:scale-95"
               >
                 <Trash2 className="w-5 h-5" />

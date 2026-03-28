@@ -216,6 +216,8 @@ export const getDrivers = () => api.get('/drivers').then(res => res.data);
 export const getDriverStats = () => api.get('/drivers/stats').then(res => res.data);
 export const createDriver = (data: Record<string, unknown>) => api.post('/drivers', data).then(res => res.data);
 export const updateDriverSubscription = (id: string, data: Record<string, unknown>) => api.put(`/drivers/${id}/subscription`, data).then(res => res.data);
+export const assignDeviceToDriver = (driverId: string, deviceId: string) => api.post(`/drivers/${driverId}/assign-device`, { deviceId }).then(res => res.data);
+export const unlinkDeviceFromDriver = (driverId: string) => api.post(`/drivers/${driverId}/unlink-device`).then(res => res.data);
 
 // Finance
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);

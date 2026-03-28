@@ -18,9 +18,14 @@ import {
   ExternalLink,
   Plus,
   LogOut,
+  Mail,
+  Phone,
+  Globe,
+  Settings,
+  Download,
   Image as ImageIcon
 } from 'lucide-react';
-import { getAdvertiserPortalData, uploadMedia, addVideoToCampaign } from '../../../services/api';
+import { getAdvertiserPortalData, uploadMedia, addVideoToCampaign, downloadWeeklyCampaignPdf } from '../../../services/api';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRef } from 'react';
@@ -235,36 +240,89 @@ export default function AdvertiserPortal() {
                 />
               </div>
 
-              {/* Weekly Performance Preview */}
-              <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-8">
-                    <TrendingUp className="w-12 h-12 text-zinc-800 transition-transform group-hover:scale-125 duration-1000" />
-                 </div>
-                 <h3 className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.4em] mb-4">Performance Insights</h3>
-                 <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-8 max-w-sm">Tu marca está <span className="text-tad-yellow underline decoration-white/20 underline-offset-8">creciendo</span> esta semana.</h2>
-                 
-                  <div className="flex items-end gap-1.5 h-32 md:h-48">
-                    {[40, 65, 45, 85, 95, 75, 80].map((h, i) => (
-                      <div key={i} className="flex-1 space-y-2">
-                        <div 
-                           className={clsx(
-                             "w-full bg-white/5 border-t border-tad-yellow/30 relative group/bar transition-all duration-1000",
-                             h === 40 && "h-[40%]",
-                             h === 65 && "h-[65%]",
-                             h === 45 && "h-[45%]",
-                             h === 85 && "h-[85%]",
-                             h === 95 && "h-[95%]",
-                             h === 75 && "h-[75%]",
-                             h === 80 && "h-[80%]"
-                           )}
-                        >
-                           <div className="absolute inset-x-0 bottom-0 bg-tad-yellow/20 h-0 transition-all group-hover/bar:h-full" />
+               {/* Insights & Brand Card */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="md:col-span-2 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8">
+                       <TrendingUp className="w-12 h-12 text-zinc-800 transition-transform group-hover:scale-125 duration-1000" />
+                    </div>
+                    <h3 className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.4em] mb-4">Performance Insights</h3>
+                    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-8 max-w-sm">Tu marca está <span className="text-tad-yellow underline decoration-white/20 underline-offset-8">impactando</span> la ciudad.</h2>
+                    
+                    <div className="flex items-end gap-1.5 h-32 md:h-48 mb-6">
+                      {[40, 65, 45, 85, 95, 75, 80].map((h, i) => (
+                        <div key={i} className="flex-1 space-y-2">
+                          <div 
+                             className={clsx(
+                               "w-full bg-white/5 border-t border-tad-yellow/30 relative group/bar transition-all duration-1000",
+                               h === 40 && "h-[40%]",
+                               h === 65 && "h-[65%]",
+                               h === 45 && "h-[45%]",
+                               h === 85 && "h-[85%]",
+                               h === 95 && "h-[95%]",
+                               h === 75 && "h-[75%]",
+                               h === 80 && "h-[80%]"
+                             )}
+                          >
+                             <div className="absolute inset-x-0 bottom-0 bg-tad-yellow/20 h-0 transition-all group-hover/bar:h-full" />
+                          </div>
+                          <p className="text-[8px] font-black text-zinc-600 text-center uppercase tracking-widest">{['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'][i]}</p>
                         </div>
-                        <p className="text-[8px] font-black text-zinc-600 text-center uppercase tracking-widest">{['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'][i]}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+
+                    <div className="flex gap-4">
+                       <button 
+                         onClick={() => downloadWeeklyCampaignPdf(data.campaigns[0]?.id, data.brand.name)}
+                         className="flex items-center gap-2 px-6 py-3 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-tad-yellow transition-all shadow-xl shadow-white/5"
+                       >
+                         <Download className="w-3 h-3" /> Descargar Reporte PDF
+                       </button>
+                    </div>
                  </div>
-              </div>
+
+                 <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-10 space-y-8">
+                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">Brand Profile</h3>
+                    
+                    <div className="space-y-6">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                             <Mail className="w-4 h-4 text-tad-yellow" />
+                          </div>
+                          <div>
+                             <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Email Comercial</p>
+                             <p className="text-xs font-bold text-white truncate max-w-[150px]">{data.brand.email}</p>
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                             <Phone className="w-4 h-4 text-tad-yellow" />
+                          </div>
+                          <div>
+                             <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Contacto Directo</p>
+                             <p className="text-xs font-bold text-white">{data.brand.phone || 'Pendiente'}</p>
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                             <Globe className="w-4 h-4 text-tad-yellow" />
+                          </div>
+                          <div>
+                             <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Industria</p>
+                             <p className="text-xs font-bold text-white">{data.brand.category || 'Advertiser'}</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5">
+                       <button className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                          <Settings className="w-3 h-3" /> Editar Perfil QR
+                       </button>
+                    </div>
+                 </div>
+               </div>
             </motion.div>
           ) : (
             <motion.div 
@@ -279,7 +337,7 @@ export default function AdvertiserPortal() {
                    <h3 className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.4em] mb-1">Media Management</h3>
                    <h2 className="text-2xl font-black uppercase italic">Playlist <span className="text-zinc-500">v4</span></h2>
                 </div>
-                <input type="file" ref={fileInputRef} className="hidden" accept="video/mp4, video/webm, image/*" onChange={handleFileSelect} />
+                <input type="file" title="Upload Media" ref={fileInputRef} className="hidden" accept="video/mp4, video/webm, image/*" onChange={handleFileSelect} />
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}

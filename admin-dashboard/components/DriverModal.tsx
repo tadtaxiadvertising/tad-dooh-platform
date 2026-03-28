@@ -172,6 +172,12 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
                 <input
                   type="text"
                   placeholder="Ej: TAD-XXXXXX"
+                  value={formData.deviceId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deviceId: e.target.value.toUpperCase() }))}
+                  onBlur={(e) => {
+                    const id = e.target.value.toUpperCase();
+                    if (id.length > 5) checkDevice(id);
+                  }}
                   className={clsx(
                     "w-full bg-zinc-800 border rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none transition-colors",
                     formData.deviceFound === true ? "border-emerald-500/50" : 

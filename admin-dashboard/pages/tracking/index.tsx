@@ -135,7 +135,7 @@ export default function TrackingPage() {
   }, [view, loadData]);
 
   useEffect(() => {
-    const interval = setInterval(loadData, 30_000);
+    const interval = setInterval(loadData, 10_000); // Higher frequency for real-time feel
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -238,11 +238,12 @@ export default function TrackingPage() {
             <div className="w-full max-w-[95%] bg-black/80 backdrop-blur-3xl border border-white/5 rounded-3xl p-4 flex justify-between items-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                <div className="flex items-center gap-6">
                   <div className="px-6 py-3 bg-zinc-950 border border-white/5 rounded-2xl flex items-center gap-4 shadow-inner">
-                     <div className="w-10 h-10 bg-tad-yellow rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(250,212,0,0.3)] hover:scale-105 transition-transform duration-500">
+                     <div className="w-10 h-10 bg-tad-yellow rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(250,212,0,0.3)] hover:scale-105 transition-transform duration-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent" />
                         <MapPin className="w-5 h-5 text-black" />
                      </div>
                      <div>
-                        <p className="text-[9px] font-black text-tad-yellow uppercase tracking-[0.4em] leading-none mb-1">Live Telemetry</p>
+                        <p className="text-[9px] font-black text-tad-yellow uppercase tracking-[0.4em] leading-none mb-1">Fleet Telemetry v5.0</p>
                         <h1 className="text-xl font-black text-white uppercase tracking-tighter leading-none">Rastreo <span className="text-tad-yellow">Master</span></h1>
                      </div>
                   </div>
@@ -254,7 +255,23 @@ export default function TrackingPage() {
                   </div>
                </div>
 
-               <div className="flex items-center gap-4">
+               <div className="flex items-center gap-6">
+                  {/* REAL-TIME ALERTS HUD */}
+                  <div className="hidden lg:flex items-center gap-3 px-6 py-3 bg-zinc-950/80 border border-white/5 rounded-2xl">
+                     <div className="flex flex-col items-end">
+                        <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Alertas Críticas</span>
+                        <span className="text-[12px] font-black text-white italic">
+                           {fleetLocations.filter(v => !v.isOnline && v.lastSeen && (Date.now() - new Date(v.lastSeen).getTime() > 259200000)).length} NODOS +3D OFFLINE
+                        </span>
+                     </div>
+                     <div className={clsx(
+                        "p-2 rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20",
+                        fleetLocations.some(v => !v.isOnline && v.lastSeen && (Date.now() - new Date(v.lastSeen).getTime() > 259200000)) && "animate-pulse"
+                     )}>
+                        <AlertTriangle className="w-5 h-5" />
+                     </div>
+                  </div>
+
                   <div className="px-5 py-3 bg-zinc-950/50 border border-white/5 rounded-2xl flex items-center gap-5 shadow-xl">
                      <div className="flex items-center gap-3 pr-4 border-r border-white/10">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />

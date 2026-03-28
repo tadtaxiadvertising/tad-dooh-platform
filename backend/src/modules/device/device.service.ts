@@ -289,9 +289,32 @@ export class DeviceService {
       },
     });
 
-    // 2. Alert Logic (Internal Log)
+    // 2. Alert Logic (Critical Inactivity & Battery)
     if (batteryLevel !== undefined && batteryLevel < 15) {
       this.logger.warn(`🚨 [CRITICAL_BATTERY] Device ${deviceId} at ${batteryLevel}%`);
+      await this.prisma.notification.create({
+        data: {
+          title: 'Batería Crítica detectada',
+          message: `La tablet ${device.taxiNumber || deviceId} reporta un nivel crítico (${batteryLevel}%).`,
+          type: 'CRITICAL',
+          category: 'DEVICE',
+          entityId: deviceId,
+        }
+      });
+    }
+
+    // Detect recovery from long offline (Re-entry alert)
+    const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+    if (deviceCheck.lastSeen && (new Date().getTime() - deviceCheck.lastSeen.getTime() > threeDaysMs)) {
+      await this.prisma.notification.create({
+        data: {
+          title: 'Dispositivo Recuperado (+3D Offline)',
+          message: `La tablet ${device.taxiNumber || deviceId} ha vuelto a conectar tras más de 3 días de inactividad crítica.`,
+          type: 'SUCCESS',
+          category: 'DEVICE',
+          entityId: deviceId,
+        }
+      });
     }
 
     const { blocked, reason } = await this.checkSubscriptionStatus(deviceId);

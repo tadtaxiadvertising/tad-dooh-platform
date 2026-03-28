@@ -125,12 +125,17 @@ export default function MonitoringPage() {
 
         <div className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden border border-white/5 bg-zinc-950 shadow-2xl">
           <iframe 
-            src={`https://cloud.umami.is/share/${UMAMI_ID}/TAD%20Platform`}
-            className="w-full h-full border-0 grayscale hover:grayscale-0 transition-all duration-700 opacity-80 hover:opacity-100"
+            src={`https://cloud.umami.is/share/${UMAMI_ID}`}
+            className="w-full h-full border-0 grayscale hover:grayscale-0 transition-all duration-700 opacity-90 hover:opacity-100"
             title="Umami Analytics Dashboard"
           />
           
           <div className="absolute inset-0 bg-transparent pointer-events-none border-[12px] border-[#09090b] rounded-[2.5rem]" />
+          
+          {/* Fallback info */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-black/80 px-4 py-1 rounded-full border border-white/5 backdrop-blur-md">
+            Si el panel no carga, activa el "Share Link" en tu consola de Umami
+          </div>
         </div>
       </div>
 

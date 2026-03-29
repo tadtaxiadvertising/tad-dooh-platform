@@ -1,5 +1,21 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+## 📅 29 de Marzo, 2026 (Advanced Auth Portals & Telemetry Overhaul v5.4)
+
+### 🔐 AUTH: Ecosistema de Portales Desacoplados
+
+- **Driver Registration & Login**: Se rediseñó por completo la PWA del taxista (`tablet-player/tad-driver.html`). Ahora no depende exclusivamente de un Device ID inyectado; permite registro independiente (vía número de WhatsApp) e inicio de sesión seguro usando encriptación Bcrypt en la base de datos de Prisma y tokens JWT, todo operando bajo un *Auth Wall* premium de Alto Contraste.
+- **Advertiser Standalone Portal**: Lanzamiento del portal exclusivo para anunciantes (`tablet-player/tad-advertiser.html`). Implementado desde cero con diseño Glassmorphism y métricas dinámicas (Impresiones, Costos, Completions) donde pueden crear su cuenta, configurar contraseñas seguras y monitorear campañas activas.
+- **Next.js Advertiser Authentication**: Actualizada la ruta oficial `/p/advertiser/login.tsx` para soportar registro interactivo y auto-acceso. Los anunciantes que se inscriben aquí nutren directamente la base de datos global de la aplicación.
+- **Public API Overrides**: Implementación segura de decoradores `@Public()` en los Controladores de NestJS para admitir endpoints de `login`, `create`, y `portal-data` sin requerir tokens de SuperAdmin (Supabase), permitiendo delegación de autenticación con guardias locales.
+
+### 🗺️ TELEMETRY: Precisión Espacial y Experiencia Visual
+
+- **Map Interactivity Layout**: Subsanado el problema estético en el Rastreo Maestro (`admin-dashboard/pages/tracking/index.tsx`) donde el botón flotante de control de mapa (Claro/Oscuro) colisionaba y bloqueaba los pines de los vehículos en esquinas inferiores. El botón ha sido reposicionado ergonómicamente a la capa superior.
+- **Last-Seen Overhaul**: El gateway móvil (`analytics.service.ts` y persistencia gps) ahora actualiza obligatoriamente el campo `lastSeen` de Prisma cada vez que los choferes envían telemetría usando su PWA personal, asegurando que los marcadores en el mapa abandonen el estado *Offline* en tiempo real, incluso si no tienen una pantalla PWA activa al instante.
+- **Velocity Vectors**: Introducida la captura de `speed` métricamente en la API de analítica para complementar la traza de impacto GPS predictivo, posibilitando proyecciones futuras de exposición de audiencia (slow vs fast traffic).
+- **Driver Override Subscriptions**: Afinamiento en la capa de negocio de flotas (`fleet.service.ts`); si el array de suscripciones está vacío, el mapa prioriza el estado operativo nativo del conductor para evitar falsos "Suspendidos", revelando la flota real al instante.
+
 ## 📅 25 de Marzo, 2026 (Player Resilience & GPS Precision v5.3)
 
 ### 👻 PLAYER: Ghost Playback & Stale Cache Kill-Switch

@@ -216,27 +216,27 @@ export class DeviceService {
 
     if (!device || !device.driver) {
       this.logger.log(`⚠️ Device ${deviceId}: Sin conductor vinculado (grace period).`);
-      return { blocked: false };
+      return { blocked: false, reason: undefined };
     }
 
     const { driver } = device;
 
-    // Validación basada en el registro consolidado del Driver
+    // [ACTUALIZADO]: Siempre permitir reproducción sin importar el estado de suscripción
     if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
-      return { blocked: false };
+      return { blocked: false, reason: undefined };
     }
 
-    // Suscripción expirada o no pagada
-    this.logger.warn(`⛔ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada.`);
+    // Suscripción expirada o no pagada - Registramos pero NO bloqueamos
+    this.logger.warn(`⚠️ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
     
-    // Trigger notification
+    // Trigger notification para administración (opcional)
     try {
       await this.financeService.notifyMorosidad(deviceId);
     } catch (e) {
       this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
     }
 
-    return { blocked: true, reason: 'payment_overdue' };
+    return { blocked: false, reason: undefined }; // IMPORTANTE: Siempre desbloqueado
   }
 
   async recordPlayback(dto: PlaybackConfirmationDto) {

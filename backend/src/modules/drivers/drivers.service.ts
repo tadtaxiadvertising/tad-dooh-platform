@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class DriversService {
@@ -118,7 +120,13 @@ export class DriversService {
     deviceId?: string;
     subscriptionPaid?: boolean;
     subscriptionEnd?: Date;
+    password?: string;
   }) {
+    let hashedPassword = null;
+    if (data.password) {
+      hashedPassword = await bcrypt.hash(data.password, 10);
+    }
+
     const driver = await this.prisma.driver.create({
       data: {
         fullName: data.fullName,
@@ -128,6 +136,7 @@ export class DriversService {
         licensePlate: data.licensePlate,
         subscriptionPaid: data.subscriptionPaid ?? false,
         subscriptionEnd: data.subscriptionEnd,
+        password: hashedPassword,
       },
       include: { devices: true }
     });
@@ -140,6 +149,37 @@ export class DriversService {
     }
 
     return driver;
+  }
+
+  async login(phone: string, pass: string) {
+    const user = await this.prisma.driver.findUnique({ where: { phone } });
+    if (!user) {
+      throw new UnauthorizedException('Chofer no encontrado con este teléfono');
+    }
+
+    let isMatch = false;
+    if (user.password) {
+      isMatch = await bcrypt.compare(pass, user.password);
+    } else {
+      throw new UnauthorizedException('Debe configurar su contraseña contactando a soporte.');
+    }
+
+    if (!isMatch) {
+      throw new UnauthorizedException('Contraseña incorrecta');
+    }
+
+    const payload = { sub: user.id, phone: user.phone, role: 'driver' };
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'tad-super-secret-key-2024', { expiresIn: '7d' });
+
+    // Retornamos también el deviceId (si tiene) para compatibilidad con la app actual
+    const device = await this.prisma.device.findFirst({ where: { driverId: user.id } });
+
+    return {
+      access_token: token,
+      driverId: user.id,
+      name: user.fullName,
+      deviceId: device?.deviceId || null
+    };
   }
 
   /**

@@ -239,7 +239,21 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 .c-y{color:var(--y)}.c-g{color:var(--green)}.c-r{color:var(--red)}.c-o{color:var(--orange)}.c-t2{color:var(--t2)}
 .text-center{text-align:center}
 .separator{height:1px;background:var(--b);margin:16px 0}
-hr{border:none;border-top:1px solid var(--b);margin:16px 0}
+/* ── AUTH ── */
+#auth-wall{position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;flex-direction:column;padding:24px;overflow-y:auto;transition:opacity .5s}
+#auth-wall.hidden{opacity:0;pointer-events:none}
+.auth-logo{width:56px;height:56px;background:var(--y);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#000;margin:40px auto 20px;box-shadow:0 0 30px var(--yg)}
+.auth-title{font-size:24px;font-weight:900;text-align:center;letter-spacing:-1px}
+.auth-sub{font-size:13px;color:var(--t2);text-align:center;margin-top:6px;line-height:1.5}
+.auth-tabs{display:flex;background:var(--s2);border-radius:14px;padding:4px;margin:24px 0;box-shadow:inset 0 2px 4px rgba(0,0,0,.2)}
+.auth-tab{flex:1;padding:12px;text-align:center;font-size:12px;font-weight:700;color:var(--t3);border-radius:10px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
+.auth-tab.active{background:var(--s3);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.auth-form{display:none;flex-direction:column;gap:14px;margin-bottom:30px}
+.auth-form.active{display:flex}
+.auth-field{display:flex;flex-direction:column;gap:6px}
+.auth-field label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.auth-field input{background:var(--s1);border:1px solid var(--b2);border-radius:13px;padding:15px;color:var(--t);font-size:15px;outline:none;transition:border-color .2s}
+.auth-field input:focus{border-color:var(--y)}
 </style>
 </head>
 <body>
@@ -251,6 +265,54 @@ hr{border:none;border-top:1px solid var(--b);margin:16px 0}
     <div class="splash-logo">TAD</div>
   </div>
   <div class="splash-txt">Cargando portal...</div>
+</div>
+
+<!-- AUTH WALL -->
+<div id="auth-wall" class="hidden">
+  <div class="auth-logo">T</div>
+  <div class="auth-title">TAD Driver</div>
+  <div class="auth-sub">El portal definitivo para monitorear tus ganancias y estadísticas en tiempo real.</div>
+
+  <div class="auth-tabs">
+    <div class="auth-tab active" id="tab-login" onclick="switchAuth('login')">Ingresar</div>
+    <div class="auth-tab" id="tab-register" onclick="switchAuth('register')">Regístrate</div>
+  </div>
+
+  <form id="form-login" class="auth-form active" onsubmit="handleAuth(event, 'login')">
+    <div class="auth-field">
+      <label>Número de Teléfono (WhatsApp)</label>
+      <input type="tel" id="li-phone" placeholder="Ej: 8091234567" required>
+    </div>
+    <div class="auth-field">
+      <label>Contraseña</label>
+      <input type="password" id="li-pass" placeholder="Tu contraseña" required>
+    </div>
+    <button type="submit" class="btn btn-y mt8" id="btn-login">Iniciar Sesión</button>
+  </form>
+
+  <form id="form-register" class="auth-form" onsubmit="handleAuth(event, 'register')">
+    <div class="auth-field">
+      <label>Nombre Completo</label>
+      <input type="text" id="rg-name" placeholder="Ej: Juan Pérez" required>
+    </div>
+    <div class="auth-field">
+      <label>Teléfono (WhatsApp)</label>
+      <input type="tel" id="rg-phone" placeholder="Ej: 8091234567" required>
+    </div>
+    <div class="auth-field">
+      <label>Cédula (Opcional)</label>
+      <input type="text" id="rg-cedula" placeholder="Ej: 000-0000000-0">
+    </div>
+    <div class="auth-field">
+      <label>Unidad / Placa de Taxi (Opcional)</label>
+      <input type="text" id="rg-plate" placeholder="Ej: STI1234">
+    </div>
+    <div class="auth-field">
+      <label>Contraseña</label>
+      <input type="password" id="rg-pass" placeholder="Crea una contraseña segura" required minlength="6">
+    </div>
+    <button type="submit" class="btn btn-y mt8" id="btn-register">Crear Cuenta</button>
+  </form>
 </div>
 
 <!-- TOAST -->
@@ -435,9 +497,12 @@ hr{border:none;border-top:1px solid var(--b);margin:16px 0}
   </div>
 
   <div class="sec"></div>
-  <button class="btn btn-outline mt4" onclick="refreshData()">
+  <button class="btn btn-outline mt4" onclick="refreshData()" style="border:1px solid var(--b2);background:transparent;color:var(--t)">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     Actualizar Datos
+  </button>
+  <button class="btn mt12" onclick="logout()" style="background:var(--s2);color:var(--red);border-color:rgba(239,68,68,0.2)">
+    Cerrar Sesión
   </button>
 </div>
 
@@ -522,7 +587,8 @@ const STITCH_GQL = 'https://api.stitch.money/graphql';
 const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
 
 const qs  = new URLSearchParams(location.search);
-const DID = qs.get('deviceId') || localStorage.getItem('tad_did') || '';
+let DID = qs.get('deviceId') || localStorage.getItem('tad_did') || '';
+let JWT = localStorage.getItem('tad_token') || '';
 const T0  = Date.now();
 
 let DATA = null, gpsOn = false, gpsW = null, gpsT = null, hbCount = +localStorage.getItem('tad_hb')||0;
@@ -532,6 +598,78 @@ function toast(msg, type='info', ms=3500){
   const el=document.getElementById('toast');
   el.textContent=msg; el.className=`toast show ${type}`;
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+// ══ AUTH LOGIC ══
+function switchAuth(tab){
+  document.getElementById('tab-login').className='auth-tab '+(tab==='login'?'active':'');
+  document.getElementById('tab-register').className='auth-tab '+(tab==='register'?'active':'');
+  document.getElementById('form-login').className='auth-form '+(tab==='login'?'active':'');
+  document.getElementById('form-register').className='auth-form '+(tab==='register'?'active':'');
+}
+
+async function handleAuth(e, type){
+  e.preventDefault();
+  const btn = document.getElementById('btn-'+type);
+  btn.textContent='Procesando...'; btn.className='btn btn-y mt8 disabled';
+
+  try {
+    let res;
+    if(type==='login'){
+      const phone = document.getElementById('li-phone').value;
+      const password = document.getElementById('li-pass').value;
+      res = await fetch(`${API}/drivers/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password})});
+    } else {
+      const fullName = document.getElementById('rg-name').value;
+      const phone = document.getElementById('rg-phone').value;
+      const cedula = document.getElementById('rg-cedula').value;
+      const taxiPlate = document.getElementById('rg-plate').value;
+      const password = document.getElementById('rg-pass').value;
+      // Creamos la cuenta y luego hacemos login en 1 paso
+      await fetch(`${API}/drivers`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,phone,cedula,taxiPlate,password,subscriptionPaid:false})});
+      res = await fetch(`${API}/drivers/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password})});
+    }
+
+    if(!res.ok){
+      const err = await res.json();
+      throw new Error(err.message||'Error en autenticación');
+    }
+
+    const json = await res.json();
+    JWT = json.access_token;
+    DID = json.deviceId || localStorage.getItem('tad_did') || 'PENDING_DID';
+    
+    localStorage.setItem('tad_token', JWT);
+    localStorage.setItem('tad_did', DID);
+    
+    document.getElementById('auth-wall').classList.add('hidden');
+    load();
+  } catch(e){
+    toast(e.message, 'err');
+  } finally {
+    btn.textContent=type==='login'?'Iniciar Sesión':'Crear Cuenta';
+    btn.className='btn btn-y mt8';
+  }
+}
+
+function checkAuth(){
+  const wall = document.getElementById('auth-wall');
+  if(!JWT){
+    document.getElementById('splash').classList.add('done');
+    wall.classList.remove('hidden');
+    return false;
+  }
+  wall.classList.add('hidden');
+  return true;
+}
+
+function logout(){
+  localStorage.removeItem('tad_token');
+  localStorage.removeItem('tad_did');
+  JWT = '';
+  DID = '';
+  DATA = null;
+  document.getElementById('auth-wall').classList.remove('hidden');
 }
 
 // ══ NAV ══
@@ -551,9 +689,13 @@ function updateUptime(){
 
 // ══ DATA LOAD ══
 async function load(){
-  if(!DID){
+  if(!checkAuth()) return;
+  
+  if(!DID || DID === 'PENDING_DID'){
     document.getElementById('splash').classList.add('done');
-    toast('Sin Device ID. Accede desde el panel admin.','err',8000);
+    toast('Tu cuenta aún no tiene un número de tableta asignado.', 'warn', 5000);
+    // Renderizamos datos nulos temporales si no hay hardware
+    render({driverName: 'Conductor'});
     return;
   }
   localStorage.setItem('tad_did',DID);

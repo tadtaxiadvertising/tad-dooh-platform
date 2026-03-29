@@ -101,7 +101,7 @@ export class FinanceService {
 
       activeAdsCount = eligibleCampaignSet.size;
 
-      const baseCommission = 500; // Fixed monthly commission per active driver
+      const baseCommission = 0; // Removed fixed monthly commission as per new business rule
       
       // Calculate referral commissions (500 per referral they brought in)
       const referrals = driver.referrals ? driver.referrals.length : 0;
@@ -112,7 +112,7 @@ export class FinanceService {
       const advertiserReferralBonus = advertiserReferrals * 500;
 
       const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-      const totalAmount = baseCommission + adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
+      const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
 
       return {
         driverId: driver.id,

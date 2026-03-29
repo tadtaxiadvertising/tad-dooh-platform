@@ -512,19 +512,14 @@
                 try {
                     if (!this.video) return;
 
-                    // Unlock audio/video via user interaction
-                    this.video.muted = true; // Keep muted to pass autoplay policy
-                    const playPromise = this.video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => {
-                            // AbortError is expected when showNoContent() interrupts play — ignore
-                            if (e.name !== 'AbortError') {
-                                console.warn('▶️ Autoplay blocked:', e.message);
-                            }
-                        });
-                    }
+                    // Mute to satisfy autoplay policy
+                    this.video.muted = true;
 
-                    // Attempt Full Screen if supported
+                    // NOTE: Do NOT call video.play() here with empty src —
+                    // it causes AbortError when pause() is called immediately after.
+                    // playback starts only once we have a valid src.
+
+                    // Attempt Full Screen silently (fails gracefully in kiosk)
                     if (document.documentElement.requestFullscreen) {
                         document.documentElement.requestFullscreen().catch(() => {});
                     }
@@ -533,13 +528,15 @@
                     const startState = document.getElementById('start-state');
                     if (startState) startState.classList.add('hidden');
                     
-                    // Trigger first sync/play if content is ready
+                    // If cache has content → play immediately, then sync in background
                     if (state.currentPlaylist.length > 0) {
                         this.play(state.currentPlaylist[state.currentIndex]);
+                        sync.performSync(); // Background refresh
                     } else {
-                        // No content: stay black, sync will handle it
+                        // No cache → sync first, player.play() will be called by sync on success
+                        console.log('📂 Boot: No cache found. Waiting for sync...');
                         this.showNoContent();
-                        sync.performSync();
+                        await sync.performSync();
                     }
                 } catch (e) {
                     // Silently ignore AbortError on startExperience

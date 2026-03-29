@@ -128,7 +128,7 @@ export class FleetService {
       }
       
       const sub = d.driver?.subscriptions?.[0];
-      const subStatus = sub ? sub.status : 'PENDING';
+      const subStatus = sub ? sub.status : (d.driver?.status || 'PENDING');
 
       return {
         deviceId: d.deviceId,

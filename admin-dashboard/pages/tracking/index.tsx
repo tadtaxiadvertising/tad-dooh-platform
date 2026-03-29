@@ -221,7 +221,7 @@ export default function TrackingPage() {
       </div>
 
       {/* MAP THEME TOGGLE — always visible, high z-index */}
-      <div className="absolute bottom-8 right-8 z-[50]">
+      <div className="absolute top-[100px] left-6 z-[50]">
         <button
           onClick={toggleMapTheme}
           title={mapTheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}

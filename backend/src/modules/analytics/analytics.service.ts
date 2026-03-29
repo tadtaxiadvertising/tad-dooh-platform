@@ -288,16 +288,40 @@ export class AnalyticsService {
   // ============================================
   // EXTERNAL MOBILE GPS GATEWAY
   // ============================================
-  async updateDeviceLocationFromMobile(data: { deviceId: string; lat: number; lng: number }) {
+  async updateDeviceLocationFromMobile(data: { deviceId: string; lat: number; lng: number; speed?: number }) {
     this.logger.log(`🛰️ Mobile GPS Update for Device: ${data.deviceId} (${data.lat}, ${data.lng})`);
+
+    // 1. Get device to check if it has a driver
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId: data.deviceId },
+      select: { driverId: true }
+    });
+
+    const now = new Date();
+
+    // 2. If it has a driver, save the GPS trail
+    if (device?.driverId) {
+      await this.prisma.driverLocation.create({
+        data: {
+          deviceId: data.deviceId,
+          driverId: device.driverId,
+          latitude: data.lat,
+          longitude: data.lng,
+          speed: data.speed || 0,
+          timestamp: now
+        }
+      });
+    }
     
+    // 3. Update the device's current location and online status
     return this.prisma.device.update({
       where: { deviceId: data.deviceId },
       data: {
         lastLat: data.lat,
         lastLng: data.lng,
-        lastSync: new Date(),
-        isOnline: true // Marcamos como online porque el chofer está activo
+        lastSeen: now, // Updates lastSeen for Fleet tracking to register it online
+        lastSync: now,
+        isOnline: true // We mark it online since the driver app is active
       },
     });
   }

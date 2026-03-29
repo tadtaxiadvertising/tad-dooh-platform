@@ -685,7 +685,7 @@ function stopGPS(){
 
 function onPos(p){
   const{latitude:lat,longitude:lng,accuracy,speed}=p.coords;
-  window.lastPos={lat,lng};
+  window.lastPos={lat,lng,speed:speed||0};
   document.getElementById('g-lat').textContent=lat.toFixed(5);
   document.getElementById('g-lng').textContent=lng.toFixed(5);
   document.getElementById('g-acc').textContent=`±${Math.round(accuracy)}m`;

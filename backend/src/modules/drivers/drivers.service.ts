@@ -9,7 +9,7 @@ export class DriversService {
 
   /**
    * REGLA DE NEGOCIO 1: Validar acceso a la publicidad
-   * Si no hay suscripción activa (RD$6,000), la tablet se bloquea.
+   * [ACTUALIZADO]: El contenido se transmite siempre sin restricciones.
    */
   async checkTabletAccess(tabletId: string) {
     const device = await this.prisma.device.findUnique({
@@ -21,17 +21,7 @@ export class DriversService {
       return { access: false, action: 'SHOW_SETUP_SCREEN', message: 'Tablet no asignada a un chofer.' };
     }
 
-    const { driver } = device;
-
-    // Validación estricta de suscripción
-    if (!driver.subscriptionPaid || (driver.subscriptionEnd && driver.subscriptionEnd < new Date())) {
-      return {
-        access: false,
-        action: 'LOCK_SCREEN',
-        message: 'Suscripción anual de RD$6,000 vencida o no pagada. Por favor, contacte a soporte TAD (809-XXX-XXXX) para reactivar su cuenta y generar ingresos.'
-      };
-    }
-
+    // El contenido siempre debe transmitirse sin restricciones (Decisión del Usuario)
     return { access: true, action: 'PLAY_ADS' };
   }
 

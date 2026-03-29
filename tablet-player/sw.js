@@ -1,5 +1,5 @@
-// sw.js - TAD Player Service Worker v5.3 (GPS Precision + Ghost Playback Kill-Switch)
-const CACHE_NAME = 'tad-terminal-cache-v5.3';
+// sw.js - TAD Player Service Worker v5.4 (Fully Kiosk Compatible)
+const CACHE_NAME = 'tad-terminal-cache-v5.4';
 const SUPABASE_STORAGE_DOMAIN = 'ltdcdhqixvbpdcitthqf.supabase.co';
 
 // APP SHELL: Core files for 100% offline boot
@@ -41,10 +41,15 @@ self.addEventListener('activate', (event) => {
 
 // Helper for Range Requests (Critical for Video Playback)
 async function handleRangeRequest(request, cache) {
+    // 🛡️ FULLY KIOSK GUARD: Skip chrome-extension:// and any non-http(s) scheme
+    // The Cache API throws if you try to store non-http(s) URLs
+    const url = new URL(request.url);
+    const isCacheableScheme = url.protocol === 'https:' || url.protocol === 'http:';
+
     const cachedResponse = await cache.match(request);
     if (!cachedResponse) {
         const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
+        if (networkResponse.ok && isCacheableScheme) {
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
@@ -74,6 +79,12 @@ async function handleRangeRequest(request, cache) {
 
 self.addEventListener('fetch', (event) => {
     const requestUrl = new URL(event.request.url);
+
+    // 🛡️ FULLY KIOSK GUARD: Ignore chrome-extension:// and any non-http(s) scheme
+    // Fully Kiosk Browser injects extension URLs that crash the Cache API
+    if (requestUrl.protocol !== 'https:' && requestUrl.protocol !== 'http:') {
+        return; // Let the browser handle it natively - do NOT intercept
+    }
 
     // 🛡️ SECURITY PATCH: Prevent Mixed Content Errors
     if (self.location.protocol === 'https:' && requestUrl.protocol === 'http:') {

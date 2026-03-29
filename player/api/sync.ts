@@ -30,11 +30,6 @@ export async function checkSync(deviceId: string): Promise<SyncResponse | null> 
       },
     });
 
-    if (res.status === 402) {
-      dispatchAlert("⚠️ SUSCRIPCIÓN VENCIDA (RD$6,000). El servicio publicitario podría suspenderse pronto.");
-      return loadLocalCache();
-    }
-
     if (!res.ok) {
       throw new Error(`Sync failed: ${res.statusText}`);
     }

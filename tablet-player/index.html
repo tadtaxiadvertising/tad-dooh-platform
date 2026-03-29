@@ -56,6 +56,14 @@
             tracesSampleRate: 1.0,
             replaysSessionSampleRate: 0.1,
             replaysOnErrorSampleRate: 1.0,
+            // Suppress expected browser/kiosk noise — only track real errors
+            ignoreErrors: [
+              'AbortError',                          // play() interrupted by pause() — expected
+              'The play() request was interrupted',  // Same as above, different browsers
+              'NotAllowedError',                     // Autoplay policy — handled gracefully
+              'Failed to fetch',                     // Network — handled by offline cache
+              'NetworkError',                        // Network — handled by offline cache
+            ],
             initialScope: {
               tags: { 
                 "app": "tad-player-v2", 

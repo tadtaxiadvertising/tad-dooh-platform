@@ -217,31 +217,41 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 
 ---
 
+### 🛡️ Portales de Acceso (Auth)
+
+- ✅ **Portal de Anunciantes (Next.js & HTML):** Auto-registro seguro, acceso dinámico, descarga de reportes y subida de archivos (MP4/JPG).
+- ✅ **Portal de Choferes:** Registro vía celular, monitoreo de métricas, cobros vía Stitch, y tracking GPS con envío de velocidad e historial de rutas.
+- ✅ **Seguridad Bcrypt & JWT:** Rotación de tokens con verificación de identidad desde la API (Node.js/Supabase).
+
+---
+
 ## 📈 Roadmap
 
-### Q1 2026 (Ene-Mar)
-- [x] Arquitectura del sistema
-- [ ] Backend API MVP
-- [ ] Tablet player básico
-- [ ] Dashboard admin
+### Q1 2026 (Ene-Mar) - Completado & Desplegado 🚀
+- [x] Arquitectura del sistema (Database + NestJS API)
+- [x] Backend API MVP
+- [x] Tablet player offline (Fully Kiosk PWA)
+- [x] Master Admin Dashboard (Next.js)
+- [x] Portales para Autenticación de Anunciantes y Conductores
+- [x] Mapa en Vivo con Reporte de estado Online e historial GPS.
 
-### Q2 2026 (Abr-Jun)
-- [ ] Analytics engine completo
-- [ ] Comandos remotos
-- [ ] CDN integration
-- [ ] Piloto con 50 taxis
+### Q2 2026 (Abr-Jun) - En Progreso
+- [x] Analytics engine completo (Impresiones, Vistas y QR Scans)
+- [x] Comandos remotos (Apagar/Reiniciar tablets, borrar contenido)
+- [ ] CDN integration optimizada para grandes pesos de video
+- [ ] Piloto en las primeras 50-100 unidades (Taxis)
 
 ### Q3 2026 (Jul-Sep)
-- [ ] Delta sync optimizado
-- [ ] Video transcoding
+- [ ] Delta sync optimizado y actualizaciones sin red dependiente
+- [ ] Video transcoding automatizado en la Nube
 - [ ] Multi-city support
 - [ ] 500+ dispositivos
 
 ### Q4 2026 (Oct-Dic)
 - [ ] Advanced analytics
-- [ ] Machine learning (optimización de playlists)
-- [ ] API pública para anunciantes
-- [ ] 2000+ dispositivos
+- [ ] Machine learning (optimización inteligente de playlists y rotaciones)
+- [ ] API integrada para Agencias Terceras de Publicidad
+- [ ] Escalamiento a 2000+ dispositivos
 
 ---
 
@@ -249,7 +259,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 
 1. Fork el repositorio
 2. Crea tu feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+3. Commit tus cambios (`git commit -m 'feat: Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 

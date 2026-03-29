@@ -116,10 +116,13 @@ export class FinanceService {
       const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
       const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
 
+      // Enhanced: Get the actual taxi number from the assigned devices or driver record
+      const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
+
       return {
         driverId: driver.id,
         driverName: driver.fullName || 'TAD DRIVER',
-        taxiNumber: driver.taxiNumber,
+        taxiNumber: actualTaxiNumber,
         activeAds: activeAdsCount,
         adIncome: adTransmissionIncome,
         baseCommission,

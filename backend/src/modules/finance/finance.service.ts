@@ -74,16 +74,18 @@ export class FinanceService {
         },
         referrals: true, // Get drivers referred by this partner
         referredAdvertisers: true // Get advertisers referred by this partner
-      }
+      } as any
     });
 
-    const payroll = drivers.map(driver => {
+    const payroll = drivers.map(d => {
+      const driver = d as any;
       let activeAdsCount = 0;
 
       // Iterate over all devices for this driver
       const eligibleCampaignSet = new Set<string>();
 
-      driver.devices.forEach(device => {
+      const devices = driver.devices || [];
+      devices.forEach((device: any) => {
         const deviceCity = device.city || 'Santo Domingo';
         
         activeCampaigns.forEach(camp => {

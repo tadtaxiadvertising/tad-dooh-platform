@@ -1,6 +1,6 @@
 # 🚗 TAD DOOH Platform
 
-**Taxi Advertising Distribution - Digital Out-Of-Home Network**
+## Taxi Advertising Distribution - Digital Out-Of-Home Network
 
 ---
 
@@ -32,7 +32,7 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 
 ## 🏗️ Arquitectura
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │         CLOUD (DigitalOcean)            │
 │                                         │
@@ -67,7 +67,7 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 
 ## 📁 Estructura del Proyecto
 
-```
+```text
 TAD DOOH Platform/
 ├── backend/                    # API NestJS
 │   ├── src/
@@ -148,7 +148,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Backend
 
 | Tecnología | Versión | Propósito |
-|------------|---------|-----------|
+| ---------- | ------- | --------- |
 | **Node.js** | 20.x | Runtime |
 | **NestJS** | 10.x | Framework API |
 | **PostgreSQL** | 15.x | Database |
@@ -158,7 +158,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Frontend
 
 | Tecnología | Versión | Propósito |
-|------------|---------|-----------|
+| ---------- | ------- | --------- |
 | **Next.js** | 14.x | React framework |
 | **React** | 18.x | UI library |
 | **TailwindCSS** | 3.x | Styling |
@@ -167,7 +167,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Tablet Player
 
 | Tecnología | Versión | Propósito |
-|------------|---------|-----------|
+| ---------- | ------- | --------- |
 | **PWA** | - | Progressive Web App |
 | **IndexedDB** | - | Storage local |
 | **Workbox** | 7.x | Service Worker |
@@ -176,7 +176,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Infraestructura
 
 | Servicio | Proveedor | Costo |
-|----------|-----------|-------|
+| -------- | --------- | ----- |
 | **Cloud** | DigitalOcean | $40/mes |
 | **Database** | Managed PostgreSQL | $30/mes |
 | **Storage** | Spaces (S3) | $5/mes |
@@ -189,7 +189,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Capacidad
 
 | Métrica | Valor |
-|---------|-------|
+| ------- | ----- |
 | **Dispositivos** | 10,000+ |
 | **Eventos/día** | 10M+ |
 | **Uptime** | 99.9% |
@@ -198,7 +198,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ### Eficiencia
 
 | Métrica | Valor |
-|---------|-------|
+| ------- | ----- |
 | **Datos/tablet/día** | ~50 MB |
 | **Sync time** | 5-10 min |
 | **Offline operation** | 99% del tiempo |
@@ -228,6 +228,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ## 📈 Roadmap
 
 ### Q1 2026 (Ene-Mar) - Completado & Desplegado 🚀
+
 - [x] Arquitectura del sistema (Database + NestJS API)
 - [x] Backend API MVP
 - [x] Tablet player offline (Fully Kiosk PWA)
@@ -236,18 +237,21 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 - [x] Mapa en Vivo con Reporte de estado Online e historial GPS.
 
 ### Q2 2026 (Abr-Jun) - En Progreso
+
 - [x] Analytics engine completo (Impresiones, Vistas y QR Scans)
 - [x] Comandos remotos (Apagar/Reiniciar tablets, borrar contenido)
 - [ ] CDN integration optimizada para grandes pesos de video
 - [ ] Piloto en las primeras 50-100 unidades (Taxis)
 
 ### Q3 2026 (Jul-Sep)
+
 - [ ] Delta sync optimizado y actualizaciones sin red dependiente
 - [ ] Video transcoding automatizado en la Nube
 - [ ] Multi-city support
 - [ ] 500+ dispositivos
 
 ### Q4 2026 (Oct-Dic)
+
 - [ ] Advanced analytics
 - [ ] Machine learning (optimización inteligente de playlists y rotaciones)
 - [ ] API integrada para Agencias Terceras de Publicidad
@@ -271,12 +275,12 @@ Propietario - TAD Dominicana, S.R.L.
 
 ---
 
-## 📞 Contacto
+### Propiedad y Autores
 
-**TAD Dominicana**
-- Email: tad.taxiadvertising@gmail.com
+- PROPIETARIO: TAD Dominicana, S.R.L.
+- Email: <tad.taxiadvertising@gmail.com>
 - WhatsApp: +1 (849) 504-3872
-- Website: https://tad.ibusiness.com.do
+- Website: <https://tad.ibusiness.com.do>
 
 ---
 

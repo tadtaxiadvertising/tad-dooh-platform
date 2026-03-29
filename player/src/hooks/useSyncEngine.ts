@@ -14,11 +14,6 @@ export const useSyncEngine = (deviceId: string) => {
       const apiUrl = import.meta.env.VITE_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
       const res = await fetch(`${apiUrl}/sync/${deviceId}`);
       
-      if (res.status === 402) {
-        dispatchAlert("SUSCRIPCIÓN VENCIDA (RD$6,000). El servicio podría suspenderse pronto.");
-        return loadLocalCache(); 
-      }
-
       if (!res.ok) throw new Error('API Sync Failed');
 
       const data = await res.json();

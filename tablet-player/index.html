@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="icon-512.png">
     
     <!-- Security: Permissive for local dev, restrict in production -->
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src * blob: data:; connect-src *; img-src * data: blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://vercel.live https://browser.sentry-cdn.com https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src * blob: data:; connect-src *; img-src * data: blob:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     
     <title>TAD Player - Taxi Advertising</title>
@@ -844,9 +844,8 @@
                     const age = Date.now() - (cached.savedAt || 0);
 
                     if (age > this.SYNC_TTL_MS) {
-                        console.warn('⏳ Cached playlist expired (>24h). Kill-switch active.');
-                        player.showBlocked('Actualización de contenido requerida. Conéctese a internet.');
-                        return false;
+                        console.warn('⏳ Cached playlist TTL exceeded — continuing with stale cache (open-access mode).');
+                        // Do NOT block — continue serving stale content
                     }
 
                     if (cached.media_assets && cached.media_assets.length > 0) {
@@ -909,22 +908,13 @@
                     });
 
                     if (!syncResponse.ok) {
-                        if (syncResponse.status === 402 || syncResponse.status === 403) {
-                            console.warn('⛔ Payment required — kill-switch from server.');
-                            player.showBlocked('Suscripción pendiente: RD$6,000.00');
-                            return;
-                        }
                         throw new Error(`HTTP ${syncResponse.status}`);
                     }
 
                     const syncData = await syncResponse.json();
 
-                    // Server-side kill-switch
-                    if (syncData.killSwitch || syncData.blocked) {
-                        console.warn('⛔ Kill-switch active:', syncData.reason);
-                        player.showBlocked(syncData.reason || 'Cuenta suspendida. Contacta a TAD.');
-                        return;
-                    }
+                    // Server-side kill-switch (disabled in open-access mode)
+                    // if (syncData.killSwitch || syncData.blocked) { ... }
 
                     // Delta check — no changes
                     if (syncData.update === false) {

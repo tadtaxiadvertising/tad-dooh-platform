@@ -1,5 +1,5 @@
-// sw.js - TAD Player Service Worker v5.4 (Fully Kiosk Compatible)
-const CACHE_NAME = 'tad-terminal-cache-v5.4';
+// sw.js - TAD Player Service Worker v5.5 (Fully Kiosk + Error Resilient)
+const CACHE_NAME = 'tad-terminal-cache-v5.5';
 const SUPABASE_STORAGE_DOMAIN = 'ltdcdhqixvbpdcitthqf.supabase.co';
 
 // APP SHELL: Core files for 100% offline boot
@@ -48,11 +48,17 @@ async function handleRangeRequest(request, cache) {
 
     const cachedResponse = await cache.match(request);
     if (!cachedResponse) {
-        const networkResponse = await fetch(request);
-        if (networkResponse.ok && isCacheableScheme) {
-            cache.put(request, networkResponse.clone());
+        try {
+            const networkResponse = await fetch(request);
+            if (networkResponse.ok && isCacheableScheme) {
+                cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+        } catch (err) {
+            // Fetch failed (SRI error, network issue, etc.) — return 503 so SW doesn't crash
+            console.warn('[TAD SW] Fetch failed for:', url.pathname, err.message);
+            return new Response('Fetch failed', { status: 503, statusText: 'Service Unavailable' });
         }
-        return networkResponse;
     }
 
     const rangeHeader = request.headers.get('Range');

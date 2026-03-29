@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { getCampaignById, getCampaignDevices } from '../../services/api';
-import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X, Monitor } from 'lucide-react';
+import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X, Monitor, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -483,13 +483,13 @@ export default function CampaignDetailPage() {
                                 <X className="w-3.5 h-3.5" />
                               </button>
                              <a 
-                               href={`https://proyecto-ia-tad-portal.rewvid.easypanel.host/${device.deviceId}`}
+                               href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/tad-driver.html?deviceId=${device.deviceId}&server=${encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api')}`}
                                target="_blank"
                                rel="noreferrer"
-                               title="Telemetría Chofer (GPS / PWA)"
-                               className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-all"
+                               title="Ver Business Hub del Conductor (TAD DRIVE)"
+                               className="p-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
                              >
-                                <Share2 className="w-3.5 h-3.5" />
+                                <Smartphone className="w-3.5 h-3.5" />
                              </a>
                              <a 
                                href={`https://proyecto-ia-tad-player.rewvid.easypanel.host/?deviceId=${device.deviceId}`}

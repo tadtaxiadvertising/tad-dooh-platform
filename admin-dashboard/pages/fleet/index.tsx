@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
 import api, { sendCommand, getDevices, getOfflineDevices, getPendingDevices, approvePendingDevice, rejectPendingDevice } from '../../services/api';
-import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw, ShieldAlert, ShieldCheck, XCircle } from 'lucide-react';
+import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw, ShieldAlert, ShieldCheck, XCircle, Smartphone } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import DeviceModal from '../../components/DeviceModal';
@@ -798,7 +798,7 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
 
       <div className="grid grid-cols-2 gap-y-4 gap-x-6 mb-6">
         <TelemetryMini label="BATERÍA" value={`${battery}%`} icon={Battery} color={battery < 20 ? 'text-rose-500' : 'text-emerald-500'} />
-        <TelemetryMini label="VAULT" value={storage} icon={HardDrive} />
+        <TelemetryMini label="LATENCIA" value={device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }).toUpperCase() : 'N/A'} icon={Clock} />
         <TelemetryMini label="CIUDAD" value={city} icon={MapPin} />
         <TelemetryMini label="STREAM" value={stream.toUpperCase()} icon={Activity} color={stream === 'playing' ? 'text-[#FFD400]' : 'text-slate-500'} />
       </div>
@@ -829,6 +829,17 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
          >
            {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
          </button>
+         <a 
+           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/tad-driver.html?deviceId=${device.device_id}&server=${encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api')}`}
+           target="_blank"
+           rel="noopener noreferrer"
+           onClick={(e) => e.stopPropagation()}
+           className="flex-1 py-3 bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
+           title="Business Hub del Conductor"
+         >
+           <Smartphone className="w-3 h-3" />
+           Hub
+         </a>
          <a 
            href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
            target="_blank"

@@ -23,25 +23,10 @@ export default function NotificationCenter() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    if (!supabase) return;
-
-    const channel = supabase
-      .channel('system_alerts')
-      .on('broadcast', { event: 'NEW_ALERT' }, (payload) => {
-        console.log('🔔 Nueva Notificación Recibida:', payload);
-        mutate(); // Revalidar SWR al recibir alerta en tiempo real
-        
-        // Opcional: Sonido o notificación de navegador
-        if (Notification.permission === 'granted') {
-           new Notification(payload.payload.title, { body: payload.payload.message });
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [mutate]);
+    // Relying entirely on SWR polling for notifications
+    // Realtime disabled to prevent WebSocket connection errors in production
+    return () => {};
+  }, []);
 
   const markAsRead = async (id: string) => {
     try {

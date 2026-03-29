@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException } from '@nestjs/common';
 import { AdvertisersService } from './advertisers.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('advertisers')
 export class AdvertisersController {
@@ -10,6 +11,7 @@ export class AdvertisersController {
     return this.advertisersService.findAll();
   }
 
+  @Public()
   @Post('login')
   async login(@Body() body: { email: string; password?: string }) {
     if (!body.email || !body.password) {
@@ -18,6 +20,7 @@ export class AdvertisersController {
     return this.advertisersService.login(body.email, body.password);
   }
 
+  @Public()
   @Post('recover-password')
   async recoverPassword(@Body() body: { email: string }) {
     if (!body.email) {
@@ -33,6 +36,7 @@ export class AdvertisersController {
     return adv;
   }
 
+  @Public()
   @Post()
   async create(@Body() body: {
     companyName: string;
@@ -56,6 +60,7 @@ export class AdvertisersController {
     return this.advertisersService.remove(id);
   }
 
+  @Public()
   @Get(':id/portal')
   async getPortal(@Param('id') id: string) {
     const data = await this.advertisersService.getPortalData(id);

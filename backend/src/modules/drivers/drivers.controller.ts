@@ -35,6 +35,7 @@ export class DriversController {
   /**
    * POST /api/drivers — Registrar un nuevo chofer
    */
+  @Public()
   @Post()
   async create(@Body() body: {
     fullName: string;
@@ -45,6 +46,7 @@ export class DriversController {
     deviceId?: string;
     subscriptionPaid?: boolean;
     subscriptionEnd?: string;
+    password?: string;
   }) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
@@ -60,7 +62,20 @@ export class DriversController {
       licensePlate: sanitize(body.licensePlate),
       deviceId: sanitize(body.deviceId),
       subscriptionEnd: body.subscriptionEnd ? new Date(body.subscriptionEnd) : undefined,
+      password: body.password,
     });
+  }
+
+  /**
+   * POST /api/drivers/login — Iniciar sesión chofer
+   */
+  @Public()
+  @Post('login')
+  async login(@Body() body: { phone: string; password?: string }) {
+    if (!body.phone || !body.password) {
+      throw new BadRequestException('El número de teléfono y contraseña son obligatorios');
+    }
+    return this.driversService.login(body.phone, body.password);
   }
 
   /**

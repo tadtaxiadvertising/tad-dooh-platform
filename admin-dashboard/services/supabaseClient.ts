@@ -19,4 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storageKey: 'tad-auth-token',
   },
+  realtime: {
+    enabled: false, // Disable WebSockets to prevent console noise/errors
+  },
 });

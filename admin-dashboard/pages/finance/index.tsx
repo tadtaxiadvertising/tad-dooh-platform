@@ -18,9 +18,13 @@ import {
   Download,
   Building2,
   RefreshCcw,
-  PieChart
+  PieChart,
+  MessageSquare
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
@@ -281,16 +285,40 @@ export default function FinancePage() {
                           </div>
                         </td>
                         <td className="px-8 py-6 text-center">
-                          <AntigravityButton
-                            actionName="process_payment"
-                            critical={true}
-                            variant="primary"
-                            className="w-full sm:w-auto"
-                            onAsyncClick={() => handlePay(item.driverId, item.totalAmount)}
-                          >
-                            <RefreshCcw className="w-4 h-4" />
-                            Procesar
-                          </AntigravityButton>
+                          <div className="flex items-center gap-2">
+                            <AntigravityButton
+                              actionName="process_payment"
+                              critical={true}
+                              variant="primary"
+                              className="flex-1"
+                              onAsyncClick={() => handlePay(item.driverId, item.totalAmount)}
+                            >
+                              <RefreshCcw className="w-4 h-4" />
+                              Liquidar
+                            </AntigravityButton>
+                            
+                            <button 
+                              onClick={async () => {
+                                const loadingToast = toast.loading("Enviando comprobante WhatsApp...");
+                                try {
+                                  const { sendDriverPaymentWhatsApp } = await import('../../services/api');
+                                  await sendDriverPaymentWhatsApp({ 
+                                    phone: (item as any).driverPhone || '', 
+                                    driverName: item.driverName, 
+                                    amount: item.totalAmount, 
+                                    month: format(new Date(), 'MMMM yyyy', { locale: es })
+                                  });
+                                  toast.success("✅ Notificado exitosamente", { id: loadingToast });
+                                } catch (err: any) {
+                                  toast.error("❌ Fallo: " + err.message, { id: loadingToast });
+                                }
+                              }}
+                              title="Notificar por WhatsApp"
+                              className="w-12 h-12 flex items-center justify-center bg-gray-900 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white rounded-xl transition-all shadow-sm group/was"
+                            >
+                               <MessageSquare className="w-5 h-5 group-hover/was:scale-110 transition-transform" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -122,6 +122,7 @@ export class FinanceService {
       return {
         driverId: driver.id,
         driverName: driver.fullName || 'TAD DRIVER',
+        driverPhone: driver.phone || '',
         taxiNumber: actualTaxiNumber,
         activeAds: activeAdsCount,
         adIncome: adTransmissionIncome,

@@ -85,15 +85,17 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('tad_admin_token');
-      localStorage.removeItem('tad_admin_user');
+      // Evitar loops infinitos de redirección
+      const isPublicPath = window.location.pathname.includes('/login') || window.location.pathname.includes('/check-in');
       
-      // 🔥 Destruir la sesión de Supabase cliente para matar el ping-pong loop
-      // donde el Frontend la cree viva pero el Backend la rechaza.
-      supabase.auth.signOut().catch(() => {});
-      
-      if (!window.location.pathname.includes('/login')) {
-        // Un pequeño delay para permitir que el SIGNED_OUT auth event dispare primero si es posible
+      if (!isPublicPath) {
+        localStorage.removeItem('tad_admin_token');
+        localStorage.removeItem('tad_admin_user');
+        
+        // 🔥 Destruir la sesión de Supabase cliente para matar el ping-pong loop
+        supabase.auth.signOut().catch(() => {});
+        
+        // Pequeño delay garantizando que el estado se limpie
         setTimeout(() => { window.location.href = '/login'; }, 100);
       }
     }

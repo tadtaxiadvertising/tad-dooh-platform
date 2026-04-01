@@ -212,6 +212,7 @@ export const deleteMedia = (id: string) => api.delete(`/media/${id}`).then(res =
 
 // Analytics
 export const getAnalyticsSummary = () => api.get('/analytics/summary').then(res => res.data);
+export const getWeeklyPerformance = (campaignId: string) => api.get(`/analytics/campaign/${campaignId}/weekly`).then(res => res.data);
 export const getTopTaxis = () => api.get('/analytics/top-taxis').then(res => res.data);
 export const getHourlyPlays = () => api.get('/analytics/hourly').then(res => res.data);
 export const getRecentPlays = () => api.get('/analytics/recent-plays').then(res => res.data);

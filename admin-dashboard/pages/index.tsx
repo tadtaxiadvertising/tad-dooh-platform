@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary } from '../services/api';
-import { CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Server, Radio, AlertTriangle, ArrowUpRight, BarChart3, Fingerprint, Layers } from 'lucide-react';
+import { CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Server, Radio, AlertTriangle, ArrowUpRight, BarChart3, Fingerprint, Layers, MessageSquare } from 'lucide-react';
+import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary, getPortalRequests } from '../services/api';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useTabSync } from '../hooks/useTabSync';
 import clsx from 'clsx';
@@ -14,7 +14,8 @@ export default function Home() {
     activeCampaigns: 0,
     media: 0,
     totalScans: 0,
-    ctr: 0
+    ctr: 0,
+    pendingRequests: 0
   });
   const [chartData, setChartData] = useState<{ name: string; val: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,8 @@ export default function Home() {
         getCampaigns(), 
         getMedia(), 
         getHourlyPlays(),
-        getAnalyticsSummary()
+        getAnalyticsSummary(),
+        getPortalRequests()
       ]);
       
       const devices = results[0].status === 'fulfilled' ? results[0].value : [];
@@ -38,15 +40,17 @@ export default function Home() {
       const media = results[2].status === 'fulfilled' ? results[2].value : [];
       const hourly = results[3].status === 'fulfilled' ? results[3].value : [];
       const analytics = results[4].status === 'fulfilled' ? results[4].value : null;
+      const portalRequests = results[5].status === 'fulfilled' ? results[5].value : [];
 
       setStats({
         devices: Array.isArray(devices) ? devices.length : 0,
-        online: Array.isArray(devices) ? (devices as { status: string }[]).filter((d) => d.status === 'online').length : 0,
+        online: Array.isArray(devices) ? (devices as { status: string }[]).filter((d) => d.status === 'online' || d.status === 'ACTIVE').length : 0,
         campaigns: Array.isArray(campaigns) ? campaigns.length : 0,
         activeCampaigns: Array.isArray(campaigns) ? (campaigns as { active: boolean }[]).filter((c) => c.active).length : 0,
         media: Array.isArray(media) ? media.length : 0,
         totalScans: analytics?.totalScans || 0,
-        ctr: analytics?.ctr || 0
+        ctr: analytics?.ctr || 0,
+        pendingRequests: Array.isArray(portalRequests) ? portalRequests.filter((r: any) => r.status === 'PENDING').length : 0
       });
 
       if (Array.isArray(hourly) && hourly.length > 0) {
@@ -107,6 +111,29 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Alert Banner for pending requests */}
+      {stats.pendingRequests > 0 && (
+         <Link href="/advertisers/requests" className="mb-8 block">
+            <div className="bg-tad-yellow border border-white/10 rounded-[2rem] p-6 flex items-center justify-between group hover:scale-[1.01] transition-transform shadow-[0_20px_40px_rgba(250,212,0,0.15)]">
+               <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center border border-white/10">
+                     <MessageSquare className="w-6 h-6 text-tad-yellow" />
+                  </div>
+                  <div>
+                     <h3 className="text-lg font-black uppercase italic tracking-tight text-black">Peticiones de Anunciantes Pendientes</h3>
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-black/60">Tienes {stats.pendingRequests} {stats.pendingRequests === 1 ? 'solicitud nueva' : 'solicitudes nuevas'} esperando revisión en el portal.</p>
+                  </div>
+               </div>
+               <div className="flex items-center gap-4">
+                  <span className="hidden md:block text-[10px] font-black uppercase tracking-widest text-black">Atender ahora</span>
+                  <div className="w-10 h-10 bg-black/10 rounded-xl flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
+                     <ArrowUpRight className="w-5 h-5" />
+                  </div>
+               </div>
+            </div>
+         </Link>
+      )}
 
       {/* Primary Metrics: Stitched Cards Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

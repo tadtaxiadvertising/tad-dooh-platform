@@ -4,6 +4,7 @@ import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { SyncDeviceDto } from './dto/sync-device.dto';
+import { BulkSyncDto } from './dto/bulk-sync.dto';
 import { CampaignService } from '../campaign/campaign.service';
 import { FinanceService } from '../finance/finance.service';
 import * as jwt from 'jsonwebtoken';
@@ -414,5 +415,95 @@ export class DeviceService {
         result: JSON.stringify(result)
       }
     });
+  }
+
+  async processBulkSync(dto: BulkSyncDto) {
+    this.logger.log(`🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`);
+    
+    // 1. Validate Device
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId: dto.device_id }
+    });
+
+    if (!device) {
+      this.logger.warn(`BulkSync from unknown device: ${dto.device_id}`);
+      return { success: false, reason: 'unknown_device' };
+    }
+
+    if (device.status === 'PENDING') {
+      return { success: false, reason: 'awaiting_approval' };
+    }
+
+    // 2. Update Heartbeat / Telemetry
+    await this.prisma.device.update({
+      where: { deviceId: dto.device_id },
+      data: {
+        lastSeen: new Date(),
+        batteryLevel: dto.battery_level ?? device.batteryLevel,
+        storageFree: dto.storage_free ?? device.storageFree,
+        isOnline: true,
+      }
+    });
+
+    // 3. Batch insert Playback Events
+    if (dto.playbacks && dto.playbacks.length > 0) {
+      this.logger.log(`   -> Inserting ${dto.playbacks.length} playback events`);
+      const playbackData = dto.playbacks.map(p => ({
+        deviceId: dto.device_id,
+        videoId: p.video_id,
+        eventType: 'play_confirm',
+        timestamp: new Date(p.timestamp),
+        lat: p.lat,
+        lng: p.lng
+      }));
+      await this.prisma.playbackEvent.createMany({
+        data: playbackData,
+        skipDuplicates: true
+      });
+      
+      // Update lastPlayback
+      await this.prisma.device.update({
+         where: { deviceId: dto.device_id },
+         data: { lastPlayback: new Date() }
+      });
+    }
+
+    // 4. Batch insert Locations (GPS)
+    if (dto.locations && dto.locations.length > 0 && device.driverId) {
+      this.logger.log(`   -> Inserting ${dto.locations.length} location events`);
+      const locationData = dto.locations.map(l => ({
+        deviceId: dto.device_id,
+        driverId: device.driverId,
+        latitude: l.lat,
+        longitude: l.lng,
+        timestamp: new Date(l.timestamp)
+      }));
+      
+      await this.prisma.driverLocation.createMany({
+        data: locationData,
+        skipDuplicates: true
+      });
+
+      // Update current known location
+      const latestLoc = dto.locations[dto.locations.length - 1];
+      if (latestLoc) {
+        await this.prisma.device.update({
+          where: { deviceId: dto.device_id },
+          data: { lastLat: latestLoc.lat, lastLng: latestLoc.lng }
+        });
+      }
+    }
+
+    // Capture telemetry history
+    await this.prisma.deviceHeartbeat.create({
+      data: {
+        deviceId: dto.device_id,
+        batteryLevel: dto.battery_level,
+        storageFree: dto.storage_free,
+        timestamp: new Date(),
+      },
+    });
+
+    return { success: true, processedPlaybacks: dto.playbacks?.length || 0, processedLocations: dto.locations?.length || 0 };
   }
 }

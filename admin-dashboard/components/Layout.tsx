@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery } from 'lucide-react';
+import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
@@ -27,6 +27,7 @@ const NAVIGATION_GROUPS = [
     items: [
       { name: 'Socios Conductores', href: '/drivers', icon: IdCard },
       { name: 'Anunciantes & Marcas', href: '/advertisers', icon: Briefcase },
+      { name: 'Solicitudes Portal', href: '/advertisers/requests', icon: MessageSquare },
     ],
   },
   {

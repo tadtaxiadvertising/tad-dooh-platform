@@ -12,6 +12,7 @@ import {
 import { FinanceService } from './finance.service';
 import { InvoiceService } from './invoice.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
+import { EmailService } from '../notifications/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 
@@ -21,6 +22,7 @@ export class FinanceController {
     private readonly financeService: FinanceService,
     private readonly invoiceService: InvoiceService,
     private readonly whatsappService: WhatsAppService,
+    private readonly emailService: EmailService,
     private readonly prisma: PrismaService
   ) {}
 
@@ -225,5 +227,121 @@ export class FinanceController {
   @Get('ledger')
   async getLedger() {
     return this.financeService.getLedger();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EMAIL ENDPOINTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Envía el Certificado de Exhibición (Proof of Play) de una campaña por email.
+   * POST /finance/report/campaign/:id/email
+   * Body: { email: string; advertiserName?: string }
+   */
+  @Post('report/campaign/:id/email')
+  async emailCampaignReport(
+    @Param('id') id: string,
+    @Body() body: { email: string; advertiserName?: string; reportUrl?: string },
+  ) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id },
+      include: { media: true },
+    });
+    if (!campaign) return { success: false, message: 'Campaña no encontrada' };
+
+    const impressions = await this.prisma.playbackEvent.count({
+      where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm' },
+    });
+
+    const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
+      totalImpressions: impressions,
+      assignedTaxis: campaign.media.length * 5,
+    });
+
+    const result = await this.emailService.sendCampaignReport(
+      body.email,
+      body.advertiserName || campaign.advertiser,
+      campaign.name,
+      pdf,
+      body.reportUrl,
+    );
+
+    return { ...result, message: result.success ? 'Reporte enviado correctamente' : 'Error al enviar el reporte' };
+  }
+
+  /**
+   * Envía la factura HTML + PDF de una campaña por email.
+   * POST /finance/invoice/:campaignId/email
+   * Body: { email: string; amount?: number }
+   */
+  @Post('invoice/:campaignId/email')
+  async emailInvoice(
+    @Param('campaignId') campaignId: string,
+    @Body() body: { email: string; amount?: number },
+  ) {
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) return { success: false, message: 'Campaña no encontrada' };
+
+    const invoiceId = `INV-${campaignId.slice(0, 8).toUpperCase()}`;
+    const baseAmount = body.amount || 3000;
+
+    // Generate proof-of-play PDF to attach
+    const impressions = await this.prisma.playbackEvent.count({
+      where: { eventType: 'play_confirm' },
+    });
+    const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
+      totalImpressions: impressions,
+      assignedTaxis: 5,
+    });
+
+    const result = await this.emailService.sendInvoice(
+      body.email,
+      campaign.advertiser,
+      campaign.name,
+      invoiceId,
+      baseAmount,
+      pdf,
+    );
+
+    return { ...result, message: result.success ? 'Factura enviada correctamente' : 'Error al enviar la factura' };
+  }
+
+  /**
+   * Envía la confirmación de pago a un conductor por email.
+   * POST /finance/payroll/email-confirm
+   * Body: { email: string; driverName: string; amount: number; month: string; driverId?: string }
+   */
+  @Post('payroll/email-confirm')
+  async emailDriverPaymentConfirm(
+    @Body() body: { email: string; driverName: string; amount: number; month: string; driverId?: string },
+  ) {
+    let pdfBuffer: Buffer | undefined;
+
+    // Generate driver settlement PDF if driverId provided
+    if (body.driverId) {
+      try {
+        const driver = await (this.prisma as any).driver.findUnique({ where: { id: body.driverId } });
+        if (driver) {
+          pdfBuffer = await this.invoiceService.generateDriverSettlementPDF({
+            chofer: driver.name,
+            placa: driver.vehiclePlate || 'N/A',
+            ingreso: body.amount.toString(),
+            anuncios: '15',
+          });
+        }
+      } catch (e) {
+        // PDF generation is optional; proceed without it
+      }
+    }
+
+    const result = await this.emailService.sendDriverPaymentConfirmation(
+      body.email,
+      body.driverName,
+      body.amount,
+      body.month,
+      pdfBuffer,
+    );
+
+    return { ...result, message: result.success ? 'Email enviado al conductor' : 'Error al enviar el email' };
   }
 }

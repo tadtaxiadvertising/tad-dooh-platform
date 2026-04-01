@@ -69,6 +69,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.warn(`[PROXY WARNING] No se detectó Header Authorization para: ${pathStr}`);
     }
     
+    // 🛡️ SEGURIDAD: Evitar que el backend envíe Gzip
+    delete forwardHeaders['accept-encoding'];
+    forwardHeaders['accept-encoding'] = 'identity'; // Forzar sin compresión
+    delete forwardHeaders['connection'];
+    forwardHeaders['connection'] = 'close';
+    delete forwardHeaders['content-length'];
+
     // Update Host so backend doesn't reject it
     forwardHeaders['host'] = new URL(targetUrl).host;
 
@@ -76,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: forwardHeaders,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(60000), // 60 segundos para PDFs grandes
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -94,21 +101,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
 
+    // Reenviar Content-Type original
     const contentType = backendResponse.headers.get('content-type');
     if (contentType) res.setHeader('Content-Type', contentType);
 
-    const responseText = await backendResponse.text();
+    // Reenviar Content-Disposition si existe (importante para nombres de archivo en descargas)
+    const contentDisp = backendResponse.headers.get('content-disposition');
+    if (contentDisp) res.setHeader('Content-Disposition', contentDisp);
 
+    // Reenviar Content-Length para que el navegador sepa el tamaño real
+    const contentLength = backendResponse.headers.get('content-length');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+
+    // CRÍTICO: Para archivos binarios (PDF, imágenes), NO usar .text() pues corrompe los bytes.
+    // Usamos arrayBuffer() para obtener los datos crudos y luego convertirlos a Buffer para Next.js.
+    const buffer = Buffer.from(await backendResponse.arrayBuffer());
+
+    // Si es JSON, intentamos mandarlo como tal por si el cliente espera un objeto parseado
     if (contentType?.includes('application/json')) {
       try {
-        const data = JSON.parse(responseText);
+        const data = JSON.parse(buffer.toString('utf-8'));
         return res.status(backendResponse.status).json(data);
-      } catch {
-        // Fallback
+      } catch (e) {
+        // Fallback a enviar el buffer si falla el parseo
       }
     }
 
-    return res.status(backendResponse.status).send(responseText);
+    return res.status(backendResponse.status).send(buffer);
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';

@@ -10,3 +10,9 @@ services:
     env:
       - NODE_OPTIONS="--max-old-space-size=400" # Fuerza al Garbage Collector de Node a actuar antes
       - DATABASE_URL="postgresql://...:6543/postgres?connection_limit=5" # REGLA SRE: Forzar Pooler de Supabase (Puerto 6543)
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

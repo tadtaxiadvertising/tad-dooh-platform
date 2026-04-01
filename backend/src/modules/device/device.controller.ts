@@ -6,6 +6,7 @@ import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { SubscriptionGuard } from '../drivers/guards/subscription.guard';
 import { SyncDeviceDto } from './dto/sync-device.dto';
+import { BulkSyncDto } from './dto/bulk-sync.dto';
 
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
@@ -38,6 +39,13 @@ export class DeviceController {
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {
     return this.deviceService.syncDeviceCampaigns(dto);
+  }
+
+  @Public()
+  @Post('bulk-sync')
+  @HttpCode(HttpStatus.OK)
+  async bulkSync(@Body() dto: BulkSyncDto) {
+    return this.deviceService.processBulkSync(dto);
   }
 
   @Get(':id/slots')

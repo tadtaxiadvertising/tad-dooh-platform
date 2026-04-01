@@ -140,7 +140,9 @@ export class DriversController {
     if (!auth) throw new ForbiddenException('No autorizado');
     const token = auth.replace('Bearer ', '');
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'tad-super-secret-key-2024');
+      const secret = process.env.JWT_SECRET;
+      if (!secret) throw new Error('JWT_SECRET no definido. Reportar al administrador.');
+      const decoded: any = jwt.verify(token, secret);
       return await this.driversService.getDriverHubDataById(decoded.sub);
     } catch (e) {
       throw new ForbiddenException('Token inválido o expirado');
@@ -164,7 +166,8 @@ export class DriversController {
    */
   @Post('purge-all')
   async purgeAll(@Headers('x-admin-secret') secret: string) {
-    if (secret !== 'TAD_CLEAN_2026') {
+    const adminSecret = process.env.ADMIN_SECRET;
+    if (!adminSecret || secret !== adminSecret) {
       throw new ForbiddenException('Unauthorized purge attempt');
     }
     return this.driversService.purgeAll();

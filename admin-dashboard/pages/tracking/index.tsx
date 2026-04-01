@@ -93,6 +93,9 @@ export default function TrackingPage() {
     return 'dark';
   });
 
+  const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
+  const [heatmapRadius, setHeatmapRadius] = useState(28);
+
   const toggleMapTheme = () => {
     const next = mapTheme === 'dark' ? 'light' : 'dark';
     setMapTheme(next);
@@ -202,6 +205,8 @@ export default function TrackingPage() {
                   center={mapCenter}
                   zoom={mapZoom}
                   mapTheme={mapTheme}
+                  heatmapIntensity={heatmapIntensity}
+                  heatmapRadius={heatmapRadius}
                   selectedId={selectedVehicleId}
                   recentPath={recentPath}
                   onClearSelection={() => {
@@ -220,15 +225,38 @@ export default function TrackingPage() {
          ) : null}
       </div>
 
-      {/* MAP THEME TOGGLE — always visible, high z-index */}
+      {/* MAP CONTROLS — always visible, high z-index */}
       <div className="absolute top-[100px] left-6 z-[50]">
         <button
           onClick={toggleMapTheme}
           title={mapTheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-          className="w-12 h-12 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-center text-zinc-400 hover:text-tad-yellow hover:border-tad-yellow/40 transition-all active:scale-90"
+          className="w-12 h-12 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-center text-zinc-400 hover:text-tad-yellow hover:border-tad-yellow/40 transition-all active:scale-90 mb-4"
         >
           {mapTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
+
+        {mapMode === 'heatmap' && (
+          <div className="flex flex-col gap-4 p-4 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl animate-in slide-in-from-left duration-500">
+             <div className="space-y-1">
+                <label className="text-[9px] font-black text-tad-yellow uppercase tracking-widest block">Intensidad</label>
+                <input 
+                  type="range" min="0.1" max="1.0" step="0.1" 
+                  value={heatmapIntensity} 
+                  onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                  className="w-24 accent-tad-yellow bg-white/10 rounded-lg appearance-none h-1 cursor-pointer"
+                />
+             </div>
+             <div className="space-y-1">
+                <label className="text-[9px] font-black text-tad-yellow uppercase tracking-widest block">Radio</label>
+                <input 
+                  type="range" min="10" max="60" step="2" 
+                  value={heatmapRadius} 
+                  onChange={(e) => setHeatmapRadius(parseInt(e.target.value))}
+                  className="w-24 accent-tad-yellow bg-white/10 rounded-lg appearance-none h-1 cursor-pointer"
+                />
+             </div>
+          </div>
+        )}
       </div>
       <div className={clsx(
          "absolute top-0 left-0 right-0 z-30 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform",

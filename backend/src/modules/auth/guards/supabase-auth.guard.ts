@@ -104,7 +104,7 @@ export class SupabaseAuthGuard implements CanActivate {
       }
     }
 
-    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url}`);
+    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url} | Token prefix: ${token ? token.substring(0, 10) + '...' : 'NONE'}`);
     throw new UnauthorizedException('La sesión expiró o es inválida. Por favor inicia sesión de nuevo.');
   }
 }

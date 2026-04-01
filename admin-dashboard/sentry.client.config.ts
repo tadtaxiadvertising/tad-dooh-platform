@@ -5,6 +5,8 @@ Sentry.init({
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
+  // 🔇 Deshabilitar en producción si está dando 403 Forbidden para no saturar consola
+  enabled: process.env.NODE_ENV !== 'production',
   integrations: [
     Sentry.replayIntegration({
       maskAllText: true,

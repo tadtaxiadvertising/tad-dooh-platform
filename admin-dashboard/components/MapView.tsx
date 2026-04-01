@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import dynamic from 'next/dynamic';
 
 const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
+const HeatmapLayer = dynamic(() => import('./map/HeatmapLayer'), { ssr: false });
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
@@ -197,6 +198,8 @@ interface MapViewProps {
   selectedId?: string | null;
   recentPath?: any[];
   mapTheme?: 'dark' | 'light';
+  heatmapIntensity?: number;
+  heatmapRadius?: number;
   onClearSelection?: () => void;
   onViewHistory?: (v: MapLocation) => void;
   onSyncCommand?: (v: MapLocation) => void;
@@ -249,6 +252,8 @@ const MapView: React.FC<MapViewProps> = ({
   selectedId = null,
   recentPath = [],
   mapTheme = 'dark',
+  heatmapIntensity = 0.5,
+  heatmapRadius = 28,
   onClearSelection,
   onViewHistory,
   onSyncCommand,
@@ -319,7 +324,7 @@ const MapView: React.FC<MapViewProps> = ({
         )}
 
         {/* LIVE MARKERS */}
-        {mode === 'live' && (
+        {mode === 'live' && useMemo(() => (
           <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon} maxClusterRadius={50} showCoverageOnHover={false}>
             {locations.map((loc, i) => {
               if (!loc.lastLat || !loc.lastLng) return null;
@@ -349,17 +354,24 @@ const MapView: React.FC<MapViewProps> = ({
               );
             })}
           </MarkerClusterGroup>
-        )}
+        ), [locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand])}
 
-        {/* HEATMAP DOTS */}
-        {mode === 'heatmap' && heatmapData.map((pt: any, i) => (
-          <CircleMarker
-            key={i}
-            center={[pt.lat, pt.lng]}
-            radius={10}
-            pathOptions={{ fillColor: '#fad400', fillOpacity: 0.35, color: '#fad400', weight: 1, opacity: 0.15 }}
+        {/* HEATMAP — Optimized Layer */}
+        {mode === 'heatmap' && heatmapData.length > 0 && (
+          <HeatmapLayer 
+            points={heatmapData.map(p => [p.lat, p.lng, (p.count || 1) / 100])}
+            radius={heatmapRadius}
+            blur={Math.max(15, heatmapRadius * 0.7)}
+            max={heatmapIntensity}
+            gradient={{
+              0.2: 'rgba(250, 212, 0, 0.05)',
+              0.4: 'rgba(250, 212, 0, 0.25)',
+              0.6: 'rgba(250, 212, 0, 0.55)',
+              0.8: 'rgba(250, 212, 0, 0.85)',
+              1.0: '#ffffff'
+            }}
           />
-        ))}
+        )}
       </MapContainer>
 
       {/* NEW: HIGH-TECH OVERLAYS */}

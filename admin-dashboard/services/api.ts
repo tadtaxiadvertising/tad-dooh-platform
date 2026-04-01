@@ -240,8 +240,21 @@ export const getCampaignReportUrl = (id: string) => `${getProxyBase()}/finance/e
 export const getInvoiceUrl = (id: string, print = false) => `${getProxyBase()}/finance/invoice/${id}${print ? '?print=true' : ''}`;
 
 // Authenticated Downloads
-const triggerDownload = (data: BlobPart, filename: string, type: string) => {
-  const blob = new Blob([data], { type });
+const triggerDownload = async (data: any, filename: string, type: string) => {
+  // Si los datos son un Blob de tipo JSON, es probable que sea un error del backend
+  // que Axios no capturó (rare) o que el proxy devolvió como 200 con cuerpo de error.
+  if (data instanceof Blob && data.type === 'application/json') {
+    const text = await data.text();
+    try {
+      const error = JSON.parse(text);
+      console.error('Download error detected in Blob:', error);
+      throw new Error(error.message || error.error || 'Error en descarga');
+    } catch (e) {
+      // Si no es JSON válido, procedemos con la descarga por si acaso
+    }
+  }
+
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -333,5 +346,37 @@ export const getTrackingData = () => api.get('/fleet/tracking').then(res => res.
 export const getTrackingSummary = () => api.get('/fleet/tracking/summary').then(res => res.data);
 export const getDeviceRecentPath = (deviceId: string) => api.get(`/fleet/devices/${deviceId}/recent-path`).then(res => res.data);
 export const getAdvertiserPortalData = (id: string) => api.get(`/advertisers/${id}/portal`).then(res => res.data);
+
+// Portal Requests
+export const createPortalRequest = (data: any) => api.post('/portal-requests', data).then(res => res.data);
+export const getPortalRequests = () => api.get('/portal-requests').then(res => res.data);
+export const getAdvertiserPortalRequests = (advertiserId: string) => api.get(`/portal-requests/advertiser/${advertiserId}`).then(res => res.data);
+export const updatePortalRequest = (id: string, data: any) => api.put(`/portal-requests/${id}`, data).then(res => res.data);
+export const deletePortalRequest = (id: string) => api.delete(`/portal-requests/${id}`).then(res => res.data);
+
+// ============================================
+// Email Notifications
+// ============================================
+
+/** Envía Reporte de Campaña (PDF adjunto) por email */
+export const emailCampaignReport = (
+  campaignId: string,
+  data: { email: string; advertiserName?: string; reportUrl?: string }
+) => api.post(`/finance/report/campaign/${campaignId}/email`, data).then(res => res.data);
+
+/** Envía Factura oficial (PDF adjunto) por email */
+export const emailInvoice = (
+  campaignId: string,
+  data: { email: string; amount?: number }
+) => api.post(`/finance/invoice/${campaignId}/email`, data).then(res => res.data);
+
+/** Envía confirmación de pago a conductor por email */
+export const emailDriverPaymentConfirm = (data: {
+  email: string;
+  driverName: string;
+  amount: number;
+  month: string;
+  driverId?: string;
+}) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
 export default api;

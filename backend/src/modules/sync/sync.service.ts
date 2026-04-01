@@ -61,17 +61,16 @@ export class SyncService {
     }
 
     // 3. Obtener campañas activas
-    // Filtro inteligente: 
-    // - Si hay suscripción + driver: recibe TODO (Global + Segmentado)
+    // Filtro inteligente (Ghost Kill Switch):
+    // - Si hay suscripción + driver: recibe TODO (Global + Segmentado + Directo)
     // - Si NO hay driver o pago: recibe solo campañas GLOBALES (demo/promociones internas)
     const now = new Date();
     this.logger.log(`🕒 Sync [V5] Clock: ${now.toISOString()} | Device: ${deviceId}`);
 
-    const activeCampaigns = await this.prisma.campaign.findMany({
-      where: {
-        active: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
+    let campaignFilter: any = { isGlobal: true }; // Fallback playlist por defecto
+
+    if (hasValidSubscription) {
+      campaignFilter = {
         OR: [
           { targetAll: true },
           { isGlobal: true },
@@ -84,6 +83,17 @@ export class SyncService {
             { targetDrivers: { some: { id: driver.id } } }
           ] : []),
         ]
+      };
+    } else {
+      this.logger.warn(`⚠️ [KILL_SWITCH] Device ${deviceId} no tiene suscripción activa. Enviando Fallback Playlist (Global only).`);
+    }
+
+    const activeCampaigns = await this.prisma.campaign.findMany({
+      where: {
+        active: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+        ...campaignFilter
       },
       include: {
         media: true,

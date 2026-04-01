@@ -19,7 +19,8 @@ import {
   Building2,
   RefreshCcw,
   PieChart,
-  MessageSquare
+  MessageSquare,
+  Mail
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -317,6 +318,31 @@ export default function FinancePage() {
                               className="w-12 h-12 flex items-center justify-center bg-gray-900 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white rounded-xl transition-all shadow-sm group/was"
                             >
                                <MessageSquare className="w-5 h-5 group-hover/was:scale-110 transition-transform" />
+                            </button>
+
+                            <button 
+                              onClick={async () => {
+                                const email = window.prompt("✉️ Enviar Confirmación por Email al Chofer:", (item as any).driverEmail || "");
+                                if (!email) return;
+                                const loadingToast = toast.loading("Enviando comprobante por email...");
+                                try {
+                                  const { emailDriverPaymentConfirm } = await import('../../services/api');
+                                  await emailDriverPaymentConfirm({ 
+                                    email, 
+                                    driverName: item.driverName, 
+                                    amount: item.totalAmount, 
+                                    month: format(new Date(), 'MMMM yyyy', { locale: es }),
+                                    driverId: item.driverId
+                                  });
+                                  toast.success("✅ Email enviado exitosamente", { id: loadingToast });
+                                } catch (err: any) {
+                                  toast.error("❌ Error al enviar email: " + (err.response?.data?.message || err.message), { id: loadingToast });
+                                }
+                              }}
+                              title="Notificar por Email"
+                              className="w-12 h-12 flex items-center justify-center bg-gray-900 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl transition-all shadow-sm group/mail"
+                            >
+                               <Mail className="w-5 h-5 group-hover/mail:scale-110 transition-transform" />
                             </button>
                           </div>
                         </td>

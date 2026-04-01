@@ -1,6 +1,26 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
-## 📅 29 de Marzo, 2026 (Advanced Auth Portals & Telemetry Overhaul v5.4)
+## 📅 01 de Abril, 2026 (Advertiser Autonomy & Reporting Precision v5.5)
+
+### 📢 ADVERTISER: Gestión de Peticiones y Autonomía
+
+- **Portal de Solicitudes (PortalRequests)**: Implementación del sistema administrativo para gestionar peticiones de anunciantes. Ahora los administradores pueden revisar, aprobar o rechazar solicitudes de "Actualización de Contenido" y "Expansión de Espacio" directamente desde el dashboard.
+- **Workflow de Aprobación**: Al aprobar una solicitud de contenido, el sistema vincula automáticamente el nuevo activo a la campaña correspondiente, eliminando la carga manual.
+- **Advertiser UI Overhaul**: Refinamiento de la interfaz para que los anunciantes puedan realizar estas solicitudes con feedback visual claro sobre el estado de su trámite (Pendiente, En Revisión, Aprobado).
+
+### 📊 ANALYTICS: Heatmaps de Alto Rendimiento
+
+- **Leaflet.Heat Integration**: Sustitución de marcadores masivos por una capa de calor (`leaflet.heat`) de alto rendimiento en el dashboard de rastreo.
+- **Controles Dinámicos**: Implementada una barra de herramientas para ajustar el `radius` y el `blur` del heatmap en tiempo real, permitiendo identificar "zonas calientes" de tráfico y exposición con precisión táctica.
+- **Componente HeatmapLayer**: Abstracción del heatmap en un componente React reutilizable, optimizando el ciclo de vida del mapa y reduciendo la carga de CPU en el cliente.
+
+### 📄 REPORTING: Certificación y Distribución
+
+- **Invoice Refinement**: Actualizada la plantilla de reporte de auditoría (`report.tsx`) para cambiar la terminología de "Impactos" a "Promociones (Ciclos) Contratados", alineándose con el discurso comercial y fiscal de la plataforma.
+- **Binary Stream Fix (Proxy)**: Corregido el bug crítico en el proxy de Next.js (`[...path].ts`) que corrompía las descargas de CSV y PDF. Se eliminó el header `accept-encoding` para evitar recibir datos Gzip que el proxy no podía descomprimir antes de enviarlos al navegador.
+- **WhatsApp Integration (Performance Reports)**: Finalizada la integración para compartir certificaciones de impacto y comprobantes de pago directamente vía WhatsApp, mejorando la inmediatez en la comunicación con anunciantes y conductores.
+
+---
 
 ### 🔐 AUTH: Ecosistema de Portales Desacoplados
 

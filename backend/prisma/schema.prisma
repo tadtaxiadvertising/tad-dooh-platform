@@ -540,6 +540,7 @@ model Advertiser {
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   campaigns   Campaign[]
+  portalRequests PortalRequest[]
   
   // Link for driver commissions
   referredBy  String?    @map("referred_by")
@@ -548,6 +549,31 @@ model Advertiser {
   @@map("advertisers")
   @@index([status])
   @@index([category])
+}
+
+// ================= ==========================
+// PORTAL REQUESTS (Peticiones de anunciantes)
+// ============================================
+
+model PortalRequest {
+  id              String   @id @default(uuid())
+  advertiserId    String   @map("advertiser_id")
+  campaignId      String?  @map("campaign_id")
+  type            String   // CONTENT_UPDATE, SPACE_REQUEST, OTHER
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  title           String
+  description     String?
+  data            String?  @default("{}") // JSON string with specific request details (e.g. new video URL)
+  adminNotes      String?  @map("admin_notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
+
+  advertiser      Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+
+  @@map("portal_requests")
+  @@index([advertiserId])
+  @@index([status])
+  @@index([type])
 }
 
 // ============================================

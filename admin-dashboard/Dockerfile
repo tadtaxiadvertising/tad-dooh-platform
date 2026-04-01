@@ -1,7 +1,7 @@
 # ============================================
 # TAD DOOH Dashboard - Production Dockerfile
 # ============================================
-FROM node:20-slim AS base
+FROM node:20-alpine AS base
 
 # ---- Dependencies ----
 FROM base AS deps

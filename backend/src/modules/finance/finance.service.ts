@@ -81,25 +81,28 @@ export class FinanceService {
       const driver = d as any;
       let activeAdsCount = 0;
 
-      // Iterate over all devices for this driver
+      // Iterate over all devices for this driver ONLY if subscription is paid
+      const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
       const eligibleCampaignSet = new Set<string>();
 
-      const devices = driver.devices || [];
-      devices.forEach((device: any) => {
-        const deviceCity = device.city || 'Santo Domingo';
-        
-        activeCampaigns.forEach(camp => {
-          const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
-          if (!matchesCity) return;
-
-          const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
-          const isExplicitlyAssigned = device.campaigns.some(dc => dc.campaign_id === camp.id);
+      if (isSubPaid) {
+        const devices = driver.devices || [];
+        devices.forEach((device: any) => {
+          const deviceCity = device.city || 'Santo Domingo';
           
-          if (isTargetAll || isExplicitlyAssigned) {
-            eligibleCampaignSet.add(camp.id);
-          }
+          activeCampaigns.forEach(camp => {
+            const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
+            if (!matchesCity) return;
+
+            const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
+            const isExplicitlyAssigned = device.campaigns.some((dc: any) => dc.campaign_id === camp.id);
+            
+            if (isTargetAll || isExplicitlyAssigned) {
+              eligibleCampaignSet.add(camp.id);
+            }
+          });
         });
-      });
+      }
 
       activeAdsCount = eligibleCampaignSet.size;
 

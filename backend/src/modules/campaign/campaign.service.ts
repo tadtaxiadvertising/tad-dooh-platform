@@ -141,9 +141,9 @@ export class CampaignService {
         type: dto.type,
         filename: dto.filename,
         url: dto.url,
-        fileSize: dto.fileSize,
-        checksum: dto.checksum,
-        duration: dto.duration || null,
+        fileSize: Math.round(Number(dto.fileSize || 0)),
+        checksum: dto.checksum || 'manual-upload',
+        duration: Math.round(Number(dto.duration || 30)),
         version: 1,
       },
     });

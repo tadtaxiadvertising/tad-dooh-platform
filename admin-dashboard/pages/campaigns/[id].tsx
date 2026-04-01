@@ -171,6 +171,13 @@ export default function CampaignDetailPage() {
              Eliminar
            </button>
            <button 
+             onClick={() => router.push(`/campaigns/${campaign.id}/report`)}
+             className="px-6 py-2.5 bg-gray-900 border border-gray-700 hover:border-tad-yellow text-gray-400 hover:text-tad-yellow rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2"
+           >
+             <Share2 className="w-4 h-4" />
+             Reporte de Impacto
+           </button>
+           <button 
              onClick={() => setIsModalOpen(true)}
              className="flex items-center gap-2 bg-tad-yellow hover:bg-yellow-400 text-black font-bold uppercase text-xs tracking-wider py-2.5 px-6 rounded-xl transition-all shadow-md"
            >

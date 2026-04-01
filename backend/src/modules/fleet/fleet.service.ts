@@ -93,57 +93,69 @@ export class FleetService {
   }
 
   async getFleetMap() {
-    const devices = await this.prisma.device.findMany({
-      select: {
-        id: true,
-        deviceId: true,
-        taxiNumber: true,
-        city: true,
-        lastSeen: true,
-        lastLat: true,
-        lastLng: true,
-        status: true,
-        driver: {
-          select: {
-            fullName: true,
-            taxiPlate: true,
-            status: true,
-            subscriptions: {
-              take: 1,
-              orderBy: { createdAt: 'desc' },
-              select: { status: true }
+    try {
+      // Simplified query — avoid nested subscriptions select which can fail
+      // if the production DB schema has a mismatch (common on EasyPanel Free).
+      const devices = await this.prisma.device.findMany({
+        select: {
+          id: true,
+          deviceId: true,
+          taxiNumber: true,
+          city: true,
+          lastSeen: true,
+          lastLat: true,
+          lastLng: true,
+          status: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              taxiPlate: true,
+              licensePlate: true,
+              status: true,
+              subscriptionPaid: true,
+              subscriptionEnd: true,
             }
           }
         }
-      }
-    });
+      });
 
-    const now = new Date();
-    const thirtyMinMs = 30 * 60 * 1000;
+      const now = new Date();
+      const thirtyMinMs = 30 * 60 * 1000;
 
-    return devices.map(d => {
-      let isOnline = false;
-      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs) {
-        isOnline = true;
-      }
-      
-      const sub = d.driver?.subscriptions?.[0];
-      const subStatus = sub ? sub.status : (d.driver?.status || 'PENDING');
+      return devices.map(d => {
+        const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime()) <= thirtyMinMs);
 
-      return {
-        deviceId: d.deviceId,
-        taxiNumber: d.taxiNumber,
-        city: d.city,
-        lastSeen: d.lastSeen,
-        lastLat: d.lastLat,
-        lastLng: d.lastLng,
-        status: d.status,
-        isOnline,
-        driverName: d.driver?.fullName || null,
-        plate: d.driver?.taxiPlate || null,
-        subscriptionStatus: subStatus
-      };
-    });
+        // Derive subscription status from the flag + expiry date (simpler, no nested query)
+        let subscriptionStatus = 'PENDING';
+        if (d.driver) {
+          if (d.driver.subscriptionPaid) {
+            const notExpired = !d.driver.subscriptionEnd || d.driver.subscriptionEnd > now;
+            subscriptionStatus = notExpired ? 'ACTIVE' : 'EXPIRED';
+          } else {
+            subscriptionStatus = d.driver.status || 'PENDING';
+          }
+        }
+
+        return {
+          deviceId: d.deviceId,
+          taxiNumber: d.taxiNumber ?? null,
+          city: d.city ?? null,
+          lastSeen: d.lastSeen ?? null,
+          lastLat: d.lastLat ?? null,
+          lastLng: d.lastLng ?? null,
+          status: d.status,
+          isOnline,
+          driverName: d.driver?.fullName ?? null,
+          plate: d.driver?.taxiPlate ?? d.driver?.licensePlate ?? null,
+          subscriptionStatus,
+        };
+      });
+    } catch (error) {
+      // Never crash the map page — return empty array with a warning log
+      console.error('[FleetService] getFleetMap() failed — returning empty array:', error?.message);
+      return [];
+    }
   }
 
   async getOfflineDevices() {

@@ -2,7 +2,7 @@
 
 > **Propósito**: Estandarizar el ciclo de despliegue, asignación de recursos y resiliencia de contenedores en el VPS.
 > **Audiencia**: DevOps, SRE, Lead Architects.
-> **Estado Operativo**: 🔴 REQUIERE AJUSTES URGENTES EN LÍMITES DE MEMORIA.
+> **Estado Operativo**: 🟢 OPERACIONAL (Migración VPS Completada).
 
 ---
 
@@ -20,11 +20,10 @@ graph TD
         direction TB
         NextContainer(Frontend - Next.js 15<br><i>Node.js 20-alpine</i>)
         NestContainer(Backend - NestJS 10<br><i>Node.js 20-alpine</i>)
-        RedisContainer(Redis Bridge - Propuesto<br><i>BullMQ / Throttler</i>)
     end
     
     NestContainer --> |TCP 6543| Supavisor[Supabase Pooler]
-    NextContainer --> |HTTPS| NestContainer
+    NextContainer --> |api/proxy| NestContainer
 ```
 
 ## ⚙️ 2. CONFIGURACIÓN DE CONTENEDORES (DOCKER-COMPOSE / NIXPACKS)
@@ -35,7 +34,7 @@ La construcción actual vía Nixpacks/Vercel es permisiva. En un entorno Dockeri
 
 NestJS es un framework pesado en inyección de dependencias. Una fuga en Prisma puede liquidar el VPS.
 
-* **Estrategia RAM:** `max_old_space_size=256` limita el Heap de V8 a 256MB.
+* **Estrategia RAM:** `max_old_space_size=512` limita el Heap de V8 a 512MB (Ajuste para EasyPanel).
 * **Healthcheck:** Vital para reiniciar el nodo si Prisma agota el pool de conexiones.
 
 ```yaml
@@ -49,12 +48,11 @@ services:
           cpus: '0.5'
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS="--max_old_space_size=256"
+      - NODE_OPTIONS="--max_old_space_size=512"
       - DATABASE_URL=${DATABASE_URL}
       - DIRECT_URL=${DIRECT_URL}
-      - PRISMA_CLIENT_ENGINE_TYPE=library
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3

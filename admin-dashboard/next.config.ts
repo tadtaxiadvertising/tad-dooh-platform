@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/backend-api/:path*',
-        destination: `${BACKEND_INTERNAL}/api/:path*`,
+        destination: `${BACKEND_INTERNAL}/api/v1/:path*`,
       },
     ];
   },
@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
-  org: "tad-dooh-platform",
+  org: "o4511114332143616",
   project: "admin-dashboard",
   sentryUrl: "https://sentry.io/",
   
@@ -67,7 +67,7 @@ export default withSentryConfig(nextConfig, {
 
   // Route browser requests to Sentry through a dedicated Next.js API route.
   // IMPORTANT: Do NOT use '/monitoring' here — that conflicts with the Auditoría page.
-  tunnelRoute: "/api/sentry-tunnel",
+  // tunnelRoute: "/api/sentry-tunnel",
 
   // Removes uploaded source maps from the production bundle to reduce bundle size
   sourcemaps: {

@@ -70,8 +70,8 @@ async function bootstrap() {
       next();
     });
 
-    // API prefix
-    app.setGlobalPrefix('api');
+    // API prefix (Regla de Negocio: Prefijo obligatorio para versionamiento)
+    app.setGlobalPrefix('api/v1');
 
     // Swagger SÓLO en desarrollo (ahorra ~150MB de RAM en producción)
     if (nodeEnv !== 'production') {
@@ -85,13 +85,17 @@ async function bootstrap() {
       SwaggerModule.setup('docs', app, document);
     }
 
+    // CRÍTICO PARA EASYPANEL/DOCKER:
+    // Habilitar Shutdown Hooks para evitar conexiones zombie de Prisma (Doc 05)
+    app.enableShutdownHooks();
+
     // Escuchar en todas las interfaces para Docker
     await app.listen(port, '0.0.0.0');
     
     console.log(`
   ╔════════════════════════════════════════════════════════╗
   ║           🚗 TAD DOOH Platform API                     ║
-  ║   URL: http://0.0.0.0:${port}                           ║
+  ║   URL: http://0.0.0.0:${port}/api/v1                       ║
   ║   Status: 🔥 OPERACIONAL                               ║
   ╚════════════════════════════════════════════════════════╝
     `);

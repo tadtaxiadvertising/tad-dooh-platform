@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabase } from './supabaseClient';
+import { supabase } from '../lib/supabase';
 
 /**
  * Estrategia de routing del API client:
@@ -43,19 +43,23 @@ export const api = axios.create({
 // ============================================
 api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
-    // 🔥 Extract token dynamic session from Supabase to guarantee it's auto-refreshed
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
-    } else {
-      // Fallback for edge cases where login just ran
-      const localToken = localStorage.getItem('tad_admin_token');
-      if (localToken) {
-        config.headers.Authorization = `Bearer ${localToken}`;
+    try {
+      // 1. Prioridad: Sesión activa de Supabase (Refresco automático)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
       } else {
-        console.warn('⚠️ AUTH_CORE: No se ha detectado un Bearer Token para la petición:', config.url);
+        // 2. Fallback: LocalStorage (Para compatibilidad con login legacy)
+        const localToken = localStorage.getItem('tad_admin_token');
+        if (localToken) {
+          config.headers.Authorization = `Bearer ${localToken}`;
+        }
+        // No emitimos console.warn aquí para evitar spam en el primer render
+        // El backend devolverá 401 si realmente falta el acceso.
       }
+    } catch (error) {
+      console.error('🔐 AUTH_ERROR:', error);
     }
   }
   return config;

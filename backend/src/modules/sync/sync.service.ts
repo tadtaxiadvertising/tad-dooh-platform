@@ -1,10 +1,13 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
+  private readonly JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService
@@ -117,9 +120,25 @@ export class SyncService {
       });
     });
 
-    // 4. Formatear manifiesto
+    // 4. Generar License Token (Kill-Switch)
+    // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.
+    // Expiración: 48 horas (Tiempo suficiente para superar zonas de sombra o desconexión nocturna, pero corta fraude mensual)
+    const licenseToken = jwt.sign(
+      { 
+        deviceId, 
+        taxi: device.taxiNumber,
+        type: 'OFFLINE_LICENSE',
+        iat: Math.floor(Date.now() / 1000)
+      }, 
+      this.JWT_SECRET, 
+      { expiresIn: '48h' }
+    );
+
+    // 5. Formatear manifiesto
     return {
       timestamp: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      licenseToken,
       device: {
         id: device.id,
         deviceId: device.deviceId,

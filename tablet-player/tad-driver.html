@@ -625,9 +625,21 @@ async function handleAuth(e, type){
       const cedula = document.getElementById('rg-cedula').value;
       const taxiPlate = document.getElementById('rg-plate').value;
       const password = document.getElementById('rg-pass').value;
-      // Creamos la cuenta y luego hacemos login en 1 paso
-      await fetch(`${API}/drivers`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,phone,cedula,taxiPlate,password,subscriptionPaid:false})});
-      res = await fetch(`${API}/drivers/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password})});
+      // Creamos la cuenta incluyendo el DID para auto-vinculación de la tablet
+      await fetch(`${API}/drivers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          fullName, phone, cedula, taxiPlate, password, 
+          deviceId: DID || undefined, 
+          subscriptionPaid: false 
+        })
+      });
+      res = await fetch(`${API}/drivers/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
     }
 
     if(!res.ok){
@@ -691,25 +703,44 @@ function updateUptime(){
 async function load(){
   if(!checkAuth()) return;
   
-  if(!DID || DID === 'PENDING_DID'){
-    document.getElementById('splash').classList.add('done');
-    toast('Tu cuenta aún no tiene un número de tableta asignado.', 'warn', 5000);
-    // Renderizamos datos nulos temporales si no hay hardware
-    render({driverName: 'Conductor'});
-    return;
-  }
-  localStorage.setItem('tad_did',DID);
-
   try{
-    const r=await fetch(`${API}/drivers/tablet/${DID}/hub`);
-    if(!r.ok) throw new Error(r.status);
-    DATA=await r.json();
+    const r = await fetch(`${API}/drivers/me/hub`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${JWT}`
+      }
+    });
+
+    if(!r.ok) {
+       if(r.status === 401 || r.status === 403) return logout();
+       throw new Error(`Server error: ${r.status}`);
+    }
+
+    DATA = await r.json();
+    
+    // Si el backend nos asignó un deviceId (hardware), lo actualizamos
+    if(DATA.deviceId && DATA.deviceId !== DID){
+      DID = DATA.deviceId;
+      localStorage.setItem('tad_did', DID);
+      // Actualizar URL sin recargar para que el GPS use el ID correcto si existe
+      const url = new URL(window.location.href);
+      url.searchParams.set('deviceId', DID);
+      window.history.replaceState({}, '', url);
+    }
+
     render(DATA);
-  }catch(e){
+  } catch(e){
+    console.error('HUB_LOAD_ERR:', e);
     // Try cache
-    const cached=localStorage.getItem('tad_hubcache');
-    if(cached){ DATA=JSON.parse(cached); render(DATA); toast('Sin conexión — datos en caché','info'); }
-    else{ toast('Error conectando al servidor','err'); }
+    const cached = localStorage.getItem('tad_hubcache');
+    if(cached){ 
+      DATA = JSON.parse(cached); 
+      render(DATA); 
+      toast('Sin conexión — datos en caché','info'); 
+    } else { 
+      toast('Error conectando al servidor','err'); 
+    }
   }
   document.getElementById('splash').classList.add('done');
 }

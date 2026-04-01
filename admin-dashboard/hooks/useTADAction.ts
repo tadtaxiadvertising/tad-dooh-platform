@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '@/lib/supabase';
 
 interface ActionOptions {
   onSuccess?: () => void;

@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import { ShieldCheck, LogIn, AlertCircle, Fingerprint, Lock, Shield, Cpu, Activity, Globe } from 'lucide-react';
 import clsx from 'clsx';
 

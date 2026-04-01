@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery } from 'lucide-react';
 import clsx from 'clsx';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
 import NotificationCenter from './NotificationCenter';
 import { TADLogo } from './ui/TADLogo';

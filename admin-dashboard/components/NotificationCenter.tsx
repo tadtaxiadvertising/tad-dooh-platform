@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, Info, ShieldAlert, CheckCircle2, X } from 'lucide-react';
 import useSWR from 'swr';
 import { api } from '../services/api';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';

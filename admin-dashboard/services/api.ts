@@ -194,8 +194,8 @@ export const uploadMedia = async (file: File, campaignId: string = 'general', qr
 
   return {
     id: regRes.data.id,
-    url: regRes.data.url,
-    size: regRes.data.size,
+    url: regRes.data.url || regRes.data.cdnUrl,
+    fileSize: regRes.data.fileSize || regRes.data.size || 0,
     name: file.name,
     path: path
   };

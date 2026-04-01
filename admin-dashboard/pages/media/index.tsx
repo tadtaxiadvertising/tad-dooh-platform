@@ -186,7 +186,7 @@ export default function MediaPage() {
           type: 'video',
           filename: title,
           url: uploadedData.url,
-          fileSize: uploadedData.size,
+          fileSize: uploadedData.fileSize,
           checksum: uploadedData.id,
           duration: Number(duration)
         });

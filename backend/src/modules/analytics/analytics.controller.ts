@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus, Inject, forwardRef } from '@nestjs/common';
 import { Response } from 'express';
 import { AnalyticsService } from './analytics.service';
+import { WhatsAppService } from '../notifications/whatsapp.service';
 import { InvoiceService } from '../finance/invoice.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -9,10 +10,25 @@ import { Public } from '../auth/decorators/public.decorator';
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
+    private readonly whatsappService: WhatsAppService,
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => InvoiceService))
     private readonly invoiceService: InvoiceService,
   ) {}
+
+  @Post('campaign/:id/share-whatsapp')
+  async shareReportByWhatsApp(
+    @Param('id') id: string,
+    @Body() body: { phone: string; advertiserName: string; campaignName: string; reportUrl: string }
+  ) {
+    return this.whatsappService.sendImpactReport(
+      body.phone,
+      body.advertiserName,
+      body.campaignName,
+      body.reportUrl
+    );
+  }
+
 
   // ============================================
   // QR SCAN TRACKING — Redirect Proxy

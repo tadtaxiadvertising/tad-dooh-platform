@@ -213,6 +213,8 @@ export const deleteMedia = (id: string) => api.delete(`/media/${id}`).then(res =
 // Analytics
 export const getAnalyticsSummary = () => api.get('/analytics/summary').then(res => res.data);
 export const getWeeklyPerformance = (campaignId: string) => api.get(`/analytics/campaign/${campaignId}/weekly`).then(res => res.data);
+export const shareReportByWhatsApp = (campaignId: string, data: { phone: string; advertiserName: string; campaignName: string; reportUrl: string }) => 
+  api.post(`/analytics/campaign/${campaignId}/share-whatsapp`, data).then(res => res.data);
 export const getTopTaxis = () => api.get('/analytics/top-taxis').then(res => res.data);
 export const getHourlyPlays = () => api.get('/analytics/hourly').then(res => res.data);
 export const getRecentPlays = () => api.get('/analytics/recent-plays').then(res => res.data);
@@ -297,6 +299,8 @@ export const downloadWeeklyCampaignPdf = async (id: string, name: string) => {
 };
 export const getAutoPayroll = () => api.get('/finance/payroll').then(res => res.data);
 export const processPayrollPayment = (data: { driverId: string; month: number; year: number; reference: string }) => api.post('/finance/payroll/pay', data).then(res => res.data);
+export const sendDriverPaymentWhatsApp = (data: { phone: string; driverName: string; amount: number; month: string }) => 
+  api.post('/finance/payroll/whatsapp-confirm', data).then(res => res.data);
 export const recordFinancialTransaction = (data: Record<string, unknown>) => api.post('/finance/transactions', data).then(res => res.data);
 export const getFinancialSummary = () => api.get('/finance/summary').then(res => res.data);
 export const getFinancialLedger = () => api.get('/finance/ledger').then(res => res.data);

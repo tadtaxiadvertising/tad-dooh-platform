@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { InvoiceService } from './invoice.service';
+import { WhatsAppService } from '../notifications/whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 
@@ -19,6 +20,7 @@ export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,
     private readonly invoiceService: InvoiceService,
+    private readonly whatsappService: WhatsAppService,
     private readonly prisma: PrismaService
   ) {}
 
@@ -108,6 +110,18 @@ export class FinanceController {
       data.month || new Date().getMonth() + 1, 
       data.year || new Date().getFullYear(), 
       data.reference
+    );
+  }
+
+  @Post('payroll/whatsapp-confirm')
+  async sendWhatsAppPaymentConfirm(
+    @Body() body: { phone: string; driverName: string; amount: number; month: string }
+  ) {
+    return this.whatsappService.sendDriverPaymentConfirm(
+      body.phone,
+      body.driverName,
+      body.amount,
+      body.month
     );
   }
 

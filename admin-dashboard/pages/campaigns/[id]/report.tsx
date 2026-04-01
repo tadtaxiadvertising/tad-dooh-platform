@@ -114,6 +114,30 @@ export default function CampaignReportPage() {
 
           <div className="flex items-center gap-4">
              <button 
+               onClick={async () => {
+                 const phone = prompt("📲 Ingresa el WhatsApp del Anunciante (Ej: 18495043872):", campaign.whatsapp || "");
+                 if (!phone) return;
+                 
+                 const loadingToast = toast.loading("Enviando reporte por WhatsApp...");
+                 try {
+                   const { shareReportByWhatsApp } = await import('../../../services/api');
+                   await shareReportByWhatsApp(campaign.id, {
+                     phone,
+                     advertiserName: campaign.advertiser,
+                     campaignName: campaign.name,
+                     reportUrl: window.location.href
+                   });
+                   toast.success("✅ Reporte enviado exitosamente", { id: loadingToast });
+                 } catch (err: any) {
+                   toast.error("❌ Fallo al enviar WhatsApp: " + err.message, { id: loadingToast });
+                 }
+               }}
+               className="p-3 bg-gray-900 border border-[#25D366]/30 rounded-xl hover:border-[#25D366] text-[#25D366] transition-all shadow-sm flex items-center gap-2 group/wa"
+             >
+                <Share2 className="w-5 h-5 group-hover/wa:scale-110 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">Compartir WhatsApp</span>
+             </button>
+             <button 
                onClick={() => window.print()}
                className="p-3 bg-gray-900 border border-gray-700 rounded-xl hover:border-white transition-all text-gray-400 hover:text-white"
              >

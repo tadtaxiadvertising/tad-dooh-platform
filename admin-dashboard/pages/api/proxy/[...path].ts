@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ? '?' + new URLSearchParams(queryParams).toString()
     : '';
 
-  const targetUrl = `${BACKEND_BASE}/api/${pathStr}${queryString}`;
+  const targetUrl = `${BACKEND_BASE}/api/v1/${pathStr}${queryString}`;
 
   console.log(`[PROXY] ${req.method} ${pathStr} → ${targetUrl}`);
 

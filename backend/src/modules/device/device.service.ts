@@ -6,12 +6,14 @@ import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { CampaignService } from '../campaign/campaign.service';
 import { FinanceService } from '../finance/finance.service';
+import * as jwt from 'jsonwebtoken';
 
 const MAX_SLOTS_PER_DEVICE = 15;
 
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
+  private readonly JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -375,9 +377,22 @@ export class DeviceService {
 
     this.logger.log(`📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`);
 
+    const licenseToken = jwt.sign(
+      { 
+        deviceId, 
+        taxi: device.taxiNumber,
+        type: 'OFFLINE_LICENSE',
+        iat: Math.floor(Date.now() / 1000)
+      }, 
+      this.JWT_SECRET, 
+      { expiresIn: '48h' }
+    );
+
     return {
       update: true,
       blocked: false,
+      licenseToken,
+      expiresAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
       sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,

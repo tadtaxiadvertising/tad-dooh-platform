@@ -872,6 +872,9 @@
                         ...payload,
                         savedAt: Date.now()
                     }));
+                    if (payload.expiresAt) {
+                        localStorage.setItem('tad_license_expires_at', payload.expiresAt);
+                    }
                     console.log('💾 Playlist persisted to localStorage cache.');
                 } catch (e) {
                     console.warn('⚠️ Failed to persist playlist:', e);
@@ -1402,6 +1405,19 @@
                     sync.performSync();
                 }
             }, 60 * 1000);
+
+            // 8. Security Kill-Switch (Offline Ghosting Prevention)
+            setInterval(() => {
+                const expiresAt = localStorage.getItem('tad_license_expires_at');
+                if (expiresAt) {
+                    const expiry = new Date(expiresAt).getTime();
+                    const now = Date.now();
+                    if (now > expiry && !state.isOnline) {
+                        console.error('⛔ License expired (Ghosting detected). Blocking playback.');
+                        player.showBlocked('Su licencia de operación offline ha expirado. Conecte su tablet a Internet para validar su suscripción de RD$6,000.');
+                    }
+                }
+            }, 30 * 1000); // Check more frequently (every 30s)
 
             console.log('✅ TAD Player v3.0 (SRE Grade) ready.');
             console.log('📱 Device ID:', state.deviceId);

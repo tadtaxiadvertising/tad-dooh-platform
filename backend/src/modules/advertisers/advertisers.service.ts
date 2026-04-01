@@ -93,13 +93,12 @@ export class AdvertisersService {
 
     if (!advertiser) return null;
 
-    // Consolidate metrics
+    // Get current campaign IDs to pull real-time scans
+    const campaignIds = advertiser.campaigns.map(c => c.id);
+
+    // 1. Total Impressions and Completions from aggregated metrics
     let totalImpressions = 0;
     let totalCompletions = 0;
-    let totalScans = 0;
-
-    // We can also pull real play confirming events from Analytics directly if needed
-    // But for now we use pre-computed metrics
     advertiser.campaigns.forEach(c => {
       c.metrics.forEach(m => {
         totalImpressions += m.totalImpressions;
@@ -107,8 +106,17 @@ export class AdvertisersService {
       });
     });
 
+    // 2. Real-time count of QR Scans from AnalyticsEvents (TAD unique value)
+    const totalScans = await this.prisma.analyticsEvent.count({
+      where: {
+        campaignId: { in: campaignIds },
+        eventType: { in: ['qr_scan', 'scan_redirect', 'scan'] }
+      }
+    });
+
     return {
       brand: {
+        id: advertiser.id,
         name: advertiser.companyName,
         category: advertiser.category,
         contact: advertiser.contactName,
@@ -119,7 +127,7 @@ export class AdvertisersService {
       stats: {
         totalImpressions,
         totalCompletions,
-        totalScans, // This needs to be joined with AnalyticsEvent.count({ where: { campaignId: { in: ids }, type: 'QR_SCAN' } })
+        totalScans, 
         activeCampaigns: advertiser.campaigns.length
       },
       campaigns: advertiser.campaigns.map(c => ({
@@ -129,6 +137,8 @@ export class AdvertisersService {
         start: c.startDate,
         end: c.endDate,
         impressions: c.metrics.reduce((acc, curr) => acc + curr.totalImpressions, 0),
+        completions: c.metrics.reduce((acc, curr) => acc + curr.totalCompletions, 0),
+        scans: 0, // Individual campaign scans would need grouped aggregate
         media: c.media.map(m => ({ id: m.id, url: m.url, type: m.mimeType, name: m.name }))
       }))
     };

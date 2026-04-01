@@ -21,11 +21,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit() {
     this.logger.log('🔌 Inicializando conexión al Pooler de Supabase...');
-    try {
-      await this.$connect();
-      this.logger.log('✅ Conexión establecida con éxito');
-    } catch (e) {
-      this.logger.error('❌ Error fatal al conectar a la base de datos', e);
+    const MAX_RETRIES = 5;
+    let attempts = 0;
+
+    while (attempts < MAX_RETRIES) {
+      try {
+        await this.$connect();
+        this.logger.log(`✅ Conexión establecida con éxito en el intento ${attempts + 1}`);
+        return;
+      } catch (e) {
+        attempts++;
+        const delay = attempts * 2000; // Exponential backup 2s, 4s, 6s...
+        this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido al conectar a Supabase. Reintentando en ${delay/1000}s...`);
+        if (attempts >= MAX_RETRIES) {
+          this.logger.error('🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos. Deteniendo proceso.');
+          process.exit(1); 
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 

@@ -248,7 +248,7 @@ export class DriversService {
 
   /**
    * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER (TAD DRIVER)
-   * Retorna ganancias, anuncios reproducidos y estado de suscripción.
+   * Retorna ganancias, anuncios reproducidos y estado de suscripción por deviceId.
    */
   async getDriverHubData(deviceId: string) {
     const device = await this.prisma.device.findUnique({
@@ -264,15 +264,44 @@ export class DriversService {
       throw new Error('Dispositivo no vinculado a un chofer.');
     }
 
-    const driver = device.driver as any;
+    return this.buildHubData(device.driver, device.deviceId);
+  }
 
-    // 1. Conteo de anuncios reproducidos (confirmados)
-    const adsPlayed = await this.prisma.analyticsEvent.count({
-      where: { 
-        deviceId: device.deviceId,
-        eventType: { in: ['play_confirm', 'video_end', 'impression'] }
-      }
+  /**
+   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER (TAD DRIVER) por Driver ID
+   */
+  async getDriverHubDataById(driverId: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      include: { 
+        devices: true,
+        referredAdvertisers: true 
+      } as any
     });
+
+    if (!driver) {
+      throw new Error('Chofer no encontrado.');
+    }
+
+    // Usar el primer dispositivo vinculado si existe
+    const deviceId = (driver as any).devices?.[0]?.deviceId || null;
+    return this.buildHubData(driver, deviceId);
+  }
+
+  /**
+   * Método interno para construir el payload del Hub
+   */
+  private async buildHubData(driver: any, deviceId: string | null) {
+    // 1. Conteo de anuncios reproducidos (confirmados)
+    let adsPlayed = 0;
+    if (deviceId) {
+      adsPlayed = await this.prisma.analyticsEvent.count({
+        where: { 
+          deviceId,
+          eventType: { in: ['play_confirm', 'video_end', 'impression'] }
+        }
+      });
+    }
 
     // 2. Ganancias proyectadas basadas en pautas activas (RD$500 c/u)
     const activeAdsCount = await this.prisma.campaign.count({
@@ -287,7 +316,7 @@ export class DriversService {
       orderBy: { createdAt: 'desc' }
     });
 
-    const totalPaid = await this.prisma.payrollPayment.aggregate({
+    const totalPaidSum = await this.prisma.payrollPayment.aggregate({
       where: { driverId: driver.id, status: 'PAID' },
       _sum: { amount: true }
     });
@@ -301,7 +330,10 @@ export class DriversService {
     const referralEarnings = referralsCount * 500;
 
     return {
+      driverId: driver.id,
       driverName: driver.fullName,
+      phone: driver.phone,
+      cedula: driver.cedula,
       taxiNumber: driver.taxiNumber || driver.taxiPlate || 'S/N',
       adsPlayed,
       projectedEarnings,
@@ -310,14 +342,15 @@ export class DriversService {
       advertiserReferralEarnings: (driver.referredAdvertisers?.length || 0) * 500,
       advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
       activeAds: activeAdsCount,
-      totalPaid: (totalPaid as any)._sum.amount || 0,
+      totalPaid: (totalPaidSum as any)._sum.amount || 0,
       lastPayment: lastPayment ? {
         amount: lastPayment.amount,
         status: lastPayment.status,
         date: lastPayment.paidAt || lastPayment.createdAt
       } : null,
       subscriptionStatus: driver.status,
-      subscriptionPaid: driver.subscriptionPaid
+      subscriptionPaid: driver.subscriptionPaid,
+      deviceId
     };
   }
 

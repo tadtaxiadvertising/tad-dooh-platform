@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Reducido un poco para evitar OOM on startup en EasyPanel
-ENV NODE_OPTIONS=--max-old-space-size=320
+# Ajustado a 512MB para estabilidad en VPS de 1GB-2GB (EasyPanel)
+ENV NODE_OPTIONS=--max-old-space-size=400
 ENV PORT=3000
 
 COPY --from=builder /app/package*.json ./

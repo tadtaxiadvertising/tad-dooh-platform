@@ -21,6 +21,7 @@ import { SheetsModule } from './modules/sheets/sheets.module';
 import { AuthService } from './modules/auth/auth.service';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { AntigravityModule } from './antigravity/antigravity.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
     SyncModule,
     NotificationsModule,
     SheetsModule,
+    AntigravityModule,
   ],
   providers: [
     // Global JWT guard — protects ALL routes by default

@@ -9,11 +9,11 @@
 
 | Recurso | URL |
 | :--- | :--- |
-| **Dashboard (Frontend)** | <https://tad-dashboard.vercel.app> |
-| **API (Backend)** | <https://tad-api.vercel.app> |
+| **Dashboard (Frontend)** | <https://proyecto-ia-tad-dashboard.rewvid.easypanel.host> |
+| **API (Backend)** | <https://proyecto-ia-tad-api.rewvid.easypanel.host> |
 | **Supabase Dashboard** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
 | **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
-| **Swagger API Docs** | <https://tad-api.vercel.app/docs> (requiere servidor local) |
+| **Swagger API Docs** | <https://proyecto-ia-tad-api.rewvid.easypanel.host/docs> |
 
 ---
 
@@ -66,7 +66,7 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | Icons | lucide-react | Latest |
 | HTTP Client | Axios | Latest |
 | Utilities | clsx, date-fns | Latest |
-| Deployment | Vercel (Git integration) | Auto-deploy on push to `main` |
+| Deployment | VPS (Docker / EasyPanel Free) | Auto-deploy on push to `main` |
 
 ### Backend (backend)
 
@@ -78,8 +78,8 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | File Upload | Direct-to-Supabase Storage (Browser) | — |
 | Validation | `class-validator` + `ValidationPipe` | — |
 | Rate Limiting | `@nestjs/throttler` (100 req/min) | — |
-| CORS | Configured in `main.ts` + `api/index.ts` | — |
-| Deployment | Vercel Serverless (`api/index.ts`) | — |
+| CORS | Configured in `main.ts` (Manual whitelist) | — |
+| Deployment | VPS (Docker / EasyPanel Free) | — |
 
 ### Infraestructura
 
@@ -88,14 +88,14 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | Database | Supabase PostgreSQL | Persistencia de datos |
 | File Storage | Supabase Storage (`campaign-videos`) | Videos de campañas |
 | Authentication | Supabase Auth | Login email/password |
-| Hosting | Vercel (Hobby plan) | Frontend + Backend serverless |
+| Hosting | VPS (Easypanel Free Tier) | Frontend + Backend en Contenedores |
 | Git | GitHub | Control de versiones |
 
 ---
 
 ## ⚡ REGLA DE ORO
 
-> **CERO COSTOS ADICIONALES**. Todo el stack utiliza tiers gratuitos (Vercel Hobby, Supabase Free). No se deben integrar servicios de pago (AWS S3, SendGrid Pro, etc.) sin autorización explícita del usuario.
+> **CERO COSTOS ADICIONALES**. Todo el stack utiliza tiers gratuitos (EasyPanel Free, Supabase Free). No se deben integrar servicios de pago (AWS S3, SendGrid Pro, etc.) sin autorización explícita del usuario.
 
 ---
 
@@ -166,7 +166,7 @@ git add . && git commit -m "msg" && git push origin main
 - **Idioma de UI**: Español (frontend en español para el mercado dominicano).
 - **Idioma de código**: Inglés (variables, funciones, clases).
 - **Prisma Maps**: Todos los modelos usan `@@map("snake_case")` para compatibilidad SQL.
-- **API Prefix**: Todas las rutas bajo `/api/` (configurado globalmente).
+- **API Prefix**: Todas las rutas bajo `/api/v1` (Regla de Negocio).
 - **Frontend routing**: Next.js Pages Router (NO App Router).
 - **Estilos**: Tailwind 4 con color personalizado `tad-yellow` (#fad400).
 

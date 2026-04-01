@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException } from '@nestjs/common';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
+import * as jwt from 'jsonwebtoken';
 
 @Controller('drivers')
 export class DriversController {
@@ -128,6 +129,22 @@ export class DriversController {
   @Get('tablet/:tabletId/access')
   async checkTabletAccess(@Param('tabletId') tabletId: string) {
     return this.driversService.checkTabletAccess(tabletId);
+  }
+
+  /**
+   * GET /api/drivers/me/hub — Datos de negocio para el portal del chofer (Autenticado)
+   * Nuevo flujo: Los choferes registrados usan su JWT para entrar, tengan o no pauta activa.
+   */
+  @Get('me/hub')
+  async getMyHub(@Headers('authorization') auth: string) {
+    if (!auth) throw new ForbiddenException('No autorizado');
+    const token = auth.replace('Bearer ', '');
+    try {
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'tad-super-secret-key-2024');
+      return await this.driversService.getDriverHubDataById(decoded.sub);
+    } catch (e) {
+      throw new ForbiddenException('Token inválido o expirado');
+    }
   }
 
   /**

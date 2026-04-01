@@ -34,16 +34,16 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 
 ```text
 ┌─────────────────────────────────────────┐
-│         CLOUD (DigitalOcean)            │
+│         CLOUD (VPS / EasyPanel)         │
 │                                         │
-│  ┌───────────┐  ┌───────────┐          │
-│  │  Next.js  │  │  NestJS   │          │
-│  │ Dashboard │  │    API    │          │
-│  └───────────┘  └───────────┘          │
-│              │                          │
-│         ┌────▼────┐                     │
-│         │PostgreSQL│                    │
-│         └─────────┘                     │
+│  ┌───────────┐      ┌───────────┐       │
+│  │  Next.js  │ ────▶│  NestJS   │       │
+│  │ Dashboard │ (Proxy)│  API v1   │       │
+│  └───────────┘      └───────────┘       │
+│              │            │             │
+│         ┌────▼────────────▼────┐        │
+│         │      PostgreSQL      │        │
+│         └──────────────────────┘        │
 └─────────────────────────────────────────┘
               │
               │ HTTPS (1x día)
@@ -177,9 +177,9 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 
 | Servicio | Proveedor | Costo |
 | -------- | --------- | ----- |
-| **Cloud** | DigitalOcean | $40/mes |
-| **Database** | Managed PostgreSQL | $30/mes |
-| **Storage** | Spaces (S3) | $5/mes |
+| **Cloud** | VPS (Easypanel Free) | $0/mes |
+| **Database** | Supabase (Free Tier) | $0/mes |
+| **Storage** | Supabase Storage | $0/mes |
 | **CDN** | Cloudflare | $0/mes |
 
 ---
@@ -207,6 +207,22 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 ---
 
 ## 🔐 Seguridad
+
+### 🛡️ Postura de Seguridad (CISO Rules)
+
+1. **Kill-Switch Offline (Anti-Fraud):** Los dispositivos solo pueden reproducir contenido offline durante 48 horas sin conexión. Pasado este tiempo, el token JWT expira y la pantalla se bloquea exigiendo reconexión para validación financiera.
+2. **Signed Uploads (Anti-OOM):** El contenido multimedia NUNCA se procesa en el VPS. El Dashboard solicita una URL firmada de Supabase y sube directamente, evitando picos de RAM y caídas del API.
+3. **Hardware Approval:** Todo dispositivo nuevo entra en estado `PENDING`. Requiere aprobación manual en el panel administrativo para recibir campañas.
+4. **Isolación de Secretos:** `SUPABASE_SERVICE_ROLE_KEY` solo reside en el Backend. El Frontend usa exclusivamente `ANON_KEY` + RLS.
+
+#### 🛡️ Seguridad & DevOps (SRE)
+
+- [x] **Kill-Switch JWT (v5.5):** Implementación de tokens de licencia offline de 48h para evitar "Ghosting" de conductores.
+- [x] **Hardening Memoria (v5.5):** Ajuste de Node.js Memory Limits (512MB) para prevenir OOM en VPS bajo costo (Easypanel).
+- [x] **Signed Upload URLs (v5.5):** Refactor de ingesta multimedia para bypass de RAM en VPS (S3 direct upload).
+- [x] **API Versioning (v5.5):** Implementación de prefijos `/api/v1` para robustez de despliegues paralelos.
+- [ ] **Rate-Limiting (Q2 2026):** Implementación de NestJS Throttler en analíticas.
+- [ ] **Docker Swarm/K8s Light (Q3 2026):** Evaluación para alta disponibilidad.
 
 - ✅ **HTTPS/TLS 1.3** en todas las comunicaciones
 - ✅ **Token-based auth** con rotación cada 30 días

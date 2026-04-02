@@ -6,7 +6,13 @@ import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDevic
 import DriverModal from '../../components/DriverModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
+import {
+  Download, Plus, User, UserCheck, UserX, CreditCard, Search, Radio,
+  ExternalLink, Tablet, CheckCircle2, AlertTriangle, Smartphone, Navigation,
+  Lock, Unlock, ChevronDown, RefreshCw, Zap, ShieldCheck, Users, IdCard, X
+} from 'lucide-react';
 import WhatsAppButton from '../../components/ui/WhatsAppButton';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
 // Helper: obtiene la base URL del API de producción
 const getApiBase = () => {

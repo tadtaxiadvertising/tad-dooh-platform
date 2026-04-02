@@ -445,8 +445,8 @@ model Driver {
 
 model FinancialTransaction {
   id            String   @id @default(uuid())
-  type          String   // INCOMING, OUTGOING
-  category      String   // SUSCRIPCION, PUBLICIDAD, HARDWARE, REFERIDOS, SERVER, OTROS
+  type          String   // DEBIT, CREDIT
+  category      String   // CAPEX_HARDWARE, REVENUE_AD, REVENUE_SUBSCRIPTION, OPEX_DRIVER_PAYOUT, OPEX_COMMISSION, OPEX_MARKETING, TAX_ITBIS
   amount        Float    // Gross amount
   netAmount     Float    @map("net_amount") // Amount after taxes/retentions
   taxAmount     Float    @map("tax_amount") // ITBIS 18% or other taxes

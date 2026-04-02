@@ -222,6 +222,14 @@ export class FinanceController {
   }
 
   /**
+   * FINANCIAL INTELLIGENCE: Returns investor metrics (Unit Economics).
+   */
+  @Get('investor-metrics')
+  async getInvestorMetrics() {
+    return this.financeService.getInvestorMetrics();
+  }
+
+  /**
    * FINANCIAL INTELLIGENCE: Returns the general ledger (last 50 transactions).
    */
   @Get('ledger')

@@ -16,7 +16,6 @@ import {
   Play
 } from 'lucide-react';
 import { getPortalRequests, updatePortalRequest, addVideoToCampaign } from '../../services/api';
-import Layout from '../../components/Layout';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -76,7 +75,7 @@ export default function RequestsPage() {
   });
 
   return (
-    <Layout>
+    <>
       <Head>
         <title>Control de Peticiones | TAD Admin</title>
       </Head>
@@ -307,6 +306,6 @@ export default function RequestsPage() {
           </div>
         )}
       </AnimatePresence>
-    </Layout>
+    </>
   );
 }

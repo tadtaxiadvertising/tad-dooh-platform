@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Activity, DollarSign, Target, LayoutDashboard, CloudRain } from 'lucide-react';
+import { Target, TrendingUp, Activity, DollarSign, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
-import apiClient from '../../lib/apiClient';
+import api from '../../services/api';
 
 export default function InvestorDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -13,7 +13,7 @@ export default function InvestorDashboard() {
   useEffect(() => {
     async function fetchMetrics() {
       try {
-        const response = await apiClient.get('/api/finance/investor-metrics');
+        const response = await api.get('/finance/investor-metrics');
         setMetrics(response.data);
       } catch (err) {
         console.error("Error fetching investor metrics", err);

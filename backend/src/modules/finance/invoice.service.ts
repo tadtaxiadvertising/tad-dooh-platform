@@ -285,4 +285,34 @@ export class InvoiceService implements OnModuleInit {
     const pdfDoc = pdfmake.createPdf(docDefinition);
     return await pdfDoc.getBuffer();
   }
+
+  /**
+   * Genera "Facturas Proforma" en PDF (buffer ligero) detallando ITBIS y neto 
+   * para transparencia con los socios (Inversionistas/Choferes).
+   */
+  async generateProformaPDF(data: any): Promise<Buffer> {
+    const docDefinition: TDocumentDefinitions = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: 'FACTURA PROFORMA (BORRADOR)', style: 'header', color: '#FFD400', bold: true },
+        { text: `Fecha: ${new Date().toLocaleDateString()}`, alignment: 'right', fontSize: 10, margin: [0,0,0,10]},
+        { text: `A quien pueda interesar: ${data.socio || 'Socio Estratégico'}`, margin: [0, 0, 0, 10] },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Concepto', bold: true, fillColor: '#f2f2f2' }, { text: 'Monto (DOP)', bold: true, fillColor: '#f2f2f2' }],
+              [data.concepto || 'Operación Mensual TAD DOOH', `RD$ ${(data.montoBruto || 0).toLocaleString()}`],
+              ['ITBIS (18%)', `RD$ ${(data.itbis || 0).toLocaleString()}`],
+              [{ text: 'TOTAL NETO', bold: true, alignment: 'right' }, { text: `RD$ ${(data.montoNeto || 0).toLocaleString()}`, bold: true }]
+            ]
+          }
+        },
+        { text: '\n\n*Nota: Este documento es únicamente una proforma para fines de transparencia y planificación financiera, no posee valor fiscal.', fontSize: 8, color: 'gray' }
+      ],
+      styles: { header: { fontSize: 16 } }
+    };
+    const pdfDoc = pdfmake.createPdf(docDefinition);
+    return await pdfDoc.getBuffer();
+  }
 }

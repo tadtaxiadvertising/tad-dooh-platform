@@ -172,13 +172,17 @@ export class FinanceService {
       return { success: true, message: 'No se encontraron montos a liquidar para este periodo.', count: 0 };
     }
 
-    const result = await this.prisma.payrollPayment.createMany({
-      data: recordsToCreate,
-      skipDuplicates: true,
-    });
+    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
+    let count = 0;
+    await throttledMap(recordsToCreate, async (record) => {
+      await this.prisma.payrollPayment.create({
+        data: record
+      });
+      count++;
+    }, 3);
 
-    this.logger.log(`✅ Bulk billing completed: ${result.count} drivers credited.`);
-    return { success: true, count: result.count };
+    this.logger.log(`✅ Bulk billing completed: ${count} drivers credited.`);
+    return { success: true, count };
   }
 
   /**
@@ -465,6 +469,64 @@ export class FinanceService {
       netProjection: mrr - burnRate,
       currency: 'DOP',
       timestamp: new Date()
+    };
+  }
+
+  /**
+   * FINANCIAL INTELLIGENCE: getInvestorMetrics
+   * Unit Economics & Escalabilidad
+   */
+  async getInvestorMetrics() {
+    this.logger.log('Generating investor metrics (Unit Economics)');
+
+    // 1. CAC (Customer Acquisition Cost) = Total OPEX_MARKETING / Total Advertisers
+    const totalMarketing = await (this.prisma as any).financialTransaction.aggregate({
+      where: { category: 'OPEX_MARKETING' },
+      _sum: { amount: true }
+    });
+    const totalAdvertisers = await this.prisma.advertiser.count();
+    const marketingSpend = totalMarketing._sum.amount || 0;
+    const cac = totalAdvertisers > 0 ? marketingSpend / totalAdvertisers : 0;
+
+    // 2. EBITDA Operativo = Revenue (AD + SUB) - OPEX (PAYOUT + COMM + MKT) (Sin CAPEX, TAX_ITBIS)
+    const revenues = await (this.prisma as any).financialTransaction.aggregate({
+      where: { category: { in: ['REVENUE_AD', 'REVENUE_SUBSCRIPTION'] } },
+      _sum: { amount: true }
+    });
+    const opex = await (this.prisma as any).financialTransaction.aggregate({
+      where: { category: { in: ['OPEX_DRIVER_PAYOUT', 'OPEX_COMMISSION', 'OPEX_MARKETING'] } },
+      _sum: { amount: true }
+    });
+    const totalRev = revenues._sum.amount || 0;
+    const totalOpex = opex._sum.amount || 0;
+    const ebitda = totalRev - totalOpex;
+
+    // 3. Promedio Mensual por Taxi (Para LTV y Payback)
+    const activeTaxis = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    
+    // Ingresos promedio mensual (simplificado)
+    const monthsActive = 12; // Suponemos 12 meses o calculamos base en oldest transaction
+    const monthlyRevPerTaxi = activeTaxis > 0 ? (totalRev / monthsActive) / activeTaxis : 0;
+    const monthlyOpexPerTaxi = activeTaxis > 0 ? (totalOpex / monthsActive) / activeTaxis : 0;
+    
+    // LTV: Ingreso proyectado por taxi a 24 meses
+    const ltv = monthlyRevPerTaxi * 24;
+
+    // Payback Period (Meses para recuperar RD$ 6,000 inicial)
+    const netMonthlyPerTaxi = monthlyRevPerTaxi - monthlyOpexPerTaxi;
+    const paybackPeriod = netMonthlyPerTaxi > 0 ? 6000 / netMonthlyPerTaxi : 999; // 999 if never
+
+    return {
+      cac: cac.toFixed(2),
+      ltv: ltv.toFixed(2),
+      paybackPeriod: paybackPeriod.toFixed(1),
+      ebitda: ebitda.toFixed(2),
+      activeTaxis,
+      monthlyRevPerTaxi: monthlyRevPerTaxi.toFixed(2),
+      monthlyOpexPerTaxi: monthlyOpexPerTaxi.toFixed(2),
+      hardwareCostPerUnit: 6000,
+      currency: 'DOP',
+      generatedAt: new Date()
     };
   }
 

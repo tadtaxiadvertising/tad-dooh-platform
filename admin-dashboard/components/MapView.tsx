@@ -276,6 +276,41 @@ const MapView: React.FC<MapViewProps> = ({
     return intersect;
   }, []);
 
+  const liveMarkers = useMemo(() => {
+    if (mode !== 'live') return null;
+    return (
+      <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon} maxClusterRadius={50} showCoverageOnHover={false}>
+        {locations.map((loc, i) => {
+          if (!loc.lastLat || !loc.lastLng) return null;
+          const sel = selectedId === loc.deviceId;
+          const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
+          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
+          
+          // Si está fuera de rango y online, forzamos alerta
+          const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
+
+          const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
+          return (
+            <Marker
+              key={loc.deviceId || i}
+              position={[loc.lastLat, loc.lastLng]}
+              icon={createIcon(markerStatus, sel, label)}
+              zIndexOffset={sel ? 1000 : 0}
+            >
+              <Popup className="popup-clean" offset={[0, -12]}>
+                <VehiclePopup
+                  device={{...loc, isOutsideFence: !inFence} as any}
+                  onViewHistory={() => onViewHistory?.(loc)}
+                  onSyncCommand={() => onSyncCommand?.(loc)}
+                />
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MarkerClusterGroup>
+    );
+  }, [mode, locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand]);
+
   const trail = useMemo(() => {
     if (!recentPath || recentPath.length < 2) return [];
     return recentPath.map((p) => [p.latitude, p.longitude] as [number, number]);
@@ -324,37 +359,7 @@ const MapView: React.FC<MapViewProps> = ({
         )}
 
         {/* LIVE MARKERS */}
-        {mode === 'live' && useMemo(() => (
-          <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon} maxClusterRadius={50} showCoverageOnHover={false}>
-            {locations.map((loc, i) => {
-              if (!loc.lastLat || !loc.lastLng) return null;
-              const sel = selectedId === loc.deviceId;
-              const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
-              const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
-              
-              // Si está fuera de rango y online, forzamos alerta
-              const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
-
-              const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
-              return (
-                <Marker
-                  key={loc.deviceId || i}
-                  position={[loc.lastLat, loc.lastLng]}
-                  icon={createIcon(markerStatus, sel, label)}
-                  zIndexOffset={sel ? 1000 : 0}
-                >
-                  <Popup className="popup-clean" offset={[0, -12]}>
-                    <VehiclePopup
-                      device={{...loc, isOutsideFence: !inFence} as any}
-                      onViewHistory={() => onViewHistory?.(loc)}
-                      onSyncCommand={() => onSyncCommand?.(loc)}
-                    />
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MarkerClusterGroup>
-        ), [locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand])}
+        {liveMarkers}
 
         {/* HEATMAP — Optimized Layer */}
         {mode === 'heatmap' && heatmapData.length > 0 && (

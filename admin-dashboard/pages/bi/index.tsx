@@ -21,6 +21,7 @@ const BIDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any>(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
 
   const fetchKpis = async () => {
     setLoading(true);
@@ -37,6 +38,7 @@ const BIDashboard = () => {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchKpis();
   }, []);
 
@@ -64,7 +66,9 @@ const BIDashboard = () => {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Último Refresh</p>
-              <p className="text-xs text-zinc-400 font-mono">{lastRefreshed.toLocaleTimeString()}</p>
+              <p className="text-xs text-zinc-400 font-mono">
+                {mounted ? lastRefreshed.toLocaleTimeString() : '--:--:--'}
+              </p>
             </div>
             <AntigravityButton 
               onAsyncClick={fetchKpis} 

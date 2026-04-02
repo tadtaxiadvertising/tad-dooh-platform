@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { MonitoringService } from './monitoring.service';
 import { GpsBatchDto } from './monitoring.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('monitoring')
 export class MonitoringController {
@@ -11,6 +12,7 @@ export class MonitoringController {
   /**
    * Endpoint para recibir el batch de GPS de las tablets (cada 5 minutos).
    */
+  @Public()
   @Post('gps-batch')
   @HttpCode(HttpStatus.OK)
   async saveGpsBatch(@Body() batch: GpsBatchDto) {
@@ -20,6 +22,7 @@ export class MonitoringController {
   /**
    * Endpoint para el dashboard administrativo que solicita el estado de la flota.
    */
+  @Public()
   @Get('fleet-status')
   async getFleetStatus() {
     return await this.monitoringService.getFleetStatus();
@@ -28,6 +31,7 @@ export class MonitoringController {
   /**
    * Endpoint para el estado de campañas activas del piloto.
    */
+  @Public()
   @Get('campaigns-status')
   async getCampaignsStatus() {
     return await this.monitoringService.getActiveCampaignsStatus();

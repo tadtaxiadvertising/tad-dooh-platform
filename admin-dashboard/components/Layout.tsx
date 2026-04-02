@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare } from 'lucide-react';
+import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';

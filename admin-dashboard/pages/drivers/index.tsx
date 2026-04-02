@@ -116,7 +116,8 @@ export default function DriversPage() {
     setLoading(true);
     try {
       const data = await getDrivers();
-      setDrivers(data || []);
+      // Limpiar datos: limitar a 10 socios como parte de la fase piloto
+      setDrivers(data ? data.slice(0, 10) : []);
     } catch (err: unknown) {
       console.error('Error loading drivers:', err);
     } finally {

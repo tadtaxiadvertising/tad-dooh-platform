@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { getDeviceProfile, sendCommand, updateDeviceProfile, deleteDevice, removeCampaignFromDevice } from '../services/api';
 import clsx from 'clsx';
+import { toast } from 'sonner';
+import { AntigravityButton } from './ui/AntigravityButton';
 import { formatDistanceToNow } from 'date-fns';
 
 interface DeviceHubModalProps {
@@ -39,37 +41,36 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
     setCommandLoading(type);
     try {
       await sendCommand(deviceId, type);
-    } catch (err) {
-      alert('Error al enviar comando');
+      toast.success(`COMANDO ${type} ENVIADO CON ÉXITO.`);
+    } catch (err: any) {
+      toast.error('FALLA DE TERMINAL: Error al enviar comando.');
     } finally {
       setTimeout(() => setCommandLoading(null), 1000);
     }
   };
 
   const handleDeleteDevice = async () => {
-    if (!window.confirm('¿ELIMINAR ESTE NODO PERMANENTEMENTE? Esta acción purgará toda la telemetría y vínculos.')) return;
     setLoading(true);
     try {
       await deleteDevice(deviceId);
+      toast.success('PANTALLA PURGADA CORRECTAMENTE.');
       onClose();
-      window.location.reload(); // Refresh fleet page
+      window.location.reload(); 
     } catch (err: any) {
-      alert('Error eliminando nodo: ' + err.message);
+      toast.error('ERROR CRÍTICO AL PURGAR: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleUnlinkCampaign = async (campaignId: string) => {
-    if (!window.confirm('¿Quitar esta campaña de este taxi?')) return;
     try {
-      // Find hardware ID from profile to use the correct API param
       const hwId = profile.device_id;
       await removeCampaignFromDevice(hwId, campaignId);
-      // Refresh content list
+      toast.warning('CAMPAÑA REMOVIDA DE ESTE NODO.');
       loadProfile();
     } catch (err: any) {
-      alert('Error desvinculando campaña: ' + err.message);
+      toast.error('ERROR AL DESVINCULAR CAMPAÑA: ' + err.message);
     }
   };
 
@@ -204,13 +205,16 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                             <span className="text-[10px] font-black text-zinc-500 bg-black/40 px-4 py-2 rounded-xl group-hover:text-white transition-colors">
                               VIGENTE DESDE {camp.assigned_at ? new Date(camp.assigned_at).toLocaleDateString() : 'N/A'}
                             </span>
-                            <button 
-                              onClick={() => handleUnlinkCampaign(camp.id)}
-                              className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                              title="Desvincular campaña"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                             <AntigravityButton 
+                               actionName="unlink_campaign_node"
+                               onAsyncClick={() => handleUnlinkCampaign(camp.id)}
+                               confirmMessage={`¿QUITAR CAMPAÑA "${camp.name}" DE ESTE NODO?`}
+                               variant="danger"
+                               className="!p-0 w-10 h-10 rounded-xl opacity-0 group-hover:opacity-100"
+                               title="Desvincular campaña"
+                             >
+                               <X className="w-4 h-4" />
+                             </AntigravityButton>
                           </div>
                         </div>
                       ))}
@@ -275,13 +279,15 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
 
                    <div className="pt-8 border-t border-white/5">
                       <h3 className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4">Zona de Peligro</h3>
-                      <button 
-                        onClick={handleDeleteDevice}
-                        disabled={loading}
-                        className="flex items-center justify-center gap-3 px-8 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
+                       <AntigravityButton 
+                        actionName="purge_node_permanent"
+                        onAsyncClick={handleDeleteDevice}
+                        confirmMessage="¿ELIMINAR ESTE NODO PERMANENTEMENTE? Se purgará toda la telemetría."
+                        variant="danger"
+                        className="px-8 py-4 h-auto text-[10px]"
                       >
                         <Trash2 className="w-4 h-4" /> Desvincular Nodo Permanentemente
-                      </button>
+                      </AntigravityButton>
                    </div>
                 </div>
               )}

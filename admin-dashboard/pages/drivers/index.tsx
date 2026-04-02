@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { IdCard, Search, UserCheck, UserX, Tablet, ChevronDown, Plus, AlertTriangle, CheckCircle2, Download, Lock, Unlock, Zap, User, Users, ShieldCheck, CreditCard, Radio, ExternalLink, Smartphone, Navigation, X, XCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '../../services/api';
 import DriverModal from '../../components/DriverModal';
 import { useTabSync } from '../../hooks/useTabSync';
@@ -75,16 +75,17 @@ export default function DriversPage() {
 
   const handleAssignDevice = async (driverId: string) => {
     if (!assigningDeviceId.trim()) {
-      alert("Por favor ingrese el ID de la tablet.");
+      toast.error("ID REQUERIDO: Por favor ingrese el ID de la tablet.");
       return;
     }
     setSavingDevice(true);
     try {
       await assignDeviceToDriver(driverId, assigningDeviceId.trim());
+      toast.success("VINCULACIÓN COMPLETADA: Nodo de hardware asignado al socio.");
       await loadDrivers();
       notifyChange('TAD_DRIVERS');
     } catch (e: any) {
-       alert("Error al asignar: " + (e.response?.data?.message || e.message));
+       toast.error("FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message));
     } finally {
       setSavingDevice(false);
       setAssigningDeviceId('');
@@ -92,14 +93,14 @@ export default function DriversPage() {
   };
 
   const handleUnlinkDevice = async (driverId: string) => {
-    if (!window.confirm("¿Seguro que deseas desvincular esta pantalla actual?")) return;
     setSavingDevice(true);
     try {
       await unlinkDeviceFromDriver(driverId);
+      toast.warning("DESVINCULACIÓN EXITOSA: El nodo ha sido liberado de este socio.");
       await loadDrivers();
       notifyChange('TAD_DRIVERS');
     } catch (e: any) {
-       alert("Error al desvincular: " + (e.response?.data?.message || e.message));
+       toast.error("ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message));
     } finally {
       setSavingDevice(false);
     }
@@ -134,9 +135,10 @@ export default function DriversPage() {
         return d;
       }));
       notifyChange('TAD_DRIVERS');
+      toast.success(`ESTADO ACTUALIZADO: Socio ${newStatus ? 'HABILITADO' : 'INHIBIDO'} correctamente.`);
     } catch (err: unknown) {
       console.error(err);
-      alert('Error crítico en actualización de credenciales.');
+      toast.error('FALLA DE SEGURIDAD: Error crítico en actualización de credenciales.');
     }
   };
 
@@ -393,18 +395,20 @@ export default function DriversPage() {
                               </Link>
                             </>
                           )}
-                          <button 
-                            onClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
-                            className={clsx(
-                              "p-2.5 rounded-xl transition-all border shadow-sm flex items-center justify-center group-hover:-translate-y-0.5",
-                              driver.status === 'ACTIVE' 
-                                ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white" 
-                                : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
-                            )}
-                            title={driver.status === 'ACTIVE' ? 'Bloquear Socio' : 'Habilitar Socio'}
-                          >
-                            {driver.status === 'ACTIVE' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                          </button>
+                           <AntigravityButton 
+                             actionName={driver.status === 'ACTIVE' ? 'lock_driver' : 'unlock_driver'}
+                             onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
+                             confirmMessage={driver.status === 'ACTIVE' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
+                             className={clsx(
+                               "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
+                               driver.status === 'ACTIVE' 
+                                 ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white" 
+                                 : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
+                             )}
+                             title={driver.status === 'ACTIVE' ? 'Bloquear Socio' : 'Habilitar Socio'}
+                           >
+                             {driver.status === 'ACTIVE' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                           </AntigravityButton>
                           <button 
                             onClick={() => setExpandedId(expandedId === driver.id ? null : driver.id)}
                             title={expandedId === driver.id ? "Contraer" : "Expandir"}
@@ -438,19 +442,20 @@ export default function DriversPage() {
                               <div>
                                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
                                 {driver.devices && driver.devices.length > 0 ? (
-                                  <div className="flex gap-2">
+                                   <div className="flex gap-2">
                                      <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices[0].deviceId}</p>
-                                     <button 
-                                       onClick={() => handleUnlinkDevice(driver.id)}
+                                     <AntigravityButton 
+                                       actionName="unlink_device"
+                                       confirmMessage="¿SEGURO QUE DESEAS DESVINCULAR ESTE NODO? El socio dejará de transmitir inmediatamente."
+                                       onAsyncClick={() => handleUnlinkDevice(driver.id)}
                                        title="Desvincular Pantalla"
-                                       disabled={savingDevice}
-                                       className="p-2 border border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
+                                       className="!p-0 w-10 h-10 border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
                                      >
                                         <RefreshCw className="w-4 h-4" />
-                                     </button>
+                                     </AntigravityButton>
                                   </div>
                                 ) : (
-                                  <div className="flex gap-2">
+                                   <div className="flex gap-2">
                                      <input 
                                        type="text"
                                        value={assigningDeviceId}
@@ -458,13 +463,14 @@ export default function DriversPage() {
                                        placeholder="TAD-XXXXX"
                                        className="flex-1 bg-gray-900 border border-gray-700/50 text-white font-mono text-xs p-2.5 rounded-lg focus:border-tad-yellow outline-none uppercase"
                                      />
-                                     <button 
-                                       onClick={() => handleAssignDevice(driver.id)}
-                                       disabled={savingDevice || !assigningDeviceId}
-                                       className="px-3 bg-tad-yellow text-black font-black uppercase text-[9px] rounded-lg tracking-widest disabled:opacity-50"
+                                     <AntigravityButton 
+                                       actionName="link_device"
+                                       onAsyncClick={() => handleAssignDevice(driver.id)}
+                                       disabled={!assigningDeviceId}
+                                       className="px-4 text-[9px] h-10 rounded-lg"
                                      >
                                         Vincular
-                                     </button>
+                                     </AntigravityButton>
                                   </div>
                                 )}
                               </div>

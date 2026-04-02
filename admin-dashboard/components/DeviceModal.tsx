@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tablet, X, Check, AlertCircle, Save, Trash2, MapPin, Hash, User } from 'lucide-react';
 import { createDevice, updateDevice, deleteDevice } from '../services/api';
+import { toast } from 'sonner';
+import { AntigravityButton } from './ui/AntigravityButton';
 
 interface DeviceModalProps {
   isOpen: boolean;
@@ -82,18 +84,16 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
   };
 
   const handleDelete = async () => {
-    if (!device) return;
-    if (!window.confirm('¿Estás seguro de eliminar este dispositivo? Se perderán todos los vínculos con conductores y campañas.')) return;
-
     setLoading(true);
     try {
-      const id = device.id || device.device_id || '';
+      const id = device?.id || device?.device_id || '';
       if (!id) throw new Error('ID no encontrado');
       await deleteDevice(id);
+      toast.success('PANTALLA ELIMINADA: Hardware purgado del inventario.');
       onSuccess();
       onClose();
-    } catch {
-      setError('No se pudo eliminar el dispositivo');
+    } catch (err: any) {
+      toast.error('FALLA DE ELIMINACIÓN: ' + (err.message || 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -217,25 +217,28 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
 
           <div className="pt-4 flex gap-3">
             {device && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={loading}
-                title="Eliminar dispositivo"
-                aria-label="Eliminar dispositivo"
-                className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-4 px-6 rounded-2xl border border-red-500/20 transition-all active:scale-95"
+              <AntigravityButton
+                actionName="delete_hardware"
+                onAsyncClick={handleDelete}
+                confirmMessage="¿ELIMINAR ESTE HARDWARE? Se perderán todos los vínculos."
+                variant="danger"
+                className="flex-[0.3] h-16 rounded-2xl"
               >
                 <Trash2 className="w-5 h-5" />
-              </button>
+              </AntigravityButton>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 flex gap-2 items-center justify-center bg-tad-yellow hover:bg-tad-yellow/90 text-black font-black py-4 px-6 rounded-2xl transition-all active:scale-95 shadow-xl shadow-tad-yellow/10"
+            <AntigravityButton
+              actionName="save_hardware"
+              onAsyncClick={async () => {
+                const e = { preventDefault: () => {} } as any;
+                await handleSubmit(e);
+              }}
+              variant="primary"
+              className="flex-1 h-16 rounded-2xl"
             >
-              <Save className="h-5 w-5" />
-              {loading ? 'Procesando...' : (device ? 'Guardar Cambios' : 'Registrar Pantalla')}
-            </button>
+              <Save className="h-5 w-5 mr-2" />
+              {device ? 'Guardar' : 'Registrar'}
+            </AntigravityButton>
           </div>
         </form>
       </div>

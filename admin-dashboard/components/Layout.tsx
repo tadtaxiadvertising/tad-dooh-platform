@@ -40,6 +40,7 @@ const NAVIGATION_GROUPS = [
   {
     label: 'Resultados & ROI',
     items: [
+      { name: 'BI Command Center', href: '/bi', icon: TrendingUp },
       { name: 'Finanzas & Pagos', href: '/finance', icon: Wallet },
       { name: 'Analítica de Impacto', href: '/analytics', icon: BarChart3 },
     ],

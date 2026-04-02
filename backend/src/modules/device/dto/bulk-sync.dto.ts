@@ -1,8 +1,10 @@
-import { IsString, IsArray, ValidateNested, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsArray, ValidateNested, IsNumber, IsOptional, IsDateString, MaxLength, Matches, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BulkPlaybackDto {
   @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-zA-Z0-9_\-]+$/, { message: 'video_id contains invalid characters' })
   video_id: string;
 
   @IsDateString()
@@ -30,6 +32,8 @@ export class BulkLocationDto {
 
 export class BulkSyncDto {
   @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-zA-Z0-9_\-]+$/, { message: 'device_id contains invalid characters' })
   device_id: string;
 
   @IsOptional()
@@ -38,14 +42,18 @@ export class BulkSyncDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(16)
+  @Matches(/^[0-9.]+\s?[GMBKmbk]+$/, { message: 'storage_free format is invalid (e.g. 1.2GB)' })
   storage_free?: string;
 
   @IsArray()
+  @ArrayMaxSize(200) // Prevent OOM by limiting batch size
   @ValidateNested({ each: true })
   @Type(() => BulkPlaybackDto)
   playbacks: BulkPlaybackDto[];
 
   @IsArray()
+  @ArrayMaxSize(200) // Prevent OOM by limiting batch size
   @ValidateNested({ each: true })
   @Type(() => BulkLocationDto)
   locations: BulkLocationDto[];

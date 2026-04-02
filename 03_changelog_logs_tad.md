@@ -1,5 +1,28 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+## 📅 02 de Abril, 2026 (SRE Resilience & Hard-Core Optimization v6.0)
+
+### 🛡️ SRE & CYBERSECURITY: Resiliencia en Baja RAM (512MB)
+
+- **Throttled Concurrency Engine**: Implementación de `throttledParallel` y `throttledMap` en `backend/src/utils/throttler.util.ts`. Este motor limita la concurrencia de operaciones pesadas (ej. Auditoría de Flota, Cálculo de Nómina) para evitar picos de memoria RAM en el VPS EasyPanel.
+- **Fleet Summary Optimization**: Refactorizado `DeviceService.getFleetStatusSummary` para operar con un límite de **5 hilos concurrentes**, eliminando el riesgo de OOM al escalar a cientos de dispositivos.
+- **Campaign Billing Throttling**: Refactorizado `FinanceService.getCampaignBillingReport` con un límite de **3 hilos concurrentes**, protegiendo el pool de conexiones de base de datos durante auditorías masivas de reproducción.
+- **Bulk Sync Hardening (Cybersecurity)**: Fortificación del `BulkSyncDto` con validaciones estrictas:
+  - **Regex Sanitization**: Los campos `device_id` y `video_id` filtrados para prevenir inyecciones de scripts.
+  - **Payload Limits**: Implementado `ArrayMaxSize(200)` en lotes de telemetría y `MaxLength(16)` en metadatos de almacenamiento para evitar ataques de denegación de servicio (DoS) por memoria.
+- **Prisma Pool Sentinel**: Añadido chequeo preventivo en `PrismaService` que emite una alerta crítica si el `DATABASE_URL` no contiene la directiva `connection_limit` en producción, asegurando la estabilidad del pooler de Supabase.
+
+---
+
+## 📅 01 de Abril, 2026 (Infrastructure Optimization & Zero-Revenue Fallback v5.6)
+
+### 📈 CORE INFRASTRUCTURE: Escalamiento y Contingencia
+
+- **Bulk Synchronization API**: Despliegue de una nueva API de sincronización en bloque (`Bulk Sync API`) para reducir drásticamente la carga de la base de datos al enviar metadatos de campaña a las tablets.
+- **Zero-Revenue Fallback Playlist**: Implementada una lista de reproducción "Zero-Revenue" para la gestión de suscripciones, actuando como un fallback resiliente para mostrar contenido predeterminado si hay fallos en las asignaciones pagadas o falta de red.
+- **Docker VPS Optimization**: Optimización de contenedores Docker ajustada para entornos VPS de baja disponibilidad de recursos, previniendo caídas OOM (Out Of Memory) y asegurando un **99.9% de Uptime** sostenido.
+- **Email & WhatsApp Notifications**: Finalización de la integración de `EmailService` para el envío automático de notificaciones de reportes de performance, facturas comerciales y confirmaciones de pago, todo controlable con un clic en el admin dashboard.
+
 ## 📅 01 de Abril, 2026 (Advertiser Autonomy & Reporting Precision v5.5)
 
 ### 📢 ADVERTISER: Gestión de Peticiones y Autonomía

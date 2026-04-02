@@ -21,6 +21,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit() {
     this.logger.log('🔌 Inicializando conexión al Pooler de Supabase...');
+    
+    // REGLA SRE: Validar configuración de Pool en Producción (Doc 05)
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (process.env.NODE_ENV === 'production' && !dbUrl.includes('connection_limit=')) {
+      this.logger.warn('⚠️ ADVERTENCIA SRE: DATABASE_URL no tiene "connection_limit". Riesgo de saturación en VPS de 512MB.');
+    }
+
     const MAX_RETRIES = 5;
     let attempts = 0;
 

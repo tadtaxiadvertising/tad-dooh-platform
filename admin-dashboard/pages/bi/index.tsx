@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import Layout from '../../components/Layout';
 import { BiKpiCard } from '../../components/bi/BiKpiCard';
 import { 
   DollarSign, 
@@ -43,7 +42,7 @@ const BIDashboard = () => {
   }, []);
 
   return (
-    <Layout>
+    <>
       <Head>
         <title>BI Command Center | TAD DOOH Platform</title>
         <meta name="description" content="TAD Dominicana BI Dashboard - Real-time fleet and financial intelligence" />
@@ -160,7 +159,7 @@ const BIDashboard = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

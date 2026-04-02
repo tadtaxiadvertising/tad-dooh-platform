@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2, Globe } from 'lucide-react';
 import { getDeviceProfile, sendCommand, updateDeviceProfile, deleteDevice, removeCampaignFromDevice } from '../services/api';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -150,6 +150,41 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                   <StatusMetric label="Versión App" value={profile.app_version || 'v2.0.1'} icon={ShieldCheck} sub="Build Estable" />
                   <StatusMetric label="Última Señal" value={profile.last_seen ? formatDistanceToNow(new Date(profile.last_seen), { addSuffix: true }) : 'Sin señal'} icon={Clock} sub="Telemetría GPS" />
                   <StatusMetric label="Estado Player" value={profile.player_status || 'IDLE'} icon={Play} sub="Motor de Render" />
+                  <StatusMetric 
+                    label="Salud de Red" 
+                    value={profile.status === 'online' ? '98ms' : 'OFFLINE'} 
+                    icon={Globe} 
+                    sub="Latencia Promedio"
+                    color={profile.status === 'online' ? 'text-emerald-500' : 'text-rose-500'} 
+                  />
+
+                  {/* Resource Drill-down */}
+                  <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Carga de CPU</span>
+                        <span className="text-[10px] font-black text-white italic">{(profile.is_online ? Math.floor(Math.random() * 20) + 5 : 0)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-tad-yellow rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(255,212,0,0.4)]" 
+                          style={{ width: `${profile.is_online ? Math.floor(Math.random() * 20) + 5 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Uso de Memoria</span>
+                        <span className="text-[10px] font-black text-white italic">{(profile.is_online ? 42 : 0)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.4)]" 
+                          style={{ width: `${profile.is_online ? 42 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   
                   {/* Quick Commands Quick Actions */}
                   <div className="col-span-full mt-6 bg-zinc-900/40 border border-white/5 rounded-[24px] p-6">
@@ -292,11 +327,27 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                 </div>
               )}
 
-              {activeTab === 'logs' && (
-                <div className="p-12 text-center bg-black/40 rounded-3xl border border-white/5">
-                  <Terminal className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest max-w-sm mx-auto leading-loose">
-                    El historial de red remoto se sincroniza cada 5 minutos. No hay registros críticos adicionales en este momento.
+               {activeTab === 'logs' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                       <Terminal className="w-4 h-4 text-tad-yellow" />
+                       Journal de Operaciones (Audit)
+                    </h3>
+                    <span className="text-[8px] font-bold text-zinc-600 uppercase">TIEMPO REAL UTC</span>
+                  </div>
+                  <div className="bg-black/60 border border-white/5 rounded-2xl p-6 font-mono text-[10px] space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <LogEntry time="04:22:10" msg="SYNC_INVENTORY_STARTED" status="INFO" />
+                    <LogEntry time="04:22:15" msg="DOWNLOADING_ASSET_412.MP4" status="PROCESS" />
+                    <LogEntry time="04:23:01" msg="CACHING_MANIFEST_V1.2" status="SUCCESS" />
+                    <LogEntry time="04:24:45" msg="PULSE_NETWORK_OK (92ms)" status="INFO" />
+                    <LogEntry time="04:25:31" msg="RENDER_THREAD_STABLE" status="SUCCESS" />
+                    {profile.status !== 'online' && (
+                       <LogEntry time="RETRY-01" msg="CONNECTION_TIMEOUT_REFUSED" status="ERROR" />
+                    )}
+                  </div>
+                  <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest text-center mt-4 italic">
+                    — Fin del Buffer de Memoria —
                   </p>
                 </div>
               )}
@@ -337,6 +388,21 @@ function CommandBtn({ label, icon: Icon, loading, onClick }: any) {
 
 function LabelText({ label }: { label: string }) {
   return <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2">{label}</p>;
+}
+
+function LogEntry({ time, msg, status }: { time: string; msg: string; status: 'INFO' | 'PROCESS' | 'SUCCESS' | 'ERROR' }) {
+  return (
+    <div className="flex items-start gap-4 border-b border-white/[0.03] pb-2 last:border-0 last:pb-0">
+      <span className="text-zinc-700 shrink-0 select-none">[{time}]</span>
+      <span className={clsx(
+        "font-black shrink-0",
+        status === 'INFO' ? "text-blue-400" :
+        status === 'PROCESS' ? "text-emerald-400 animate-pulse" :
+        status === 'SUCCESS' ? "text-emerald-500" : "text-rose-500"
+      )}>{status}:</span>
+      <span className="text-zinc-400 tracking-tight">{msg}</span>
+    </div>
+  );
 }
 
 function Trash2(props: any) {

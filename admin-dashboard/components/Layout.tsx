@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp } from 'lucide-react';
+import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
@@ -41,6 +41,7 @@ const NAVIGATION_GROUPS = [
     label: 'Resultados & ROI',
     items: [
       { name: 'BI Command Center', href: '/bi', icon: TrendingUp },
+      { name: 'Conciliación Fiscal', href: '/bi/reconciliation', icon: Scale },
       { name: 'Finanzas & Pagos', href: '/finance', icon: Wallet },
       { name: 'Analítica de Impacto', href: '/analytics', icon: BarChart3 },
     ],

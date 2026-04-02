@@ -15,7 +15,7 @@ import {
   Flame, Tv2, ChevronRight, X, Filter,
   CheckCircle2, Gauge as SpeedIcon,
 } from 'lucide-react';
-import { getDeviceRecentPath, getHeatmapData } from '../../services/api';
+import api, { getDeviceRecentPath, getHeatmapData } from '../../services/api';
 
 // ─────────────────────────────────────────────────────────────────────
 // DYNAMIC IMPORTS  (everything that touches window/Leaflet)
@@ -736,8 +736,8 @@ export default function RealtimeDashboard() {
     try {
       setIsRefreshing(true);
       const [devRes, campRes] = await Promise.all([
-        axios.get('/api/proxy/monitoring/fleet-status'),
-        axios.get('/api/proxy/monitoring/campaigns-status'),
+        api.get('/monitoring/fleet-status'),
+        api.get('/monitoring/campaigns-status'),
       ]);
       // Filtramos exclusivamente los 10 taxis del piloto STI
       const pilotDevices = (devRes.data || []).filter((d: any) => {

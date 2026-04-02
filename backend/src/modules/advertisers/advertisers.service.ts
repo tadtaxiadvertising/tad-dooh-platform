@@ -81,10 +81,7 @@ export class AdvertisersService {
         campaigns: {
           where: { active: true },
           include: {
-            metrics: {
-              orderBy: { date: 'desc' },
-              take: 30
-            },
+            // Solo tomar media para el frontend
             media: true
           }
         }
@@ -93,26 +90,61 @@ export class AdvertisersService {
 
     if (!advertiser) return null;
 
-    // Get current campaign IDs to pull real-time scans
     const campaignIds = advertiser.campaigns.map(c => c.id);
 
-    // 1. Total Impressions and Completions from aggregated metrics
+    // 1. Total Impressions from aggregations (avoiding giant table iterations)
     let totalImpressions = 0;
     let totalCompletions = 0;
-    advertiser.campaigns.forEach(c => {
-      c.metrics.forEach(m => {
-        totalImpressions += m.totalImpressions;
-        totalCompletions += m.totalCompletions;
-      });
-    });
+    
+    if (campaignIds.length > 0) {
+      try {
+        const agg = await this.prisma.campaignMetric.aggregate({
+          where: { campaignId: { in: campaignIds } },
+          _sum: { totalImpressions: true, totalCompletions: true }
+        });
+        totalImpressions = agg._sum.totalImpressions || 0;
+        totalCompletions = agg._sum.totalCompletions || 0;
+      } catch (e) {
+        console.error("Error aggregating metrics:", e);
+      }
+    }
 
-    // 2. Real-time count of QR Scans from AnalyticsEvents (TAD unique value)
-    const totalScans = await this.prisma.analyticsEvent.count({
+    // 2. Real-time count of QR Scans from AnalyticsEvents
+    const totalScans = campaignIds.length > 0 ? await this.prisma.analyticsEvent.count({
       where: {
         campaignId: { in: campaignIds },
         eventType: { in: ['qr_scan', 'scan_redirect', 'scan'] }
       }
-    });
+    }) : 0;
+
+    // 3. Cálculos Financieros Exactos
+    const COST_PER_AD = 1500;
+    const TAX_RATE = 0.18;
+    const totalAds = advertiser.campaigns.length;
+    const subtotal = totalAds * COST_PER_AD;
+    const taxAmount = subtotal * TAX_RATE;
+    const totalCost = subtotal + taxAmount;
+
+    // Obtener métricas por campaña
+    const campaignsWithMetrics = await Promise.all(advertiser.campaigns.map(async (c) => {
+      const campAgg = await this.prisma.campaignMetric.aggregate({
+        where: { campaignId: c.id },
+        _sum: { totalImpressions: true, totalCompletions: true }
+      });
+      return {
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        start: c.startDate,
+        end: c.endDate,
+        targetUrl: c.targetUrl,
+        promocionesContratadas: c.targetImpressions || 0, // Using requested terminology
+        impressions: campAgg._sum.totalImpressions || 0,
+        completions: campAgg._sum.totalCompletions || 0,
+        scans: 0,
+        media: c.media.map(m => ({ id: m.id, url: m.url, type: m.mimeType, name: m.name }))
+      };
+    }));
 
     return {
       brand: {
@@ -125,22 +157,20 @@ export class AdvertisersService {
         status: advertiser.status
       },
       stats: {
+        promocionesContratadas: advertiser.campaigns.reduce((acc, curr) => acc + (curr.targetImpressions || 0), 0),
         totalImpressions,
         totalCompletions,
         totalScans, 
-        activeCampaigns: advertiser.campaigns.length
+        activeCampaigns: totalAds
       },
-      campaigns: advertiser.campaigns.map(c => ({
-        id: c.id,
-        name: c.name,
-        status: c.status,
-        start: c.startDate,
-        end: c.endDate,
-        impressions: c.metrics.reduce((acc, curr) => acc + curr.totalImpressions, 0),
-        completions: c.metrics.reduce((acc, curr) => acc + curr.totalCompletions, 0),
-        scans: 0, // Individual campaign scans would need grouped aggregate
-        media: c.media.map(m => ({ id: m.id, url: m.url, type: m.mimeType, name: m.name }))
-      }))
+      financials: {
+        subtotal,
+        taxAmount,
+        totalCost,
+        costPerAd: COST_PER_AD,
+        taxRate: TAX_RATE
+      },
+      campaigns: campaignsWithMetrics
     };
   }
 

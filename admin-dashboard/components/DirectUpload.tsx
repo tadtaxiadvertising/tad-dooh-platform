@@ -84,7 +84,7 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
               <p className="text-sm text-zinc-400 text-center">Solo formato MP4 permitido</p>
             </div>
             <label className="cursor-pointer">
-              <AntigravityButton variant="secondary" onClick={() => {}} className="pointer-events-none">
+              <AntigravityButton actionName="Select_Video" variant="secondary" onAsyncClick={async () => {}} className="pointer-events-none">
                 Seleccionar Video
               </AntigravityButton>
               <input type="file" className="hidden" accept="video/mp4" onChange={handleFileChange} />
@@ -114,9 +114,9 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
 
             <div className="mt-6 w-full flex justify-end space-x-3">
               <AntigravityButton 
+                actionName="Upload_Video"
                 variant="primary" 
-                onClick={handleUpload} 
-                isPending={isUploading}
+                onAsyncClick={async () => { await handleUpload(); }} 
                 className="w-full sm:w-auto"
               >
                 Subir Video

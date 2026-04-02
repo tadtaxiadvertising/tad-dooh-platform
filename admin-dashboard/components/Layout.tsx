@@ -18,7 +18,7 @@ const NAVIGATION_GROUPS = [
     items: [
       { name: 'Resumen General', href: '/', icon: LayoutDashboard },
       { name: 'Monitor de Pantallas', href: '/fleet', icon: Tablet },
-      { name: 'Geolocalización', href: '/tracking', icon: Navigation },
+      { name: 'Geolocalización', href: '/dashboard/realtime', icon: Navigation },
       { name: 'Auditoría & Salud', href: '/monitoring', icon: ShieldCheck },
     ],
   },

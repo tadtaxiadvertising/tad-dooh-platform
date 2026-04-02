@@ -25,6 +25,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -62,7 +63,6 @@ import { BiModule } from './modules/bi/bi.module';
     // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
     // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
-
     PrismaModule,
     AuthModule,
     SupabaseModule,
@@ -81,7 +81,9 @@ import { BiModule } from './modules/bi/bi.module';
     AntigravityModule,
     PortalRequestsModule,
     BiModule,
+    MonitoringModule,
   ],
+
   providers: [
     // Global JWT guard — protects ALL routes by default
     // Use @Public() decorator on tablet-facing routes to bypass

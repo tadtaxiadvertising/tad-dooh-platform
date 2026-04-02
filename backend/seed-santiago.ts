@@ -53,11 +53,20 @@ async function seedSantiago() {
         licensePlate: `A${Math.floor(100000 + Math.random() * 900000)}`,
         taxiPlate: `TP-${i.toString().padStart(4, '0')}`,
         taxiNumber: `STI-${i.toString().padStart(3, '0')}`,
-        deviceId,
         subscriptionPaid: Math.random() > 0.3,
         status: 'ACTIVE'
       }
     });
+
+    // Update the device to point to the driver
+    const driver = await prisma.driver.findFirst({ where: { phone: `809555${i.toString().padStart(4, '0')}` } });
+    if (driver) {
+      await prisma.device.update({
+        where: { deviceId },
+        data: { driverId: driver.id }
+      });
+    }
+
   }
   console.log('✅ 100 Choferes registrados con terminales activas.');
 

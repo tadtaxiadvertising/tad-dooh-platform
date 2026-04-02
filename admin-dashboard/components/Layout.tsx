@@ -167,8 +167,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="space-y-1.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = router.pathname === item.href
-                    || (item.href !== '/' && router.pathname.startsWith(item.href));
+                  const allHrefTexts = NAVIGATION_GROUPS.flatMap(g => g.items.map(i => i.href));
+                  const isExactMatch = router.pathname === item.href;
+                  const isPrefixMatch = item.href !== '/' && router.pathname.startsWith(item.href + '/');
+                  // Es activo si es coincidencia exacta, O si es un sub-path y no hay otro botón en el menú que coincida mejor.
+                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some(otherHref => 
+                      otherHref !== item.href && 
+                      otherHref.length > item.href.length && 
+                      (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
+                  ));
 
                   return (
                     <Link

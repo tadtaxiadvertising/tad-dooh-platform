@@ -739,7 +739,14 @@ export default function RealtimeDashboard() {
         axios.get('/api/proxy/monitoring/fleet-status'),
         axios.get('/api/proxy/monitoring/campaigns-status'),
       ]);
-      setDevices(devRes.data  || []);
+      // Filtramos exclusivamente los 10 taxis del piloto STI
+      const pilotDevices = (devRes.data || []).filter((d: any) => {
+        const numMatch = d.deviceId.match(/STI0*(\d+)/);
+        if (!numMatch) return false;
+        const num = parseInt(numMatch[1], 10);
+        return num >= 1 && num <= 10;
+      });
+      setDevices(pilotDevices);
       setCampaigns(campRes.data || []);
       setLastUpdate(new Date());
     } catch (err) {

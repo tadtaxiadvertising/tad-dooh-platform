@@ -379,4 +379,11 @@ export const emailDriverPaymentConfirm = (data: {
   driverId?: string;
 }) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
+// Business Intelligence (BI)
+export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
+export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
+export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
+export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
+export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
+
 export default api;

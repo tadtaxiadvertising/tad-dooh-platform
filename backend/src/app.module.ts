@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import * as zod from 'zod';
@@ -23,6 +24,7 @@ import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
+import { BiModule } from './modules/bi/bi.module';
 
 @Module({
   imports: [
@@ -59,6 +61,7 @@ import { PortalRequestsModule } from './modules/portal-requests/portal-requests.
 
     // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
     // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ScheduleModule.forRoot(),
 
     PrismaModule,
     AuthModule,
@@ -77,6 +80,7 @@ import { PortalRequestsModule } from './modules/portal-requests/portal-requests.
     SheetsModule,
     AntigravityModule,
     PortalRequestsModule,
+    BiModule,
   ],
   providers: [
     // Global JWT guard — protects ALL routes by default

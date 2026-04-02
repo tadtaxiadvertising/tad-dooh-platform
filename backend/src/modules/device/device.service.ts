@@ -7,6 +7,7 @@ import { SyncDeviceDto } from './dto/sync-device.dto';
 import { BulkSyncDto } from './dto/bulk-sync.dto';
 import { CampaignService } from '../campaign/campaign.service';
 import { FinanceService } from '../finance/finance.service';
+import { throttledMap } from '../../utils/throttler.util';
 import * as jwt from 'jsonwebtoken';
 
 const MAX_SLOTS_PER_DEVICE = 15;
@@ -122,8 +123,8 @@ export class DeviceService {
 
     const thirtyMinMs = 30 * 60 * 1000;
     
-    // Process in parallel to be fast
-    const fleetStatus = await Promise.all(devices.map(async d => {
+    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
+    const fleetStatus = await throttledMap(devices, async (d) => {
       const isOnline = d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs);
       
       // Call the unified slot counter
@@ -147,7 +148,7 @@ export class DeviceService {
         driver_name: d.driver?.fullName || 'No asignado',
         subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
       };
-    }));
+    }, 5); // Limit to 5 simultaneous operations
 
     return fleetStatus;
   }

@@ -30,14 +30,36 @@ import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
+import { ConfirmPromptModal } from '../../components/ui/ConfirmPromptModal';
+
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns' | 'ledger'>('payroll');
-  const [payroll, setPayroll] = useState<{ driverId: string; driverName: string; taxiNumber?: string; activeAds: number; totalAmount: number }[]>([]);
+  const [payroll, setPayroll] = useState<{ driverId: string; driverName: string; taxiNumber?: string; activeAds: number; totalAmount: number; driverEmail?: string; driverPhone?: string }[]>([]);
   const [campaignData, setCampaignData] = useState<{ campaignId: string; campaignName: string; assignedTaxis: number; status: string; estimatedRevenue: number; totalImpressions?: number }[]>([]);
   const [ledger, setLedger] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // States for Premium Modals
+  const [promptConfig, setPromptConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    placeholder: string;
+    confirmText: string;
+    type: 'text' | 'email';
+    defaultValue?: string;
+    onConfirm: (val: string) => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    placeholder: '',
+    confirmText: '',
+    type: 'text',
+    onConfirm: async () => {}
+  });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -77,16 +99,15 @@ export default function FinancePage() {
     }
   }, [activeTab]);
 
-  useTabSync('FINANCE', loadData);
-
-  useEffect(() => {
-    loadData();
-  }, [activeTab, loadData]);
-
   const handlePay = async (driverId: string, amount: number) => {
-    const ref = window.prompt(`Confirmar liquidación de RD$${amount.toLocaleString()}. Ingrese Hash o Ref. de Transferencia:`);
-    if (ref) {
-      try {
+    setPromptConfig({
+      isOpen: true,
+      title: 'Confirmar Liquidación',
+      description: `Ingrese el Hash o Referencia de Transferencia para la liquidación de RD$${amount.toLocaleString()}.`,
+      placeholder: 'Ej: TX-908234L...',
+      confirmText: 'Registrar Pago',
+      type: 'text',
+      onConfirm: async (ref: string) => {
         const now = new Date();
         await processPayrollPayment({ 
           driverId, 
@@ -94,15 +115,18 @@ export default function FinancePage() {
           year: now.getFullYear(),
           reference: ref 
         });
-        alert('Protocolo de pago ejecutado exitosamente.');
+        toast.success('LIQUIDACIÓN EXITOSA: Protocolo de pago ejecutado y registrado en el Libro Mayor.');
         notifyChange('FINANCE');
         loadData();
-      } catch (err: unknown) {
-        console.error(err);
-        alert('Error crítico en el proceso de liquidación. Verifique duplicidad de registros.');
       }
-    }
+    });
   };
+
+  useTabSync('FINANCE', loadData);
+
+  useEffect(() => {
+    loadData();
+  }, [activeTab, loadData]);
 
   return (
     <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
@@ -162,7 +186,7 @@ export default function FinancePage() {
           <AntigravityButton
             actionName="new_transaction"
             variant="secondary"
-            onClick={() => alert('Consola de Registro Rápido: Use el comando de voz o el terminal de Inteligencia Financiera.')}
+            onClick={() => toast.info('CONSOLA DE REGISTRO: Use el terminal de Inteligencia Financiera para nuevas entradas.', { duration: 5000 })}
           >
             <RefreshCcw className="w-4 h-4" />
             Nuevo Registro
@@ -322,22 +346,31 @@ export default function FinancePage() {
 
                             <button 
                               onClick={async () => {
-                                const email = window.prompt("✉️ Enviar Confirmación por Email al Chofer:", (item as any).driverEmail || "");
-                                if (!email) return;
-                                const loadingToast = toast.loading("Enviando comprobante por email...");
-                                try {
-                                  const { emailDriverPaymentConfirm } = await import('../../services/api');
-                                  await emailDriverPaymentConfirm({ 
-                                    email, 
-                                    driverName: item.driverName, 
-                                    amount: item.totalAmount, 
-                                    month: format(new Date(), 'MMMM yyyy', { locale: es }),
-                                    driverId: item.driverId
-                                  });
-                                  toast.success("✅ Email enviado exitosamente", { id: loadingToast });
-                                } catch (err: any) {
-                                  toast.error("❌ Error al enviar email: " + (err.response?.data?.message || err.message), { id: loadingToast });
-                                }
+                                setPromptConfig({
+                                  isOpen: true,
+                                  title: 'Notificar por Email',
+                                  description: `Enviar comprobante de liquidación a ${item.driverName}.`,
+                                  defaultValue: item.driverEmail || '',
+                                  placeholder: 'correo@ejemplo.com',
+                                  confirmText: 'Enviar Email',
+                                  type: 'email',
+                                  onConfirm: async (email: string) => {
+                                    const loadingToast = toast.loading("Enviando comprobante por email...");
+                                    try {
+                                      const { emailDriverPaymentConfirm } = await import('../../services/api');
+                                      await emailDriverPaymentConfirm({ 
+                                        email, 
+                                        driverName: item.driverName, 
+                                        amount: item.totalAmount, 
+                                        month: format(new Date(), 'MMMM yyyy', { locale: es }),
+                                        driverId: item.driverId
+                                      });
+                                      toast.success("✅ Email enviado exitosamente", { id: loadingToast });
+                                    } catch (err: any) {
+                                      toast.error("❌ Error al enviar email: " + (err.response?.data?.message || err.message), { id: loadingToast });
+                                    }
+                                  }
+                                });
                               }}
                               title="Notificar por Email"
                               className="w-12 h-12 flex items-center justify-center bg-gray-900 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl transition-all shadow-sm group/mail"
@@ -570,6 +603,10 @@ export default function FinancePage() {
             </div>
         </div>
       </div>
+      <ConfirmPromptModal 
+        {...promptConfig}
+        onClose={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

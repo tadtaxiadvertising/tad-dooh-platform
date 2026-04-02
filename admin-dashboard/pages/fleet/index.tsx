@@ -8,6 +8,8 @@ import { formatDistanceToNow } from 'date-fns';
 import DeviceModal from '../../components/DeviceModal';
 import DeviceHubModal from '../../components/DeviceHubModal';
 import { notifyChange } from '../../lib/sync-channel';
+import { toast } from 'sonner';
+import { StatusSemaphore, SemaphoreStatus } from '../../components/ui/StatusSemaphore';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
 
@@ -85,7 +87,7 @@ export default function FleetPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [commanding, setCommanding] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
@@ -169,24 +171,29 @@ export default function FleetPage() {
     setCommanding(deviceId);
     try {
       await sendCommand(deviceId, type);
-      setToast(`Comando ${type} enviado`);
-      setTimeout(() => setToast(null), 3000);
+      setStatusMessage(`Comando ${type} enviado`);
+      setTimeout(() => setStatusMessage(null), 3000);
+      toast.success(`Comando ${type} enviado con éxito a la terminal ${deviceId}`);
     } catch (err) {
-      alert('Error enviando comando');
+      toast.error('FALLA DE SISTEMA: Error enviando comando de hardware.');
     } finally {
       setCommanding(null);
     }
   };
 
-  const handleDeleteDevice = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta pantalla? Se perderán todos sus vínculos.')) return;
+  const handleDeleteDevice = async (id: string, confirmed: boolean = false) => {
+    if (!confirmed) {
+       // We'll rely on AntigravityButton's confirmation for this call now.
+       return;
+    }
     try {
       await api.delete(`/devices/${id}`);
-      setToast('Pantalla eliminada exitosamente');
+      setStatusMessage('Pantalla eliminada exitosamente');
+      toast.success('PANTALLA PURGADA: El nodo ha sido removido de la red TAD.');
       mutateFleet();
       if (activeTab === 'inventory') loadInventory();
     } catch (err) {
-      alert('Error eliminando dispositivo');
+      toast.error('ERROR CRÍTICO: No se pudo eliminar el dispositivo.');
     }
   };
 
@@ -364,8 +371,8 @@ export default function FleetPage() {
                         device={device}
                         isLoading={isLoadingFleet}
                         onCommand={handleCommand}
-                                                 onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
-                         onDelete={() => handleDeleteDevice(device.id)}
+                        onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
+                        onDelete={() => handleDeleteDevice(device.id, true)}
                         isCommanding={commanding === device?.device_id}
                         playerLink={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
                      />
@@ -614,38 +621,44 @@ export default function FleetPage() {
                       <td className="px-8 py-6 whitespace-nowrap">
                         {loadingPending ? <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" /> : (
                           <div className="flex items-center gap-3">
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await approvePendingDevice(device.deviceId);
-                                  setToast('Dispositivo Aprobado');
-                                  loadPending();
-                                  mutateFleet(); // refresca dashboard si cambia
-                                } catch (e) {
-                                  alert('Error aprobando dispositivo');
-                                }
-                              }}
-                              className="px-4 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl transition-all"
-                            >
-                              <ShieldCheck className="w-3 h-3" />
-                              Aprobar
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (!window.confirm(`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`)) return;
-                                try {
-                                  await rejectPendingDevice(device.deviceId);
-                                  setToast('Dispositivo Rechazado');
-                                  loadPending();
-                                } catch (e) {
-                                  alert('Error rechazando dispositivo');
-                                }
-                              }}
-                              className="px-4 py-1.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl transition-all"
-                            >
-                              <XCircle className="w-3 h-3" />
-                              Rechazar
-                            </button>
+                             <AntigravityButton
+                               actionName="approve_pending_device"
+                               onAsyncClick={async () => {
+                                 try {
+                                   await approvePendingDevice(device.deviceId);
+                                   setStatusMessage('Dispositivo Aprobado');
+                                   toast.success('ACCESO CONCEDIDO: El dispositivo ya forma parte de la flota activa.');
+                                   loadPending();
+                                   mutateFleet();
+                                 } catch (e) {
+                                   toast.error('FALLA DE AUTORIZACIÓN: No se pudo aprobar el dispositivo.');
+                                 }
+                               }}
+                               variant="primary"
+                               className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                             >
+                               <ShieldCheck className="w-3 h-3" />
+                               Aprobar
+                             </AntigravityButton>
+                             <AntigravityButton
+                               actionName="reject_pending_device"
+                               confirmMessage={`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`}
+                               onAsyncClick={async () => {
+                                 try {
+                                   await rejectPendingDevice(device.deviceId);
+                                   setStatusMessage('Dispositivo Rechazado');
+                                   toast.warning('SOLICITUD RECHAZADA: El dispositivo ha sido bloqueado de la red.');
+                                   loadPending();
+                                 } catch (e) {
+                                   toast.error('ERROR: No se pudo procesar el rechazo del dispositivo.');
+                                 }
+                               }}
+                               variant="danger"
+                               className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                             >
+                               <XCircle className="w-3 h-3" />
+                               Rechazar
+                             </AntigravityButton>
                           </div>
                         )}
                       </td>
@@ -685,11 +698,11 @@ export default function FleetPage() {
         deviceId={selectedHubId || ''}
       />
 
-      {toast && (
+      {statusMessage && (
         <div className="fixed bottom-10 right-10 z-[100] bg-zinc-900 border border-tad-yellow/40 text-tad-yellow px-8 py-4 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-right-20">
            <div className="flex items-center gap-3">
               <Zap className="w-5 h-5 text-tad-yellow animate-pulse" />
-              <span className="text-xs font-black uppercase tracking-widest">{toast}</span>
+              <span className="text-xs font-black uppercase tracking-widest">{statusMessage}</span>
            </div>
         </div>
       )}
@@ -745,6 +758,18 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
   const stream = device.player_status || 'IDLE';
   const slots = device.occupied_slots || 0;
   const maxSlots = device.max_slots || 15;
+  const isPaid = device.subscription_status === 'PAID';
+
+  // SRE SEMAPHORE LOGIC
+  let healthStatus: SemaphoreStatus = 'optimum';
+  const lastSeenDate = device.last_seen ? new Date(device.last_seen) : null;
+  const offlineMoreThanOneHour = lastSeenDate && (new Date().getTime() - lastSeenDate.getTime() > 60 * 60 * 1000);
+
+  if (!device.is_online || !isPaid) {
+    healthStatus = 'critical';
+  } else if (battery < 20 || (storage && parseFloat(storage) < 1)) {
+    healthStatus = 'warning';
+  }
 
   return (
     <div 
@@ -754,6 +779,11 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
         device.is_online ? "ring-1 ring-[#FFD400]/10" : ""
       )}
     >
+      {/* SEMAPHORE BADGE */}
+      <div className="absolute top-6 right-6 z-10">
+        <StatusSemaphore status={healthStatus} size="sm" />
+      </div>
+
       {/* GLOW BACKGROUND */}
       {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400]/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#FFD400]/10 transition-all duration-500" />}
 
@@ -774,14 +804,16 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
            >
              <Edit2 className="w-4 h-4" />
            </button>
-           <button 
-             onClick={(e) => { e.stopPropagation(); onDelete(); }}
+           <AntigravityButton
+             actionName="delete_node"
+             confirmMessage={`¿Eliminar nodo ${device.device_id}? Se perderán sus vínculos.`}
+             onAsyncClick={async () => await onDelete()}
+             variant="danger"
+             className="p-3 w-12 h-12 rounded-xl"
              title="Eliminar Pantalla"
-             aria-label="Eliminar Pantalla"
-             className="p-2 rounded-xl bg-rose-500/5 border border-rose-500/10 text-rose-500/40 hover:text-rose-500 hover:border-rose-500/30 transition-all"
            >
              <Trash2 className="w-4 h-4" />
-           </button>
+           </AntigravityButton>
            <div className={clsx(
              "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ml-2",
              device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
@@ -854,6 +886,7 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
     </div>
   );
 }
+
 
 function TelemetryMini({ label, value, icon: Icon, color = "text-slate-400" }: any) {
   return (

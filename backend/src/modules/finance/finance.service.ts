@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceService } from './invoice.service';
+import { throttledMap } from '../../utils/throttler.util';
 
 @Injectable()
 export class FinanceService {
@@ -220,39 +221,38 @@ export class FinanceService {
       }
     });
 
-    const reports = await Promise.all(
-      campaigns.map(async (campaign) => {
-        const mediaIds = campaign.media.map(m => m.id);
-        const impressions = await this.prisma.playbackEvent.count({
-          where: { videoId: { in: mediaIds }, eventType: 'play_confirm' }
-        });
+    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
+    const reports = await throttledMap(campaigns, async (campaign) => {
+      const mediaIds = campaign.media.map(m => m.id);
+      const impressions = await this.prisma.playbackEvent.count({
+        where: { videoId: { in: mediaIds }, eventType: 'play_confirm' }
+      });
 
-        const mediaItems = await this.prisma.media.findMany({
-          where: { id: { in: mediaIds } }
-        });
+      const mediaItems = await this.prisma.media.findMany({
+        where: { id: { in: mediaIds } }
+      });
 
-        // Pricing model: RD$1,500 per 30-second block per media asset
-        let monthlyRevenue = 0;
-        mediaItems.forEach(media => {
-          const duration = (media as any).durationSeconds || 30;
-          const blocks = Math.ceil(duration / 30);
-          monthlyRevenue += blocks * 1500;
-        });
+      // Pricing model: RD$1,500 per 30-second block per media asset
+      let monthlyRevenue = 0;
+      mediaItems.forEach(media => {
+        const duration = (media as any).durationSeconds || 30;
+        const blocks = Math.ceil(duration / 30);
+        monthlyRevenue += blocks * 1500;
+      });
 
-        const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
-        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
-        const totalRevenue = monthlyRevenue * diffMonths;
+      const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+      const totalRevenue = monthlyRevenue * diffMonths;
 
-        return {
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-          totalImpressions: impressions,
-          assignedTaxis: campaign._count.devices,
-          estimatedRevenue: totalRevenue,
-          status: campaign.status
-        };
-      })
-    );
+      return {
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        totalImpressions: impressions,
+        assignedTaxis: campaign._count.devices,
+        estimatedRevenue: totalRevenue,
+        status: campaign.status
+      };
+    }, 3); // Limit to 3 simultaneous campaign audits (more intensive)
 
     return reports;
   }

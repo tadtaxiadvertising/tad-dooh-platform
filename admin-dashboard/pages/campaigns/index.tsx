@@ -9,6 +9,7 @@ import { CampaignModal } from '../../components/CampaignModal';
 import { useTabSync } from '../../hooks/useTabSync';
 import { notifyChange } from '../../lib/sync-channel';
 import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { toast } from 'sonner';
 import { getMedia } from '../../services/api';
 
 export default function CampaignsPage() {
@@ -16,7 +17,6 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<{ id: string; name: string; devices?: string[] } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -55,10 +55,9 @@ export default function CampaignsPage() {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
            <button 
-             onClick={() => {
+            onClick={() => {
                loadData();
-               setSuccessMsg('SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.');
-               setTimeout(() => setSuccessMsg(''), 3000);
+               toast.success('SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.');
              }}
              className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-[#FFD400] hover:text-[#FFD400] transition-all text-gray-500 shadow-sm flex items-center gap-2 group"
            >
@@ -286,21 +285,11 @@ export default function CampaignsPage() {
           onSuccess={() => {
             loadData();
             notifyChange('CAMPAIGNS');
-            setSuccessMsg(`"${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`);
-            setTimeout(() => setSuccessMsg(''), 5000);
+            toast.success(`"${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`);
           }}
         />
       )}
 
-      {/* Primary Dispatch Notification */}
-      {successMsg && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-24 duration-700 fill-mode-both">
-           <div className="bg-tad-yellow text-black px-8 py-4 rounded-xl shadow-2xl flex items-center gap-4">
-              <Zap className="w-4 h-4" />
-              <p className="text-xs font-bold uppercase tracking-wider">{successMsg}</p>
-           </div>
-        </div>
-      )}
 
       {/* Terminal Footer Info */}
       <div className="mt-16 pt-10 border-t border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-6">

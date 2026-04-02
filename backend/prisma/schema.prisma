@@ -79,6 +79,8 @@ model Device {
   driver          Driver?  @relation(fields: [driverId], references: [id])
   subscriptions   Subscription[]
   locations       DriverLocation[]
+  tabletHealthLogs TabletHealthLog[]
+  reconciliationReports ReconciliationReport[]
   
   @@map("devices")
   @@index([status])
@@ -423,6 +425,7 @@ model Driver {
   campaigns     Campaign[]
   payrollPayments PayrollPayment[]
   locations     DriverLocation[]
+  reconciliationReports ReconciliationReport[]
   
   // FINANCIAL INTELLIGENCE: Referral tracking
   referredByDriver    Driver?   @relation("DriverReferrals", fields: [referredBy], references: [id])
@@ -616,4 +619,126 @@ model Notification {
   @@index([read])
   @@index([category])
   @@index([createdAt])
+}
+
+// ============================================
+// BI & HEALTH (Inteligencia de Negocios)
+// ============================================
+
+model TabletHealthLog {
+  id              String   @id @default(uuid())
+  deviceId        String   @map("device_id")
+  snapshotAt      DateTime @default(now()) @map("snapshot_at")
+
+  // Conectividad
+  isOnline        Boolean  @default(false) @map("is_online")
+  lastHeartbeatAt DateTime? @map("last_heartbeat_at")
+  offlineHours    Float    @default(0) @map("offline_hours")
+
+  // Hardware
+  batteryLevel    Int?     @map("battery_level")
+  batteryStatus   String   @default("UNKNOWN") @map("battery_status")
+  // "OK" (>40%), "LOW" (<40%), "CRITICAL" (<15%), "UNKNOWN"
+
+  // Software
+  appVersion      String?  @map("app_version")
+  playerStatus    String?  @map("player_status")
+  // "PLAYING", "IDLE", "ERROR", "OFFLINE"
+
+  // GPS
+  lastGpsAt       DateTime? @map("last_gps_at")
+  gpsStaleHours   Float    @default(0) @map("gps_stale_hours")
+  networkType     String?  @map("network_type") // "WIFI", "4G", "OFFLINE"
+  syncSuccess     Boolean  @default(false) @map("sync_success")
+
+  device          Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@map("tablet_health_logs")
+  @@index([deviceId, snapshotAt])
+  @@index([isOnline])
+  @@index([batteryStatus])
+  @@index([snapshotAt])
+}
+
+model ReconciliationReport {
+  id                    String   @id @default(uuid())
+  period                String   // "2026-03" (YYYY-MM)
+  generatedAt           DateTime @default(now()) @map("generated_at")
+  generatedBy           String   @default("SYSTEM") @map("generated_by")
+
+  // Dimensión: Chofer / Dispositivo
+  driverId              String?  @map("driver_id")
+  deviceId              String?  @map("device_id")
+
+  // Suscripción
+  subscriptionStatus    String   @map("subscription_status")
+  // "ACTIVE", "EXPIRED", "MISSING"
+  subscriptionDueDate   DateTime? @map("subscription_due_date")
+  subscriptionPaidAt    DateTime? @map("subscription_paid_at")
+  subscriptionAmount    Float    @default(0) @map("subscription_amount")
+
+  // Actividad Operativa
+  onlineDays            Int      @default(0) @map("online_days")
+  totalPlaybacks        Int      @default(0) @map("total_playbacks")
+  totalPlaybackMinutes  Float    @default(0) @map("total_playback_minutes")
+
+  // Campaña / Ingresos
+  activeCampaigns       Int      @default(0) @map("active_campaigns")
+  contractedImpressions Int      @default(0) @map("contracted_impressions")
+  deliveredImpressions  Int      @default(0) @map("delivered_impressions")
+  deliveryRate          Float    @default(0) @map("delivery_rate")
+
+  // Finanzas
+  revenueContracted     Float    @default(0) @map("revenue_contracted")
+  revenueReceived       Float    @default(0) @map("revenue_received")
+  payrollDue            Float    @default(0) @map("payroll_due")
+  payrollPaid           Float    @default(0) @map("payroll_paid")
+
+  // Discrepancias (Flags Automáticos)
+  hasDiscrepancy        Boolean  @default(false) @map("has_discrepancy")
+  discrepancyType       String?  @map("discrepancy_type")
+  // "UNPAID_SUBSCRIPTION" | "MISSING_PAYMENT" | "LOW_DELIVERY" | "PAYROLL_PENDING" | "OK"
+  discrepancyAmount     Float    @default(0) @map("discrepancy_amount")
+  notes                 String?
+
+  driver                Driver?  @relation(fields: [driverId], references: [id])
+  device                Device?  @relation(fields: [deviceId], references: [id])
+
+  @@map("reconciliation_reports")
+  @@unique([period, driverId])
+  @@index([period])
+  @@index([hasDiscrepancy])
+  @@index([discrepancyType])
+  @@index([driverId])
+}
+
+model BiDashboardSnapshot {
+  id                    String   @id @default(uuid())
+  snapshotDate          DateTime @unique @map("snapshot_date")
+
+  // Financiero
+  mrr                   Float    @default(0)
+  burnRate              Float    @default(0) @map("burn_rate")
+  netProjection         Float    @default(0) @map("net_projection")
+  pendingSubscriptions  Int      @default(0) @map("pending_subscriptions")
+  overdueSubscriptions  Int      @default(0) @map("overdue_subscriptions")
+  totalRevenueMtd       Float    @default(0) @map("total_revenue_mtd")
+
+  // Flota
+  totalDevices          Int      @default(0) @map("total_devices")
+  onlineDevices         Int      @default(0) @map("online_devices")
+  offlineDevices        Int      @default(0) @map("offline_devices")
+  criticalDevices       Int      @default(0) @map("critical_devices")
+  lowBatteryDevices     Int      @default(0) @map("low_battery_devices")
+  syncHealthRate        Float    @default(0) @map("sync_health_rate")
+
+  // Campañas
+  activeCampaigns       Int      @default(0) @map("active_campaigns")
+  totalImpressionsMtd   Int      @default(0) @map("total_impressions_mtd")
+  deliveryRateAvg       Float    @default(0) @map("delivery_rate_avg")
+
+  generatedAt           DateTime @default(now()) @map("generated_at")
+
+  @@map("bi_dashboard_snapshots")
+  @@index([snapshotDate])
 }

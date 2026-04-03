@@ -41,8 +41,16 @@ export class CampaignService {
       if (campaign.targetAll || campaign.isGlobal) {
         devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } }));
       } else {
-        const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id } });
-        devicesToSync = assignments.map(a => ({ id: a.device_id, deviceId: undefined }));
+        // Broadcast to both v1 and v2 assignments
+        const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
+        const assignmentsV1 = await this.prisma.playlistItem.findMany({ where: { campaignId: id }, include: { device: { select: { id: true } } } });
+        
+        const uniqueDeviceIds = new Set([
+          ...assignmentsV2.map(a => a.device_id),
+          ...assignmentsV1.map(a => a.device.id)
+        ]);
+        
+        devicesToSync = Array.from(uniqueDeviceIds).map(id => ({ id }));
       }
 
       if (devicesToSync.length > 0) {
@@ -133,10 +141,11 @@ export class CampaignService {
       await tx.deviceCampaign.createMany({ data: dataV2 });
 
       // Create FORCE_SYNC commands to wake tablets and trigger instant sync
+      // We send to UUID (id) because DeviceCommand relation uses UUID
       const commands = availableDevices.map(d => ({
         deviceId: d.id,
         commandType: 'FORCE_SYNC',
-        commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId }),
+        commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId, deviceId: d.deviceId }),
         status: 'PENDING',
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }));

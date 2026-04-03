@@ -39,6 +39,10 @@ export default function DeviceSelectorModal({
     { dedupingInterval: 60000, revalidateOnFocus: false }
   );
 
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+
   const devices: Device[] = Array.isArray(fleetSummary) ? fleetSummary : [];
   const loading = swrLoading;
 

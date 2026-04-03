@@ -1,7 +1,7 @@
-# 🧠 11 — ESTADO ACTUAL Y HANDOVER (01 Abril 2026)
+# 🧠 11 — ESTADO ACTUAL Y HANDOVER (03 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Última actualización**: 01 de Abril de 2026
+> **Última actualización**: 03 de Abril de 2026
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base, la infraestructura, las reglas de negocio recientes y los siguientes pasos para la plataforma TAD DOOH.
 
 ---
@@ -30,6 +30,14 @@ La plataforma ahora rastrea minuciosamente todo flujo de liquidez cruzado (`Subs
 ## 4. 🔐 Autenticación y Portales Desacoplados
 - Todo endpoint API sensible está protegido por `SupabaseAuthGuard` a través de JWT extraídos por un Regex a prueba de fallos de comas dobles HTTP (`Bearer xyz, Bearer xyz`). Sin embargo, para flujos comerciales (Landing Anunciantes y Player Conductores) se liberó estrictamente el uso de decoradores `@Public()`.
 - Un anunciante ahora cuenta con su PWA autónoma (`tad-advertiser.html`), usando registro directo, para administrar inversiones y solicitar "Adiciones o Extensiones de Campaña" enviadas a una canasta interactiva pending de revisión para el Administrador de Flota.
+
+## 5. 📜 Aceptación Legal y Zero-Trust Onboarding
+- **Onboarding Workflow**: Implementado un flujo digital en el `Driver Portal` y PWA (`tad-driver.html`) que obliga la aceptación dual de "Acuerdo de Servicios y Comodato" y "Política de Privacidad y Tratamiento de Datos".
+- **Zero-Trust Assignation**: La asignación de Hardware en el backend (`assignDevice`) ahora requiere estrictamente el pago previo de la membresía de RD$6,000, implementando un Hard Block (estado HTTP 403 Forbidden) para quien no complete todo el flujo hasta su estado `ACTIVE`.
+
+## 6. 🎨 Mejoras de Experiencia de Usuario Web y Mapas
+- **PWA Gestures y Mapas**: Reparación de _rendering_ para remover líneas de cuadrícula negras/blancas (_tile gaps_) causadas por antialiasing en mapas Leaflet (escalado subpixel en `globals.css`). 
+- **Desplazamiento inercial**: Inyección global de comportamiento `overscroll-behavior-y: none` que neutraliza el rebote molesto del Pull-To-Refresh y habilita inercia fluida o _momentum scrolling_ via `-webkit-overflow-scrolling: touch` para garantizar que las webapps operen de manera idéntica a una app nativa en iOS/Android.
 
 ---
 

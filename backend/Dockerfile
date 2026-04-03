@@ -28,8 +28,8 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Ajustado a 512MB para estabilidad en VPS de 1GB-2GB (EasyPanel)
-ENV NODE_OPTIONS=--max-old-space-size=400
+# Ajustado a 900MB para aprovechamiento de VPS con 1GB RAM (EasyPanel)
+ENV NODE_OPTIONS=--max-old-space-size=850
 ENV PORT=3000
 
 COPY --from=builder /app/package*.json ./

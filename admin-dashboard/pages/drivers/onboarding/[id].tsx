@@ -150,18 +150,39 @@ export default function DriverOnboarding() {
               onScroll={handleScroll}
               className="bg-black/50 border border-zinc-800 rounded-xl p-4 sm:p-6 mb-6 h-[40vh] overflow-y-auto font-mono text-xs sm:text-sm text-zinc-400 leading-relaxed custom-scrollbar"
             >
-              <h3 className="text-white text-lg mb-4 font-sans">TÉRMINOS Y CONDICIONES - TAXI ADVERTISING LLC</h3>
-              <p className="mb-4">1. DECLARACIÓN DEL SERVICIO<br/>Al aceptar este contrato, el Chofer ("Afiliado") acuerda instalar una tableta Android inteligente proporcionada por TAD ("El Equipo") en la parte trasera del apoyacabezas del asiento del copiloto de su vehículo, para transmitir publicidad digital en movimiento a sus pasajeros.</p>
+              <h3 className="text-white text-lg mb-4 font-sans">ACUERDO DE PRESTACIÓN DE SERVICIOS INDEPENDIENTES Y COMODATO</h3>
+              <p className="mb-4">1. NATURALEZA DEL VÍNCULO<br/>El presente contrato es de naturaleza estrictamente CIVIL. El Conductor actúa como un proveedor de servicios independiente, sin subordinación, cumpliendo con la exhibición de pautas a través del hardware proporcionado.</p>
               
-              <p className="mb-4">2. DEPÓSITO Y MEMBRESÍA<br/>El Afiliado se compromete a abonar la suma anual no reembolsable de RD$ 6,000.00 DOP ("Membresía") para la cobertura de seguro contra robo/rotura, conectividad celular LTE ininterrumpida y licenciamiento logístico de la flota. <strong>Bajo ningún concepto se entregará hardware sin este pago validado.</strong></p>
+              <p className="mb-4">2. MEMBRESÍA DE ACTIVACIÓN Y ACCESO (PAGO PREVIO)<br/>Para acceder a la plataforma TAD y recibir el hardware en comodato, el Conductor acepta realizar un pago único anual de RD$6,000.00.<br/><strong>Condición Esencial:</strong> La entrega del equipo y la activación de la cuenta están sujetas a la confirmación de este pago. Este monto no es reembolsable y cubre el soporte técnico, licencia de software y gestión de datos.</p>
 
-              <p className="mb-4">3. RESPONSABILIDAD DEL EQUIPO<br/>El Afiliado es responsable solidario de velar por el cuidado de la Tablet. En caso de vandalismo por terceros, el seguro de la membresía cubre 1(un) reemplazo anual, requiriendo acta policial obligatoria.</p>
+              <p className="mb-4">3. COMODATO DE EQUIPO (TABLET)<br/>TAD entrega una Tablet y accesorios en calidad de préstamo gratuito (Comodato).<br/><strong>Valoración:</strong> Las partes valoran el equipo en RD$6,000.00.<br/><strong>Responsabilidad:</strong> El Conductor reconoce que cualquier pérdida, robo o daño irreparable le obliga a indemnizar a TAD con el valor de reposición (RD$6,000.00), suma que TAD podrá compensar de los créditos acumulados por el conductor.</p>
 
-              <p className="mb-4">4. MONITOREO GEOSPATIAL<br/>El Afiliado acepta que el dispositivo cuenta con capacidades GPS de alta precisión y Telemetría las 24 horas del día. La plataforma recopilará coordenadas anonimizadas para la validación de impresiones publicitarias ante marcas globales.</p>
+              <p className="mb-4">4. ESQUEMA DE COMPENSACIÓN (REVENUE SHARE)<br/>El Conductor no recibe un sueldo, sino beneficios basados exclusivamente en:<br/><strong>Por Transmisión:</strong> El pago de RD$500.00 mensuales por cada anuncio comercial que sea efectivamente transmitido y validado por el software de auditoría de TAD en su unidad.<br/><strong>Por Referimiento de Anunciantes:</strong> El Conductor recibirá un bono único de RD$500.00 por cada nuevo anunciante que contrate los servicios de TAD bajo su referimiento directo, liquidable una vez el anunciante realice su primer pago.</p>
               
-              <p className="mb-4">5. PAGOS POR DESEMPEÑO<br/>La compensación salarial neta ("Nómina") es de cincuenta pesos dominicanos (RD$ 50.00) netos semanales por cada anunciante activo ("Campaña Aprobada"). TAD consolidará el balance los días 15 y 30/31 de cada mes mediante transferencia interbancaria (ACH), supeditado a un uptime (conectividad) mayor al 75% dictaminado por los analíticos del equipo.</p>
+              <p className="mb-4">5. TECNOLOGÍA DE MONITOREO Y BLOQUEO<br/>El Conductor acepta que la Tablet cuenta con un sistema de bloqueo remoto (Kill-Switch) que se activará en caso de:<br/>- Incumplimiento de las normas de uso de software.<br/>- Falta de conexión reportada por más de 48 horas sin aviso previo.<br/>- Expiración de la membresía anual sin renovación.</p>
               
-              <p className="mb-12">6. JURISDICCIÓN COMPETENTE<br/>Cualquier disconformidad legal será resuelta mediante la jurisdicción e instancias de la República Dominicana o en los tribunales del Estado de Delaware, Estados Unidos de América.</p>
+              <p className="mb-8">6. ACEPTACIÓN DIGITAL<br/>Al marcar la casilla "Acepto los Términos y Condiciones", el Conductor otorga su consentimiento electrónico con plena validez legal según la Ley 126-02.</p>
+
+              <div className="border-t border-zinc-800 my-6"></div>
+
+              <h3 className="text-white text-lg mb-4 font-sans">POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS (TAD)</h3>
+              <p className="mb-4 text-zinc-500 italic">Última actualización: 3 de abril de 2026</p>
+              
+              <p className="mb-4">1. RESPONSABLE DEL TRATAMIENTO<br/>TADTaxi Advertising (en adelante, "TAD"), con domicilio en Santiago de los Caballeros, República Dominicana, es la entidad responsable del tratamiento de sus datos personales recolectados a través de nuestra aplicación y dispositivos de hardware.</p>
+
+              <p className="mb-4">2. DATOS QUE RECOLECTAMOS<br/>Al utilizar nuestra plataforma, recolectamos:<br/>- Datos de Identidad: Nombre, cédula de identidad y contacto.<br/>- Datos del Vehículo: Placa, modelo y registros de seguro.<br/>- Datos de Ubicación (Geolocalización): Recolectamos la ubicación exacta de su unidad en tiempo real mediante GPS.<br/>- Datos de Telemetría: Estado de conexión del dispositivo, tiempo de encendido y registros de reproducción de anuncios.</p>
+              
+              <p className="mb-4">3. FINALIDAD DEL RASTREO DE UBICACIÓN<br/>La recolección de su ubicación es esencial para la ejecución del contrato de servicios y se utiliza exclusivamente para:<br/>- Validación de Pauta: Confirmar a los anunciantes que sus anuncios fueron reproducidos en las zonas geográficas contratadas.<br/>- Cálculo de Compensación: Generar los reportes de transmisión que permiten el pago de los RD$500.00 por anuncio activo y bonos de referidos.<br/>- Seguridad del Equipo: Monitorear la ubicación del hardware entregado en comodato para prevenir robos o usos no autorizados.<br/>- Mapas de Calor (Heatmaps): Optimizar la distribución de la publicidad en la ciudad.</p>
+              
+              <p className="mb-4">4. USO DE LA UBICACIÓN EN SEGUNDO PLANO<br/>La aplicación recolectará datos de ubicación incluso cuando la aplicación esté cerrada o no esté en uso, siempre que el dispositivo Tablet esté encendido y vinculado a su cuenta. Esto es necesario para garantizar que la pauta publicitaria se registre correctamente durante toda su jornada de operación.</p>
+              
+              <p className="mb-4">5. COMPARTICIÓN DE DATOS CON TERCEROS<br/>TAD no vende su información personal a terceros. Sin embargo, compartimos datos agregados y anonimizados con nuestros anunciantes (ejemplo: "Su anuncio se vio 100 veces en la Av. 27 de Febrero"). Su identidad personal nunca es revelada a los anunciantes sin su consentimiento expreso.</p>
+              
+              <p className="mb-4">6. SEGURIDAD Y ALMACENAMIENTO<br/>Sus datos se almacenan en servidores seguros con cifrado de grado industrial. Cumplimos con los estándares de seguridad física y digital para evitar el acceso no autorizado, la pérdida o alteración de su información, conforme a la Ley 172-13.</p>
+              
+              <p className="mb-4">7. DERECHOS DEL TITULAR (ARCO)<br/>Usted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos. No obstante, dado que el rastreo de ubicación es un requisito técnico indispensable para la plataforma, la revocación del consentimiento para la geolocalización resultará en la terminación inmediata del servicio y la obligación de devolver el equipo en comodato.</p>
+              
+              <p className="mb-12">8. CONSENTIMIENTO<br/>Al aceptar estas políticas en nuestra plataforma web o aplicación, usted otorga su consentimiento libre, expreso e informado para el tratamiento de sus datos personales y de ubicación bajo los términos aquí descritos.</p>
               
               <div className="text-center text-zinc-600 border-t border-zinc-800 pt-6">-- FIN DEL DOCUMENTO --</div>
             </div>
@@ -169,7 +190,7 @@ export default function DriverOnboarding() {
             <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 p-4 rounded-xl mb-6">
               <CheckCircle className={`w-5 h-5 flex-shrink-0 ${hasScrolledToBottom ? 'text-green-500' : 'text-zinc-600'}`} />
               <p className="text-sm">
-                He leído y comprendido todo el contrato de afiliación y responsabilidad por posesión de Hardware.
+                He leído y acepto el Acuerdo de Prestación de Servicios, el Comodato y la Política de Tratamiento de Datos.
               </p>
             </div>
 

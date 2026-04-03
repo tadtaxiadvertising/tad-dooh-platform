@@ -324,12 +324,12 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 
     <!-- Acuerdo Legal Digital -->
     <label class="auth-check">
-      <input type="checkbox" id="rg-insurance" required>
-      <span>He leído y acepto el <strong onclick="showLegal('insurance')">Acuerdo de Responsabilidad y Comodato</strong> del equipo.</span>
+      <input type="checkbox" id="rg-contract" required>
+      <span>He leído y acepto el <strong onclick="showLegal('contract')">Acuerdo de Servicios y Comodato</strong>.</span>
     </label>
     <label class="auth-check">
-      <input type="checkbox" id="rg-contract" required>
-      <span>He leído y acepto el <strong onclick="showLegal('contract')">Contrato de Prestación de Servicios</strong> independiente.</span>
+      <input type="checkbox" id="rg-privacy" required>
+      <span>He leído y acepto la <strong onclick="showLegal('privacy')">Política de Privacidad y Datos</strong>.</span>
     </label>
 
     <button type="submit" class="btn btn-y mt8" id="btn-register">Crear Cuenta</button>
@@ -641,61 +641,68 @@ function switchAuth(tab){
 
     // --- Lógica Legal (Jurisdicción República Dominicana) ---
     const LEGAL_TEXTS = {
-      insurance: `DECLARACIÓN DE COMPROMISO Y CUSTODIA DE EQUIPO
-(Instrumento de Comodato — Jurisdicción: República Dominicana)
+      contract: `ACUERDO DE PRESTACIÓN DE SERVICIOS INDEPENDIENTES Y COMODATO
 
-Yo, el Conductor abajo firmante, al aceptar este documento de forma digital, DECLARO y ME COMPROMETO a lo siguiente:
+1. NATURALEZA DEL VÍNCULO
+El presente contrato es de naturaleza estrictamente CIVIL. El Conductor actúa como un proveedor de servicios independiente, sin subordinación, cumpliendo con la exhibición de pautas a través del hardware proporcionado.
 
-1. ENTREGA EN COMODATO
-TADTaxi Advertising, S.R.L. (en adelante «TAD») me entrega, en calidad de Comodato (préstamo de uso gratuito), un dispositivo electrónico tipo Tablet, su soporte vehicular y accesorios (en adelante «el Equipo»), con un valor de reposición de RD$12,000.00. Esta entrega NO implica traspaso de dominio. El Equipo es y será siempre propiedad exclusiva de TAD.
+2. MEMBRESÍA DE ACTIVACIÓN Y ACCESO (PAGO PREVIO)
+Para acceder a la plataforma TAD y recibir el hardware en comodato, el Conductor acepta realizar un pago único anual de RD$6,000.00.
+Condición Esencial: La entrega del equipo y la activación de la cuenta están sujetas a la confirmación de este pago. Este monto no es reembolsable y cubre el soporte técnico, licencia de software y gestión de datos.
 
-2. MIS COMPROMISOS COMO CUSTODIO
-Me comprometo a:
-   a) Mantener el Equipo instalado de forma visible en mi vehículo durante toda jornada de servicio activa.
-   b) Conservar el Equipo en buen estado, sin alteraciones físicas, daños intencionales ni modificaciones de cualquier tipo.
-   c) Impedir que terceros accedan, usen o manipulen el Equipo.
-   d) Notificar a TAD de inmediato ante cualquier falla, robo o situación de riesgo para el Equipo.
+3. COMODATO DE EQUIPO (TABLET)
+TAD entrega una Tablet y accesorios en calidad de préstamo gratuito (Comodato).
+Valoración: Las partes valoran el equipo en RD$6,000.00.
+Responsabilidad: El Conductor reconoce que cualquier pérdida, robo o daño irreparable le obliga a indemnizar a TAD con el valor de reposición (RD$6,000.00), suma que TAD podrá compensar de los créditos acumulados por el conductor.
 
-3. USO EXCLUSIVO PERMITIDO
-El Equipo es exclusivamente para la transmisión del contenido publicitario asignado por TAD. Queda prohibido:
-   - Instalar aplicaciones o archivos no autorizados.
-   - Utilizar el plan de datos del Equipo para uso personal.
-   - Acceder a configuraciones del sistema, cámara o micrófono fuera del software TAD.
+4. ESQUEMA DE COMPENSACIÓN (REVENUE SHARE)
+El Conductor no recibe un sueldo, sino beneficios basados exclusivamente en:
+Por Transmisión: El pago de RD$500.00 mensuales por cada anuncio comercial que sea efectivamente transmitido y validado por el software de auditoría de TAD en su unidad.
+Por Referimiento de Anunciantes: El Conductor recibirá un bono único de RD$500.00 por cada nuevo anunciante que contrate los servicios de TAD bajo su referimiento directo, liquidable una vez el anunciante realice su primer pago.
 
-4. RESPONSABILIDAD POR DAÑO O PÉRDIDA
-Reconozco que, ante pérdida, robo (salvo deposito de denuncia formal ante el Ministerio Público), o daño irreparable por mal uso o negligencia comprobada, estaré obligado a reembolsar a TAD el valor de reposición del Equipo (RD$12,000.00). TAD podrá compensar este monto de los beneficios pendientes de liquidación a mi favor.
+5. TECNOLOGÍA DE MONITOREO Y BLOQUEO
+El Conductor acepta que la Tablet cuenta con un sistema de bloqueo remoto (Kill-Switch) que se activará en caso de:
+- Incumplimiento de las normas de uso de software.
+- Falta de conexión reportada por más de 48 horas sin aviso previo.
+- Expiración de la membresía anual sin renovación.
 
-5. ACLARACIÓN IMPORTANTE
-Este Acuerdo NO es una póliza de seguro médico, de vida ni de accidentes personales. Como conductor independiente, soy responsable de mis propias coberturas de salud y del Seguro de Vehículo de Motor exigido por el INTRANT/DIGESETT conforme a la Ley No. 63-17.`,
-      contract: `CONTRATO DE VINCULACIÓN A PLATAFORMA DE SERVICIOS INDEPENDIENTES
-(TADTaxi Advertising, S.R.L. — República Dominicana)
+6. ACEPTACIÓN DIGITAL
+Al marcar la casilla "Acepto los Términos y Condiciones", el Conductor otorga su consentimiento electrónico con plena validez legal según la Ley 126-02.`,
 
-1. NATURALEZA JURÍDICA DEL VÍNCULO
-Las partes declaran expresamente que el presente instrumento es un contrato civil de prestación de servicios, amparado en el Código Civil de la República Dominicana (Art. 1134 y siguientes). El Conductor actúa como operador independiente y NO como empleado, razón por la cual no existe subordinación jurídica, jornada laboral fija, ni relación laboral alguna al amparo de la Ley No. 16-92 (Código de Trabajo).
+      privacy: `POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS (TAD)
+Última actualización: 3 de abril de 2026
 
-2. OBJETO DEL CONTRATO
-El Conductor se vincula a la plataforma TAD para prestar el servicio de difusión publicitaria mediante la exhibición del contenido asignado en el dispositivo instalado en su vehículo de taxi, generando impresiones cuantificables y verificables por el sistema.
+1. RESPONSABLE DEL TRATAMIENTO
+TADTaxi Advertising (en adelante, "TAD"), con domicilio en Santiago de los Caballeros, República Dominicana, es la entidad responsable del tratamiento de sus datos personales recolectados a través de nuestra aplicación y dispositivos de hardware.
 
-3. AUTONOMÍA OPERATIVA
-El Conductor decide libremente su horario, zona y rutas de operación. TAD no impartirá órdenes sobre el tiempo o lugar de trabajo. La compensación económica dependerá únicamente de la actividad registrada por el Equipo mientras esté en línea.
+2. DATOS QUE RECOLECTAMOS
+Al utilizar nuestra plataforma, recolectamos:
+- Datos de Identidad: Nombre, cédula de identidad y contacto.
+- Datos del Vehículo: Placa, modelo y registros de seguro.
+- Datos de Ubicación (Geolocalización): Recolectamos la ubicación exacta de su unidad en tiempo real mediante GPS.
+- Datos de Telemetría: Estado de conexión del dispositivo, tiempo de encendido y registros de reproducción de anuncios.
 
-4. COMPENSACIÓN Y MODELO DE INGRESOS
-   a) El Conductor recibirá una participación en los ingresos netos por publicidad efectivamente reproducida y cobrada por TAD, atribuida a su unidad.
-   b) TAD descontará de los beneficios brutos los costos operativos de conectividad y mantenimiento del Equipo.
-   c) Los pagos se procesarán conforme al calendario de liquidación acordado y se acreditarán por transferencia bancaria.
-   d) El Conductor es responsable de declarar sus ingresos ante la Dirección General de Impuestos Internos (DGII) conforme a las leyes fiscales vigentes.
+3. FINALIDAD DEL RASTREO DE UBICACIÓN
+La recolección de su ubicación es esencial para la ejecución del contrato de servicios y se utiliza exclusivamente para:
+- Validación de Pauta: Confirmar a los anunciantes que sus anuncios fueron reproducidos en las zonas geográficas contratadas.
+- Cálculo de Compensación: Generar los reportes de transmisión que permiten el pago de los RD$500.00 por anuncio activo y bonos de referidos.
+- Seguridad del Equipo: Monitorear la ubicación del hardware entregado en comodato para prevenir robos o usos no autorizados.
+- Mapas de Calor (Heatmaps): Optimizar la distribución de la publicidad en la ciudad.
 
-5. CONFIDENCIALIDAD Y DATOS PERSONALES
-En cumplimiento de la Ley No. 172-13 sobre Protección de Datos Personales, el Conductor autoriza a TAD a tratar sus datos personales (nombre, cédula, teléfono, ubicación GPS durante la jornada) únicamente para fines operativos y de reportes internos de la plataforma. TAD NO compartirá esta información con terceros sin consentimiento expreso.
+4. USO DE LA UBICACIÓN EN SEGUNDO PLANO
+La aplicación recolectará datos de ubicación incluso cuando la aplicación esté cerrada o no esté en uso, siempre que el dispositivo Tablet esté encendido y vinculado a su cuenta. Esto es necesario para garantizar que la pauta publicitaria se registre correctamente durante toda su jornada de operación.
 
-6. PROPIEDAD INTELECTUAL
-Todo el contenido publicitario exhibido a través del Equipo —incluyendo marcas, logos, imágenes y audio— es propiedad de TAD o de sus anunciantes. El Conductor no adquiere ningún derecho sobre dicho contenido.
+5. COMPARTICIÓN DE DATOS CON TERCEROS
+TAD no vende su información personal a terceros. Sin embargo, compartimos datos agregados y anonimizados con nuestros anunciantes (ejemplo: "Su anuncio se vio 100 veces en la Av. 27 de Febrero"). Su identidad personal nunca es revelada a los anunciantes sin su consentimiento expreso.
 
-7. VIGENCIA Y TERMINACIÓN
-Este contrato entra en vigor al momento de la aceptación digital y tendrá una vigencia inicial de doce (12) meses, renovable automáticamente. Cualquiera de las partes podrá dar por terminada la relación con un preaviso de siete (7) días calendario, sin penalidad, siempre que no existan obligaciones pendientes de liquidación.
+6. SEGURIDAD Y ALMACENAMIENTO
+Sus datos se almacenan en servidores seguros con cifrado de grado industrial. Cumplimos con los estándares de seguridad física y digital para evitar el acceso no autorizado, la pérdida o alteración de su información, conforme a la Ley 172-13.
 
-8. RESOLUCIÓN DE CONTROVERSIAS
-Ante cualquier diferencia o desacuerdo derivado de este contrato, las partes acuerdan acudir, en primera instancia, a un proceso de mediación ante la Cámara de Comercio y Producción de Santiago, conforme a la Ley No. 489-08 sobre Arbitraje Comercial.`
+7. DERECHOS DEL TITULAR (ARCO)
+Usted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos. No obstante, dado que el rastreo de ubicación es un requisito técnico indispensable para la plataforma, la revocación del consentimiento para la geolocalización resultará en la terminación inmediata del servicio y la obligación de devolver el equipo en comodato.
+
+8. CONSENTIMIENTO
+Al aceptar estas políticas en nuestra plataforma web o aplicación, usted otorga su consentimiento libre, expreso e informado para el tratamiento de sus datos personales y de ubicación bajo los términos aquí descritos.`
     };
 
     function showLegal(type) {
@@ -703,12 +710,12 @@ Ante cualquier diferencia o desacuerdo derivado de este contrato, las partes acu
       const title = document.getElementById('legal-title');
       const content = document.getElementById('legal-content');
       
-      if(type === 'insurance') {
-        title.innerText = 'Seguro de Accidentes TAD';
-        content.innerText = LEGAL_TEXTS.insurance;
-      } else {
-        title.innerText = 'Contrato de Prestación de Servicios';
+      if(type === 'contract') {
+        title.innerText = 'Acuerdo de Servicios y Comodato';
         content.innerText = LEGAL_TEXTS.contract;
+      } else {
+        title.innerText = 'Política de Privacidad y Datos';
+        content.innerText = LEGAL_TEXTS.privacy;
       }
       
       modal.style.display = 'block';
@@ -737,8 +744,8 @@ async function handleAuth(e, type){
       const cedula = document.getElementById('rg-cedula').value;
       const taxiPlate = document.getElementById('rg-plate').value;
       const password = document.getElementById('rg-pass').value;
-      const insuranceAccepted = document.getElementById('rg-insurance').checked;
       const contractAccepted = document.getElementById('rg-contract').checked;
+      const privacyAccepted = document.getElementById('rg-privacy').checked;
 
       // Creamos la cuenta incluyendo el DID para auto-vinculación de la tablet
       await fetch(`${API}/drivers`, {
@@ -748,8 +755,8 @@ async function handleAuth(e, type){
           fullName, phone, cedula, taxiPlate, password, 
           deviceId: DID || undefined, 
           subscriptionPaid: false,
-          insuranceAccepted,
           contractAccepted,
+          privacyAccepted,
           agreementVersion: "1.0"
         })
       });

@@ -74,7 +74,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
             pedidosYaUrl: '', uberEatsUrl: '',
             category: 'General',
             productsData: '[]',
-            status: 'ACTIVE' 
+            status: 'ACTIVE',
+            referredBy: ''
           });
         }
         onClose();

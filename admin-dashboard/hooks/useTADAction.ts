@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 
 interface ActionOptions {
   onSuccess?: () => void;
@@ -21,6 +20,10 @@ async function logTelemetry(
   errorMsg?: string
 ) {
   try {
+    // Lazy import: supabase is only resolved when telemetry is actually needed.
+    // This prevents a missing/invalid NEXT_PUBLIC_SUPABASE_URL from crashing
+    // the module at eval-time, which would make AntigravityButton become undefined.
+    const { supabase } = await import('@/lib/supabase');
     const { error } = await supabase.from('analytics_events').insert([{
       event_type: 'CRITICAL_ACTION',
       device_id: 'ADMIN_CONSOLE',

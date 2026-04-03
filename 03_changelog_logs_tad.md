@@ -14,12 +14,19 @@ During this cycle, we successfully resolved a critical 404 error blocking the Bu
 - **Verification**: Confirmed that `admin-dashboard/pages/api/proxy/[...path].ts` accurately forwards requests to the backend with the correct `/api/v1/` injection.
 - **Environment Handling**: Verified that `BACKEND_INTERNAL_URL` is used at runtime to bypass build-time DNS issues common in VPS environments with limited memory.
 
-## 3. UI Component Fix (ReferenceError Mitigation)
+## [v6.5.5] - 2026-04-03
 
-- **Detected Issue**: `ReferenceError: AntigravityButton is not defined` occurred in production.
-- **Root Cause**: Likely a build-time crash or circular dependency involving the Supabase client initialization when environment variables are partially missing during the the EasyPanel build phase.
-- **Improved Pattern**: Hardened the `useTADAction` hook and `AntigravityButton` by using lazy-loading for the Supabase client. This prevents initialization errors from breaking the JS evaluation of essential UI components.
-- **Affected File**: `admin-dashboard/hooks/useTADAction.ts`
+### Stabilización BI Robustness & Routing Correction
+
+- **Backend (BI Module)**: Corregidos decoradores de ruta redundantes (`api/bi` -> `bi`) para alinearse con el prefijo global `api/v1`.
+- **Backend (BiService)**: Implementada lógica de "Graceful Fallback". Si la tabla `BiDashboardSnapshot` no existe (migración pendiente), el sistema calcula métricas en tiempo real en lugar de fallar con 500 Internal Server Error.
+- **Backend (Build)**: Optimizada la Dockerfile de NestJS con `npm ci` y limpieza de caché para prevenir fallos por OOM (Out Of Memory) en VPS de 512MB RAM.
+- **Frontend (Admin)**: Verificada la integridad de importaciones de `AntigravityButton` en las vistas de Fleet y BI para resolver errores de referencia en el bundle de producción.
+- **Documentation**: Actualizado `AUDITORIA_TAD_2026.md` para reflejar el estado actual de los módulos de inteligencia de negocio.
+- **CI/CD**: Recomendación de despliegue con "Clear Cache" en EasyPanel ante posibles capas corruptas de Docker.
+
+---
+ **Affected File**: `admin-dashboard/hooks/useTADAction.ts`
 
 ## 4. Verification Checkpoints
 

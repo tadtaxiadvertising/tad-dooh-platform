@@ -8,15 +8,15 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install everything including devDeps
-RUN npm install
+# Install dependencies using 'ci' for faster, more stable builds under RAM pressure
+RUN npm ci
 
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (Minimalistic)
 RUN npx prisma generate
 
-# Final build
+# Final build (NestJS)
 RUN npm run build
 
 # Stage 2: Production

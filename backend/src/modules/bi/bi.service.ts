@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BiKpiResponse, TaxiDrillDownResponse, SemaphoreColor } from './interfaces/bi-kpi.interface';
 
@@ -17,15 +17,20 @@ export class BiService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Try to get today's snapshot
-    const snapshot = await this.prisma.biDashboardSnapshot.findUnique({
-      where: { snapshotDate: today }
-    });
+    // Try to get today's snapshot with error resilience
+    let snapshot = null;
+    try {
+      snapshot = await this.prisma.biDashboardSnapshot.findUnique({
+        where: { snapshotDate: today }
+      });
+    } catch (e) {
+      this.logger.warn(`⚠️ BI Snapshot table missing or error (fallback to real-time): ${e.message}`);
+    }
 
     if (snapshot) {
       return {
         mrr: snapshot.mrr,
-        activeSubscribers: snapshot.totalDevices - snapshot.offlineDevices, // Simplified
+        activeSubscribers: snapshot.totalDevices - snapshot.offlineDevices,
         totalDevices: snapshot.totalDevices,
         onlineDevices: snapshot.onlineDevices,
         offlineDevices: snapshot.offlineDevices,
@@ -38,60 +43,69 @@ export class BiService {
       };
     }
 
-    // Fallback: Real-time basic query (Calculated on the fly)
-    this.logger.warn('⚠️ No BI snapshot found for today, generating one...');
+    // Fresh calculation if no snapshot exists or table missing
+    this.logger.log('📊 Generating fresh BI metrics (Real-time calculation)...');
     
     // Calculate impressions from PlaybackEvent (MTD)
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    
-    const [devicesCount, onlineCount, activeCampaigns, impressions] = await Promise.all([
-      this.prisma.device.count(),
-      this.prisma.device.count({ where: { isOnline: true } }),
-      this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.playbackEvent.count({
-        where: {
-          timestamp: { gte: monthStart },
-          eventType: 'play_confirm'
-        }
-      })
-    ]);
 
-    // Simple MRR calculation for the snapshot (RD$ 6,000 per active driver)
-    const activeSubscribers = await this.prisma.driver.count({
-      where: { subscriptionPaid: true }
-    });
-    const mrr = activeSubscribers * 6000;
+    try {
+      const [devicesCount, onlineCount, activeCampaigns, impressions] = await Promise.all([
+        this.prisma.device.count(),
+        this.prisma.device.count({ where: { isOnline: true } }),
+        this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+        this.prisma.playbackEvent.count({
+          where: {
+            timestamp: { gte: monthStart },
+            eventType: 'play_confirm'
+          }
+        })
+      ]);
 
-    // Persist the snapshot for today to avoid re-calculation
-    const newSnapshot = await this.prisma.biDashboardSnapshot.create({
-      data: {
-        snapshotDate: today,
+      const activeSubscribers = await this.prisma.driver.count({
+        where: { subscriptionPaid: true }
+      });
+      
+      const mrr = activeSubscribers * 6000; // Simplified logic v1
+
+      // Try to persist the snapshot if possible
+      try {
+        await this.prisma.biDashboardSnapshot.create({
+          data: {
+            snapshotDate: today,
+            mrr,
+            totalDevices: devicesCount,
+            onlineDevices: onlineCount,
+            offlineDevices: devicesCount - onlineCount,
+            criticalDevices: 0,
+            activeCampaigns,
+            totalImpressionsMtd: impressions,
+            deliveryRateAvg: 100,
+            syncHealthRate: 100,
+            generatedAt: new Date()
+          }
+        });
+      } catch (saveError) {
+        this.logger.error(`❌ Could not save BI snapshot: ${saveError.message}`);
+      }
+
+      return {
         mrr,
+        activeSubscribers,
         totalDevices: devicesCount,
         onlineDevices: onlineCount,
         offlineDevices: devicesCount - onlineCount,
-        criticalDevices: 0, // Logic to be refined
+        criticalDevices: 0,
         activeCampaigns,
         totalImpressionsMtd: impressions,
         deliveryRateAvg: 100,
         syncHealthRate: 100,
-        generatedAt: new Date()
-      }
-    });
-
-    return {
-      mrr: newSnapshot.mrr,
-      activeSubscribers,
-      totalDevices: newSnapshot.totalDevices,
-      onlineDevices: newSnapshot.onlineDevices,
-      offlineDevices: newSnapshot.offlineDevices,
-      criticalDevices: newSnapshot.criticalDevices,
-      activeCampaigns: newSnapshot.activeCampaigns,
-      totalImpressionsMtd: newSnapshot.totalImpressionsMtd,
-      deliveryRateAvg: newSnapshot.deliveryRateAvg,
-      syncHealthRate: newSnapshot.syncHealthRate,
-      lastUpdate: newSnapshot.generatedAt
-    };
+        lastUpdate: new Date()
+      };
+    } catch (realtimeError) {
+      this.logger.error(`🚨 Fatal error in BI metrics calculation: ${realtimeError.message}`);
+      throw new HttpException('Error al calcular métricas de BI', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   /**

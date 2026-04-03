@@ -355,6 +355,25 @@ export class CampaignController {
       where: { id: mediaId },
       data: { campaign_id: campaignId },
     });
+    
+    // Invalidate campaign cache and force sync devices
+    await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { updatedAt: new Date() }
+    });
+    
+    // Create FORCE_SYNC commands for assigned devices
+    const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
+    if (assignments.length > 0) {
+      await this.prisma.deviceCommand.createMany({
+        data: assignments.map(a => ({
+          deviceId: a.device_id,
+          commandType: 'FORCE_SYNC',
+          commandParams: JSON.stringify({ reason: 'media_linked' }),
+        }))
+      });
+    }
+
     Logger.log(`[CONTENT_DIST] Linked media ${mediaId} → campaign ${campaignId}`);
     return { success: true, media: updated };
   }
@@ -399,6 +418,26 @@ export class CampaignController {
         });
         success = true;
       } catch(e) { /* ignore */ }
+    }
+
+    if (success) {
+      // Invalidate campaign cache and force sync
+      await this.prisma.campaign.update({
+        where: { id: campaignId },
+        data: { updatedAt: new Date() }
+      });
+      
+      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
+      if (assignments.length > 0) {
+        await this.prisma.deviceCommand.createMany({
+          data: assignments.map(a => ({
+            deviceId: a.device_id,
+            commandType: 'FORCE_SYNC',
+            commandParams: JSON.stringify({ reason: 'media_unlinked' }),
+          }))
+        });
+      }
+      Logger.log(`[CONTENT_DIST] Unlinked/deleted media ${mediaId} from campaign ${campaignId}`);
     }
 
     return { success: true };

@@ -36,6 +36,20 @@ export class CampaignService {
 
     if (dto.target_devices) {
       await this.assignCampaignToDevices(id, dto.target_devices);
+    } else {
+      // Create FORCE_SYNC commands for assigned devices just in case settings changed
+      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id } });
+      if (assignments.length > 0) {
+        await this.prisma.deviceCommand.createMany({
+          data: assignments.map(a => ({
+            deviceId: a.device_id,
+            commandType: 'FORCE_SYNC',
+            commandParams: JSON.stringify({ reason: 'campaign_updated' }),
+            status: 'PENDING',
+            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+          }))
+        });
+      }
     }
 
     return campaign;
@@ -97,6 +111,12 @@ export class CampaignService {
       await tx.playlistItem.deleteMany({ where: { campaignId } });
       await tx.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
 
+      // Update the campaign's updatedAt to trigger cache invalidation
+      await tx.campaign.update({
+        where: { id: campaignId },
+        data: { updatedAt: new Date() }
+      });
+
       if (availableDevices.length === 0) return { count: 0, skipped: skippedCount };
 
       // Create new assignments (V1 Legacy & V2 Core)
@@ -105,6 +125,16 @@ export class CampaignService {
 
       await tx.playlistItem.createMany({ data: dataV1 });
       await tx.deviceCampaign.createMany({ data: dataV2 });
+
+      // Create FORCE_SYNC commands to wake tablets and trigger instant sync
+      const commands = availableDevices.map(d => ({
+        deviceId: d.id,
+        commandType: 'FORCE_SYNC',
+        commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId }),
+        status: 'PENDING',
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+      }));
+      await tx.deviceCommand.createMany({ data: commands });
 
       return { count: availableDevices.length, skipped: skippedCount };
     });
@@ -135,7 +165,7 @@ export class CampaignService {
       }
     }
 
-    return this.prisma.mediaAsset.create({
+    const asset = await this.prisma.mediaAsset.create({
       data: {
         campaignId,
         type: dto.type,
@@ -147,6 +177,28 @@ export class CampaignService {
         version: 1,
       },
     });
+
+    // Invalidate campaign cache
+    await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { updatedAt: new Date() }
+    });
+
+    // Create FORCE_SYNC commands for assigned devices
+    const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
+    if (assignments.length > 0) {
+      await this.prisma.deviceCommand.createMany({
+        data: assignments.map(a => ({
+          deviceId: a.device_id,
+          commandType: 'FORCE_SYNC',
+          commandParams: JSON.stringify({ reason: 'media_asset_added' }),
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+        }))
+      });
+    }
+
+    return asset;
   }
 
   async getAllCampaigns() {

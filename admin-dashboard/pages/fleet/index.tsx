@@ -780,11 +780,6 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
         device.is_online ? "ring-1 ring-[#FFD400]/10" : ""
       )}
     >
-      {/* SEMAPHORE BADGE */}
-      <div className="absolute top-6 right-6 z-10">
-        <StatusSemaphore status={healthStatus} size="sm" />
-      </div>
-
       {/* GLOW BACKGROUND */}
       {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400]/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#FFD400]/10 transition-all duration-500" />}
 
@@ -796,12 +791,12 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
           <Tablet className="w-5 h-5" />
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
            <button 
              onClick={(e) => { e.stopPropagation(); onConfigure(); }}
              title="Editar Configuración"
              aria-label="Editar Configuración"
-             className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-[#FFD400] hover:border-[#FFD400]/30 transition-all"
+             className="p-2 mt-0.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-[#FFD400] hover:border-[#FFD400]/30 transition-all"
            >
              <Edit2 className="w-4 h-4" />
            </button>
@@ -810,16 +805,19 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
              confirmMessage={`¿Eliminar nodo ${device.device_id}? Se perderán sus vínculos.`}
              onAsyncClick={async () => await onDelete()}
              variant="danger"
-             className="p-3 w-12 h-12 rounded-xl"
+             className="p-2 mt-0.5 w-[34px] h-[34px] flex items-center justify-center rounded-xl"
              title="Eliminar Pantalla"
            >
              <Trash2 className="w-4 h-4" />
            </AntigravityButton>
-           <div className={clsx(
-             "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ml-2",
-             device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
-           )}>
-             {device.is_online ? '• Online' : '• Offline'}
+           <div className="flex flex-col items-end gap-1.5 ml-1">
+             <StatusSemaphore status={healthStatus} size="sm" />
+             <div className={clsx(
+               "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+               device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
+             )}>
+               {device.is_online ? '• Online' : '• Offline'}
+             </div>
            </div>
         </div>
       </div>

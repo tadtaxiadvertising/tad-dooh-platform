@@ -23,10 +23,10 @@ export default function ReconciliationPage() {
   
   // Mock data for reconciliation
   const disputes = [
-    { id: 'REC-2900', target: 'Driver J. Perez', amount: '$42.50', status: 'DISPUTE', reason: 'Offline 4h', date: '2026-04-01' },
-    { id: 'REC-2901', target: 'Advertiser Coca-Cola', amount: '$1,200.00', status: 'RESOLVED', reason: 'Proof of play verified', date: '2026-04-01' },
-    { id: 'REC-2902', target: 'Driver L. Gomez', amount: '$12.00', status: 'PENDING', reason: 'GPS inaccuracy', date: '2026-03-31' },
-    { id: 'REC-2903', target: 'Unit STI-451', amount: '-$150.00', status: 'CRITICAL', reason: 'Hardware failure > 12h', date: '2026-03-30' },
+    { id: 'REC-2900', target: 'Driver J. Perez', amount: 'RD$42.50', status: 'DISPUTE', reason: 'Offline 4h', date: '2026-04-01' },
+    { id: 'REC-2901', target: 'Advertiser Coca-Cola', amount: 'RD$1,200.00', status: 'RESOLVED', reason: 'Proof of play verified', date: '2026-04-01' },
+    { id: 'REC-2902', target: 'Driver L. Gomez', amount: 'RD$12.00', status: 'PENDING', reason: 'GPS inaccuracy', date: '2026-03-31' },
+    { id: 'REC-2903', target: 'Unit STI-451', amount: '-RD$150.00', status: 'CRITICAL', reason: 'Hardware failure > 12h', date: '2026-03-30' },
   ];
 
   return (
@@ -64,8 +64,8 @@ export default function ReconciliationPage() {
 
       {/* KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <ReconStat label="Ingreso Proyectado" value="$42,850.00" icon={DollarSign} trend="+12.5%" trendType="up" />
-        <ReconStat label="Brecha Operativa" value="-$1,240.50" icon={Activity} trend="-4.2%" trendType="down" />
+        <ReconStat label="Ingreso Proyectado" value="RD$42,850.00" icon={DollarSign} trend="+12.5%" trendType="up" />
+        <ReconStat label="Brecha Operativa" value="-RD$1,240.50" icon={Activity} trend="-4.2%" trendType="down" />
         <ReconStat label="Índice de Confianza" value="97.8%" icon={Scale} trend="+0.5%" trendType="up" />
       </div>
 

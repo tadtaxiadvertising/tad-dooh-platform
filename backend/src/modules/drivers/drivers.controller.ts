@@ -48,9 +48,16 @@ export class DriversController {
     subscriptionPaid?: boolean;
     subscriptionEnd?: string;
     password?: string;
+    insuranceAccepted?: boolean;
+    contractAccepted?: boolean;
+    agreementVersion?: string;
   }) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
+    }
+
+    if (!body.insuranceAccepted || !body.contractAccepted) {
+      throw new BadRequestException('Debe aceptar el seguro y el contrato para unirse a TAD');
     }
 
     // Sanear campos opcionales: Convertir strings vacíos a undefined para evitar conflictos de unicidad en Prisma

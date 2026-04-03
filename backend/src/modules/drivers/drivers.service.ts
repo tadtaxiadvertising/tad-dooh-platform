@@ -111,16 +111,10 @@ export class DriversService {
   /**
    * Registrar un nuevo chofer con su suscripción
    */
-  async create(data: {
-    fullName: string;
-    cedula?: string;
-    phone: string;
-    taxiPlate?: string;
-    licensePlate?: string;
-    deviceId?: string;
-    subscriptionPaid?: boolean;
-    subscriptionEnd?: Date;
     password?: string;
+    insuranceAccepted?: boolean;
+    contractAccepted?: boolean;
+    agreementVersion?: string;
   }) {
     let hashedPassword = null;
     if (data.password) {
@@ -137,6 +131,13 @@ export class DriversService {
         subscriptionPaid: data.subscriptionPaid ?? false,
         subscriptionEnd: data.subscriptionEnd,
         password: hashedPassword,
+        
+        // Agreement fields
+        insuranceAccepted: data.insuranceAccepted ?? false,
+        insuranceAcceptedAt: data.insuranceAccepted ? new Date() : null,
+        contractAccepted: data.contractAccepted ?? false,
+        contractAcceptedAt: data.contractAccepted ? new Date() : null,
+        agreementVersion: data.agreementVersion ?? "1.0",
       },
       include: { devices: true }
     });

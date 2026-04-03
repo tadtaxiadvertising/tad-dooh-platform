@@ -139,9 +139,10 @@ export class DriversController {
   }
 
   /**
-   * GET /api/drivers/me/hub — Datos de negocio para el portal del chofer (Autenticado)
+   * GET /api/drivers/me/hub — Datos de negocio para el portal del chofer (Autenticado con JWT propio)
    * Nuevo flujo: Los choferes registrados usan su JWT para entrar, tengan o no pauta activa.
    */
+  @Public() // Bypasses SupabaseAuthGuard to use internal jwt.verify logic
   @Get('me/hub')
   async getMyHub(@Headers('authorization') auth: string) {
     if (!auth) throw new ForbiddenException('No autorizado');

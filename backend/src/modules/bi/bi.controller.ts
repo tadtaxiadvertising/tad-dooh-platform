@@ -3,7 +3,7 @@ import { BiService } from './bi.service';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { BiKpiResponse, TaxiDrillDownResponse } from './interfaces/bi-kpi.interface';
 
-@Controller('api/bi')
+@Controller('bi')
 @UseGuards(SupabaseAuthGuard)
 export class BiController {
   constructor(private readonly biService: BiService) {}

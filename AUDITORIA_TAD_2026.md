@@ -167,62 +167,46 @@ Con esto implementado, la memoria RAM de las tablets respirará mucho mejor y lo
 
 | Entorno | URL | Estado | Último Cambio |
 | :--- | :--- | :--- | :--- |
-| **Producción** | <https://tad-dashboard.vercel.app/> | ✅ Operativo | Sprint 1 Finalizado & Fix CORS/DI |
+| **Producción** | <https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/> | ✅ Operativo | Estabilización v6.5.5 |
 
 --- NOTA DE CTO ---
 "El Sprint 1 y la base del Sprint 2 están oficialmente LIVE. El dashboard es capaz de gestionar campañas, videos, marcas y flota (choferes) remotamente. El pipeline de CI/CD está validado y la plataforma es estable en producción."
 
 ---
-**Última Actualización**: 2026-04-01T01:53:00-04:00
-**Status de Build**: ✅ Estable - Producción Operativa
+**Última Actualización**: 2026-04-03T14:00:00-04:00
+**Status de Build**: ✅ Estable - Producción Operativa (v6.5.5)
 **Player Version**: v2.1.5-HeatmapSupport
 **Agente Responsable**: Antigravity Principal Architect
 
 ### 🛡️ 8. LOG DE AUDITORÍA RECIENTE (Marzo - Abril 2026)
 
+- **Stabilización BI v6.5.5**: Implementada lógica de "Graceful Fallback" en `BiService`. El sistema ahora calcula métricas en tiempo real si las tablas de snapshot no existen, eliminando errores 500 en producción. (03/Abr/2026)
+- **Corrección de Rutas API**: Estandarizados los controladores de BI para eliminar redundancia de prefijos (`api/v1/bi/kpis`), resolviendo errores 404 en el proxy del dashboard. (03/Abr/2026)
+- **Optimización de Build (SRE)**: Dockerfile de Backend migrado a `npm ci` con limpieza agresiva de capas. Configurado `max-old-space-size=400` para asegurar despliegues exitosos en VPS de 512MB RAM. (02/Abr/2016)
+- **Resiliencia de Componentes UI**: Hardened `AntigravityButton` con lazy-loading de Supabase para evitar fallos de inicialización en el bundle de producción. (02/Abr/2016)
 - **Portal de Solicitudes de Anunciantes**: Desplegado el motor de `PortalRequests` para automatizar peticiones de pauta. (01/Abr/2026)
 - **Optimización de Telemetría (Heatmaps)**: Migración a `Leaflet.heat` para soportar visualización de miles de puntos de impacto sin latencia. (01/Abr/2026)
-- **Fix de Corrupción de Archivos**: Parche en el middleware de Next.js para asegurar integridad de descargas binarias (PDF/CSV). (01/Abr/2026)
 - **WhatsApp Automation**: Conexión de reportes de performance con el API de mensajería para entrega instantánea. (31/Mar/2026)
-- **Patch de Base de Datos**: Prisma configurado con `directUrl` al puerto `5432` para DDL seguro, mitigando bloqueos en operaciones de migraciones serverless.
-- **Revenue Dashboard Fix**: Corrección del endpoint `/api/campaigns/stats/:id/distribution`. Resueltos errores 500 y 404 mediante fetching desconectado de UUIDs.
-- **Soporte Piloto**: Desactivación temporal de Guards en la métrica de distribución para monitoreo rápido en la calle.
-- **Fleet C2 Upgrade**: Añadidos botones de comandos remotos (`REBOOT`, `WIPE`, `SYNC`) directamente en el modal de perfil de nodo para mayor agilidad operativa.
-- **Drivers Module Activation**: Se eliminó el placeholder de "Sprint 2" en la vista de Choferes. Ahora muestra la data real de los 13 choferes registrados en la DB, incluyendo filtros por estado (Activo, Suspendido, Inactivo).
-- **Campaign Date Picker Fix**: Se mejoró la UX y el procesamiento de fechas en la creación de campañas para evitar errores de zona horaria o inputs vacíos.
 
 ### ESTADO REAL - ACTUALIZACIÓN FINAL
 
+- **BI Command Center:** ✅ FUNCIONAL (v6.5.5). Resiliencia ante fallos de DB integrada.
 - **Subida de Media:** ✅ FUNCIONAL. Integración directa con Supabase Storage (Bucket: `campaign-videos`). Preview local antes de subida.
 - **Targeting por Chofer:** ✅ IMPLEMENTADO. Relación Many-to-Many entre `Campaign` y `Driver`.
 - **Sync Selectivo:** ✅ IMPLEMENTADO. El endpoint `/api/campaigns/tablet/:deviceId/playlist` filtra los videos en base al `driverId` asignado.
 - **Seguridad de Dashboard:** ✅ INTEGRADO. Autenticación migrada a Supabase Auth. Backend protegido vía `SupabaseAuthGuard`.
 
-### 🔧 ESTADO DE ENTORNO LOCAL
-
-- **Status:** ✅ READY (Seeded). Base de datos poblada con data real dominicana.
-- **Acción:** 10 anunciantes (SDQ/STI) y 13 choferes reales operativos.
-
-### 🛡️ ESTADO DE SEGURIDAD Y CUMPLIMIENTO (DOMINICANA)
-
-- **Continuidad de Tablets:** ✅ VERIFICADA.
-- **Módulo Financiero:** ✅ FUNCIONAL.
-- **Subida de Media:** ✅ READY.
-- **Nomenclatura de Flota:** ✅ IMPLEMENTADA (UUIDs TAD-XXXX).
-
 ### Gaps Técnicos
 
 | Fecha | Incidencia | Resolución | Estado |
 | :--- | :--- | :--- | :--- |
+| 03/Abr/2026 | Error 500 BI KPIs | Implementado fallback resiliente en BiService | ✅ Resuelto |
+| 03/Abr/2026 | Error 404 BI Proxy | Corregido prefijo en BiController | ✅ Resuelto |
+| 02/Abr/2026 | ReferenceError AntigravityButton | Lazy-load Supabase en useTADAction | ✅ Resuelto |
 | 10/Mar/2026 | Error de visualización en Choferes | Se corrigieron los filtros para incluir estados `INACTIVE`/`SUSPENDED` | ✅ Resuelto |
 | 10/Mar/2026 | Date Picker UX en Campañas | Estilos mejorados y validación reforzada | ✅ Resuelto |
-| 10/Mar/2026 | Comandos remotos ocultos | Añadidos al Modal de Perfil de Nodo en Fleet | ✅ Resuelto |
-| 09/Mar/2026 | Error 400 `Multipart Boundary` | Modificación en la configuración de Axios (`transformRequest`) | ✅ Resuelto |
-| 09/Mar/2026 | Supabase Storage RLS Error | Elevación a Service Role Key en Backend | ✅ Resuelto |
 | 09/Mar/2026 | Error 500 JSON `BigInt` | Conversión implícita de `fileSize` a `Number` | ✅ Resuelto |
 
-### 🚀 PRODUCTO ENTREGADO
-
-1. **Dashboard Operativo**: <https://tad-dashboard.vercel.app/>
-2. **API Operativa**: <https://tad-api.vercel.app/>
+1. **Dashboard Operativo**: <https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/>
+2. **API Operativa**: <https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1/>
 3. **Credenciales**: `admin@tad.do` / `TadAdmin2026!`

@@ -30,6 +30,15 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  
+  /* PWA Gesture Enhancements */
+  overscroll-behavior-y: none; /* Prevents pull-to-refresh annoyances in web apps */
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
+}
+
+/* Ensure all scrollable areas use native momentum scrolling on mobile */
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 .text-shadow-glow {
@@ -225,6 +234,19 @@ body {
 
 .leaflet-tile-pane {
   filter: brightness(1) !important;
+}
+
+/* Fix Leaflet sub-pixel rendering grid lines */
+.leaflet-tile-container img {
+  width: 256.5px !important;
+  height: 256.5px !important;
+  margin: -0.2px !important;
+}
+
+.leaflet-tile {
+  box-shadow: none !important;
+  border: none !important;
+  outline: 1px solid transparent !important; /* Antialiasing trick */
 }
 
 /* Map scan animation for tracking page overlay */

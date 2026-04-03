@@ -434,6 +434,13 @@ model Driver {
   // New: Advertiser referrals for commissions
   referredAdvertisers Advertiser[] @relation("AdvertiserReferrals")
 
+  // LEGAL COMPLIANCE: Acceptance of agreements
+  insuranceAccepted    Boolean   @default(false) @map("insurance_accepted")
+  insuranceAcceptedAt  DateTime? @map("insurance_accepted_at")
+  contractAccepted     Boolean   @default(false) @map("contract_accepted")
+  contractAcceptedAt   DateTime? @map("contract_accepted_at")
+  agreementVersion     String?   @map("agreement_version")
+
   @@map("drivers")
   @@index([status])
   @@index([phone])

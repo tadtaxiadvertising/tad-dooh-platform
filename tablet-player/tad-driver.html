@@ -12,9 +12,8 @@
 <script>
   Sentry.onLoad(function() {
     Sentry.init({
-      dsn: "https://b786a0fa94eec198afb9e35ce84d16ea@o4511114332143616.ingest.us.sentry.io/4511114334633984",
       integrations: [Sentry.browserTracingIntegration()],
-      tracesSampleRate: 1.0,
+      tracesSampleRate: 0.1, // Reducido para ahorrar banda en tablets
     });
   });
 </script>
@@ -614,7 +613,7 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 
 <script>
 // ══ CONFIG ══
-const API   = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+const API   = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
 const STITCH_GQL = 'https://api.stitch.money/graphql';
 const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
 

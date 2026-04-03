@@ -14,6 +14,14 @@ During this cycle, we successfully resolved a critical 404 error blocking the Bu
 - **Verification**: Confirmed that `admin-dashboard/pages/api/proxy/[...path].ts` accurately forwards requests to the backend with the correct `/api/v1/` injection.
 - **Environment Handling**: Verified that `BACKEND_INTERNAL_URL` is used at runtime to bypass build-time DNS issues common in VPS environments with limited memory.
 
+## [v6.6.1] - 2026-04-03
+
+### Aceptación Legal y UI Experiencial
+
+- **Legal (Driver Onboarding)**: Unificados _"Acuerdo de Servicios y Comodato"_ y _"Política de Privacidad y Tratamiento de Datos"_ bajo un estricto flujo Zero-Trust en `tad-driver.html` y el portal Next.js. El hardware no puede asignarse (`assignDevice` arroja `403 Forbidden`) si el Driver carece de pago y estatus `ACTIVE`.
+- **UI (PWA Gestures)**: Añadidas reglas en `globals.css` (`overscroll-behavior-y: none`) para deshabilitar pull-to-refresh limitantes en la experiencia Driver/Advertiser PWA. Implementado `-webkit-overflow-scrolling: touch` para Momentum Scrolling nativo de iOS/Android.
+- **UI (Mapas Leaflet)**: Corregidos _bugs_ visuales de cuadriculado (tile gaps) en motores Webkit aplicando márgenes negativos microscópicos (`-0.2px`) a los `.leaflet-tile-container img`.
+
 ## [v6.6.0] - 2026-04-04
 
 ### Stabilización BI Robustness & Routing Correction

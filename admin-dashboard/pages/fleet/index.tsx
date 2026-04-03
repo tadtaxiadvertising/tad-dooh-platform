@@ -10,6 +10,7 @@ import DeviceHubModal from '../../components/DeviceHubModal';
 import { notifyChange } from '../../lib/sync-channel';
 import { toast } from 'sonner';
 import { StatusSemaphore, SemaphoreStatus } from '../../components/ui/StatusSemaphore';
+import { AntigravityButton } from '../../components/ui/AntigravityButton';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
 

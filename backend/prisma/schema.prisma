@@ -1,9 +1,3 @@
-// ============================================
-// TAD DOOH Platform - Prisma Schema
-// ============================================
-// Database schema for PostgreSQL
-// ============================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,187 +8,141 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// USERS (Administradores del sistema)
-// ============================================
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   password  String
   name      String
-  role      String @default("ADMIN")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  role      String     @default("ADMIN")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   campaigns Campaign[]
-  
+
   @@map("users")
 }
 
-
-
-// ============================================
-// DEVICES (Tablets en taxis)
-// ============================================
-
 model Device {
-  id            String    @id @default(uuid())
-  deviceId      String    @unique @map("device_id")
-  name          String?
-  taxiNumber    String?   @map("taxi_number")
-  city          String?
-  status        String @default("ACTIVE")
-  lastSync      DateTime? @map("last_sync")
-  lastHeartbeat DateTime? @map("last_heartbeat")
-  batteryLevel  Int?      @default(100) @map("battery_level")
-  lastLat       Float?    @map("last_lat") // Última latitud conocida
-  lastLng       Float?    @map("last_lng") // Última longitud conocida
-  isOnline      Boolean   @default(false) @map("is_online")
-  storageUsed   BigInt?   @map("storage_used")
-  storageTotal  BigInt?   @map("storage_total")
-  appVersion    String?   @map("app_version")
-  authToken     String?   @map("auth_token")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt      @map("updated_at")
-
-  fleet         String?
-  lastSeen      DateTime? @map("last_seen")
-  storageFree   String?   @map("storage_free")
-  lastPlayback  DateTime? @map("last_playback")
-  playerStatus  String?   @map("player_status")
-  lastSyncHash  String?   @map("last_sync_hash")
-  lastSyncAt    DateTime? @map("last_sync_at")
-  lastOnline    DateTime? @map("last_online")
-  lastSyncSuccess Boolean? @map("last_sync_success")
-  driverId      String?   @map("driver_id")
-
-  events         AnalyticsEvent[]
-  commands       DeviceCommand[]
-  campaignMetrics CampaignMetric[]
-  heartbeats      DeviceHeartbeat[]
-  playbackEvents  PlaybackEvent[]
+  id                String            @id @default(uuid())
+  deviceId          String            @unique @map("device_id")
+  name              String?
+  taxiNumber        String?           @map("taxi_number")
+  city              String?
+  status            String            @default("ACTIVE")
+  lastSync          DateTime?         @map("last_sync")
+  lastHeartbeat     DateTime?         @map("last_heartbeat")
+  batteryLevel      Int?              @default(100) @map("battery_level")
+  lastLat           Float?            @map("last_lat")
+  lastLng           Float?            @map("last_lng")
+  isOnline          Boolean           @default(false) @map("is_online")
+  storageUsed       BigInt?           @map("storage_used")
+  storageTotal      BigInt?           @map("storage_total")
+  appVersion        String?           @map("app_version")
+  authToken         String?           @map("auth_token")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  fleet             String?
+  lastSeen          DateTime?         @map("last_seen")
+  storageFree       String?           @map("storage_free")
+  lastPlayback      DateTime?         @map("last_playback")
+  playerStatus      String?           @map("player_status")
+  lastSyncHash      String?           @map("last_sync_hash")
+  lastSyncAt        DateTime?         @map("last_sync_at")
+  lastOnline        DateTime?         @map("last_online")
+  lastSyncSuccess   Boolean?          @map("last_sync_success")
+  driverId          String?           @map("driver_id")
+  events            AnalyticsEvent[]
+  campaignMetrics   CampaignMetric[]
+  campaigns         DeviceCampaign[]
+  commands          DeviceCommand[]
+  heartbeats        DeviceHeartbeat[]
+  driver            Driver?           @relation(fields: [driverId], references: [id])
+  locations         DriverLocation[]
+  playbackEvents    PlaybackEvent[]
   assignedCampaigns PlaylistItem[]
-  campaigns      DeviceCampaign[]
-  driver          Driver?  @relation(fields: [driverId], references: [id])
-  subscriptions   Subscription[]
-  locations       DriverLocation[]
-  tabletHealthLogs TabletHealthLog[]
-  reconciliationReports ReconciliationReport[]
-  
-  @@map("devices")
+  subscriptions     Subscription[]
+
   @@index([status])
   @@index([lastSync])
   @@index([city])
   @@index([lastSeen])
   @@index([driverId])
+  @@map("devices")
 }
 
-
-
-// ============================================
-// CAMPAIGNS (Campañas publicitarias)
-// ============================================
-
 model Campaign {
-  id          String   @id @default(uuid())
-  name        String
-  advertiser  String
-  advertiserId String? @map("advertiser_id")
-  description String?
-  status      String @default("DRAFT")
-  active      Boolean  @default(true)
-  startDate   DateTime @map("start_date")
-  endDate     DateTime @map("end_date")
-  version     Int      @default(1)
-  isGlobal    Boolean  @default(false) @map("is_global")
-  targetAll   Boolean  @default(true) @map("target_all")
-  targetCities String @default("[]") @map("target_cities")
-  targetCity  String   @default("Global") @map("target_city") // "Global", "Santo Domingo", etc.
-  targetFleets String @default("[]") @map("target_fleets")
-  priority    Int      @default(0)
-  targetImpressions Int @default(0) @map("target_impressions")
-  budget      Float @default(0)
-  targetUrl   String? @map("target_url") // URL de destino para QR Scan redirect
-  category    String? @default("General")
-  whatsapp    String?
-  instagram   String?
-  facebook    String?
-  websiteUrl  String? @map("website_url")
-  pedidosYaUrl String? @map("pedidos_ya_url")
-  uberEatsUrl  String? @map("uber_eats_url")
-  createdById String?  @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt      @map("updated_at")
+  id                String           @id @default(uuid())
+  name              String
+  advertiser        String
+  advertiserId      String?          @map("advertiser_id")
+  description       String?
+  status            String           @default("DRAFT")
+  active            Boolean          @default(true)
+  startDate         DateTime         @map("start_date")
+  endDate           DateTime         @map("end_date")
+  version           Int              @default(1)
+  isGlobal          Boolean          @default(false) @map("is_global")
+  targetAll         Boolean          @default(true) @map("target_all")
+  targetCities      String           @default("[]") @map("target_cities")
+  targetCity        String           @default("Global") @map("target_city")
+  targetFleets      String           @default("[]") @map("target_fleets")
+  priority          Int              @default(0)
+  targetImpressions Int              @default(0) @map("target_impressions")
+  budget            Float            @default(0)
+  targetUrl         String?          @map("target_url")
+  createdById       String?          @map("created_by")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  facebook          String?
+  instagram         String?
+  pedidosYaUrl      String?          @map("pedidos_ya_url")
+  uberEatsUrl       String?          @map("uber_eats_url")
+  websiteUrl        String?          @map("website_url")
+  whatsapp          String?
+  category          String?          @default("General")
+  metrics           CampaignMetric[]
+  advertiserRef     Advertiser?      @relation(fields: [advertiserId], references: [id])
+  createdBy         User?            @relation(fields: [createdById], references: [id])
+  devices           DeviceCampaign[]
+  media             Media[]          @relation("MediaCampaign")
+  mediaAssets       MediaAsset[]
+  targets           PlaylistItem[]
+  playlists         Playlist[]
+  videos            Video[]
+  targetDrivers     Driver[]         @relation("CampaignToDriver")
 
-  createdBy User?      @relation(fields: [createdById], references: [id])
-  advertiserRef Advertiser? @relation(fields: [advertiserId], references: [id])
-  playlists Playlist[]
-  metrics   CampaignMetric[]
-  videos       Video[]
-  mediaAssets  MediaAsset[]
-  media        Media[] @relation("MediaCampaign")
-  targets      PlaylistItem[]
-  devices      DeviceCampaign[]
-  targetDrivers Driver[]
-  
-  @@map("campaigns")
   @@index([active])
   @@index([status])
   @@index([startDate, endDate])
+  @@map("campaigns")
 }
 
-
-
-// ============================================
-// PLAYLISTS (Listas de reproducción)
-// ============================================
-
 model Playlist {
-  id        String   @id @default(uuid())
-  campaignId String  @map("campaign_id")
-  name      String
-  loopType  String @default("SEQUENTIAL")
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  name       String
+  loopType   String   @default("SEQUENTIAL")
+  createdAt  DateTime @default(now()) @map("created_at")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
   @@map("playlists")
 }
 
-
-
-// ============================================
-// PLAYLIST ITEMS (Items en playlist)
-// ============================================
-
-// ============================================
-// CAMPAIGN TARGETS (Asignación manual a dispositivos)
-// ============================================
-
 model PlaylistItem {
-  campaignId String @map("campaign_id")
-  deviceId   String @map("device_id")
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  device   Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  campaignId String   @map("campaign_id")
+  deviceId   String   @map("device_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
   @@id([campaignId, deviceId])
   @@map("playlist_items")
 }
 
-// ============================================
-// DEVICE CAMPAIGNS (Relación explícita v2)
-// ============================================
-
 model DeviceCampaign {
   device_id   String
   campaign_id String
   assigned_at DateTime @default(now())
-
-  // Relaciones
-  device      Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
   campaign    Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  device      Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
 
   @@id([device_id, campaign_id])
   @@index([device_id])
@@ -202,135 +150,107 @@ model DeviceCampaign {
   @@map("device_campaigns")
 }
 
-// ============================================
-// MEDIA (Archivos de video/imagen)
-// ============================================
-
 model Media {
-  id              String   @id @default(uuid())
-  name            String?
-  filename        String?
-  originalFilename String? @map("original_filename")
-  mime_type       String?  @map("mime_type")
-  mimeType        String?  
-  size            BigInt?
-  fileSize        BigInt?  @map("file_size")
-  durationSeconds Int?    @map("duration_seconds")
-  width           Int?
-  height          Int?
-  storageKey      String?  @map("storage_key")
-  url             String?
-  cdnUrl          String? @map("cdn_url")
-  hash            String?
-  hashMd5         String?  @map("hash_md5")
-  hashSha256      String?  @map("hash_sha256")
-  campaign_id     String?
-  campaign        Campaign? @relation("MediaCampaign", fields: [campaign_id], references: [id])
-  status          String @default("READY")
-  qrUrl           String?  @map("qr_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  @@map("media")
+  id               String    @id @default(uuid())
+  name             String?
+  filename         String?
+  originalFilename String?   @map("original_filename")
+  mime_type        String?   @map("mime_type")
+  mimeType         String?
+  size             BigInt?
+  fileSize         BigInt?   @map("file_size")
+  durationSeconds  Int?      @map("duration_seconds")
+  width            Int?
+  height           Int?
+  storageKey       String?   @map("storage_key")
+  url              String?
+  cdnUrl           String?   @map("cdn_url")
+  hash             String?
+  hashMd5          String?   @map("hash_md5")
+  hashSha256       String?   @map("hash_sha256")
+  campaign_id      String?
+  status           String    @default("READY")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  qrUrl            String?   @map("qr_url")
+  campaign         Campaign? @relation("MediaCampaign", fields: [campaign_id], references: [id])
+
   @@index([status])
+  @@map("media")
 }
 
-
-
-// ============================================
-// ANALYTICS EVENTS (Eventos de analytics)
-// ============================================
-
 model AnalyticsEvent {
-  id          String   @id @default(uuid())
-  deviceId    String   @map("device_id")
-  campaignId  String?  @map("campaign_id")
-  mediaId     String?  @map("media_id")
-  eventType   String   @map("event_type")
-  eventData   String?    @map("event_data")
-  lat         Float?     // Latitud
-  lng         Float?     // Longitud
-  timestamp   DateTime @default(now())
-  occurredAt  DateTime @map("occurred_at")
-  receivedAt  DateTime @default(now()) @map("received_at")
-  processed   Boolean  @default(false)
+  id         String   @id @default(uuid())
+  deviceId   String   @map("device_id")
+  campaignId String?  @map("campaign_id")
+  mediaId    String?  @map("media_id")
+  eventType  String   @map("event_type")
+  eventData  String?  @map("event_data")
+  lat        Float?
+  lng        Float?
+  timestamp  DateTime @default(now())
+  occurredAt DateTime @map("occurred_at")
+  receivedAt DateTime @default(now()) @map("received_at")
+  processed  Boolean  @default(false)
+  device     Device   @relation(fields: [deviceId], references: [deviceId])
 
-  device Device? @relation(fields: [deviceId], references: [deviceId])
-  
-  @@map("analytics_events")
   @@index([deviceId])
   @@index([campaignId])
   @@index([eventType])
   @@index([occurredAt])
   @@index([processed])
+  @@map("analytics_events")
 }
-
-// ============================================
-// CAMPAIGN METRICS (Métricas pre-computadas)
-// ============================================
 
 model CampaignMetric {
-  id               BigInt   @id @default(autoincrement())
-  campaignId       String   @map("campaign_id")
-  deviceId         String?  @map("device_id")
-  date             DateTime
-  city             String?
-  totalImpressions Int      @default(0) @map("total_impressions")
-  totalCompletions Int      @default(0) @map("total_completions")
-  totalErrors      Int      @default(0) @map("total_errors")
-  uniqueDevices    Int      @default(0) @map("unique_devices")
-  avgCompletionRate Float? @map("avg_completion_rate")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id                BigInt   @id @default(autoincrement())
+  campaignId        String   @map("campaign_id")
+  deviceId          String?  @map("device_id")
+  date              DateTime
+  city              String?
+  totalImpressions  Int      @default(0) @map("total_impressions")
+  totalCompletions  Int      @default(0) @map("total_completions")
+  totalErrors       Int      @default(0) @map("total_errors")
+  uniqueDevices     Int      @default(0) @map("unique_devices")
+  avgCompletionRate Float?   @map("avg_completion_rate")
+  createdAt         DateTime @default(now()) @map("created_at")
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  device            Device?  @relation(fields: [deviceId], references: [id])
 
-  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  device   Device?  @relation(fields: [deviceId], references: [id])
-  
-  @@map("campaign_metrics")
+  @@unique([campaignId, date, city])
   @@index([campaignId])
   @@index([date])
-  @@unique([campaignId, date, city])
+  @@map("campaign_metrics")
 }
-
-// ============================================
-// DEVICE COMMANDS (Comandos remotos)
-// ============================================
 
 model DeviceCommand {
-  id           String        @id @default(uuid())
-  deviceId     String        @map("device_id")
-  commandType  String        @map("command_type")
-  commandParams String?        @map("command_params")
-  status       String @default("PENDING")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  executedAt   DateTime?     @map("executed_at")
-  result       String?
-  expiresAt    DateTime?     @map("expires_at")
+  id            String    @id @default(uuid())
+  deviceId      String    @map("device_id")
+  commandType   String    @map("command_type")
+  commandParams String?   @map("command_params")
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  executedAt    DateTime? @map("executed_at")
+  result        String?
+  expiresAt     DateTime? @map("expires_at")
+  device        Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  
-  @@map("device_commands")
   @@index([deviceId])
   @@index([status])
+  @@map("device_commands")
 }
 
-
-
-// ============================================
-// NEW MODELS FOR V1
-// ============================================
-
 model Video {
-  id          String   @id @default(uuid())
-  campaignId  String   @map("campaign_id")
-  title       String
-  url         String
-  duration    Int
-  fileSize    Int?     @map("file_size")
-  mimeType    String?  @map("mime_type")
-  qrUrl       String?  @map("qr_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  uploadedAt  DateTime @default(now()) @map("uploaded_at")
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  title      String
+  url        String
+  duration   Int
+  fileSize   Int?     @map("file_size")
+  mimeType   String?  @map("mime_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  qrUrl      String?  @map("qr_url")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@map("videos")
 }
@@ -341,52 +261,44 @@ model DeviceHeartbeat {
   batteryLevel Int?     @map("battery_level")
   storageFree  String?  @map("storage_free")
   timestamp    DateTime @default(now())
-
-  // Using deviceId as string field, relation works if we map it to the Device unique deviceId or ID. 
-  // It's usually better to map to Device ID. 
-  // Wait, device_id from payload is e.g. "taxi-9wu77o406". Let's link it to Device.deviceId as relation?
-  // Our Schema: Device has `id` and `deviceId` (unique).
-  // Standard relational is by `deviceId` in Device.id or Device.deviceId.
   device       Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
-  @@map("device_heartbeats")
   @@index([deviceId])
+  @@map("device_heartbeats")
 }
 
 model PlaybackEvent {
-  id         String   @id @default(uuid())
-  deviceId   String   @map("device_id")
-  eventType  String   @map("event_type")
-  videoId    String   @map("video_id")
-  lat        Float?   // Latitud para Geo-fencing
-  lng        Float?   // Longitud para Geo-fencing
-  timestamp  DateTime @default(now())
+  id        String   @id @default(uuid())
+  deviceId  String   @map("device_id")
+  eventType String   @map("event_type")
+  videoId   String   @map("video_id")
+  lat       Float?
+  lng       Float?
+  timestamp DateTime @default(now())
+  device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
-  device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-
-  @@map("playback_events")
   @@index([deviceId])
   @@index([timestamp])
   @@index([videoId])
+  @@map("playback_events")
 }
 
 model MediaAsset {
-  id          String   @id @default(uuid())
-  campaignId  String   @map("campaign_id")
-  type        String
-  filename    String
-  url         String
-  fileSize    Int      @map("file_size")
-  checksum    String
-  duration    Int?
-  qrUrl       String?  @map("qr_url")
-  version     Int      @default(1)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  type       String
+  filename   String
+  url        String
+  fileSize   Int      @map("file_size")
+  checksum   String
+  duration   Int?
+  version    Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  qrUrl      String?  @map("qr_url")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@map("media_assets")
   @@index([campaignId])
+  @@map("media_assets")
 }
 
 model Fleet {
@@ -398,41 +310,24 @@ model Fleet {
   @@map("fleets")
 }
 
-// ============================================
-// DRIVERS (Choferes de taxis)
-// ============================================
-
 model Driver {
-  id               String    @id @default(uuid())
-  fullName         String    @map("full_name")
-  cedula           String?   @unique
-  phone            String    @unique  // WhatsApp number
-  password         String?   // For driver portal login
-  licensePlate     String?   @map("license_plate")
-  taxiPlate        String?   @unique @map("taxi_plate")
-  taxiNumber       String?   @map("taxi_number")
-  subscriptionPaid Boolean   @default(false) @map("subscription_paid")
-  subscriptionEnd  DateTime? @map("subscription_end")
-  referredBy       String?   @map("referred_by")
-  status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
-  onboardedAt      DateTime  @default(now()) @map("onboarded_at")
-  blockedAt        DateTime? @map("blocked_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  devices       Device[]
-  subscriptions Subscription[]
-  campaigns     Campaign[]
-  payrollPayments PayrollPayment[]
-  locations     DriverLocation[]
-  reconciliationReports ReconciliationReport[]
-  
-  // FINANCIAL INTELLIGENCE: Referral tracking
-  referredByDriver    Driver?   @relation("DriverReferrals", fields: [referredBy], references: [id])
-  referrals           Driver[]   @relation("DriverReferrals")
-  
-  // New: Advertiser referrals for commissions
-  referredAdvertisers Advertiser[] @relation("AdvertiserReferrals")
+  id                  String           @id @default(uuid())
+  fullName            String           @map("full_name")
+  cedula              String?          @unique
+  phone               String           @unique
+  licensePlate        String?          @map("license_plate")
+  taxiPlate           String?          @unique @map("taxi_plate")
+  taxiNumber          String?          @map("taxi_number")
+  subscriptionPaid    Boolean          @default(false) @map("subscription_paid")
+  subscriptionEnd     DateTime?        @map("subscription_end")
+  status              String           @default("ACTIVE")
+  onboardedAt         DateTime         @default(now()) @map("onboarded_at")
+  blockedAt           DateTime?        @map("blocked_at")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  referredBy          String?          @map("referred_by")
+  password            String?
+  referredAdvertisers Advertiser[]     @relation("AdvertiserReferrals")
 
   // LEGAL COMPLIANCE: Acceptance of agreements
   insuranceAccepted    Boolean   @default(false) @map("insurance_accepted")
@@ -440,155 +335,130 @@ model Driver {
   contractAccepted     Boolean   @default(false) @map("contract_accepted")
   contractAcceptedAt   DateTime? @map("contract_accepted_at")
   agreementVersion     String?   @map("agreement_version")
+  devices             Device[]
+  locations           DriverLocation[]
+  referredByDriver    Driver?          @relation("DriverReferrals", fields: [referredBy], references: [id])
+  referrals           Driver[]         @relation("DriverReferrals")
+  payrollPayments     PayrollPayment[]
+  subscriptions       Subscription[]
+  campaigns           Campaign[]       @relation("CampaignToDriver")
 
-  @@map("drivers")
   @@index([status])
   @@index([phone])
+  @@map("drivers")
 }
 
-// ============================================
-// FINANCIAL INTELLIGENCE (Libro Mayor)
-// ============================================
-
 model FinancialTransaction {
-  id            String   @id @default(uuid())
-  type          String   // DEBIT, CREDIT
-  category      String   // CAPEX_HARDWARE, REVENUE_AD, REVENUE_SUBSCRIPTION, OPEX_DRIVER_PAYOUT, OPEX_COMMISSION, OPEX_MARKETING, TAX_ITBIS
-  amount        Float    // Gross amount
-  netAmount     Float    @map("net_amount") // Amount after taxes/retentions
-  taxAmount     Float    @map("tax_amount") // ITBIS 18% or other taxes
-  status        String   @default("PENDING") // PENDING, COMPLETED, FAILED
-  entityId      String?  @map("entity_id") // ID of Driver, Advertiser, etc.
-  reference     String?  @unique
-  note          String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  type      String
+  category  String
+  amount    Float
+  netAmount Float    @map("net_amount")
+  taxAmount Float    @map("tax_amount")
+  status    String   @default("PENDING")
+  entityId  String?  @map("entity_id")
+  reference String?  @unique
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("financial_transactions")
   @@index([type])
   @@index([category])
   @@index([status])
   @@index([createdAt])
+  @@map("financial_transactions")
 }
-
-// ============================================
-// PAYROLL (Pagos a choferes por anuncios)
-// ============================================
 
 model PayrollPayment {
-  id            String   @id @default(uuid())
-  driverId      String   @map("driver_id")
-  amount        Float
-  month         Int      // 1-12
-  year          Int      // 2026
-  status        String   @default("PENDING") // PENDING, PAID
-  referenceNum  String?  @map("reference_num") // Bank transfer reference
-  paidAt        DateTime? @map("paid_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-  
-  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  driverId     String    @map("driver_id")
+  amount       Float
+  month        Int
+  year         Int
+  status       String    @default("PENDING")
+  referenceNum String?   @map("reference_num")
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  driver       Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  @@unique([driverId, month, year]) // Evita pagar doble el mismo mes
-  @@map("payroll_payments")
+  @@unique([driverId, month, year])
   @@index([driverId])
   @@index([status])
+  @@map("payroll_payments")
 }
 
-// ============================================
-// SUBSCRIPTIONS (Suscripciones y pagos)
-// ============================================
-
 model Subscription {
-  id            String   @id @default(uuid())
-  driverId      String   @map("driver_id")
-  deviceId      String?  @map("device_id")
-  plan          String   // ANNUAL, MONTHLY
-  amount        Float    @default(6000.0)
-  status        String   @default("PENDING") // ACTIVE, EXPIRED, PENDING
-  startDate     DateTime @default(now()) @map("start_date")
-  dueDate       DateTime @map("due_date")
-  validUntil    DateTime @map("valid_until")
+  id            String    @id @default(uuid())
+  driverId      String    @map("driver_id")
+  deviceId      String?   @map("device_id")
+  plan          String
+  amount        Float     @default(6000.0)
+  status        String    @default("PENDING")
+  startDate     DateTime  @default(now()) @map("start_date")
+  dueDate       DateTime  @map("due_date")
+  validUntil    DateTime  @map("valid_until")
   paidAt        DateTime? @map("paid_at")
   paymentMethod String?   @map("payment_method")
   notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  device        Device?   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  driver        Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  device        Device?  @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-
-  @@map("subscriptions")
   @@index([driverId])
   @@index([deviceId])
   @@index([status])
   @@index([dueDate])
+  @@map("subscriptions")
 }
-
-// ============================================
-// ADVERTISERS (Anunciantes / Marcas)
-// ============================================
 
 model Advertiser {
-  id          String     @id @default(uuid())
-  companyName String     @map("company_name")
-  contactName String     @map("contact_name")
-  email       String     @unique
-  password    String?    // For advertiser portal login
-  phone       String?
-  // Redes y contacto comercial para el Perfil QR
-  whatsapp    String?
-  instagram   String?
-  facebook    String?
-  websiteUrl  String?    @map("website_url")
-  pedidosYaUrl String?   @map("pedidos_ya_url")
-  uberEatsUrl  String?   @map("uber_eats_url")
-  productsData String?   @map("products_data") @default("[]") // JSON string con [{name, price, img, link}]
-
-  category    String?    @default("General")
-  status      String     @default("ACTIVE")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-
-  campaigns   Campaign[]
+  id             String          @id @default(uuid())
+  companyName    String          @map("company_name")
+  contactName    String          @map("contact_name")
+  email          String          @unique
+  phone          String?
+  status         String          @default("ACTIVE")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  facebook       String?
+  instagram      String?
+  productsData   String?         @default("[]") @map("products_data")
+  websiteUrl     String?         @map("website_url")
+  whatsapp       String?
+  category       String?         @default("General")
+  pedidosYaUrl   String?         @map("pedidos_ya_url")
+  uberEatsUrl    String?         @map("uber_eats_url")
+  referredBy     String?         @map("referred_by")
+  password       String?
+  referrer       Driver?         @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
+  campaigns      Campaign[]
   portalRequests PortalRequest[]
-  
-  // Link for driver commissions
-  referredBy  String?    @map("referred_by")
-  referrer    Driver?    @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
 
-  @@map("advertisers")
   @@index([status])
   @@index([category])
+  @@map("advertisers")
 }
 
-// ================= ==========================
-// PORTAL REQUESTS (Peticiones de anunciantes)
-// ============================================
-
 model PortalRequest {
-  id              String   @id @default(uuid())
-  advertiserId    String   @map("advertiser_id")
-  campaignId      String?  @map("campaign_id")
-  type            String   // CONTENT_UPDATE, SPACE_REQUEST, OTHER
-  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
-  title           String
-  description     String?
-  data            String?  @default("{}") // JSON string with specific request details (e.g. new video URL)
-  adminNotes      String?  @map("admin_notes")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt      @map("updated_at")
+  id           String     @id @default(uuid())
+  advertiserId String     @map("advertiser_id")
+  campaignId   String?    @map("campaign_id")
+  type         String
+  status       String     @default("PENDING")
+  title        String
+  description  String?
+  data         String?    @default("{}")
+  adminNotes   String?    @map("admin_notes")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  advertiser   Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
 
-  advertiser      Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
-
-  @@map("portal_requests")
   @@index([advertiserId])
   @@index([status])
   @@index([type])
+  @@map("portal_requests")
 }
-
-// ============================================
-// TRACKING (GPS Tracking Hybrid logic)
-// ============================================
 
 model DriverLocation {
   id        String   @id @default(uuid())
@@ -598,154 +468,27 @@ model DriverLocation {
   longitude Float
   speed     Float    @default(0)
   timestamp DateTime @default(now())
-
-  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  @@map("driver_locations")
   @@index([deviceId, timestamp])
-  @@index([driverId, timestamp]) // Optimización para resumen diario
+  @@index([driverId, timestamp])
   @@index([driverId])
+  @@map("driver_locations")
 }
-
-// ============================================
-// NOTIFICATIONS (Alertas del sistema)
-// ============================================
 
 model Notification {
   id        String   @id @default(uuid())
   title     String
   message   String
-  type      String   @default("INFO") // INFO, WARNING, CRITICAL, SUCCESS
-  category  String   @default("SYSTEM") // SYSTEM, DEVICE, CAMPAIGN, FINANCE
+  type      String   @default("INFO")
+  category  String   @default("SYSTEM")
   read      Boolean  @default(false)
-  entityId  String?  @map("entity_id") // ID del Dispositivo, Campaña, etc.
+  entityId  String?  @map("entity_id")
   createdAt DateTime @default(now()) @map("created_at")
-  
-  @@map("notifications")
+
   @@index([read])
   @@index([category])
   @@index([createdAt])
-}
-
-// ============================================
-// BI & HEALTH (Inteligencia de Negocios)
-// ============================================
-
-model TabletHealthLog {
-  id              String   @id @default(uuid())
-  deviceId        String   @map("device_id")
-  snapshotAt      DateTime @default(now()) @map("snapshot_at")
-
-  // Conectividad
-  isOnline        Boolean  @default(false) @map("is_online")
-  lastHeartbeatAt DateTime? @map("last_heartbeat_at")
-  offlineHours    Float    @default(0) @map("offline_hours")
-
-  // Hardware
-  batteryLevel    Int?     @map("battery_level")
-  batteryStatus   String   @default("UNKNOWN") @map("battery_status")
-  // "OK" (>40%), "LOW" (<40%), "CRITICAL" (<15%), "UNKNOWN"
-
-  // Software
-  appVersion      String?  @map("app_version")
-  playerStatus    String?  @map("player_status")
-  // "PLAYING", "IDLE", "ERROR", "OFFLINE"
-
-  // GPS
-  lastGpsAt       DateTime? @map("last_gps_at")
-  gpsStaleHours   Float    @default(0) @map("gps_stale_hours")
-  networkType     String?  @map("network_type") // "WIFI", "4G", "OFFLINE"
-  syncSuccess     Boolean  @default(false) @map("sync_success")
-
-  device          Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-
-  @@map("tablet_health_logs")
-  @@index([deviceId, snapshotAt])
-  @@index([isOnline])
-  @@index([batteryStatus])
-  @@index([snapshotAt])
-}
-
-model ReconciliationReport {
-  id                    String   @id @default(uuid())
-  period                String   // "2026-03" (YYYY-MM)
-  generatedAt           DateTime @default(now()) @map("generated_at")
-  generatedBy           String   @default("SYSTEM") @map("generated_by")
-
-  // Dimensión: Chofer / Dispositivo
-  driverId              String?  @map("driver_id")
-  deviceId              String?  @map("device_id")
-
-  // Suscripción
-  subscriptionStatus    String   @map("subscription_status")
-  // "ACTIVE", "EXPIRED", "MISSING"
-  subscriptionDueDate   DateTime? @map("subscription_due_date")
-  subscriptionPaidAt    DateTime? @map("subscription_paid_at")
-  subscriptionAmount    Float    @default(0) @map("subscription_amount")
-
-  // Actividad Operativa
-  onlineDays            Int      @default(0) @map("online_days")
-  totalPlaybacks        Int      @default(0) @map("total_playbacks")
-  totalPlaybackMinutes  Float    @default(0) @map("total_playback_minutes")
-
-  // Campaña / Ingresos
-  activeCampaigns       Int      @default(0) @map("active_campaigns")
-  contractedImpressions Int      @default(0) @map("contracted_impressions")
-  deliveredImpressions  Int      @default(0) @map("delivered_impressions")
-  deliveryRate          Float    @default(0) @map("delivery_rate")
-
-  // Finanzas
-  revenueContracted     Float    @default(0) @map("revenue_contracted")
-  revenueReceived       Float    @default(0) @map("revenue_received")
-  payrollDue            Float    @default(0) @map("payroll_due")
-  payrollPaid           Float    @default(0) @map("payroll_paid")
-
-  // Discrepancias (Flags Automáticos)
-  hasDiscrepancy        Boolean  @default(false) @map("has_discrepancy")
-  discrepancyType       String?  @map("discrepancy_type")
-  // "UNPAID_SUBSCRIPTION" | "MISSING_PAYMENT" | "LOW_DELIVERY" | "PAYROLL_PENDING" | "OK"
-  discrepancyAmount     Float    @default(0) @map("discrepancy_amount")
-  notes                 String?
-
-  driver                Driver?  @relation(fields: [driverId], references: [id])
-  device                Device?  @relation(fields: [deviceId], references: [id])
-
-  @@map("reconciliation_reports")
-  @@unique([period, driverId])
-  @@index([period])
-  @@index([hasDiscrepancy])
-  @@index([discrepancyType])
-  @@index([driverId])
-}
-
-model BiDashboardSnapshot {
-  id                    String   @id @default(uuid())
-  snapshotDate          DateTime @unique @map("snapshot_date")
-
-  // Financiero
-  mrr                   Float    @default(0)
-  burnRate              Float    @default(0) @map("burn_rate")
-  netProjection         Float    @default(0) @map("net_projection")
-  pendingSubscriptions  Int      @default(0) @map("pending_subscriptions")
-  overdueSubscriptions  Int      @default(0) @map("overdue_subscriptions")
-  totalRevenueMtd       Float    @default(0) @map("total_revenue_mtd")
-
-  // Flota
-  totalDevices          Int      @default(0) @map("total_devices")
-  onlineDevices         Int      @default(0) @map("online_devices")
-  offlineDevices        Int      @default(0) @map("offline_devices")
-  criticalDevices       Int      @default(0) @map("critical_devices")
-  lowBatteryDevices     Int      @default(0) @map("low_battery_devices")
-  syncHealthRate        Float    @default(0) @map("sync_health_rate")
-
-  // Campañas
-  activeCampaigns       Int      @default(0) @map("active_campaigns")
-  totalImpressionsMtd   Int      @default(0) @map("total_impressions_mtd")
-  deliveryRateAvg       Float    @default(0) @map("delivery_rate_avg")
-
-  generatedAt           DateTime @default(now()) @map("generated_at")
-
-  @@map("bi_dashboard_snapshots")
-  @@index([snapshotDate])
+  @@map("notifications")
 }

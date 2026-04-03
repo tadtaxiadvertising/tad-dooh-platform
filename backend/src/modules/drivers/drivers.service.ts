@@ -111,6 +111,15 @@ export class DriversService {
   /**
    * Registrar un nuevo chofer con su suscripción
    */
+  async create(data: {
+    fullName: string;
+    cedula?: string;
+    phone: string;
+    taxiPlate?: string;
+    licensePlate?: string;
+    deviceId?: string;
+    subscriptionPaid?: boolean;
+    subscriptionEnd?: Date;
     password?: string;
     insuranceAccepted?: boolean;
     contractAccepted?: boolean;

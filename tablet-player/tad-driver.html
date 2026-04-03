@@ -258,6 +258,13 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 .auth-check input{width:18px;height:18px;accent-color:var(--y);margin-top:2px;flex-shrink:0}
 .auth-check span{font-size:12px;color:var(--t2);line-height:1.4}
 .auth-check strong{color:var(--y);text-decoration:underline}
+
+/* Modales Legales */
+#modal-legal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);z-index:1000;display:none;padding:20px;overflow-y:auto}
+.legal-box{background:var(--s1);border-radius:24px;padding:30px;max-width:600px;margin:20px auto;position:relative;border:1px solid var(--b2)}
+.legal-box h2{color:var(--y);margin-bottom:20px;font-size:20px}
+.legal-box .content{color:var(--t2);font-size:14px;line-height:1.7;white-space:pre-wrap}
+.close-legal{position:sticky;top:-10px;float:right;background:var(--y);color:var(--b);border:none;width:30px;height:30px;border-radius:50%;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -319,15 +326,25 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
     <!-- Acuerdo Legal Digital -->
     <label class="auth-check">
       <input type="checkbox" id="rg-insurance" required>
-      <span>He leído y acepto el <strong>Seguro de Accidentes</strong> para conductores TAD.</span>
+      <span>He leído y acepto el <strong onclick="showLegal('insurance')">Seguro de Accidentes</strong> para conductores TAD.</span>
     </label>
     <label class="auth-check">
       <input type="checkbox" id="rg-contract" required>
-      <span>He leído y acepto el <strong>Contrato de Prestación de Servicios</strong> y términos de uso.</span>
+      <span>He leído y acepto el <strong onclick="showLegal('contract')">Contrato de Prestación de Servicios</strong> y términos de uso.</span>
     </label>
 
     <button type="submit" class="btn btn-y mt8" id="btn-register">Crear Cuenta</button>
   </form>
+</div>
+
+<!-- Modal Legal -->
+<div id="modal-legal">
+  <div class="legal-box">
+    <button class="close-legal" onclick="closeLegal()">✕</button>
+    <h2 id="legal-title">Documento Legal</h2>
+    <div id="legal-content" class="content">...</div>
+    <button class="btn btn-y mt20" onclick="closeLegal()">Entendido</button>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -622,6 +639,53 @@ function switchAuth(tab){
   document.getElementById('form-login').className='auth-form '+(tab==='login'?'active':'');
   document.getElementById('form-register').className='auth-form '+(tab==='register'?'active':'');
 }
+
+    // --- Lógica Legal ---
+    const LEGAL_TEXTS = {
+      insurance: `PÓLIZA DE SEGURO DE ACCIDENTES PARA SOCIOS CONDUCTORES TAD
+
+1. COBERTURA: Este seguro cubre exclusivamente accidentes ocurridos durante la operación de la unidad de taxi con el dispositivo TAD activo y conectado.
+2. BENEFICIOS:
+   - Gastos Médicos: Hasta un límite de RD$50,000 por incidente.
+   - Incapacidad Total/Parcial: Indemnización sujeta a peritaje médico.
+   - Vida: Cobertura básica en caso de fatalidad laboral.
+3. EXCLUSIONES: El seguro no tendrá validez si:
+   - El equipo TAD está desconectado o manipulado.
+   - El conductor está bajo la influencia de alcohol o sustancias ilegales.
+   - El conductor está fuera de su horario de operación declarado.
+4. RECLAMACIONES: Todo incidente debe reportarse a través de la App TAD en un plazo máximo de 24 horas.`,
+      contract: `CONTRATO DE PRESTACIÓN DE SERVICIOS - PLATAFORMA TAD
+
+1. NATURALEZA DE LA RELACIÓN: El Conductor actúa como contratista independiente. No existe relación de dependencia laboral, subordinación ni exclusividad con TADTaxi Advertising.
+2. OPERACIÓN DEL DISPOSITIVO: El Conductor se compromete a mantener la tablet TAD encendida y visible durante su jornada de trabajo. Queda prohibida la manipulación del hardware o software.
+3. MODELO DE GANANCIAS:
+   - TAD pagará al Conductor el porcentaje acordado sobre los ingresos netos de publicidad generada por su unidad.
+   - Los pagos se realizarán mensualmente tras el cierre de facturación.
+4. CUIDADO DEL EQUIPO: El Conductor es responsable del resguardo físico de la tablet. En caso de robo o daño por negligencia, el costo de reposición será descontado de sus ganancias futuras.
+5. TERMINACIÓN: Cualquiera de las partes puede rescindir este acuerdo con notificación previa de 24 horas. Incumplir las normas de conducta resultará en rescisión inmediata.`
+    };
+
+    function showLegal(type) {
+      const modal = document.getElementById('modal-legal');
+      const title = document.getElementById('legal-title');
+      const content = document.getElementById('legal-content');
+      
+      if(type === 'insurance') {
+        title.innerText = 'Seguro de Accidentes TAD';
+        content.innerText = LEGAL_TEXTS.insurance;
+      } else {
+        title.innerText = 'Contrato de Prestación de Servicios';
+        content.innerText = LEGAL_TEXTS.contract;
+      }
+      
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLegal() {
+      document.getElementById('modal-legal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
 
 async function handleAuth(e, type){
   e.preventDefault();

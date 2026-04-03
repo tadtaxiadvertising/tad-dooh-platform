@@ -325,11 +325,11 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
     <!-- Acuerdo Legal Digital -->
     <label class="auth-check">
       <input type="checkbox" id="rg-insurance" required>
-      <span>He leído y acepto el <strong onclick="showLegal('insurance')">Seguro de Accidentes</strong> para conductores TAD.</span>
+      <span>He leído y acepto el <strong onclick="showLegal('insurance')">Acuerdo de Responsabilidad y Comodato</strong> del equipo.</span>
     </label>
     <label class="auth-check">
       <input type="checkbox" id="rg-contract" required>
-      <span>He leído y acepto el <strong onclick="showLegal('contract')">Contrato de Prestación de Servicios</strong> y términos de uso.</span>
+      <span>He leído y acepto el <strong onclick="showLegal('contract')">Contrato de Prestación de Servicios</strong> independiente.</span>
     </label>
 
     <button type="submit" class="btn btn-y mt8" id="btn-register">Crear Cuenta</button>
@@ -639,29 +639,26 @@ function switchAuth(tab){
   document.getElementById('form-register').className='auth-form '+(tab==='register'?'active':'');
 }
 
-    // --- Lógica Legal ---
+    // --- Lógica Legal (Jurisdicción República Dominicana) ---
     const LEGAL_TEXTS = {
-      insurance: `PÓLIZA DE SEGURO DE ACCIDENTES PARA SOCIOS CONDUCTORES TAD
+      insurance: `ACUERDO DE RESPONSABILIDAD Y COMODATO DE EQUIPO TECNOLÓGICO
 
-1. COBERTURA: Este seguro cubre exclusivamente accidentes ocurridos durante la operación de la unidad de taxi con el dispositivo TAD activo y conectado.
-2. BENEFICIOS:
-   - Gastos Médicos: Hasta un límite de RD$50,000 por incidente.
-   - Incapacidad Total/Parcial: Indemnización sujeta a peritaje médico.
-   - Vida: Cobertura básica en caso de fatalidad laboral.
-3. EXCLUSIONES: El seguro no tendrá validez si:
-   - El equipo TAD está desconectado o manipulado.
-   - El conductor está bajo la influencia de alcohol o sustancias ilegales.
-   - El conductor está fuera de su horario de operación declarado.
-4. RECLAMACIONES: Todo incidente debe reportarse a través de la App TAD en un plazo máximo de 24 horas.`,
-      contract: `CONTRATO DE PRESTACIÓN DE SERVICIOS - PLATAFORMA TAD
+1. OBJETO (COMODATO): TADTaxi Advertising entrega al Conductor, en calidad de préstamo de uso gratuito (Comodato), un dispositivo tipo Tablet (Hardware) y sus accesorios para el exclusivo propósito de exhibición publicitaria.
+2. RESPONSABILIDAD DEL CONDUCTOR: El Conductor asume la custodia y conservación del equipo. Se compromete a:
+   - Mantener el equipo conectado y encendido durante la jornada de operación.
+   - Proteger el equipo contra robo, extravío o daños físicos derivados de negligencia.
+3. SOFTWARE Y DATOS: Queda estrictamente prohibida la manipulación del software TAD, el acceso a funciones no autorizadas o el uso del plan de datos para fines ajenos a la plataforma.
+4. INDEMNIZACIÓN POR PÉRDIDA: En caso de robo (sin reporte policial válido), pérdida o daño irreparable por mal uso, el Conductor reconoce una deuda líquida y exigible equivalente al costo de reposición del equipo (RD$12,000.00), la cual podrá ser compensada de sus beneficios generados.
+5. NO COBERTURA: Este acuerdo NO constituye una póliza de seguro médico, de vida o de accidentes. El Conductor es responsable de su propia seguridad social y seguros vehiculares exigidos por ley (DIGESETT/INTRANT).`,
+      contract: `CONTRATO DE PRESTACIÓN DE SERVICIOS INDEPENDIENTES (TAD)
 
-1. NATURALEZA DE LA RELACIÓN: El Conductor actúa como contratista independiente. No existe relación de dependencia laboral, subordinación ni exclusividad con TADTaxi Advertising.
-2. OPERACIÓN DEL DISPOSITIVO: El Conductor se compromete a mantener la tablet TAD encendida y visible durante su jornada de trabajo. Queda prohibida la manipulación del hardware o software.
-3. MODELO DE GANANCIAS:
-   - TAD pagará al Conductor el porcentaje acordado sobre los ingresos netos de publicidad generada por su unidad.
-   - Los pagos se realizarán mensualmente tras el cierre de facturación.
-4. CUIDADO DEL EQUIPO: El Conductor es responsable del resguardo físico de la tablet. En caso de robo o daño por negligencia, el costo de reposición será descontado de sus ganancias futuras.
-5. TERMINACIÓN: Cualquiera de las partes puede rescindir este acuerdo con notificación previa de 24 horas. Incumplir las normas de conducta resultará en rescisión inmediata.`
+1. NATURALEZA CIVIL: El presente contrato es de naturaleza civil. Conforme al Código de Trabajo de la Rep. Dom., el Conductor actúa como prestatario de servicios independiente, sin subordinación jurídica ni dependencia laboral.
+2. AUTONOMÍA: El Conductor tiene plena autonomía para decidir sus horarios y rutas de operación, siempre que cumpla con los estándares de visibilidad de los anuncios contratados por los clientes de la plataforma.
+3. COMPENSACIÓN (REVENUE SHARE):
+   - El Conductor recibirá un porcentaje de los ingresos netos por pauta publicitaria efectivamente cobrada y atribuida a su unidad.
+   - El Conductor autoriza a TAD a deducir costos operativos de plataforma y mantenimiento del hardware de sus beneficios brutos.
+4. PROPIEDAD INTELECTUAL: Todo el contenido publicitario exhibido es propiedad de TAD o sus clientes. El conductor no tiene derechos sobre la imagen o marcas exhibidas.
+5. RESOLUCIÓN DE CONFLICTOS: Las partes acuerdan someter cualquier diferencia a la Cámara de Comercio y Producción de Santiago (o Santo Domingo, según corresponda) para arbitraje o conciliación.`
     };
 
     function showLegal(type) {

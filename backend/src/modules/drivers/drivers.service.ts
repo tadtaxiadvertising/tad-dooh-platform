@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -214,6 +214,11 @@ export class DriversService {
     const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
     if (!driver) throw new Error('Chofer no encontrado');
 
+    // REGLA DE NEGOCIO ORO: Solo se asigna Hardware a usuarios con onboarding ACTIVE (PAGO REALIZADO)
+    if (driver.status !== 'ACTIVE' && driver.onboardingStatus !== 'ACTIVE') {
+      throw new ForbiddenException('Onboarding incompleto o suscripción no pagada. Asegúrate de abonar RD$6,000 primero.');
+    }
+
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ deviceId }, { id: deviceId }] }
     });
@@ -239,6 +244,37 @@ export class DriversService {
     return this.prisma.device.updateMany({
       where: { driverId },
       data: { driverId: null }
+    });
+  }
+
+  /**
+   * Aceptar firma electrónica del contrato y pasar a PENDING_PAYMENT
+   */
+  async acceptAgreement(driverId: string, version: string, ipAddress: string, userAgent: string) {
+    const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
+    if (!driver) throw new Error('Chofer no encontrado');
+
+    if (driver.contractAccepted) {
+      throw new Error('El conductor ya ha aceptado el contrato previamente');
+    }
+
+    await this.prisma.contractAcceptance.create({
+      data: {
+        driverId,
+        version,
+        ipAddress,
+        userAgent
+      }
+    });
+
+    return this.prisma.driver.update({
+      where: { id: driverId },
+      data: {
+        contractAccepted: true,
+        contractAcceptedAt: new Date(),
+        agreementVersion: version,
+        onboardingStatus: 'PENDING_PAYMENT'
+      }
     });
   }
 

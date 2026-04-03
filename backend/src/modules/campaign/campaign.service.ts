@@ -37,12 +37,18 @@ export class CampaignService {
     if (dto.target_devices) {
       await this.assignCampaignToDevices(id, dto.target_devices);
     } else {
-      // Create FORCE_SYNC commands for assigned devices just in case settings changed
-      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id } });
-      if (assignments.length > 0) {
+      let devicesToSync = [];
+      if (campaign.targetAll || campaign.isGlobal) {
+        devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } }));
+      } else {
+        const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id } });
+        devicesToSync = assignments.map(a => ({ id: a.device_id, deviceId: undefined }));
+      }
+
+      if (devicesToSync.length > 0) {
         await this.prisma.deviceCommand.createMany({
-          data: assignments.map(a => ({
-            deviceId: a.device_id,
+          data: devicesToSync.map(d => ({
+            deviceId: d.id, // Device Command needs UUID usually
             commandType: 'FORCE_SYNC',
             commandParams: JSON.stringify({ reason: 'campaign_updated' }),
             status: 'PENDING',
@@ -179,17 +185,24 @@ export class CampaignService {
     });
 
     // Invalidate campaign cache
-    await this.prisma.campaign.update({
+    const campaign = await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { updatedAt: new Date() }
     });
 
     // Create FORCE_SYNC commands for assigned devices
-    const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
-    if (assignments.length > 0) {
+    let devicesToSync = [];
+    if (campaign.targetAll || campaign.isGlobal) {
+      devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true } }));
+    } else {
+      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
+      devicesToSync = assignments.map(a => ({ id: a.device_id }));
+    }
+
+    if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
-        data: assignments.map(a => ({
-          deviceId: a.device_id,
+        data: devicesToSync.map(d => ({
+          deviceId: d.id,
           commandType: 'FORCE_SYNC',
           commandParams: JSON.stringify({ reason: 'media_asset_added' }),
           status: 'PENDING',

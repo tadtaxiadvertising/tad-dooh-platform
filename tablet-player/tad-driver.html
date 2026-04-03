@@ -254,6 +254,10 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 .auth-field label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
 .auth-field input{background:var(--s1);border:1px solid var(--b2);border-radius:13px;padding:15px;color:var(--t);font-size:15px;outline:none;transition:border-color .2s}
 .auth-field input:focus{border-color:var(--y)}
+.auth-check{display:flex;align-items:flex-start;gap:10px;margin-top:6px;cursor:pointer;user-select:none}
+.auth-check input{width:18px;height:18px;accent-color:var(--y);margin-top:2px;flex-shrink:0}
+.auth-check span{font-size:12px;color:var(--t2);line-height:1.4}
+.auth-check strong{color:var(--y);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -311,6 +315,17 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
       <label>Contraseña</label>
       <input type="password" id="rg-pass" placeholder="Crea una contraseña segura" required minlength="6">
     </div>
+
+    <!-- Acuerdo Legal Digital -->
+    <label class="auth-check">
+      <input type="checkbox" id="rg-insurance" required>
+      <span>He leído y acepto el <strong>Seguro de Accidentes</strong> para conductores TAD.</span>
+    </label>
+    <label class="auth-check">
+      <input type="checkbox" id="rg-contract" required>
+      <span>He leído y acepto el <strong>Contrato de Prestación de Servicios</strong> y términos de uso.</span>
+    </label>
+
     <button type="submit" class="btn btn-y mt8" id="btn-register">Crear Cuenta</button>
   </form>
 </div>
@@ -625,6 +640,9 @@ async function handleAuth(e, type){
       const cedula = document.getElementById('rg-cedula').value;
       const taxiPlate = document.getElementById('rg-plate').value;
       const password = document.getElementById('rg-pass').value;
+      const insuranceAccepted = document.getElementById('rg-insurance').checked;
+      const contractAccepted = document.getElementById('rg-contract').checked;
+
       // Creamos la cuenta incluyendo el DID para auto-vinculación de la tablet
       await fetch(`${API}/drivers`, {
         method: 'POST',
@@ -632,7 +650,10 @@ async function handleAuth(e, type){
         body: JSON.stringify({ 
           fullName, phone, cedula, taxiPlate, password, 
           deviceId: DID || undefined, 
-          subscriptionPaid: false 
+          subscriptionPaid: false,
+          insuranceAccepted,
+          contractAccepted,
+          agreementVersion: "1.0"
         })
       });
       res = await fetch(`${API}/drivers/login`, {

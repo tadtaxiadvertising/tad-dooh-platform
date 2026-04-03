@@ -14,13 +14,14 @@ During this cycle, we successfully resolved a critical 404 error blocking the Bu
 - **Verification**: Confirmed that `admin-dashboard/pages/api/proxy/[...path].ts` accurately forwards requests to the backend with the correct `/api/v1/` injection.
 - **Environment Handling**: Verified that `BACKEND_INTERNAL_URL` is used at runtime to bypass build-time DNS issues common in VPS environments with limited memory.
 
-## [v6.5.5] - 2026-04-03
+## [v6.6.0] - 2026-04-04
 
 ### Stabilización BI Robustness & Routing Correction
 
 - **Backend (BI Module)**: Corregidos decoradores de ruta redundantes (`api/bi` -> `bi`) para alinearse con el prefijo global `api/v1`.
 - **Backend (BiService)**: Implementada lógica de "Graceful Fallback". Si la tabla `BiDashboardSnapshot` no existe (migración pendiente), el sistema calcula métricas en tiempo real en lugar de fallar con 500 Internal Server Error.
-- **Backend (Build)**: Optimizada la Dockerfile de NestJS con `npm ci` y limpieza de caché para prevenir fallos por OOM (Out Of Memory) en VPS de 512MB RAM.
+- **Backend (Build)**: Optimización de Build (SRE): Dockerfile de Backend migrado a `npm ci` con limpieza agresiva de capas. Configurado `max-old-space-size=850` para aprovechar la expansión a 1GB RAM en el VPS, asegurando despliegues exitosos y mayor performance en tiempo de ejecución. (02/Abr/2016)
+- **Aceptación Digital de Acuerdos**: Implementados campos de firma digital (`insurance_accepted`, `contract_accepted`) en el registro de choferes. El portal `tad-driver.html` ahora obliga a la aceptación de términos antes de crear la cuenta. (03/Abr/2026)
 - **Frontend (Admin)**: Verificada la integridad de importaciones de `AntigravityButton` en las vistas de Fleet y BI para resolver errores de referencia en el bundle de producción.
 - **Documentation**: Actualizado `AUDITORIA_TAD_2026.md` para reflejar el estado actual de los módulos de inteligencia de negocio.
 - **CI/CD**: Recomendación de despliegue con "Clear Cache" en EasyPanel ante posibles capas corruptas de Docker.

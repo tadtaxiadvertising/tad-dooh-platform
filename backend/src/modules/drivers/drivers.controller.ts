@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
 import * as jwt from 'jsonwebtoken';
@@ -107,6 +108,28 @@ export class DriversController {
       body.paid,
       body.endDate ? new Date(body.endDate) : undefined,
     );
+  }
+
+  /**
+   * POST /api/drivers/:id/accept-agreement — Firma Electrónica
+   */
+  @Post(':id/accept-agreement')
+  async acceptAgreement(
+    @Param('id') id: string,
+    @Body() body: { version: string },
+    @Req() req: Request
+  ) {
+    if (!body.version) throw new BadRequestException('version es requerida');
+    
+    // Fallbacks para IP address and headers
+    const ipAddress = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown') as string;
+    const userAgent = (req.headers['user-agent'] || 'unknown') as string;
+
+    try {
+      return await this.driversService.acceptAgreement(id, body.version, ipAddress, userAgent);
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
   }
 
   /**

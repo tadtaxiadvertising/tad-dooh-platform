@@ -24,19 +24,23 @@ La plataforma ahora rastrea minuciosamente todo flujo de liquidez cruzado (`Subs
 - **Proxy Binario y Descargas de CSV/PDF**: Corregido bug fatal en `[...path].ts` (Proxy) que corrompía la descarga de binarios de reportería mediante la eliminación manual de la compresión `accept-encoding` del header.
 
 ## 3. 🗺️ Rastreo y Telemetría Semafórica
+
 - **Leaflet.Heat y Rendimiento GPS**: Sustitución definitiva del renderizado de pines masivos por mapa de calor (`leaflet.heat`) nativo. Se implementaron en UI `HeatmapLayers` desacopladas para controlar intensidad (`blur`, `radius`) logrando trazar una geocerca de saturación sin explotar la GPU del navegador del Administrador de la plataforma.
 - **Control de Spotlight & Resplandor Neon**: El panel master rastrea y resalta el auto seleccionado bajando la opacidad de los no-activos y dibujando un _Glow Trail_ de sus últimos 5 nodos GPS en verde/amarillo.
 
 ## 4. 🔐 Autenticación y Portales Desacoplados
+
 - Todo endpoint API sensible está protegido por `SupabaseAuthGuard` a través de JWT extraídos por un Regex a prueba de fallos de comas dobles HTTP (`Bearer xyz, Bearer xyz`). Sin embargo, para flujos comerciales (Landing Anunciantes y Player Conductores) se liberó estrictamente el uso de decoradores `@Public()`.
 - Un anunciante ahora cuenta con su PWA autónoma (`tad-advertiser.html`), usando registro directo, para administrar inversiones y solicitar "Adiciones o Extensiones de Campaña" enviadas a una canasta interactiva pending de revisión para el Administrador de Flota.
 
 ## 5. 📜 Aceptación Legal y Zero-Trust Onboarding
+
 - **Onboarding Workflow**: Implementado un flujo digital en el `Driver Portal` y PWA (`tad-driver.html`) que obliga la aceptación dual de "Acuerdo de Servicios y Comodato" y "Política de Privacidad y Tratamiento de Datos".
 - **Zero-Trust Assignation**: La asignación de Hardware en el backend (`assignDevice`) ahora requiere estrictamente el pago previo de la membresía de RD$6,000, implementando un Hard Block (estado HTTP 403 Forbidden) para quien no complete todo el flujo hasta su estado `ACTIVE`.
 
 ## 6. 🎨 Mejoras de Experiencia de Usuario Web y Mapas
-- **PWA Gestures y Mapas**: Reparación de _rendering_ para remover líneas de cuadrícula negras/blancas (_tile gaps_) causadas por antialiasing en mapas Leaflet (escalado subpixel en `globals.css`). 
+
+- **PWA Gestures y Mapas**: Reparación de _rendering_ para remover líneas de cuadrícula negras/blancas (_tile gaps_) causadas por antialiasing en mapas Leaflet (escalado subpixel en `globals.css`).
 - **Desplazamiento inercial**: Inyección global de comportamiento `overscroll-behavior-y: none` que neutraliza el rebote molesto del Pull-To-Refresh y habilita inercia fluida o _momentum scrolling_ via `-webkit-overflow-scrolling: touch` para garantizar que las webapps operen de manera idéntica a una app nativa en iOS/Android.
 
 ---
@@ -49,8 +53,8 @@ Si estás asumiendo el desarrollo a partir de este punto, **tu enfoque debe esta
 2. **Dashboard BI Dashboard**: Continuar con la fase 2 documentada en `10_bi_dashboard_architecture.md`: consolidar API NestJS, y crear interfaces `.tsx` que muestren semáforos limpios, sin peticiones cascada innecesarias (SWR es tu amigo).
 3. **Escalamiento E2E Test Suite**: Tienes `test_production.sh` preparado en el proyecto. Debes asegurar Playwright pasando para las nuevas características financieras y fallbacks usando el subverted TypeScript Next Environment (`tests/tsconfig.json`).
 
-> ✅ **Nota de estilo UI:** TODO el frontend debe sentirse *Premium*, *Dark Mode* (`CartoDB DarkMatter` nativo o similares), y usar colores corporativos **#FFD400**. Usa el componente encapsulado `AntigravityButton` y Notificaciones Oscuras (`toast.success` vía Sonner) en cada mutación de Next/React. No uses `window.alert`.
+> ✅ **Nota de estilo UI:** TODO el frontend debe sentirse _Premium_, _Dark Mode_ (`CartoDB DarkMatter` nativo o similares), y usar colores corporativos **#FFD400**. Usa el componente encapsulado `AntigravityButton` y Notificaciones Oscuras (`toast.success` vía Sonner) en cada mutación de Next/React. No uses `window.alert`.
 
 ---
 
-**FIN DEL REPORTE - ESTADO LISTO PARA DESARROLLO**
+### FIN DEL REPORTE - ESTADO LISTO PARA DESARROLLO

@@ -492,3 +492,46 @@ model Notification {
   @@index([createdAt])
   @@map("notifications")
 }
+
+model BiDashboardSnapshot {
+  id                  String   @id @default(uuid())
+  snapshotDate        DateTime @unique @map("snapshot_date")
+  mrr                 Float
+  totalDevices        Int      @map("total_devices")
+  onlineDevices       Int      @map("online_devices")
+  offlineDevices      Int      @map("offline_devices")
+  criticalDevices     Int      @map("critical_devices")
+  activeCampaigns     Int      @map("active_campaigns")
+  totalImpressionsMtd Int      @map("total_impressions_mtd")
+  deliveryRateAvg     Float    @map("delivery_rate_avg")
+  syncHealthRate      Float    @map("sync_health_rate")
+  generatedAt         DateTime @default(now()) @map("generated_at")
+
+  @@map("bi_dashboard_snapshots")
+}
+
+model ReconciliationReport {
+  id                  String    @id @default(uuid())
+  period              String // YYYY-MM
+  driverId            String    @map("driver_id")
+  deviceId            String?   @map("device_id")
+  subscriptionStatus  String    @map("subscription_status")
+  subscriptionDueDate DateTime? @map("subscription_due_date")
+  subscriptionAmount  Float     @map("subscription_amount")
+  totalPlaybacks      Int       @map("total_playbacks")
+  activeCampaigns     Int       @map("active_campaigns")
+  revenueContracted   Float     @map("revenue_contracted")
+  revenueReceived     Float     @map("revenue_received")
+  payrollDue          Float     @map("payroll_due")
+  payrollPaid         Float     @map("payroll_paid")
+  hasDiscrepancy      Boolean   @default(false) @map("has_discrepancy")
+  discrepancyType     String    @default("OK") @map("discrepancy_type")
+  discrepancyAmount   Float     @default(0) @map("discrepancy_amount")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@unique([period, driverId], name: "period_driverId")
+  @@index([period])
+  @@index([driverId])
+  @@map("reconciliation_reports")
+}

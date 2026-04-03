@@ -1,6 +1,24 @@
 # Changelog de Desarrollos e Iteraciones (TAD DOOH)
 
+Este documento centraliza el historial de cambios, optimizaciones y correcciones del ecosistema TAD.
+
+## 📅 03 de Abril, 2026 (Platform Stabilization & Financial Intelligence v6.5)
+
+Esta iteración se enfocó en eliminar errores críticos de ejecución en producción y preparar la infraestructura para el despliegue del ecosistema financiero.
+
+### 🛡️ SRE & STABILITY: Corrección de Errores Críticos de Runtime
+
+- **AntigravityButton Reference Fix**: Resuelto el error `ReferenceError: AntigravityButton is not defined` que bloqueaba la interfaz de administración. Se identificó una falla en la evaluación del módulo causada por la inicialización fallida de Supabase en entornos sin variables de entorno configuradas.
+- **Lazy Supabase Initialization**: Refactorizado `useTADAction.ts` para importar dinámicamente el cliente de Supabase solo en el momento de uso, evitando interrupciones en la cadena de importación durante el arranque del bundle.
+- **Supabase Client Hardening**: Añadidos placeholders de URL en `lib/supabase.ts` para prevenir que `createClient` lance excepciones fatales si las variables de entorno están ausentes, garantizando que el dashboard cargue incluso en modo de degradación.
+- **DeviceSelectorModal Declaration Fix**: Declarados los hooks de estado faltantes (`selectedDevices`, `saving`, `search`) en `DeviceSelectorModal.tsx` para permitir la compilación exitosa en entornos de CI/CD.
+- **AdvertiserModal State Alignment**: Corregido el objeto de reinicio de formulario en `AdvertiserModal.tsx` añadiendo el campo `referredBy`, manteniendo la consistencia con la interfaz de TypeScript.
+
+---
+
 ## 📅 02 de Abril, 2026 (SRE Resilience & Hard-Core Optimization v6.0)
+
+Esta iteración introdujo mecanismos de protección para el funcionamiento estable en servidores de bajos recursos.
 
 ### 🛡️ SRE & CYBERSECURITY: Resiliencia en Baja RAM (512MB)
 

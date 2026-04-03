@@ -39,13 +39,34 @@ const POLIGONO_CENTRAL: [number, number][] = [
 ];
 
 // Creates a premium cyber-taxi icon
-const createIcon = (status: string, selected: boolean, label = '') => {
+const createIcon = (status: string, selected: boolean, label = '', lastSeen?: string | null) => {
   const isActive = status === 'active';
   const mainColor = isActive ? '#FFD400' : '#52525b';
-  const glow = isActive ? '0 0 25px rgba(255, 212, 0, 0.6)' : 'none';
   const W = 52;
   const H = 64;
   const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
+  
+  // Determine number color based on connectivity
+  let numberColor = '#71717a'; // Default Gray (Weeks/Never)
+  let textGlow = 'none';
+
+  if (isActive) {
+    numberColor = '#10b981'; // Green
+    textGlow = '0 0 10px rgba(16,185,129,0.8)';
+  } else if (lastSeen) {
+    const diffHours = (Date.now() - new Date(lastSeen).getTime()) / (1000 * 60 * 60);
+    if (diffHours <= 72) {
+      numberColor = '#eab308'; // Yellow
+      textGlow = '0 0 8px rgba(234,179,8,0.6)';
+    } else if (diffHours <= 24 * 14) { // Up to 2 weeks
+      numberColor = '#ef4444'; // Red
+      textGlow = '0 0 8px rgba(239,68,68,0.6)';
+    } else {
+      numberColor = '#52525b'; // Gray
+    }
+  }
+
+  const glow = isActive ? '0 0 25px rgba(255, 212, 0, 0.6)' : 'none';
   
   const html = `
     <div style="
@@ -89,9 +110,9 @@ const createIcon = (status: string, selected: boolean, label = '') => {
           font-family: 'Inter', sans-serif;
           font-weight: 950;
           font-size: 10px;
-          color: ${isActive ? 'white' : '#71717a'};
+          color: ${numberColor};
           letter-spacing: -0.5px;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+          text-shadow: 0 1px 3px rgba(0,0,0,0.8), ${textGlow};
           transform: skew(-5deg);
         ">
           ${short}
@@ -294,7 +315,7 @@ const MapView: React.FC<MapViewProps> = ({
             <Marker
               key={loc.deviceId || i}
               position={[loc.lastLat, loc.lastLng]}
-              icon={createIcon(markerStatus, sel, label)}
+              icon={createIcon(markerStatus, sel, label, loc.lastSeen)}
               zIndexOffset={sel ? 1000 : 0}
             >
               <Popup className="popup-clean" offset={[0, -12]}>
@@ -405,6 +426,8 @@ const MapView: React.FC<MapViewProps> = ({
 
       <style jsx global>{`
         .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }
+        .leaflet-tile { border: none !important; opacity: 1 !important; outline: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+        .leaflet-tile-container { border: none !important; outline: none !important; }
         .popup-clean .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .popup-clean .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .popup-clean .leaflet-popup-tip-container { display: none !important; }

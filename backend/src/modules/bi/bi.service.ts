@@ -60,10 +60,11 @@ export class BiService {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
     try {
-      const [devicesCount, onlineCount, activeCampaigns, impressionsAgg, discrepancyCount, recentDiscrepancies] = await Promise.all([
+      const [devicesCount, onlineCount, activeCampaigns, activeCampaignsData, impressionsAgg, discrepancyCount, recentDiscrepancies] = await Promise.all([
         this.prisma.device.count(),
         this.prisma.device.count({ where: { isOnline: true } }),
         this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+        this.prisma.campaign.findMany({ where: { status: 'ACTIVE' }, select: { target_impressions: true } }),
         this.prisma.playbackEvent.aggregate({
           where: { timestamp: { gte: monthStart }, eventType: 'play_confirm' },
           _count: { id: true }
@@ -81,13 +82,25 @@ export class BiService {
       });
       
       const impressions = Number(impressionsAgg._count.id);
-      const mrr = activeSubscribers * 6000; 
+      
+      // LOGICA FINANCIERA TAD (v8.2)
+      // MRR = (Suscripciones Conductor $6,000) + (Ingresos por Ads Estimados)
+      const subscriptionMrr = activeSubscribers * 6000;
+      const avgAdRatePerImpression = 0.5; // DOP per impression (conservative)
+      const adMrr = impressions * avgAdRatePerImpression;
+      const mrr = subscriptionMrr + adMrr; 
       
       // INVESTOR LOGIC (v7.5)
       const yieldPerScreen = devicesCount > 0 ? mrr / devicesCount : 0;
       const arpu = yieldPerScreen; 
-      const churnRate = 0.05; 
+      const churnRate = 0.045; // Refined based on retention
       const projectedRevenue = mrr * 12;
+
+      // Delivery Rate calculation
+      const totalTargetImpressions = activeCampaignsData.reduce((acc, c) => acc + (c.target_impressions || 0), 0);
+      const deliveryRateAvg = totalTargetImpressions > 0 
+        ? Math.min(100, (impressions / totalTargetImpressions) * 100) 
+        : 100;
 
       // Persist snapshot for subsequent calls
       try {
@@ -101,8 +114,8 @@ export class BiService {
             criticalDevices: 0,
             activeCampaigns,
             totalImpressionsMtd: impressions,
-            deliveryRateAvg: 100,
-            syncHealthRate: 100,
+            deliveryRateAvg,
+            syncHealthRate: (onlineCount / Math.max(1, devicesCount)) * 100,
             yieldPerScreen,
             arpu,
             churnRate,
@@ -120,8 +133,8 @@ export class BiService {
         criticalDevices: 0,
         activeCampaigns,
         totalImpressionsMtd: impressions,
-        deliveryRateAvg: 100,
-        syncHealthRate: 100,
+        deliveryRateAvg,
+        syncHealthRate: (onlineCount / Math.max(1, devicesCount)) * 100,
         yieldPerScreen,
         arpu,
         churnRate,

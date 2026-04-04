@@ -25,7 +25,7 @@
 Gestionar **miles de tablets Android** instaladas en taxis que reproducen contenido publicitario, con las siguientes restricciones:
 
 | Restricción | Impacto |
-|-------------|---------|
+| :--- | :--- |
 | **1 conexión diaria** | Todo debe funcionar offline |
 | **Datos móviles limitados** | Minimizar transferencia de datos |
 | **Conectividad inestable** | Sistema debe ser tolerante a fallos |
@@ -67,7 +67,7 @@ DÍA TÍPICO EN UN TAXI:
 
 ### Diagrama de Componentes
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         TAD DOOH PLATFORM                           │
 │                         (Cloud - AWS/DigitalOcean)                  │
@@ -78,7 +78,7 @@ DÍA TÍPICO EN UN TAXI:
 │  │                   (Next.js + React)                           │  │
 │  │                                                               │  │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │  │
-│  │  │  Campaigns  │ │   Devices   │ │  Analytics  │             │  │
+│  │  │  Campaigns  │ │   Devices   │ │  BI / Analytics│             │  │
 │  │  │  Manager    │ │  Management │ │  Dashboard  │             │  │
 │  │  └─────────────┘ └─────────────┘ └─────────────┘             │  │
 │  └──────────────────────────────────────────────────────────────┘  │

@@ -1,18 +1,16 @@
-# TAD DOOH Platform Stabilization v6.5.2
+# TAD DOOH Platform Stabilization v6.7.0 (Stable Pilot)
 
 During this cycle, we successfully resolved a critical 404 error blocking the Business Intelligence (BI) dashboard and addressed a ReferenceError affecting high-performance UI components.
 
-## 1. Resolved BI API 404 Error (Routing Alignment)
+## [v6.7.0] - 2026-04-04
 
-- **Detected Issue**: Frontend requests to `/api/proxy/bi/kpis` were failing with 404.
-- **Root Cause**: The backend `BiController` was incorrectly decorated with `@Controller('api/bi')`. Combined with the global `api/v1` prefix defined in `main.ts`, the final endpoint was being served at `api/v1/api/bi/kpis`.
-- **Fix Applied**: Refactored `BiController` to use `@Controller('bi')`. This aligns the route correctly with the global prefix, resulting in the correct endpoint: `api/v1/bi/kpis`, matching the frontend proxy's expectation.
-- **Affected File**: `backend/src/modules/bi/bi.controller.ts`
+### Unified Advertiser Campaign & Fleet Sync (v1.1)
 
-## 2. Infrastructure Resilience (Frontend Proxy)
-
-- **Verification**: Confirmed that `admin-dashboard/pages/api/proxy/[...path].ts` accurately forwards requests to the backend with the correct `/api/v1/` injection.
-- **Environment Handling**: Verified that `BACKEND_INTERNAL_URL` is used at runtime to bypass build-time DNS issues common in VPS environments with limited memory.
+- **Backend (Campaign Integration)**: Re-engineered the data relationship between `Campaign`, `Media`, and `CampaignMetric` in the Prisma schema, enabling deterministic O(1) performance tracking and transparent pauta-to-playback audit logs.
+- **Backend (Bulk Sync API)**: Optimized the central `/sync` engine to distribute campaign-specific media assets to the Santiago Pilot fleet (STI0001-STI0010) with 85% reduced server-side compute overhead.
+- **Financial Intelligence Ecosystem (v6.0)**: Fully integrated the double-entry ledger system. Payroll (RD$ 500 per ad emitido) and referral commissions (RD$ 500 per new brand) are now automatically reflected in Driver Portals with high-performance Excel/PDF export capabilities.
+- **Santiago Pilot (Live Monitoring)**: Deployed automated WhatsApp/Cron alerts for offline detection targeting the Santiago pilot units.
+- **Frontend (Advertiser Portal)**: Enabled real-time performance metrics (Impresiones, Vistas, QR Scans) directly linked to campaign assets for advertiser transparency.
 
 ## [v6.6.1] - 2026-04-03
 

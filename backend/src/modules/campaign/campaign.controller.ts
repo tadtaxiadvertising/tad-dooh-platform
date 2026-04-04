@@ -203,13 +203,18 @@ export class CampaignController {
   // 2. Reporte de Cobertura — Pantallas que reciben esta campaña
   @Get(':campaignId/devices')
   async getCampaignDevices(@Param('campaignId') campaignId: string) {
+    console.log(`[CAMPAIGN_DEBUG] Fetching devices for campaign: ${campaignId}`);
     // First, get the campaign to check if it's global
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { targetAll: true, isGlobal: true, targetCity: true }
+      select: { targetAll: true, isGlobal: true, targetCity: true, name: true }
     });
 
-    if (!campaign) return [];
+    if (!campaign) {
+      console.warn(`[CAMPAIGN_DEBUG] Campaign ${campaignId} NOT FOUND`);
+      return [];
+    }
+    console.log(`[CAMPAIGN_DEBUG] Campaign: ${campaign.name}, targetAll: ${campaign.targetAll}, isGlobal: ${campaign.isGlobal}`);
 
     // If global → return ALL active devices
     if (campaign.targetAll || campaign.isGlobal) {
@@ -232,6 +237,7 @@ export class CampaignController {
         device: true, 
       },
     });
+    console.log(`[CAMPAIGN_DEBUG] Explicit assignments found: ${assignments.length}`);
 
     // Also check drivers targeted
     const targetedDriverDevices = await this.prisma.device.findMany({
@@ -241,16 +247,19 @@ export class CampaignController {
         }
       }
     });
+    console.log(`[CAMPAIGN_DEBUG] Driver targeted devices found: ${targetedDriverDevices.length}`);
     
     // Merge both (avoid duplicates)
     const deviceMap = new Map<string, any>();
     
     for (const a of assignments) {
-      deviceMap.set(a.device.id, {
-        ...a.device,
-        assigned_at: a.assigned_at,
-        assignment_type: 'DIRECT'
-      });
+      if (a.device) {
+        deviceMap.set(a.device.id, {
+          ...a.device,
+          assigned_at: a.assigned_at,
+          assignment_type: 'DIRECT'
+        });
+      }
     }
     
     for (const d of targetedDriverDevices) {
@@ -263,7 +272,9 @@ export class CampaignController {
       }
     }
 
-    return Array.from(deviceMap.values());
+    const result = Array.from(deviceMap.values());
+    console.log(`[CAMPAIGN_DEBUG] Final merged device list: ${result.length}`);
+    return result;
   }
 
   // 3. Playlist Personalizada para Tablet (Segmentación por Chofer)

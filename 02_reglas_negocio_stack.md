@@ -1,7 +1,7 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-03-25T03:40:00-04:00
+> **Última Actualización**: 2026-04-04T05:50:00-04:00
 
 ---
 
@@ -10,7 +10,8 @@
 | Recurso | URL |
 | :--- | :--- |
 | **Dashboard (Frontend)** | <https://proyecto-ia-tad-dashboard.rewvid.easypanel.host> |
-| **API (Backend)** | <https://proyecto-ia-tad-api.rewvid.easypanel.host> |
+| **API (Backend Embebido)** | <https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1> |
+| **Santiago Dev Dashboard** | <https://tad-dashboard-sti.rewvid.easypanel.host> |
 | **Supabase Dashboard** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
 | **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
 | **Swagger API Docs** | <https://proyecto-ia-tad-api.rewvid.easypanel.host/docs> |

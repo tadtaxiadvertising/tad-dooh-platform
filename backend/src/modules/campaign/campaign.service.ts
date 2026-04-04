@@ -83,12 +83,11 @@ export class CampaignService {
 
   async createCampaign(dto: CreateCampaignDto, user?: any) {
     const isAdmin = user?.role === 'ADMIN';
-
     let assignedAdvertiser = dto.advertiser;
-    let assignedAdvertiserId = undefined;
+    let assignedAdvertiserId = dto.advertiser_id; // Support explicit ID from DTO
     let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
 
-    if (!isAdmin && user?.email) {
+    if (!isAdmin && user?.email && !assignedAdvertiserId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (advertiser) {
         assignedAdvertiserId = advertiser.id;

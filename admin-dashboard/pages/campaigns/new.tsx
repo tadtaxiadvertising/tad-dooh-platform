@@ -7,9 +7,11 @@ import clsx from 'clsx';
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const [advertisers, setAdvertisers] = useState<{ id: string; companyName: string }[]>([]);
   const [form, setForm] = useState({
     name: '',
     advertiser: '',
+    advertiser_id: '',
     start_date: '',
     end_date: '',
     target_impressions: 1000,
@@ -26,16 +28,29 @@ export default function NewCampaignPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Cargar Catálogo de Anunciantes/Marcas
+    const { getAdvertisers } = require('../../services/api');
+    getAdvertisers()
+      .then((data: any) => {
+        if (Array.isArray(data)) setAdvertisers(data);
+      })
+      .catch(console.error);
+
     if (router.isReady && router.query.advertiser) {
       setForm(prev => ({
         ...prev,
-        advertiser: router.query.advertiser as string
+        advertiser: router.query.advertiser as string,
+        advertiser_id: (router.query.advertiserId as string) || ''
       }));
     }
-  }, [router.isReady, router.query.advertiser]);
+  }, [router.isReady, router.query.advertiser, router.query.advertiserId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.advertiser_id && advertisers.length > 0) {
+      alert('POR_FAVOR: Selecciona una marca válida del catálogo.');
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -115,17 +130,27 @@ export default function NewCampaignPage() {
                 </div>
 
                 <div className="group/field relative">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Marca / Anunciante</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Marca / Anunciante Principal</label>
                   <div className="relative">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <input 
+                    <select 
                       required
-                      type="text" 
-                      value={form.advertiser}
-                      onChange={e => setForm({...form, advertiser: e.target.value})}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 uppercase shadow-sm"
-                      placeholder="EJ. COCA-COLA"
-                    />
+                      value={form.advertiser_id}
+                      onChange={e => {
+                        const selected = advertisers.find(a => a.id === e.target.value);
+                        setForm({
+                           ...form, 
+                           advertiser_id: e.target.value,
+                           advertiser: selected?.companyName || '' 
+                        });
+                      }}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all appearance-none shadow-sm"
+                    >
+                      <option value="">Selecciona una Marca...</option>
+                      {advertisers.map(a => (
+                        <option key={a.id} value={a.id}>{a.companyName.toUpperCase()}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

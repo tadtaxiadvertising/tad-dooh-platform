@@ -9,6 +9,10 @@ export class CreateCampaignDto {
   @IsNotEmpty()
   advertiser: string;
 
+  @IsString()
+  @IsOptional()
+  advertiser_id?: string;
+
   @IsDateString()
   start_date: string;
 

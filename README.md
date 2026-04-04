@@ -18,7 +18,8 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 - ✅ **Upload de Medios** - Videos, imágenes y campañas HTML
 - ✅ **Dashboard de Analytics** - Métricas en tiempo real de impresiones y alcance
 - ✅ **Gestión de Dispositivos** - Monitoreo de salud y control remoto de tablets
-- ✅ **Mapa en Vivo** - Ver ubicación y estado de todos los taxis
+- ✅ **Mapa en Vivo (Santiago Pilot)** - Monitoreo dedicado de las primeras 10 unidades (STI0001-STI0010)
+- ✅ **Ecosistema Financiero** - Doble entrada contable, nómina de choferes y comisiones automatizadas
 
 ### Para Tablets (Taxis)
 
@@ -301,5 +302,5 @@ Propietario - TAD Dominicana, S.R.L.
 ---
 
 **Creado:** 6 de Marzo, 2026  
-**Versión:** 6.6.2 (Stable Pilot)  
-**Última Actualización:** 03 de Abril, 2026  
+**Versión:** 6.7.0 (Stable Pilot)  
+**Última Actualización:** 04 de Abril, 2026  

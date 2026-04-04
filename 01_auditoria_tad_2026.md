@@ -1,9 +1,8 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-04-03T23:50:00-04:00
-> **Estado Operativo Actual**: Master Console v6.6.2 (Consolidada). Dashboard UI Premium v15.2.6. Infraestructura Optimizada. Redundancia de Sincronización Reforzada.
+> **Última Actualización**: 2026-04-04T05:45:00-04:00
+> **Estado Operativo Actual**: Master Console v6.7.0 (Financial & BI Ecosystem). Santiago Pilot LIVE (STI0001-STI0010). Ecosistema de Pauta Auditada Unificado.
 
 ---
 
@@ -66,9 +65,10 @@
 | `DriversModule` | `drivers.controller.ts` | `GET /`, `POST /`, `PUT /:id/subscription`, `/check-access` | ✅ Funcional |
 | `AdvertisersModule` | `advertisers.controller.ts` | `GET /`, `POST /` | ✅ Funcional |
 | `MediaModule` | `media.controller.ts` | `GET /`, `POST /upload`, `GET /:id/status` | ✅ Funcional |
-| `SyncModule` | `sync.controller.ts` | `GET /api/sync/:deviceId` (Público) | ✅ Operativo |
-| `FinanceModule` | `finance.controller.ts` | `/payroll`, `/payroll/pay`, `/report/*`, `/export/*`, `/invoice/:id` | ✅ Funcional |
-| `AnalyticsModule` | `analytics.controller.ts` | `/top-taxis`, `/hourly`, `/recent-plays`, **`/qr-scan`** | ✅ Funcional |
+| `SyncModule` | `sync.controller.ts` | `GET /api/sync/:deviceId` (Público), **Bulk Sync API v1.1** | ✅ Operativo |
+| `FinanceModule` | `finance.controller.ts` | `/payroll`, `/ledger`, `/report/*`, `/export/*`, `/invoice/:id`, **Double-Entry Ledger** | ✅ Funcional |
+| `BiModule` | `bi.controller.ts` | `/kpis`, `/fleet-health`, `/reconciliation`, `/hotspots` | ✅ Funcional |
+| `AnalyticsModule` | `analytics.controller.ts` | `/top-taxis`, `/hourly`, `/recent-plays`, `/qr-scan` | ✅ Funcional |
 | `DeviceModule` | `device.controller.ts` | `/sync`, `/heartbeat`, `/command/:id/ack`, `/:id/profile`, `/:id/campaigns` | ✅ Funcional |
 | `AssetsModule` | `assets.controller.ts` | Assets management | ✅ Funcional |
 
@@ -197,14 +197,15 @@
 - [x] **Estabilización de Carga de Medios**: Timeout de 5 min y flexibilización de DTO para grandes archivos.
 - [x] **Relanzamiento Master Console GPS v4.5**: Spotlight Táctico, Motion Trails (últimos 5 puntos) y Dark Mode High-Fidelity.
 
-### Sprint 3: PILOTO DE CALLE (FUTURO)
+### Sprint 3: PILOTO DE CALLE & INTELIGENCIA ✅ EN DESPLIEGUE LIVE
 
-- [ ] Onboarding de tablets en campo
-- [x] Dashboard analytics en tiempo real (Dashboard Overview v4.5)
-- [ ] Alertas SMS/WhatsApp para choferes
-- [ ] Integración con pasarela de pago
-- [x] Módulo de Nómina Automática (RD$500/anuncio por taxi)
-- [x] Mapa de Calor de Reproducciones (Integrado en Analytics)
+- [x] Onboarding de tablets en campo (Santiago STI0001-STI0010)
+- [x] Dashboard analytics en tiempo real (BI Dashboard v6.7)
+- [x] Alertas WhatsApp para desconexiones del fleet (Cron-based)
+- [x] Módulo de Inteligencia Financiera (Doble entrada + nómina)
+- [x] Mapa de Calor de Reproducciones (Leaflet.Heat dinámico)
+- [ ] Integración transaccional con pasarela de pagos (Q3 2026)
+- [ ] Auditoría de pauta exportable para Anunciantes (v2.0)
 
 ---
 

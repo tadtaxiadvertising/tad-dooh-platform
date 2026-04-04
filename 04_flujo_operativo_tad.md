@@ -1,7 +1,7 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
 
-**Versión:** 1.3 (Auditoría v4.6 - SRE Approved)
-**Última Actualización:** 21 de Marzo, 2026 (20:45)
+**Versión:** 1.6 (Auditoría v6.7.0 - SRE Approved)
+**Última Actualización:** 04 de Abril, 2026 (05:55)
 
 > ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. Cualquier flujo manual que escape a este diagrama de arquitectura se considerará una vulnerabilidad crítica. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable.
 

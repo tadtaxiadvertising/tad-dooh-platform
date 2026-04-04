@@ -110,25 +110,44 @@ export class DeviceService {
 
   async getFleetStatusSummary() {
     const now = new Date();
-
-    // Only show ACTIVE devices in the fleet — PENDING devices are excluded
-    const devices = await this.prisma.device.findMany({
-      where: { status: { not: 'PENDING' } },
-      include: {
-        driver: {
-          select: { id: true, fullName: true, status: true, subscriptionPaid: true }
-        }
-      }
-    });
-
     const thirtyMinMs = 30 * 60 * 1000;
-    
-    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
-    const fleetStatus = await throttledMap(devices, async (d) => {
-      const isOnline = d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs);
-      
-      // Call the unified slot counter
-      const slotsInfo = await this.getDeviceSlots(d.deviceId);
+
+    // SRE FIX: Single batch query — eliminates N+1 problem (getDeviceSlots per device)
+    // Was timing out after 25s due to serial throttledMap(N devices × campaign joins).
+    const [devices, campaignAssignments] = await Promise.all([
+      // 1. Fetch all non-pending devices with minimal fields
+      this.prisma.device.findMany({
+        where: { status: { not: 'PENDING' } },
+        select: {
+          id: true,
+          deviceId: true,
+          taxiNumber: true,
+          status: true,
+          lastSeen: true,
+          batteryLevel: true,
+          playerStatus: true,
+          city: true,
+          driver: {
+            select: { id: true, fullName: true, subscriptionPaid: true }
+          }
+        }
+      }),
+      // 2. Count campaign assignments per device in one query
+      (this.prisma as any).deviceCampaign.groupBy({
+        by: ['device_id'],
+        _count: { campaign_id: true }
+      }).catch(() => []) // Graceful fallback — table may not exist in all envs
+    ]);
+
+    // Build a deviceId -> assignedCampaigns count map
+    const slotMap = new Map<string, number>();
+    for (const row of (campaignAssignments || [])) {
+      slotMap.set(row.device_id, row._count?.campaign_id || 0);
+    }
+
+    return devices.map((d) => {
+      const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs));
+      const assignedSlots = slotMap.get(d.id) || 0;
 
       return {
         id: d.id,
@@ -138,8 +157,8 @@ export class DeviceService {
         status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
         is_online: isOnline,
         battery_level: d.batteryLevel,
-        occupied_slots: slotsInfo.assigned_slots,
-        available_slots: slotsInfo.available_slots,
+        occupied_slots: assignedSlots,
+        available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - assignedSlots),
         max_slots: MAX_SLOTS_PER_DEVICE,
         player_status: d.playerStatus,
         last_seen: d.lastSeen,
@@ -148,9 +167,7 @@ export class DeviceService {
         driver_name: d.driver?.fullName || 'No asignado',
         subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
       };
-    }, 5); // Limit to 5 simultaneous operations
-
-    return fleetStatus;
+    });
   }
 
   async deviceHeartbeat(dto: HeartbeatDto) {

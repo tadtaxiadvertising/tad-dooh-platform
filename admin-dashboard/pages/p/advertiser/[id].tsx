@@ -403,31 +403,98 @@ export default function AdvertiserPortal() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {data.campaigns[0]?.media.map((item: any) => (
-                  <div key={item.id} className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 flex items-center justify-between group hover:border-tad-yellow/20 transition-all">
-                    <div className="flex items-center gap-6">
-                       <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden relative">
-                         {item.type?.includes('video') ? <Play className="w-6 h-6 text-tad-yellow" /> : <Layers className="w-6 h-6 text-tad-yellow" />}
-                         <div className="absolute inset-0 bg-tad-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                       </div>
-                       <div className="space-y-1">
-                          <h4 className="text-sm font-black uppercase tracking-tight">{item.name || 'Anuncio TAD'}</h4>
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{item.type || 'MP4 1080p'} &middot; 15s</p>
-                       </div>
+              <div className="space-y-12">
+                {data.campaigns.map((campaign: any) => (
+                  <div key={campaign.id} className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                           <span className={clsx(
+                             "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                             campaign.status === 'ACTIVE' ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-800 text-zinc-500"
+                           )}>
+                             {campaign.status}
+                           </span>
+                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Campaña</span>
+                        </div>
+                        <h3 className="text-xl font-black uppercase italic tracking-tight">{campaign.name}</h3>
+                      </div>
+                      
+                      <div className="flex gap-6">
+                        <div className="text-right">
+                           <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Flota</p>
+                           <p className="text-sm font-black text-white">{campaign.totalDevices} Screens</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Sync</p>
+                           <p className={clsx(
+                             "text-sm font-black transition-colors",
+                             campaign.syncProgress >= 90 ? "text-emerald-400" : 
+                             campaign.syncProgress >= 50 ? "text-tad-yellow" : "text-rose-400"
+                           )}>
+                             {campaign.syncProgress}%
+                           </p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Impactos</p>
+                           <p className="text-sm font-black text-white">{campaign.impressions.toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">CTR</p>
+                           <p className="text-sm font-black text-tad-yellow">
+                             {campaign.impressions > 0 ? ((campaign.scans / campaign.impressions) * 100).toFixed(2) : '0.00'}%
+                           </p>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-6">
-                       <div className="hidden md:flex flex-col items-end">
-                          <div className="flex items-center gap-2 text-emerald-400">
-                             <CheckCircle2 className="w-3.5 h-3.5" />
-                             <span className="text-[9px] font-black uppercase tracking-widest">Sincronizado</span>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {campaign.media.length > 0 ? (
+                        campaign.media.map((item: any) => (
+                          <div key={item.id} className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 flex items-center justify-between group hover:border-tad-yellow/20 transition-all">
+                            <div className="flex items-center gap-6">
+                               <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden relative">
+                                 {item.type?.includes('video') ? <Play className="w-6 h-6 text-tad-yellow" /> : <Layers className="w-6 h-6 text-tad-yellow" />}
+                                 <div className="absolute inset-0 bg-tad-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-sm font-black uppercase tracking-tight">{item.name || 'Anuncio TAD'}</h4>
+                                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                                    {item.type || 'MP4 1080p'} &middot; {item.category || 'Nexus'}
+                                  </p>
+                               </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-6">
+                               <div className="hidden md:flex flex-col items-end">
+                                  <div className={clsx(
+                                    "flex items-center gap-2",
+                                    campaign.syncProgress >= 90 ? "text-emerald-400" : "text-tad-yellow"
+                                  )}>
+                                     {campaign.syncProgress >= 90 ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5 animate-pulse" />}
+                                     <span className="text-[9px] font-black uppercase tracking-widest">
+                                       {campaign.syncProgress >= 90 ? 'Sincronizado' : 'En Sincronización'}
+                                     </span>
+                                  </div>
+                                  <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-1">
+                                    {campaign.syncProgress}% de la flota
+                                  </p>
+                               </div>
+                               <button 
+                                 title="Abrir Vista Previa"
+                                 onClick={() => window.open(item.url, '_blank')}
+                                 className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                               >
+                                  <ExternalLink className="w-5 h-5" />
+                               </button>
+                            </div>
                           </div>
-                          <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Fleet Sync OK</p>
-                       </div>
-                       <button title="Ver Detalles del Asset" aria-label="Ver Detalles del Asset" className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-600 hover:text-white hover:bg-white/10 transition-all">
-                          <ChevronRight className="w-5 h-5" />
-                       </button>
+                        ))
+                      ) : (
+                        <div className="py-8 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                          <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">No hay anuncios vinculados</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

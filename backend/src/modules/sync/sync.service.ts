@@ -123,7 +123,10 @@ export class SyncService {
       this.logger.log(`   📂 Campaign "${c.name}" [${c.id}] | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
     });
 
-    const playlist = [];
+    // 3.5 Ordenar por prioridad (Revenue focus)
+    activeCampaigns.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    const playlistMap = new Map<string, any>();
     activeCampaigns.forEach(c => {
       // Unificar Media, MediaAssets y Videos (v1, v2 y Hub)
       const mediaList = [
@@ -133,18 +136,24 @@ export class SyncService {
       ];
       
       mediaList.forEach((m: any) => {
-        playlist.push({
-          id: m.id,
-          campaignId: c.id,
-          filename: m.filename || m.name || m.title || 'video.mp4',
-          url: m.cdnUrl || m.url || '',
-          checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
-          hashMd5: m.hashMd5 || m.hash || m.checksum || null,
-          duration: m.duration || m.durationSeconds || 30,
-          version: new Date(c.updatedAt || new Date()).getTime() 
-        });
+        const key = m.hashMd5 || m.hash || m.checksum || m.url;
+        if (!playlistMap.has(key)) {
+          playlistMap.set(key, {
+            id: m.id,
+            campaignId: c.id,
+            filename: m.filename || m.name || m.title || 'video.mp4',
+            url: m.cdnUrl || m.url || '',
+            checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
+            hashMd5: m.hashMd5 || m.hash || m.checksum || null,
+            duration: m.duration || m.durationSeconds || 30,
+            version: new Date(c.updatedAt || new Date()).getTime(),
+            priority: c.priority || 5
+          });
+        }
       });
     });
+
+    const playlist = Array.from(playlistMap.values());
 
     // 4. Generar License Token (Kill-Switch)
     // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.

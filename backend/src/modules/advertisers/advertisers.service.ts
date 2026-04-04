@@ -81,8 +81,9 @@ export class AdvertisersService {
         campaigns: {
           where: { active: true },
           include: {
-            // Solo tomar media para el frontend
-            media: true
+            media: true,
+            mediaAssets: true,
+            videos: true
           }
         }
       }
@@ -113,7 +114,7 @@ export class AdvertisersService {
     const totalScans = campaignIds.length > 0 ? await this.prisma.analyticsEvent.count({
       where: {
         campaignId: { in: campaignIds },
-        eventType: { in: ['qr_scan', 'scan_redirect', 'scan'] }
+        eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] }
       }
     }) : 0;
 
@@ -127,10 +128,38 @@ export class AdvertisersService {
 
     // Obtener métricas por campaña
     const campaignsWithMetrics = await Promise.all(advertiser.campaigns.map(async (c) => {
-      const campAgg = await this.prisma.campaignMetric.aggregate({
-        where: { campaignId: c.id },
-        _sum: { totalImpressions: true, totalCompletions: true }
-      });
+      const [campAgg, cScans, assignments] = await Promise.all([
+        this.prisma.campaignMetric.aggregate({
+          where: { campaignId: c.id },
+          _sum: { totalImpressions: true, totalCompletions: true }
+        }),
+        this.prisma.analyticsEvent.count({
+          where: { campaignId: c.id, eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] } }
+        }),
+        this.prisma.deviceCampaign.findMany({
+          where: { campaign_id: c.id },
+          include: { device: { select: { lastSyncAt: true, lastSyncSuccess: true, status: true } } }
+        })
+      ]);
+
+      // Calcular progreso de sincronización real (v5.2)
+      const totalAssigned = assignments.length;
+      const syncedCount = assignments.filter(a => 
+        a.device.status === 'ACTIVE' && 
+        a.device.lastSyncSuccess && 
+        a.device.lastSyncAt && 
+        a.device.lastSyncAt >= c.updatedAt
+      ).length;
+      
+      const syncProgress = totalAssigned > 0 ? (syncedCount / totalAssigned) * 100 : 100;
+
+      // Consolidate all types of ad assets (media, mediaAssets, videos)
+      const consolidatedMedia = [
+        ...c.media.map(m => ({ id: m.id, url: m.cdnUrl || m.url, type: m.mimeType || m.mime_type, name: m.name || m.filename, category: 'Vault' })),
+        ...c.mediaAssets.map(a => ({ id: a.id, url: a.url, type: a.type, name: a.filename, category: 'Asset' })),
+        ...c.videos.map(v => ({ id: v.id, url: v.url, type: v.mimeType || 'video/mp4', name: v.title, category: 'Video' }))
+      ];
+
       return {
         id: c.id,
         name: c.name,
@@ -141,8 +170,10 @@ export class AdvertisersService {
         promocionesContratadas: c.targetImpressions || 0, // Using requested terminology
         impressions: campAgg._sum.totalImpressions || 0,
         completions: campAgg._sum.totalCompletions || 0,
-        scans: 0,
-        media: c.media.map(m => ({ id: m.id, url: m.url, type: m.mimeType, name: m.name }))
+        scans: cScans,
+        syncProgress: Math.round(syncProgress),
+        totalDevices: totalAssigned,
+        media: consolidatedMedia
       };
     }));
 

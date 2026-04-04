@@ -8,9 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies using 'ci' for faster, more stable builds under RAM pressure
-ENV NODE_OPTIONS=--max-old-space-size=640
-RUN npm ci --quiet --no-audit
+# Install dependencies
+RUN npm install
 
 COPY . .
 
@@ -29,8 +28,7 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Ajustado a 768MB para aprovechamiento de VPS con 1GB RAM (EasyPanel)
-ENV NODE_OPTIONS=--max-old-space-size=640
+# Configuración estándar para alto rendimiento (8GB RAM disponible)
 ENV PORT=3000
 
 COPY --from=builder /app/package*.json ./

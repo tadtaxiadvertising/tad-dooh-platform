@@ -19,6 +19,7 @@ export class CampaignService {
     const data: any = {};
     if (dto.name) data.name = dto.name;
     if (dto.advertiser) data.advertiser = dto.advertiser;
+    if (dto.advertiser_id) data.advertiserId = dto.advertiser_id;
     if (dto.start_date) data.startDate = new Date(dto.start_date);
     if (dto.end_date) data.endDate = new Date(dto.end_date);
     if (dto.active !== undefined) data.active = dto.active;

@@ -52,17 +52,16 @@
         if (typeof Sentry !== 'undefined') {
           Sentry.init({
             dsn: DSN,
-            integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-            tracesSampleRate: 1.0,
-            replaysSessionSampleRate: 0.1,
-            replaysOnErrorSampleRate: 1.0,
-            // Suppress expected browser/kiosk noise — only track real errors
+            integrations: [],
+            tracesSampleRate: 0,
+            replaysSessionSampleRate: 0,
+            replaysOnErrorSampleRate: 0,
             ignoreErrors: [
-              'AbortError',                          // play() interrupted by pause() — expected
-              'The play() request was interrupted',  // Same as above, different browsers
-              'NotAllowedError',                     // Autoplay policy — handled gracefully
-              'Failed to fetch',                     // Network — handled by offline cache
-              'NetworkError',                        // Network — handled by offline cache
+              'AbortError',
+              'The play() request was interrupted',
+              'NotAllowedError',
+              'Failed to fetch',
+              'NetworkError',
             ],
             initialScope: {
               tags: { 
@@ -84,24 +83,10 @@
             background: #000;
         }
         
-        h1, h2, h3, .font-display {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        #video-container {
-            background: #000;
-        }
-        
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        .kiosk-mode {
-            cursor: none;
-        }
-        
+        h1, h2, h3, .font-display { font-family: 'Outfit', sans-serif; }
+        #video-container { background: #000; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .kiosk-mode { cursor: none; }
         .loader {
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-top: 3px solid #FFD400;
@@ -110,31 +95,8 @@
             height: 50px;
             animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .glow-yellow {
-            text-shadow: 0 0 25px rgba(255, 212, 0, 0.6), 0 0 50px rgba(255, 212, 0, 0.3);
-        }
-
-        .bg-mesh {
-            background-color: #000;
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(50, 100%, 50%, 0.1) 0, transparent 50%), 
-                radial-gradient(at 100% 100%, hsla(50, 100%, 50%, 0.05) 0, transparent 50%),
-                radial-gradient(at 50% 50%, hsla(0, 0%, 5%, 0.8) 0, transparent 80%);
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 10px currentColor;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px currentColor; }
         .status-online { color: #22c55e; background: currentColor; }
         .status-offline { color: #ef4444; background: currentColor; }
         .status-sync { color: #eab308; background: currentColor; }
@@ -142,10 +104,7 @@
 </head>
 <body class="bg-black text-white kiosk-mode">
     
-    <!-- App Container -->
     <div id="app" class="min-h-screen flex flex-col">
-        
-        <!-- Header (oculto en kiosk mode, visible para debug) -->
         <header id="header" class="hidden bg-zinc-900 border-b border-zinc-800 p-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -160,20 +119,9 @@
             </div>
         </header>
         
-        <!-- Main Video Container -->
         <main id="video-container" class="flex-1 flex items-center justify-center relative">
+            <video id="main-video" class="w-full h-full" preload="auto" muted autoplay loop></video>
             
-            <!-- Video Element -->
-            <video 
-                id="main-video" 
-                class="w-full h-full"
-                preload="auto"
-                muted
-                autoplay
-                loop
-            ></video>
-            
-            <!-- Loading State -->
             <div id="loading-state" class="absolute inset-0 flex items-center justify-center bg-black">
                 <div class="text-center">
                     <div class="loader mx-auto mb-4"></div>
@@ -181,47 +129,25 @@
                 </div>
             </div>
             
-            <!-- Error State -->
             <div id="error-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
                 <div class="text-center max-w-md px-4">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
                     <h2 class="text-xl font-bold mb-2">Error de Reproducción</h2>
-                    <p id="error-message" class="text-gray-400 mb-4">--</p>
-                    <button 
-                        onclick="player.retry()"
-                        class="bg-taxi-500 hover:bg-taxi-600 text-white font-bold py-2 px-6 rounded-full"
-                    >
-                        Reintentar
-                    </button>
+                    <p id="error-message" class="text-gray-400 mb-4">Contenido no disponible</p>
+                    <button onclick="player.retry()" class="bg-taxi-500 hover:bg-taxi-600 text-white font-bold py-2 px-6 rounded-full">Reintentar</button>
                 </div>
             </div>
             
-            <!-- No Content State: Pure black, no branding -->
-            <div id="no-content-state" class="hidden absolute inset-0 bg-black">
-                <!-- Intentionally blank: screen stays black when no content is assigned -->
-            </div>
+            <div id="no-content-state" class="hidden absolute inset-0 bg-black"></div>
             
-            <!-- Blocked State (Subscription Expired) -->
             <div id="blocked-state" class="hidden absolute inset-0 flex items-center justify-center bg-black">
                 <div class="text-center max-w-lg px-6">
-                    <svg class="w-20 h-20 mx-auto mb-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-10V5a2 2 0 00-2-2H8a2 2 0 00-2 2v2m8 0H6a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V9a2 2 0 00-2-2z"></path>
-                    </svg>
                     <h2 class="text-2xl font-bold mb-3 text-yellow-400">Cuenta Suspendida</h2>
-                    <p id="blocked-reason" class="text-gray-400 text-lg mb-4">Tu suscripción ha vencido. Para reactivar la publicidad contacta a soporte TAD.</p>
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
-                        <p class="text-white font-bold text-lg">WhatsApp: +1 (849) 504-3872</p>
-                        <p class="text-gray-500 text-sm mt-1">tad.taxiadvertising@gmail.com</p>
-                    </div>
+                    <p id="blocked-reason" class="text-gray-400 text-lg mb-4">Suscripción vencida.</p>
                     <p class="text-gray-600 text-xs mt-4">ID: <span id="blocked-device-id">--</span></p>
                 </div>
             </div>
-
         </main>
         
-        <!-- Footer (oculto en kiosk mode) -->
         <footer id="footer" class="hidden bg-zinc-900 border-t border-zinc-800 p-4">
             <div class="flex items-center justify-between text-sm text-gray-400">
                 <div class="flex items-center space-x-4">
@@ -229,838 +155,162 @@
                     <span id="playlist-position">--/--</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button onclick="player.toggleDebug()" class="hover:text-white">Debug</button>
-                    <button onclick="player.forceSync()" class="hover:text-white">Sync</button>
                     <button onclick="player.restart()" class="hover:text-white">Restart</button>
                 </div>
             </div>
         </footer>
-        
-        <!-- Debug Panel (toggle con F12 o botón) -->
-        <div id="debug-panel" class="hidden absolute top-0 right-0 bg-black/90 p-4 text-xs font-mono max-w-md max-h-full overflow-auto">
-            <h3 class="font-bold mb-2">Debug Info</h3>
-            <pre id="debug-content" class="text-gray-400"></pre>
-        </div>
     </div>
     
-    <!-- Application Logic -->
-    <script type="module">
-        // ============================================
-        // TAD TABLET PLAYER v2.0 — Localhost Edition
-        // ============================================
-        // Changes from v1:
-        //   - SERVER_URL defaults to http://localhost:3000 (no Vercel)
-        //   - True UUID-based identity: crypto.randomUUID() → localStorage
-        //   - Legacy IDs (taxi-9wu77o406, Mendy, etc.) are purged on boot
-        //   - TEST_PLAYLIST removed: if no backend content → TAD NODE logo
-        //   - Playback confirmation sent on each video_completed
-        // ============================================
-
-        // ============================================
-        // CONFIGURATION
-        // ============================================
-
+    <script>
         const CONFIG = {
-            // URL del servidor TAD — Producción en Easypanel
             SERVER_URL: localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host',
-            
-            // Device ID (se genera automáticamente y se persiste en localStorage)
             DEVICE_ID_KEY: 'tad_device_id',
-            
-            // Auth token
             AUTH_TOKEN_KEY: 'tad_auth_token',
-            
-            // FullyKiosk Browser password — configurable via localStorage
-            FULLY_KIOSK_PASSWORD: localStorage.getItem('tad_fkb_password') || '',
-            
-            // Sync settings
-            SYNC_INTERVAL: 5 * 60 * 1000, // 5 minutos (más frecuente en localhost)
-            SYNC_WINDOW: 10 * 60 * 1000,
-            
-            // Analytics batch size
             ANALYTICS_BATCH_SIZE: 100,
-            
-            // Heartbeat interval
-            HEARTBEAT_INTERVAL: 5 * 60 * 1000,
-            
-            // Storage keys
-            STORAGE_CAMPAIGNS: 'tad_campaigns',
-            STORAGE_EVENTS: 'tad_events',
-            STORAGE_CONFIG: 'tad_config'
+            STORAGE_EVENTS: 'tad_events'
         };
 
-        // ============================================
-        // STATE MANAGEMENT
-        // ============================================
-        
-        const state = {
+        const LEGACY_IDS_TO_PURGE = ['taxi-9wu77o406', 'taxi-at23izb1d', 'Mendy'];
+
+        var state = {
             deviceId: null,
-            authToken: null,
             isOnline: navigator.onLine,
             isSyncing: false,
-            currentCampaign: null,
             currentPlaylist: [],
             currentIndex: 0,
-            lastSync: null,
-            lastSyncHash: null,
-            events: [],
-            config: {
-                loopEnabled: true,
-                analyticsEnabled: true,
-                watchdogEnabled: true,
-                simulatorMode: !(/Android|iPhone|iPad/i.test(navigator.userAgent))
-            },
-            batteryLevel: 100,
-            lat: null,
-            lng: null
+            lastSyncHash: null
         };
 
-        // ============================================
-        // IDENTITY ENGINE — Unique UUID per Tablet
-        // ============================================
-        // This is the SINGLE source of truth for Device ID generation.
-        // It runs once during storage.init() and never again.
-        // The ID format is: TAD-XXXXXXXX (8-char uppercase hex from crypto.randomUUID)
-        //
-        // Legacy IDs from testing are automatically purged:
-        //   - taxi-9wu77o406, taxi-at23izb1d, Mendy
-        // ============================================
-
-        const LEGACY_IDS_TO_PURGE = [
-            'taxi-9wu77o406',
-            'taxi-at23izb1d',
-            'Mendy',
-        ];
-
-        function generateDeviceId() {
-            // Prefer FullyKiosk hardware ID if available (real tablet)
-            if (typeof fully !== 'undefined' && fully.getDeviceId) {
-                const hwId = fully.getDeviceId();
-                if (hwId) {
-                    return 'TAD-' + hwId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
-                }
-            }
-
-            // Generate a true UUID and take the first segment (8 hex chars)
-            const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                ? crypto.randomUUID().split('-')[0].toUpperCase()
-                : Math.random().toString(36).substr(2, 8).toUpperCase();
-
-            return 'TAD-' + uuid;
-        }
-
-        // ============================================
-        // STORAGE WRAPPER (IndexedDB + localStorage)
-        // ============================================
-        
-        const storage = {
+        var storage = {
             async init() {
-                // 1. Check for deviceId in URL parameters (Priority 1)
                 const urlParams = new URLSearchParams(window.location.search);
-                let urlId = urlParams.get('deviceId') || urlParams.get('device_id') || urlParams.get('node') || urlParams.get('id');
+                let id = urlParams.get('deviceId') || urlParams.get('device_id') || localStorage.getItem(CONFIG.DEVICE_ID_KEY);
                 
-                // 2. Read persisted Device ID (Priority 2)
-                let savedId = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
-
-                // 3. Logic to decide which ID to use
-                if (urlId) {
-                    console.log('🔗 Device ID from URL detected:', urlId);
-                    savedId = urlId;
-                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, savedId);
-                }
-
-                // 4. Purge any legacy/test IDs
-                if (savedId && LEGACY_IDS_TO_PURGE.includes(savedId)) {
-                    console.log('🚮 Purging legacy Device ID:', savedId);
-                    savedId = null;
-                    localStorage.removeItem(CONFIG.DEVICE_ID_KEY);
-                }
-
-                // 5. Generate a new ID only if none exists
-                if (!savedId) {
-                    savedId = generateDeviceId();
-                    localStorage.setItem(CONFIG.DEVICE_ID_KEY, savedId);
-                    console.log('🆕 New Device ID generated:', savedId);
-                }
-
-                state.deviceId = savedId;
-                state.authToken = localStorage.getItem(CONFIG.AUTH_TOKEN_KEY);
-                state.lastSync = localStorage.getItem('tad_last_sync');
+                if (id && LEGACY_IDS_TO_PURGE.includes(id)) id = null;
+                if (!id) id = 'TAD-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+                
+                state.deviceId = id;
+                localStorage.setItem(CONFIG.DEVICE_ID_KEY, id);
                 state.lastSyncHash = localStorage.getItem('tad_last_sync_hash');
-
-                console.log('🔑 Device ID activo:', state.deviceId);
-
-                // ============================================
-                // DEBUG GESTURE: 7 clicks to open Admin Panel
-                // ============================================
-                let clickCount = 0;
-                let lastClick = 0;
-                document.body.addEventListener('click', (e) => {
-                    const now = Date.now();
-                    if (now - lastClick > 500) clickCount = 0;
-                    clickCount++;
-                    lastClick = now;
-
-                    if (clickCount >= 7) {
-                        clickCount = 0;
-                        const action = confirm(`DEBUG TAD\nID: ${state.deviceId}\nServer: ${CONFIG.SERVER_URL}\n\n¿Deseas REINICIAR el ID de este dispositivo?`);
-                        if (action) {
-                            localStorage.clear();
-                            location.reload();
-                        }
-                    }
-                });
                 
-                // Load config
-                const config = localStorage.getItem(CONFIG.STORAGE_CONFIG);
-                if (config) {
-                    state.config = JSON.parse(config);
-                }
-                
-                console.log('💾 Storage initialized');
+                console.log('🔑 Device ID:', state.deviceId);
             },
-            
-            async saveEvents(events) {
-                const db = await this.getDB();
-                const tx = db.transaction('events', 'readwrite');
-                events.forEach(event => {
-                    tx.objectStore('events').add({ ...event, id: Date.now() + Math.random() });
-                });
+            async getEvents() { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_EVENTS) || '[]'); },
+            async saveEvents(evs) {
+                const existing = await this.getEvents();
+                localStorage.setItem(CONFIG.STORAGE_EVENTS, JSON.stringify([...existing, ...evs]));
             },
-            
-            async getEvents() {
-                const db = await this.getDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction('events', 'readonly');
-                    const req = tx.objectStore('events').getAll();
-                    req.onsuccess = () => resolve(req.result.sort((a, b) => a.timestamp - b.timestamp));
-                    req.onerror = () => reject(req.error);
-                });
-            },
-            
             async clearEvents(ids) {
-                if (!ids || !Array.isArray(ids) || ids.length === 0) return;
-                const db = await this.getDB();
-                const tx = db.transaction('events', 'readwrite');
-                const store = tx.objectStore('events');
-                ids.forEach(id => {
-                    if (id !== undefined) store.delete(id);
-                });
-            },
-            
-            async getDB() {
-                if (!this.db) {
-                    this.db = await this.openDB();
-                }
-                return this.db;
-            },
-            
-            openDB() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open('TADPlayer', 1);
-                    
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = () => resolve(request.result);
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        if (!db.objectStoreNames.contains('events')) {
-                            db.createObjectStore('events', { keyPath: 'id' });
-                        }
-                        if (!db.objectStoreNames.contains('campaigns')) {
-                            db.createObjectStore('campaigns', { keyPath: 'id' });
-                        }
-                    };
-                });
+                const existing = await this.getEvents();
+                localStorage.setItem(CONFIG.STORAGE_EVENTS, JSON.stringify(existing.filter(e => !ids.includes(e.id))));
             }
         };
-        
-        // ============================================
-        // VIDEO PLAYER
-        // ============================================
-        
-        const player = {
+
+        var player = {
             video: null,
-            isPlaying: false,
-            retryCount: 0,
-            maxRetries: 3,
-            
             init() {
                 this.video = document.getElementById('main-video');
-                
-                // Inject cross-browser inline playback attributes via JS to silence static linters
-                this.video.setAttribute('playsinline', '');
-                this.video.setAttribute('webkit-playsinline', '');
-                this.video.setAttribute('x5-playsinline', '');
-                
-                // Inject theme-color via JS
-                const meta = document.createElement('meta');
-                meta.name = 'theme-color';
-                meta.content = '#000000';
-                document.getElementsByTagName('head')[0].appendChild(meta);
-
-                this.video.addEventListener('play', () => this.onPlay());
-                this.video.addEventListener('pause', () => this.onPause());
-                this.video.addEventListener('ended', () => this.onEnded());
-                this.video.addEventListener('error', (e) => this.onError(e));
-                this.video.addEventListener('timeupdate', () => this.onTimeUpdate());
-                
-                console.log('▶️ Video player initialized');
+                this.video.addEventListener('ended', () => this.next());
+                this.video.addEventListener('error', () => this.retry());
+                this.video.addEventListener('play', () => ui.hideAllStates());
+                this.video.addEventListener('timeupdate', () => ui.updatePlaylistPosition());
             },
-            
-            async startExperience() {
-                try {
-                    if (!this.video) return;
-
-                    // Mute to satisfy autoplay policy
-                    this.video.muted = true;
-
-                    // NOTE: Do NOT call video.play() here with empty src —
-                    // it causes AbortError when pause() is called immediately after.
-                    // playback starts only once we have a valid src.
-
-                    // Attempt Full Screen silently (fails gracefully in kiosk)
-                    if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen().catch(() => {});
-                    }
-
-                    // Hide start screen
-                    const startState = document.getElementById('start-state');
-                    if (startState) startState.classList.add('hidden');
-                    
-                    // If cache has content → play immediately, then sync in background
-                    if (state.currentPlaylist.length > 0) {
-                        this.play(state.currentPlaylist[state.currentIndex]);
-                        sync.performSync(); // Background refresh
-                    } else {
-                        // No cache → sync first, player.play() will be called by sync on success
-                        console.log('📂 Boot: No cache found. Waiting for sync...');
-                        this.showNoContent();
-                        await sync.performSync();
-                    }
-                } catch (e) {
-                    // Silently ignore AbortError on startExperience
-                    if (e.name !== 'AbortError') {
-                        console.error('Failure starting experience:', e);
-                    }
-                }
+            async play(asset) {
+                if (!asset || !asset.url) return;
+                this.video.src = asset.url;
+                try { await this.video.play(); } catch (e) { console.warn('Play failed', e); }
             },
-            
-            async play(video) {
-                try {
-                    this.showLoading();
-                    
-                    // Ensure video is muted for autoplay policy
-                    this.video.muted = true;
-                    this.video.src = video.url || video.src;
-                    this.video.load();
-                    
-                    await this.video.play();
-                    this.isPlaying = true;
-                    this.retryCount = 0;
-                    
-                    // Track campaignId from the media asset itself
-                    const campaignId = video.campaignId || state.currentCampaign?.id;
-                    
-                    analytics.track('video_started', {
-                        campaignId: campaignId,
-                        mediaId: video.id,
-                        videoUrl: video.url,
-                        filename: video.filename
-                    });
-                    
-                    console.log('▶️ Playing:', video.filename || video.name || video.url);
-                    
-                } catch (error) {
-                    console.error('❌ Error playing video:', error);
-                    this.onError(error);
-                }
-            },
-            
-            onPlay() {
-                this.hideAllStates();
-                this.isPlaying = true;
-                ui.updatePlaylistPosition();
-            },
-            
-            onPause() {
-                this.isPlaying = false;
-            },
-            
-            async onEnded() {
-                console.log('✅ Video ended');
-                
-                const currentMedia = state.currentPlaylist[state.currentIndex];
-                const campaignId = currentMedia?.campaignId || state.currentCampaign?.id;
-                
-                // Track completion
-                analytics.track('video_completed', {
-                    campaignId: campaignId,
-                    mediaId: currentMedia?.id,
-                    duration: this.video.duration,
-                    filename: currentMedia?.filename
-                });
-
-                // Send Playback Confirmation to backend for "EN VIVO" tracking
-                if (state.isOnline && currentMedia) {
-                    try {
-                        await fetch(`${CONFIG.SERVER_URL}/api/v1/device/playback`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                device_id: state.deviceId,
-                                video_id: currentMedia.id,
-                                timestamp: new Date().toISOString()
-                            })
-                        });
-                    } catch (e) {
-                        console.warn('⚠️ Playback confirmation failed (offline?)');
-                    }
-                }
-                
-                // Next video
-                this.next();
-            },
-            
-            onError(error) {
-                console.error('❌ Video error:', error);
-                this.retryCount++;
-                
-                if (typeof Sentry !== 'undefined') {
-                    Sentry.captureException(new Error(`MediaError: ${error.message || 'Video failed'}`), {
-                        tags: { type: 'video_load_error', media_url: this.video?.src }
-                    });
-                }
-
-                if (this.retryCount >= this.maxRetries) {
-                    this.showError('Error al reproducir video. Saltando al siguiente...');
-                    
-                    analytics.track('video_error', {
-                        campaignId: state.currentCampaign?.id,
-                        mediaId: state.currentPlaylist[state.currentIndex]?.id,
-                        error: error.message || 'Unknown error'
-                    });
-                    
-                    // Skip to next
-                    setTimeout(() => this.next(), 3000);
-                } else {
-                    console.log('🔄 Retry', this.retryCount);
-                    setTimeout(() => this.play(state.currentPlaylist[state.currentIndex]), 2000);
-                }
-            },
-            
-            onTimeUpdate() {
-                ui.updateProgress(this.video.currentTime / this.video.duration);
-            },
-            
             next() {
-                if (state.currentPlaylist.length === 0) {
-                    this.showNoContent();
-                    return;
-                }
-                
+                if (!state.currentPlaylist.length) return;
                 state.currentIndex = (state.currentIndex + 1) % state.currentPlaylist.length;
-                const nextVideo = state.currentPlaylist[state.currentIndex];
-                this.play(nextVideo);
+                this.play(state.currentPlaylist[state.currentIndex]);
             },
-            
-            previous() {
-                if (state.currentPlaylist.length === 0) return;
-                
-                state.currentIndex = (state.currentIndex - 1 + state.currentPlaylist.length) % state.currentPlaylist.length;
-                const prevVideo = state.currentPlaylist[state.currentIndex];
-                this.play(prevVideo);
+            retry() { setTimeout(() => this.play(state.currentPlaylist[state.currentIndex]), 3000); },
+            restart() { location.reload(); }
+        };
+
+        var ui = {
+            init() {
+                this.indicator = document.getElementById('status-indicator');
+                this.text = document.getElementById('status-text');
+                document.getElementById('device-id').textContent = state.deviceId;
+                setInterval(() => this.updateTime(), 60000);
+                this.updateTime();
             },
-            
-            retry() {
-                this.retryCount = 0;
-                if (state.currentPlaylist.length > 0) {
-                    this.play(state.currentPlaylist[state.currentIndex]);
+            updateStatus(s) {
+                if (!this.indicator) return;
+                this.indicator.className = 'status-dot status-' + s;
+                this.text.textContent = s === 'online' ? 'En Línea' : s === 'sync' ? 'Sincronizando...' : 'Fuera de Línea';
+            },
+            updatePlaylistPosition() {
+                const el = document.getElementById('playlist-position');
+                if (el) el.textContent = `${state.currentIndex + 1}/${state.currentPlaylist.length}`;
+            },
+            updateTime() {
+                const t = document.getElementById('time');
+                if (t) {
+                    const d = new Date();
+                    t.textContent = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
                 }
             },
-            
-            restart() {
-                location.reload();
-            },
-            
-            showLoading() {
-                this.hideAllStates();
-                document.getElementById('loading-state').classList.remove('hidden');
-            },
-            
-            showError(message) {
-                this.hideAllStates();
-                document.getElementById('error-message').textContent = message;
-                document.getElementById('error-state').classList.remove('hidden');
-            },
-            
-            showNoContent() {
-                this.hideAllStates();
-                // Pure black screen — no TAD branding visible on tablets
-                const container = document.getElementById('no-content-state');
-                if (container) container.classList.remove('hidden');
-                // Stop any current playback
-                if (this.video) {
-                    this.video.pause();
-                    this.video.removeAttribute('src');
-                    this.video.load();
-                }
-                this.isPlaying = false;
-                console.log('⬛ No content assigned. Screen is black.');
-            },
-            
-            showBlocked(reason) {
-                this.hideAllStates();
-                const display = document.getElementById('blocked-device-id');
-                if (display) display.textContent = state.deviceId;
-                
-                if (reason) {
-                    const reasonEl = document.getElementById('blocked-reason');
-                    if (reasonEl) reasonEl.textContent = reason;
-                }
-                
-                const container = document.getElementById('blocked-state');
-                if (container) container.classList.remove('hidden');
-                if (this.video) {
-                    this.video.pause();
-                    this.video.src = '';
-                }
-                this.isPlaying = false;
-                console.warn('⛔ Player blocked:', reason);
-            },
-            
             hideAllStates() {
-                document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('error-state').classList.add('hidden');
-                document.getElementById('no-content-state').classList.add('hidden');
-                document.getElementById('blocked-state').classList.add('hidden');
-            },
-            
-            toggleDebug() {
-                const panel = document.getElementById('debug-panel');
-                panel.classList.toggle('hidden');
-                if (!panel.classList.contains('hidden')) {
-                    this.updateDebugInfo();
-                }
-            },
-            
-            updateDebugInfo() {
-                const debug = {
-                    deviceId: state.deviceId,
-                    serverUrl: CONFIG.SERVER_URL,
-                    isOnline: state.isOnline,
-                    isSyncing: state.isSyncing,
-                    playlistLength: state.currentPlaylist.length,
-                    currentIndex: state.currentIndex,
-                    lastSync: state.lastSync,
-                    pendingEvents: state.events.length,
-                    videoState: {
-                        src: this.video?.src,
-                        currentTime: this.video?.currentTime,
-                        duration: this.video?.duration,
-                        paused: this.video?.paused,
-                        error: this.video?.error
-                    }
-                };
-                document.getElementById('debug-content').textContent = JSON.stringify(debug, null, 2);
-            },
-            
-            async forceSync() {
-                await sync.performSync();
+                ['loading-state', 'error-state', 'no-content-state', 'blocked-state'].forEach(id => document.getElementById(id).classList.add('hidden'));
             }
         };
-        
-        // ============================================
-        // ANALYTICS
-        // ============================================
-        
-        const analytics = {
-            track(eventType, data = {}) {
-                const event = {
-                    type: eventType,
-                    deviceId: state.deviceId,
-                    timestamp: Date.now(),
-                    occurredAt: new Date().toISOString(),
-                    lat: state.lat,
-                    lng: state.lng,
-                    speed: state.speed || 0,
-                    ...data
-                };
-                
-                console.log('📊 Event tracked:', eventType);
-                storage.saveEvents([event]);
-                
-                // If heartbeat interval matched, sync events too
-            },
-            
-            async uploadBatch() {
-                if (!state.isOnline) return;
-                
-                try {
-                    const allEvents = await storage.getEvents();
-                    if (allEvents.length === 0) return;
 
-                    const batch = allEvents.slice(0, CONFIG.ANALYTICS_BATCH_SIZE);
-                    console.log(`📤 Uploading analytical batch (${batch.length} events)...`);
-
-                    // Separamos por tipo para endpoints específicos (v3 logic)
-                    const locations = batch.filter(e => e.type === 'location' || (e.lat && e.lng)).map(e => ({
-                        lat: e.lat,
-                        lng: e.lng,
-                        speed: e.speed || 0,
-                        ts: e.occurredAt
-                    }));
-
-                    if (locations.length > 0) {
-                        await fetch(`${CONFIG.SERVER_URL}/api/v1/fleet/track-batch`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                deviceId: state.deviceId,
-                                locations: locations
-                            })
-                        }).catch(e => console.warn('📍 Batch GPS failed', e));
-                    }
-
-                    const otherEvents = batch.filter(e => e.type !== 'location');
-                    if (otherEvents.length > 0) {
-                         // Track playback events and others to a generic endpoint or keep in state
-                         // For now, simple heartbeats handle this in stateful V3.
-                    }
-
-                    // Acknowledge processed IDs
-                    const ids = batch.map(e => e.id);
-                    await storage.clearEvents(ids);
-                    
-                } catch (error) {
-                    console.error('❌ Error in analytics upload:', error);
-                }
-            }
-        };
-        
-        // ============================================
-        // SYNC CLIENT — Localhost-first
-        // ============================================
-        
-        const sync = {
-            syncRetryDelay: 30000,
-            SYNC_CACHE_KEY: 'tad_playlist_cache',
-            SYNC_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours kill-switch TTL
-
-            restoreFromCache() {
-                try {
-                    const raw = localStorage.getItem(this.SYNC_CACHE_KEY);
-                    if (!raw) return false;
-                    const cached = JSON.parse(raw);
-                    const age = Date.now() - (cached.savedAt || 0);
-
-                    // Check License Expiration (Local Kill-Switch)
-                    const licenseExpires = localStorage.getItem('tad_license_expires_at');
-                    if (licenseExpires && new Date() > new Date(licenseExpires)) {
-                        console.error('⛔ Offline License Expired!');
-                        player.showBlocked('Su licencia de operación offline ha expirado (24h). Conecte la tablet a internet para renovar el permiso de RD$6,000.');
-                        return false; 
-                    }
-
-                    if (cached.media_assets && cached.media_assets.length > 0) {
-                        state.currentPlaylist = cached.media_assets;
-                        state.lastSyncHash = cached.sync_hash;
-                        return true;
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Cache restore failed:', e);
-                }
-                return false;
-            },
-
-            saveToCache(payload) {
-                try {
-                    localStorage.setItem(this.SYNC_CACHE_KEY, JSON.stringify({
-                        ...payload,
-                        savedAt: Date.now()
-                    }));
-                    if (payload.expiresAt) {
-                        localStorage.setItem('tad_license_expires_at', payload.expiresAt);
-                    }
-                } catch (e) { /* ignore */ }
-            },
-
+        var sync = {
             async performSync() {
-                if (state.isSyncing) return;
-                if (!state.isOnline) {
-                    this.restoreFromCache(); // Verify TTL locally
-                    return;
-                }
-
+                if (state.isSyncing || !state.isOnline) return;
                 state.isSyncing = true;
                 ui.updateStatus('sync');
-
                 try {
-                    const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/sync`, {
+                    const res = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/sync`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            deviceId: state.deviceId,
-                            lastHash: state.lastSyncHash || '',
-                            batteryLevel: state.batteryLevel || 100,
-                            lat: state.lat,
-                            lng: state.lng
-                        }),
-                        signal: AbortSignal.timeout(15000)
+                        body: JSON.stringify({ deviceId: state.deviceId, lastHash: state.lastSyncHash || '' })
                     });
-
-                    if (syncResponse.status === 402 || syncResponse.status === 403) {
-                         const errData = await syncResponse.json();
-                         player.showBlocked(errData.message || "Suscripción Inactiva");
-                         return;
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.update !== false && data.media_assets) {
+                            state.currentPlaylist = data.media_assets;
+                            state.lastSyncHash = data.sync_hash;
+                            localStorage.setItem('tad_last_sync_hash', data.sync_hash);
+                            localStorage.setItem('tad_playlist_cache', JSON.stringify({ media_assets: data.media_assets }));
+                            player.play(state.currentPlaylist[0]);
+                        }
                     }
-
-                    const syncData = await syncResponse.json();
-                    
-                    if (syncData.update !== false && syncData.media_assets) {
-                        state.currentPlaylist = syncData.media_assets;
-                        state.lastSyncHash  = syncData.sync_hash;
-                        this.saveToCache({ media_assets: syncData.media_assets, sync_hash: syncData.sync_hash, expiresAt: syncData.expiresAt });
-                        player.play(state.currentPlaylist[0]);
-                    }
-
-                    await analytics.uploadBatch();
-
-                } catch (error) {
-                    console.warn('⚠️ Sync failed, using local cache:', error.message);
-                    this.restoreFromCache();
-                } finally {
-                    state.isSyncing = false;
-                    ui.updateStatus(state.isOnline ? 'online' : 'offline');
-                }
+                } catch (e) { console.warn('Sync failed', e); }
+                finally { state.isSyncing = false; ui.updateStatus(state.isOnline ? 'online' : 'offline'); }
             }
         };
-        
-        // ... rest of UI and Watchdog ...
 
-        async function init() {
+        async function boot() {
             await storage.init();
-            
-            if (state.isOnline) {
-                fetch(`${CONFIG.SERVER_URL}/api/v1/device/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: state.deviceId, app_version: 'v3.0.0-sre' })
-                }).catch(() => {});
-            }
-            
-            ui.init();
             player.init();
-            watchdog.init();
-
-            // OFFLINE-FIRST BOOT
-            const cacheRestored = sync.restoreFromCache();
-            if (cacheRestored && state.currentPlaylist.length > 0) {
+            ui.init();
+            
+            const cache = JSON.parse(localStorage.getItem('tad_playlist_cache') || '{}');
+            if (cache.media_assets) {
+                state.currentPlaylist = cache.media_assets;
                 player.play(state.currentPlaylist[0]);
-            } else if (!cacheRestored && localStorage.getItem('tad_license_expires_at')) {
-                // If here, it means restore returned false because it's expired
-                player.showBlocked('Licencia Vencida');
-            } else {
-                player.showNoContent();
             }
-
-            if (state.isOnline) sync.performSync();
-
-            // 24h Kill-switch safety check
-            setInterval(() => sync.restoreFromCache(), 60000);
+            
+            sync.performSync();
+            setInterval(() => sync.performSync(), 300000);
         }
 
-        init().then(() => {
-            setTimeout(() => { if (window.player) player.startExperience(); }, 1000);
-        });
-
-        window.player = player;
-        window.sync = sync;
-        window.analytics = analytics;
+        window.addEventListener('online', () => { state.isOnline = true; ui.updateStatus('online'); sync.performSync(); });
+        window.addEventListener('offline', () => { state.isOnline = false; ui.updateStatus('offline'); });
+        
+        boot();
     </script>
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then((registration) => {
-                    console.log('[TAD CTO] PWA Service Worker registrado con éxito:', registration.scope);
-                })
-                .catch((error) => {
-                    console.error('[TAD CTO] Fallo al registrar Service Worker:', error);
-                });
-        });
-    }
-
-    // Refactorización de tu lógica de descarga:
-    // Ya NO necesitas convertir a Blob ni guardar en IndexedDB.
-    // Simplemente asigna la URL del backend al <video src="..."> 
-    // y el Service Worker se encargará de cachearlo automáticamente la primera vez que se reproduzca.
-</script>
-
-<script>
-// ============================================
-// TAD SYNC V5 — OFFLINE SYNC MANAGER
-// ============================================
-const CACHE_NAME = 'tad-media-v5';
-
-class OfflineSyncManager {
-  static async synchronize(deviceId) {
-    try {
-      console.log(`[TAD Sync] Iniciando sincronización para dispositivo: ${deviceId}`);
-      
-      const SERVER_URL = localStorage.getItem('tad_server_url') || 'https://api.tad.com.do';
-      const response = await fetch(`${SERVER_URL}/api/sync/${deviceId}`);
-      
-      if (!response.ok) {
-        if (response.status === 402) console.error('[TAD Sync] ⛔ Suscripción no pagada (Error 402).');
-        if (response.status === 403) console.error('[TAD Sync] ⛔ Dispositivo Inactivo (Error 403).');
-        return false;
-      }
-      
-      const manifest = await response.json();
-      const serverPlaylist = manifest.playlist;
-      const serverUrls = serverPlaylist.map(item => item.url);
-
-      const cache = await caches.open(CACHE_NAME);
-      const cachedRequests = await cache.keys();
-      const cachedUrls = cachedRequests.map(req => req.url);
-
-      let hasChanges = false;
-
-      for (const item of serverPlaylist) {
-        if (!cachedUrls.includes(item.url)) {
-          console.log(`[TAD Sync] ⬇️ Descargando nuevo medio: ${item.campaignId}`);
-          try {
-            await cache.add(item.url);
-            hasChanges = true;
-          } catch (err) {
-            console.error(`[TAD Sync] Error descargando ${item.url}:`, err);
-          }
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW OK', reg.scope)).catch(err => console.error('SW ERR', err));
+            });
         }
-      }
-
-      for (const cachedReq of cachedRequests) {
-        if (!serverUrls.includes(cachedReq.url)) {
-          console.log(`[TAD Sync] 🗑️ Eliminando medio obsoleto: ${cachedReq.url}`);
-          await cache.delete(cachedReq);
-          hasChanges = true;
-        }
-      }
-
-      localStorage.setItem('tad_active_playlist', JSON.stringify(serverPlaylist));
-      localStorage.setItem('tad_last_sync', new Date().toISOString());
-
-      console.log(`[TAD Sync] ✅ Sincronización completada. Total videos activos: ${serverPlaylist.length}`);
-      return hasChanges;
-
-    } catch (error) {
-      console.error('[TAD Sync] ❌ Fallo crítico en sincronización:', error);
-      return false;
-    }
-  }
-}
-
-window.OfflineSyncManager = OfflineSyncManager;
-</script>
+    </script>
 </body>
 </html>

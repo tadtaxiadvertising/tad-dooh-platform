@@ -16,11 +16,28 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 //   1. BACKEND_INTERNAL_URL=http://api:3000  (red interna Docker de EasyPanel - más rápido)
 //   2. NEXT_PUBLIC_API_URL=https://...easypanel.host/api  (URL pública - fallback)
 //   3. URL hardcodeada - último recurso
-const BACKEND_BASE = (
+// Normalizar la URL base del backend:
+// - BACKEND_INTERNAL_URL = http://api:3000  (red interna EasyPanel - PRIORIDAD)
+// - NEXT_PUBLIC_API_URL puede ser https://host/api o https://host/api/v1 → extraemos solo el host
+// - Fallback hardcodeado como última instancia
+const rawBackendUrl = (
   process.env.BACKEND_INTERNAL_URL
-  || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')
+  || process.env.NEXT_PUBLIC_API_URL
   || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
-).replace(/\/$/, ''); // quitar trailing slash
+);
+
+// Strip any trailing /api, /api/v1, or / to get a clean base
+const BACKEND_BASE = rawBackendUrl
+  .replace(/\/api\/v1\/?$/, '')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
+
+// Diagnostic log on first load (server-side, visible in EasyPanel logs)
+console.log(`[PROXY_CONFIG] Backend target: ${BACKEND_BASE} (source: ${
+  process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' :
+  process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' :
+  'HARDCODED_FALLBACK'
+})`);
 
 export const config = {
   api: {
@@ -32,6 +49,17 @@ export const config = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { path } = req.query;
+
+  // Health check especial para diagnóstico de red
+  if (req.method === 'GET' && Array.isArray(path) && path[0] === '_proxy_health') {
+    return res.status(200).json({
+      proxy: 'OK',
+      backendTarget: `${BACKEND_BASE}/api/v1/`,
+      envSource: process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
+                 process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' : 'HARDCODED',
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   // Construir ruta del backend
   const pathStr = Array.isArray(path) ? path.join('/') : (path || '');

@@ -604,7 +604,7 @@
                 // Send Playback Confirmation to backend for "EN VIVO" tracking
                 if (state.isOnline && currentMedia) {
                     try {
-                        await fetch(`${CONFIG.SERVER_URL}/api/device/playback`, {
+                        await fetch(`${CONFIG.SERVER_URL}/api/v1/device/playback`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -902,7 +902,7 @@
                 try {
                     console.log(`🔄 [DELTA SYNC] → ${CONFIG.SERVER_URL}`);
 
-                    const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/device/sync`, {
+                    const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/sync`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1071,7 +1071,7 @@
 
             async acknowledgeCommand(id, result) {
                 try {
-                    await fetch(`${CONFIG.SERVER_URL}/api/device/command/${id}/ack`, {
+                    await fetch(`${CONFIG.SERVER_URL}/api/v1/device/command/${id}/ack`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(result)
@@ -1302,7 +1302,7 @@
                 }
                 
                 try {
-                    const response = await fetch(`${CONFIG.SERVER_URL}/api/device/heartbeat`, {
+                    const response = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/heartbeat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1348,7 +1348,7 @@
             // 2. Register with backend (so tablet appears in Fleet Monitor)
             if (state.isOnline) {
                 try {
-                    await fetch(`${CONFIG.SERVER_URL}/api/device/register`, {
+                    await fetch(`${CONFIG.SERVER_URL}/api/v1/device/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 

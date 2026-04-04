@@ -318,7 +318,7 @@ export default function MediaPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {[
            { label: 'Activos en Bóveda', value: media.length, icon: Film, color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
-           { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id).length > 0).length, icon: Share2, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
+           { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id, m.url).length > 0).length, icon: Share2, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
            { label: 'Integridad Global', value: '100%', icon: ShieldCheck, color: 'text-emerald-500', borderColor: 'border-emerald-500/40', iconColor: 'text-emerald-500' }
         ].map((s, i) => (
            <div key={i} className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300">
@@ -349,7 +349,7 @@ export default function MediaPage() {
           ))
         ) : media.length > 0 ? (
           media.map((file, idx) => {
-            const linkedCampaigns = getLinkedCampaigns(file.id);
+            const linkedCampaigns = getLinkedCampaigns(file.id, file.url);
             const videoUrl = getPreviewUrlForFile(file);
             const displayName = getDisplayName(file);
             const isVideo = file.mime?.includes('video') || file.url?.includes('.mp4') || file.url?.includes('.webm');

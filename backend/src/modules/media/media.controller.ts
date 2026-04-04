@@ -38,41 +38,6 @@ export class MediaController {
     return this.mediaService.registerBypassedMedia(body);
   }
 
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: {
-      fileSize: 200 * 1024 * 1024, // 200MB limit for high-quality taxi ads
-    },
-    fileFilter: (req, file, cb) => {
-      // Validate mp4 or webm natively inside Multer config
-      if (file.mimetype === 'video/mp4' || file.mimetype === 'video/webm') {
-        cb(null, true);
-      } else {
-        cb(new BadRequestException('Only .mp4 and .webm formats are permitted'), false);
-      }
-    }
-  }))
-  async uploadMedia(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('campaignId') campaignId: string,
-    @Body('qrUrl') qrUrl?: string
-  ) {
-    console.log(`[MEDIA_UPLOAD] Ingesting: ${file?.originalname} | Size: ${file?.size} bytes | Campaign: ${campaignId}`);
-    
-    if (!file) {
-      console.error('[MEDIA_UPLOAD] Rejected: Missing file payload');
-      throw new BadRequestException('A file payload is required');
-    }
-
-    const targetCampaignId = campaignId || 'general';
-    
-    try {
-      return await this.mediaService.uploadFile(file, targetCampaignId, qrUrl);
-    } catch (e) {
-      console.error(`[MEDIA_UPLOAD] Critical Service Error: ${e.message}`);
-      throw e;
-    }
-  }
 
   @Get()
   async getMedia() {

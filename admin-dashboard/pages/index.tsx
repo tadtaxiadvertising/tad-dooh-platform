@@ -21,6 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [pilotMode, setPilotMode] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -42,9 +43,14 @@ export default function Home() {
       const analytics = results[4].status === 'fulfilled' ? results[4].value : null;
       const portalRequests = results[5].status === 'fulfilled' ? results[5].value : [];
 
+      const devicesList = Array.isArray(devices) ? devices : [];
+      const filteredDevices = pilotMode 
+        ? devicesList.filter((d: any) => (d.device_id || d.deviceId || '').startsWith('STI'))
+        : devicesList;
+
       setStats({
-        devices: Array.isArray(devices) ? devices.length : 0,
-        online: Array.isArray(devices) ? (devices as { status: string }[]).filter((d) => d.status === 'online' || d.status === 'ACTIVE').length : 0,
+        devices: filteredDevices.length,
+        online: filteredDevices.filter((d: any) => d.status === 'online' || d.status === 'ACTIVE' || d.is_online).length,
         campaigns: Array.isArray(campaigns) ? campaigns.length : 0,
         activeCampaigns: Array.isArray(campaigns) ? (campaigns as { active: boolean }[]).filter((c) => c.active).length : 0,
         media: Array.isArray(media) ? media.length : 0,
@@ -78,7 +84,7 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     loadData();
-  }, [loadData]);
+  }, [loadData, pilotMode]);
 
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
@@ -101,7 +107,20 @@ export default function Home() {
           <p className="text-gray-400 text-sm font-medium">Gestión inteligente de la flota publicitaria TAD Dominicana</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => setPilotMode(!pilotMode)}
+            className={clsx(
+              "flex items-center gap-3 px-6 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all",
+              pilotMode 
+                ? "bg-tad-yellow border-tad-yellow text-black shadow-[0_0_30px_rgba(255,212,0,0.3)] animate-pulse" 
+                : "bg-white/5 border-white/10 text-zinc-500 hover:text-white"
+            )}
+          >
+            <ShieldCheck className={clsx("w-4 h-4", pilotMode ? "text-black" : "text-zinc-600")} />
+            {pilotMode ? 'STI PILOT ACTIVE' : 'SANTIAGO PILOT'}
+          </button>
+
           <div className="flex flex-col items-end">
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Estado del Sistema</span>
             <div className="flex items-center gap-2">

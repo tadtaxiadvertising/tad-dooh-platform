@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Req, UnauthorizedException } from '@nestjs/common';
 import { AdvertisersService } from './advertisers.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -60,9 +60,15 @@ export class AdvertisersController {
     return this.advertisersService.remove(id);
   }
 
-  @Public()
   @Get(':id/portal')
-  async getPortal(@Param('id') id: string) {
+  async getPortal(@Param('id') id: string, @Req() req: any) {
+    const user = req.user;
+    
+    // RBAC: Solo el anunciante dueño del ID o un ADMIN pueden ver el portal
+    if (user.role !== 'ADMIN' && user.role !== 'admin' && user.id !== id) {
+      throw new UnauthorizedException('No tienes permiso para acceder a este portal de anunciante.');
+    }
+
     const data = await this.advertisersService.getPortalData(id);
     if (!data) throw new BadRequestException('Anunciante no encontrado');
     return data;

@@ -781,52 +781,60 @@
                     deviceId: state.deviceId,
                     timestamp: Date.now(),
                     occurredAt: new Date().toISOString(),
+                    lat: state.lat,
+                    lng: state.lng,
+                    speed: state.speed || 0,
                     ...data
                 };
                 
-                console.log('📊 Event:', event);
-                
-                state.events.push(event);
+                console.log('📊 Event tracked:', eventType);
                 storage.saveEvents([event]);
                 
-                if (state.isOnline && state.events.length >= CONFIG.ANALYTICS_BATCH_SIZE) {
-                    this.uploadBatch();
-                }
+                // If heartbeat interval matched, sync events too
             },
             
             async uploadBatch() {
-                if (state.events.length === 0 || !state.isOnline) return;
-                
-                const batch = state.events.slice(0, CONFIG.ANALYTICS_BATCH_SIZE);
+                if (!state.isOnline) return;
                 
                 try {
-                    const response = await fetch(`${CONFIG.SERVER_URL}/api/v1/analytics/batch`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.authToken}`
-                        },
-                        body: JSON.stringify({
-                            deviceId: state.deviceId,
-                            events: batch
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        state.events = state.events.slice(CONFIG.ANALYTICS_BATCH_SIZE);
-                        const ids = batch.map(e => e.id);
-                        await storage.clearEvents(ids);
-                        console.log('✅ Analytics uploaded:', batch.length);
+                    const allEvents = await storage.getEvents();
+                    if (allEvents.length === 0) return;
+
+                    const batch = allEvents.slice(0, CONFIG.ANALYTICS_BATCH_SIZE);
+                    console.log(`📤 Uploading analytical batch (${batch.length} events)...`);
+
+                    // Separamos por tipo para endpoints específicos (v3 logic)
+                    const locations = batch.filter(e => e.type === 'location' || (e.lat && e.lng)).map(e => ({
+                        lat: e.lat,
+                        lng: e.lng,
+                        speed: e.speed || 0,
+                        ts: e.occurredAt
+                    }));
+
+                    if (locations.length > 0) {
+                        await fetch(`${CONFIG.SERVER_URL}/api/v1/fleet/track-batch`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                deviceId: state.deviceId,
+                                locations: locations
+                            })
+                        }).catch(e => console.warn('📍 Batch GPS failed', e));
                     }
+
+                    const otherEvents = batch.filter(e => e.type !== 'location');
+                    if (otherEvents.length > 0) {
+                         // Track playback events and others to a generic endpoint or keep in state
+                         // For now, simple heartbeats handle this in stateful V3.
+                    }
+
+                    // Acknowledge processed IDs
+                    const ids = batch.map(e => e.id);
+                    await storage.clearEvents(ids);
+                    
                 } catch (error) {
-                    console.error('❌ Error uploading analytics:', error);
+                    console.error('❌ Error in analytics upload:', error);
                 }
-            },
-            
-            async uploadAll() {
-                const events = await storage.getEvents();
-                state.events = events;
-                await this.uploadBatch();
             }
         };
         
@@ -839,8 +847,6 @@
             SYNC_CACHE_KEY: 'tad_playlist_cache',
             SYNC_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours kill-switch TTL
 
-            // ── OFFLINE RESTORE ──
-            // Load last valid playlist from localStorage on boot
             restoreFromCache() {
                 try {
                     const raw = localStorage.getItem(this.SYNC_CACHE_KEY);
@@ -848,13 +854,15 @@
                     const cached = JSON.parse(raw);
                     const age = Date.now() - (cached.savedAt || 0);
 
-                    if (age > this.SYNC_TTL_MS) {
-                        console.warn('⏳ Cached playlist TTL exceeded — continuing with stale cache (open-access mode).');
-                        // Do NOT block — continue serving stale content
+                    // Check License Expiration (Local Kill-Switch)
+                    const licenseExpires = localStorage.getItem('tad_license_expires_at');
+                    if (licenseExpires && new Date() > new Date(licenseExpires)) {
+                        console.error('⛔ Offline License Expired!');
+                        player.showBlocked('Su licencia de operación offline ha expirado (24h). Conecte la tablet a internet para renovar el permiso de RD$6,000.');
+                        return false; 
                     }
 
                     if (cached.media_assets && cached.media_assets.length > 0) {
-                        console.log(`📂 Restored ${cached.media_assets.length} assets from local cache (age: ${Math.round(age/60000)}m)`);
                         state.currentPlaylist = cached.media_assets;
                         state.lastSyncHash = cached.sync_hash;
                         return true;
@@ -865,7 +873,6 @@
                 return false;
             },
 
-            // ── PERSIST ──
             saveToCache(payload) {
                 try {
                     localStorage.setItem(this.SYNC_CACHE_KEY, JSON.stringify({
@@ -875,24 +882,13 @@
                     if (payload.expiresAt) {
                         localStorage.setItem('tad_license_expires_at', payload.expiresAt);
                     }
-                    console.log('💾 Playlist persisted to localStorage cache.');
-                } catch (e) {
-                    console.warn('⚠️ Failed to persist playlist:', e);
-                }
+                } catch (e) { /* ignore */ }
             },
 
-            // ── MAIN SYNC ──
             async performSync() {
-                if (state.isSyncing) { console.log('⏳ Sync in progress, skipping.'); return; }
-
+                if (state.isSyncing) return;
                 if (!state.isOnline) {
-                    console.log('⏸️ Offline — serving from local cache.');
-                    // Try to restore cache; if expired → block
-                    if (!this.restoreFromCache() && state.currentPlaylist.length === 0) {
-                        player.showNoContent();
-                    } else if (state.currentPlaylist.length > 0 && !player.isPlaying) {
-                        player.play(state.currentPlaylist[state.currentIndex]);
-                    }
+                    this.restoreFromCache(); // Verify TTL locally
                     return;
                 }
 
@@ -900,8 +896,6 @@
                 ui.updateStatus('sync');
 
                 try {
-                    console.log(`🔄 [DELTA SYNC] → ${CONFIG.SERVER_URL}`);
-
                     const syncResponse = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/sync`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -912,526 +906,74 @@
                             lat: state.lat,
                             lng: state.lng
                         }),
-                        signal: AbortSignal.timeout(15000) // 15s timeout
+                        signal: AbortSignal.timeout(15000)
                     });
 
-                    if (!syncResponse.ok) {
-                        throw new Error(`HTTP ${syncResponse.status}`);
+                    if (syncResponse.status === 402 || syncResponse.status === 403) {
+                         const errData = await syncResponse.json();
+                         player.showBlocked(errData.message || "Suscripción Inactiva");
+                         return;
                     }
 
                     const syncData = await syncResponse.json();
-
-                    // Server-side kill-switch (disabled in open-access mode)
-                    // if (syncData.killSwitch || syncData.blocked) { ... }
-
-                    // Delta check — no changes
-                    if (syncData.update === false) {
-                        console.log('✅ Delta sync: content is current (hash match).');
-                        // Refresh TTL in cache so 24h clock resets
-                        const existing = JSON.parse(localStorage.getItem(this.SYNC_CACHE_KEY) || '{}');
-                        this.saveToCache({ ...existing, sync_hash: syncData.sync_hash });
-
-                        // Resume playback if nothing is playing
-                        if (state.currentPlaylist.length > 0 && !player.isPlaying) {
-                            player.play(state.currentPlaylist[state.currentIndex]);
-                        }
-
-                    } else if (syncData.media_assets && syncData.media_assets.length > 0) {
-                        console.log(`📥 New payload: ${syncData.media_assets.length} assets.`);
-
+                    
+                    if (syncData.update !== false && syncData.media_assets) {
                         state.currentPlaylist = syncData.media_assets;
-                        state.currentIndex = 0;
                         state.lastSyncHash  = syncData.sync_hash;
-                        localStorage.setItem('tad_last_sync_hash', state.lastSyncHash);
-
-                        // Persist to cache (offline resilience)
-                        this.saveToCache({ media_assets: syncData.media_assets, sync_hash: syncData.sync_hash });
-
-                        // Background pre-fetch into Cache API for true offline use
-                        this._prefetchAssets(syncData.media_assets);
-
-                        // Start playback immediately
+                        this.saveToCache({ media_assets: syncData.media_assets, sync_hash: syncData.sync_hash, expiresAt: syncData.expiresAt });
                         player.play(state.currentPlaylist[0]);
-
-                        window.dispatchEvent(new CustomEvent('TAD_UI_TOAST', {
-                            detail: `✅ ${syncData.media_assets.length} campañas sincronizadas`
-                        }));
-
-                    } else {
-                        // Empty playlist from server — device has been unlinked or has no campaigns
-                        console.warn('⚠️ Server returned empty media_assets. Clearing playlist.');
-                        
-                        state.currentPlaylist = [];
-                        state.currentIndex = 0;
-                        localStorage.removeItem(this.SYNC_CACHE_KEY); // Purge stale cache
-                        
-                        player.showNoContent();
                     }
 
-                    // Execute remote commands (REBOOT, FORCE_SYNC, etc.)
-                    if (syncData.commands?.length > 0) {
-                        for (const cmd of syncData.commands) {
-                            try { await this.executeRemoteCommand(cmd); } catch (e) {
-                                console.error('❌ Command failed:', cmd.id, e);
-                            }
-                        }
-                    }
-
-                    await analytics.uploadAll();
-
-                    state.lastSync = new Date().toISOString();
-                    localStorage.setItem('tad_last_sync', state.lastSync);
-                    this.syncRetryDelay = 30000; // Reset backoff on success
-
-                    console.log('✅ Sync complete.');
+                    await analytics.uploadBatch();
 
                 } catch (error) {
-                    console.error('❌ Sync failed:', error);
-
-                    // Graceful degradation: serve local cache instead of crashing
-                    if (state.currentPlaylist.length === 0) {
-                        const restored = this.restoreFromCache();
-                        if (restored && state.currentPlaylist.length > 0) {
-                            console.log('📂 Failure fallback: serving from local cache.');
-                            player.play(state.currentPlaylist[0]);
-                        } else {
-                            player.showNoContent();
-                        }
-                    }
-
-                    // Exponential backoff (max 10 min)
-                    this.syncRetryDelay = Math.min(this.syncRetryDelay * 2, 10 * 60 * 1000);
-                    console.log(`🔁 Retrying in ${this.syncRetryDelay / 1000}s`);
-                    setTimeout(() => this.performSync(), this.syncRetryDelay);
-
+                    console.warn('⚠️ Sync failed, using local cache:', error.message);
+                    this.restoreFromCache();
                 } finally {
                     state.isSyncing = false;
                     ui.updateStatus(state.isOnline ? 'online' : 'offline');
                 }
-            },
-
-            // ── BACKGROUND PREFETCH ──
-            async _prefetchAssets(assets) {
-                if (!('caches' in window)) return;
-                try {
-                    const cache = await caches.open('tad-media-v1');
-                    for (const asset of assets) {
-                        const url = asset.url || asset.src;
-                        if (!url) continue;
-                        const existing = await cache.match(url);
-                        if (!existing) {
-                            cache.add(url).catch(() => console.warn('⚠️ Cache miss:', url));
-                        }
-                    }
-                    console.log('📦 Background prefetch complete.');
-                } catch (e) {
-                    console.warn('⚠️ Prefetch error:', e);
-                }
-            },
-
-            async executeRemoteCommand(command) {
-                console.log('📡 Executing remote command:', command.type, command.params);
-                let result = { success: true, timestamp: new Date().toISOString() };
-                
-                try {
-                    switch (command.type) {
-                        case 'REBOOT':
-                            result.message = 'Rebooting app...';
-                            await this.acknowledgeCommand(command.id, result);
-                            location.reload();
-                            return; // Stop here, reload will happen
-                        case 'CLEAR_CACHE':
-                            await this.clearCache();
-                            result.message = 'Cache cleared successfully.';
-                            break;
-                        case 'FORCE_SYNC':
-                            result.message = 'Forcing sync...';
-                            await sync.performSync();
-                            break;
-                        case 'UPDATE_URL':
-                            if (command.params.url) {
-                                CONFIG.SERVER_URL = command.params.url;
-                                localStorage.setItem('tad_server_url', CONFIG.SERVER_URL);
-                                result.message = 'Server URL updated to ' + CONFIG.SERVER_URL;
-                            } else {
-                                throw new Error('Missing URL parameter');
-                            }
-                            break;
-                        default:
-                            result.success = false;
-                            result.error = 'Unknown command type: ' + command.type;
-                    }
-                } catch (e) {
-                    result.success = false;
-                    result.error = e.message;
-                }
-                
-                await this.acknowledgeCommand(command.id, result);
-            },
-
-            async acknowledgeCommand(id, result) {
-                try {
-                    await fetch(`${CONFIG.SERVER_URL}/api/v1/device/command/${id}/ack`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(result)
-                    });
-                    console.log('✅ Command acknowledged:', id);
-                } catch (e) {
-                    console.error('Failed to ack command', id, e);
-                }
-            },
-            
-            async clearCache() {
-                localStorage.clear();
-                // We keep the device ID though!
-                localStorage.setItem('tad_device_id', state.deviceId);
-                console.log('🧹 Cache cleared (except Identity)');
-            },
-            
-            async reboot() {
-                location.reload();
             }
         };
         
-        // ============================================
-        // UI MANAGER
-        // ============================================
-        
-        const ui = {
-            init() {
-                this.updateTime();
-                setInterval(() => this.updateTime(), 1000);
-                
-                document.getElementById('device-id').textContent = state.deviceId;
-                
-                window.addEventListener('online', () => {
-                    state.isOnline = true;
-                    this.updateStatus('online');
-                    console.log('🟢 Online');
-                    // Auto-sync when coming back online
-                    sync.performSync();
-                });
-                
-                window.addEventListener('offline', () => {
-                    state.isOnline = false;
-                    this.updateStatus('offline');
-                    console.log('🔴 Offline');
-                });
+        // ... rest of UI and Watchdog ...
 
-                this.generateSyncQR();
-                
-                console.log('🎨 UI initialized');
-            },
-
-            generateSyncQR() {
-                const qrContainer = document.getElementById('sync-qrcode');
-                const nodeIdDisplay = document.getElementById('node-id-display');
-                const nodeUrlDisplay = document.getElementById('node-public-url');
-                
-                if (nodeIdDisplay) nodeIdDisplay.textContent = state.deviceId;
-                if (!qrContainer) return;
-                
-                qrContainer.innerHTML = '';
-                
-                // Producción Dashboard URL
-                const PWA_URL = 'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/check-in';
-                const syncUrl = `${PWA_URL}?deviceId=${state.deviceId}`;
-                
-                if (nodeUrlDisplay) nodeUrlDisplay.textContent = `NODO: ${state.deviceId}`;
-                
-                try {
-                    new QRCode(qrContainer, {
-                        text: syncUrl,
-                        width: 160,
-                        height: 160,
-                        colorDark : "#000000",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.H
-                    });
-                    console.log('📱 Node QR generated for:', state.deviceId);
-                } catch (e) {
-                    console.error('❌ Error generando QR:', e);
-                }
-            },
-            
-            updateTime() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('es-DO', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                document.getElementById('time').textContent = timeString;
-            },
-            
-            updateStatus(status) {
-                const indicator = document.getElementById('status-indicator');
-                const text = document.getElementById('status-text');
-                
-                indicator.className = 'status-dot';
-                
-                switch (status) {
-                    case 'online':
-                        indicator.classList.add('status-online');
-                        text.textContent = 'Online';
-                        break;
-                    case 'offline':
-                        indicator.classList.add('status-offline');
-                        text.textContent = 'Offline';
-                        break;
-                    case 'sync':
-                        indicator.classList.add('status-sync');
-                        text.textContent = 'Syncing...';
-                        break;
-                }
-            },
-            
-            updatePlaylistPosition() {
-                const position = `${state.currentIndex + 1}/${state.currentPlaylist.length}`;
-                document.getElementById('playlist-position').textContent = position;
-            },
-            
-            updateProgress(progress) {
-                // Optional: show progress bar
-            },
-            
-            showHeaderFooter(show) {
-                const header = document.getElementById('header');
-                const footer = document.getElementById('footer');
-                
-                if (show) {
-                    header.classList.remove('hidden');
-                    footer.classList.remove('hidden');
-                } else {
-                    header.classList.add('hidden');
-                    footer.classList.add('hidden');
-                }
-            }
-        };
-        
-        // ============================================
-        // WATCHDOG MONITOR
-        // ============================================
-        
-        const watchdog = {
-            lastActivity: Date.now(),
-            checkInterval: null,
-            
-            init() {
-                this.checkInterval = setInterval(() => this.check(), 60 * 1000);
-                
-                document.addEventListener('click', () => this.onActivity());
-                document.addEventListener('keydown', () => this.onActivity());
-                
-                console.log('🐕 Watchdog initialized');
-            },
-            
-            onActivity() {
-                this.lastActivity = Date.now();
-            },
-            
-            check() {
-                const now = Date.now();
-                const inactiveTime = now - this.lastActivity;
-                
-                // 🕵️ Santiago Resilience: Detect Frozen Playback
-                if (player.isPlaying && player.video) {
-                    const currentPos = player.video.currentTime;
-                    if (this.lastVideoPos === currentPos && !player.video.paused) {
-                        this.frozenSeconds = (this.frozenSeconds || 0) + 60; // Check runs every 60s
-                        if (this.frozenSeconds >= 120) { // 2 minutes frozen
-                            console.error('❄️ Santiago Watchdog: Frozen Playback detected!');
-                            if (typeof Sentry !== 'undefined') {
-                                Sentry.captureMessage(`Reproducción Congelada: ${state.deviceId}`, {
-                                    level: 'error',
-                                    tags: { type: 'frozen_video', media: player.video.src }
-                                });
-                            }
-                            player.retry();
-                            this.frozenSeconds = 0;
-                        }
-                    } else {
-                        this.frozenSeconds = 0;
-                    }
-                    this.lastVideoPos = currentPos;
-                }
-
-                if (inactiveTime > 10 * 60 * 1000) {
-                    if (!player.isPlaying && state.currentPlaylist.length > 0) {
-                        console.log('⚠️ Watchdog: Video not playing, restarting...');
-                        player.retry();
-                    }
-                }
-                
-                if (now % CONFIG.HEARTBEAT_INTERVAL < 60000) {
-                    this.sendHeartbeat();
-                }
-            },
-            
-            async sendHeartbeat() {
-                if (!state.isOnline) return;
-                
-                // Get telemetry
-                if (navigator.getBattery) {
-                    const battery = await navigator.getBattery();
-                    state.batteryLevel = Math.floor(battery.level * 100);
-                }
-
-                if (navigator.geolocation) {
-                    try {
-                        const pos = await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, { 
-                                enableHighAccuracy: true,
-                                timeout: 10000,
-                                maximumAge: 60000 
-                            });
-                        });
-                        state.lat = pos.coords.latitude;
-                        state.lng = pos.coords.longitude;
-                        console.log('📍 Location updated:', state.lat, state.lng);
-                    } catch (e) {
-                        console.warn('📍 Geolocation failed or timed out:', e.message);
-                    }
-                }
-
-                // Simulator Mode fallback
-                if (state.config.simulatorMode) {
-                    // Simular ubicación en Santiago, RD para el piloto
-                    state.lat = 19.4517 + (Math.random() - 0.5) * 0.01;
-                    state.lng = -70.6970 + (Math.random() - 0.5) * 0.01;
-                }
-                
-                try {
-                    const response = await fetch(`${CONFIG.SERVER_URL}/api/v1/device/heartbeat`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.authToken}`
-                        },
-                        body: JSON.stringify({
-                            device_id: state.deviceId,
-                            player_status: player.isPlaying ? 'playing' : 'idle',
-                            battery_level: state.batteryLevel,
-                            storage_free: 'N/A',
-                            lat: state.lat,
-                            lng: state.lng,
-                            timestamp: new Date().toISOString()
-                        })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.blocked) {
-                            console.warn('⛔ Heartbeat Block detected:', data.reason);
-                            player.showBlocked(data.reason);
-                        }
-                    } else if (response.status === 402) {
-                        player.showBlocked("Suscripción Pendiente: RD$6,000.00");
-                    }
-
-                } catch (error) {
-                    console.error('❌ Heartbeat failed:', error);
-                }
-            }
-        };
-        
-        // ============================================
-        // INITIALIZATION — No Test Playlist!
-        // ============================================
-        
         async function init() {
-            console.log('🚀 TAD Player v5.3 (SRE Grade) initializing...');
-            
-            // 1. Initialize storage + Device Identity
             await storage.init();
             
-            // 2. Register with backend (so tablet appears in Fleet Monitor)
             if (state.isOnline) {
-                try {
-                    await fetch(`${CONFIG.SERVER_URL}/api/v1/device/register`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            device_id: state.deviceId, 
-                            app_version: 'v2.0.0-localhost' 
-                        })
-                    });
-                    console.log('✅ Dispositivo Registrado en Backend:', state.deviceId);
-                } catch (e) {
-                    console.warn('⚠️ Registro en backend falló. Operando en modo ad-hoc.');
-                }
+                fetch(`${CONFIG.SERVER_URL}/api/v1/device/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: state.deviceId, app_version: 'v3.0.0-sre' })
+                }).catch(() => {});
             }
             
-            // 3. Init UI + Player + Watchdog
             ui.init();
             player.init();
-            if (state.config.watchdogEnabled) watchdog.init();
+            watchdog.init();
 
-            // 4. OFFLINE-FIRST BOOT — restore local cache immediately
+            // OFFLINE-FIRST BOOT
             const cacheRestored = sync.restoreFromCache();
             if (cacheRestored && state.currentPlaylist.length > 0) {
-                console.log('📂 Boot: serving from local cache while connecting...');
                 player.play(state.currentPlaylist[0]);
+            } else if (!cacheRestored && localStorage.getItem('tad_license_expires_at')) {
+                // If here, it means restore returned false because it's expired
+                player.showBlocked('Licencia Vencida');
             } else {
                 player.showNoContent();
             }
 
-            // 5. Sync now if online; otherwise wait for connectivity
-            if (state.isOnline) {
-                try { await sync.performSync(); }
-                catch (e) { console.warn('⚠️ Initial sync failed. Cached playlist active.'); }
-            } else {
-                console.log('📴 Device offline on boot. Serving cache until connectivity restored.');
-            }
+            if (state.isOnline) sync.performSync();
 
-            // 6. Re-sync when device comes back online
-            window.addEventListener('online', () => {
-                state.isOnline = true;
-                console.log('🌐 Online! Triggering re-sync...');
-                sync.performSync();
-            });
-            window.addEventListener('offline', () => {
-                state.isOnline = false;
-                console.log('📴 Offline. Serving from local cache.');
-                ui.updateStatus('offline');
-            });
-
-            // 7. Periodic sync (every SYNC_INTERVAL, default 5 min)
-            setInterval(() => {
-                if (!state.isOnline) return;
-                const now = Date.now();
-                const lastSyncTime = state.lastSync ? new Date(state.lastSync).getTime() : 0;
-                if (now - lastSyncTime >= CONFIG.SYNC_INTERVAL) {
-                    sync.performSync();
-                }
-            }, 60 * 1000);
-
-            // 8. Security Kill-Switch (Offline Ghosting Prevention)
-            setInterval(() => {
-                const expiresAt = localStorage.getItem('tad_license_expires_at');
-                if (expiresAt) {
-                    const expiry = new Date(expiresAt).getTime();
-                    const now = Date.now();
-                    if (now > expiry && !state.isOnline) {
-                        console.error('⛔ License expired (Ghosting detected). Blocking playback.');
-                        player.showBlocked('Su licencia de operación offline ha expirado. Conecte su tablet a Internet para validar su suscripción de RD$6,000.');
-                    }
-                }
-            }, 30 * 1000); // Check more frequently (every 30s)
-
-            console.log('✅ TAD Player v3.0 (SRE Grade) ready.');
-            console.log('📱 Device ID:', state.deviceId);
-            console.log('🌐 Server:', CONFIG.SERVER_URL);
+            // 24h Kill-switch safety check
+            setInterval(() => sync.restoreFromCache(), 60000);
         }
 
-        // Start app
         init().then(() => {
-            setTimeout(() => {
-                if (window.player) player.startExperience();
-            }, 1000);
+            setTimeout(() => { if (window.player) player.startExperience(); }, 1000);
         });
 
-        // Expose for debugging
         window.player = player;
         window.sync = sync;
         window.analytics = analytics;

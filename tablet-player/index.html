@@ -800,7 +800,7 @@
                 const batch = state.events.slice(0, CONFIG.ANALYTICS_BATCH_SIZE);
                 
                 try {
-                    const response = await fetch(`${CONFIG.SERVER_URL}/api/analytics/batch`, {
+                    const response = await fetch(`${CONFIG.SERVER_URL}/api/v1/analytics/batch`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

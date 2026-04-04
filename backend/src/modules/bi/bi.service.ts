@@ -64,7 +64,7 @@ export class BiService {
         this.prisma.device.count(),
         this.prisma.device.count({ where: { isOnline: true } }),
         this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
-        this.prisma.campaign.findMany({ where: { status: 'ACTIVE' }, select: { target_impressions: true } }),
+        this.prisma.campaign.findMany({ where: { status: 'ACTIVE' }, select: { targetImpressions: true } }),
         this.prisma.playbackEvent.aggregate({
           where: { timestamp: { gte: monthStart }, eventType: 'play_confirm' },
           _count: { id: true }
@@ -97,7 +97,7 @@ export class BiService {
       const projectedRevenue = mrr * 12;
 
       // Delivery Rate calculation
-      const totalTargetImpressions = activeCampaignsData.reduce((acc, c) => acc + (c.target_impressions || 0), 0);
+      const totalTargetImpressions = activeCampaignsData.reduce((acc, c) => acc + (c.targetImpressions || 0), 0);
       const deliveryRateAvg = totalTargetImpressions > 0 
         ? Math.min(100, (impressions / totalTargetImpressions) * 100) 
         : 100;

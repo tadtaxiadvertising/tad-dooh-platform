@@ -10,6 +10,7 @@ interface AuthContextValue {
   loading: boolean;
 }
 
+
 const AuthContext = createContext<AuthContextValue>({ session: null, loading: true });
 
 export const useAuth = () => useContext(AuthContext);

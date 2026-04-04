@@ -57,7 +57,7 @@ export class SupabaseAuthGuard implements CanActivate {
           request.user = {
             id: payload.sub,
             email: payload.email,
-            role: payload.app_metadata?.role || 'ADMIN',
+            role: payload.app_metadata?.role || payload.role || 'GUEST',
           };
           return true;
         }
@@ -75,7 +75,7 @@ export class SupabaseAuthGuard implements CanActivate {
         request.user = {
           id: data.user.id,
           email: data.user.email,
-          role: data.user.app_metadata?.role || 'ADMIN',
+          role: data.user.app_metadata?.role || (data.user as any).role || 'GUEST',
         };
         this.logger.log(`✅ [AUTH_GUARD] ESTRATEGIA 2 OK (Red Supabase): ${data.user.email}`);
         return true;
@@ -95,7 +95,7 @@ export class SupabaseAuthGuard implements CanActivate {
           request.user = {
             id: decoded.sub || 'dev-user',
             email: decoded.email || 'dev@local',
-            role: decoded.app_metadata?.role || 'ADMIN',
+            role: decoded.app_metadata?.role || decoded.role || 'GUEST',
           };
           return true;
         }

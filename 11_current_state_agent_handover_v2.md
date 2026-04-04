@@ -1,7 +1,7 @@
 # 🧠 11 — ESTADO ACTUAL Y HANDOVER (03 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Última actualización**: 03 de Abril de 2026
+> **Última actualización**: 04 de Abril de 2026 (v5.7)
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base, la infraestructura, las reglas de negocio recientes y los siguientes pasos para la plataforma TAD DOOH.
 
 ---
@@ -13,6 +13,7 @@ Se han realizado optimizaciones críticas para manejar ambientes VPS de bajos re
 - **Next.js Worker Offload**: En `next.config.js`, `webpackBuildWorker` configurado a `true` y `parallelServerCompiles` en `false` para evitar el colapso (OOM) al compilar.
 - **Docker VPS Optimization**: Contenedores limitados para no devorar la RAM, implementando Swarm Proxy interno (`http://tad-api:3000`) sin tocar interfaces públicas.
 - **Bulk Synchronization API**: Creado nuevo motor de caché iterativo y sincronización en bloque (`Bulk Sync API`). En lugar de que el endpoint `/api/sync/:deviceId` calcule metadatos costosos, el flujo delega pre-cómputos y reduce peticiones N+1.
+- **Santiago Pilot Infrastructure (v5.7)**: Implementado el modo de monitoreo dedicado para el piloto de Santiago. El Dashboard Principal cuenta ahora con un interruptor "STI PILOT" que filtra todas las métricas en tiempo real para las 10 unidades iniciales (`STI0001-STI0010`).
 - **Zero-Revenue Fallback Playlist**: Implementado un fallback resiliente para mostrar contenido predeterminado institucional de TAD cuando falla la red, el pago no se ha reflejado, o las campañas asignadas vencieron. Esto previene el efecto pantalla negra o "Ghosting".
 
 ## 2. 🧮 Módulo de Inteligencia Financiera & BI (v1.0)
@@ -30,7 +31,8 @@ La plataforma ahora rastrea minuciosamente todo flujo de liquidez cruzado (`Subs
 
 ## 4. 🔐 Autenticación y Portales Desacoplados
 
-- Todo endpoint API sensible está protegido por `SupabaseAuthGuard` a través de JWT extraídos por un Regex a prueba de fallos de comas dobles HTTP (`Bearer xyz, Bearer xyz`). Sin embargo, para flujos comerciales (Landing Anunciantes y Player Conductores) se liberó estrictamente el uso de decoradores `@Public()`.
+- Todo endpoint API sensible está protegido por `SupabaseAuthGuard` a través de JWT. Se corrigió un fallo crítico en el Guard que otorgaba privilegios de `ADMIN` por defecto; ahora el fallback es `GUEST`.
+- **Advertiser Portal RBAC (v2.0)**: El endpoint `/:id/portal` ha sido blindado. El backend ahora valida que el `user.id` del token coincida exactamente con el `advertiserId` solicitado, impidiendo el acceso cruzado de marcas.
 - Un anunciante ahora cuenta con su PWA autónoma (`tad-advertiser.html`), usando registro directo, para administrar inversiones y solicitar "Adiciones o Extensiones de Campaña" enviadas a una canasta interactiva pending de revisión para el Administrador de Flota.
 
 ## 5. 📜 Aceptación Legal y Zero-Trust Onboarding

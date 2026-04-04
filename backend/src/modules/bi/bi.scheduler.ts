@@ -26,17 +26,19 @@ export class BiScheduler {
   }
 
   /**
-   * Refresco proactivo de salud de flota cada hora.
-   * Útil para detectar tendencias de desconexión masiva.
+   * Conciliación financiera proactiva a las 02:00 AM AST.
+   * Analiza suscripciones, impresiones y pagos del periodo actual.
    */
-  @Cron(CronExpression.EVERY_HOUR)
-  async handleFleetHealthCheck() {
-    this.logger.log('🔍 Ejecutando chequeo proactivo de salud de flota...');
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async handleReconciliation() {
+    const now = new Date();
+    const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    this.logger.log(`🌙 Iniciando conciliación automática para el periodo ${period}...`);
     try {
-      const health = await this.biService.getFleetHealth();
-      this.logger.log(`📊 Salud de flota procesada: ${health.length} dispositivos analizados.`);
+      const result = await this.biService.generateReconciliationReport(period);
+      this.logger.log(`✅ Conciliación completada: ${result.total} registros procesados.`);
     } catch (error) {
-       this.logger.error('❌ Error en chequeo de salud de flota:', error.message);
+      this.logger.error('❌ Falla en conciliación automática:', error.message);
     }
   }
 }

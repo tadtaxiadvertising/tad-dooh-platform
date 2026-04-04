@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger, Req } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CampaignService } from './campaign.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
@@ -89,8 +89,17 @@ export class CampaignController {
   }
 
   @Post()
-  async createCampaign(@Body() dto: CreateCampaignDto) {
-    return this.campaignService.createCampaign(dto);
+  async createCampaign(@Body() dto: CreateCampaignDto, @Req() req: any) {
+    return this.campaignService.createCampaign(dto, req.user);
+  }
+
+  /**
+   * Single Source of Truth: Direct Upload & Metadata Sync.
+   * El cliente sube directo a Supabase, el backend solo registra metadatos confirmados.
+   */
+  @Post('register-media')
+  async registerMedia(@Body() dto: any, @Req() req: any) {
+    return this.campaignService.registerDirectMedia(dto, req.user);
   }
 
   @Post(':id/assets')
@@ -104,17 +113,6 @@ export class CampaignController {
     }
   }
 
-  @Post(':id/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadVideo(
-    @Param('id') campaignId: string,
-    @UploadedFile() file: Express.Multer.File
-  ) {
-    if (!file) {
-      throw new NotFoundException('No file uploaded');
-    }
-    return this.mediaService.uploadFile(file, campaignId);
-  }
 
   @Get()
   async getAllCampaigns() {

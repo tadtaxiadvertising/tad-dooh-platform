@@ -103,12 +103,30 @@ export class SyncService {
       };
     }
 
+    // 3. Obtener campañas activas via MASTER SYNC (Materialized View)
+    // SRE Optimization: Pre-calculated targeting avoids complex joins in heartbeats.
+    const city = device.city || 'Santiago';
+    
+    const results: any[] = await this.prisma.$queryRaw`
+      SELECT campaign_id FROM mv_active_campaigns
+      WHERE active = true 
+        AND start_date <= NOW() 
+        AND end_date >= NOW()
+        AND (
+          target_all = true OR 
+          target_city = ${city} OR
+          target_cities::text LIKE ${`%${city}%`} OR
+          assigned_device_uuids::jsonb @> ${JSON.stringify([device.id])}::jsonb OR
+          assigned_hw_ids::jsonb @> ${JSON.stringify([deviceId])}::jsonb OR
+          (assigned_driver_ids::jsonb @> ${JSON.stringify([driver?.id])}::jsonb AND ${!!isDriverActive})
+        )
+    `;
+
+    const campaignIds = results.map(r => r.campaign_id);
+
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: {
-        active: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-        ...campaignFilter
+        id: { in: campaignIds }
       },
       include: {
         media: true,
@@ -157,7 +175,7 @@ export class SyncService {
 
     // 4. Generar License Token (Kill-Switch)
     // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.
-    // Expiración: 48 horas (Tiempo suficiente para superar zonas de sombra o desconexión nocturna, pero corta fraude mensual)
+    // Expiración: 24 horas (Tiempo suficiente para superar zonas de sombra o desconexión nocturna, pero corta fraude mensual)
     const licenseToken = jwt.sign(
       { 
         deviceId, 
@@ -166,13 +184,13 @@ export class SyncService {
         iat: Math.floor(Date.now() / 1000)
       }, 
       this.JWT_SECRET, 
-      { expiresIn: '48h' }
+      { expiresIn: '24h' }
     );
 
     // 5. Formatear manifiesto
     return {
       timestamp: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
       licenseToken,
       device: {
         id: device.id,

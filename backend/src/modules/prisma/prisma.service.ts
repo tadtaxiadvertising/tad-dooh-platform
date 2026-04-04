@@ -35,6 +35,28 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       try {
         await this.$connect();
         this.logger.log(`✅ Conexión establecida con éxito en el intento ${attempts + 1}`);
+
+        // REGLA SRE: Inicializar Vistas Materializadas (Master Sync)
+        try {
+          this.logger.log('🏗️ Sincronizando Vistas Materializadas (Master Sync)...');
+          // Nota: El path es relativo a la raíz del backend una vez compilado (dist)
+          const fs = require('fs');
+          const path = require('path');
+          const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
+          if (fs.existsSync(viewsFile)) {
+            const sql = fs.readFileSync(viewsFile, 'utf8');
+             // Split queries by semicolon if needed, but for simple views executeRawUnsafe should work
+             await this.$executeRawUnsafe(sql).catch(e => {
+                if (!e.message.includes('already exists')) {
+                   this.logger.error(`Error SQL en vista: ${e.message}`);
+                }
+             });
+            this.logger.log('✅ mv_active_campaigns configurada.');
+          }
+        } catch (viewError) {
+          this.logger.error(`❌ Fallo al cargar script de vistas: ${viewError.message}`);
+        }
+
         return;
       } catch (e) {
         attempts++;
@@ -53,5 +75,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     this.logger.warn('🔌 Cerrando conexiones al Pooler (EasyPanel redeploy)...');
     await this.$disconnect();
+  }
+
+  /**
+   * Refresca la vista materializada para el "Master Sync".
+   * Se debe llamar cada vez que una campaña sea aprobada o modificada.
+   */
+  async refreshActiveCampaignsView() {
+    this.logger.log('🔄 Refrescando Materialized View (Master Sync)...');
+    try {
+      await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_active_campaigns;');
+      this.logger.log('✅ mv_active_campaigns actualizada con éxito.');
+    } catch (e) {
+      if (e.message.includes('not been populated')) {
+         // Fallback if not populated yet
+         await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW mv_active_campaigns;');
+      } else {
+         this.logger.error(`❌ Error al refrescar vista: ${e.message}`);
+      }
+    }
   }
 }

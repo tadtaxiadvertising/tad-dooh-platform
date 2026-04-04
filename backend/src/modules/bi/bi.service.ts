@@ -230,7 +230,8 @@ export class BiService {
   }
 
   /**
-   * RECONCILIATION - Audit loop
+   * RECONCILIATION - Audit loop (SRE Optimized)
+   * Process drivers in small chunks to prevent OOM on 512MB RAM.
    */
   async generateReconciliationReport(period: string) {
     const [year, month] = period.split('-').map(Number);
@@ -245,49 +246,84 @@ export class BiService {
       }
     });
 
-    const results = await Promise.all(drivers.map(async (driver) => {
-      const device       = driver.devices[0];
-      const subscription = driver.subscriptions[0];
+    this.logger.log(`🧬 Auditing ${drivers.length} drivers for period ${period}...`);
+    
+    const results = [];
+    // Sequential Batching: 5 drivers at a time to stay under RAM limits
+    for (let i = 0; i < drivers.length; i += 5) {
+      const chunk = drivers.slice(i, i + 5);
+      const chunkResults = await Promise.all(chunk.map(async (driver) => {
+        const device       = driver.devices[0];
+        const subscription = driver.subscriptions[0];
 
-      const deliveredImpressions = device ? await this.prisma.playbackEvent.count({
-        where: { deviceId: device.deviceId, eventType: 'play_confirm', timestamp: { gte: periodStart, lte: periodEnd } }
-      }) : 0;
+        // Optimized count query
+        const deliveredImpressions = device ? await this.prisma.playbackEvent.count({
+          where: { 
+            deviceId: device.deviceId, 
+            eventType: 'play_confirm', 
+            timestamp: { gte: periodStart, lte: periodEnd } 
+          }
+        }) : 0;
 
-      const revenueAgg = await this.prisma.financialTransaction.aggregate({
-        where: { type: 'INCOMING', status: 'COMPLETED', category: 'PUBLICIDAD', createdAt: { gte: periodStart, lte: periodEnd } },
-        _sum: { amount: true }
-      });
+        const revenueAgg = await this.prisma.financialTransaction.aggregate({
+          where: { 
+            type: 'INCOMING', 
+            status: 'COMPLETED', 
+            category: 'PUBLICIDAD', 
+            createdAt: { gte: periodStart, lte: periodEnd } 
+          },
+          _sum: { amount: true }
+        });
 
-      const payrollDue  = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
-      const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
-      const revenueReceived = revenueAgg._sum?.amount ?? 0;
-      const revenueContracted = 1500; // Simplified
+        const payrollDue  = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
+        const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
+        const revenueReceived = Number(revenueAgg._sum?.amount ?? 0);
+        const revenueContracted = 1500; 
 
-      let discrepancyType = 'OK';
-      let hasDiscrepancy  = false;
-      if (subscription?.status !== 'ACTIVE') {
-        discrepancyType = 'UNPAID_SUBSCRIPTION';
-        hasDiscrepancy = true;
-      }
-
-      return this.prisma.reconciliationReport.upsert({
-        where: { period_driverId: { period, driverId: driver.id } },
-        create: {
-          period, driverId: driver.id, deviceId: device?.id,
-          subscriptionStatus: subscription?.status || 'MISSING',
-          subscriptionDueDate: subscription?.dueDate,
-          subscriptionAmount: subscription?.amount || 0,
-          totalPlaybacks: deliveredImpressions,
-          activeCampaigns: 1, revenueContracted, revenueReceived,
-          payrollDue, payrollPaid, hasDiscrepancy, discrepancyType, discrepancyAmount: 0
-        },
-        update: {
-          subscriptionStatus: subscription?.status || 'MISSING',
-          totalPlaybacks: deliveredImpressions,
-          hasDiscrepancy, discrepancyType
+        let discrepancyType = 'OK';
+        let hasDiscrepancy  = false;
+        
+        if (subscription?.status !== 'ACTIVE') {
+          discrepancyType = 'UNPAID_SUBSCRIPTION';
+          hasDiscrepancy = true;
+        } else if (deliveredImpressions < 10) { // Example: low delivery alert
+           discrepancyType = 'LOW_DELIVERY';
+           hasDiscrepancy = true;
         }
-      });
-    }));
+
+        return this.prisma.reconciliationReport.upsert({
+          where: { period_driverId: { period, driverId: driver.id } },
+          create: {
+            period, 
+            driverId: driver.id, 
+            deviceId: device?.id,
+            subscriptionStatus: subscription?.status || 'MISSING',
+            subscriptionDueDate: subscription?.dueDate,
+            subscriptionAmount: subscription?.amount || 0,
+            totalPlaybacks: deliveredImpressions,
+            activeCampaigns: 1, 
+            revenueContracted, 
+            revenueReceived,
+            payrollDue: Number(payrollDue.toFixed(2)), 
+            payrollPaid: Number(payrollPaid.toFixed(2)), 
+            hasDiscrepancy, 
+            discrepancyType, 
+            discrepancyAmount: 0
+          },
+          update: {
+            subscriptionStatus: subscription?.status || 'MISSING',
+            totalPlaybacks: deliveredImpressions,
+            hasDiscrepancy, 
+            discrepancyType,
+            revenueReceived,
+            payrollDue: Number(payrollDue.toFixed(2)),
+            payrollPaid: Number(payrollPaid.toFixed(2))
+          }
+        });
+      }));
+      results.push(...chunkResults);
+      if (i % 25 === 0) this.logger.debug(`Reconciliation Progress: ${i}/${drivers.length}`);
+    }
 
     return { period, total: results.length };
   }

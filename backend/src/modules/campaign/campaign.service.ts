@@ -70,17 +70,42 @@ export class CampaignService {
       }
     }
 
+    if (campaign.status === 'ACTIVE') {
+      await this.prisma.refreshActiveCampaignsView();
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'campaign_updated',
+        campaignId: id
+      }).catch(() => {});
+    }
+
     return campaign;
   }
 
-  async createCampaign(dto: CreateCampaignDto) {
+  async createCampaign(dto: CreateCampaignDto, user?: any) {
+    const isAdmin = user?.role === 'ADMIN';
+
+    let assignedAdvertiser = dto.advertiser;
+    let assignedAdvertiserId = undefined;
+    let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
+
+    if (!isAdmin && user?.email) {
+      const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
+      if (advertiser) {
+        assignedAdvertiserId = advertiser.id;
+        assignedAdvertiser = advertiser.companyName;
+      }
+      initialStatus = 'PENDING_REVIEW';
+    }
+
     const campaign = await this.prisma.campaign.create({
       data: {
         name: dto.name,
-        advertiser: dto.advertiser,
+        advertiser: assignedAdvertiser,
+        advertiserId: assignedAdvertiserId,
         startDate: new Date(dto.start_date),
         endDate: new Date(dto.end_date),
-        active: dto.active ?? true,
+        active: initialStatus === 'ACTIVE',
+        status: initialStatus,
         targetImpressions: dto.target_impressions || 0,
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : false,
@@ -92,12 +117,19 @@ export class CampaignService {
         websiteUrl: dto.websiteUrl,
         pedidosYaUrl: dto.pedidosYaUrl,
         uberEatsUrl: dto.uberEatsUrl,
-        status: 'ACTIVE',
       } as any,
     });
 
     if (dto.target_devices && dto.target_devices.length > 0) {
       await this.assignCampaignToDevices(campaign.id, dto.target_devices);
+    }
+
+    if (campaign.status === 'ACTIVE') {
+      await this.prisma.refreshActiveCampaignsView();
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'campaign_created',
+        campaignId: campaign.id
+      }).catch(() => {});
     }
 
     return campaign;
@@ -179,6 +211,31 @@ export class CampaignService {
     return await this.prisma.deviceCampaign.create({
       data: { device_id: deviceId, campaign_id: campaignId }
     });
+  }
+
+  /**
+   * Registra metadatos de archivos subidos directamente a Supabase sin tocar la RAM.
+   */
+  async registerDirectMedia(dto: any, user?: any) {
+    if (user?.role !== 'ADMIN' && user?.email && dto.brandId) {
+      const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
+      if (!advertiser || advertiser.id !== dto.brandId) {
+        throw new BadRequestException('No tiene permisos para registrar contenido en esta marca');
+      }
+    }
+
+    const media = await this.prisma.media.create({
+      data: {
+        filename: dto.fileName,
+        originalFilename: dto.fileName,
+        url: dto.url,
+        fileSize: dto.fileSize ? Math.round(Number(dto.fileSize)) : 0,
+        storageKey: dto.storagePath,
+        status: 'READY'
+      }
+    });
+
+    return { success: true, media };
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {

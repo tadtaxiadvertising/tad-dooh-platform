@@ -86,7 +86,7 @@ export default function FleetPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'monitoring' | 'alerts' | 'inventory' | 'pending'>('monitoring');
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [filter, setFilter] = useState<'all' | 'online' | 'offline' | 'santiago'>('all');
   const [commanding, setCommanding] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   
@@ -331,16 +331,18 @@ export default function FleetPage() {
               </div>
 
               <div className="flex gap-2">
-                 {(['all', 'online', 'offline'] as const).map(f => (
+                 {(['all', 'santiago', 'online', 'offline'] as const).map(f => (
                    <button 
                      key={f}
                      onClick={() => setFilter(f)}
                      className={clsx(
-                       "px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                       filter === f ? "bg-white text-black" : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
+                       "px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                       filter === f 
+                        ? (f === 'santiago' ? "bg-tad-yellow text-black shadow-[0_0_20px_rgba(255,212,0,0.4)]" : "bg-white text-black") 
+                        : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
                      )}
                    >
-                     {f === 'all' ? 'Ver Todos' : f === 'online' ? 'Online' : 'Offline'}
+                     {f === 'all' ? 'Ver Todos' : f === 'santiago' ? 'Santiago STI' : f === 'online' ? 'Online' : 'Offline'}
                    </button>
                  ))}
                  <button 
@@ -365,6 +367,7 @@ export default function FleetPage() {
                      if (isLoadingFleet) return true;
                      const matchSearch = d.device_id.toLowerCase().includes(search.toLowerCase()) || (d.taxi_number || '').toLowerCase().includes(search.toLowerCase()) || (d.city || '').toLowerCase().includes(search.toLowerCase());
                      if (filter === 'all') return matchSearch;
+                     if (filter === 'santiago') return matchSearch && (d.device_id || '').startsWith('STI');
                      return matchSearch && (filter === 'online' ? d.is_online : !d.is_online);
                    }).map((device: any, i: number) => (
                      <DeviceGridCard 

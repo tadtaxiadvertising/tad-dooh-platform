@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { BiKpiCard } from '../../components/bi/BiKpiCard';
-import { BiHeatmap } from '../../components/bi/BiHeatmap';
+import dynamic from 'next/dynamic';
+
+const BiHeatmap = dynamic(() => import('../../components/bi/BiHeatmap').then(mod => mod.BiHeatmap), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
+});
 import { 
   DollarSign, 
   Car, 

@@ -72,26 +72,24 @@ export class SyncService {
     if (hasValidSubscription) {
       campaignFilter = {
         OR: [
-          // 1. Canal Global (Nacional)
-          { targetAll: true, targetCity: 'Global' },
+          // 1. Canal Global (nacional — llega a TODOS los dispositivos con suscripción activa)
+          // BUG FIX: antes requería targetCity:'Global', lo que exluía campañas con ciudad específica.
+          { targetAll: true },
           
-          // 2. Canal Geofencing (Ciudad)
-          { targetAll: true, targetCity: device.city || 'Santiago' }, // Compatibilidad v1
+          // 2. Canal Geofencing Ciudad (v1 y v2)
+          ...(device.city ? [{ targetCity: device.city }] : []),
           
-          // 3. Canal Selectivo (Cities Array - v2): only when city is known
+          // 3. Canal Selectivo (Cities Array - v2): JSON array contains city
           ...(device.city ? [{ 
             targetCities: { contains: `"${device.city}"` } 
           }] : []),
-
-          // 3b. Canal Ciudad Directa (v1 string match)
-          ...(device.city ? [{ targetCity: device.city }] : []),
 
           // 4. Canal de Flota (v2)
           ...(device.fleet ? [{
             targetFleets: { contains: `"${device.fleet}"` }
           }] : []),
 
-          // 5. Canal Directo (v2 UUID)
+          // 5. Canal Directo (v2 UUID - asignación explícita por DeviceCampaign)
           { devices: { some: { device_id: device.id } } },
 
           // 6. Canal Legacy (v1 Hardware ID)
@@ -103,8 +101,6 @@ export class SyncService {
           ] : []),
         ]
       };
-    } else {
-      this.logger.warn(`⚠️ [KILL_SWITCH] Device ${deviceId} no tiene suscripción activa. Enviando Fallback Playlist (Global only).`);
     }
 
     const activeCampaigns = await this.prisma.campaign.findMany({

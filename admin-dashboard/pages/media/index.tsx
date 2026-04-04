@@ -126,8 +126,14 @@ export default function MediaPage() {
     return basename;
   };
 
-  const getLinkedCampaigns = (mediaId: string) => {
-    return campaigns.filter(c => c.mediaAssets?.some((a) => a.checksum === mediaId || a.url?.includes(mediaId)));
+  const getLinkedCampaigns = (mediaId: string, mediaUrl: string) => {
+    return campaigns.filter(c =>
+      c.mediaAssets?.some((a: any) =>
+        a.id === mediaId ||
+        a.checksum === mediaId ||
+        (mediaUrl && a.url && a.url.includes(mediaUrl.split('?')[0].split('/').pop() || ''))
+      )
+    );
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,34 +189,50 @@ export default function MediaPage() {
       // FASE 2: Registro en la arquitectura de la campaña (Asset mapping)
       try {
         await addVideoToCampaign(selectedCampaign, {
-          type: 'video',
+          type: 'VIDEO',
           filename: title,
           url: uploadedData.url,
           fileSize: uploadedData.fileSize,
-          checksum: uploadedData.id,
+          checksum: uploadedData.hashMd5 || uploadedData.id,
           duration: Number(duration)
         });
-        setUploadProgress(85);
+        setUploadProgress(80);
+        toast.info('Asset vinculado. Desplegando a flota...', {
+          style: { background: '#111', color: '#FFD400', border: '1px solid #FFD400' }
+        });
       } catch (assetError: any) {
         console.warn('⚠️ ERROR_ASSET_LINKING:', assetError);
-        // No lanzamos error aquí porque el video YA ESTÁ en el servidor. 
-        // El usuario puede vincularlo manualmente después.
-        toast.warning('Video en la bóveda, pero enlace a campaña pendiente.', { duration: 6000 });
+        toast.warning('Video en la bóveda, enlace a campaña pendiente. Reintenta desde la página de campaña.', { duration: 6000 });
       }
 
-      // FASE 3: Delegada a nivel de campaña
-      // La asignación de pantallas ya no se hace por contenido, sino que hereda de la campaña.
-      setUploadProgress(95);
+      // FASE 3: Asignar campaña a todos los dispositivos activos de la flota (garantiza cobertura total)
+      try {
+        const fleetRes = await api.get('/fleet/summary');
+        const allDevices: { device_id?: string; deviceId?: string }[] = Array.isArray(fleetRes.data) ? fleetRes.data : [];
+        const allDeviceIds = allDevices
+          .map(d => d.device_id || d.deviceId)
+          .filter(Boolean) as string[];
+
+        if (allDeviceIds.length > 0) {
+          await assignCampaignToDevices(selectedCampaign, allDeviceIds);
+        }
+        setUploadProgress(95);
+      } catch (assignErr: any) {
+        // Non-fatal: devices may already be assigned or targetAll handles it
+        console.warn('⚠️ FASE_3_ASSIGN_WARN:', assignErr.message);
+      }
 
       setUploadProgress(100);
       
-      // ÉXITO TOTAL O PARCIAL CONTROLADO
+
+      // Éxito total
       setTimeout(() => {
         setShowUploadModal(false);
         resetUploadForm();
         loadData();
-        toast.success('¡Ingesta multimedia completada con éxito!', {
-           icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
+        toast.success('✅ ¡Contenido en flota! Las tablets recibirán el anuncio en el próximo ciclo de sync.', {
+          icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+          duration: 5000
         });
         notifyChange('MEDIA');
         notifyChange('CAMPAIGNS');

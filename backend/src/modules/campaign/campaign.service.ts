@@ -224,19 +224,38 @@ export class CampaignService {
         data: devicesToSync.map(d => ({
           deviceId: d.id,
           commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_asset_added' }),
+          commandParams: JSON.stringify({ reason: 'media_asset_added', campaignId, assetId: asset.id }),
           status: 'PENDING',
           expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
         }))
       });
-
-      // REGLA SRE 04: Realtime Sync
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'media_asset_added',
-        campaignId,
-        count: devicesToSync.length
-      }).catch(() => {});
+    } else {
+      // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
+      // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
+      const allActiveDevices = await this.prisma.device.findMany({
+        where: { status: 'ACTIVE' },
+        select: { id: true }
+      });
+      if (allActiveDevices.length > 0) {
+        await this.prisma.deviceCommand.createMany({
+          data: allActiveDevices.map(d => ({
+            deviceId: d.id,
+            commandType: 'FORCE_SYNC',
+            commandParams: JSON.stringify({ reason: 'global_media_asset_added', campaignId, assetId: asset.id }),
+            status: 'PENDING',
+            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+          }))
+        });
+      }
     }
+
+    // ALWAYS broadcast WAKE_UP_CALL — tablets listening via Realtime will sync immediately
+    this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+      reason: 'media_asset_added',
+      campaignId,
+      assetId: asset.id,
+      count: devicesToSync.length
+    }).catch(() => {});
 
     return asset;
   }

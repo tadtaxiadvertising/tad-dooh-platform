@@ -15,7 +15,7 @@ import {
   Layers,
   Play
 } from 'lucide-react';
-import { getPortalRequests, updatePortalRequest, addVideoToCampaign } from '../../services/api';
+import { getPortalRequests, updatePortalRequest } from '../../services/api';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -42,24 +42,13 @@ export default function RequestsPage() {
   const handleAction = async (id: string, status: 'APPROVED' | 'REJECTED') => {
     setProcessing(true);
     try {
-      const req = requests.find(r => r.id === id);
-      
-      // If approved and is content update, apply content to campaign
-      if (status === 'APPROVED' && req.type === 'CONTENT_UPDATE' && req.data) {
-        let mediaData;
-        try {
-          mediaData = typeof req.data === 'string' ? JSON.parse(req.data) : req.data;
-          await addVideoToCampaign(req.campaignId, mediaData);
-        } catch (e) {
-          console.error("Error parsing request data for content update:", e);
-        }
-      }
-
+      // NOTE: Content linking is now handled server-side in PortalRequestsService.update()
+      // The backend activates the campaign, links media, and dispatches FORCE_SYNC on approval.
       await updatePortalRequest(id, { status, adminNotes });
       loadRequests();
       setSelectedRequest(null);
       setAdminNotes('');
-      alert(`Petición ${status === 'APPROVED' ? 'Aprobada' : 'Rechazada'} correctamente.`);
+      alert(`Petición ${status === 'APPROVED' ? '✅ Aprobada — Contenido desplegado en flota' : '❌ Rechazada'} correctamente.`);
     } catch (err: any) {
       alert('Error: ' + (err.message || 'No se pudo procesar'));
     } finally {
@@ -183,7 +172,7 @@ export default function RequestsPage() {
                            <CheckCircle2 className="w-6 h-6" />
                         </button>
                         <button 
-                          onClick={() => { setSelectedRequest(req); }}
+                          onClick={() => handleAction(req.id, 'REJECTED')}
                           title="Rechazar Petición"
                           className="w-14 h-14 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-lg shadow-rose-500/5"
                         >

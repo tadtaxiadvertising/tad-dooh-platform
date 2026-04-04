@@ -78,10 +78,13 @@ export class SyncService {
           // 2. Canal Geofencing (Ciudad)
           { targetAll: true, targetCity: device.city || 'Santiago' }, // Compatibilidad v1
           
-          // 3. Canal Selectivo (Cities Array - v2)
+          // 3. Canal Selectivo (Cities Array - v2): only when city is known
           ...(device.city ? [{ 
             targetCities: { contains: `"${device.city}"` } 
           }] : []),
+
+          // 3b. Canal Ciudad Directa (v1 string match)
+          ...(device.city ? [{ targetCity: device.city }] : []),
 
           // 4. Canal de Flota (v2)
           ...(device.fleet ? [{

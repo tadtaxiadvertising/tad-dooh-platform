@@ -14,6 +14,7 @@ interface BiKpiCardProps {
     isPositive: boolean;
   };
   loading?: boolean;
+  isHighlight?: boolean;
 }
 
 export const BiKpiCard: React.FC<BiKpiCardProps> = ({
@@ -23,11 +24,13 @@ export const BiKpiCard: React.FC<BiKpiCardProps> = ({
   icon: Icon,
   status,
   trend,
-  loading
+  loading,
+  isHighlight
 }) => {
   return (
     <div className={clsx(
       "bg-zinc-950/50 border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden group transition-all duration-500 hover:border-tad-yellow/30",
+      isHighlight && "bg-zinc-900/40 border-tad-yellow/10 ring-1 ring-tad-yellow/5",
       loading && "animate-pulse"
     )}>
       {/* Background Glow */}

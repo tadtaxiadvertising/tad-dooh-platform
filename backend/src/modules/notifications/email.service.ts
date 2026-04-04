@@ -149,6 +149,30 @@ export class EmailService {
     });
   }
 
+  /**
+   * Envía Alerta de Morosidad (Regla 402) a un conductor.
+   */
+  async sendDelinquencyAlert(
+    to: string,
+    driverName: string,
+    deviceId: string,
+    pdfBuffer: Buffer,
+  ): Promise<{ success: boolean }> {
+    const html = this.buildDelinquencyHtml(driverName, deviceId);
+    return this.sendEmail({
+      to,
+      subject: `⚠️ AVISO DE MOROSIDAD: Susupensión de Servicio — Dispositivo ${deviceId} | TAD`,
+      html,
+      attachments: [
+        {
+          filename: `Factura_SOS_${deviceId}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+    });
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // EMAIL TEMPLATES
   // ─────────────────────────────────────────────────────────────────────
@@ -364,6 +388,53 @@ export class EmailService {
               <p style="color:#555;font-size:12px;line-height:1.6;margin:0;">
                 Recuerda mantener tu tablet encendida y conectada para maximizar tus ingresos diarios.<br>
                 El PDF adjunto contiene el detalle completo de tu liquidación.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#0d0d0d;padding:20px 40px;border-top:1px solid #1a1a1a;">
+              <p style="color:#333;font-size:11px;margin:0;">© ${new Date().getFullYear()} TAD Advertising SRL · Santo Domingo, RD</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  private buildDelinquencyHtml(driverName: string, deviceId: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Aviso de Morosidad TAD</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#111;border-radius:20px;overflow:hidden;border:1px solid #331111;">
+          <tr>
+            <td style="background:#111;padding:40px;border-bottom:2px solid #ef4444;">
+              <h1 style="margin:0;color:#ef4444;font-size:24px;font-weight:900;">⚠️ AVISO DE MOROSIDAD</h1>
+              <p style="margin:4px 0 0;color:#555;font-size:11px;letter-spacing:3px;text-transform:uppercase;">Protocolo de Suspensión Regla 402</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 24px;">
+                Hola <strong style="color:#fff;">${driverName}</strong>,<br><br>
+                Le informamos que su dispositivo con ID <strong style="color:#FFD400;">${deviceId}</strong> presenta un retraso en el pago de su suscripción de mantenimiento y seguro (RD$ 6,000).
+              </p>
+              <div style="background:#201010;border-radius:14px;padding:24px;text-align:center;margin-bottom:24px;border:1px solid #ef444433;">
+                <p style="color:#ef4444;font-size:18px;font-weight:900;margin:0;text-transform:uppercase;">Servicio Suspendido</p>
+                <p style="color:#888;font-size:11px;margin:8px 0 0;">Favor regularizar su balance para reactivar la transmisión publicitaria.</p>
+              </div>
+              <p style="color:#aaa;font-size:14px;line-height:1.6;margin:0 0 24px;">
+                Adjunta encontrará su factura SOS pendiente. Puede realizar el pago vía transferencia bancaria y reportarlo mediante la PWA de Choferes.
               </p>
             </td>
           </tr>

@@ -51,4 +51,23 @@ export class SupabaseService {
   getClient() {
     return this.supabase;
   }
+
+  /**
+   * REGLA SRE 04: Realtime Sync — Emite un comando por un canal de Supabase.
+   * Usado para WAKE_UP_CALL y comandos instantáneos a la flota.
+   */
+  async broadcastEvent(channelName: string, eventName: string, payload: any) {
+    this.logger.log(`[REALTIME] Broadcasting ${eventName} to channel: ${channelName}`);
+    
+    const channel = this.supabase.channel(channelName);
+    
+    return channel.send({
+      type: 'broadcast',
+      event: eventName,
+      payload: {
+        ...payload,
+        timestamp: new Date().toISOString()
+      },
+    });
+  }
 }

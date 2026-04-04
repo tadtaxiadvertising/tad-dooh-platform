@@ -2,8 +2,8 @@
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-03-20T21:30:00-04:00
-> **Estado Operativo Actual**: Master Console v4.5 Completada (Spotlight Táctico + Motion Trails). Layout Responsive (Móvil/Tablet) Operativo. Corregida estabilidad de Carga de Medios.
+> **Última Actualización**: 2026-04-03T23:50:00-04:00
+> **Estado Operativo Actual**: Master Console v6.6.2 (Consolidada). Dashboard UI Premium v15.2.6. Infraestructura Optimizada. Redundancia de Sincronización Reforzada.
 
 ---
 
@@ -28,8 +28,8 @@
 
 | Componente | Tecnología | URL Producción | Estado |
 | --- | --- | --- | --- |
-| **Dashboard Admin** | Next.js 15 / React 19 / Tailwind 4 | <https://tad-dashboard.vercel.app> | ✅ Operativo |
-| **API Backend** | NestJS 10 / Prisma 5 / Express | <https://tad-api.vercel.app> | ✅ Operativo |
+| **Dashboard Admin** | Next.js 15.2.6 / React 19 / Tailwind 4 | <https://tad-dashboard.vercel.app> | ✅ Operativo |
+| **API Backend** | NestJS 10 / Prisma 5.22 / Express | <https://tad-api.vercel.app> | ✅ Operativo |
 | **Tablet Player** | PWA (HTML + Service Worker + Cache API) | Carga local vía FullyKiosk | ✅ Funcional |
 | **Base de Datos** | Supabase PostgreSQL (us-west-2) | Pool: puerto 6543 / Direct: 5432 | ✅ Conectada |
 | **Storage** | Supabase Storage (bucket: `campaign-videos`) | Via Browser-Direct Upload | ✅ Operativo |

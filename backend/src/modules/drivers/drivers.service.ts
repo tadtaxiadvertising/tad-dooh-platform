@@ -349,6 +349,19 @@ export class DriversService {
       });
     }
 
+    // 1.5. GPS Points & Bonus Eligibility
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    
+    const gpsPoints = await this.prisma.driverLocation.count({
+      where: {
+        driverId: driver.id,
+        timestamp: { gte: monthStart, lte: monthEnd }
+      }
+    });
+    const qualifiesForGpsBonus = gpsPoints >= 100;
+    const gpsBonus = qualifiesForGpsBonus ? 500 : 0;
+
     // 2. Ganancias proyectadas basadas en pautas activas (RD$500 c/u)
     const activeAdsCount = await this.prisma.campaign.count({
       where: { status: 'ACTIVE' }
@@ -387,6 +400,9 @@ export class DriversService {
       referralsCount,
       advertiserReferralEarnings: (driver.referredAdvertisers?.length || 0) * 500,
       advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
+      gpsPoints,
+      gpsBonus,
+      qualifiesForGpsBonus,
       activeAds: activeAdsCount,
       totalPaid: (totalPaidSum as any)._sum.amount || 0,
       lastPayment: lastPayment ? {

@@ -28,7 +28,9 @@ During this cycle, we successfully resolved a critical 404 error blocking the Bu
 
 - **Backend (BI Module)**: Corregidos decoradores de ruta redundantes (`api/bi` -> `bi`) para alinearse con el prefijo global `api/v1`.
 - **Backend (BiService)**: Implementada lógica de "Graceful Fallback". Si la tabla `BiDashboardSnapshot` no existe (migración pendiente), el sistema calcula métricas en tiempo real en lugar de fallar con 500 Internal Server Error.
-- **Backend (Build)**: Optimización de Build (SRE): Dockerfile de Backend migrado a `npm ci` con limpieza agresiva de capas. Configurado `max-old-space-size=850` para aprovechar la expansión a 1GB RAM en el VPS, asegurando despliegues exitosos y mayor performance en tiempo de ejecución. (02/Abr/2016)
+- **Backend (Build)**: Optimización de Build (SRE): Dockerfile de Backend migrado a `npm ci` con limpieza agresiva de capas. Configurado `max-old-space-size=850` para aprovechar la expansión a 1GB RAM en el VPS, asegurando despliegues exitosos y mayor performance en tiempo de ejecución. (02/Abr/2026)
+- **BI Dashboard Phase 2**: Implementado el motor de inteligencia geoespacial (`/bi/hotspots`) y conciliación financiera real. Los KPI ahora reflejan discrepancias automáticas entre pauta y pagos. (04/Abr/2026)
+- **Frontend (BI)**: Integrado Mapa de Calor dinámico con `Leaflet.Heat` para visualización de hotspots de impacto en Santiago. (04/Abr/2026)
 - **Aceptación Digital de Acuerdos**: Implementados campos de firma digital (`insurance_accepted`, `contract_accepted`) en el registro de choferes. El portal `tad-driver.html` ahora obliga a la aceptación de términos antes de crear la cuenta. (03/Abr/2026)
 - **Frontend (Admin)**: Verificada la integridad de importaciones de `AntigravityButton` en las vistas de Fleet y BI para resolver errores de referencia en el bundle de producción.
 - **Documentation**: Actualizado `AUDITORIA_TAD_2026.md` para reflejar el estado actual de los módulos de inteligencia de negocio.

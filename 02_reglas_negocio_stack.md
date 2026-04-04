@@ -180,9 +180,9 @@ git add . && git commit -m "msg" && git push origin main
    - Envío forzado cada **60 segundos** (si hay menos de 10 puntos).
 3. **Bloqueo RD$6,000**: Si la suscripción anual del dispositivo no está `ACTIVE`/Pagada, el endpoint `/fleet/track-batch` devuelve **402 Payment Required**.
 4. **Validación de Identidad**: El chofer debe estar autenticado en la PWA. No se permiten reportes de GPS para un `deviceId` que no tenga asignado en la base de datos.
-5. **Cálculo de Comisión**: El pago de RD$500/mes para el chofer se desbloquea tras alcanzar 75% de "Attendance" (días con tracking activo durante horario laboral).
+5. **Cálculo de Comisión**: El Bono de Disponibilidad de **RD$500/mes** se desbloquea automáticamente al registrar al menos **100 puntos GPS** válidos durante el mes calendario.
 6. **Restricción de Formato (Codecs)**: En el módulo de Multimedia (`/media`), se bloquea cualquier carga que no sea `video/mp4`. Esto garantiza compatibilidad nativa con el motor de renderizado de las tablets STI.
 7. **Broadcast de Sincronización**: La consola de administración (`/fleet`) tiene la capacidad de emitir un `WAKE_UP_CALL` vía el canal `fleet_sync` de Supabase Realtime para forzar una actualización inmediata de contenido en toda la flota activa.
 8. **Comisiones por Referidos (Advertiser Referral)**: Los conductores (TAD DRIVERS) que refieran marcas o anunciantes a la plataforma reciben una comisión de **RD$ 500.00** mensuales, calculada y liquidada automáticamente por el módulo de Inteligencia Financiera.
 9. **Transmisión Dinámica (Selective Targeting)**: Las campañas pueden ser asignadas globalmente, por ciudad o a dispositivos/conductores específicos. El motor de sincronización (`SyncModule`) orquesta los manifiestos JSON individuales para cada tablet basándose en estas reglas de segmentación.
-10. **Auditoría de Cumplimiento**: La plataforma genera un reporte de auditoría en tiempo real para cada conductor, desglosando la Comisión Fija (RD$500), Bono por Transmisión (RD$500/ad), Referidos de Socios (RD$500/driver) y Referidos de Anunciantes (RD$500/brand).
+10. **Auditoría de Cumplimiento**: La plataforma genera un reporte de auditoría en tiempo real para cada conductor, desglosando el Bono de Disponibilidad (RD$500), Bono por Transmisión (RD$500/ad), Referidos de Socios (RD$500/driver) y Referidos de Anunciantes (RD$500/brand).

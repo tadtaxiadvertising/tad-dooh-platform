@@ -9,6 +9,15 @@ export interface BiKpiResponse {
   totalImpressionsMtd: number;
   deliveryRateAvg: number;
   syncHealthRate: number;
+  discrepancyCount: number;
+  recentDiscrepancies: any[];
+  
+  // INVESTOR METRICS (v7.5)
+  yieldPerScreen?: number;
+  arpu?: number;
+  churnRate?: number;
+  projectedRevenue?: number;
+
   lastUpdate: Date;
 }
 

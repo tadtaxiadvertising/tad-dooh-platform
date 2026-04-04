@@ -34,7 +34,17 @@ import { ConfirmPromptModal } from '../../components/ui/ConfirmPromptModal';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns' | 'ledger'>('payroll');
-  const [payroll, setPayroll] = useState<{ driverId: string; driverName: string; taxiNumber?: string; activeAds: number; totalAmount: number; driverEmail?: string; driverPhone?: string }[]>([]);
+  const [payroll, setPayroll] = useState<{ 
+    driverId: string; 
+    driverName: string; 
+    taxiNumber?: string; 
+    activeAds: number; 
+    gpsPoints: number; 
+    gpsBonus: number; 
+    totalAmount: number; 
+    driverEmail?: string; 
+    driverPhone?: string 
+  }[]>([]);
   const [campaignData, setCampaignData] = useState<{ campaignId: string; campaignName: string; assignedTaxis: number; status: string; estimatedRevenue: number; totalImpressions?: number }[]>([]);
   const [ledger, setLedger] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -251,6 +261,7 @@ export default function FinancePage() {
                     <tr className="bg-gray-900/40 border-b border-gray-700/50">
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">TAD DRIVER</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Impactos Verificados</th>
+                      <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Actividad GPS</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-right">Liquidación</th>
                       <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest leading-none text-center">Acciones</th>
                     </tr>
@@ -298,6 +309,14 @@ export default function FinancePage() {
                           <div className="inline-flex flex-col items-center px-6 py-2 bg-gray-900/50 rounded-xl border border-gray-700/50">
                              <span className="text-2xl font-bold text-white tracking-tight leading-none mb-1 group-hover:text-tad-yellow transition-colors">{item.activeAds}</span>
                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Impactos</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                          <div className="inline-flex flex-col items-center px-6 py-2 bg-gray-900/50 rounded-xl border border-gray-700/50">
+                             <span className={clsx("text-2xl font-bold tracking-tight leading-none mb-1", item.gpsBonus > 0 ? "text-emerald-500" : "text-amber-500")}>
+                               {item.gpsPoints}
+                             </span>
+                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Puntos GPS</span>
                           </div>
                         </td>
                         <td className="px-8 py-6 text-right">

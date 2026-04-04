@@ -45,6 +45,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
           NODE_ENV: zod.string().default('production'),
           CORS_ORIGIN: zod.string().default('*'),
           UMAMI_API_TOKEN: zod.string().optional(),
+          CDN_URL_PREFIX: zod.string().url().optional(),
         });
 
         const result = schema.safeParse(config);

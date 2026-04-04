@@ -37,4 +37,9 @@ export class BiController {
     // For now, we reuse the generator logic or simplified queries
     return this.biService.generateReconciliationReport(period);
   }
+
+  @Get('hotspots')
+  async getHotspots() {
+    return this.biService.getHotspots();
+  }
 }

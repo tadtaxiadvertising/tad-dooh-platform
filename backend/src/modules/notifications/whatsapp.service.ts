@@ -54,4 +54,12 @@ export class WhatsAppService {
     const message = `✅ *PAGO PROCESADO - TAD*\n\nHola *${driverName}*,\n\nSe ha procesado tu liquidación publicitaria de *${month}* por un monto de *RD$ ${amount.toLocaleString()}*.\n\nRecuerda mantener tu tablet encendida para maximizar tus ingresos diaria. 🚗💰\n\n_Equipo TAD Dominicana._`;
     return this.sendMessage(to, message);
   }
+
+  /**
+   * Envía Alerta de Morosidad (Regla 402)
+   */
+  async sendDelinquencyAlert(to: string, driverName: string, deviceId: string) {
+    const message = `⚠️ *AVISO DE MOROSIDAD - TAD*\n\nHola *${driverName}*,\n\nDetectamos un retraso en el pago de suscripción para tu dispositivo *${deviceId}*.\n\nEl servicio de reproducción publicitaria ha sido suspendido temporalmente. Para reactivarlo, favor realizar el pago de *RD$ 6,000* vía transferencia.\n\n_Tu éxito es nuestro motor. Equipo TAD Dominicana._`;
+    return this.sendMessage(to, message);
+  }
 }

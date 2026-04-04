@@ -47,12 +47,13 @@ export class MediaService {
 
     // 2. Registrar en la BD para que aparezca en el Dashboard
     try {
+      const cdnPrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
       const media = await this.prisma.media.create({
         data: {
           filename: file.originalname,
           originalFilename: file.originalname,
           url: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
-          cdnUrl: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
+          cdnUrl: `${cdnPrefix}/storage/v1/object/public/campaign-videos/${data.path}`,
           storageKey: data.path,
           campaign_id: campaignId,
           mimeType: file.mimetype,
@@ -88,7 +89,8 @@ export class MediaService {
 
     if (error) throw new BadRequestException(`Storage Error: ${error.message}`);
 
-    const publicUrl = `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/ads-videos/${data.path}`;
+    const basePrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
+    const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${data.path}`;
     
     return {
       uploadUrl: data.signedUrl,
@@ -99,12 +101,20 @@ export class MediaService {
 
   async registerBypassedMedia(data: any) {
     try {
+      const cdnPrefix = this.config.get('CDN_URL_PREFIX');
+      let finalCdnUrl = data.publicUrl;
+
+      // Si tenemos un CDN_PREFIX, reemplazamos la base de Supabase por el CDN
+      if (cdnPrefix && data.publicUrl.includes(this.config.get('SUPABASE_URL'))) {
+        finalCdnUrl = data.publicUrl.replace(this.config.get('SUPABASE_URL'), cdnPrefix);
+      }
+
       const media = await this.prisma.media.create({
         data: {
           filename: data.filename,
           originalFilename: data.filename,
           url: data.publicUrl,
-          cdnUrl: data.publicUrl,
+          cdnUrl: finalCdnUrl,
           storageKey: data.storageKey,
           campaign_id: data.campaignId !== 'general' ? data.campaignId : null,
           mimeType: data.contentType,
@@ -112,7 +122,7 @@ export class MediaService {
           status: 'READY',
           // @ts-ignore
           qrUrl: data.qrUrl,
-          hashMd5: 'bypassed',
+          hashMd5: data.hashMd5 || 'bypassed',
         }
       });
       return {

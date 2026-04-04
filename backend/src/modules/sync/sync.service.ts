@@ -72,13 +72,29 @@ export class SyncService {
     if (hasValidSubscription) {
       campaignFilter = {
         OR: [
-          { targetAll: true },
-          { isGlobal: true },
-          // Canal Directo (v2 UUID) - ALWAYS CHECKED
+          // 1. Canal Global (Nacional)
+          { targetAll: true, targetCity: 'Global' },
+          
+          // 2. Canal Geofencing (Ciudad)
+          { targetAll: true, targetCity: device.city || 'Santiago' }, // Compatibilidad v1
+          
+          // 3. Canal Selectivo (Cities Array - v2)
+          ...(device.city ? [{ 
+            targetCities: { contains: `"${device.city}"` } 
+          }] : []),
+
+          // 4. Canal de Flota (v2)
+          ...(device.fleet ? [{
+            targetFleets: { contains: `"${device.fleet}"` }
+          }] : []),
+
+          // 5. Canal Directo (v2 UUID)
           { devices: { some: { device_id: device.id } } },
-          // Canal Legacy (v1 Hardware ID) - ALWAYS CHECKED
+
+          // 6. Canal Legacy (v1 Hardware ID)
           { targets: { some: { deviceId } } },
-          // Canal Segmentado (v2 Segmentación por Conductor)
+
+          // 7. Canal Segmentado (v2 Segmentación por Conductor)
           ...(isDriverActive ? [
             { targetDrivers: { some: { id: driver.id } } }
           ] : []),
@@ -122,8 +138,9 @@ export class SyncService {
           id: m.id,
           campaignId: c.id,
           filename: m.filename || m.name || m.title || 'video.mp4',
-          url: m.url || m.cdnUrl || '',
+          url: m.cdnUrl || m.url || '',
           checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
+          hashMd5: m.hashMd5 || m.hash || m.checksum || null,
           duration: m.duration || m.durationSeconds || 30,
           version: new Date(c.updatedAt || new Date()).getTime() 
         });

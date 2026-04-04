@@ -2,11 +2,15 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class CampaignService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
@@ -151,6 +155,13 @@ export class CampaignService {
       }));
       await tx.deviceCommand.createMany({ data: commands });
 
+      // BROADCAST REALTIME: Send WAKE_UP_CALL to fleet_sync channel
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'campaign_assigned',
+        campaignId,
+        targets: availableDevices.map(d => d.deviceId)
+      }).catch(e => console.warn('Realtime broadcast failed:', e.message));
+
       return { count: availableDevices.length, skipped: skippedCount };
     });
   }
@@ -218,6 +229,13 @@ export class CampaignService {
           expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
         }))
       });
+
+      // REGLA SRE 04: Realtime Sync
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'media_asset_added',
+        campaignId,
+        count: devicesToSync.length
+      }).catch(() => {});
     }
 
     return asset;
@@ -316,7 +334,9 @@ export class CampaignService {
         id: ma.id || ma.checksum || `asset-${Math.random().toString(36).substr(2, 9)}`,
         campaignId: campaign.id,
         filename: ma.filename || ma.name || ma.title || 'video.mp4',
-        url: ma.url || ma.cdnUrl || '',
+        url: ma.cdnUrl || ma.url || '',
+        checksum: ma.hashMd5 || ma.hash || ma.checksum || 'no-checksum',
+        hashMd5: ma.hashMd5 || ma.hash || ma.checksum || null,
         duration: Number(ma.duration || 30),
         qrUrl: campaign.targetUrl || ma.qrUrl || null,
         advertiserId: campaign.advertiserRef?.id || campaign.advertiserId || null,

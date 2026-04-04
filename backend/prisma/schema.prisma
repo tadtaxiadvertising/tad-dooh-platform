@@ -250,6 +250,7 @@ model Video {
   createdAt  DateTime @default(now()) @map("created_at")
   uploadedAt DateTime @default(now()) @map("uploaded_at")
   qrUrl      String?  @map("qr_url")
+  hashMd5    String?  @map("hash_md5")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@map("videos")
@@ -507,6 +508,13 @@ model BiDashboardSnapshot {
   totalImpressionsMtd Int      @map("total_impressions_mtd")
   deliveryRateAvg     Float    @map("delivery_rate_avg")
   syncHealthRate      Float    @map("sync_health_rate")
+  
+  // METRICAS PARA INVERSIONISTAS (v7.5)
+  yieldPerScreen      Float    @default(0) @map("yield_per_screen")
+  arpu                Float    @default(0) @map("arpu")
+  churnRate           Float    @default(0) @map("churn_rate")
+  projectedRevenue    Float    @default(0) @map("projected_revenue")
+
   generatedAt         DateTime @default(now()) @map("generated_at")
 
   @@map("bi_dashboard_snapshots")

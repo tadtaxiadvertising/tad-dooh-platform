@@ -19,7 +19,7 @@ interface AntigravityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   confirmMessage?: string;
   onSuccess?: () => void;
   onError?: (err: any) => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glow';
 }
 
 export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
@@ -95,6 +95,7 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
     secondary: 'bg-zinc-900 text-white hover:bg-zinc-800 border-white/10 hover:border-white/30 backdrop-blur-md',
     danger:    'bg-gradient-to-r from-rose-600 to-rose-700 text-white hover:from-rose-500 hover:to-rose-600 border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.2)]',
     ghost:     'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 border-transparent hover:border-white/10',
+    glow:      'bg-gradient-to-br from-tad-yellow via-amber-400 to-amber-500 text-black border-white/20 shadow-[0_0_30px_rgba(250,212,0,0.4)] hover:shadow-[0_0_50px_rgba(250,212,0,0.6)] hover:brightness-110 active:scale-95',
   };
 
   return (

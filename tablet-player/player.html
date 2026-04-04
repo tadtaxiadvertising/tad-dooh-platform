@@ -49,193 +49,26 @@
         </div>
     </div>
 
-    <script>
-        // ============================================
-        // TAD MINIMAL PLAYER — Zero Dependencies
-        // ============================================
-        (function() {
-            // Priority: URL Param > localStorage > Production URL
-            var urlParams = new URL(window.location.href).searchParams;
-            var SERVER = urlParams.get('apiUrl') || localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
-            var SYNC_INTERVAL = 30000; // 30 seconds
-            var deviceId = '';
-            var playlist = [];
-            var currentIndex = 0;
-            var video = document.getElementById('video-player');
-            var waitingScreen = document.getElementById('waiting-screen');
-            var nodeIdEl = document.getElementById('node-id');
-
-            // 1. Get Device ID from URL or generate one
-            function getDeviceId() {
-                var params = new URLSearchParams(window.location.search);
-                var id = params.get('deviceId') || params.get('node') || params.get('id');
-                if (id) {
-                    localStorage.setItem('tad_device_id', id);
-                    return id;
-                }
-                var saved = localStorage.getItem('tad_device_id');
-                if (saved) return saved;
-                var newId = 'TAD-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-                localStorage.setItem('tad_device_id', newId);
-                return newId;
-            }
-
-            // 2. Register device with backend
-            function register() {
-                fetch(SERVER + '/api/device/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: deviceId, app_version: 'v3.0-minimal' })
-                }).then(function() {
-                    console.log('[TAD] Registered:', deviceId);
-                    updateStatus('REGISTRADO');
-                }).catch(function(e) {
-                    console.warn('[TAD] Register failed:', e.message);
-                    updateStatus('MODO LOCAL');
-                });
-            }
-
-            // 3. Sync with backend to get playlist
-            function sync() {
-                updateStatus('SINCRONIZANDO...');
-                fetch(SERVER + '/api/device/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        deviceId: deviceId,
-                        lastHash: localStorage.getItem('tad_sync_hash') || '',
-                        batteryLevel: 100
-                    })
-                }).then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (data.blocked) {
-                        updateStatus('BLOQUEADO: ' + (data.reason || ''));
-                        return;
-                    }
-                    if (data.media_assets && data.media_assets.length > 0) {
-                        playlist = data.media_assets;
-                        localStorage.setItem('tad_sync_hash', data.sync_hash || '');
-                        console.log('[TAD] Playlist:', playlist.length, 'videos');
-                        updateStatus('CONTENIDO RECIBIDO: ' + playlist.length + ' VIDEOS');
-                        startPlayback();
-                    } else if (data.update === false) {
-                        console.log('[TAD] No changes');
-                        updateStatus('SIN CAMBIOS - ESPERANDO CONTENIDO');
-                        if (playlist.length > 0) startPlayback();
-                    } else {
-                        console.log('[TAD] No content assigned');
-                        updateStatus('SIN CONTENIDO ASIGNADO');
-                        showWaiting();
-                    }
-                }).catch(function(e) {
-                    console.error('[TAD] Sync error:', e.message);
-                    updateStatus('ERROR DE SYNC - REINTENTANDO');
-                });
-            }
-
-            // 4. Start video playback
-            function startPlayback() {
-                if (playlist.length === 0) {
-                    showWaiting();
-                    return;
-                }
-                waitingScreen.classList.add('hidden');
-                playNext();
-            }
-
-            function playNext() {
-                if (playlist.length === 0) return;
-                var media = playlist[currentIndex];
-                var url = media.url || media.src;
-                console.log('[TAD] Playing:', url);
-                video.src = url;
-                video.load();
-                video.play().catch(function(e) {
-                    console.error('[TAD] Play error:', e.message);
-                    // Skip to next after 3 seconds
-                    setTimeout(function() {
-                        currentIndex = (currentIndex + 1) % playlist.length;
-                        playNext();
-                    }, 3000);
-                });
-            }
-
-            // Video ended -> play next
-            video.addEventListener('ended', function() {
-                console.log('[TAD] Video ended, next...');
-                currentIndex = (currentIndex + 1) % playlist.length;
-                playNext();
-            });
-
-            video.addEventListener('error', function() {
-                console.error('[TAD] Video error, skipping...');
-                setTimeout(function() {
-                    currentIndex = (currentIndex + 1) % playlist.length;
-                    playNext();
-                }, 3000);
-            });
-
-            // 5. Show waiting screen
-            function showWaiting() {
-                waitingScreen.classList.remove('hidden');
-            }
-
-            // 6. Update status text
-            function updateStatus(text) {
-                var el = document.querySelector('.status');
-                if (el) el.innerHTML = '<span class="dot"></span> ' + text;
-            }
-
-            // 7. Heartbeat
-            function heartbeat() {
-                fetch(SERVER + '/api/device/heartbeat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        device_id: deviceId,
-                        player_status: playlist.length > 0 ? 'playing' : 'idle',
-                        battery_level: 100,
-                        storage_free: 'N/A'
-                    })
-                }).catch(function() {});
-            }
-
-            // ============================================
-            // INIT
-            // ============================================
-            deviceId = getDeviceId();
-            nodeIdEl.textContent = deviceId;
-            console.log('[TAD] Player v3.0 Minimal — Device:', deviceId);
-            console.log('[TAD] Server:', SERVER);
-
-            register();
-            setTimeout(sync, 1000);
-
-            // Periodic sync
-            setInterval(sync, SYNC_INTERVAL);
-            // Periodic heartbeat
-            setInterval(heartbeat, 60000);
-        })();
-    </script>
 <script>
 // ============================================
-// TAD SYNC V5 — OFFLINE SYNC MANAGER
+// TAD SYNC V7 — OFFLINE SYNC MANAGER (SRE)
 // ============================================
-const CACHE_NAME = 'tad-media-v5';
+const CACHE_NAME = 'tad-terminal-cache-v5.5'; // Debería coincidir con sw.js
 
 class OfflineSyncManager {
+  static async computeHash(blob) {
+    const buffer = await blob.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   static async synchronize(deviceId) {
     try {
-      console.log(`[TAD Sync] Iniciando sincronización para dispositivo: ${deviceId}`);
-      
-      const SERVER_URL = localStorage.getItem('tad_server_url') || 'https://api.tad.com.do';
+      const SERVER_URL = localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
       const response = await fetch(`${SERVER_URL}/api/sync/${deviceId}`);
       
-      if (!response.ok) {
-        if (response.status === 402) console.error('[TAD Sync] ⛔ Suscripción no pagada (Error 402).');
-        if (response.status === 403) console.error('[TAD Sync] ⛔ Dispositivo Inactivo (Error 403).');
-        return false;
-      }
+      if (!response.ok) return false;
       
       const manifest = await response.json();
       const serverPlaylist = manifest.playlist;
@@ -249,19 +82,28 @@ class OfflineSyncManager {
 
       for (const item of serverPlaylist) {
         if (!cachedUrls.includes(item.url)) {
-          console.log(`[TAD Sync] ⬇️ Descargando nuevo medio: ${item.campaignId}`);
+          console.log(`[TAD SRE] ⬇️ Syncing asset: ${item.filename}`);
           try {
-            await cache.add(item.url);
+            const resp = await fetch(item.url);
+            if (!resp.ok) continue;
+            
+            const blob = await resp.blob();
+            // TODO: Integrar computeHash con item.checksum de v7.0
+            
+            await cache.put(item.url, new Response(blob, {
+               headers: { 
+                 'Content-Type': blob.type,
+                 'Content-Length': blob.size,
+                 'X-TAD-Sync-Date': new Date().toISOString()
+               }
+            }));
             hasChanges = true;
-          } catch (err) {
-            console.error(`[TAD Sync] Error descargando ${item.url}:`, err);
-          }
+          } catch (err) { console.warn(`[TAD SRE] Download failed: ${item.url}`); }
         }
       }
 
       for (const cachedReq of cachedRequests) {
         if (!serverUrls.includes(cachedReq.url)) {
-          console.log(`[TAD Sync] 🗑️ Eliminando medio obsoleto: ${cachedReq.url}`);
           await cache.delete(cachedReq);
           hasChanges = true;
         }
@@ -269,18 +111,108 @@ class OfflineSyncManager {
 
       localStorage.setItem('tad_active_playlist', JSON.stringify(serverPlaylist));
       localStorage.setItem('tad_last_sync', new Date().toISOString());
-
-      console.log(`[TAD Sync] ✅ Sincronización completada. Total videos activos: ${serverPlaylist.length}`);
+      localStorage.setItem('tad_sync_hash', manifest.sync_hash || '');
       return hasChanges;
-
-    } catch (error) {
-      console.error('[TAD Sync] ❌ Fallo crítico en sincronización:', error);
-      return false;
-    }
+    } catch (error) { return false; }
   }
 }
-
 window.OfflineSyncManager = OfflineSyncManager;
+
+// ============================================
+// TAD MINIMAL PLAYER — Main Loop
+// ============================================
+(function() {
+    var urlParams = new URL(window.location.href).searchParams;
+    var SERVER = urlParams.get('apiUrl') || localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+    var SYNC_INTERVAL = 60000;
+    var FALLBACK_TIMEOUT = 14400000; // 4 hours
+    var deviceId = '';
+    var playlist = [];
+    var currentIndex = 0;
+    var video = document.getElementById('video-player');
+    var waitingScreen = document.getElementById('waiting-screen');
+    var nodeIdEl = document.getElementById('node-id');
+
+    const FALLBACK_PLAYLIST = [
+      {
+        id: 'fallback-01',
+        filename: 'branding-tad-v1.mp4',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        isFallback: true
+      }
+    ];
+
+    function getDeviceId() {
+        var params = new URLSearchParams(window.location.search);
+        var id = params.get('deviceId') || params.get('node') || params.get('id');
+        if (id) { localStorage.setItem('tad_device_id', id); return id; }
+        var saved = localStorage.getItem('tad_device_id');
+        if (saved) return saved;
+        var newId = 'TAD-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        localStorage.setItem('tad_device_id', newId);
+        return newId;
+    }
+
+    async function sync() {
+        updateStatus('SYNCING...');
+        try {
+            await window.OfflineSyncManager.synchronize(deviceId);
+            const savedPlaylist = JSON.parse(localStorage.getItem('tad_active_playlist') || '[]');
+            const lastSyncStr = localStorage.getItem('tad_last_sync');
+            const lastSyncTime = lastSyncStr ? new Date(lastSyncStr).getTime() : 0;
+            const now = Date.now();
+
+            if (now - lastSyncTime > FALLBACK_TIMEOUT) {
+                playlist = FALLBACK_PLAYLIST;
+                updateStatus('FALLBACK MODE');
+            } else if (savedPlaylist.length > 0) {
+                playlist = savedPlaylist;
+                updateStatus('ACTIVE: ' + playlist.length + ' VIDEOS');
+            } else {
+                playlist = FALLBACK_PLAYLIST;
+                updateStatus('NO CONTENT');
+            }
+            if (playlist.length > 0 && video.paused) startPlayback();
+        } catch (e) {
+            if (playlist.length === 0) playlist = FALLBACK_PLAYLIST;
+            if (playlist.length > 0 && video.src === '') startPlayback();
+        }
+    }
+
+    function startPlayback() {
+        if (playlist.length === 0) return showWaiting();
+        waitingScreen.classList.add('hidden');
+        playNext();
+    }
+
+    function playNext() {
+        if (playlist.length === 0) return;
+        var media = playlist[currentIndex];
+        video.src = media.url;
+        video.load();
+        video.play().catch(() => setTimeout(nextIndex, 3000));
+    }
+
+    function nextIndex() {
+        if (playlist.length === 0) return;
+        currentIndex = (currentIndex + 1) % playlist.length;
+        playNext();
+    }
+
+    video.addEventListener('ended', nextIndex);
+    video.addEventListener('error', () => setTimeout(nextIndex, 2000));
+
+    function showWaiting() { waitingScreen.classList.remove('hidden'); }
+    function updateStatus(text) {
+        var el = document.querySelector('.status');
+        if (el) el.innerHTML = '<span class="dot"></span> ' + text;
+    }
+
+    deviceId = getDeviceId();
+    nodeIdEl.textContent = deviceId;
+    sync();
+    setInterval(sync, SYNC_INTERVAL);
+})();
 </script>
 </body>
 </html>

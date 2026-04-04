@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceService } from './invoice.service';
 import { throttledMap } from '../../utils/throttler.util';
+import { WhatsAppService } from '../notifications/whatsapp.service';
+import { EmailService } from '../notifications/email.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class FinanceService {
@@ -10,7 +13,9 @@ export class FinanceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly invoiceService: InvoiceService
+    private readonly invoiceService: InvoiceService,
+    private readonly whatsappService: WhatsAppService,
+    private readonly emailService: EmailService
   ) {}
 
   /**
@@ -33,10 +38,14 @@ export class FinanceService {
       placa: device.taxiNumber
     });
 
-    // 2. Simular Envío (Email / WhatsApp)
-    // En una implementación real, aquí llamaríamos a un MailService o WhatsAppService
-    this.logger.log(`📧 [EMAIL_SIMULATOR] Enviando Factura de RD$6,000 a: ${device.driver?.phone || 'admin@tad.do'}`);
-    this.logger.log(`📄 [PDF_ATTACHMENT] Certificado de Morosidad generado: ${pdfBuffer.length} bytes`);
+    // 2. Real Notifications (WhatsApp only as Driver lacks email field in current schema)
+    const driverPhone = device.driver?.phone;
+    const driverName = device.driver?.fullName || 'Socio TAD';
+
+    if (driverPhone) {
+      await this.whatsappService.sendDelinquencyAlert(driverPhone, driverName, device.deviceId);
+      this.logger.log(`📱 [WHATSAPP_SENT] Alerta de Morosidad enviada a: ${driverPhone}`);
+    }
 
     // 3. Registrar el intento de cobro en el Ledger
     await (this.prisma as any).financialTransaction.create({
@@ -51,7 +60,38 @@ export class FinanceService {
       }
     });
 
-    return { success: true, pdfGenerated: true, notified: true };
+    return { success: true, notified: !!driverPhone };
+  }
+
+  /**
+   * SCANNER CRON: Checks daily for drivers with unpaid subscriptions past due
+   * and triggers the delinquency protocol.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async checkHighDelinquency() {
+    this.logger.log('🛡️ [CRON_DELINQUENCY] Iniciando escaneo diario de morosidad...');
+
+    const delinquentDrivers = await this.prisma.driver.findMany({
+      where: {
+        status: 'ACTIVE',
+        subscriptionPaid: false,
+        subscriptionEnd: { lt: new Date() } // Past due
+      },
+      include: { devices: true }
+    });
+
+    if (delinquentDrivers.length === 0) {
+      this.logger.log('✅ No hay morosos críticos detectados hoy.');
+      return;
+    }
+
+    this.logger.warn(`🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`);
+
+    for (const driver of delinquentDrivers) {
+      for (const device of driver.devices) {
+        await this.notifyMorosidad(device.deviceId);
+      }
+    }
   }
 
   /**
@@ -78,9 +118,22 @@ export class FinanceService {
       } as any
     });
 
-    const payroll = drivers.map(d => {
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd = new Date(year, month, 0, 23, 59, 59);
+
+    const payroll = await Promise.all(drivers.map(async (d) => {
       const driver = d as any;
       let activeAdsCount = 0;
+
+      // 2. Calculate GPS Usage Bonus
+      // Condition: At least 100 entries in DriverLocation during the month
+      const gpsPointsCount = await this.prisma.driverLocation.count({
+        where: {
+          driverId: driver.id,
+          timestamp: { gte: periodStart, lte: periodEnd }
+        }
+      });
+      const gpsBonus = gpsPointsCount >= 100 ? 500 : 0;
 
       // Iterate over all devices for this driver ONLY if subscription is paid
       const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
@@ -106,7 +159,6 @@ export class FinanceService {
       }
 
       activeAdsCount = eligibleCampaignSet.size;
-
       const baseCommission = 0; // Removed fixed monthly commission as per new business rule
       
       // Calculate referral commissions (500 per referral they brought in)
@@ -118,7 +170,7 @@ export class FinanceService {
       const advertiserReferralBonus = advertiserReferrals * 500;
 
       const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-      const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
+      const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus + gpsBonus;
 
       // Enhanced: Get the actual taxi number from the assigned devices or driver record
       const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
@@ -131,12 +183,14 @@ export class FinanceService {
         activeAds: activeAdsCount,
         adIncome: adTransmissionIncome,
         baseCommission,
+        gpsPoints: gpsPointsCount,
+        gpsBonus: gpsBonus,
         referralBonus: driverReferralBonus,
         advertiserReferralBonus,
         totalAmount: totalAmount,
         currency: 'DOP'
       };
-    });
+    }));
 
     return payroll;
   }
@@ -317,9 +371,9 @@ export class FinanceService {
    */
   async exportPayrollCsv(month: number, year: number) {
     const data = await this.calculateMonthlyPayroll(month, year);
-    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,Comision Fija,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
+    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Bono Disponibilidad,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
     data.forEach(d => {
-      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},RD$ ${d.baseCommission},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
+      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.gpsPoints},RD$ ${d.gpsBonus},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
     });
     return csv;
   }

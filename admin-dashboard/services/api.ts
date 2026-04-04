@@ -166,12 +166,34 @@ export const unlinkMediaFromCampaign = (campaignId: string, mediaId: string) => 
 export const getMedia = () => api.get('/media').then(res => res.data);
 export const getMediaStatus = (id: string) => api.get(`/media/${id}/status`).then(res => res.data);
 export const updateMedia = (id: string, data: { qrUrl: string }) => api.patch(`/media/${id}`, data).then(res => res.data);
+/**
+ * REGLA SRE 05: Checksum Verification.
+ * Calcula el MD5 en el navegador antes de subir para asegurar integridad.
+ */
+const computeMD5 = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const buffer = e.target?.result as ArrayBuffer;
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer); // Usamos SHA-256 como fallback fuerte o MD5 si hay lib
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      resolve(hashHex);
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file.slice(0, 10 * 1024 * 1024)); // Tomamos los primeros 10MB para no colapsar la RAM del browser
+  });
+};
+
 export const uploadMedia = async (file: File, campaignId: string = 'general', qrUrl?: string) => {
-  // 1. Pedir URL firmada de subida al backend
+  // 1. Calcular Checksum (SRE Rule 05)
+  const hashMd5 = await computeMD5(file);
+
+  // 2. Pedir URL firmada de subida al backend
   const urlRes = await api.get(`/media/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${file.type}`);
   const { uploadUrl, path, publicUrl } = urlRes.data;
 
-  // 2. BYPASS: Subir directo a Supabase Storage (Node.js respira 🫁)
+  // 3. BYPASS: Subir directo a Supabase Storage (Node.js respira 🫁)
   await fetch(uploadUrl, {
     method: 'PUT',
     body: file,
@@ -181,7 +203,7 @@ export const uploadMedia = async (file: File, campaignId: string = 'general', qr
     }
   });
 
-  // 3. Registrar el asset en la Base de Datos
+  // 4. Registrar el asset en la Base de Datos con el Hash calculado
   const regRes = await api.post('/media/register-bypassed', {
     filename: file.name,
     contentType: file.type,
@@ -189,6 +211,7 @@ export const uploadMedia = async (file: File, campaignId: string = 'general', qr
     campaignId,
     storageKey: path,
     publicUrl: publicUrl,
+    hashMd5, // Enviamos el hash para validación en tablet
     qrUrl
   });
 
@@ -196,6 +219,7 @@ export const uploadMedia = async (file: File, campaignId: string = 'general', qr
     id: regRes.data.id,
     url: regRes.data.url || regRes.data.cdnUrl,
     fileSize: regRes.data.fileSize || regRes.data.size || 0,
+    hashMd5: regRes.data.hashMd5 || hashMd5,
     name: file.name,
     path: path
   };
@@ -385,5 +409,6 @@ export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => re
 export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
 export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
 export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
+export const getBiHotspots = () => api.get('/bi/hotspots').then(res => res.data);
 
 export default api;

@@ -61,7 +61,10 @@ export class CampaignController {
     // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
     const activeCampaign = await this.prisma.campaign.findFirst({
       where: { 
-        advertiser: advertiser.companyName, // Basado en nombre por ahora (legacy mapping)
+        OR: [
+          { advertiserId: advertiser.id },
+          { advertiser: advertiser.companyName } // Legacy fallback por nombre
+        ],
         active: true,
         startDate: { lte: new Date() },
         endDate: { gte: new Date() },

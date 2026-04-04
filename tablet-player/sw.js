@@ -1,5 +1,5 @@
 // sw.js - TAD Player Service Worker v5.5 (Fully Kiosk + Error Resilient)
-const CACHE_NAME = 'tad-terminal-cache-v5.6';
+const CACHE_NAME = 'tad-terminal-cache-v5.7';
 const SUPABASE_STORAGE_DOMAIN = 'ltdcdhqixvbpdcitthqf.supabase.co';
 
 // APP SHELL: Core files for 100% offline boot

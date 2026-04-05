@@ -25,11 +25,12 @@ ENV NODE_ENV=production
 # 8GB VPS optimization (High heap for analytics & map clusters)
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.ts .
 
 EXPOSE 3000
-CMD ["npm", "start", "--", "-p", "3000"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

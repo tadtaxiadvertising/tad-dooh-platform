@@ -87,14 +87,25 @@ api.interceptors.response.use(
       const isPublicPath = window.location.pathname.includes('/login') || window.location.pathname.includes('/check-in');
       
       if (!isPublicPath) {
+        // Limpiar TODOS los posibles tokens de portales para evitar loops de 401
         localStorage.removeItem('tad_admin_token');
         localStorage.removeItem('tad_admin_user');
+        localStorage.removeItem('tad_advertiser_token');
+        localStorage.removeItem('tad_advertiser_user');
+        localStorage.removeItem('tad_driver_token');
+        localStorage.removeItem('tad_driver_user');
         
         // 🔥 Destruir la sesión de Supabase cliente para matar el ping-pong loop
         supabase.auth.signOut().catch(() => {});
         
+        // Determinar a qué login ir según el portal actual (opcional, por ahora /login es el unificado)
+        const currentPath = window.location.pathname;
+        let loginPath = '/login';
+        if (currentPath.includes('/advertiser/')) loginPath = '/advertiser/login';
+        if (currentPath.includes('/driver/')) loginPath = '/driver/login';
+        
         // Pequeño delay garantizando que el estado se limpie
-        setTimeout(() => { window.location.href = '/login'; }, 100);
+        setTimeout(() => { window.location.href = loginPath; }, 100);
       }
     }
     return Promise.reject(error);

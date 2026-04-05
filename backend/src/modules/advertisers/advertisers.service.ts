@@ -225,13 +225,25 @@ export class AdvertisersService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const payload = { sub: user.id, email: user.email, role: 'advertiser' };
-    const token = jwt.sign(payload, process.env.JWT_SECRET || 'tad-super-secret-key-2024', { expiresIn: '7d' });
+    const payload = { 
+      sub: user.id, 
+      email: user.email, 
+      role: 'ADVERTISER',
+      app_metadata: { 
+        role: 'ADVERTISER', 
+        entityId: user.id 
+      } 
+    };
+    
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'tad-super-secret-key-2024';
+    const token = jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 
     return {
       access_token: token,
       advertiserId: user.id,
-      name: user.companyName
+      name: user.companyName,
+      role: 'ADVERTISER',
+      entityId: user.id
     };
   }
 

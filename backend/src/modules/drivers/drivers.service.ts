@@ -178,8 +178,18 @@ export class DriversService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const payload = { sub: user.id, phone: user.phone, role: 'driver' };
-    const token = jwt.sign(payload, process.env.JWT_SECRET || 'tad-super-secret-key-2024', { expiresIn: '7d' });
+    const payload = { 
+      sub: user.id, 
+      phone: user.phone, 
+      role: 'DRIVER',
+      app_metadata: {
+        role: 'DRIVER',
+        entityId: user.id
+      }
+    };
+    
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'tad-super-secret-key-2024';
+    const token = jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 
     // Retornamos también el deviceId (si tiene) para compatibilidad con la app actual
     const device = await this.prisma.device.findFirst({ where: { driverId: user.id } });
@@ -188,6 +198,8 @@ export class DriversService {
       access_token: token,
       driverId: user.id,
       name: user.fullName,
+      role: 'DRIVER',
+      entityId: user.id,
       deviceId: device?.deviceId || null
     };
   }

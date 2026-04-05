@@ -50,7 +50,8 @@ export class SupabaseAuthGuard implements CanActivate {
     const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
 
     // --- ESTRATEGIA 1: Validación Local (Offline-First Backend) ---
-    if (jwtSecret && jwtSecret.length > 40 && !jwtSecret.startsWith('sb_')) {
+    // Usamos el secreto de Supabase si está disponible lógicamente (>= 32 chars)
+    if (jwtSecret && jwtSecret.length >= 32) {
       try {
         const payload = jwt.verify(token, jwtSecret) as any;
         if (payload) {
@@ -60,14 +61,18 @@ export class SupabaseAuthGuard implements CanActivate {
             role: payload.app_metadata?.role || payload.role || 'GUEST',
             entityId: payload.app_metadata?.entityId || null,
           };
+          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 1 OK (Local JWT): ${request.user.email} [${request.user.role}]`);
           return true;
         }
       } catch (err) {
-        this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 1 FALLIDA (Check JWT_SECRET): ${err.message}`);
+        // Solo logueamos si NO es un error de expiración (para no saturar si es normal)
+        if (err.name !== 'TokenExpiredError') {
+           this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 1 RECHAZADA (Check JWT_SECRET): ${err.message}`);
+        }
       }
     }
 
-    // --- ESTRATEGIA 2: Validación vía Red de Supabase ---
+    // --- ESTRATEGIA 2: Validación vía Red de Supabase (Fallback) ---
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase.auth.getUser(token);
@@ -83,7 +88,9 @@ export class SupabaseAuthGuard implements CanActivate {
         return true;
       }
 
-      this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA (Check SERVICE_ROLE_KEY): ${error?.message || 'No user returned'}`);
+      if (error) {
+        this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA: ${error.message}`);
+      }
     } catch (err) {
       this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 ERROR DE RED: ${err.message}`);
     }
@@ -107,7 +114,8 @@ export class SupabaseAuthGuard implements CanActivate {
       }
     }
 
-    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url} | Token prefix: ${token ? token.substring(0, 10) + '...' : 'NONE'}`);
+    const decodedForLog = jwt.decode(token) as any;
+    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url} | Email: ${decodedForLog?.email || 'N/A'} | Role: ${decodedForLog?.role || decodedForLog?.app_metadata?.role || 'N/A'}`);
     throw new UnauthorizedException('La sesión expiró o es inválida. Por favor inicia sesión de nuevo.');
   }
 }

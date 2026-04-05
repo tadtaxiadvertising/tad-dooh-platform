@@ -39,6 +39,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/login',
+        permanent: false,
+      },
+      {
+        source: '/dashboard',
+        destination: '/admin',
+        permanent: false,
+      }
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {

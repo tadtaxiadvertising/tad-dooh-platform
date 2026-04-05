@@ -74,10 +74,12 @@ const DRIVER_NAVIGATION = [
   },
 ];
 
-function FleetHealthStatus() {
-  const { data: devices, isLoading } = useSWR('/fleet/summary', fetcher, { 
-    refreshInterval: 60000 // Refrescar cada minuto
-  });
+function FleetHealthStatus({ hasSession }: { hasSession: boolean }) {
+  const { data: devices, isLoading } = useSWR(
+    hasSession ? '/fleet/summary' : null, // ← null desactiva SWR cuando no hay sesión
+    fetcher,
+    { refreshInterval: 60000 }
+  );
 
   const healthScore = React.useMemo(() => {
     if (!devices || !Array.isArray(devices) || devices.length === 0) return 0;
@@ -329,7 +331,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-8">
-             {role === 'ADMIN' && <FleetHealthStatus />}
+             {role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}
              {role === 'ADMIN' && (
                <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
                   <div className="text-right">

@@ -19,12 +19,13 @@ export default function AdvertiserDashboard() {
 
   useEffect(() => {
     async function load() {
-      if (!session?.user?.entityId) {
+      const entityId = session?.user?.app_metadata?.entityId;
+      if (!entityId) {
         setLoading(false);
         return;
       }
       try {
-        const res = await getAdvertiserPortalData(session.user.entityId);
+        const res = await getAdvertiserPortalData(entityId);
         setData(res.data);
       } catch (e) {
         console.error('Failed to load portal data:', e);

@@ -228,6 +228,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
                   ));
 
+                  return (
                     <a
                       key={item.name}
                       href={item.href}

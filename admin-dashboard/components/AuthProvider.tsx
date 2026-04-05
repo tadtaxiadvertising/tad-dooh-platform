@@ -27,11 +27,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublic = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
 
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      setSession(session);
+      let activeSession = session;
+
+      if (!activeSession) {
+        const localToken = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_driver_token');
+        const localUser = localStorage.getItem('tad_admin_user') || localStorage.getItem('tad_advertiser_user') || localStorage.getItem('tad_driver_user');
+
+        if (localToken && localUser) {
+          try {
+            activeSession = {
+              access_token: localToken,
+              token_type: 'bearer',
+              expires_in: 3600,
+              refresh_token: '',
+              user: JSON.parse(localUser)
+            } as Session;
+          } catch(e) {}
+        }
+      }
+
+      setSession(activeSession);
       setLoading(false);
 
       // Solo redirigir al login si NO estamos ya en él
-      if (!session && !isPublic) {
+      if (!activeSession && !isPublic) {
         router.replace('/login');
       }
     });

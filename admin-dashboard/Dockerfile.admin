@@ -9,8 +9,8 @@ RUN npm install --frozen-lockfile
 # Finalize source code
 COPY . .
 
-# Fix for Tailwind/LightningCSS on Alpine
-RUN npm install lightningcss-linux-x64-musl
+# Fix for Tailwind/LightningCSS on Alpine (npm optional deps bug)
+RUN rm -rf node_modules package-lock.json && npm install && npm install lightningcss-linux-x64-musl
 
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN (FORCED AT BUILD)
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN

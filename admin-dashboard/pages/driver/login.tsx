@@ -1,13 +1,13 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { login as apiLogin } from '@/services/api';
-import { Car, LogIn, AlertCircle, Wallet, Navigation, ShieldCheck, MapPin, Tablet, Zap } from 'lucide-react';
+import api from '@/services/api';
+import { Car, LogIn, AlertCircle, Wallet, Navigation, ShieldCheck, MapPin, Tablet, Zap, Phone } from 'lucide-react';
 import clsx from 'clsx';
 import Head from 'next/head';
 
 export default function DriverLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,14 +23,28 @@ export default function DriverLoginPage() {
     setLoading(true);
 
     try {
-      const data = await apiLogin(email, password);
-      
-      if (data.user.role !== 'DRIVER' && data.user.role !== 'ADMIN') {
-        throw new Error('Esta cuenta no tiene acceso al portal de conductores.');
+      // Use the dedicated Driver login endpoint (phone-based, custom JWT)
+      const res = await api.post('/drivers/login', { phone, password });
+      const data = res.data;
+
+      if (!data.access_token) {
+        throw new Error('No se recibió token de acceso del servidor.');
       }
 
-      // Cookie para middleware
-      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      // Store driver token and user in localStorage
+      localStorage.setItem('tad_driver_token', data.access_token);
+      localStorage.setItem('tad_driver_user', JSON.stringify({
+        id: data.driverId,
+        email: data.phone || phone,
+        role: 'DRIVER',
+        entityId: data.driverId,
+        fullName: data.fullName,
+        app_metadata: { role: 'DRIVER', entityId: data.driverId }
+      }));
+
+      // Cookie for middleware — conditional Secure for http/https
+      const isSecure = window.location.protocol === 'https:';
+      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
 
       router.replace('/driver/dashboard');
     } catch (err: any) {
@@ -39,6 +53,7 @@ export default function DriverLoginPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
@@ -84,10 +99,10 @@ export default function DriverLoginPage() {
             <div className="space-y-4">
               <div>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="CORREO ELECTRÓNICO / TELÉFONO"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="NÚMERO DE TELÉFONO"
                   required
                   className="w-full bg-black border border-white/5 rounded-2xl px-6 py-5 text-white text-base font-bold placeholder:text-gray-700 focus:outline-none focus:border-tad-yellow transition-all shadow-inner"
                 />

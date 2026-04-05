@@ -32,7 +32,6 @@ export default function AdvertiserLoginPage() {
         throw new Error('Respuesta del servidor no contiene token de acceso.');
       }
 
-      // Guardar token y datos del anunciante en localStorage
       localStorage.setItem('tad_advertiser_token', data.access_token);
       localStorage.setItem('tad_advertiser_user', JSON.stringify({
         id: data.advertiserId,
@@ -43,8 +42,9 @@ export default function AdvertiserLoginPage() {
         app_metadata: { role: 'ADVERTISER', entityId: data.advertiserId }
       }));
 
-      // Cookie para el middleware de Next.js
-      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      // Cookie for Next.js middleware — works on both http (local) and https (prod)
+      const isSecure = window.location.protocol === 'https:';
+      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
 
       router.replace('/advertiser/dashboard');
     } catch (err: any) {

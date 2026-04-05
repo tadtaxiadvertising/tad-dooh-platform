@@ -86,6 +86,11 @@ export function middleware(request: NextRequest) {
   if (portalType === 'DRIVER' && role !== 'DRIVER' && role !== 'ADMIN') {
     return NextResponse.redirect(new URL('/driver/login', request.url));
   }
+  if (portalType === 'ADMIN' && role !== 'ADMIN') {
+    // Si estamos en el portal de administración pero el usuario NO es admin,
+    // lo mandamos al login de administración para que se autentique correctamente.
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
 
   // --- ADVERTISER HUB ---
   if (role === 'ADVERTISER') {

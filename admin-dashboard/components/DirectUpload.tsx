@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { AntigravityButton } from './ui/AntigravityButton';
 import { UploadCloud, FileVideo, X } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '../lib/supabase';
 
 interface DirectUploadProps {
   onSuccess: (url: string, filename: string) => void;

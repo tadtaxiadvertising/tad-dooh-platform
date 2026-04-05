@@ -159,7 +159,7 @@ export default function CampaignDetailPage() {
              onClick={async () => {
                 if (!confirm(`¿Eliminar la campaña "${campaign.name}"? Esta acción no se puede deshacer.`)) return;
                 try {
-                  await (await import('../../services/api')).deleteCampaign(campaign.id);
+                  await (await import('@/services/api')).deleteCampaign(campaign.id);
                   toast.success(`Campaña "${campaign.name}" eliminada`);
                   router.push('/campaigns');
                 } catch (err: unknown) {
@@ -337,7 +337,7 @@ export default function CampaignDetailPage() {
                         e.preventDefault();
                         if (!confirm('¿Desvincular este activo de la campaña? El activo NO será borrado del sistema, solo de esta campaña.')) return;
                         try {
-                          const { unlinkMediaFromCampaign } = await import('../../services/api');
+                          const { unlinkMediaFromCampaign } = await import('@/services/api');
                           await unlinkMediaFromCampaign(campaign.id, asset.id);
                           
                           // Optimistic update for immediate feedback
@@ -474,7 +474,7 @@ export default function CampaignDetailPage() {
                                   e.preventDefault();
                                   if (!confirm('¿Desasignar esta pantalla de la campaña actual?')) return;
                                   try {
-                                    const { removeCampaignFromDevice } = await import('../../services/api');
+                                    const { removeCampaignFromDevice } = await import('@/services/api');
                                     await removeCampaignFromDevice(device.deviceId, campaign.id);
                                     
                                     // Optimistic update

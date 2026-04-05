@@ -20,7 +20,7 @@ import api, { getDeviceRecentPath, getHeatmapData } from '@/services/api';
 // ─────────────────────────────────────────────────────────────────────
 // DYNAMIC IMPORTS  (everything that touches window/Leaflet)
 // ─────────────────────────────────────────────────────────────────────
-const MapView = dynamic(() => import('../../components/MapView'), {
+const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-[#07080d] flex flex-col items-center justify-center gap-6 relative overflow-hidden">

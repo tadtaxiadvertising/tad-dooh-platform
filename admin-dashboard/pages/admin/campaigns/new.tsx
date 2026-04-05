@@ -29,7 +29,7 @@ export default function NewCampaignPage() {
 
   useEffect(() => {
     // Cargar Catálogo de Anunciantes/Marcas
-    const { getAdvertisers } = require('../../services/api');
+    const { getAdvertisers } = require('@/services/api');
     getAdvertisers()
       .then((data: any) => {
         if (Array.isArray(data)) setAdvertisers(data);

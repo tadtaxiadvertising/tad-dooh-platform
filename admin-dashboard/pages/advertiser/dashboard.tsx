@@ -58,10 +58,30 @@ export default function AdvertiserDashboard() {
   }
 
   const stats = [
-    { label: 'Campañas Activas', value: data?.campaigns?.filter((c: any) => c.status === 'ACTIVE').length || 0, icon: Megaphone, color: '#fad400' },
-    { label: 'Impresiones Totales', value: (data?.summary?.impressions || 0).toLocaleString(), icon: TrendingUp, color: '#10b981' },
-    { label: 'Delivery Rate', value: '98.5%', icon: Activity, color: '#3b82f6' },
-    { label: 'Anuncios Listos', value: data?.campaigns?.reduce((acc: number, c: any) => acc + (c.mediaAssets?.length || 0), 0) || 0, icon: Clock, color: '#a855f7' },
+    { 
+      label: 'Campañas Activas', 
+      value: (data?.campaigns || []).filter((c: any) => c.status === 'ACTIVE').length || 0, 
+      icon: Megaphone, 
+      color: '#fad400' 
+    },
+    { 
+      label: 'Impresiones Totales', 
+      value: (data?.summary?.impressions || 0).toLocaleString(), 
+      icon: TrendingUp, 
+      color: '#10b981' 
+    },
+    { 
+      label: 'Delivery Rate', 
+      value: '98.5%', 
+      icon: Activity, 
+      color: '#3b82f6' 
+    },
+    { 
+      label: 'Anuncios Listos', 
+      value: (data?.campaigns || []).reduce((acc: number, c: any) => acc + (c.mediaAssets?.length || 0), 0) || 0, 
+      icon: Clock, 
+      color: '#a855f7' 
+    },
   ];
 
   return (

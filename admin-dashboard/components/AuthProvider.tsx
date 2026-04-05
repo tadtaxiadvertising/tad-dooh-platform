@@ -112,6 +112,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      if (activeSession?.access_token) {
+        // Sync with middleware cookie if not already set or mismatched
+        const currentCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('sb-access-token='))
+          ?.split('=')[1];
+        
+        if (currentCookie !== activeSession.access_token) {
+          const isSecure = window.location.protocol === 'https:';
+          document.cookie = `sb-access-token=${activeSession.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+        }
+      }
+
       setSession(activeSession);
       setLoading(false);
 

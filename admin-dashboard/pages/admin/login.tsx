@@ -31,7 +31,8 @@ export default function AdminLoginPage() {
       }
 
       // Inyectar Cookie (para el Middleware en el Edge Runtime)
-      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      const isSecure = window.location.protocol === 'https:';
+      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
 
       // Redirección a Dashboard base
       router.replace('/admin');

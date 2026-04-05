@@ -177,6 +177,26 @@ export class AdvertisersService {
       };
     }));
 
+    // 4. Generate Time Series (Last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const metricsHistory = await this.prisma.campaignMetric.groupBy({
+      by: ['date'],
+      where: {
+        campaignId: { in: campaignIds },
+        date: { gte: sevenDaysAgo }
+      },
+      _sum: { totalImpressions: true, totalCompletions: true },
+      orderBy: { date: 'asc' }
+    });
+
+    const timeSeries = metricsHistory.map(m => ({
+      date: m.date.toISOString().split('T')[0],
+      impressions: Number(m._sum.totalImpressions || 0),
+      completions: Number(m._sum.totalCompletions || 0)
+    }));
+
     return {
       brand: {
         id: advertiser.id,
@@ -187,8 +207,14 @@ export class AdvertisersService {
         phone: advertiser.phone,
         status: advertiser.status
       },
-      stats: {
+      summary: {
         promocionesContratadas: advertiser.campaigns.reduce((acc, curr) => acc + (curr.targetImpressions || 0), 0),
+        impressions: totalImpressions,
+        completions: totalCompletions,
+        scans: totalScans,
+        activeCampaigns: totalAds
+      },
+      stats: {
         totalImpressions,
         totalCompletions,
         totalScans, 
@@ -201,7 +227,8 @@ export class AdvertisersService {
         costPerAd: COST_PER_AD,
         taxRate: TAX_RATE
       },
-      campaigns: campaignsWithMetrics
+      campaigns: campaignsWithMetrics,
+      timeSeries
     };
   }
 

@@ -17,11 +17,11 @@ import { supabase } from '../lib/supabase';
  */
 const getBaseURL = () => {
   if (typeof window !== 'undefined') {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host === '0.0.0.0') {
       return 'http://localhost:3000/api';
     }
     // Producción: usar el proxy interno de Next.js (API Route)
-    // /api/proxy/{endpoint} → backend NestJS server-side
     return '/api/proxy';
   }
   // SSR: usar URL interna si está disponible, pública como fallback
@@ -44,16 +44,27 @@ export const api = axios.create({
 api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     try {
+      const currentPath = window.location.pathname;
+      
       // 1. Prioridad: Sesión activa de Supabase (Refresco automático)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
       } else {
-        // 2. Fallback: LocalStorage (Para compatibilidad con login legacy y diversos portales)
-        const localToken = localStorage.getItem('tad_admin_token') || 
-                           localStorage.getItem('tad_advertiser_token') || 
-                           localStorage.getItem('tad_driver_token');
+        // 2. Fallback: LocalStorage (Priorizar según el portal actual para evitar colisiones)
+        let localToken = null;
+        
+        if (currentPath.includes('/advertiser/')) {
+          localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
+        } else if (currentPath.includes('/driver/')) {
+          localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
+        } else {
+          localToken = localStorage.getItem('tad_admin_token') || 
+                       localStorage.getItem('tad_advertiser_token') || 
+                       localStorage.getItem('tad_driver_token');
+        }
+
         if (localToken) {
           config.headers.Authorization = `Bearer ${localToken}`;
         }
@@ -85,29 +96,40 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // Evitar loops infinitos de redirección
-      const isPublicPath = window.location.pathname.includes('/login') || window.location.pathname.includes('/check-in');
+      const currentPath = window.location.pathname;
+      const isPublicPath = currentPath.includes('/login') || currentPath.includes('/check-in') || currentPath === '/';
       
       if (!isPublicPath) {
-        // Limpiar TODOS los posibles tokens de portales para evitar loops de 401
-        localStorage.removeItem('tad_admin_token');
-        localStorage.removeItem('tad_admin_user');
-        localStorage.removeItem('tad_advertiser_token');
-        localStorage.removeItem('tad_advertiser_user');
-        localStorage.removeItem('tad_driver_token');
-        localStorage.removeItem('tad_driver_user');
+        console.warn('🚨 Unauthorized access detected. Clearing session.');
         
-        // 🔥 Destruir la sesión de Supabase cliente para matar el ping-pong loop
+        // Limpiar tokens según el contexto actual para ser más precisos
+        if (currentPath.includes('/advertiser/')) {
+          localStorage.removeItem('tad_advertiser_token');
+          localStorage.removeItem('tad_advertiser_user');
+        } else if (currentPath.includes('/driver/')) {
+          localStorage.removeItem('tad_driver_token');
+          localStorage.removeItem('tad_driver_user');
+        } else {
+          localStorage.removeItem('tad_admin_token');
+          localStorage.removeItem('tad_admin_user');
+        }
+        
+        // Siempre intentar el signo out de Supabase
         supabase.auth.signOut().catch(() => {});
         
-        // Determinar a qué login ir según el portal actual (opcional, por ahora /login es el unificado)
-        const currentPath = window.location.pathname;
+        // Borrar cookie de middleware
+        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        
+        // Redirigir al portal correspondiente
         let loginPath = '/login';
         if (currentPath.includes('/advertiser/')) loginPath = '/advertiser/login';
-        if (currentPath.includes('/driver/')) loginPath = '/driver/login';
+        else if (currentPath.includes('/driver/')) loginPath = '/driver/login';
+        else if (currentPath.includes('/admin/')) loginPath = '/admin/login';
         
-        // Pequeño delay garantizando que el estado se limpie
-        setTimeout(() => { window.location.href = loginPath; }, 100);
+        // Prevenir loops infinitos si ya estamos yendo a login
+        if (window.location.href.indexOf(loginPath) === -1) {
+          setTimeout(() => { window.location.href = loginPath; }, 100);
+        }
       }
     }
     return Promise.reject(error);
@@ -133,10 +155,28 @@ export const login = (email: string, password: string) =>
   });
 
 export const logout = () => {
+  const currentPath = window.location.pathname;
+  let target = '/login';
+  
+  if (currentPath.includes('/advertiser/')) target = '/advertiser/login';
+  else if (currentPath.includes('/driver/')) target = '/driver/login';
+  else if (currentPath.includes('/admin/')) target = '/admin/login';
+
+  // Clear ALL portal tokens to avoid state contamination
   localStorage.removeItem('tad_admin_token');
   localStorage.removeItem('tad_admin_user');
+  localStorage.removeItem('tad_advertiser_token');
+  localStorage.removeItem('tad_advertiser_user');
+  localStorage.removeItem('tad_driver_token');
+  localStorage.removeItem('tad_driver_user');
+  
+  // Clear middleware cookie
   document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-  window.location.href = '/login';
+  
+  // Clear Supabase session if possible
+  supabase.auth.signOut().catch(() => {});
+  
+  window.location.href = target;
 };
 
 export const getStoredUser = () => {

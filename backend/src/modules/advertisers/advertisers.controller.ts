@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Req, UnauthorizedException } from '@nestjs/common';
 import { AdvertisersService } from './advertisers.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('advertisers')
+@Roles(UserRole.ADMIN)
 export class AdvertisersController {
   constructor(private readonly advertisersService: AdvertisersService) {}
 
@@ -61,11 +63,12 @@ export class AdvertisersController {
   }
 
   @Get(':id/portal')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getPortal(@Param('id') id: string, @Req() req: any) {
     const user = req.user;
     
     // RBAC: Solo el anunciante dueño del ID o un ADMIN pueden ver el portal
-    if (user.role !== 'ADMIN' && user.role !== 'admin' && user.id !== id) {
+    if (user.role !== UserRole.ADMIN && user.entityId !== id) {
       throw new UnauthorizedException('No tienes permiso para acceder a este portal de anunciante.');
     }
 

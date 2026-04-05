@@ -12,6 +12,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const portalType = process.env.NEXT_PUBLIC_PORTAL_TYPE; // ADMIN, ADVERTISER, DRIVER
 
   // 1. Omitir archivos estáticos, API interna y rutas públicas
   if (
@@ -19,7 +20,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname.includes('/login') || // Captura /login, /admin/login, /advertiser/login, etc.
+    pathname.includes('/login') ||
     pathname === '/check-in' ||
     pathname.startsWith('/p/')
   ) {
@@ -31,10 +32,11 @@ export function middleware(request: NextRequest) {
           const payloadBase64 = session.split('.')[1];
           const decodedPayload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
           const role = decodedPayload.app_metadata?.role || 'GUEST';
+          
           if (role === 'ADVERTISER') return NextResponse.redirect(new URL('/advertiser/dashboard', request.url));
           if (role === 'DRIVER') return NextResponse.redirect(new URL('/driver/dashboard', request.url));
-          if (role === 'ADMIN') return NextResponse.redirect(new URL('/dashboard', request.url));
-        } catch { /* Ignorar error de parsing y seguir al login */ }
+          if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
+        } catch { /* Ignorar error de parsing */ }
       }
     }
     return NextResponse.next();
@@ -44,7 +46,13 @@ export function middleware(request: NextRequest) {
   const session = request.cookies.get('sb-access-token')?.value;
 
   if (!session) {
-    // Si no hay sesión y no es pública, redirigir al login correspondiente o genérico
+    // Lógica de Redirección Inteligente al Login
+    if (pathname === '/') {
+        if (portalType === 'ADVERTISER') return NextResponse.redirect(new URL('/advertiser/login', request.url));
+        if (portalType === 'DRIVER') return NextResponse.redirect(new URL('/driver/login', request.url));
+        if (portalType === 'ADMIN') return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
     let loginTarget = '/login';
     if (pathname.startsWith('/advertiser')) loginTarget = '/advertiser/login';
     if (pathname.startsWith('/driver')) loginTarget = '/driver/login';
@@ -54,15 +62,22 @@ export function middleware(request: NextRequest) {
   }
 
   try {
-    // 3. Decodificar JWT (Paylod es la parte 2)
     const payloadBase64 = session.split('.')[1];
     const decodedPayload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
     
     const role = decodedPayload.app_metadata?.role || 'GUEST';
-    const status = decodedPayload.status; // Para bloqueo 402
+    const status = decodedPayload.status;
 
-    // 4. Lógica de Redirección por Roles
-    
+    // BLOQUEO: Si el portal está configurado para un rol específico, restringir acceso
+    if (portalType === 'ADVERTISER' && role !== 'ADVERTISER' && role !== 'ADMIN') {
+        // Un driver no puede entrar a tad-anunciante
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+    if (portalType === 'DRIVER' && role !== 'DRIVER' && role !== 'ADMIN') {
+        // Un advertiser no puede entrar a tad-driver
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+
     // --- ADVERTISER HUB ---
     if (role === 'ADVERTISER') {
        if (pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname === '/') {
@@ -72,13 +87,6 @@ export function middleware(request: NextRequest) {
 
     // --- DRIVER PWA ---
     if (role === 'DRIVER') {
-       // Bloqueo de suscripción (REGLA FASE 3)
-       // Si el estatus en el token (inyectado por backend) no es ACTIVE, redirigir a zona de pago
-       if (status && status !== 'ACTIVE' && pathname !== '/driver/billing') {
-          // El usuario pide mostrar Alerta 402, en web redirigimos a una página de pago
-          // return NextResponse.redirect(new URL('/driver/billing?reason=subscription_required', request.url));
-       }
-
        if (pathname.startsWith('/admin') || pathname.startsWith('/advertiser') || pathname === '/') {
           return NextResponse.redirect(new URL('/driver/dashboard', request.url));
        }
@@ -86,15 +94,13 @@ export function middleware(request: NextRequest) {
 
     // --- ADMIN / FALLBACK ---
     if (role === 'ADMIN') {
-       // El admin puede navegar, pero si entra a raíz, lo mandamos al dashboard principal
        if (pathname === '/') {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
+          return NextResponse.redirect(new URL('/admin', request.url));
        }
     }
 
     return NextResponse.next();
   } catch (error) {
-    console.error('❌ Middleware Auth Error:', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }

@@ -2,9 +2,12 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards, HttpException, Ht
 import { BiService } from './bi.service';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { BiKpiResponse, TaxiDrillDownResponse } from './interfaces/bi-kpi.interface';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('bi')
 @UseGuards(SupabaseAuthGuard)
+@Roles(UserRole.ADMIN)
 export class BiController {
   constructor(private readonly biService: BiService) {}
 

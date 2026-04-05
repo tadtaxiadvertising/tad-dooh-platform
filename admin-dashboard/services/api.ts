@@ -50,13 +50,11 @@ api.interceptors.request.use(async (config) => {
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
       } else {
-        // 2. Fallback: LocalStorage (Para compatibilidad con login legacy)
-        const localToken = localStorage.getItem('tad_admin_token');
+        // 2. Fallback: LocalStorage (Para compatibilidad con login legacy y diversos portales)
+        const localToken = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_advertiser_token');
         if (localToken) {
           config.headers.Authorization = `Bearer ${localToken}`;
         }
-        // No emitimos console.warn aquí para evitar spam en el primer render
-        // El backend devolverá 401 si realmente falta el acceso.
       }
     } catch (error) {
       console.error('🔐 AUTH_ERROR:', error);

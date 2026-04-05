@@ -5,11 +5,12 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
 import { MediaService } from '../media/media.service';
-
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('campaigns')
+@Roles(UserRole.ADMIN, UserRole.ADVERTISER)
 export class CampaignController {
   constructor(
     private readonly campaignService: CampaignService,
@@ -88,7 +89,7 @@ export class CampaignController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async updateCampaign(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
     const { role, entityId } = req.user;
     const campaign = await this.campaignService.getCampaignById(id);
@@ -102,7 +103,7 @@ export class CampaignController {
   }
 
   @Post()
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async createCampaign(@Body() dto: CreateCampaignDto, @Req() req: any) {
     return this.campaignService.createCampaign(dto, req.user);
   }
@@ -112,13 +113,13 @@ export class CampaignController {
    * El cliente sube directo a Supabase, el backend solo registra metadatos confirmados.
    */
   @Post('register-media')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async registerMedia(@Body() dto: any, @Req() req: any) {
     return this.campaignService.registerDirectMedia(dto, req.user);
   }
 
   @Post(':id/assets')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async addMediaAsset(@Param('id') id: string, @Body() dto: AddMediaAssetDto, @Req() req: any) {
     const { role, entityId } = req.user;
     const campaign = await this.campaignService.getCampaignById(id);
@@ -133,7 +134,7 @@ export class CampaignController {
 
 
   @Get()
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getAllCampaigns(@Req() req: any) {
     const { role, entityId } = req.user;
     if (role === 'ADVERTISER') {
@@ -147,12 +148,14 @@ export class CampaignController {
   }
 
   @Post(':id/assign')
+  @Roles(UserRole.ADMIN)
   async assignToDevices(@Param('id') id: string, @Body('deviceIds') deviceIds: string[]) {
     return this.campaignService.assignCampaignToDevices(id, deviceIds);
   }
 
   // 1. Mapa de Calor / Distribución por Campaña
   @Get('stats/:id/distribution')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignDistribution(@Param('id') id: string) {
     try {
       const campaign = await this.prisma.campaign.findUnique({
@@ -364,6 +367,7 @@ export class CampaignController {
 
   // 4. Asignar choferes a una campaña (segmentación)
   @Post(':id/drivers')
+  @Roles(UserRole.ADMIN)
   async assignDrivers(
     @Param('id') id: string,
     @Body() body: { driverIds: string[]; targetAll: boolean }
@@ -495,7 +499,7 @@ export class CampaignController {
 
   // 6. Delete a campaign
   @Delete(':id')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async deleteCampaign(@Param('id') id: string, @Req() req: any) {
     const { role, entityId } = req.user;
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
@@ -517,7 +521,7 @@ export class CampaignController {
   }
 
   @Get('reports/summary')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getReportsSummary(@Req() req: any) {
     const { role, entityId } = req.user;
     const advertiserId = role === 'ADVERTISER' ? entityId : undefined;
@@ -526,7 +530,7 @@ export class CampaignController {
 
   // 6. Generic ID lookup MUST BE LAST to avoid route conflicts
   @Get(':id')
-  @Roles('ADMIN', 'ADVERTISER')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignById(@Param('id') id: string, @Req() req: any) {
     const { role, entityId } = req.user;
     const campaign = await this.campaignService.getCampaignById(id);

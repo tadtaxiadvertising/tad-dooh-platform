@@ -16,34 +16,34 @@ const ADMIN_NAVIGATION = [
   {
     label: 'Centro de Control',
     items: [
-      { name: 'Resumen General', href: '/', icon: LayoutDashboard },
-      { name: 'Monitor de Pantallas', href: '/fleet', icon: Tablet },
-      { name: 'Geolocalización', href: '/dashboard/realtime', icon: Navigation },
-      { name: 'Auditoría & Salud', href: '/monitoring', icon: ShieldCheck },
+      { name: 'Resumen General', href: '/admin', icon: LayoutDashboard },
+      { name: 'Monitor de Pantallas', href: '/admin/fleet', icon: Tablet },
+      { name: 'Geolocalización', href: '/admin/dashboard/realtime', icon: Navigation },
+      { name: 'Auditoría & Salud', href: '/admin/monitoring', icon: ShieldCheck },
     ],
   },
   {
     label: 'Gestión Táctica',
     items: [
-      { name: 'Socios Conductores', href: '/drivers', icon: IdCard },
-      { name: 'Anunciantes & Marcas', href: '/advertisers', icon: Briefcase },
-      { name: 'Solicitudes Portal', href: '/advertisers/requests', icon: MessageSquare },
+      { name: 'Socios Conductores', href: '/admin/drivers', icon: IdCard },
+      { name: 'Anunciantes & Marcas', href: '/admin/advertisers', icon: Briefcase },
+      { name: 'Solicitudes Portal', href: '/admin/advertisers/requests', icon: MessageSquare },
     ],
   },
   {
     label: 'Playlist & Ads',
     items: [
-      { name: 'Campañas Activas', href: '/campaigns', icon: Megaphone },
-      { name: 'Biblioteca Multimedia', href: '/media', icon: CloudUpload },
+      { name: 'Campañas Activas', href: '/admin/campaigns', icon: Megaphone },
+      { name: 'Biblioteca Multimedia', href: '/admin/media', icon: CloudUpload },
     ],
   },
   {
     label: 'Resultados & ROI',
     items: [
-      { name: 'BI Command Center', href: '/bi', icon: TrendingUp },
-      { name: 'Conciliación Fiscal', href: '/bi/reconciliation', icon: Scale },
-      { name: 'Finanzas & Pagos', href: '/finance', icon: Wallet },
-      { name: 'Analítica de Impacto', href: '/analytics', icon: BarChart3 },
+      { name: 'BI Command Center', href: '/admin/bi', icon: TrendingUp },
+      { name: 'Conciliación Fiscal', href: '/admin/bi/reconciliation', icon: Scale },
+      { name: 'Finanzas & Pagos', href: '/admin/finance', icon: Wallet },
+      { name: 'Analítica de Impacto', href: '/admin/analytics', icon: BarChart3 },
     ],
   },
 ];
@@ -121,7 +121,8 @@ function FleetHealthStatus() {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { session } = useAuth();
-  const role = (session?.user?.app_metadata?.role as string) || 'ADMIN';
+  const currentRole = session?.user?.app_metadata?.role as string;
+  const role = currentRole || null;
   const userEmail = session?.user?.email || 'Administrador';
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -328,30 +329,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-8">
-             <FleetHealthStatus />
-             <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
-                <div className="text-right">
-                   <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Status Red</p>
-                   <div className="flex items-center gap-2 justify-end">
-                      <span className="text-[10px] font-bold text-emerald-500 tracking-tight">STABLE</span>
-                      <Activity className="w-3 h-3 text-emerald-500/80 animate-pulse" />
-                   </div>
-                </div>
-                <div className="text-right">
-                   <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">OS Build</p>
-                   <div className="flex items-center gap-2 justify-end">
-                        <span className="text-[10px] font-bold text-tad-yellow tracking-tight">V4.5.1</span>
-                      <Cpu className="w-3 h-3 text-tad-yellow/80" />
-                   </div>
-                </div>
-             </div>
+             {role === 'ADMIN' && <FleetHealthStatus />}
+             {role === 'ADMIN' && (
+               <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
+                  <div className="text-right">
+                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Status Red</p>
+                     <div className="flex items-center gap-2 justify-end">
+                        <span className="text-[10px] font-bold text-emerald-500 tracking-tight">STABLE</span>
+                        <Activity className="w-3 h-3 text-emerald-500/80 animate-pulse" />
+                     </div>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">OS Build</p>
+                     <div className="flex items-center gap-2 justify-end">
+                          <span className="text-[10px] font-bold text-tad-yellow tracking-tight">V4.5.1</span>
+                        <Cpu className="w-3 h-3 text-tad-yellow/80" />
+                     </div>
+                  </div>
+               </div>
+             )}
 
               <div className="flex items-center gap-6">
                  <NotificationCenter />
                  <div className="flex items-center gap-5 group cursor-pointer bg-zinc-950/40 px-5 py-2 rounded-2xl border border-white/5 hover:border-white/20 transition-all">
                     <div className="text-right hidden sm:block">
-                       <p className="text-[11px] font-black text-white uppercase tracking-tighter mb-0.5">Admin_Terminal</p>
-                       <p className="text-[9px] font-black text-tad-yellow uppercase tracking-widest opacity-80 italic">Level_SSS</p>
+                       <p className="text-[11px] font-black text-white uppercase tracking-tighter mb-0.5">
+                          {role === 'ADMIN' ? 'Admin_Terminal' : role === 'ADVERTISER' ? 'Advertiser_Hub' : 'Driver_Panel'}
+                       </p>
+                       <p className="text-[9px] font-black text-tad-yellow uppercase tracking-widest opacity-80 italic">
+                          {role === 'ADMIN' ? 'Level_SSS' : 'Verified_Node'}
+                       </p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 relative overflow-hidden shadow-lg">
                        <User className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />

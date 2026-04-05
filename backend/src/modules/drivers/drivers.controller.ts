@@ -3,8 +3,10 @@ import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('drivers')
+@Roles(UserRole.ADMIN)
 export class DriversController {
   constructor(private readonly driversService: DriversService) {}
 
@@ -166,7 +168,7 @@ export class DriversController {
    * Nuevo flujo: Los choferes registrados usan su JWT para entrar, tengan o no pauta activa.
    */
   @Get('me/hub')
-  @Roles('DRIVER')
+  @Roles(UserRole.DRIVER)
   async getMyHub(@Req() req: any) {
     const { entityId } = req.user;
     if (!entityId) throw new ForbiddenException('No tienes un perfil de conductor asociado');

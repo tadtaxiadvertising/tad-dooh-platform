@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, Logger, UseGuards } from '@nestjs/common';
 import { MonitoringService } from './monitoring.service';
 import { GpsBatchDto } from './monitoring.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('monitoring')
 export class MonitoringController {
@@ -24,6 +25,7 @@ export class MonitoringController {
    */
   @Public()
   @Get('fleet-status')
+  @Roles(UserRole.ADMIN)
   async getFleetStatus() {
     return await this.monitoringService.getFleetStatus();
   }
@@ -31,8 +33,8 @@ export class MonitoringController {
   /**
    * Endpoint para el estado de campañas activas del piloto.
    */
-  @Public()
   @Get('campaigns-status')
+  @Roles(UserRole.ADMIN)
   async getCampaignsStatus() {
     return await this.monitoringService.getActiveCampaignsStatus();
   }

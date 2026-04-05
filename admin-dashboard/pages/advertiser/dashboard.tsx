@@ -6,23 +6,49 @@ import {
 } from 'recharts';
 import { 
   LayoutDashboard, Megaphone, FileVideo, BarChart3, 
-  TrendingUp, Users, Activity, Clock
+  TrendingUp, Users, Activity, Clock, RefreshCw, LogOut
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const MOCK_DATA = [
-  { name: 'Lun', imp: 4000, conv: 2400 },
-  { name: 'Mar', imp: 3000, conv: 1398 },
-  { name: 'Mie', imp: 2000, conv: 9800 },
-  { name: 'Jue', imp: 2780, conv: 3908 },
-  { name: 'Vie', imp: 1890, conv: 4800 },
-  { name: 'Sab', imp: 2390, conv: 3800 },
-  { name: 'Dom', imp: 3490, conv: 4300 },
-];
+import { getAdvertiserPortalData } from '@/services/api';
+import clsx from 'clsx';
 
 export default function AdvertiserDashboard() {
-  const { session } = useAuth();
-  const [advertiserData, setAdvertiserData] = useState<any>(null);
+  const { session, logout } = useAuth();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      if (!session?.user?.entityId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await getAdvertiserPortalData(session.user.entityId);
+        setData(res.data);
+      } catch (e) {
+        console.error('Failed to load portal data:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [session]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+         <RefreshCw className="w-8 h-8 text-[#fad400] animate-spin" />
+      </div>
+    );
+  }
+
+  const stats = [
+    { label: 'Campañas Activas', value: data?.campaigns?.filter((c: any) => c.status === 'ACTIVE').length || 0, icon: Megaphone, color: '#fad400' },
+    { label: 'Impresiones Totales', value: (data?.summary?.impressions || 0).toLocaleString(), icon: TrendingUp, color: '#10b981' },
+    { label: 'Delivery Rate', value: '98.5%', icon: Activity, color: '#3b82f6' },
+    { label: 'Anuncios Listos', value: data?.campaigns?.reduce((acc: number, c: any) => acc + (c.mediaAssets?.length || 0), 0) || 0, icon: Clock, color: '#a855f7' },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white p-8">
@@ -44,22 +70,23 @@ export default function AdvertiserDashboard() {
           </h1>
         </motion.div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
            <div className="px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-2xl flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Live Status: Active</span>
            </div>
+           <button 
+             onClick={logout}
+             className="p-3 bg-zinc-900 border border-white/10 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors"
+           >
+             <LogOut className="w-5 h-5" />
+           </button>
         </div>
       </div>
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {[
-          { label: 'Campañas Activas', value: '4', icon: Megaphone, color: '#fad400' },
-          { label: 'Impresiones Totales', value: '128.4K', icon: TrendingUp, color: '#10b981' },
-          { label: 'Delivery Rate', value: '94.2%', icon: Activity, color: '#3b82f6' },
-          { label: 'Tempo en Pantalla', value: '72h', icon: Clock, color: '#a855f7' },
-        ].map((kpi, i) => (
+        {stats.map((kpi, i) => (
           <motion.div
             key={kpi.label}
             initial={{ opacity: 0, y: 20 }}
@@ -94,7 +121,7 @@ export default function AdvertiserDashboard() {
           
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MOCK_DATA}>
+              <AreaChart data={data?.timeSeries || []}>
                 <defs>
                   <linearGradient id="colorImp" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#fad400" stopOpacity={0.3}/>
@@ -102,13 +129,13 @@ export default function AdvertiserDashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f23" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#4b5563', fontSize: 10}} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#4b5563', fontSize: 10}} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#4b5563', fontSize: 10}} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '12px' }}
                   itemStyle={{ fontSize: '10px', textTransform: 'uppercase' }}
                 />
-                <Area type="monotone" dataKey="imp" stroke="#fad400" fillOpacity={1} fill="url(#colorImp)" strokeWidth={3} />
+                <Area type="monotone" dataKey="impressions" stroke="#fad400" fillOpacity={1} fill="url(#colorImp)" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -129,11 +156,7 @@ export default function AdvertiserDashboard() {
           </div>
 
           <div className="space-y-4">
-            {[
-              { name: 'Promo Primavera 2026', status: 'ACTIVE', imp: '45,232' },
-              { name: 'Nueva Sede Santiago', status: 'ACTIVE', imp: '12,900' },
-              { name: 'Descuento App', status: 'PAUSED', imp: '8,400' },
-            ].map((c, i) => (
+            {(data?.campaigns || []).slice(0, 5).map((c: any, i: number) => (
               <div key={i} className="flex items-center justify-between p-5 bg-black/40 rounded-2xl border border-white/[0.02] hover:border-white/10 transition-colors group">
                  <div className="flex items-center gap-4">
                     <div className={clsx(
@@ -144,7 +167,7 @@ export default function AdvertiserDashboard() {
                     </div>
                     <div>
                        <p className="text-[11px] font-black uppercase tracking-tight group-hover:text-[#fad400] transition-colors">{c.name}</p>
-                       <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{c.imp} Impresiones</p>
+                       <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{(c.metrics_summary?.impressions || 0).toLocaleString()} Impresiones</p>
                     </div>
                  </div>
                  <div className={clsx(

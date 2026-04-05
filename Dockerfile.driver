@@ -1,0 +1,31 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Optimize build process: Cache node_modules
+COPY admin-dashboard/package*.json ./
+RUN npm install --frozen-lockfile
+
+# Finalize source code
+COPY admin-dashboard/ .
+
+# INYECCIÓN CRÍTICA DE IDENTIDAD DRIVER (FORCED AT BUILD)
+ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
+
+# Build standalone Next.js 15
+RUN npm run build
+
+# Stage 2: Production Execution
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# 8GB VPS optimization (High heap for PWA Driver maps & stats)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
+COPY --from=builder /app/package.json .
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts .
+
+EXPOSE 3000
+CMD ["npm", "start", "--", "-p", "3000"]

@@ -80,14 +80,14 @@ export function middleware(request: NextRequest) {
 
   // --- ADVERTISER HUB ---
   if (role === 'ADVERTISER') {
-    if (pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname === '/') {
+    if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/driver') || pathname === '/') {
       return NextResponse.redirect(new URL('/advertiser/dashboard', request.url));
     }
   }
 
   // --- DRIVER PWA ---
   if (role === 'DRIVER') {
-    if (pathname.startsWith('/admin') || pathname.startsWith('/advertiser') || pathname === '/') {
+    if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/advertiser') || pathname === '/') {
       return NextResponse.redirect(new URL('/driver/dashboard', request.url));
     }
   }
@@ -97,6 +97,8 @@ export function middleware(request: NextRequest) {
     if (pathname === '/') {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
+    // Permite que el ADMIN acceda a todo (admin, advertiser, driver)
+    return NextResponse.next();
   }
 
   return NextResponse.next();

@@ -30,12 +30,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let activeSession = session;
 
       if (!activeSession) {
-        const localToken = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_driver_token');
-        const localUser = localStorage.getItem('tad_admin_user') || localStorage.getItem('tad_advertiser_user') || localStorage.getItem('tad_driver_user');
+        // Intentar recuperar sesión de localStorage para portales con JWT custom
+        // Orden de prioridad: admin > advertiser > driver
+        const tokenKeys = ['tad_admin_token', 'tad_advertiser_token', 'tad_driver_token'];
+        const userKeys = ['tad_admin_user', 'tad_advertiser_user', 'tad_driver_user'];
+        
+        let localToken: string | null = null;
+        let localUser: string | null = null;
+
+        for (let i = 0; i < tokenKeys.length; i++) {
+          const t = localStorage.getItem(tokenKeys[i]);
+          const u = localStorage.getItem(userKeys[i]);
+          if (t && u) {
+            localToken = t;
+            localUser = u;
+            break;
+          }
+        }
 
         if (localToken && localUser) {
           try {
             const parsedUser = JSON.parse(localUser);
+            // Detectar el rol real del usuario almacenado
+            const detectedRole = parsedUser.app_metadata?.role || parsedUser.role || 'ADMIN';
+            const detectedEntityId = parsedUser.app_metadata?.entityId || parsedUser.entityId || null;
+            
             activeSession = {
               access_token: localToken,
               token_type: 'bearer',
@@ -45,8 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...parsedUser,
                 app_metadata: {
                   ...parsedUser.app_metadata,
-                  role: parsedUser.role || 'ADMIN',
-                  entityId: parsedUser.entityId || null
+                  role: detectedRole,
+                  entityId: detectedEntityId
                 }
               }
             } as Session;

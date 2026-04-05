@@ -19,14 +19,27 @@ export default function AdvertiserDashboard() {
 
   useEffect(() => {
     async function load() {
-      const entityId = session?.user?.app_metadata?.entityId;
+      // Intentar obtener entityId del session o del localStorage
+      let entityId = session?.user?.app_metadata?.entityId;
+      
+      if (!entityId) {
+        // Fallback: leer de localStorage directamente
+        try {
+          const storedUser = localStorage.getItem('tad_advertiser_user');
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            entityId = parsed.entityId || parsed.id;
+          }
+        } catch {}
+      }
+
       if (!entityId) {
         setLoading(false);
         return;
       }
       try {
         const res = await getAdvertiserPortalData(entityId);
-        setData(res.data);
+        setData(res); // getAdvertiserPortalData ya hace .then(res => res.data)
       } catch (e) {
         console.error('Failed to load portal data:', e);
       } finally {

@@ -42,6 +42,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
           JWT_SECRET: zod.string().optional(),
           SUPABASE_URL: zod.string().url().optional(),
           SUPABASE_SERVICE_ROLE_KEY: zod.string().optional(),
+          SUPABASE_JWT_SECRET: zod.string().optional(),
           PORT: zod.string().regex(/^\d+$/).default('3000'),
           NODE_ENV: zod.string().default('production'),
           CORS_ORIGIN: zod.string().default('*'),

@@ -3,12 +3,12 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { QRCodeCanvas } from 'qrcode.react';
-import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia, deleteMedia } from '../../services/api';
+import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia, deleteMedia } from '@/services/api';
 import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu, Trash2, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 
@@ -781,3 +781,4 @@ export default function MediaPage() {
     </div>
   );
 }
+

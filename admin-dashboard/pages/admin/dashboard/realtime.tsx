@@ -15,7 +15,7 @@ import {
   Flame, Tv2, ChevronRight, X, Filter,
   CheckCircle2, Gauge as SpeedIcon,
 } from 'lucide-react';
-import api, { getDeviceRecentPath, getHeatmapData } from '../../services/api';
+import api, { getDeviceRecentPath, getHeatmapData } from '@/services/api';
 
 // ─────────────────────────────────────────────────────────────────────
 // DYNAMIC IMPORTS  (everything that touches window/Leaflet)
@@ -903,3 +903,4 @@ export default function RealtimeDashboard() {
     </div>
   );
 }
+

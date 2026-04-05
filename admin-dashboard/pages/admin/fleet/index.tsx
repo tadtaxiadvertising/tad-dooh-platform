@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
-import api, { sendCommand, getDevices, getOfflineDevices, getPendingDevices, approvePendingDevice, rejectPendingDevice } from '../../services/api';
+import api, { sendCommand, getDevices, getOfflineDevices, getPendingDevices, approvePendingDevice, rejectPendingDevice } from '@/services/api';
 import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw, ShieldAlert, ShieldCheck, XCircle, Smartphone } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
-import DeviceModal from '../../components/DeviceModal';
-import DeviceHubModal from '../../components/DeviceHubModal';
-import { notifyChange } from '../../lib/sync-channel';
+import DeviceModal from '@/components/DeviceModal';
+import DeviceHubModal from '@/components/DeviceHubModal';
+import { notifyChange } from '@/lib/sync-channel';
 import { toast } from 'sonner';
-import { StatusSemaphore, SemaphoreStatus } from '../../components/ui/StatusSemaphore';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { StatusSemaphore, SemaphoreStatus } from '@/components/ui/StatusSemaphore';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
 
@@ -910,3 +910,4 @@ function TelemetryItem({ icon: Icon, value, color }: { icon: any; value: string;
     </div>
   );
 }
+

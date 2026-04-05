@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { createCampaign } from '../../services/api';
+import { createCampaign } from '@/services/api';
 import { ArrowLeft, Save, Megaphone, Activity, Info, Zap, Calendar, Target, ShieldCheck, RefreshCcw, Globe, Radio, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -402,3 +402,4 @@ export default function NewCampaignPage() {
     </div>
   );
 }
+

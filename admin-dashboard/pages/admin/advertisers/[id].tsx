@@ -3,9 +3,9 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Share2, ArrowLeft, BarChart3, CloudUpload, Play, Plus, Megaphone, CheckCircle2, AlertTriangle, MonitorPlay, Zap, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
-import { getAdvertiser } from '../../services/api';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
+import { getAdvertiser } from '@/services/api';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function AdvertiserProfilePage() {

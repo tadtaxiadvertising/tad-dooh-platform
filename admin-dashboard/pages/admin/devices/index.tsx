@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getDevices } from '../../services/api';
+import { getDevices } from '@/services/api';
 import { Tablet, Search, Battery, HardDrive, Clock, RefreshCcw, AlertTriangle, CheckCircle2, Server, Plus, Edit2, Cpu, Activity, Zap, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
-import DeviceModal from '../../components/DeviceModal';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
+import DeviceModal from '@/components/DeviceModal';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<{ device_id?: string; deviceId?: string; taxi_number?: string; taxiNumber?: string; status: string; battery_level?: number; batteryLevel?: number; storage_used?: number; storage_total?: number; app_version?: string; appVersion?: string; last_seen?: string; lastSeen?: string }[]>([]);
@@ -310,3 +310,4 @@ export default function DevicesPage() {
     </div>
   );
 }
+

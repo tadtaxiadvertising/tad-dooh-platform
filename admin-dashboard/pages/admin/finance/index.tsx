@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getFinancialSummary, getFinancialLedger, downloadPayrollCsv, downloadCampaignReport, openInvoiceHtml } from '../../services/api';
+import { getCampaignBilling, getAutoPayroll, processPayrollPayment, getFinancialSummary, getFinancialLedger, downloadPayrollCsv, downloadCampaignReport, openInvoiceHtml } from '@/services/api';
 import { 
   AlertTriangle,
   Receipt,
@@ -26,11 +26,11 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 
-import { ConfirmPromptModal } from '../../components/ui/ConfirmPromptModal';
+import { ConfirmPromptModal } from '@/components/ui/ConfirmPromptModal';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'payroll' | 'campaigns' | 'ledger'>('payroll');
@@ -661,3 +661,4 @@ function SummaryCard({ icon, label, value, color, sub, large }: SummaryCardProps
       </div>
    );
 }
+

@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Target, TrendingUp, Activity, DollarSign, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
-import api from '../../services/api';
+import api from '@/services/api';
 
 export default function InvestorDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -175,3 +175,4 @@ function UnitStatus({ number, uptime, profit, alert }: any) {
     </div>
   );
 }
+

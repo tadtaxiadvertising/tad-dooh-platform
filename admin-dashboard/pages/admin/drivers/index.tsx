@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '../../services/api';
-import DriverModal from '../../components/DriverModal';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
+import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '@/services/api';
+import DriverModal from '@/components/DriverModal';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
 import {
   Download, Plus, User, UserCheck, UserX, CreditCard, Search, Radio,
   ExternalLink, Tablet, CheckCircle2, AlertTriangle, Smartphone, Navigation,
   Lock, Unlock, ChevronDown, RefreshCw, Zap, ShieldCheck, Users, IdCard, X
 } from 'lucide-react';
-import WhatsAppButton from '../../components/ui/WhatsAppButton';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import WhatsAppButton from '@/components/ui/WhatsAppButton';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 
 // Helper: obtiene la base URL del API de producción
 const getApiBase = () => {
@@ -677,3 +677,4 @@ function AuditLine({ label, value, info, highlight }: { label: string; value: st
     </div>
   );
 }
+

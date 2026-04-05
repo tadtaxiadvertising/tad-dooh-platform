@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { BiKpiCard } from '../../components/bi/BiKpiCard';
+import { BiKpiCard } from '@/components/bi/BiKpiCard';
 import dynamic from 'next/dynamic';
 
 const BiHeatmap = dynamic(() => import('../../components/bi/BiHeatmap').then(mod => mod.BiHeatmap), { 
@@ -17,8 +17,8 @@ import {
   MapPin,
   Calendar
 } from 'lucide-react';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
-import { getBiKpis } from '../../services/api';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
+import { getBiKpis } from '@/services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -248,3 +248,4 @@ const BIDashboard = () => {
 };
 
 export default BIDashboard;
+

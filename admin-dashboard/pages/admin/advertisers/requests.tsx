@@ -15,7 +15,7 @@ import {
   Layers,
   Play
 } from 'lucide-react';
-import { getPortalRequests, updatePortalRequest } from '../../services/api';
+import { getPortalRequests, updatePortalRequest } from '@/services/api';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -298,3 +298,4 @@ export default function RequestsPage() {
     </>
   );
 }
+

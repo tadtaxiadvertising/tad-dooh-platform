@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { getCampaignById, getCampaignDevices } from '../../services/api';
+import { getCampaignById, getCampaignDevices } from '@/services/api';
 import { ArrowLeft, Megaphone, Calendar, Film, Clock, Zap, MapPin, Play, Tablet, RefreshCcw, ShieldCheck, Target, Share2, Layers, Download, X, Monitor, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
-import { CampaignModal } from '../../components/CampaignModal';
+import { CampaignModal } from '@/components/CampaignModal';
 import { toast } from 'sonner';
 
 export default function CampaignDetailPage() {

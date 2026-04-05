@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getOfflineDevices } from '../../services/api';
+import { getOfflineDevices } from '@/services/api';
 import { MonitorOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -85,3 +85,4 @@ export default function OfflineFleetPage() {
     </div>
   );
 }
+

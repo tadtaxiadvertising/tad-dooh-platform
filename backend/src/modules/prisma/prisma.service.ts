@@ -45,12 +45,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
           if (fs.existsSync(viewsFile)) {
             const sql = fs.readFileSync(viewsFile, 'utf8');
-             // Split queries by semicolon if needed, but for simple views executeRawUnsafe should work
-             await this.$executeRawUnsafe(sql).catch(e => {
-                if (!e.message.includes('already exists')) {
-                   this.logger.error(`Error SQL en vista: ${e.message}`);
-                }
-             });
+             // Split queries by semicolon (;) to execute separately since pg driver limits executeRawUnsafe to single statements
+             const queries = sql.split(';').map((q: string) => q.trim()).filter((q: string) => q.length > 0);
+             for (const query of queries) {
+               await this.$executeRawUnsafe(query).catch(e => {
+                  if (!e.message.includes('already exists')) {
+                     this.logger.error(`Error SQL en vista: ${e.message}`);
+                  }
+               });
+             }
             this.logger.log('✅ mv_active_campaigns configurada.');
           }
         } catch (viewError) {

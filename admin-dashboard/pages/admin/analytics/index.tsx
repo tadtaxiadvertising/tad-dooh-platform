@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { getTopTaxis, getHourlyPlays, getRecentPlays, getAnalyticsSummary } from '../../services/api';
+import { getTopTaxis, getHourlyPlays, getRecentPlays, getAnalyticsSummary } from '@/services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { 
   BarChart3, 
@@ -18,7 +18,7 @@ import {
   Zap
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useTabSync } from '../../hooks/useTabSync';
+import { useTabSync } from '@/hooks/useTabSync';
 import Link from 'next/link';
 import clsx from 'clsx';
 
@@ -502,3 +502,4 @@ function SectorRow({ label, perc, color }: { label: string; perc: number; color:
       </div>
    );
 }
+

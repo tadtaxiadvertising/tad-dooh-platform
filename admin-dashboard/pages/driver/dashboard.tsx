@@ -7,10 +7,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import api from '@/services/api';
+import api, { logout } from '@/services/api';
 
-export default function DriverDashboard() {
-  const { session, logout } = useAuth();
+function DriverDashboard() {
+  const { session } = useAuth();
   const [driverData, setDriverData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

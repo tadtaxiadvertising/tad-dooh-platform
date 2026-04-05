@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getRecentPlays } from '../../services/api';
+import { getRecentPlays } from '@/services/api';
 import { ArrowLeft, RefreshCcw, Tablet, Clock, ShieldCheck, Database, Search, ArrowDownToLine, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -244,3 +244,4 @@ export default function AnalyticsHistoryPage() {
     </div>
   );
 }
+

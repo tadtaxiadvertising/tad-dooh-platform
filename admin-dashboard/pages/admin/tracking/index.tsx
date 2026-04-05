@@ -9,10 +9,10 @@ import {
   Sun, Moon
 } from 'lucide-react';
 import clsx from 'clsx';
-import { getTrackingSummary, getTrackingData, getFleetLocations, getHeatmapData, getDeviceRecentPath } from '../../services/api';
-import { useTabSync } from '../../hooks/useTabSync';
+import { getTrackingSummary, getTrackingData, getFleetLocations, getHeatmapData, getDeviceRecentPath } from '@/services/api';
+import { useTabSync } from '@/hooks/useTabSync';
 import dynamic from 'next/dynamic';
-import { FleetSidebar } from '../../components/ui/FleetSidebar';
+import { FleetSidebar } from '@/components/ui/FleetSidebar';
 
 const MapView = dynamic(() => import('../../components/MapView'), { 
   ssr: false,
@@ -529,3 +529,4 @@ function ModeButton({ active, onClick, label, color }: any) {
       </button>
    );
 }
+

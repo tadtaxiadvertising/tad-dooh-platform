@@ -8,7 +8,7 @@ import {
   getCampaigns, getDevices, getFinancialLedger,
   downloadCampaignPdf, downloadFleetPdf, downloadTransactionPdf,
   downloadWeeklyCampaignPdf
-} from '../../services/api';
+} from '@/services/api';
 
 export default function ExportsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -183,3 +183,4 @@ export default function ExportsPage() {
     </div>
   );
 }
+

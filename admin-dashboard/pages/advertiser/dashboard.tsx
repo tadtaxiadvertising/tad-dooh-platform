@@ -9,11 +9,11 @@ import {
   TrendingUp, Users, Activity, Clock, RefreshCw, LogOut
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getAdvertiserPortalData } from '@/services/api';
+import { getAdvertiserPortalData, logout } from '@/services/api';
 import clsx from 'clsx';
 
 export default function AdvertiserDashboard() {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -188,5 +188,3 @@ export default function AdvertiserDashboard() {
     </div>
   );
 }
-
-import clsx from 'clsx';

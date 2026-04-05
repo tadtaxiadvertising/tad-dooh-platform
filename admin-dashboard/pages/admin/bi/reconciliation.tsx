@@ -16,7 +16,7 @@ import {
   Activity
 } from 'lucide-react';
 import clsx from 'clsx';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 
 export default function ReconciliationPage() {
   const [search, setSearch] = useState('');
@@ -191,3 +191,4 @@ function ReconStat({ label, value, icon: Icon, trend, trendType }: any) {
     </div>
   );
 }
+

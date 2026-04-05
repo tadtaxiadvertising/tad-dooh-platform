@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Phone, Mail, DollarSign, TrendingUp, Building2, Activity, UserPlus, FileSpreadsheet, Zap, Shield, Briefcase, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
-import { getAdvertisers, deleteAdvertiser } from '../../services/api';
-import { AdvertiserModal } from '../../components/AdvertiserModal';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
-import WhatsAppButton from '../../components/ui/WhatsAppButton';
+import { getAdvertisers, deleteAdvertiser } from '@/services/api';
+import { AdvertiserModal } from '@/components/AdvertiserModal';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
+import WhatsAppButton from '@/components/ui/WhatsAppButton';
 
 export default function AdvertisersPage() {
   const [advertisers, setAdvertisers] = useState<{ 

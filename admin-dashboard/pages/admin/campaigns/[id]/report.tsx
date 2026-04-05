@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { getCampaignById, getWeeklyPerformance, downloadWeeklyCampaignPdf, emailCampaignReport, emailInvoice } from '../../../services/api';
+import { getCampaignById, getWeeklyPerformance, downloadWeeklyCampaignPdf, emailCampaignReport, emailInvoice } from '@/services/api';
 import { 
   ArrowLeft, 
   Download, 

@@ -1,16 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCampaigns, deleteCampaign } from '../../services/api';
+import { getCampaigns, deleteCampaign } from '@/services/api';
 import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download, RefreshCcw, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import clsx from 'clsx';
-import DeviceSelectorModal from '../../components/DeviceSelectorModal';
-import { CampaignModal } from '../../components/CampaignModal';
-import { useTabSync } from '../../hooks/useTabSync';
-import { notifyChange } from '../../lib/sync-channel';
-import { AntigravityButton } from '../../components/ui/AntigravityButton';
+import DeviceSelectorModal from '@/components/DeviceSelectorModal';
+import { CampaignModal } from '@/components/CampaignModal';
+import { useTabSync } from '@/hooks/useTabSync';
+import { notifyChange } from '@/lib/sync-channel';
+import { AntigravityButton } from '@/components/ui/AntigravityButton';
 import { toast } from 'sonner';
-import { getMedia } from '../../services/api';
+import { getMedia } from '@/services/api';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; media?: { id: string }[]; devices?: string[]; category?: string; targetCity?: string; target_city?: string }[]>([]);
@@ -340,3 +340,4 @@ export default function CampaignsPage() {
     </div>
   );
 }
+

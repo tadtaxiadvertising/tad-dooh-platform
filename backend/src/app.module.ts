@@ -26,6 +26,7 @@ import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -91,6 +92,11 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
     {
       provide: APP_GUARD,
       useClass: SupabaseAuthGuard,
+    },
+    // RBAC Guard — checks roles after JWT validation
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     {
       provide: APP_INTERCEPTOR,

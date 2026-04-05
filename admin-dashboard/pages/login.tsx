@@ -35,14 +35,22 @@ export default function LoginPage() {
         throw new Error(authError?.message || 'Credenciales inválidas');
       }
 
+      // 1. Guardar en LocalStorage (compatibilidad cliente)
       localStorage.setItem('tad_admin_token', data.session.access_token);
       localStorage.setItem('tad_admin_user', JSON.stringify({
         id: data.user?.id,
         email: data.user?.email,
         name: 'Admin',
-        role: 'ADMIN',
+        role: data.user?.app_metadata?.role || 'GUEST',
       }));
 
+      // 2. Inyectar Cookie (para el Middleware en el Edge Runtime)
+      if (typeof window !== 'undefined') {
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `sb-access-token=${data.session.access_token}; path=/; expires=${expires}; SameSite=Lax; Secure`;
+      }
+
+      // Redirección a Dashboard base, el Middleware decidirá si redirección secundaria
       router.replace('/');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');

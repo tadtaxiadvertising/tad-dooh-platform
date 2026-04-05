@@ -12,7 +12,7 @@ import api, { getDevices } from '../services/api';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
 
-const NAVIGATION_GROUPS = [
+const ADMIN_NAVIGATION = [
   {
     label: 'Centro de Control',
     items: [
@@ -44,6 +44,32 @@ const NAVIGATION_GROUPS = [
       { name: 'Conciliación Fiscal', href: '/bi/reconciliation', icon: Scale },
       { name: 'Finanzas & Pagos', href: '/finance', icon: Wallet },
       { name: 'Analítica de Impacto', href: '/analytics', icon: BarChart3 },
+    ],
+  },
+];
+
+const ADVERTISER_NAVIGATION = [
+  {
+    label: 'Marketing Hub',
+    items: [
+      { name: 'Dashboard BI', href: '/advertiser/dashboard', icon: LayoutDashboard },
+      { name: 'Mis Campañas', href: '/advertiser/campaigns', icon: Megaphone },
+      { name: 'Librería de Medios', href: '/advertiser/media', icon: CloudUpload },
+    ],
+  },
+  {
+    label: 'Análisis & ROI',
+    items: [
+      { name: 'Reportes de Impacto', href: '/advertiser/reports', icon: BarChart3 },
+    ],
+  },
+];
+
+const DRIVER_NAVIGATION = [
+  {
+    label: 'Mi Terminal',
+    items: [
+      { name: 'Dashboard', href: '/driver/dashboard', icon: LayoutDashboard },
     ],
   },
 ];
@@ -95,9 +121,16 @@ function FleetHealthStatus() {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { session } = useAuth();
+  const role = (session?.user?.app_metadata?.role as string) || 'ADMIN';
   const userEmail = session?.user?.email || 'Administrador';
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  const navigationGroups = React.useMemo(() => {
+    if (role === 'ADVERTISER') return ADVERTISER_NAVIGATION;
+    if (role === 'DRIVER') return DRIVER_NAVIGATION;
+    return ADMIN_NAVIGATION;
+  }, [role]);
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
@@ -154,7 +187,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Global Navigation Nexus */}
         <nav className="flex-1 w-full px-4 h-full overflow-y-auto pb-10 custom-scrollbar overflow-x-hidden">
-          {NAVIGATION_GROUPS.map((group, gi) => (
+          {navigationGroups.map((group: any, gi: number) => (
             <div key={group.label} className={clsx(gi > 0 && 'mt-8')}>
               <p className={clsx(
                  "text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap px-2", 
@@ -165,13 +198,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                  {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
               </p>
               <div className="space-y-1.5">
-                {group.items.map((item) => {
+                {group.items.map((item: any) => {
                   const Icon = item.icon;
-                  const allHrefTexts = NAVIGATION_GROUPS.flatMap(g => g.items.map(i => i.href));
+                  const allHrefTexts = navigationGroups.flatMap((g: any) => g.items.map((i: any) => i.href));
                   const isExactMatch = router.pathname === item.href;
                   const isPrefixMatch = item.href !== '/' && router.pathname.startsWith(item.href + '/');
                   // Es activo si es coincidencia exacta, O si es un sub-path y no hay otro botón en el menú que coincida mejor.
-                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some(otherHref => 
+                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some((otherHref: string) => 
                       otherHref !== item.href && 
                       otherHref.length > item.href.length && 
                       (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))

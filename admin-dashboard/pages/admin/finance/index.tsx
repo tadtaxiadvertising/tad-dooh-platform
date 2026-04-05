@@ -345,7 +345,7 @@ export default function FinancePage() {
                               onClick={async () => {
                                 const loadingToast = toast.loading("Enviando comprobante WhatsApp...");
                                 try {
-                                  const { sendDriverPaymentWhatsApp } = await import('../../services/api');
+                                  const { sendDriverPaymentWhatsApp } = await import('@/services/api');
                                   await sendDriverPaymentWhatsApp({ 
                                     phone: (item as any).driverPhone || '', 
                                     driverName: item.driverName, 
@@ -376,7 +376,7 @@ export default function FinancePage() {
                                   onConfirm: async (email: string) => {
                                     const loadingToast = toast.loading("Enviando comprobante por email...");
                                     try {
-                                      const { emailDriverPaymentConfirm } = await import('../../services/api');
+                                      const { emailDriverPaymentConfirm } = await import('@/services/api');
                                       await emailDriverPaymentConfirm({ 
                                         email, 
                                         driverName: item.driverName, 

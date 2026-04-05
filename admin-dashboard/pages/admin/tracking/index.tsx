@@ -14,7 +14,7 @@ import { useTabSync } from '@/hooks/useTabSync';
 import dynamic from 'next/dynamic';
 import { FleetSidebar } from '@/components/ui/FleetSidebar';
 
-const MapView = dynamic(() => import('../../components/MapView'), { 
+const MapView = dynamic(() => import('@/components/MapView'), { 
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-[#070707] flex flex-col items-center justify-center text-zinc-600 gap-6 relative overflow-hidden">

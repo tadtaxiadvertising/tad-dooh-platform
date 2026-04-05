@@ -157,7 +157,7 @@ export default function CampaignReportPage() {
                  if (!phone) return;
                  const loadingToast = toast.loading("Enviando...");
                  try {
-                   const { shareReportByWhatsApp } = await import('../../../services/api');
+                   const { shareReportByWhatsApp } = await import('@/services/api');
                    await shareReportByWhatsApp(campaign.id, {
                      phone,
                      advertiserName: campaign.advertiser,

@@ -1,9 +1,10 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger, Req } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Body, Param, NotFoundException, UseInterceptors, UploadedFile, Logger, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CampaignService } from './campaign.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { MediaService } from '../media/media.service';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -87,11 +88,21 @@ export class CampaignController {
   }
 
   @Patch(':id')
-  async updateCampaign(@Param('id') id: string, @Body() dto: any) {
+  @Roles('ADMIN', 'ADVERTISER')
+  async updateCampaign(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
+    const { role, entityId } = req.user;
+    const campaign = await this.campaignService.getCampaignById(id);
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos para editar esta campaña');
+    }
+
     return this.campaignService.updateCampaign(id, dto);
   }
 
   @Post()
+  @Roles('ADMIN', 'ADVERTISER')
   async createCampaign(@Body() dto: CreateCampaignDto, @Req() req: any) {
     return this.campaignService.createCampaign(dto, req.user);
   }
@@ -101,24 +112,37 @@ export class CampaignController {
    * El cliente sube directo a Supabase, el backend solo registra metadatos confirmados.
    */
   @Post('register-media')
+  @Roles('ADMIN', 'ADVERTISER')
   async registerMedia(@Body() dto: any, @Req() req: any) {
     return this.campaignService.registerDirectMedia(dto, req.user);
   }
 
   @Post(':id/assets')
-  async addMediaAsset(@Param('id') id: string, @Body() dto: AddMediaAssetDto) {
-    console.log(`[CAMPAIGN_ASSETS] Linking to ${id}:`, JSON.stringify(dto));
-    try {
-      return await this.campaignService.addMediaAsset(id, dto);
-    } catch (e) {
-      console.error(`[CAMPAIGN_ASSETS] Failed: ${e.message}`);
-      throw e;
+  @Roles('ADMIN', 'ADVERTISER')
+  async addMediaAsset(@Param('id') id: string, @Body() dto: AddMediaAssetDto, @Req() req: any) {
+    const { role, entityId } = req.user;
+    const campaign = await this.campaignService.getCampaignById(id);
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos para agregar archivos a esta campaña');
     }
+
+    return await this.campaignService.addMediaAsset(id, dto);
   }
 
 
   @Get()
-  async getAllCampaigns() {
+  @Roles('ADMIN', 'ADVERTISER')
+  async getAllCampaigns(@Req() req: any) {
+    const { role, entityId } = req.user;
+    if (role === 'ADVERTISER') {
+       return this.prisma.campaign.findMany({
+         where: { advertiserId: entityId },
+         include: { mediaAssets: true, media: true },
+         orderBy: { createdAt: 'desc' },
+       });
+    }
     return this.campaignService.getAllCampaigns();
   }
 
@@ -471,7 +495,16 @@ export class CampaignController {
 
   // 6. Delete a campaign
   @Delete(':id')
-  async deleteCampaign(@Param('id') id: string) {
+  @Roles('ADMIN', 'ADVERTISER')
+  async deleteCampaign(@Param('id') id: string, @Req() req: any) {
+    const { role, entityId } = req.user;
+    const campaign = await this.prisma.campaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos para eliminar esta campaña');
+    }
+
     // Delete related records first
     await this.prisma.mediaAsset.deleteMany({ where: { campaignId: id } });
     await this.prisma.video.deleteMany({ where: { campaignId: id } });
@@ -480,13 +513,30 @@ export class CampaignController {
     await this.prisma.playlist.deleteMany({ where: { campaignId: id } });
     await this.prisma.campaignMetric.deleteMany({ where: { campaignId: id } });
     await this.prisma.media.updateMany({ where: { campaign_id: id }, data: { campaign_id: null } });
-    await this.prisma.campaign.delete({ where: { id } });
-    return { success: true };
+    return this.prisma.campaign.delete({ where: { id } });
+  }
+
+  @Get('reports/summary')
+  @Roles('ADMIN', 'ADVERTISER')
+  async getReportsSummary(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === 'ADVERTISER' ? entityId : undefined;
+    return this.campaignService.getCampaignReports(advertiserId);
   }
 
   // 6. Generic ID lookup MUST BE LAST to avoid route conflicts
   @Get(':id')
-  async getCampaignById(@Param('id') id: string) {
-    return this.campaignService.getCampaignById(id);
+  @Roles('ADMIN', 'ADVERTISER')
+  async getCampaignById(@Param('id') id: string, @Req() req: any) {
+    const { role, entityId } = req.user;
+    const campaign = await this.campaignService.getCampaignById(id);
+    
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+       throw new ForbiddenException('No tienes permisos para ver esta campaña');
+    }
+    
+    return campaign;
   }
 }

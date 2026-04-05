@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
-import * as jwt from 'jsonwebtoken';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('drivers')
 export class DriversController {
@@ -165,20 +165,12 @@ export class DriversController {
    * GET /api/drivers/me/hub — Datos de negocio para el portal del chofer (Autenticado con JWT propio)
    * Nuevo flujo: Los choferes registrados usan su JWT para entrar, tengan o no pauta activa.
    */
-  @Public() // Bypasses SupabaseAuthGuard to use internal jwt.verify logic
   @Get('me/hub')
-  async getMyHub(@Headers('authorization') auth: string) {
-    if (!auth) throw new ForbiddenException('No autorizado: Cabecera faltante');
-    const parts = auth.split(' ');
-    const token = parts.length === 2 ? parts[1] : auth;
-    
-    try {
-      const secret = process.env.JWT_SECRET || 'tad-super-secret-key-2024';
-      const decoded: any = jwt.verify(token, secret);
-      return await this.driversService.getDriverHubDataById(decoded.sub);
-    } catch (e) {
-      throw new ForbiddenException('Token inválido o expirado');
-    }
+  @Roles('DRIVER')
+  async getMyHub(@Req() req: any) {
+    const { entityId } = req.user;
+    if (!entityId) throw new ForbiddenException('No tienes un perfil de conductor asociado');
+    return this.driversService.getDriverHubDataById(entityId);
   }
 
   /**

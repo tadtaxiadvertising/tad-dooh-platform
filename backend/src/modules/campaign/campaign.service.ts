@@ -84,11 +84,18 @@ export class CampaignService {
 
   async createCampaign(dto: CreateCampaignDto, user?: any) {
     const isAdmin = user?.role === 'ADMIN';
+    const isAdvertiser = user?.role === 'ADVERTISER';
     let assignedAdvertiser = dto.advertiser;
     let assignedAdvertiserId = dto.advertiser_id; // Support explicit ID from DTO
     let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
 
-    if (!isAdmin && user?.email && !assignedAdvertiserId) {
+    if (isAdvertiser && user?.entityId) {
+       assignedAdvertiserId = user.entityId;
+       // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
+       const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
+       assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
+       initialStatus = 'PENDING_REVIEW';
+    } else if (!isAdmin && user?.email && !assignedAdvertiserId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (advertiser) {
         assignedAdvertiserId = advertiser.id;
@@ -434,6 +441,56 @@ export class CampaignService {
       version: latestUpdate,
       sync_hash: syncHash,
       media_assets: finalMediaAssets
+    };
+  }
+
+  async getCampaignReports(advertiserId?: string, startDate?: Date, endDate?: Date) {
+    const where: any = {};
+    if (advertiserId) {
+      where.campaign = { advertiserId };
+    }
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = startDate;
+      if (endDate) where.date.lte = endDate;
+    }
+
+    const metrics = await this.prisma.campaignMetric.findMany({
+      where,
+      include: {
+        campaign: {
+          select: { name: true, advertiser: true }
+        }
+      },
+      orderBy: { date: 'asc' }
+    });
+
+    const summary = metrics.reduce((acc: any, curr) => {
+      acc.impressions += curr.totalImpressions;
+      acc.completions += curr.totalCompletions;
+      return acc;
+    }, { impressions: 0, completions: 0 });
+
+    const byDate = metrics.reduce((acc: any, curr) => {
+      const day = curr.date.toISOString().split('T')[0];
+      if (!acc[day]) acc[day] = { date: day, impressions: 0, completions: 0 };
+      acc[day].impressions += curr.totalImpressions;
+      acc[day].completions += curr.totalCompletions;
+      return acc;
+    }, {});
+
+    const byCity = metrics.reduce((acc: any, curr) => {
+      const city = curr.city || 'Desconocido';
+      if (!acc[city]) acc[city] = { city, impressions: 0 };
+      acc[city].impressions += curr.totalImpressions;
+      return acc;
+    }, {});
+
+    return {
+      summary,
+      timeSeries: Object.values(byDate),
+      geographic: Object.values(byCity),
+      totalRecords: metrics.length
     };
   }
 }

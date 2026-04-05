@@ -46,6 +46,15 @@ export function middleware(request: NextRequest) {
       if (role === 'DRIVER') return NextResponse.redirect(new URL('/driver/dashboard', request.url));
       if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
     }
+
+    // Bloqueo de Gateway genérico: Si un portal específico intenta acceder a la UI de login genérica
+    // lo forzamos silenciosamente y a la velocidad de Edge hacia su login personalizado.
+    if (pathname === '/login') {
+      if (portalType === 'ADVERTISER') return NextResponse.redirect(new URL('/advertiser/login', request.url));
+      if (portalType === 'DRIVER') return NextResponse.redirect(new URL('/driver/login', request.url));
+      if (portalType === 'ADMIN') return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
     return NextResponse.next();
   }
 

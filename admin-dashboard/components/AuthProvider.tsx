@@ -10,10 +10,68 @@ interface AuthContextValue {
   loading: boolean;
 }
 
-
 const AuthContext = createContext<AuthContextValue>({ session: null, loading: true });
 
 export const useAuth = () => useContext(AuthContext);
+
+/** Decode a JWT token payload without verifying signature */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const base64 = token.split('.')[1];
+    if (!base64) return null;
+    const padded = base64.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+/** Build a synthetic Session from a custom portal JWT stored in localStorage */
+function buildSessionFromLocalToken(tokenKey: string, userKey: string): Session | null {
+  try {
+    const token = localStorage.getItem(tokenKey);
+    const userRaw = localStorage.getItem(userKey);
+    if (!token || !userRaw) return null;
+
+    // Decode claims directly from JWT — this is the source of truth
+    const claims = decodeJwtPayload(token);
+    if (!claims) return null;
+
+    // Check token expiry
+    if (claims.exp && claims.exp * 1000 < Date.now()) {
+      localStorage.removeItem(tokenKey);
+      localStorage.removeItem(userKey);
+      return null;
+    }
+
+    let storedUser: Record<string, any> = {};
+    try { storedUser = JSON.parse(userRaw); } catch { /* noop */ }
+
+    // Extract role and entityId from JWT claims first (most reliable)
+    const role = claims.app_metadata?.role || claims.role || storedUser.role || 'GUEST';
+    const entityId = claims.app_metadata?.entityId || claims.sub || storedUser.entityId || storedUser.id || null;
+
+    const syntheticUser = {
+      id: claims.sub || storedUser.id || '',
+      email: claims.email || storedUser.email || '',
+      role: role,
+      app_metadata: { role, entityId },
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: storedUser.created_at || '',
+    };
+
+    return {
+      access_token: token,
+      token_type: 'bearer',
+      expires_in: claims.exp ? Math.max(0, claims.exp - Math.floor(Date.now() / 1000)) : 3600,
+      refresh_token: '',
+      user: syntheticUser,
+    } as unknown as Session;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -21,94 +79,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // ── 1. Leer sesión inicial desde el storage (síncrono en el SDK de Supabase)
-    if (!supabase) return; // Safely exit if Supabase couldn't be initialized (SSR)
+    if (typeof window === 'undefined') return;
 
-    const isPublic = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
+    const currentPath = router.pathname;
+    const isPublic = PUBLIC_PATHS.includes(currentPath) || currentPath.startsWith('/p');
 
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      let activeSession = session;
+    function resolveSession(supabaseSession: Session | null) {
+      let activeSession: Session | null = supabaseSession;
 
       if (!activeSession) {
-        // Intentar recuperar sesión de localStorage para portales con JWT custom
-        // Orden de prioridad: admin > advertiser > driver
-        const tokenKeys = ['tad_admin_token', 'tad_advertiser_token', 'tad_driver_token'];
-        const userKeys = ['tad_admin_user', 'tad_advertiser_user', 'tad_driver_user'];
-        
-        let localToken: string | null = null;
-        let localUser: string | null = null;
+        // Try each portal's token in priority order based on current path
+        const portals: [string, string][] = [];
 
-        for (let i = 0; i < tokenKeys.length; i++) {
-          const t = localStorage.getItem(tokenKeys[i]);
-          const u = localStorage.getItem(userKeys[i]);
-          if (t && u) {
-            localToken = t;
-            localUser = u;
-            break;
-          }
+        if (currentPath.startsWith('/advertiser')) {
+          portals.push(['tad_advertiser_token', 'tad_advertiser_user']);
+          portals.push(['tad_admin_token', 'tad_admin_user']);
+        } else if (currentPath.startsWith('/driver')) {
+          portals.push(['tad_driver_token', 'tad_driver_user']);
+          portals.push(['tad_admin_token', 'tad_admin_user']);
+        } else {
+          portals.push(['tad_admin_token', 'tad_admin_user']);
+          portals.push(['tad_advertiser_token', 'tad_advertiser_user']);
+          portals.push(['tad_driver_token', 'tad_driver_user']);
         }
 
-        if (localToken && localUser) {
-          try {
-            const parsedUser = JSON.parse(localUser);
-            // Detectar el rol real del usuario almacenado
-            const detectedRole = parsedUser.app_metadata?.role || parsedUser.role || 'ADMIN';
-            const detectedEntityId = parsedUser.app_metadata?.entityId || parsedUser.entityId || null;
-            
-            activeSession = {
-              access_token: localToken,
-              token_type: 'bearer',
-              expires_in: 3600,
-              refresh_token: '',
-              user: {
-                ...parsedUser,
-                app_metadata: {
-                  ...parsedUser.app_metadata,
-                  role: detectedRole,
-                  entityId: detectedEntityId
-                }
-              }
-            } as Session;
-          } catch(e) {}
+        for (const [tokenKey, userKey] of portals) {
+          const s = buildSessionFromLocalToken(tokenKey, userKey);
+          if (s) {
+            activeSession = s;
+            break;
+          }
         }
       }
 
       setSession(activeSession);
       setLoading(false);
 
-      // Solo redirigir al login si NO estamos ya en él
       if (!activeSession && !isPublic) {
-        router.replace('/login');
+        let loginTarget = '/login';
+        if (currentPath.startsWith('/advertiser')) loginTarget = '/advertiser/login';
+        else if (currentPath.startsWith('/driver')) loginTarget = '/driver/login';
+        else if (currentPath.startsWith('/admin')) loginTarget = '/admin/login';
+        router.replace(loginTarget);
       }
-    });
+    }
 
-    // ── 2. Subscribirse a cambios de sesión (login, logout, refresh de token)
-    const { data } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session: sbSession } }) => {
+        resolveSession(sbSession);
+      });
+
+      const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, sbSession: Session | null) => {
+        if (_event === 'SIGNED_IN' && sbSession) {
+          setSession(sbSession);
+          if (currentPath === '/login' || currentPath === '/admin/login') {
+            router.replace('/admin');
+          }
+        }
 
         if (_event === 'SIGNED_OUT') {
-          // Limpiar también el token legado de localStorage por compatibilidad
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('tad_admin_token');
-            localStorage.removeItem('tad_admin_user');
+          // Only clear ADMIN (Supabase) tokens — leave advertiser/driver tokens intact
+          localStorage.removeItem('tad_admin_token');
+          localStorage.removeItem('tad_admin_user');
+          // Re-check if there's a portal session still valid
+          const s = buildSessionFromLocalToken('tad_advertiser_token', 'tad_advertiser_user')
+            || buildSessionFromLocalToken('tad_driver_token', 'tad_driver_user');
+          setSession(s);
+          if (!s) {
+            router.replace('/login');
           }
-          router.replace('/login');
         }
+      });
 
-        if (_event === 'SIGNED_IN' && router.pathname === '/login') {
-          router.replace('/');
-        }
-      }
-    );
-
-    return () => {
-      data?.subscription?.unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      return () => { data?.subscription?.unsubscribe(); };
+    } else {
+      // No Supabase configured — try local tokens only
+      resolveSession(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── 3. Pantalla de carga premium (bloquea renders que dispararían kick-outs)
   const isPublicPage = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
   if (loading && !isPublicPage) {
     return (

@@ -228,10 +228,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
                   ));
 
-                  return (
-                    <Link
+                    <a
                       key={item.name}
                       href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsSidebarOpen(false);
+                        router.push(item.href);
+                      }}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
                         'group flex items-center text-[11px] font-black rounded-xl transition-all relative tracking-widest border border-transparent uppercase',
@@ -262,7 +266,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       )}>
                          {item.name}
                       </span>
-                    </Link>
+                    </a>
                   );
                 })}
               </div>

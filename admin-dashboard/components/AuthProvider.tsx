@@ -35,12 +35,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (localToken && localUser) {
           try {
+            const parsedUser = JSON.parse(localUser);
             activeSession = {
               access_token: localToken,
               token_type: 'bearer',
               expires_in: 3600,
               refresh_token: '',
-              user: JSON.parse(localUser)
+              user: {
+                ...parsedUser,
+                app_metadata: {
+                  ...parsedUser.app_metadata,
+                  role: parsedUser.role || 'ADMIN',
+                  entityId: parsedUser.entityId || null
+                }
+              }
             } as Session;
           } catch(e) {}
         }

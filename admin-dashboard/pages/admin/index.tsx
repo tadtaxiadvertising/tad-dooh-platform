@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Server, Radio, AlertTriangle, ArrowUpRight, BarChart3, Fingerprint, Layers, MessageSquare } from 'lucide-react';
-import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary, getPortalRequests } from '../services/api';
+import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary, getPortalRequests } from '../../services/api';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { useTabSync } from '../hooks/useTabSync';
+import { useTabSync } from '../../hooks/useTabSync';
 import clsx from 'clsx';
 import Link from 'next/link';
 

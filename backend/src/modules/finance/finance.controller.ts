@@ -15,8 +15,11 @@ import { WhatsAppService } from '../notifications/whatsapp.service';
 import { EmailService } from '../notifications/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('finance')
+@Roles(UserRole.ADMIN)
 export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,

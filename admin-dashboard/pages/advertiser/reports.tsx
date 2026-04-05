@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
+import api from '@/services/api';
 
 const COLORS = ['#fad400', '#3b82f6', '#10b981', '#a855f7', '#f43f5e'];
 
@@ -22,13 +23,8 @@ export default function AdvertiserReports() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campaigns/reports/summary`, {
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`
-          }
-        });
-        const result = await res.json();
-        setData(result);
+        const response = await api.get('/campaigns/reports/summary');
+        setData(response.data);
       } catch (e) {
         console.error('Error fetching reports:', e);
       } finally {

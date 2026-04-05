@@ -7,8 +7,12 @@ import clsx from 'clsx';
 export default function LoginGateway() {
   const router = useRouter();
 
-  // Opcional: Si ya hay sesión, el middleware ya debería haberlo atrapado,
-  // pero podemos añadir un check extra o simplemente renderizar el selector.
+  useEffect(() => {
+    const portalType = process.env.NEXT_PUBLIC_PORTAL_TYPE;
+    if (portalType === 'ADVERTISER') router.replace('/advertiser/login');
+    if (portalType === 'DRIVER') router.replace('/driver/login');
+    if (portalType === 'ADMIN') router.replace('/admin/login');
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">

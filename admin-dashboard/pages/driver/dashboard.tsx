@@ -3,27 +3,50 @@ import { useAuth } from '@/components/AuthProvider';
 import { 
   Car, Wallet, ShieldAlert, Wifi, Battery, MapPin, 
   ChevronRight, RefreshCw, Smartphone, TrendingUp,
-  CreditCard, Award
+  CreditCard, Award, LogOut, LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import api from '@/services/api';
 
 export default function DriverDashboard() {
-  const { session } = useAuth();
-  const [driver, setDriver] = useState<any>(null);
+  const { session, logout } = useAuth();
+  const [driverData, setDriverData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // MOCK DATA for pilot 4G experience
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await api.get('/drivers/me/hub');
+        setDriverData(response.data);
+      } catch (error) {
+        console.error('Failed to load driver data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+     return (
+       <div className="min-h-screen bg-black flex items-center justify-center">
+          <RefreshCw className="w-8 h-8 text-[#fad400] animate-spin" />
+       </div>
+     );
+  }
+
   const stats = {
-    balance: 'RD$1,250.00',
-    bonus: 'RD$500.00',
-    referralEarned: 'RD$750.00',
-    subscriptionStatus: 'ACTIVE', // ACTIVE, PENDING, EXPIRED
+    balance: `RD$${(driverData?.balance || 0).toLocaleString()}`,
+    bonus: `RD$${(driverData?.bonus || 0).toLocaleString()}`,
+    referralEarned: `RD$${(driverData?.referralEarned || 0).toLocaleString()}`,
+    subscriptionStatus: driverData?.subscriptionStatus || 'ACTIVE',
     tabletHealth: {
-      battery: 85,
-      gps: 'LAT: 18.48, LNG: -69.93',
-      sync: '100%',
-      lastSeen: 'Hace 2 min'
+      battery: driverData?.device?.batteryLevel || 100,
+      gps: driverData?.device?.lastLocation || 'N/A',
+      sync: driverData?.device?.syncStatus || '100%',
+      lastSeen: driverData?.device?.lastSeen || 'Desconocido',
+      hwId: driverData?.device?.deviceId || 'TAD-DRIVER'
     }
   };
 
@@ -35,9 +58,12 @@ export default function DriverDashboard() {
            <p className="text-[10px] font-black text-[#fad400] uppercase tracking-[0.3em]">TAD Driver v2.1</p>
            <h1 className="text-2xl font-black uppercase tracking-tighter">Mi <span className="text-[#fad400]">Panel</span></h1>
         </div>
-        <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center">
-           <Car className="w-5 h-5 text-zinc-400" />
-        </div>
+        <button 
+          onClick={logout}
+          className="w-10 h-10 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center hover:bg-rose-500/10 transition-colors"
+        >
+           <LogOut className="w-5 h-5 text-rose-500" />
+        </button>
       </header>
 
       <main className="p-6 space-y-8 pb-32">
@@ -106,7 +132,7 @@ export default function DriverDashboard() {
                          <Smartphone className="w-6 h-6 text-[#fad400]" />
                       </div>
                       <div>
-                         <p className="text-xs font-black uppercase tracking-tighter">STI-0004_PRO</p>
+                         <p className="text-xs font-black uppercase tracking-tighter">{stats.tabletHealth.hwId}</p>
                          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{stats.tabletHealth.lastSeen}</p>
                       </div>
                    </div>
@@ -177,4 +203,4 @@ export default function DriverDashboard() {
   );
 }
 
-import { LayoutDashboard } from 'lucide-react';
+export default DriverDashboard;

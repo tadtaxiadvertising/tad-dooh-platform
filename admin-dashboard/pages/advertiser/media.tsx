@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { supabase } from '@/lib/supabase'; // Assuming this exists
+import { supabase } from '@/lib/supabase';
+import api from '@/services/api';
 
 export default function AdvertiserMedia() {
   const { session } = useAuth();
@@ -45,26 +46,19 @@ export default function AdvertiserMedia() {
 
         if (error) throw error;
 
-        // Register Metadata in Backend
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campaigns/register-media`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            storagePath: filePath,
-            url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
-            fileSize: file.size,
-            brandId: session?.user?.app_metadata?.entityId
-          })
+        // Register Metadata in Backend (Using our unified API proxy)
+        const response = await api.post('/campaigns/register-media', {
+          fileName: file.name,
+          storagePath: filePath,
+          url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
+          fileSize: file.size,
+          brandId: session?.user?.app_metadata?.entityId
         });
 
-        if (res.ok) {
-           const newMedia = await res.json();
+        if (response.data) {
+           const newMedia = response.data.media;
            setMediaLibrary(prev => [{
-             id: newMedia.media.id,
+             id: newMedia.id,
              filename: file.name,
              size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
              date: new Date().toISOString(),

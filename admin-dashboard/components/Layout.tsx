@@ -129,6 +129,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
+  // Auto-close mobile sidebar when route changes
+  React.useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [router.pathname]);
+
   const navigationGroups = React.useMemo(() => {
     if (role === 'ADVERTISER') return ADVERTISER_NAVIGATION;
     if (role === 'DRIVER') return DRIVER_NAVIGATION;
@@ -227,7 +232,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.name}
                       href={item.href}
-                      onClick={() => setIsSidebarOpen(false)}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
                         'group flex items-center text-[11px] font-black rounded-xl transition-all relative tracking-widest border border-transparent uppercase',

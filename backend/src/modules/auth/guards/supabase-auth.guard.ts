@@ -47,7 +47,7 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
-    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET');
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
 
     // --- ESTRATEGIA 1: Validación Local (Offline-First Backend) ---
     if (jwtSecret && jwtSecret.length > 40 && !jwtSecret.startsWith('sb_')) {

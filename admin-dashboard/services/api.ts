@@ -51,7 +51,9 @@ api.interceptors.request.use(async (config) => {
         config.headers.Authorization = `Bearer ${session.access_token}`;
       } else {
         // 2. Fallback: LocalStorage (Para compatibilidad con login legacy y diversos portales)
-        const localToken = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_advertiser_token');
+        const localToken = localStorage.getItem('tad_admin_token') || 
+                           localStorage.getItem('tad_advertiser_token') || 
+                           localStorage.getItem('tad_driver_token');
         if (localToken) {
           config.headers.Authorization = `Bearer ${localToken}`;
         }

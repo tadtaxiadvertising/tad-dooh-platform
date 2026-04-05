@@ -92,27 +92,24 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  // --- ADVERTISER HUB ---
-  if (role === 'ADVERTISER') {
-    if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/driver') || pathname === '/') {
+  // --- PORTAL-SPECIFIC REDIRECTS (ONLY IF ROLE MATCHES PORTAL) ---
+  
+  if (role === 'ADVERTISER' && portalType === 'ADVERTISER') {
+    if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/driver')) {
       return NextResponse.redirect(new URL('/advertiser/dashboard', request.url));
     }
   }
 
-  // --- DRIVER PWA ---
-  if (role === 'DRIVER') {
-    if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/advertiser') || pathname === '/') {
+  if (role === 'DRIVER' && portalType === 'DRIVER') {
+    if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/advertiser')) {
       return NextResponse.redirect(new URL('/driver/dashboard', request.url));
     }
   }
 
-  // --- ADMIN / FALLBACK ---
-  if (role === 'ADMIN') {
+  if (role === 'ADMIN' && portalType === 'ADMIN') {
     if (pathname === '/') {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
-    // Permite que el ADMIN acceda a todo (admin, advertiser, driver)
-    return NextResponse.next();
   }
 
   return NextResponse.next();

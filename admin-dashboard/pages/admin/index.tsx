@@ -139,7 +139,7 @@ export default function Home() {
 
       {/* Alert Banner for pending requests */}
       {stats.pendingRequests > 0 && (
-         <Link href="/advertisers/requests" className="mb-8 block">
+         <Link href="/admin/advertisers/requests" className="mb-8 block">
             <div className="bg-tad-yellow border border-white/10 rounded-[2rem] p-6 flex items-center justify-between group hover:scale-[1.01] transition-transform shadow-[0_20px_40px_rgba(250,212,0,0.15)]">
                <div className="flex items-center gap-6">
                   <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center border border-white/10">
@@ -279,7 +279,7 @@ export default function Home() {
              </div>
           </div>
 
-          <Link href="/analytics" className="stitched-card p-8 group block hover:translate-x-2 transition-transform duration-500">
+          <Link href="/admin/analytics" className="stitched-card p-8 group block hover:translate-x-2 transition-transform duration-500">
              <div className="flex items-center justify-between mb-6">
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10 group-hover:border-emerald-500/50 transition-colors">
                    <BarChart3 className="w-6 h-6 text-emerald-500" />

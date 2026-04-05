@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { login as apiLogin } from '@/services/api';
+import api from '@/services/api';
 import { BarChart3, LogIn, AlertCircle, TrendingUp, Target, Rocket, Briefcase, Globe, Shield } from 'lucide-react';
 import clsx from 'clsx';
 import Head from 'next/head';
@@ -23,18 +23,32 @@ export default function AdvertiserLoginPage() {
     setLoading(true);
 
     try {
-      const data = await apiLogin(email, password);
-      
-      if (data.user.role !== 'ADVERTISER' && data.user.role !== 'ADMIN') {
-        throw new Error('Esta cuenta no tiene acceso al portal de anunciantes.');
+      // CRITICAL: Usar el endpoint de login de anunciantes (JWT custom),
+      // NO el login de Supabase Auth que solo funciona para admins.
+      const res = await api.post('/advertisers/login', { email, password });
+      const data = res.data;
+
+      if (!data.access_token) {
+        throw new Error('Respuesta del servidor no contiene token de acceso.');
       }
 
-      // El interceptor de API ya guarda token y user, pero aseguramos la cookie para el middleware
+      // Guardar token y datos del anunciante en localStorage
+      localStorage.setItem('tad_advertiser_token', data.access_token);
+      localStorage.setItem('tad_advertiser_user', JSON.stringify({
+        id: data.advertiserId,
+        email: email,
+        role: 'ADVERTISER',
+        entityId: data.advertiserId,
+        companyName: data.name,
+        app_metadata: { role: 'ADVERTISER', entityId: data.advertiserId }
+      }));
+
+      // Cookie para el middleware de Next.js
       document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
 
       router.replace('/advertiser/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || err.message || 'Error al iniciar sesión');
+      setError(err?.response?.data?.message || err.message || 'Email o contraseña incorrectos');
     } finally {
       setLoading(false);
     }

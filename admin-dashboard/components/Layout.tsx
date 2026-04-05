@@ -147,8 +147,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (role === 'ADMIN') target = '/admin/login';
 
     if (supabase) await supabase.auth.signOut();
+    
+    // Limpiar TODOS los tokens de TODOS los portales
     localStorage.removeItem('tad_admin_token');
     localStorage.removeItem('tad_admin_user');
+    localStorage.removeItem('tad_advertiser_token');
+    localStorage.removeItem('tad_advertiser_user');
+    localStorage.removeItem('tad_driver_token');
+    localStorage.removeItem('tad_driver_user');
     
     // Matar cookie de middleware
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';

@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
 
       // Redirección a Dashboard base
-      router.replace('/dashboard');
+      router.replace('/admin');
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || 'Error al iniciar sesión');
     } finally {

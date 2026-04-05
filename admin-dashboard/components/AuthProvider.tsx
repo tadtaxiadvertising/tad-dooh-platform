@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
-const PUBLIC_PATHS = ['/login', '/check-in'];
+const PUBLIC_PATHS = ['/login', '/admin/login', '/advertiser/login', '/driver/login', '/check-in'];
 
 interface AuthContextValue {
   session: Session | null;

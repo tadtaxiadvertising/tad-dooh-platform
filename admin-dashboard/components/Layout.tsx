@@ -133,9 +133,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [role]);
 
   const handleLogout = async () => {
+    let target = '/login';
+    if (role === 'ADVERTISER') target = '/advertiser/login';
+    if (role === 'DRIVER') target = '/driver/login';
+    if (role === 'ADMIN') target = '/admin/login';
+
     if (supabase) await supabase.auth.signOut();
     localStorage.removeItem('tad_admin_token');
     localStorage.removeItem('tad_admin_user');
+    
+    // Matar cookie de middleware
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    
+    router.replace(target);
   };
 
   return (

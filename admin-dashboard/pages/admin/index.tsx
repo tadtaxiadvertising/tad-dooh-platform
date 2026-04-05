@@ -5,6 +5,7 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, A
 import { useTabSync } from '@/hooks/useTabSync';
 import clsx from 'clsx';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -22,8 +23,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [pilotMode, setPilotMode] = useState(false);
+  const { session } = useAuth();
 
   const loadData = useCallback(async () => {
+    if (!session?.access_token) return;
+
     setLoading(true);
     setError(null);
     try {
@@ -83,8 +87,10 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    loadData();
-  }, [loadData, pilotMode]);
+    if (session) {
+      loadData();
+    }
+  }, [loadData, pilotMode, session]);
 
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">

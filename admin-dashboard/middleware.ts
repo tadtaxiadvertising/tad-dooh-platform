@@ -19,22 +19,38 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname === '/login' ||
+    pathname.includes('/login') || // Captura /login, /admin/login, /advertiser/login, etc.
     pathname === '/check-in' ||
     pathname.startsWith('/p/')
   ) {
+    // 🔥 LÓGICA DE AUTO-REDIRECT SI YA TIENE SESIÓN Y ESTÁ EN LOGIN
+    if (pathname.includes('/login')) {
+      const session = request.cookies.get('sb-access-token')?.value;
+      if (session) {
+        try {
+          const payloadBase64 = session.split('.')[1];
+          const decodedPayload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+          const role = decodedPayload.app_metadata?.role || 'GUEST';
+          if (role === 'ADVERTISER') return NextResponse.redirect(new URL('/advertiser/dashboard', request.url));
+          if (role === 'DRIVER') return NextResponse.redirect(new URL('/driver/dashboard', request.url));
+          if (role === 'ADMIN') return NextResponse.redirect(new URL('/dashboard', request.url));
+        } catch { /* Ignorar error de parsing y seguir al login */ }
+      }
+    }
     return NextResponse.next();
   }
 
-  // 2. Extraer Sesión (Supabase usa 'sb-<id>-auth-token' o lo manejamos manual)
-  // Por simplicidad en este entorno, buscamos 'tad-session' o el token de Supabase
-  const session = request.cookies.get('sb-access-token')?.value || 
-                  request.cookies.get('tad-session')?.value;
+  // 2. Extraer Sesión
+  const session = request.cookies.get('sb-access-token')?.value;
 
   if (!session) {
-    // Si no hay sesión y no es pública, al login
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    // Si no hay sesión y no es pública, redirigir al login correspondiente o genérico
+    let loginTarget = '/login';
+    if (pathname.startsWith('/advertiser')) loginTarget = '/advertiser/login';
+    if (pathname.startsWith('/driver')) loginTarget = '/driver/login';
+    if (pathname.startsWith('/admin')) loginTarget = '/admin/login';
+    
+    return NextResponse.redirect(new URL(loginTarget, request.url));
   }
 
   try {

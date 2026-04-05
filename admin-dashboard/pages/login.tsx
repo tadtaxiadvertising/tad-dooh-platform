@@ -1,203 +1,97 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabase';
-import { ShieldCheck, LogIn, AlertCircle, Fingerprint, Lock, Shield, Cpu, Activity, Globe } from 'lucide-react';
+import Head from 'next/head';
+import { Shield, BarChart3, Car, ChevronRight, LayoutDashboard } from 'lucide-react';
 import clsx from 'clsx';
 
-export default function LoginPage() {
+export default function LoginGateway() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      if (!supabase) {
-        throw new Error('Supabase client no pudo ser inicializado. Falta entorno.');
-      }
-      
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError || !data.session) {
-        throw new Error(authError?.message || 'Credenciales inválidas');
-      }
-
-      // 1. Guardar en LocalStorage (compatibilidad cliente)
-      localStorage.setItem('tad_admin_token', data.session.access_token);
-      localStorage.setItem('tad_admin_user', JSON.stringify({
-        id: data.user?.id,
-        email: data.user?.email,
-        name: 'Admin',
-        role: data.user?.app_metadata?.role || 'GUEST',
-      }));
-
-      // 2. Inyectar Cookie (para el Middleware en el Edge Runtime)
-      if (typeof window !== 'undefined') {
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-        document.cookie = `sb-access-token=${data.session.access_token}; path=/; expires=${expires}; SameSite=Lax; Secure`;
-      }
-
-      // Redirección a Dashboard base, el Middleware decidirá si redirección secundaria
-      router.replace('/');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Opcional: Si ya hay sesión, el middleware ya debería haberlo atrapado,
+  // pero podemos añadir un check extra o simplemente renderizar el selector.
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center p-6 relative overflow-hidden selection:bg-tad-yellow selection:text-black font-sans">
-      {/* Dynamic Environmental Decor */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-white/[0.01] blur-[150px] rounded-full" />
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      <Head>
+        <title>TAD | Selecciona tu Portal</title>
+      </Head>
+
+      {/* Decorative background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-tad-yellow/10 blur-[150px] rounded-full animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-blue-500/5 blur-[150px] rounded-full" />
       </div>
 
-      <div className={clsx(
-        "w-full max-w-[440px] transition-all duration-1000 cubic-bezier(0.4, 0, 0.2, 1) transform",
-        mounted ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
-      )}>
-        {/* Superior Brand Identity */}
-        <div className="text-center mb-12">
-          <div className="relative inline-block mb-8 group">
-             <div className="absolute inset-0 bg-tad-yellow blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-             <div className="relative w-24 h-24 bg-tad-yellow rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-700">
-                <ShieldCheck className="w-12 h-12 text-black" />
-             </div>
-          </div>
+      <div className="z-10 w-full max-w-4xl">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-black text-white tracking-widest uppercase mb-4">
+            TAD <span className="text-tad-yellow">PLATFORM</span>
+          </h1>
+          <p className="text-gray-500 font-bold uppercase tracking-[0.5em] text-xs">Access Management Gateway</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <PortalCard 
+            title="Administrador"
+            subtitle="Central Command & Fleet Controls"
+            icon={<Shield className="w-8 h-8 text-black" />}
+            bgColor="bg-tad-yellow"
+            onClick={() => router.push('/admin/login')}
+            delay="delay-0"
+          />
           
-          <div className="space-y-4">
-             <div className="flex items-center justify-center gap-3">
-                <div className="w-10 h-px bg-white/10" />
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Integrated Core v4.5</p>
-                <div className="w-10 h-px bg-white/10" />
-             </div>
-             <h1 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">
-               TAD <span className="text-tad-yellow">NODE</span>
-             </h1>
-          </div>
+          <PortalCard 
+            title="Anunciante"
+            subtitle="Campaign Performance & Insights"
+            icon={<BarChart3 className="w-8 h-8 text-white" />}
+            bgColor="bg-zinc-800"
+            onClick={() => router.push('/advertiser/login')}
+            delay="delay-75"
+          />
+
+          <PortalCard 
+            title="Conductor"
+            subtitle="Earnings & Device Status PWA"
+            icon={<Car className="w-8 h-8 text-white" />}
+            bgColor="bg-zinc-900"
+            onClick={() => router.push('/driver/login')}
+            delay="delay-150"
+          />
         </div>
 
-        {/* High-Security Terminal Container */}
-        <div className="relative group/form">
-            <div className="absolute -inset-1 bg-gradient-to-br from-tad-yellow/20 to-transparent blur-2xl opacity-0 group-hover/form:opacity-100 transition-opacity duration-1000" />
-            <form 
-              onSubmit={handleSubmit} 
-              className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white-[0.03] rounded-[2.5rem] p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-            >
-              {error && (
-                <div className="mb-10 p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-4 text-rose-500 animate-in zoom-in duration-300">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">{error}</p>
-                </div>
-              )}
-
-              <div className="space-y-8">
-                <div className="group/input">
-                  <div className="flex justify-between items-center mb-3">
-                    <label htmlFor="login-email" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest transition-colors group-focus-within/input:text-tad-yellow">
-                      Email_Credential
-                    </label>
-                    <Fingerprint className="w-3.5 h-3.5 text-gray-700 group-focus-within/input:text-tad-yellow transition-colors" />
-                  </div>
-                  <div className="relative">
-                     <input
-                       id="login-email"
-                       type="email"
-                       value={email}
-                       onChange={(e) => setEmail(e.target.value)}
-                       placeholder="ADMIN_ACCESS@TAD.DO"
-                       required
-                       className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-bold uppercase tracking-widest placeholder:text-gray-700 focus:outline-none focus:border-tad-yellow/50 focus:bg-zinc-900/80 transition-all shadow-inner"
-                     />
-                  </div>
-                </div>
-
-                <div className="group/input">
-                  <div className="flex justify-between items-center mb-3">
-                    <label htmlFor="login-password" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest transition-colors group-focus-within/input:text-tad-yellow">
-                      Secure_Vault
-                    </label>
-                    <Lock className="w-3.5 h-3.5 text-gray-700 group-focus-within/input:text-tad-yellow transition-colors" />
-                  </div>
-                  <div className="relative">
-                     <input
-                       id="login-password"
-                       type="password"
-                       value={password}
-                       onChange={(e) => setPassword(e.target.value)}
-                       placeholder="••••••••••••"
-                       required
-                       minLength={6}
-                       className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-bold tracking-[0.5em] placeholder:text-gray-700 focus:outline-none focus:border-tad-yellow/50 focus:bg-zinc-900/80 transition-all shadow-inner"
-                     />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                id="login-submit"
-                type="submit"
-                disabled={loading}
-                className="w-full mt-12 bg-tad-yellow hover:bg-white text-black font-bold uppercase tracking-[0.2em] text-[10px] py-5 rounded-2xl transition-all shadow-[0_10px_20px_rgba(250,212,0,0.1)] hover:shadow-[0_15px_30px_rgba(255,255,255,0.15)] disabled:bg-zinc-800 disabled:text-gray-500 disabled:shadow-none flex items-center justify-center gap-4 group/btn overflow-hidden relative"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-                {loading ? (
-                  <div className="flex items-center gap-3 relative z-10">
-                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                     <span>Decrypting...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 relative z-10">
-                    <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    <span>Iniciar Sesión</span>
-                  </div>
-                )}
-              </button>
-            </form>
-        </div>
-
-        {/* Global Footer Consensus */}
-        <div className="mt-16 text-center opacity-40 hover:opacity-100 transition-opacity duration-700">
-           <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                TAD GLOBAL AUDIT NETWORK • EST. 2026
-              </p>
-           </div>
-           <div className="flex items-center justify-center gap-8">
-              {['Nexus', 'Cipher', 'Vortex'].map((link) => (
-                <span key={link} className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.3em] cursor-pointer hover:text-tad-yellow transition-colors">{link}</span>
-              ))}
-           </div>
+        <div className="mt-20 text-center opacity-30 hover:opacity-100 transition-opacity">
+          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.8em]">
+            TAD TECHNOLOGIES © SANTIAGO PILOT v2
+          </p>
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes pulse-soft {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.15; transform: scale(1.05); }
-        }
-        .animate-pulse-soft {
-          animation: pulse-soft 8s infinite ease-in-out;
-        }
-        .border-white-\[0\.03\] { border-color: rgba(255, 255, 255, 0.03); }
-      `}</style>
     </div>
   );
 }
 
+function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
+  return (
+    <button 
+      onClick={onClick}
+      className={clsx(
+        "group p-1 rounded-[2.5rem] bg-white/5 border border-white/5 transition-all duration-500 hover:scale-[1.02] active:scale-95 text-left h-full",
+        delay
+      )}
+    >
+      <div className="bg-zinc-900/50 backdrop-blur-3xl p-8 rounded-[2.3rem] h-full flex flex-col justify-between border border-transparent group-hover:border-white/10 transition-colors">
+        <div>
+          <div className={clsx("w-16 h-16 rounded-3xl flex items-center justify-center mb-10 shadow-2xl group-hover:rotate-6 transition-transform duration-500", bgColor)}>
+            {icon}
+          </div>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">{title}</h2>
+          <p className="text-gray-500 text-xs font-bold leading-relaxed">{subtitle}</p>
+        </div>
+        
+        <div className="mt-12 flex items-center gap-3 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">Enter Portal</span>
+          <ChevronRight className="w-4 h-4 text-tad-yellow" />
+        </div>
+      </div>
+    </button>
+  );
+}

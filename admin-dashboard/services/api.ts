@@ -111,12 +111,19 @@ export const login = (email: string, password: string) =>
     const { access_token, user } = res.data;
     localStorage.setItem('tad_admin_token', access_token);
     localStorage.setItem('tad_admin_user', JSON.stringify(user));
+    
+    // 🔥 IMPORTANTE: Inyectar cookie aquí también por si el login no lo hace
+    if (typeof window !== 'undefined') {
+      document.cookie = `sb-access-token=${access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
+    }
+    
     return res.data;
   });
 
 export const logout = () => {
   localStorage.removeItem('tad_admin_token');
   localStorage.removeItem('tad_admin_user');
+  document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
   window.location.href = '/login';
 };
 

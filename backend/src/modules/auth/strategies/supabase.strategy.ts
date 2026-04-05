@@ -44,11 +44,14 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Token inválido o expirado.');
     }
 
-    // El payload de Supabase incluye: sub (user ID), email, role, aud, exp
+    // El payload de Supabase incluye: app_metadata con nuestro entityId y role
+    const appMeta = payload.app_metadata || {};
+    
     return {
       id: payload.sub,
       email: payload.email,
-      role: payload.role || 'ADMIN',
+      role: appMeta.role || payload.role || 'ADMIN',
+      entityId: appMeta.entityId || null,
     };
   }
 }

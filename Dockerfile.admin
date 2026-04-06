@@ -14,7 +14,7 @@ COPY packages ./packages
 COPY apps/admin ./apps/admin
 
 # Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
-RUN npm install
+RUN npm install && npm install lightningcss-linux-x64-musl
 
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
 ARG NEXT_PUBLIC_SUPABASE_URL

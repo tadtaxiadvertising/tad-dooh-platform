@@ -5,7 +5,7 @@ import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, C
 import clsx from 'clsx';
 import { supabase } from "@tad/services";
 import { useAuth } from './AuthProvider';
-import NotificationCenter from './NotificationCenter';
+import { NotificationCenter } from './NotificationCenter';
 import { TADLogo } from './TADLogo';
 import useSWR from 'swr';
 import api, { getDevices } from "@tad/services";

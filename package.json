@@ -6,16 +6,16 @@
   "license": "PROPRIETARY",
   "private": true,
   "workspaces": [
-    "admin-dashboard",
-    "backend"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev:backend": "cd backend && npm run start:dev",
-    "dev:tablet": "cd tablet-player && python -m http.server 8080",
-    "dev:admin": "npm run dev -w admin-dashboard",
+    "dev:backend": "cd apps/api && npm run start:dev",
+    "dev:tablet": "cd apps/tablet-player && python -m http.server 8080",
+    "dev:admin": "npm run dev -workspace admin",
     "install:all": "npm install",
-    "build": "next build",
-    "build:backend": "cd backend && npm run build",
+    "build": "npm run build -ws",
+    "build:backend": "npm run build -workspace api",
     "deploy:vercel": "node devops/deploy-vercel.js"
   },
   "keywords": [

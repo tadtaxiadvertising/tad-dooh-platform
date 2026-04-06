@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Archivos core del monorepo
 COPY package*.json ./
-COPY turbo.json ./
+
 
 # Copiar configuración de workspaces
 COPY packages ./packages

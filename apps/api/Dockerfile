@@ -41,9 +41,7 @@ RUN npm prune --production
 # CRITICAL: do NOT use 'set -e' — a failed prisma push must NOT stop the app
 RUN printf '#!/bin/sh\n\
 echo "=== TAD Backend Entrypoint ==="\n\
-echo "Running Prisma DB Push (non-blocking)..."\n\
-npx prisma db push --accept-data-loss --skip-generate 2>&1 || echo "WARNING: prisma db push failed - app will start anyway"\n\
-echo "Starting NestJS application..."\n\
+echo "Starting NestJS application immediately to pass healthchecks..."\n\
 exec node dist/src/main\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 

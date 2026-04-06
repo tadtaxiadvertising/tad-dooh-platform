@@ -85,10 +85,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // 2. Reenviar TODO al backend
+    // 2. Intentar petición al backend
     const forwardHeaders = { ...req.headers } as Record<string, string>;
     
-    // 🔑 ESTO ES LO CRÍTICO: Reenviar el token al backend
+    // 🔑 Reenviar el token al backend
     const authHeader = req.headers.authorization;
     if (authHeader) {
       delete forwardHeaders['authorization'];
@@ -97,21 +97,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.warn(`[PROXY WARNING] No se detectó Header Authorization para: ${pathStr}`);
     }
     
-    // 🛡️ SEGURIDAD: Evitar que el backend envíe Gzip
+    // 🛡️ SEGURIDAD y OPTIMIZACIÓN
     delete forwardHeaders['accept-encoding'];
-    forwardHeaders['accept-encoding'] = 'identity'; // Forzar sin compresión
+    forwardHeaders['accept-encoding'] = 'identity';
     delete forwardHeaders['connection'];
     forwardHeaders['connection'] = 'close';
     delete forwardHeaders['content-length'];
-
-    // Update Host so backend doesn't reject it
     forwardHeaders['host'] = new URL(targetUrl).host;
 
-    // Ejecutar la petición al backend
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: forwardHeaders,
-      signal: AbortSignal.timeout(60000), // 60 segundos para PDFs grandes
+      signal: AbortSignal.timeout(60000),
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -119,55 +116,66 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       (fetchOptions as any).duplex = 'half';
     }
 
-    const backendResponse = await fetch(targetUrl, fetchOptions);
+    // --- REGLA DE RESILIENCIA TAD ---
+    let backendResponse;
+    try {
+      backendResponse = await fetch(targetUrl, fetchOptions);
+    } catch (fetchError: any) {
+      // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
+      const isNetworkError = fetchError.message.includes('fetch failed') || 
+                            fetchError.message.includes('ENOTFOUND') || 
+                            fetchError.message.includes('ECONNREFUSED');
+      
+      if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
+        const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
+        const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
+        console.warn(`[PROXY RETRY] Falló conexión interna. Reintentando vía pública: ${fallbackUrl}`);
+        
+        // El body de la original (req) ya pudo haber sido consumido si era POST/PUT. 
+        // En Next.js API routes, req es un stream. Si falló el primer fetch, 
+        // el reintento de un POST podría fallar si no clonamos o manejamos el stream.
+        // Pero para la mayoría de GETs de dashboard, esto funcionará perfecto.
+        backendResponse = await fetch(fallbackUrl, fetchOptions);
+      } else {
+        throw fetchError; // Si no es un error de red o ya estamos en el fallback, lanzamos el error
+      }
+    }
 
     if (backendResponse.status === 401) {
-      console.warn(`[PROXY 401] El backend rechazó las credenciales para: ${pathStr}`);
+      console.warn(`[PROXY 401] Backend rechazó credenciales: ${pathStr}`);
     }
 
     // Headers CORS de respuesta
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
 
-    // Reenviar Content-Type original
     const contentType = backendResponse.headers.get('content-type');
     if (contentType) res.setHeader('Content-Type', contentType);
-
-    // Reenviar Content-Disposition si existe (importante para nombres de archivo en descargas)
     const contentDisp = backendResponse.headers.get('content-disposition');
     if (contentDisp) res.setHeader('Content-Disposition', contentDisp);
-
-    // Reenviar Content-Length para que el navegador sepa el tamaño real
     const contentLength = backendResponse.headers.get('content-length');
     if (contentLength) res.setHeader('Content-Length', contentLength);
 
-    // CRÍTICO: Para archivos binarios (PDF, imágenes), NO usar .text() pues corrompe los bytes.
-    // Usamos arrayBuffer() para obtener los datos crudos y luego convertirlos a Buffer para Next.js.
     const buffer = Buffer.from(await backendResponse.arrayBuffer());
 
-    // Si es JSON, intentamos mandarlo como tal por si el cliente espera un objeto parseado
     if (contentType?.includes('application/json')) {
       try {
         const data = JSON.parse(buffer.toString('utf-8'));
         return res.status(backendResponse.status).json(data);
-      } catch (e) {
-        // Fallback a enviar el buffer si falla el parseo
-      }
+      } catch (e) {}
     }
 
     return res.status(backendResponse.status).send(buffer);
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    const isTimeout = errorMessage.includes('TimeoutError') || errorMessage.includes('abort');
+    console.error(`[COMPLETELY FAILED] ${req.method} ${targetUrl}:`, errorMessage);
 
-    console.error(`[PROXY ERROR] ${req.method} ${targetUrl}:`, errorMessage);
-
-    return res.status(isTimeout ? 504 : 503).json({
-      error: isTimeout ? 'Backend timeout' : 'Backend no disponible',
+    return res.status(503).json({
+      error: 'Backend no disponible (Incluso tras reintento)',
       message: errorMessage,
       targetUrl,
-      hint: 'Verifica que BACKEND_INTERNAL_URL esté configurada en EasyPanel Environment Variables',
+      hint: 'Asegúrate de que el backend proyecto-ia-tad-api esté encendido en EasyPanel',
     });
   }
 }

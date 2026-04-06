@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule, OnModuleInit } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -106,6 +106,8 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
   ],
 })
 export class AppModule implements NestModule, OnModuleInit {
+  private readonly logger = new Logger(AppModule.name);
+
   constructor(private readonly authService: AuthService) {}
 
   configure(consumer: MiddlewareConsumer) {
@@ -117,3 +119,4 @@ export class AppModule implements NestModule, OnModuleInit {
     this.logger.log('🚀 TAD Backend Iniciado.');
   }
 }
+

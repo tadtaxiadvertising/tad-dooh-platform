@@ -1,31 +1,58 @@
+# ============================================
+# TAD DOOH Dashboard - Production Monorepo Dockerfile
+# ============================================
 FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# Optimize build process: Cache node_modules
-COPY apps/admin/package*.json ./
+# Archivos core del monorepo
+COPY package*.json ./
+COPY turbo.json ./
+
+# Copiar configuración de workspaces
+COPY packages ./packages
+COPY apps/admin ./apps/admin
+
+# Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
 RUN npm install
 
-# Finalize source code
-COPY apps/admin/ .
+# INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL
 
-# INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN (FORCED AT BUILD)
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
 
-# Build standalone Next.js 15
+# Build específico para admin
+WORKDIR /app/apps/admin
 RUN npm run build
 
-# Stage 2: Production Execution
+# ---- Runner (Production) ----
 FROM node:20-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
-# 8GB VPS optimization (High heap for analytics & map clusters)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-# Standalone execution
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Los archivos standalone de Next.js se generan en apps/admin/.next/standalone/apps/admin (por ser monorepo)
+# o simplemente en /app/apps/admin/.next/standalone
+COPY --from=builder /app/apps/admin/.next/standalone ./
+COPY --from=builder /app/apps/admin/.next/static ./.next/static
+COPY --from=builder /app/apps/admin/public ./public
+
+USER nextjs
 
 EXPOSE 3000
-CMD ["node", "server.js", "-p", "3000"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Importante: Como es root del monorepo, Next.js pone el server.js dentro de apps/admin/server.js dentro de standalone
+CMD ["node", "apps/admin/server.js"]

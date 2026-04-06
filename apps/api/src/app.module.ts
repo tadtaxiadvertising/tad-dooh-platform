@@ -114,11 +114,6 @@ export class AppModule implements NestModule, OnModuleInit {
   }
 
   async onModuleInit() {
-    // Seed default admin user if none exist
-    try {
-      await this.authService.seedAdminUser();
-    } catch (e) {
-      console.warn('⚠️ No se pudo ejecutar el seed inicial:', e.message);
-    }
+    this.logger.log('🚀 TAD Backend Iniciado.');
   }
 }

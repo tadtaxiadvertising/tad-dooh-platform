@@ -36,41 +36,54 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         await this.$connect();
         this.logger.log(`✅ Conexión establecida con éxito en el intento ${attempts + 1}`);
 
-        // REGLA SRE: Inicializar Vistas Materializadas (Master Sync)
-        try {
-          this.logger.log('🏗️ Sincronizando Vistas Materializadas (Master Sync)...');
-          // Nota: El path es relativo a la raíz del backend una vez compilado (dist)
-          const fs = require('fs');
-          const path = require('path');
-          const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
-          if (fs.existsSync(viewsFile)) {
-            const sql = fs.readFileSync(viewsFile, 'utf8');
-             // Split queries by semicolon (;) to execute separately since pg driver limits executeRawUnsafe to single statements
-             const queries = sql.split(';').map((q: string) => q.trim()).filter((q: string) => q.length > 0);
-             for (const query of queries) {
-               await this.$executeRawUnsafe(query).catch(e => {
-                  if (!e.message.includes('already exists')) {
-                     this.logger.error(`Error SQL en vista: ${e.message}`);
-                  }
-               });
-             }
-            this.logger.log('✅ mv_active_campaigns configurada.');
-          }
-        } catch (viewError) {
-          this.logger.error(`❌ Fallo al cargar script de vistas: ${viewError.message}`);
-        }
+        // Async background initialization to keep startup lean
+        this.initializeSreViews().catch(e => {
+          this.logger.error(`❌ Fallo en inicialización de fondo: ${e.message}`);
+        });
 
         return;
       } catch (e) {
         attempts++;
-        const delay = attempts * 2000; // Exponential backup 2s, 4s, 6s...
+        const delay = attempts * 2000;
         this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido al conectar a Supabase. Reintentando en ${delay/1000}s...`);
         if (attempts >= MAX_RETRIES) {
-          this.logger.error('🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos. Deteniendo proceso.');
-          process.exit(1); 
+          this.logger.error('🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos.');
+          // Don't exit immediately, let Nest trial continue if possible, or use a health check
+          return; 
         }
         await new Promise(resolve => setTimeout(resolve, delay));
       }
+    }
+  }
+
+  /**
+   * REGLA SRE: Inicializar Vistas Materializadas en segundo plano
+   */
+  private async initializeSreViews() {
+    try {
+      this.logger.log('🏗️ Sincronizando Vistas Materializadas (Master Sync)...');
+      const fs = require('fs');
+      const path = require('path');
+      const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
+      
+      if (!fs.existsSync(viewsFile)) {
+        this.logger.warn('⚠️ No se encontró prisma/views.sql. Saltando.');
+        return;
+      }
+
+      const sql = fs.readFileSync(viewsFile, 'utf8');
+      const queries = sql.split(';').map((q: string) => q.trim()).filter((q: string) => q.length > 0);
+      
+      for (const query of queries) {
+        await this.$executeRawUnsafe(query).catch(e => {
+          if (!e.message.includes('already exists')) {
+            this.logger.error(`Error SQL en vista: ${e.message}`);
+          }
+        });
+      }
+      this.logger.log('✅ Master Sync Views configuradas.');
+    } catch (viewError) {
+      this.logger.error(`❌ Fallo al cargar script de vistas: ${viewError.message}`);
     }
   }
 

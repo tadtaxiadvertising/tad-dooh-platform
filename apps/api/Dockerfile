@@ -19,8 +19,7 @@ RUN npx prisma generate
 # Final build (NestJS)
 RUN npm run build
 
-# Stage 2: Migrate (separate stage to run db push as a pre-start step at BUILD time)
-# We use a startup script instead to allow DATABASE_URL to be injected at runtime by EasyPanel
+# Stage 2: Production runner
 FROM node:20-alpine AS runner
 
 RUN apk add --no-cache openssl
@@ -38,14 +37,15 @@ COPY --from=builder /app/prisma ./prisma
 # Cleanup dev deps to reduce image size
 RUN npm prune --production
 
-# Create entrypoint script that runs migrate then starts the app
-RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
-    echo 'set -e' >> /app/entrypoint.sh && \
-    echo 'echo "🔄 Running Prisma DB Push..."' >> /app/entrypoint.sh && \
-    echo 'npx prisma db push --accept-data-loss --skip-generate || echo "⚠️ DB push failed, continuing..."' >> /app/entrypoint.sh && \
-    echo 'echo "🚀 Starting TAD Backend..."' >> /app/entrypoint.sh && \
-    echo 'exec node dist/src/main' >> /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+# Create entrypoint script
+# CRITICAL: do NOT use 'set -e' — a failed prisma push must NOT stop the app
+RUN printf '#!/bin/sh\n\
+echo "=== TAD Backend Entrypoint ==="\n\
+echo "Running Prisma DB Push (non-blocking)..."\n\
+npx prisma db push --accept-data-loss --skip-generate 2>&1 || echo "WARNING: prisma db push failed - app will start anyway"\n\
+echo "Starting NestJS application..."\n\
+exec node dist/src/main\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 3000
 

@@ -120,7 +120,7 @@ function FleetHealthStatus({ hasSession }: { hasSession: boolean }) {
   );
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { session } = useAuth();
   const currentRole = session?.user?.app_metadata?.role as string;

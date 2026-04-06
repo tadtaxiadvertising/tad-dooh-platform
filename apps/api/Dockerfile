@@ -8,39 +8,45 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
+# Install ALL dependencies (including dev) for build
 RUN npm install
 
 COPY . .
 
-# Generate Prisma Client (Minimalistic)
+# Generate Prisma Client
 RUN npx prisma generate
 
 # Final build (NestJS)
 RUN npm run build
 
-# Stage 2: Production
+# Stage 2: Migrate (separate stage to run db push as a pre-start step at BUILD time)
+# We use a startup script instead to allow DATABASE_URL to be injected at runtime by EasyPanel
 FROM node:20-alpine AS runner
 
-# SSL is needed for Prisma
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Configuración estándar para alto rendimiento (8GB RAM disponible)
 ENV PORT=3000
 
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
-# Para evitar errores por dependencias faltantes en runtime, copiamos node_modules completo
-# y luego eliminamos devDeps.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
-# Limpiar dev dependencies del node_modules final
+# Cleanup dev deps to reduce image size
 RUN npm prune --production
+
+# Create entrypoint script that runs migrate then starts the app
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
+    echo 'echo "🔄 Running Prisma DB Push..."' >> /app/entrypoint.sh && \
+    echo 'npx prisma db push --accept-data-loss --skip-generate || echo "⚠️ DB push failed, continuing..."' >> /app/entrypoint.sh && \
+    echo 'echo "🚀 Starting TAD Backend..."' >> /app/entrypoint.sh && \
+    echo 'exec node dist/src/main' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["/bin/sh", "/app/entrypoint.sh"]

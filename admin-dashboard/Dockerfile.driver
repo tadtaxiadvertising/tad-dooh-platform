@@ -29,6 +29,9 @@ ENV NODE_ENV=production
 # 8GB VPS optimization (High heap for PWA Driver maps & stats)
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+# REGLA ORO: Persistir la variable de entorno en la etapa final de ejecución (Runner)
+ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
+
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public

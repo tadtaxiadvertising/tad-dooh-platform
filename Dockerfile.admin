@@ -6,7 +6,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Archivos core del monorepo
-COPY package*.json ./
+COPY package.json ./
 
 
 # Copiar configuración de workspaces
@@ -14,7 +14,7 @@ COPY packages ./packages
 COPY apps/admin ./apps/admin
 
 # Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
-RUN npm install && npm install lightningcss-linux-x64-musl
+RUN rm -rf package-lock.json node_modules && npm install
 
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
 ARG NEXT_PUBLIC_SUPABASE_URL

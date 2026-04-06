@@ -42,11 +42,15 @@ ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Los archivos standalone de Next.js se generan en apps/admin/.next/standalone/apps/admin (por ser monorepo)
-# o simplemente en /app/apps/admin/.next/standalone
-COPY --from=builder /app/apps/admin/.next/standalone ./
-COPY --from=builder /app/apps/admin/.next/static ./.next/static
-COPY --from=builder /app/apps/admin/public ./public
+# Los archivos standalone de Next.js en un monorepo se estructuran así:
+# apps/admin/server.js
+# node_modules/
+# .next/static e imágenes deben estar disponibles para el server.
+
+# Copiamos los archivos y aseguramos que el usuario nextjs sea el dueño
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/admin/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/public ./apps/admin/public
 
 USER nextjs
 
@@ -54,5 +58,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Importante: Como es root del monorepo, Next.js pone el server.js dentro de apps/admin/server.js dentro de standalone
-CMD ["sh", "-c", "if [ -f apps/admin/server.js ]; then mkdir -p apps/admin/.next && cp -r .next/static apps/admin/.next/ && cp -r public apps/admin/ && node apps/admin/server.js; elif [ -f server.js ]; then node server.js; else echo 'No server.js found!' && find . -name server.js && exit 1; fi"]
+CMD ["node", "apps/admin/server.js"]

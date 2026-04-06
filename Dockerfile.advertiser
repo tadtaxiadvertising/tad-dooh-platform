@@ -42,10 +42,10 @@ ENV NEXT_PUBLIC_PORTAL_TYPE=ADVERTISER
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copiar los assets de output standalone
-COPY --from=builder /app/apps/advertiser/.next/standalone ./
-COPY --from=builder /app/apps/advertiser/.next/static ./.next/static
-COPY --from=builder /app/apps/advertiser/public ./public
+# Copiar los assets de output standalone con los permisos correctos
+COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/static ./apps/advertiser/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/public ./apps/advertiser/public
 
 USER nextjs
 
@@ -54,4 +54,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Importante: standalone server queda bajo la ruta apps/advertiser/server.js
-CMD ["sh", "-c", "if [ -f apps/advertiser/server.js ]; then mkdir -p apps/advertiser/.next && cp -r .next/static apps/advertiser/.next/ && cp -r public apps/advertiser/ && node apps/advertiser/server.js; elif [ -f server.js ]; then node server.js; else echo 'No server.js found!' && find . -name server.js && exit 1; fi"]
+CMD ["node", "apps/advertiser/server.js"]

@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as jwt from 'jsonwebtoken';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class SyncService {
@@ -173,9 +174,13 @@ export class SyncService {
 
     const playlist = Array.from(playlistMap.values());
 
+    // 3.7 Calculate Manifest Hash for ETagging
+    // Unique fingerprint based on campaign list and their last updates
+    const manifestContent = activeCampaigns.map(c => `${c.id}-${c.updatedAt.getTime()}`).sort().join('|');
+    const etag = crypto.createHash('md5').update(manifestContent).digest('hex');
+
     // 4. Generar License Token (Kill-Switch)
     // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.
-    // Expiración: 24 horas (Tiempo suficiente para superar zonas de sombra o desconexión nocturna, pero corta fraude mensual)
     const licenseToken = jwt.sign(
       { 
         deviceId, 
@@ -191,6 +196,7 @@ export class SyncService {
     return {
       timestamp: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      etag,
       licenseToken,
       device: {
         id: device.id,
@@ -200,5 +206,14 @@ export class SyncService {
       count: playlist.length,
       playlist
     };
+  }
+
+  async refreshManifestView() {
+    try {
+      await this.prisma.$executeRawUnquoted`SELECT refresh_active_campaigns();`;
+      this.logger.log('✅ Active Campaigns Materialized View Refreshed');
+    } catch (e) {
+      this.logger.error('❌ Failed to refresh Materialized View', e.stack);
+    }
   }
 }

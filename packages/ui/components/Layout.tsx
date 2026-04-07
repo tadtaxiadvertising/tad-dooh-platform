@@ -1,7 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale } from 'lucide-react';
+import { 
+  Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, 
+  BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, 
+  LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, 
+  ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale,
+  Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon
+} from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from "@tad/services";
 import { useAuth } from './AuthProvider';
@@ -17,24 +23,24 @@ const ADMIN_NAVIGATION = [
     label: 'Centro de Control',
     items: [
       { name: 'Resumen General', href: '/admin/dashboard', icon: LayoutDashboard },
-      { name: 'Monitor de Pantallas', href: '/admin/fleet', icon: Tablet },
-      { name: 'Geolocalización', href: '/admin/dashboard/realtime', icon: Navigation },
-      { name: 'Auditoría & Salud', href: '/admin/monitoring', icon: ShieldCheck },
+      { name: 'Monitor de Pantallas', href: '/admin/fleet', icon: Monitor },
+      { name: 'Geolocalización', href: '/admin/dashboard/realtime', icon: Map },
+      { name: 'Auditoría & Salud', href: '/admin/monitoring', icon: Activity },
     ],
   },
   {
     label: 'Gestión Táctica',
     items: [
-      { name: 'Socios Conductores', href: '/admin/drivers', icon: IdCard },
-      { name: 'Anunciantes & Marcas', href: '/admin/advertisers', icon: Briefcase },
-      { name: 'Solicitudes Portal', href: '/admin/advertisers/requests', icon: MessageSquare },
+      { name: 'Socios Conductores', href: '/admin/drivers', icon: Users },
+      { name: 'Anunciantes & Marcas', href: '/admin/advertisers', icon: Building2 },
+      { name: 'Solicitudes Portal', href: '/admin/advertisers/requests', icon: ClipboardList },
     ],
   },
   {
     label: 'Playlist & Ads',
     items: [
-      { name: 'Campañas Activas', href: '/admin/campaigns', icon: Megaphone },
-      { name: 'Biblioteca Multimedia', href: '/admin/media', icon: CloudUpload },
+      { name: 'Campañas Activas', href: '/admin/campaigns', icon: Target },
+      { name: 'Biblioteca Multimedia', href: '/admin/media', icon: ImageIcon },
     ],
   },
   {
@@ -53,8 +59,8 @@ const ADVERTISER_NAVIGATION = [
     label: 'Marketing Hub',
     items: [
       { name: 'Dashboard BI', href: '/advertiser/dashboard', icon: LayoutDashboard },
-      { name: 'Mis Campañas', href: '/advertiser/campaigns', icon: Megaphone },
-      { name: 'Librería de Medios', href: '/advertiser/media', icon: CloudUpload },
+      { name: 'Mis Campañas', href: '/advertiser/campaigns', icon: Target },
+      { name: 'Librería de Medios', href: '/advertiser/media', icon: ImageIcon },
     ],
   },
   {
@@ -171,9 +177,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "bg-zinc-900/90 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-50 fixed lg:static h-full shadow-2xl",
-        isSidebarOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0",
-        isCollapsed ? "lg:w-[88px]" : "lg:w-[280px]"
+        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-[100] fixed lg:static h-full shadow-2xl",
+        isSidebarOpen ? "translate-x-0 w-[300px]" : "-translate-x-full lg:translate-x-0",
+        isCollapsed ? "lg:w-[100px]" : "lg:w-[300px]"
       )}>
         <button 
           className="lg:hidden absolute top-4 right-4 text-zinc-400 hover:text-white z-50"
@@ -245,11 +251,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       }}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
-                        'group flex items-center text-[11px] font-black rounded-xl transition-all relative tracking-widest border border-transparent uppercase',
+                        'group flex items-center text-[12px] font-bold rounded-2xl transition-all relative tracking-wider border border-transparent uppercase',
                         isActive
-                          ? 'bg-tad-yellow text-black shadow-[0_8px_20px_rgba(250,212,0,0.15)] border-tad-yellow/30'
+                          ? 'bg-tad-yellow text-black shadow-[0_12px_24px_rgba(250,212,0,0.2)] border-tad-yellow/40'
                           : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10',
-                        isCollapsed ? 'justify-center p-3' : 'px-4 py-3.5'
+                        isCollapsed ? 'justify-center p-4' : 'px-5 py-4'
                       )}
                     >
                       {isActive && (
@@ -320,7 +326,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
         
         {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
-        <header className="h-20 shrink-0 flex items-center justify-between px-4 md:px-10 border-b border-white-[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/10 z-30 w-full shadow-2xl relative overflow-hidden">
+        <header className="h-20 shrink-0 flex items-center justify-between px-4 md:px-10 border-b border-white-[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] w-full shadow-2xl relative overflow-hidden">
            {/* Subtle glass light leak */}
            <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
           <div className="flex items-center gap-4 flex-1">

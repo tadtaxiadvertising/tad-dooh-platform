@@ -16,7 +16,7 @@ const ADMIN_NAVIGATION = [
   {
     label: 'Centro de Control',
     items: [
-      { name: 'Resumen General', href: '/admin', icon: LayoutDashboard },
+      { name: 'Resumen General', href: '/admin/dashboard', icon: LayoutDashboard },
       { name: 'Monitor de Pantallas', href: '/admin/fleet', icon: Tablet },
       { name: 'Geolocalización', href: '/admin/dashboard/realtime', icon: Navigation },
       { name: 'Auditoría & Salud', href: '/admin/monitoring', icon: ShieldCheck },

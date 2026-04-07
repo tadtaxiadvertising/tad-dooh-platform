@@ -5,6 +5,7 @@ import {
   ChevronRight, RefreshCw, Smartphone, TrendingUp,
   CreditCard, Award, LogOut, LayoutDashboard
 } from 'lucide-react';
+import { PortalRequestCenter } from '@tad/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import api, { logout } from "@tad/services";
@@ -113,7 +114,22 @@ function DriverDashboard() {
                  </div>
               </div>
 
-              <button className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:translate-y-[-2px] transition-transform shadow-xl">
+              <button 
+                onClick={async () => {
+                  try {
+                    await api.post('/portal-requests', {
+                      driverId: session?.user?.id,
+                      type: 'PAYOUT',
+                      title: 'Solicitud de Liquidación',
+                      description: `El conductor solicita el pago de su balance actual: ${stats.balance}`,
+                    });
+                    alert('Solicitud enviada. El administrador revisará tu pago pronto.');
+                  } catch (e) {
+                    alert('Error enviando solicitud');
+                  }
+                }}
+                className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:translate-y-[-2px] transition-transform shadow-xl"
+              >
                  <CreditCard className="w-4 h-4" />
                  Solicitar Liquidación
               </button>
@@ -160,6 +176,14 @@ function DriverDashboard() {
                 </div>
              </div>
           </div>
+        </section>
+
+        {/* Requests Center */}
+        <section>
+           <PortalRequestCenter 
+             portalType="DRIVER" 
+             userId={session?.user?.id} 
+           />
         </section>
 
         {/* Quick Menu */}

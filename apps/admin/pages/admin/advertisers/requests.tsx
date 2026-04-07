@@ -20,6 +20,7 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RequestsPage() {
+  const [portalType, setPortalType] = useState<'ADVERTISER' | 'DRIVER'>('ADVERTISER');
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
@@ -57,10 +58,17 @@ export default function RequestsPage() {
   };
 
   const filteredRequests = requests.filter(r => {
+    const isOfPortalType = portalType === 'ADVERTISER' ? !!r.advertiserId : !!r.driverId;
     const matchesFilter = filter === 'ALL' || r.status === filter;
-    const matchesSearch = r.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (r.advertiser?.companyName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    
+    let matchesSearch = r.title.toLowerCase().includes(searchTerm.toLowerCase());
+    if (portalType === 'ADVERTISER') {
+      matchesSearch = matchesSearch || (r.advertiser?.companyName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    } else {
+      matchesSearch = matchesSearch || (r.driver?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    }
+
+    return isOfPortalType && matchesFilter && matchesSearch;
   });
 
   return (
@@ -72,11 +80,27 @@ export default function RequestsPage() {
       <div className="space-y-8 pb-20">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tad-yellow/10 border border-tad-yellow/20">
-                <MessageSquare className="w-4 h-4 text-tad-yellow" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-tad-yellow">Nexus Feedback Hub</span>
-             </div>
-             <h1 className="text-4xl font-black uppercase italic tracking-tighter">Solicitudes de <span className="text-tad-yellow">Advertisers</span></h1>
+              <div className="flex items-center gap-4">
+                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tad-yellow/10 border border-tad-yellow/20">
+                    <MessageSquare className="w-4 h-4 text-tad-yellow" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-tad-yellow">Nexus Hub</span>
+                 </div>
+                 <div className="flex bg-zinc-900 border border-white/5 rounded-2xl p-1 shrink-0">
+                    {(['ADVERTISER', 'DRIVER'] as const).map(t => (
+                      <button 
+                        key={t}
+                        onClick={() => setPortalType(t)}
+                        className={clsx(
+                          "px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                          portalType === t ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white"
+                        )}
+                      >
+                        {t === 'ADVERTISER' ? 'Anunciantes' : 'Conductores'}
+                      </button>
+                    ))}
+                 </div>
+              </div>
+              <h1 className="text-4xl font-black uppercase italic tracking-tighter">Solicitudes de <span className="text-tad-yellow">{portalType === 'ADVERTISER' ? 'Advertisers' : 'Drivers'}</span></h1>
           </div>
 
           <div className="flex bg-zinc-900 border border-white/5 rounded-2xl p-1 shrink-0">
@@ -144,7 +168,12 @@ export default function RequestsPage() {
                        <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2 text-zinc-400">
                              <User className="w-3.5 h-3.5 text-tad-yellow" />
-                             <span className="text-[10px] font-black uppercase tracking-widest">{req.advertiser?.companyName || 'Marca Desconocida'}</span>
+                             <span className="text-[10px] font-black uppercase tracking-widest">
+                                {portalType === 'ADVERTISER' 
+                                  ? (req.advertiser?.companyName || 'Marca Desconocida')
+                                  : (req.driver?.fullName || 'Conductor Desconocido')
+                                }
+                             </span>
                           </div>
                           <div className="w-1 h-1 rounded-full bg-zinc-800" />
                           <p className="text-xs text-zinc-500 font-medium max-w-sm truncate">{req.description}</p>

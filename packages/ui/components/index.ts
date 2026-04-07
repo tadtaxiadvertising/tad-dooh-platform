@@ -8,3 +8,4 @@ export * from './AntigravityButton';
 export * from './StatusSemaphore';
 export * from './WhatsAppButton';
 export * from './ConfirmPromptModal';
+export * from './PortalRequestCenter';

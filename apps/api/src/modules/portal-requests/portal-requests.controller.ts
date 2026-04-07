@@ -23,6 +23,12 @@ export class PortalRequestsController {
     return this.portalRequestsService.findByAdvertiser(advertiserId);
   }
 
+  @Get('driver/:driverId')
+  @Public() // Allow drivers to see their own requests
+  async findByDriver(@Param('driverId') driverId: string) {
+    return this.portalRequestsService.findByDriver(driverId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.portalRequestsService.findOne(id);

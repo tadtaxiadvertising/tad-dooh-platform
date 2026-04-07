@@ -399,6 +399,9 @@ export class DriversService {
     `;
     const referralsCount = Number(referralsResult[0]?.count ?? 0);
     const referralEarnings = referralsCount * 500;
+    const advertiserReferralEarnings = (driver.referredAdvertisers?.length || 0) * 500;
+    const totalPaid = (totalPaidSum as any)._sum.amount || 0;
+    const balance = (projectedEarnings + referralEarnings + advertiserReferralEarnings + gpsBonus) - totalPaid;
 
     return {
       driverId: driver.id,
@@ -410,13 +413,14 @@ export class DriversService {
       projectedEarnings,
       referralEarnings,
       referralsCount,
-      advertiserReferralEarnings: (driver.referredAdvertisers?.length || 0) * 500,
+      advertiserReferralEarnings,
       advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
       gpsPoints,
       gpsBonus,
       qualifiesForGpsBonus,
       activeAds: activeAdsCount,
       totalPaid: (totalPaidSum as any)._sum.amount || 0,
+      balance,
       lastPayment: lastPayment ? {
         amount: lastPayment.amount,
         status: lastPayment.status,

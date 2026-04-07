@@ -12,7 +12,8 @@ export class PortalRequestsService {
   ) {}
 
   async create(data: {
-    advertiserId: string;
+    advertiserId?: string;
+    driverId?: string;
     campaignId?: string;
     type: string;
     title: string;
@@ -22,6 +23,7 @@ export class PortalRequestsService {
     return (this.prisma as any).portalRequest.create({
       data: {
         advertiserId: data.advertiserId,
+        driverId: data.driverId,
         campaignId: data.campaignId,
         type: data.type,
         title: data.title,
@@ -41,6 +43,12 @@ export class PortalRequestsService {
             email: true,
           },
         },
+        driver: {
+          select: {
+            fullName: true,
+            phone: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -53,11 +61,19 @@ export class PortalRequestsService {
     });
   }
 
+  async findByDriver(driverId: string) {
+    return (this.prisma as any).portalRequest.findMany({
+      where: { driverId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findOne(id: string) {
     return (this.prisma as any).portalRequest.findUnique({
       where: { id },
       include: {
         advertiser: true,
+        driver: true,
       },
     });
   }
@@ -68,7 +84,7 @@ export class PortalRequestsService {
   }) {
     const request = await (this.prisma as any).portalRequest.findUnique({
       where: { id },
-      include: { advertiser: true },
+      include: { advertiser: true, driver: true },
     });
 
     if (!request) throw new Error(`PortalRequest ${id} not found`);
@@ -81,97 +97,219 @@ export class PortalRequestsService {
     // ===========================================================
     // BUG FIX: Trigger content deployment on APPROVAL
     // ===========================================================
-    if (updateData.status === 'APPROVED' && request.campaignId) {
+    if (updateData.status === 'APPROVED') {
       try {
         this.logger.log(`[APPROVAL_FLOW] Processing approval for request ${id}, type: ${request.type}`);
 
-        // 1. Always activate + update the campaign
-        await this.prisma.campaign.update({
-          where: { id: request.campaignId },
-          data: { active: true, status: 'ACTIVE', updatedAt: new Date() }
-        });
+        let targetCampaignId = request.campaignId;
 
-        // 2. If it's a content update, link the new media asset
-        if (request.type === 'CONTENT_UPDATE' && request.data) {
-          let mediaData: any;
-          try {
-            mediaData = typeof request.data === 'string' ? JSON.parse(request.data) : request.data;
-          } catch (e) {
-            this.logger.warn(`[APPROVAL_FLOW] Invalid media data JSON for request ${id}`);
-          }
+        // NEW: Handle Campaign Creation Workflow
+        if (request.type === 'CAMPAIGN_CREATE' && request.data) {
+          const cData = JSON.parse(request.data);
+          
+          // 1. Create the Campaign
+          const newCampaign = await this.prisma.campaign.create({
+            data: {
+              name: cData.name,
+              advertiser: request.advertiser?.companyName || "Anunciante de Portal", // Required string field
+              advertiserId: (request.advertiserId as string) || null, // Optional FK field
+              description: request.description || "Inició vía Portal de Anunciante",
+              startDate: new Date(cData.startDate),
+              endDate: new Date(cData.endDate),
+              status: 'ACTIVE',
+              active: true,
+              isGlobal: true,
+              targetAll: true,
+              budget: 1000,
+              category: cData.category || 'General'
+            }
+          });
 
-          if (mediaData?.mediaId) {
-            // Link an existing media record
-            await this.prisma.media.update({
-              where: { id: mediaData.mediaId },
-              data: { campaign_id: request.campaignId }
-            }).catch(() => {});
-          } else if (mediaData?.url) {
-            // Create a new MediaAsset from the portal submission
+          targetCampaignId = newCampaign.id as string;
+
+          // 2. Wrap MediaAsset creation
+          if (cData.mediaUrl) {
             await this.prisma.mediaAsset.create({
               data: {
-                campaignId: request.campaignId,
-                type: mediaData.type || 'VIDEO',
-                filename: mediaData.filename || 'portal-upload.mp4',
-                url: mediaData.url,
-                fileSize: Math.round(Number(mediaData.fileSize || 0)),
-                checksum: mediaData.checksum || mediaData.hashMd5 || 'portal-upload',
-                duration: Math.round(Number(mediaData.duration || 30)),
+                campaignId: targetCampaignId,
+                type: 'VIDEO',
+                filename: `portal-${newCampaign.id}.mp4`,
+                url: cData.mediaUrl,
+                fileSize: 1024 * 1024 * 5, // Simulated 5MB
+                checksum: `MD5-${newCampaign.id}`, // Required field
+                duration: 15, // Default 15s
                 version: 1,
               }
-            }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+            });
+          }
+
+          // 3. Update request with the new campaign reference
+          await (this.prisma as any).portalRequest.update({
+            where: { id },
+            data: { campaignId: targetCampaignId }
+          });
+          
+          this.logger.log(`[APPROVAL_FLOW] Created NEW Campaign ${targetCampaignId} for Advertiser ${request.advertiserId}`);
+        }
+
+        // NEW: Handle Driver Payout Workflow
+        if (request.type === 'PAYOUT' && request.driverId) {
+          let amount = 0;
+          // Try structured data first, then fallback to description regex
+          try {
+            const payoutData = typeof request.data === 'string' ? JSON.parse(request.data) : request.data;
+            amount = parseFloat(payoutData?.amount) || 0;
+          } catch { /* ignore parse errors */ }
+          if (amount === 0) {
+            const amountStr = request.description?.match(/RD\$([\d,.]+)/)?.[1]?.replace(/,/g, '') || '0';
+            amount = parseFloat(amountStr) || 0;
+          }
+          const month = new Date().getMonth() + 1;
+          const year = new Date().getFullYear();
+          
+          if (amount > 0) {
+            const existing = await this.prisma.payrollPayment.findUnique({
+              where: {
+                driverId_month_year: {
+                  driverId: request.driverId,
+                  month,
+                  year
+                }
+              }
+            });
+
+            if (existing) {
+              await this.prisma.payrollPayment.update({
+                where: { id: existing.id },
+                data: {
+                  amount: existing.amount + amount,
+                  status: 'PAID',
+                  paidAt: new Date(),
+                  referenceNum: `UPG-${id}`
+                }
+              });
+            } else {
+              await this.prisma.payrollPayment.create({
+                data: {
+                  driverId: request.driverId,
+                  amount: amount,
+                  month,
+                  year,
+                  status: 'PAID',
+                  paidAt: new Date(),
+                  referenceNum: `REQ-${id}`
+                }
+              });
+            }
+            this.logger.log(`[APPROVAL_FLOW] 💰 PAID RD$${amount} to Driver ${request.driverId}`);
           }
         }
 
-        // 3. Dispatch FORCE_SYNC to all assigned devices
-        const campaign = await this.prisma.campaign.findUnique({
-          where: { id: request.campaignId },
-          select: { targetAll: true, isGlobal: true }
-        });
+        // Handle established Campaign activations/updates
+        if (targetCampaignId) {
+          // 1. Always activate + update the campaign
+          await this.prisma.campaign.update({
+            where: { id: targetCampaignId },
+            data: { active: true, status: 'ACTIVE', updatedAt: new Date() }
+          });
 
-        let devicesToSync: { id: string }[] = [];
-        if (campaign?.targetAll || campaign?.isGlobal) {
-          devicesToSync = await this.prisma.device.findMany({
-            where: { status: 'ACTIVE' }, select: { id: true }
+          // 2. If it's a content update, link the new media asset
+          if (request.type === 'CONTENT_UPDATE' && request.data) {
+            let mediaData: any;
+            try {
+              mediaData = typeof request.data === 'string' ? JSON.parse(request.data) : request.data;
+            } catch (e) {
+              this.logger.warn(`[APPROVAL_FLOW] Invalid media data JSON for request ${id}`);
+            }
+
+            if (mediaData?.mediaId) {
+              // Link an existing media record
+              await this.prisma.media.update({
+                where: { id: mediaData.mediaId },
+                data: { campaign_id: targetCampaignId }
+              }).catch(() => {});
+            } else if (mediaData?.url) {
+              // Create a new MediaAsset from the portal submission
+              await this.prisma.mediaAsset.create({
+                data: {
+                  campaignId: targetCampaignId,
+                  type: mediaData.type || 'VIDEO',
+                  filename: mediaData.filename || 'portal-upload.mp4',
+                  url: mediaData.url,
+                  fileSize: Math.round(Number(mediaData.fileSize || 0)),
+                  checksum: mediaData.checksum || mediaData.hashMd5 || 'portal-upload',
+                  duration: Math.round(Number(mediaData.duration || 30)),
+                  version: 1,
+                }
+              }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+            }
+          }
+
+          // 3. Create DeviceCampaign assignments for global/targetAll campaigns
+          const campaign = await this.prisma.campaign.findUnique({
+            where: { id: targetCampaignId },
+            select: { targetAll: true, isGlobal: true }
           });
-        } else {
-          const assignments = await this.prisma.deviceCampaign.findMany({
-            where: { campaign_id: request.campaignId }
-          });
-          devicesToSync = assignments.map(a => ({ id: a.device_id }));
+
+          let devicesToSync: { id: string }[] = [];
+          if (campaign?.targetAll || campaign?.isGlobal) {
+            devicesToSync = await this.prisma.device.findMany({
+              where: { status: 'ACTIVE' }, select: { id: true }
+            });
+
+            // Create DeviceCampaign assignments so sync endpoint serves this campaign
+            if (devicesToSync.length > 0) {
+              await this.prisma.deviceCampaign.createMany({
+                data: devicesToSync.map(d => ({
+                  device_id: d.id,
+                  campaign_id: targetCampaignId!,
+                })),
+                skipDuplicates: true,
+              });
+            }
+          } else {
+            const assignments = await this.prisma.deviceCampaign.findMany({
+              where: { campaign_id: targetCampaignId }
+            });
+            devicesToSync = assignments.map(a => ({ id: a.device_id }));
+          }
+
+          // 4. Dispatch FORCE_SYNC to all assigned devices
+          if (devicesToSync.length > 0) {
+            await this.prisma.deviceCommand.createMany({
+              data: devicesToSync.map(d => ({
+                deviceId: d.id,
+                commandType: 'FORCE_SYNC',
+                commandParams: JSON.stringify({
+                  reason: 'portal_request_approved',
+                  campaignId: targetCampaignId,
+                  requestId: id,
+                }),
+                status: 'PENDING',
+                expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+              }))
+            });
+          }
+
+          // 5. Broadcast WAKE_UP_CALL for real-time tablets
+          this.supabase.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+            reason: 'portal_request_approved',
+            campaignId: targetCampaignId,
+            requestId: id,
+          }).catch(() => {});
+
+          this.logger.log(`[APPROVAL_FLOW] ✅ Campaign ${targetCampaignId} activated, assigned & synced to ${devicesToSync.length} devices.`);
         }
-
-        if (devicesToSync.length > 0) {
-          await this.prisma.deviceCommand.createMany({
-            data: devicesToSync.map(d => ({
-              deviceId: d.id,
-              commandType: 'FORCE_SYNC',
-              commandParams: JSON.stringify({
-                reason: 'portal_request_approved',
-                campaignId: request.campaignId,
-                requestId: id,
-              }),
-              status: 'PENDING',
-              expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
-            }))
-          });
-        }
-
-        // 4. Broadcast WAKE_UP_CALL for real-time tablets
-        this.supabase.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-          reason: 'portal_request_approved',
-          campaignId: request.campaignId,
-          requestId: id,
-        }).catch(() => {});
-
-        this.logger.log(`[APPROVAL_FLOW] ✅ Campaign ${request.campaignId} activated, FORCE_SYNC sent to ${devicesToSync.length} devices.`);
       } catch (err) {
         this.logger.error(`[APPROVAL_FLOW] ❌ Approval dispatch failed: ${err.message}`);
-        // Do NOT re-throw — the status was already saved. The admin should see this in logs.
       }
     }
 
-    return updated;
+    // Return enriched response
+    return (this.prisma as any).portalRequest.findUnique({
+      where: { id },
+      include: { advertiser: true, driver: true },
+    });
   }
 
   async remove(id: string) {

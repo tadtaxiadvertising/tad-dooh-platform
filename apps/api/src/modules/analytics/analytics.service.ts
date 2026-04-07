@@ -171,29 +171,30 @@ export class AnalyticsService {
   }
 
   async getHourlyAnalytics() {
-    // Get stats for the last 24 hours from PlaybackEvent
+    // Perform database-level aggregation to count events per hour, bypassing Node.js RAM limits
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const events = await this.prisma.playbackEvent.findMany({
-      where: {
-        timestamp: { gte: last24h },
-      },
-      select: {
-        timestamp: true,
-        eventType: true,
-      },
-    });
 
-    // Group by hour
+    // Using Raw SQL for grouped aggregation on PostgreSQL
+    const results: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        EXTRACT(HOUR FROM "timestamp") as "hour",
+        COUNT(id)::int as "plays"
+      FROM "playback_events"
+      WHERE "timestamp" >= ${last24h}
+      GROUP BY 1
+    `;
+
+    // Pre-fill last 24 slots with base 0
     const hourlyMap = new Map<string, number>();
-    // Pre-fill last 24 slots
     for (let i = 0; i < 24; i++) {
       const h = new Date(Date.now() - i * 60 * 60 * 1000).getHours();
       hourlyMap.set(h.toString().padStart(2, '0'), 0);
     }
 
-    events.forEach(e => {
-      const hour = new Date(e.timestamp).getHours().toString().padStart(2, '0');
-      hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + 1);
+    // Overlay values from Database Group By
+    results.forEach((row) => {
+      const h = Number(row.hour).toString().padStart(2, '0');
+      hourlyMap.set(h, row.plays);
     });
 
     return Array.from(hourlyMap.entries())

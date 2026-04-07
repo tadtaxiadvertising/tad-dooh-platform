@@ -344,6 +344,7 @@ model Driver {
   subscriptions       Subscription[]
   campaigns           Campaign[]       @relation("CampaignToDriver")
   contractAcceptances ContractAcceptance[]
+  portalRequests      PortalRequest[]
 
   @@index([status])
   @@index([phone])
@@ -443,20 +444,23 @@ model Advertiser {
 }
 
 model PortalRequest {
-  id           String     @id @default(uuid())
-  advertiserId String     @map("advertiser_id")
-  campaignId   String?    @map("campaign_id")
+  id           String      @id @default(uuid())
+  advertiserId String?     @map("advertiser_id")
+  driverId     String?     @map("driver_id")
+  campaignId   String?     @map("campaign_id")
   type         String
-  status       String     @default("PENDING")
+  status       String      @default("PENDING")
   title        String
   description  String?
-  data         String?    @default("{}")
-  adminNotes   String?    @map("admin_notes")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  advertiser   Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  data         String?     @default("{}")
+  adminNotes   String?     @map("admin_notes")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  advertiser   Advertiser? @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  driver       Driver?     @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@index([advertiserId])
+  @@index([driverId])
   @@index([status])
   @@index([type])
   @@map("portal_requests")

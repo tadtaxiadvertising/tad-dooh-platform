@@ -434,6 +434,7 @@ export const getAdvertiserPortalData = (id: string) => api.get(`/advertisers/${i
 export const createPortalRequest = (data: any) => api.post('/portal-requests', data).then(res => res.data);
 export const getPortalRequests = () => api.get('/portal-requests').then(res => res.data);
 export const getAdvertiserPortalRequests = (advertiserId: string) => api.get(`/portal-requests/advertiser/${advertiserId}`).then(res => res.data);
+export const getDriverPortalRequests = (driverId: string) => api.get(`/portal-requests/driver/${driverId}`).then(res => res.data);
 export const updatePortalRequest = (id: string, data: any) => api.put(`/portal-requests/${id}`, data).then(res => res.data);
 export const deletePortalRequest = (id: string) => api.delete(`/portal-requests/${id}`).then(res => res.data);
 

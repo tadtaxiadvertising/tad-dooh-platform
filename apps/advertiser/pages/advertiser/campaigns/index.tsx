@@ -12,9 +12,16 @@ import { es } from 'date-fns/locale';
 
 export default function AdvertiserCampaigns() {
   const { session } = useAuth();
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    mediaUrl: '',
+    category: 'General'
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -36,6 +43,47 @@ export default function AdvertiserCampaigns() {
     if (session?.access_token) fetchCampaigns();
   }, [session]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.id) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/portal-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          advertiserId: session.user.id,
+          type: 'CAMPAIGN_CREATE',
+          title: `NUEVA CAMPAÑA: ${formData.name}`,
+          description: formData.description,
+          data: JSON.stringify({
+            name: formData.name,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            mediaUrl: formData.mediaUrl,
+            category: formData.category
+          }),
+          status: 'PENDING'
+        })
+      });
+
+      if (res.ok) {
+        alert('✅ Solicitud enviada correctamente. El equipo de TAD revisará tu campaña antes de activarla.');
+        setShowModal(false);
+        setFormData({ name: '', description: '', startDate: '', endDate: '', mediaUrl: '', category: 'General' });
+      } else {
+        throw new Error('No se pudo enviar la solicitud');
+      }
+    } catch (err: any) {
+      alert('❌ Error: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filteredCampaigns = campaigns.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -50,6 +98,7 @@ export default function AdvertiserCampaigns() {
         </div>
 
         <motion.button
+          onClick={() => setShowModal(true)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="flex items-center gap-3 px-8 py-4 bg-[#fad400] text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_10px_30px_rgba(250,212,0,0.2)]"
@@ -58,6 +107,118 @@ export default function AdvertiserCampaigns() {
           Nueva campaña
         </motion.button>
       </div>
+
+      {/* Modal - New Campaign */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl overflow-y-auto">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.9 }}
+               className="bg-zinc-900 border border-white/5 rounded-[3rem] w-full max-w-2xl p-10 space-y-10 shadow-3xl relative my-auto shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]"
+             >
+                <div>
+                   <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none mb-2">Nueva <span className="text-tad-yellow">Pauta Publicitaria</span></h2>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Configura los detalles de tu nuevo anuncio</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                   <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Nombre de la Campaña</label>
+                           <input 
+                             required
+                             type="text" 
+                             value={formData.name}
+                             onChange={e => setFormData({...formData, name: e.target.value})}
+                             placeholder="Ex: Ofertas Verano 2026"
+                             className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-tad-yellow transition-all"
+                           />
+                         </div>
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Categoría</label>
+                           <select 
+                             value={formData.category}
+                             onChange={e => setFormData({...formData, category: e.target.value})}
+                             className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none focus:border-tad-yellow h-[54px]"
+                           >
+                             <option value="General">General</option>
+                             <option value="Retail">Retail</option>
+                             <option value="Servicios">Servicios</option>
+                             <option value="Turismo">Turismo</option>
+                           </select>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Fecha Inicio</label>
+                           <input 
+                             required
+                             type="date" 
+                             value={formData.startDate}
+                             onChange={e => setFormData({...formData, startDate: e.target.value})}
+                             className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:border-tad-yellow text-zinc-300"
+                           />
+                         </div>
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Fecha Fin</label>
+                           <input 
+                             required
+                             type="date" 
+                             value={formData.endDate}
+                             onChange={e => setFormData({...formData, endDate: e.target.value})}
+                             className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:border-tad-yellow text-zinc-300"
+                           />
+                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">URL del Video / Arte (MP4/JPG)</label>
+                        <input 
+                          required
+                          type="url" 
+                          value={formData.mediaUrl}
+                          onChange={e => setFormData({...formData, mediaUrl: e.target.value})}
+                          placeholder="https://su-servidor.com/anuncio.mp4"
+                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-tad-yellow transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Notas / Briefing</label>
+                        <textarea 
+                          value={formData.description}
+                          onChange={e => setFormData({...formData, description: e.target.value})}
+                          placeholder="Describe el objetivo de tu pauta..."
+                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-tad-yellow transition-all min-h-[100px] resize-none"
+                        />
+                      </div>
+                   </div>
+
+                   <div className="flex gap-4 pt-4">
+                      <button 
+                        type="button"
+                        onClick={() => setShowModal(false)}
+                        className="flex-1 py-4 bg-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all border border-white/5"
+                      >
+                         Cancelar
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={submitting}
+                        className="flex-1 py-4 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-tad-yellow/10 disabled:opacity-30"
+                      >
+                         {submitting ? 'Enviando Nexus Hub...' : 'Solicitar Aprobación'}
+                      </button>
+                   </div>
+                </form>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row gap-4 mb-8">

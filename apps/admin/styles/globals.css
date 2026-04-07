@@ -14,15 +14,20 @@
 /* stylelint-enable at-rule-no-unknown */
 
 :root {
-  --background: #09090b;
-  --foreground: #ffffff;
+  /* HSL Tailored Palette - TAD Premium */
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --tad-yellow: 50 100% 50%;
+  --tad-yellow-muted: 50 100% 50% / 0.1;
+  --glass-border: 0 0% 100% / 0.05;
+  --glass-bg: 0 0% 0% / 0.3;
 }
 
 body {
-  background-color: var(--background);
+  background-color: hsl(var(--background));
   background-image: 
-    radial-gradient(circle at top left, rgba(255, 212, 0, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.02) 0%, transparent 30%);
+    radial-gradient(circle at 0% 0%, hsla(var(--tad-yellow) / 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, hsla(240, 100%, 70%, 0.01) 0%, transparent 50%);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);

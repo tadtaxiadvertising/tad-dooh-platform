@@ -45,6 +45,7 @@ export class AdvertisersController {
     contactName: string;
     email: string;
     phone?: string;
+    password?: string;
   }) {
     if (!body.companyName || !body.contactName || !body.email) {
       throw new BadRequestException('companyName, contactName, and email are required');

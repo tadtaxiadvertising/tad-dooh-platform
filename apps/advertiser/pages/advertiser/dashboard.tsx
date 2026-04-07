@@ -8,6 +8,7 @@ import {
   TrendingUp, BarChart3, Fingerprint, Crosshair, Map, Zap, Layers, FileVideo, ArrowUpRight
 } from 'lucide-react';
 import { getAdvertiserPortalData, logout } from "@tad/services";
+import { PortalRequestCenter } from '@tad/ui';
 import clsx from 'clsx';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -246,6 +247,13 @@ export default function AdvertiserDashboard() {
                    Ver Gestor Completo <ArrowUpRight className="w-4 h-4" />
                 </Link>
              </div>
+          </div>
+
+          <div className="stitched-card p-8">
+             <PortalRequestCenter 
+               portalType="ADVERTISER" 
+               userId={data?.id || session?.user?.id} 
+             />
           </div>
 
           <div className="p-8 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center text-center opacity-40 hover:opacity-100 transition-opacity duration-500">

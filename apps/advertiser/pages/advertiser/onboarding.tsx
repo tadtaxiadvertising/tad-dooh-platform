@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { Map, ArrowRight, Eye, MousePointerClick, UploadCloud, Users, Share2, CheckCircle2, DollarSign, Calculator, Megaphone } from 'lucide-react';
+import { Map, ArrowRight, Eye, MousePointerClick, UploadCloud, Users, Share2, CheckCircle2, DollarSign, Calculator, Megaphone, Briefcase, Zap } from 'lucide-react';
 import clsx from 'clsx';
 import { AntigravityButton } from '@tad/ui';
 

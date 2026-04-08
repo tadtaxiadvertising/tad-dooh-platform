@@ -3,7 +3,7 @@ import { useAuth } from '@tad/ui';
 import { 
   Plus, Search, Filter, MoreHorizontal, 
   ExternalLink, Edit2, Trash2, Calendar, 
-  CheckCircle2, Clock, AlertCircle, FileVideo
+  CheckCircle2, Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -22,6 +22,20 @@ export default function AdvertiserCampaigns() {
     category: 'General'
   });
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  
+  // States for Video Generator
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [rendering, setRendering] = useState(false);
+  const [generatorData, setGeneratorData] = useState({
+    logoUrl: '',
+    brandColor: '#fad400',
+    primaryText: '',
+    secondaryText: ''
+  });
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -81,6 +95,36 @@ export default function AdvertiserCampaigns() {
       alert('❌ Error: ' + err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGenerateVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCampaignId || !session?.access_token) return;
+
+    setRendering(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campaigns/${selectedCampaignId}/generate-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(generatorData)
+      });
+
+      if (!res.ok) throw new Error('Fallo al generar el video');
+      
+      const data = await res.json();
+      alert('✅ ¡Video generado con éxito! El sistema lo ha registrado en tu campaña.');
+      setShowGenerator(false);
+      // Refresh campaigns to show new asset
+      window.location.reload(); 
+    } catch (err: any) {
+      alert('❌ Error de Renderizado: ' + err.message);
+    } finally {
+      setRendering(true);
+      // We keep it true for a bit or just wait for reload
     }
   };
 
@@ -220,6 +264,118 @@ export default function AdvertiserCampaigns() {
         )}
       </AnimatePresence>
 
+      {/* Modal - Video Generator */}
+      <AnimatePresence>
+        {showGenerator && (
+          <div className="fixed inset-0 z-[1001] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl overflow-y-auto">
+             <motion.div 
+               initial={{ opacity: 0, y: 50 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95 }}
+               className="bg-zinc-900 border border-[#fad400]/20 rounded-[3rem] w-full max-w-xl p-10 space-y-8 shadow-4xl relative shadow-[0_50px_100px_rgba(250,212,0,0.1)]"
+             >
+                <div className="flex justify-between items-start">
+                   <div>
+                      <div className="flex items-center gap-2 mb-2">
+                         <Sparkles className="w-5 h-5 text-[#fad400]" />
+                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#fad400]">AI Creative Engine</span>
+                      </div>
+                      <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none">Auto <span className="text-white">Ads Generator</span></h2>
+                      <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500 mt-2">Crea un video profesional en segundos solo con tu logo</p>
+                   </div>
+                </div>
+
+                <form onSubmit={handleGenerateVideo} className="interface-stack space-y-6">
+                   <div className="space-y-4">
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4 italic">Enlace de tu Logo (PNG/SVG)</label>
+                         <input 
+                           required
+                           type="url" 
+                           value={generatorData.logoUrl}
+                           onChange={e => setGeneratorData({...generatorData, logoUrl: e.target.value})}
+                           placeholder="https://tuweb.com/logo.png"
+                           className="w-full bg-black/60 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                         />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4 italic">Color de Marca</label>
+                           <input 
+                             type="color" 
+                             value={generatorData.brandColor}
+                             onChange={e => setGeneratorData({...generatorData, brandColor: e.target.value})}
+                             className="w-full h-[54px] bg-black/60 border border-white/5 rounded-2xl px-2 py-2 outline-none cursor-pointer"
+                           />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4 italic">Previsualización</label>
+                           <div className="w-full h-[54px] rounded-2xl flex items-center justify-center border border-dashed border-zinc-800 text-[10px] font-bold text-zinc-600 uppercase">
+                              10s Vertical HD
+                           </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4 italic">Texto Principal (Oferta/Hook)</label>
+                         <input 
+                           required
+                           maxLength={35}
+                           type="text" 
+                           value={generatorData.primaryText}
+                           onChange={e => setGeneratorData({...generatorData, primaryText: e.target.value})}
+                           placeholder="EJ: PIZZAS 2X1 HOY!"
+                           className="w-full bg-black/60 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                         />
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4 italic">Subtexto (Llamada a la acción)</label>
+                         <input 
+                           required
+                           maxLength={45}
+                           type="text" 
+                           value={generatorData.secondaryText}
+                           onChange={e => setGeneratorData({...generatorData, secondaryText: e.target.value})}
+                           placeholder="EJ: ORDENA EN NUESTRA WEB"
+                           className="w-full bg-black/60 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                         />
+                      </div>
+                   </div>
+
+                   <div className="flex gap-4 pt-4">
+                      <button 
+                        type="button"
+                        onClick={() => setShowGenerator(false)}
+                        className="flex-1 py-4 bg-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all border border-white/10"
+                      >
+                         Cerrar
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={rendering}
+                        className="flex-[2] py-4 bg-[#fad400] text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-[#fad400]/20 disabled:opacity-50 relative overflow-hidden"
+                      >
+                         {rendering ? (
+                           <span className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Renderizando MP4...
+                           </span>
+                         ) : (
+                           <span className="flex items-center justify-center gap-2">
+                              <Sparkles className="w-4 h-4" />
+                              Generar Video Profesional
+                           </span>
+                         )}
+                      </button>
+                   </div>
+                </form>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row gap-4 mb-8">
          <div className="flex-1 relative group">
@@ -300,29 +456,24 @@ export default function AdvertiserCampaigns() {
                      </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                     <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                           {[1,2,3].map(n => (
-                             <div key={n} className="w-6 h-6 rounded-full bg-zinc-800 border border-[#0a0a0b] flex items-center justify-center">
-                                <p className="text-[8px] font-black text-zinc-500">M</p>
-                             </div>
-                           ))}
-                        </div>
-                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                          {campaign.mediaAssets?.length || 0} Assets
-                        </p>
-                     </div>
-
-                     <div className="flex gap-2">
-                        <button className="p-3 bg-zinc-800/50 hover:bg-[#fad400] hover:text-black rounded-xl transition-all">
-                           <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-3 bg-zinc-800/50 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl transition-all">
-                           <Trash2 className="w-4 h-4" />
-                        </button>
-                     </div>
-                  </div>
+                      <div className="flex gap-2">
+                         <button 
+                           onClick={() => {
+                             setSelectedCampaignId(campaign.id);
+                             setShowGenerator(true);
+                           }}
+                           className="p-3 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white rounded-xl transition-all group/gen"
+                           title="Auto-Generador de Video"
+                         >
+                            <Wand2 className="w-4 h-4" />
+                         </button>
+                         <button className="p-3 bg-zinc-800/50 hover:bg-[#fad400] hover:text-black rounded-xl transition-all">
+                            <Edit2 className="w-4 h-4" />
+                         </button>
+                         <button className="p-3 bg-zinc-800/50 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl transition-all">
+                            <Trash2 className="w-4 h-4" />
+                         </button>
+                      </div>
                 </div>
               </motion.div>
             ))}

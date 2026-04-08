@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/decorators/roles.decorator';
 import { MediaService } from '../media/media.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { VideoGeneratorService } from './video-generator.service';
 
 @Controller('campaigns')
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
@@ -15,7 +16,8 @@ export class CampaignController {
   constructor(
     private readonly campaignService: CampaignService,
     private readonly prisma: PrismaService,
-    private readonly mediaService: MediaService
+    private readonly mediaService: MediaService,
+    private readonly videoGenerator: VideoGeneratorService,
   ) {}
 
   @Public() // Catálogo público de marcas (Hub)
@@ -116,6 +118,24 @@ export class CampaignController {
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async registerMedia(@Body() dto: any, @Req() req: any) {
     return this.campaignService.registerDirectMedia(dto, req.user);
+  }
+
+  @Post(':id/generate-video')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async generateVideo(
+    @Param('id') id: string,
+    @Body() props: { logoUrl: string; brandColor: string; primaryText: string; secondaryText: string },
+    @Req() req: any
+  ) {
+    const { role, entityId } = req.user;
+    const campaign = await this.campaignService.getCampaignById(id);
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos para generar video en esta campaña');
+    }
+
+    return this.videoGenerator.generateAdVideo(id, props);
   }
 
   @Post(':id/assets')

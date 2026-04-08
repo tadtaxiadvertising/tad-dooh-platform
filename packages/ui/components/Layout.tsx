@@ -172,12 +172,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-[#0a0a0b] text-white font-sans overflow-hidden selection:bg-tad-yellow selection:text-black">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+        <div className="fixed inset-0 z-[190] bg-black/80 backdrop-blur-sm lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-[100] fixed lg:static h-full shadow-2xl",
+        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-[200] fixed lg:relative h-full shadow-2xl",
         isSidebarOpen ? "translate-x-0 w-[300px]" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "lg:w-[100px]" : "lg:w-[300px]"
       )}>

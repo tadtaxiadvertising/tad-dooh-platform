@@ -7,12 +7,12 @@ Este documento centraliza el estado actual, las reglas de negocio implementadas 
 
 ## 🏗️ 1. ESTADO DE LA ARQUITECTURA GENERAL (v6.7.0)
 
-| Componente | Estado | Tecnología | Responsabilidad |
-| :--- | :--- | :--- | :--- |
-| **Backend API** | ✅ Estable | NestJS 10 / Prisma | Engine transaccional, BI y Sincronización Masiva. |
-| **Admin Dashboard** | ✅ Estable | Next.js 15 | Centro de comando para flotas, campañas y finanzas. |
-| **Santiago Pilot** | 🟢 Activo | Tablets STI | Monitoreo en vivo de las primeras 10 unidades (STI0001-STI0010). |
-| **Financial Intelligence**| ✅ Activo | Double-Entry Ledger| Gestión de nómina, referidos y egresos automatizados. |
+| Componente                 | Estado     | Tecnología          | Responsabilidad                                                  |
+| :------------------------- | :--------- | :------------------ | :--------------------------------------------------------------- |
+| **Backend API**            | ✅ Estable | NestJS 10 / Prisma  | Engine transaccional, BI y Sincronización Masiva.                |
+| **Admin Dashboard**        | ✅ Estable | Next.js 15          | Centro de comando para flotas, campañas y finanzas.              |
+| **Santiago Pilot**         | 🟢 Activo  | Tablets STI         | Monitoreo en vivo de las primeras 10 unidades (STI0001-STI0010). |
+| **Financial Intelligence** | ✅ Activo  | Double-Entry Ledger | Gestión de nómina, referidos y egresos automatizados.            |
 
 ## 🚀 2. HITOS RECIENTES (Abril 2026)
 

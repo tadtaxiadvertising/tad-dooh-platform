@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
+import * as path from 'path';
 
 @Injectable()
 export class SheetsService implements OnModuleInit {
@@ -10,7 +11,10 @@ export class SheetsService implements OnModuleInit {
   private isConnected = false;
   
   private readonly SHEET_ID = '1x2PQInj1F5CJnotWVNkCuGEKqULeO9Vv7qkUvmtd-LY';
-  private readonly CREDENTIALS_PATH = '../../../../taxi-advertisig-c30861d203c5.json';
+  private readonly CREDENTIALS_PATHS = [
+    '../../../../taxi-advertisig-c30861d203c5.json',
+    '../../../../../../taxi-advertisig-c30861d203c5.json' // Parent of project root
+  ];
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -36,11 +40,16 @@ export class SheetsService implements OnModuleInit {
 
       // 2. Si no hay env, intentar cargar desde archivo físico (Local fallback)
       if (!creds) {
-          try {
-              creds = require(this.CREDENTIALS_PATH);
-              this.logger.log('📂 TAD-SRE: Credenciales cargadas desde archivo físico.');
-          } catch (e) {
-              this.logger.error('🚨 No se encontró archivo de credenciales en: ' + this.CREDENTIALS_PATH);
+          for (const credPath of this.CREDENTIALS_PATHS) {
+              try {
+                  const absolutePath = path.resolve(__dirname, credPath);
+                  this.logger.log(`🔍 Intentando cargar credenciales desde: ${absolutePath} (Base: ${__dirname})`);
+                  creds = require(absolutePath);
+                  this.logger.log(`🔐 TAD-SRE: Credenciales cargadas desde ${absolutePath}`);
+                  break;
+              } catch (e) {
+                  this.logger.warn(`⚠️ No se encontró archivo en: ${credPath}`);
+              }
           }
       }
 

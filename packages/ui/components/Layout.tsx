@@ -6,7 +6,7 @@ import {
   BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, 
   LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, 
   ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale,
-  Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon
+  Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon, ChevronDown
 } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from "@tad/services";
@@ -177,9 +177,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Premium Sidebar Component */}
       <aside className={clsx(
-        "bg-zinc-900/95 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-[200] fixed lg:relative h-full shadow-2xl",
-        isSidebarOpen ? "translate-x-0 w-[300px]" : "-translate-x-full lg:translate-x-0",
-        isCollapsed ? "lg:w-[100px]" : "lg:w-[300px]"
+        "bg-zinc-950 backdrop-blur-3xl border-r border-white/5 flex flex-col items-start pt-8 overflow-hidden shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-[200] fixed lg:relative h-full shadow-2xl",
+        isSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0",
+        isCollapsed ? "lg:w-20" : "lg:w-72"
       )}>
         <button 
           className="lg:hidden absolute top-4 right-4 text-zinc-400 hover:text-white z-50"
@@ -321,75 +321,65 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Orchestration Surface */}
-      <div className="flex-1 flex flex-col overflow-hidden w-full relative h-full">
+      <div className="flex-1 flex flex-col overflow-hidden relative h-full">
         {/* Environmental Glows */}
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
         
         {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
-        <header className="h-20 shrink-0 flex items-center justify-between px-4 md:px-10 border-b border-white-[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] w-full shadow-2xl relative overflow-hidden">
+        <header className="h-20 shrink-0 flex items-center justify-between px-6 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative overflow-hidden">
            {/* Subtle glass light leak */}
            <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
-          <div className="flex items-center gap-4 flex-1">
+          
+           {/* Left Section */}
+           <div className="flex items-center gap-4 z-20 flex-1 lg:flex-none">
             <button 
               className="lg:hidden p-2 text-zinc-400 hover:text-white"
               onClick={() => setIsSidebarOpen(true)}
               title="Abrir el panel de control"
-              aria-label="Abrir el panel de control"
             >
               <Menu className="w-6 h-6" />
             </button>
-              <div className="relative group w-full max-w-lg hidden xl:block">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all duration-300" />
-                 <input 
-                   type="text" 
-                   placeholder="SEARCH PROTOCOL OR UNIT ID..." 
-                   className="w-full bg-zinc-900/40 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-[10px] font-black outline-none focus:border-tad-yellow/40 focus:bg-zinc-950/80 transition-all tracking-[0.2em] text-white uppercase placeholder:text-zinc-700 backdrop-blur-md shadow-inner"
-                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-30 group-focus-within:opacity-100 transition-opacity pointer-events-none">
-                   <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">CTRL</span>
-                   <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 border border-white/5 text-[8px] font-mono text-zinc-400">K</span>
-                </div>
-             </div>
+            {role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}
           </div>
 
-          <div className="flex items-center gap-8">
-             {role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}
-             {role === 'ADMIN' && (
-               <div className="flex items-center gap-8 pr-8 border-r border-white-[0.03] hidden md:flex">
-                  <div className="text-right">
-                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Status Red</p>
-                     <div className="flex items-center gap-2 justify-end">
-                        <span className="text-[10px] font-bold text-emerald-500 tracking-tight">STABLE</span>
-                        <Activity className="w-3 h-3 text-emerald-500/80 animate-pulse" />
-                     </div>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">OS Build</p>
-                     <div className="flex items-center gap-2 justify-end">
-                          <span className="text-[10px] font-bold text-tad-yellow tracking-tight">V4.5.1</span>
-                        <Cpu className="w-3 h-3 text-tad-yellow/80" />
-                     </div>
-                  </div>
-               </div>
-             )}
-
-              <div className="flex items-center gap-6">
-                 <NotificationCenter />
-                 <div className="flex items-center gap-5 group cursor-pointer bg-zinc-950/40 px-5 py-2 rounded-2xl border border-white/5 hover:border-white/20 transition-all">
-                    <div className="text-right hidden sm:block">
-                       <p className="text-[11px] font-black text-white uppercase tracking-tighter mb-0.5">
-                          {role === 'ADMIN' ? 'Admin_Terminal' : role === 'ADVERTISER' ? 'Advertiser_Hub' : 'Driver_Panel'}
-                       </p>
-                       <p className="text-[9px] font-black text-tad-yellow uppercase tracking-widest opacity-80 italic">
-                          {role === 'ADMIN' ? 'Level_SSS' : 'Verified_Node'}
-                       </p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/[0.05] flex items-center justify-center group-hover:border-tad-yellow/40 transition-all duration-500 relative overflow-hidden shadow-lg">
-                       <User className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
-                       <div className="absolute bottom-0 left-0 w-full h-0.5 bg-tad-yellow translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                    </div>
-                 </div>
+          {/* Center Section: Search Bar */}
+          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md hidden md:block z-10 w-96">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
+              <input 
+                type="text" 
+                placeholder="SEARCH PROTOCOL..." 
+                className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl py-2 pl-11 pr-16 text-[11px] font-medium outline-none focus:bg-white/10 focus-within:ring-2 focus-within:ring-[#FFCC00]/50 focus-within:border-[#FFCC00]/30 transition-all tracking-wider text-white placeholder:text-zinc-500"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+                <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">CTRL</kbd>
+                <span className="text-zinc-600 text-[10px]">+</span>
+                <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">K</kbd>
               </div>
+            </div>
+          </div>
+
+          {/* Right Section: User Nav Cluster */}
+          <div className="flex items-center gap-4 z-20 relative">
+             <NotificationCenter />
+             
+             <div className="flex items-center gap-4 pl-4 border-l border-white/10">
+                {/* Role/Node Badge */}
+                <div className="hidden sm:flex items-center gap-1.5 bg-green-500/10 text-green-400 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-500/20">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span className="tracking-wide">
+                    {role === 'ADMIN' ? 'Admin Node' : role === 'ADVERTISER' ? 'Adv Node' : 'Driver Node'}
+                  </span>
+                </div>
+
+                {/* Interactive Avatar */}
+                <div className="flex items-center gap-2 cursor-pointer group">
+                  <div className="w-9 h-9 rounded-full bg-zinc-800 border border-transparent group-hover:ring-2 group-hover:ring-[#FFCC00] transition-all duration-300 flex items-center justify-center relative shadow-sm">
+                    <span className="text-[11px] font-bold text-white uppercase">{userEmail.slice(0, 2)}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+                </div>
+             </div>
           </div>
         </header>
         

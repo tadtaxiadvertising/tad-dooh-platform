@@ -55,7 +55,7 @@ export class SupabaseAuthGuard implements CanActivate {
     // Usamos el secreto local si está configurado
     if (jwtSecret) {
       try {
-        const payload = jwt.verify(token, jwtSecret) as any;
+        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as any;
         if (payload) {
           request.user = {
             id: payload.sub,

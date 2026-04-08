@@ -326,60 +326,81 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
         
         {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
-        <header className="h-20 shrink-0 flex items-center justify-between px-6 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative overflow-hidden">
-           {/* Subtle glass light leak */}
-           <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
+        <header className="h-20 shrink-0 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative overflow-hidden">
+          {/* Subtle glass light leak */}
+          <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
           
-           {/* Left Section */}
-           <div className="flex items-center gap-4 z-20 flex-1 lg:flex-none">
-            <button 
-              className="lg:hidden p-2 text-zinc-400 hover:text-white"
-              onClick={() => setIsSidebarOpen(true)}
-              title="Abrir el panel de control"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            {role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}
-          </div>
+          <div className="h-full px-6 grid grid-cols-3 items-center">
+            {/* Left Section: Mobile Menu & Status Info */}
+            <div className="flex items-center gap-6 z-20">
+              <button 
+                className="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors"
+                onClick={() => setIsSidebarOpen(true)}
+                title="Abrir el panel de control"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              
+              {role === 'ADMIN' && (
+                <div className="flex items-center gap-6">
+                  <FleetHealthStatus hasSession={!!session} />
+                  
+                  <div className="hidden lg:flex items-center gap-6 pl-6 border-l border-white/5">
+                    <div className="text-right">
+                      <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">Network</p>
+                      <div className="flex items-center gap-2 justify-end">
+                        <span className="text-[10px] font-bold text-emerald-500 tracking-tight">STABLE</span>
+                        <Activity className="w-3 h-3 text-emerald-500/80 animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">Build</p>
+                      <div className="flex items-center gap-2 justify-end">
+                        <span className="text-[10px] font-bold text-tad-yellow tracking-tight">V4.5</span>
+                        <Cpu className="w-3 h-3 text-tad-yellow/80" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Center Section: Search Bar */}
-          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md hidden md:block z-10 w-96">
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
-              <input 
-                type="text" 
-                placeholder="SEARCH PROTOCOL..." 
-                className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl py-2 pl-11 pr-16 text-[11px] font-medium outline-none focus:bg-white/10 focus-within:ring-2 focus-within:ring-[#FFCC00]/50 focus-within:border-[#FFCC00]/30 transition-all tracking-wider text-white placeholder:text-zinc-500"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50 group-focus-within:opacity-100 transition-opacity pointer-events-none">
-                <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">CTRL</kbd>
-                <span className="text-zinc-600 text-[10px]">+</span>
-                <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">K</kbd>
+            {/* Center Section: Search Bar (Properly Centered via Grid) */}
+            <div className="flex justify-center z-10">
+              <div className="relative group w-full max-w-sm">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="SEARCH PROTOCOL..." 
+                  className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl py-2 pl-11 pr-16 text-[11px] font-medium outline-none focus:bg-white/10 focus-within:ring-2 focus-within:ring-[#FFCC00]/50 focus-within:border-[#FFCC00]/30 transition-all tracking-wider text-white placeholder:text-zinc-500"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+                  <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">CTRL</kbd>
+                  <span className="text-zinc-600 text-[10px]">+</span>
+                  <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">K</kbd>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Section: User Nav Cluster */}
-          <div className="flex items-center gap-4 z-20 relative">
-             <NotificationCenter />
-             
-             <div className="flex items-center gap-4 pl-4 border-l border-white/10">
-                {/* Role/Node Badge */}
-                <div className="hidden sm:flex items-center gap-1.5 bg-green-500/10 text-green-400 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-500/20">
+            {/* Right Section: User Nav Cluster */}
+            <div className="flex items-center justify-end gap-4 z-20">
+              <NotificationCenter />
+              
+              <div className="flex items-center gap-4 pl-4 border-l border-white/10">
+                <div className="hidden sm:flex items-center gap-1.5 bg-green-500/10 text-green-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/20 uppercase tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span className="tracking-wide">
-                    {role === 'ADMIN' ? 'Admin Node' : role === 'ADVERTISER' ? 'Adv Node' : 'Driver Node'}
-                  </span>
+                  <span>{role === 'ADMIN' ? 'Admin Node' : role === 'ADVERTISER' ? 'Adv Hub' : 'Drive Node'}</span>
                 </div>
 
-                {/* Interactive Avatar */}
-                <div className="flex items-center gap-2 cursor-pointer group">
-                  <div className="w-9 h-9 rounded-full bg-zinc-800 border border-transparent group-hover:ring-2 group-hover:ring-[#FFCC00] transition-all duration-300 flex items-center justify-center relative shadow-sm">
-                    <span className="text-[11px] font-bold text-white uppercase">{userEmail.slice(0, 2)}</span>
+                <div className="flex items-center gap-2 cursor-pointer group select-none">
+                  <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/5 group-hover:border-tad-yellow/30 group-hover:ring-4 group-hover:ring-tad-yellow/10 transition-all duration-300 flex items-center justify-center relative shadow-sm">
+                    <span className="text-[11px] font-bold text-white tracking-widest">{userEmail.slice(0, 2).toUpperCase()}</span>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a0a0b] animate-pulse shadow-[0_0_8px_#10b981]" />
                   </div>
                   <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
         </header>
         

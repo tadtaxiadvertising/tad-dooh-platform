@@ -1,4 +1,4 @@
-const API_URL = import.meta.env?.VITE_API_URL || "https://proyecto-ia-tad-api.rewvid.easypanel.host/api";
+const API_URL = import.meta.env?.VITE_API_URL || "https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1";
 
 export interface SyncResponse {
   campaign_version: number;
@@ -23,11 +23,12 @@ const loadLocalCache = (): SyncResponse | null => {
 
 export async function checkSync(deviceId: string): Promise<SyncResponse | null> {
   try {
-    const res = await fetch(`${API_URL}/device/sync?device_id=${deviceId}`, {
-      method: "GET",
+    const res = await fetch(`${API_URL}/device/sync`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({ deviceId }),
     });
 
     if (!res.ok) {

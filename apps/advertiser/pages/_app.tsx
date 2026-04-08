@@ -16,6 +16,8 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/admin/login', 
     '/advertiser/login', 
     '/driver/login', 
+    '/driver/onboarding',
+    '/advertiser/onboarding',
     '/check-in'
   ].includes(router.pathname) || router.pathname.startsWith('/p');
   

@@ -1,7 +1,7 @@
-# 🧠 11 — ESTADO ACTUAL Y HANDOVER (04 Abril 2026)
+# 🧠 11 — ESTADO ACTUAL Y HANDOVER (08 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Última actualización**: 04 de Abril de 2026 (v8.2)
+> **Última actualización**: 08 de Abril de 2026 (v9.0)
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base, la infraestructura, las reglas de negocio recientes y los siguientes pasos para la plataforma TAD DOOH.
 
 ---
@@ -11,6 +11,10 @@
 - **Campaign-Advertiser Coupling (v8.2)**: Refactorizado el motor de creación de campañas para forzar vinculación con IDs de marcas del catálogo. Se eliminó la dependencia de texto libre para anunciantes, asegurando integridad total entre el Dashboard y el Portal de Anunciantes.
 - **Red Desierta Fix**: Corregida la visualización de hardware asignado en el detalle de campaña. La lógica de filtrado ahora combina asignaciones directas y segmentación por chofer, garantizando visibilidad 1/1 del fleet activo.
 - **Auto-Sync Deployment**: Implementado el trigger automático de `FORCE_SYNC` y `WAKE_UP_CALL` tras la aprobación de pautas en el Portal de Solicitudes. El contenido fluye a las tablets en <5 segundos tras la aprobación administrativa.
+- **UI Performance & Layering (v9.0)**: Corregido error crítico de `z-index` y posicionamiento en `Layout.tsx` que causaba que la cabecera cubriera el logotipo y menús superiores del Sidebar en resoluciones de escritorio.
+- **Backend Auth Strategy 1 (v9.0)**: Estabilizado `SupabaseAuthGuard` corrigiendo el error de `invalid algorithm` mediante la especificación explícita de `HS256`, permitiendo validación JWT local (offline-first) en <1ms.
+- **Zero-Bug Logging (v9.0)**: Refactorizado `LoggerMiddleware` para evitar salidas tipo `[[object Object]]` y asegurar un build de producción estable tras corregir fallas de alcance de variables (`statusCode`).
+- **Google Sheets Sync Stability**: Restaurada la sincronización bidireccional entre el Backend y el Master Sheet de Operaciones, resolviendo cuellos de botella en la autenticación de la Service Account.
 
 ## 2. 🧮 Ecosistema de Inteligencia Financiera & BI (v8.2)
 

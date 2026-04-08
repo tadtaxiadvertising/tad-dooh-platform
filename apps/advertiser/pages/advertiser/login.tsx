@@ -160,7 +160,7 @@ export default function AdvertiserLoginPage() {
               {/* Register CTA */}
               <div className="pt-6 border-t border-white/5 text-center">
                 <p className="text-[11px] text-gray-500 mb-3">¿Aún no tienes cuenta?</p>
-                <button type="button" onClick={() => switchView('register')}
+                <button type="button" onClick={() => router.push('/advertiser/onboarding')}
                   className="inline-flex items-center gap-2 text-[11px] font-bold text-tad-yellow uppercase tracking-wider hover:text-white transition-colors group"
                 >
                   <UserPlus className="w-4 h-4" />

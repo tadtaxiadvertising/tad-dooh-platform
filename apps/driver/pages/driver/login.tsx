@@ -146,11 +146,11 @@ export default function DriverLoginPage() {
 
               <div className="pt-5 border-t border-white/5 text-center">
                 <p className="text-[11px] text-gray-500 mb-3">¿Eres nuevo conductor TAD?</p>
-                <button type="button" onClick={() => switchView('register')}
+                <button type="button" onClick={() => router.push('/driver/onboarding')}
                   className="inline-flex items-center gap-2 text-[12px] font-black text-tad-yellow uppercase tracking-wider hover:text-white transition-colors active:scale-95 group"
                 >
                   <UserPlus className="w-5 h-5" />
-                  <span>Registrarme</span>
+                  <span>Conviértete en Socio</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>

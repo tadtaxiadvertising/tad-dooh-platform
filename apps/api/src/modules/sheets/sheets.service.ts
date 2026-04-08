@@ -85,6 +85,8 @@ export class SheetsService implements OnModuleInit {
       await this.syncIngresos();
       await this.syncSuscripciones();
       await this.syncConciliacion();
+      await this.syncEstadoResultados();
+      await this.syncCuentasPorCobrar();
       
       this.logger.log('✅ TAD-SRE: Sincronización masiva completada (Registro Contable Completo).');
       return { success: true, timestamp: new Date().toISOString() };
@@ -227,6 +229,75 @@ export class SheetsService implements OnModuleInit {
       DISCREPANCIA_TOTAL: r.discrepancyAmount,
       TIPO_DISCREPANCIA: r.discrepancyType
     })));
+  }
+
+  private async syncEstadoResultados() {
+    const sheet = this.doc.sheetsByTitle['Estado_Resultados'];
+    if (!sheet) return;
+    
+    // Aggregation Logic for P&L
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // 1. Ingresos
+    const ingresosAds = await this.prisma.financialTransaction.aggregate({
+      where: { category: 'CAMPAIGN', type: 'INCOME', status: 'COMPLETED', createdAt: { gte: startOfMonth } },
+      _sum: { amount: true, taxAmount: true }
+    });
+    
+    const ingresosSubs = await this.prisma.subscription.aggregate({
+      where: { status: 'PAID', paidAt: { gte: startOfMonth } },
+      _sum: { amount: true }
+    });
+
+    // 2. Costos de Ventas (COGS)
+    const costoNomina = await this.prisma.payrollPayment.aggregate({
+      where: { status: 'PAID', paidAt: { gte: startOfMonth } },
+      _sum: { amount: true }
+    });
+
+    const devicesActivos = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    const COSTO_HARDWARE_UNITARIO = 1500; // Depreciacion Fija por Tablet
+    const costoHardware = devicesActivos * COSTO_HARDWARE_UNITARIO;
+
+    const totalIngresos = (ingresosAds._sum.amount || 0) + (ingresosSubs._sum.amount || 0);
+    const totalCogs = (costoNomina._sum.amount || 0) + costoHardware;
+    const taxes = ingresosAds._sum.taxAmount || 0;
+
+    await sheet.clearRows();
+    await sheet.addRow({
+      MES_AÑO: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
+      INGRESOS_ADS: ingresosAds._sum.amount || 0,
+      INGRESOS_SUBS: ingresosSubs._sum.amount || 0,
+      TOTAL_INGRESOS: totalIngresos,
+      COSTO_NOMINA: costoNomina._sum.amount || 0,
+      COSTO_HARDWARE: costoHardware,
+      GROSS_MARGIN: totalIngresos - totalCogs,
+      IMPUESTOS_DGII: taxes,
+      NET_PROFIT: totalIngresos - totalCogs - taxes
+    });
+  }
+
+  private async syncCuentasPorCobrar() {
+    const sheet = this.doc.sheetsByTitle['Cuentas_Por_Cobrar'];
+    if (!sheet) return;
+
+    const subsVencidas = await this.prisma.subscription.findMany({
+      where: { status: { in: ['PENDING', 'OVERDUE'] } },
+      include: { driver: true }
+    });
+
+    await sheet.clearRows();
+    await sheet.addRows(subsVencidas.map(s => {
+      const diasAtraso = Math.floor((new Date().getTime() - s.dueDate.getTime()) / (1000 * 3600 * 24));
+      return {
+        ID_CLIENTE: s.driver.id,
+        TIPO_DEUDOR: 'CONDUCTOR',
+        MONTO_ADEUDADO: s.amount,
+        DIAS_ATRASO: diasAtraso,
+        ESTADO_RIESGO: diasAtraso > 60 ? 'DEFAULT' : diasAtraso > 30 ? 'WARNING' : 'NORMAL'
+      };
+    }));
   }
 
   async getSecondaryDBData() {

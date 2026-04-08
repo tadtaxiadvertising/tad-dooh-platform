@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Res, Param, Logger } from '@nestjs/common';
 import { SheetsService } from './sheets.service';
 import { InvoiceService } from '../finance/invoice.service';
+import { Public } from '../auth/decorators/public.decorator';
 import { Response } from 'express';
 
 @Controller('sheets')
@@ -15,6 +16,7 @@ export class SheetsController {
   /**
    * TAD-SRE: Disparador manual de sincronización masiva a la DB secundaria.
    */
+  @Public()
   @Post('sync')
   async syncAll() {
     return this.sheetsService.syncAllTables();
@@ -23,6 +25,7 @@ export class SheetsController {
   /**
    * TAD-SRE: Fallback Report - Obtiene los datos del Dashboard directo desde Google Sheets.
    */
+  @Public()
   @Get('report')
   async getReport() {
     const data = await this.sheetsService.getSecondaryDBData();

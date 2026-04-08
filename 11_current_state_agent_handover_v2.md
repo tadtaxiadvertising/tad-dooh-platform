@@ -14,7 +14,7 @@
 
 ## 2. 🧮 Ecosistema de Inteligencia Financiera & BI (v8.2)
 
-- **Refined MRR Logic**: El motor de Business Intelligence ahora calcula el MRR de forma híbrida: (Suscripciones de Conductor RD$ 6,000) + (Ingresos por Publicidad estimulados por impresiones reales). 
+- **Refined MRR Logic**: El motor de Business Intelligence ahora calcula el MRR de forma híbrida: (Suscripciones de Conductor RD$ 6,000) + (Ingresos por Publicidad estimulados por impresiones reales).
 - **Yield per Screen & ARPU**: Métricas actualizadas para inversionistas que desglosan la rentabilidad exacta por pantalla (DOP/u), integrando el costo operativo vs. el impacto publicitario.
 - **Delivery Rate Tracking**: Sistema de monitoreo de cumplimiento de pauta que compara impresiones servidas contra el target contratado (`target_impressions`), proveyendo un porcentaje de salud de entrega en tiempo real.
 

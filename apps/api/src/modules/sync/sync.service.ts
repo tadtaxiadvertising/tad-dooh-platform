@@ -210,7 +210,7 @@ export class SyncService {
 
   async refreshManifestView() {
     try {
-      await this.prisma.$executeRawUnquoted`SELECT refresh_active_campaigns();`;
+      await this.prisma.$executeRaw`SELECT refresh_active_campaigns();`;
       this.logger.log('✅ Active Campaigns Materialized View Refreshed');
     } catch (e) {
       this.logger.error('❌ Failed to refresh Materialized View', e.stack);

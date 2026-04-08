@@ -416,6 +416,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       
+      {/* @ts-ignore */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 5px;

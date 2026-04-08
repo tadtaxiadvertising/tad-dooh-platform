@@ -5,7 +5,7 @@ import api from '@tad/services';
 import {
   Map, ArrowRight, UploadCloud, Users, Share2, CheckCircle2,
   Calculator, Megaphone, Briefcase, Zap, Phone, Shield, Eye, EyeOff,
-  Building, User, Mail, ChevronLeft
+  Building, User, Mail, ChevronLeft, MousePointerClick
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AntigravityButton } from '@tad/ui';

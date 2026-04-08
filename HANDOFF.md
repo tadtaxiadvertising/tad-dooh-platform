@@ -2,7 +2,7 @@
 
 ## 🎯 Objetivo de la Sesión Completada
 
-Estabilizar el despliegue del **TAD DOOH Platform** (Monorepo) en producción utilizando EasyPanel. Inicialmente la plataforma sufría de múltiples fallas críticas durante la compilación, timeouts, y errores de enrutamiento/dependencias que colapsaban las aplicaciones.
+Estabilizar la interfaz del Admin Dashboard y optimizar la seguridad del backend. Se resolvieron fallos críticos de superposición de elementos en la UI y se eliminaron latencias de autenticación mediante el fix de la estrategia JWT local. Además, se limpiaron los logs de producción para una auditoría más legible.
 
 Todas las fallas detectadas en la infraestructura **ya fueron mitigadas** e integradas en `main`.
 
@@ -39,6 +39,21 @@ Todas las fallas detectadas en la infraestructura **ya fueron mitigadas** e inte
 
 - **Problema:** Pantallazo blanco en la carga de Next.js debido a que `packages/ui/components/index.ts` utilizaba `export * from './Layout'`, pero `Layout.tsx` era un `export default function`.
 - **Solución:** Convertimos `Layout.tsx` a un _named export_ (`export function Layout`).
+
+### 7. Superposición de Capas (Z-Index Sidebar)
+
+- **Problema:** El Header con la barra de búsqueda ocultaba el logotipo y los menús superiores del Sidebar en resoluciones Desktop.
+- **Solución:** Modificada la directiva CSS de `lg:static` a `lg:relative z-[200]` en `Layout.tsx`, asegurando la jerarquía visual correcta.
+
+### 8. Fallo en Estratégia de Auth Local (invalid algorithm)
+
+- **Problema:** `SupabaseAuthGuard` rechazaba la validación local de JWT, forzando un fallback a red (lento).
+- **Solución:** Forsado el algoritmo `HS256` en `jwt.verify` para coincidir con el estándar de Supabase.
+
+### 9. Logs Corruptos en NestJS ([[object Object]])
+
+- **Problema:** El middleware de logging imprimía objetos sin serializar y causó un fallo en el Build de producción por alcance de variables.
+- **Solución:** Refactorizado `LoggerMiddleware` con manejo seguro de `res.on('finish')` y mensajes de texto plano optimizados.
 
 ---
 

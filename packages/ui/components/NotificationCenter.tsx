@@ -59,9 +59,7 @@ export const NotificationCenter: React.FC = () => {
         )}>
            <Bell className={clsx("w-4.5 h-4.5", unreadCount > 0 && "animate-pulse-soft")} />
            {unreadCount > 0 && (
-             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-rose-600 text-white text-[10px] font-black rounded-full border-2 border-[#0a0a0b] flex items-center justify-center animate-bounce-slow shadow-[0_0_10px_#e11d48]">
-               {unreadCount > 9 ? '+9' : unreadCount}
-             </span>
+             <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#FFCC00] rounded-full animate-pulse ring-2 ring-[#0a0a0b]" />
            )}
         </div>
       </button>

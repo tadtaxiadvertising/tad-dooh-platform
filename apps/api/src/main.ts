@@ -46,28 +46,28 @@ async function bootstrap() {
 
     app.useGlobalFilters(new PrismaClientExceptionFilter());
 
-    // CONFIGURACIÓN DE CORS MANUAL (MÁXIMA COMPATIBILIDAD CON PROXY/EASYPANEL)
-    app.use((req, res, next) => {
-      // Intentamos detectar el origen o usamos el configService
-      const origin = req.header('Origin') || '*';
-      
-      // Permitir cualquier dashboard y localhost en dev, o el configurado en prod
-      const allowedOriginsStr = configService.get('CORS_ORIGIN') || 'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host';
-      const allowedOrigins = allowedOriginsStr.split(',');
+    // CONFIGURACIÓN DE CORS (MÁXIMA COMPATIBILIDAD CON PROXY/EASYPANEL)
+    const allowedOriginsStr = configService.get('CORS_ORIGIN') || '*';
+    const allowedOrigins = allowedOriginsStr.split(',');
 
-      if (allowedOrigins.includes(origin) || allowedOriginsStr === '*') {
-         res.header('Access-Control-Allow-Origin', origin);
-      } else {
-         // Fallback al dashboard principal si el origen no está explícitamente en la lista
-         res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
-      }
-      
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, x-device-id, X-Requested-With');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      
-      if (req.method === 'OPTIONS') return res.sendStatus(200);
-      next();
+    app.enableCors({
+      origin: (origin, callback) => {
+        // En producción, si origin es undefined (ej. wget/curl), podemos permitir o denegar.
+        // Los navegadores siempre envían Origin.
+        if (!origin || allowedOriginsStr === '*' || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          // Para debugging, permitimos orígenes de easypanel localmente si fallan
+          if (origin.includes('easypanel.host')) {
+             callback(null, true);
+          } else {
+             callback(new Error('Not allowed by CORS'));
+          }
+        }
+      },
+      methods: 'GET,PUT,POST,DELETE,OPTIONS,PATCH',
+      allowedHeaders: 'Content-Type, Authorization, Accept, x-device-id, X-Requested-With',
+      credentials: true,
     });
 
     // API prefix (Regla de Negocio: Prefijo obligatorio para versionamiento)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, Info, ShieldAlert, CheckCircle2, X } from 'lucide-react';
+import { Bell, AlertTriangle, Info, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';
 import { api } from "@tad/services";
 import { supabase } from "@tad/services";
@@ -98,12 +98,12 @@ export const NotificationCenter: React.FC = () => {
                         !n.read ? "bg-tad-yellow/[0.02]" : "opacity-60"
                       )}
                     >
-                       <div className={clsx(
-                         "p-2 rounded-lg shrink-0",
-                         n.type === 'CRITICAL' ? "bg-rose-500/10 text-rose-500" :
-                         n.type === 'WARNING' ? "bg-tad-yellow/10 text-tad-yellow" :
-                         "bg-blue-500/10 text-blue-400"
-                       )}>
+                        <div className={clsx(
+                          "p-2 rounded-lg shrink-0 transition-transform group-hover:scale-110",
+                          n.type === 'CRITICAL' ? "bg-rose-500/10 text-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.1)]" :
+                          n.type === 'WARNING' ? "bg-tad-yellow/10 text-tad-yellow shadow-[0_0_10px_rgba(255,204,0,0.1)]" :
+                          "bg-blue-500/10 text-blue-400"
+                        )}>
                           {n.type === 'CRITICAL' ? <ShieldAlert className="w-4 h-4" /> :
                            n.type === 'WARNING' ? <AlertTriangle className="w-4 h-4" /> :
                            <Info className="w-4 h-4" />}
@@ -131,14 +131,9 @@ export const NotificationCenter: React.FC = () => {
               )}
             </div>
 
-            <div className="p-3 bg-zinc-950/80 border-t border-white-[0.05] text-center">
-               <button 
-                 onClick={() => setIsOpen(false)}
-                 className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
-               >
-                 Cerrar Panel
-               </button>
-            </div>
+             <div className="p-3 bg-zinc-950/80 border-t border-white-[0.05] text-center">
+                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">End of Log</p>
+             </div>
           </div>
         </>
       )}

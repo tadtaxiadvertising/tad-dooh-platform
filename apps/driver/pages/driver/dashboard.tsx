@@ -3,8 +3,9 @@ import { useAuth } from '@tad/ui';
 import { 
   Car, Wallet, ShieldAlert, Wifi, Battery, MapPin, 
   ChevronRight, RefreshCw, Smartphone, TrendingUp,
-  CreditCard, Award, LogOut, LayoutDashboard, Zap, Activity
+  CreditCard, Award, LogOut, LayoutDashboard, Zap, Activity, Users
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { PortalRequestCenter } from '@tad/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -235,12 +236,10 @@ function DriverDashboard() {
         </section>
 
         {/* Requests Center */}
-        <section>
            <PortalRequestCenter 
              portalType="DRIVER" 
-             userId={session?.user?.id} 
+             userId={session?.user?.id || ''} 
            />
-        </section>
 
         {/* Strategic Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
@@ -286,7 +285,7 @@ function DriverDashboard() {
   );
 }
 
-export default DriverDashboard;ard;
+export default DriverDashboard;
 
 
 

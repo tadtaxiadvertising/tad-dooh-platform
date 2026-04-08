@@ -4,10 +4,12 @@ import { CampaignController } from './campaign.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MediaModule } from '../media/media.module';
 
+import { VideoGeneratorService } from './video-generator.service';
+
 @Module({
   imports: [PrismaModule, MediaModule],
   controllers: [CampaignController],
-  providers: [CampaignService],
-  exports: [CampaignService], // export the service so DeviceModule can use it to fetch sync data
+  providers: [CampaignService, VideoGeneratorService],
+  exports: [CampaignService, VideoGeneratorService], // export the service so DeviceModule can use it to fetch sync data
 })
 export class CampaignModule {}

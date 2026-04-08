@@ -22,34 +22,34 @@ const ADMIN_NAVIGATION = [
   {
     label: 'Centro de Control',
     items: [
-      { name: 'Resumen General', href: '/admin/dashboard', icon: LayoutDashboard },
-      { name: 'Monitor de Pantallas', href: '/admin/fleet', icon: Monitor },
-      { name: 'Geolocalización', href: '/admin/dashboard/realtime', icon: Map },
-      { name: 'Auditoría & Salud', href: '/admin/monitoring', icon: Activity },
+      { name: 'Resumen', href: '/admin/dashboard', icon: LayoutDashboard },
+      { name: 'Pantallas', href: '/admin/fleet', icon: Monitor },
+      { name: 'Mapa', href: '/admin/dashboard/realtime', icon: Map },
+      { name: 'Auditoría', href: '/admin/monitoring', icon: Activity },
     ],
   },
   {
     label: 'Gestión Táctica',
     items: [
-      { name: 'Socios Conductores', href: '/admin/drivers', icon: Users },
-      { name: 'Anunciantes & Marcas', href: '/admin/advertisers', icon: Building2 },
-      { name: 'Solicitudes Portal', href: '/admin/advertisers/requests', icon: ClipboardList },
+      { name: 'Conductores', href: '/admin/drivers', icon: Users },
+      { name: 'Marcas', href: '/admin/advertisers', icon: Building2 },
+      { name: 'Solicitudes', href: '/admin/advertisers/requests', icon: ClipboardList },
     ],
   },
   {
     label: 'Playlist & Ads',
     items: [
-      { name: 'Campañas Activas', href: '/admin/campaigns', icon: Target },
-      { name: 'Biblioteca Multimedia', href: '/admin/media', icon: ImageIcon },
+      { name: 'Campañas', href: '/admin/campaigns', icon: Target },
+      { name: 'Medios', href: '/admin/media', icon: ImageIcon },
     ],
   },
   {
     label: 'Resultados & ROI',
     items: [
-      { name: 'BI Command Center', href: '/admin/bi', icon: TrendingUp },
-      { name: 'Conciliación Fiscal', href: '/admin/bi/reconciliation', icon: Scale },
-      { name: 'Finanzas & Pagos', href: '/admin/finance', icon: Wallet },
-      { name: 'Analítica de Impacto', href: '/admin/analytics', icon: BarChart3 },
+      { name: 'BI', href: '/admin/bi', icon: TrendingUp },
+      { name: 'Fiscal', href: '/admin/bi/reconciliation', icon: Scale },
+      { name: 'Finanzas', href: '/admin/finance', icon: Wallet },
+      { name: 'Impacto', href: '/admin/analytics', icon: BarChart3 },
     ],
   },
 ];
@@ -58,15 +58,15 @@ const ADVERTISER_NAVIGATION = [
   {
     label: 'Marketing Hub',
     items: [
-      { name: 'Dashboard BI', href: '/advertiser/dashboard', icon: LayoutDashboard },
-      { name: 'Mis Campañas', href: '/advertiser/campaigns', icon: Target },
-      { name: 'Librería de Medios', href: '/advertiser/media', icon: ImageIcon },
+      { name: 'Dashboard', href: '/advertiser/dashboard', icon: LayoutDashboard },
+      { name: 'Campañas', href: '/advertiser/campaigns', icon: Target },
+      { name: 'Medios', href: '/advertiser/media', icon: ImageIcon },
     ],
   },
   {
     label: 'Análisis & ROI',
     items: [
-      { name: 'Reportes de Impacto', href: '/advertiser/reports', icon: BarChart3 },
+      { name: 'Reportes', href: '/advertiser/reports', icon: BarChart3 },
     ],
   },
 ];

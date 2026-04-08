@@ -38,38 +38,55 @@ export default function DriverOnboarding() {
 
         {/* ─── Fase 1: Gancho (Cero Fricción) ─── */}
         {step === 1 && (
-          <div className="animate-in fade-in zoom-in-95 duration-500 space-y-8">
+          <div className="animate-in fade-in zoom-in-95 duration-700 space-y-8">
             <div className="text-center">
-              <div className="w-20 h-20 bg-tad-yellow/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                <Camera className="w-10 h-10 text-tad-yellow" />
+              <div className="w-20 h-20 bg-tad-yellow/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 relative group">
+                <div className="absolute inset-0 bg-tad-yellow/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Camera className="w-10 h-10 text-tad-yellow relative z-10" />
               </div>
               <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Escaneo Inteligente</h1>
-              <p className="text-sm text-gray-400 font-medium">Olvídate de formularios largos. Sube una foto de tu licencia y seguro, nosotros hacemos el resto mediante OCR.</p>
+              <p className="text-sm text-gray-400 font-medium">Olvídate de formularios. Sube tus documentos y nuestra IA (Nexus-OCR) extraerá la data en milisegundos.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <button className="h-32 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-tad-yellow/50 transition-all text-gray-500 group">
-                  <UploadCloud className="w-8 h-8 group-hover:text-tad-yellow transition-colors" />
-                  <span className="text-[10px] uppercase font-black tracking-widest">Foto Licencia</span>
-               </button>
-               <button className="h-32 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-tad-yellow/50 transition-all text-gray-500 group">
-                  <UploadCloud className="w-8 h-8 group-hover:text-tad-yellow transition-colors" />
-                  <span className="text-[10px] uppercase font-black tracking-widest">Foto Seguro</span>
-               </button>
+               <div className="relative h-40 border-2 border-dashed border-white/5 bg-black/40 rounded-3xl overflow-hidden group cursor-pointer hover:border-tad-yellow/40 transition-all">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <UploadCloud className="w-8 h-8 text-zinc-700 group-hover:text-tad-yellow transition-colors" />
+                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Foto Licencia</span>
+                  </div>
+                  {/* Scanner Laser Spell */}
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-tad-yellow shadow-[0_0_15px_#FFD400] animate-[scanner_3s_infinite] opacity-40" />
+               </div>
+               <div className="relative h-40 border-2 border-dashed border-white/5 bg-black/40 rounded-3xl overflow-hidden group cursor-pointer hover:border-tad-yellow/40 transition-all">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <UploadCloud className="w-8 h-8 text-zinc-700 group-hover:text-tad-yellow transition-colors" />
+                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Foto Seguro</span>
+                  </div>
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-tad-yellow shadow-[0_0_15px_#FFD400] animate-[scanner_3s_infinite_ease-in-out_1s] opacity-40 rotate-180" />
+               </div>
             </div>
 
-            <div className="bg-black/40 rounded-3xl p-6 border border-white/5 flex items-start gap-4">
-               <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center shrink-0">
-                  <PlayCircle className="w-6 h-6 text-white" />
+            <style jsx>{`
+              @keyframes scanner {
+                0% { transform: translateY(0px); opacity: 0 }
+                20% { opacity: 1 }
+                80% { opacity: 1 }
+                100% { transform: translateY(160px); opacity: 0 }
+              }
+            `}</style>
+
+            <div className="bg-gradient-to-br from-zinc-900 to-black rounded-3xl p-6 border border-white/5 flex items-start gap-4">
+               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center shrink-0 border border-white/10">
+                  <PlayCircle className="w-6 h-6 text-tad-yellow" />
                </div>
                <div>
-                 <h4 className="text-white font-bold text-sm mb-1">Video: Tu nuevo activo financiero</h4>
-                 <p className="text-xs text-gray-500">Mira en 15 segundos cómo la pantalla TAD se instala gratis en tu asiento trasero.</p>
+                 <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-tight">Tutorial: Ganado por kilómetro</h4>
+                 <p className="text-xs text-gray-500 leading-relaxed">Mira en 15 segundos cómo el cerebro Nexus de TAD detecta zonas premium automáticamente.</p>
                </div>
             </div>
 
-            <AntigravityButton actionName="next_step" variant="glow" onClick={nextStep} className="w-full">
-               Continuar a Ganancias <ArrowRight className="w-5 h-5 ml-2" />
+            <AntigravityButton actionName="next_step" variant="glow" onClick={nextStep} className="w-full h-16 text-xs">
+               Explorar Potencial de Ganancias <ArrowRight className="w-5 h-5 ml-2" />
             </AntigravityButton>
           </div>
         )}
@@ -78,26 +95,32 @@ export default function DriverOnboarding() {
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-right duration-500 space-y-8">
             <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                <DollarSign className="w-10 h-10 text-emerald-500" />
+              <div className="inline-flex px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-4">
+                Simulación Factible 2026
               </div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Simulador de Socio</h1>
-              <p className="text-sm text-gray-400 font-medium">Tu vehículo ahora es un activo de alto rendimiento.</p>
+              <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Tu Nuevo Activo</h1>
+              <p className="text-sm text-gray-400 font-medium">Calcula hoy lo que tu taxi puede generar mientras trabajas.</p>
             </div>
 
-            <div className="bg-black/60 rounded-3xl p-8 border border-emerald-500/20 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[40px] -mr-10 -mt-10" />
-               <div className="flex justify-between items-end mb-6 relative z-10">
+            <div className="bg-black/60 rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-tad-yellow/10 transition-colors" />
+               
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 relative z-10 gap-6">
                  <div>
-                   <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Proyección de Ingreso Extra</p>
-                   <h3 className="text-4xl font-black text-emerald-400">RD$ {projectedEarnings.toLocaleString()}</h3>
-                   <span className="text-xs text-gray-500">mes estimado</span>
+                   <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                     <DollarSign className="w-3 h-3 text-emerald-500" />
+                     Ingreso Mensual Estimado
+                   </p>
+                   <div className="flex items-baseline gap-2">
+                      <h3 className="text-5xl font-black text-white tracking-tighter">RD$ {projectedEarnings.toLocaleString()}</h3>
+                      <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">+ Bonos</span>
+                   </div>
                  </div>
-                 <div className="text-right">
-                   <p className="text-[10px] font-black uppercase text-white mb-2">Horas conduciendo al día</p>
-                   <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
+                 <div className="w-full sm:w-auto text-left sm:text-right">
+                   <p className="text-[9px] font-black uppercase text-zinc-500 mb-3 tracking-widest">Compromiso al Volante</p>
+                   <div className="inline-flex bg-white/5 rounded-2xl p-1.5 border border-white/10 shadow-inner">
                       {[4, 8, 12].map(h => (
-                         <button key={h} onClick={() => setHours(h)} className={clsx("px-4 py-1.5 rounded-full text-xs font-bold transition-all", hours === h ? "bg-emerald-500 text-black shadow-lg" : "text-gray-400")}>
+                         <button key={h} onClick={() => setHours(h)} className={clsx("px-5 py-2 rounded-xl text-xs font-black transition-all", hours === h ? "bg-tad-yellow text-black shadow-lg" : "text-zinc-500 hover:text-white")}>
                            {h}h
                          </button>
                       ))}
@@ -106,17 +129,26 @@ export default function DriverOnboarding() {
                </div>
             </div>
 
-            <div className="bg-gradient-to-r from-tad-yellow/10 to-transparent p-6 rounded-3xl border border-tad-yellow/20 flex gap-4">
-              <ShieldCheck className="w-8 h-8 text-tad-yellow shrink-0" />
-              <div>
-                 <h4 className="text-white font-bold mb-1 uppercase tracking-tight">Membresía de Socio VIP</h4>
-                 <p className="text-xs text-gray-400 leading-relaxed mb-3">La plataforma requiere un aporte único de <strong>RD$6,000</strong> que incluye: Seguro Full Premium para la Tablet, Mantenimiento Técnico y Datos Móviles Ilimitados 5G por un año.</p>
-                 <span className="text-[10px] bg-tad-yellow/20 text-tad-yellow font-black uppercase px-3 py-1 rounded-full">Retorno esperado en {hours === 4 ? '2 meses' : '1 mes'}</span>
+            <div className="bg-zinc-950 rounded-[2rem] p-6 border border-white/5 space-y-4">
+              <div className="flex items-center gap-4">
+                <ShieldCheck className="w-8 h-8 text-tad-yellow shrink-0" />
+                <h4 className="text-white font-black text-sm uppercase tracking-tight">Starter Kit Operativo (VIP)</h4>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Únete con una inversión única de <strong>RD$6,000</strong>. No es un gasto, es tu acceso a:
+              </p>
+              <div className="grid grid-cols-2 gap-3 pb-2">
+                {["Tablet Nexus v2", "Seguro Contra Robo", "Mantenimiento 24/7", "Internet 5G Ilimitado"].map(item => (
+                  <div key={item} className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl border border-white/5 text-[9px] font-bold text-zinc-300 uppercase tracking-wider">
+                     <div className="w-1 h-1 rounded-full bg-tad-yellow shadow-[0_0_5px_rgba(255,212,0,1)]" />
+                     {item}
+                  </div>
+                ))}
               </div>
             </div>
 
-            <AntigravityButton actionName="next_step" variant="primary" onClick={nextStep} className="w-full">
-               Comprar Membresía de Socio <ArrowRight className="w-5 h-5 ml-2" />
+            <AntigravityButton actionName="next_step" variant="primary" onClick={nextStep} className="w-full h-16">
+               Adquirir Membresía y Conectar <ArrowRight className="w-5 h-5 ml-2" />
             </AntigravityButton>
           </div>
         )}
@@ -124,31 +156,35 @@ export default function DriverOnboarding() {
         {/* ─── Fase 3: Activación del Hardware (Mensaje Gamificado) ─── */}
         {step === 3 && (
           <div className="animate-in zoom-in-95 duration-500 py-10 text-center space-y-8">
-            <div className="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto relative">
-               <div className="absolute inset-0 border-4 border-emerald-500/30 rounded-full animate-ping" />
-               <CheckCircle2 className="w-16 h-16 text-emerald-500" />
+            <div className="w-32 h-32 bg-tad-yellow/10 rounded-full flex items-center justify-center mx-auto relative group">
+               <div className="absolute inset-0 border-2 border-tad-yellow/30 rounded-full animate-[ping_2s_infinite]" />
+               <div className="absolute inset-0 border border-tad-yellow/10 rounded-full scale-110 group-hover:scale-125 transition-transform" />
+               <CheckCircle2 className="w-16 h-16 text-tad-yellow group-hover:scale-110 transition-transform" />
             </div>
             
-            <div>
-               <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-4 text-shadow-glow">
-                 ¡Felicidades, Socio!
+            <div className="space-y-3">
+               <h1 className="text-4xl font-black text-white uppercase tracking-tighter text-shadow-glow">
+                 Punto de Control Activo
                </h1>
-               <p className="text-lg text-gray-300 font-medium">Tu vehículo ya está <span className="text-emerald-400 font-bold border-b-2 border-emerald-500">facturando</span>.</p>
+               <p className="text-zinc-500 font-bold text-xs uppercase tracking-[0.2em]">Tu vehículo ha sido vinculado a la Nodo-Red</p>
             </div>
 
-            <div className="bg-black/50 p-6 rounded-3xl border border-white/5 inline-block mx-auto">
-               <div className="flex items-center gap-4">
-                 <Zap className="w-8 h-8 text-tad-yellow animate-pulse" />
-                 <div className="text-left">
-                    <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-none mb-1">Primer Anuncio Reproducido</p>
-                    <p className="text-white font-black text-lg">Campaña: Coca-Cola Zona Norte</p>
+            <div className="bg-black/80 rounded-2xl p-6 border border-white/5 font-mono text-left max-w-sm mx-auto shadow-2xl relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500/20 group-hover:bg-tad-yellow/20 transition-colors" />
+               <div className="space-y-2 opacity-80">
+                 <p className="text-[10px] text-emerald-500">[{new Date().toLocaleTimeString()}] PING_RESPONSE: SUCCESS</p>
+                 <p className="text-[10px] text-zinc-400">&gt; VERIFYING_EQUIPMENT... OK</p>
+                 <p className="text-[10px] text-zinc-400">&gt; ACTIVATING_REVENUE_STREAM... 100%</p>
+                 <div className="flex items-center gap-3 pt-2">
+                    <Zap className="w-4 h-4 text-tad-yellow animate-pulse" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest font-sans underline decoration-tad-yellow">FACTURANDO EN VIVO</span>
                  </div>
                </div>
             </div>
 
-            <div className="pt-8">
-              <AntigravityButton actionName="go_dashboard" variant="primary" onClick={() => router.push('/driver/dashboard')} className="w-full">
-                 ENTRAR AL TABLERO DE GANANCIAS <Car className="w-5 h-5 ml-2" />
+            <div className="pt-4">
+              <AntigravityButton actionName="go_dashboard" variant="glow" onClick={() => router.push('/driver/dashboard')} className="w-full h-16">
+                 ACCEDER AL CENTRO DE GANANCIAS <Car className="w-5 h-5 ml-2" />
               </AntigravityButton>
             </div>
           </div>

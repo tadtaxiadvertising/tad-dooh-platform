@@ -165,6 +165,18 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(250, 212, 0, 0.2);
 }
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-skeleton {
+  background: linear-gradient(90deg, #111 25%, #222 50%, #111 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 .delay-500 { animation-delay: 500ms; }
 
 /* 🧶 STITCHED UI ELEMENTS — Inspirado en Google/High-end Design */
@@ -179,8 +191,12 @@ body {
   @apply border-tad-yellow/40 bg-zinc-900/60 -translate-y-2;
   box-shadow: 
     0 30px 60px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(255, 212, 0, 0.05),
+    0 0 50px rgba(255, 212, 0, 0.08),
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.stitched-header {
+  @apply border-b border-white/5 pb-6 mb-6;
 }
 
 .stitched-glow {

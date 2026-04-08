@@ -200,12 +200,20 @@ export default function Home() {
                 </div>
              </div>
 
-             <div className="h-[350px] relative w-full overflow-hidden">
+             <div className="h-[350px] relative w-full overflow-hidden flex items-center justify-center">
                {mounted && (
                  (!chartData || chartData.length === 0 || loading) ? (
-                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4">
-                     <Radio className="w-12 h-12 opacity-20 animate-pulse" />
-                     <p className="text-[10px] font-black tracking-[0.3em] uppercase">Escaneando transpondedores...</p>
+                   <div className="flex flex-col items-center justify-center text-center gap-6 animate-in zoom-in duration-700">
+                     <div className="relative">
+                        <Radio className="w-16 h-16 text-zinc-900 absolute inset-0 animate-ping opacity-20" />
+                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner">
+                           <Layers className={clsx("w-8 h-8", loading ? "text-tad-yellow animate-pulse" : "text-zinc-700")} />
+                        </div>
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black tracking-[0.4em] uppercase text-zinc-500 mb-2">Escaneando Transpondedores</p>
+                        <p className="text-[9px] font-bold text-zinc-700 uppercase italic">Esperando telemetría de red activa...</p>
+                     </div>
                    </div>
                  ) : (
                    <ResponsiveContainer width="100%" height="100%">

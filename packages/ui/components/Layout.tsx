@@ -251,11 +251,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       }}
                       title={isCollapsed ? item.name : undefined}
                       className={clsx(
-                        'group flex items-center text-[12px] font-bold rounded-2xl transition-all relative tracking-wider border border-transparent uppercase',
+                        'group flex items-center text-[12px] font-bold rounded-2xl transition-all duration-500 relative tracking-wider border border-transparent uppercase overflow-hidden',
                         isActive
                           ? 'bg-tad-yellow text-black shadow-[0_12px_24px_rgba(250,212,0,0.2)] border-tad-yellow/40'
-                          : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10',
-                        isCollapsed ? 'justify-center p-4' : 'px-5 py-4'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10 hover:translate-x-2',
+                        isCollapsed ? 'justify-center p-4' : 'px-5 py-4 hover:pl-8'
                       )}
                     >
                       {isActive && (

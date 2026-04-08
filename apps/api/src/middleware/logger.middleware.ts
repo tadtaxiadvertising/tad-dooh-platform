@@ -11,15 +11,12 @@ export class LoggerMiddleware implements NestMiddleware {
     // We log the device ID if present in the payload
     const deviceId = body?.device_id || '-';
 
-    res.on('finish', () => {
-      const { statusCode } = res;
-      const logLevel = statusCode >= 400 ? 'error' : 'log';
-      this.logger[logLevel](`${method} ${originalUrl} ${statusCode}`, { 
-        deviceId, 
-        method, 
-        url: originalUrl, 
-        statusCode 
-      });
+      const logMessage = `${method} ${originalUrl} ${statusCode} [Device: ${deviceId}]`;
+      if (statusCode >= 400) {
+        this.logger.error(logMessage);
+      } else {
+        this.logger.log(logMessage);
+      }
     });
 
     next();

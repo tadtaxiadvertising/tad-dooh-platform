@@ -181,14 +181,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         isSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "lg:w-20" : "lg:w-72"
       )}>
-        <button 
-          className="lg:hidden absolute top-4 right-4 text-zinc-400 hover:text-white z-50"
-          onClick={() => setIsSidebarOpen(false)}
-          title="Cerrar el panel de control"
-          aria-label="Cerrar el panel de control"
-        >
-          <X className="w-5 h-5" />
-        </button>
         <div className="absolute top-[-5%] left-[-5%] w-64 h-64 bg-tad-yellow/10 blur-[100px] -z-10 pointer-events-none transition-all duration-1000" />
         
         {/* Brand Identity Section */}
@@ -330,9 +322,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Subtle glass light leak */}
           <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
           
-          <div className="h-full px-6 grid grid-cols-3 items-center">
-            {/* Left Section: Mobile Menu & Status Info */}
-            <div className="flex items-center gap-6 z-20">
+          <div className="h-full px-6 flex items-center justify-between gap-6 w-full">
+            {/* Left Section: Mobile Menu */}
+            <div className="flex items-center shrink-0">
               <button 
                 className="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors"
                 onClick={() => setIsSidebarOpen(true)}
@@ -340,12 +332,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              
+            </div>
+
+            {/* Center Section: Status Info & Search Bar */}
+            <div className="flex flex-1 items-center justify-end lg:justify-start gap-8 min-w-0">
               {role === 'ADMIN' && (
-                <div className="flex items-center gap-6">
+                <div className="hidden xl:flex items-center gap-6 shrink-0 z-20">
                   <FleetHealthStatus hasSession={!!session} />
                   
-                  <div className="hidden lg:flex items-center gap-6 pl-6 border-l border-white/5">
+                  <div className="flex items-center gap-6 pl-6 border-l border-white/5">
                     <div className="text-right">
                       <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">Network</p>
                       <div className="flex items-center gap-2 justify-end">
@@ -363,11 +358,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Center Section: Search Bar (Properly Centered via Grid) */}
-            <div className="flex justify-center z-10">
-              <div className="relative group w-full max-w-sm">
+              <div className="w-full max-w-sm relative group z-10 hidden md:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
                 <input 
                   type="text" 
@@ -383,7 +375,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Right Section: User Nav Cluster */}
-            <div className="flex items-center justify-end gap-4 z-20">
+            <div className="flex items-center justify-end gap-4 z-20 shrink-0">
               <NotificationCenter />
               
               <div className="flex items-center gap-4 pl-4 border-l border-white/10">

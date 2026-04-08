@@ -30,7 +30,9 @@ export function middleware(request: NextRequest) {
   }
 
   // 3. Protected routes
-  if (!session || decodeTokenRole(session) !== 'DRIVER') {
+  const isPublicRoute = pathname === '/driver/onboarding';
+
+  if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'DRIVER')) {
     if (session && decodeTokenRole(session) === 'ADMIN') return NextResponse.next(); // Admin can access
     return NextResponse.redirect(new URL('/driver/login', request.url));
   }

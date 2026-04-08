@@ -83,8 +83,10 @@ export class SheetsService implements OnModuleInit {
       await this.syncMarcas();
       await this.syncPagos();
       await this.syncIngresos();
+      await this.syncSuscripciones();
+      await this.syncConciliacion();
       
-      this.logger.log('✅ TAD-SRE: Sincronización masiva completada.');
+      this.logger.log('✅ TAD-SRE: Sincronización masiva completada (Registro Contable Completo).');
       return { success: true, timestamp: new Date().toISOString() };
     } catch (e) {
       this.logger.error(`❌ TAD-SRE: Error en sincronización: ${e.message}`);
@@ -157,14 +159,16 @@ export class SheetsService implements OnModuleInit {
   private async syncPagos() {
     const sheet = this.doc.sheetsByTitle['Pagos'];
     if (!sheet) return;
-    const txs = await (this.prisma as any).financialTransaction.findMany();
+    const txs = await this.prisma.financialTransaction.findMany();
     await sheet.clearRows();
     await sheet.addRows(txs.map(t => ({
       ID: t.id,
       FECHA: t.createdAt.toISOString(),
       RECEPTOR: t.entityId || 'N/A',
       TIPO_RECEPTOR: t.category,
-      MONTO: t.amount,
+      MONTO_BRUTO: t.amount,
+      NET_AMOUNT: t.netAmount,
+      TAX_AMOUNT: t.taxAmount,
       REFERENCIA: t.reference || 'N/A',
       ESTATUS: t.status
     })));
@@ -186,6 +190,42 @@ export class SheetsService implements OnModuleInit {
       INGRESO_BRUTO: p.amount,
       FEE_PLATAFORMA: 0,
       TOTAL_PAGAR: p.amount
+    })));
+  }
+
+  private async syncSuscripciones() {
+    const sheet = this.doc.sheetsByTitle['Suscripciones'];
+    if (!sheet) return;
+    const subs = await this.prisma.subscription.findMany({ include: { driver: true } });
+    await sheet.clearRows();
+    await sheet.addRows(subs.map(s => ({
+      ID: s.id,
+      CHOFER: s.driver.fullName,
+      PLAN: s.plan,
+      MONTO: s.amount,
+      INICIO: s.startDate.toISOString(),
+      VENCIMIENTO: s.dueDate.toISOString(),
+      PAGADO_EN: s.paidAt?.toISOString() || 'PENDIENTE',
+      METODO_PAGO: s.paymentMethod || 'N/A',
+      ESTATUS: s.status
+    })));
+  }
+
+  private async syncConciliacion() {
+    const sheet = this.doc.sheetsByTitle['Conciliacion'];
+    if (!sheet) return;
+    const reports = await this.prisma.reconciliationReport.findMany();
+    await sheet.clearRows();
+    await sheet.addRows(reports.map(r => ({
+      PERIODO: r.period,
+      ID_CHOFER: r.driverId,
+      SUSCRIPCION_ESTATUS: r.subscriptionStatus,
+      SUSCRIPCION_MONTO: r.subscriptionAmount,
+      INGRESOS_REPRODUCCIONES: r.revenueReceived,
+      PAGOS_NOMINA_DEBIDO: r.payrollDue,
+      PAGOS_NOMINA_PAGADOS: r.payrollPaid,
+      DISCREPANCIA_TOTAL: r.discrepancyAmount,
+      TIPO_DISCREPANCIA: r.discrepancyType
     })));
   }
 

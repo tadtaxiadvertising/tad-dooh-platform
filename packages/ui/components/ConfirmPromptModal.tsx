@@ -50,12 +50,12 @@ export const ConfirmPromptModal: React.FC<ConfirmPromptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
-      <div className="relative bg-[#111317] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-[0_0_80px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-500 overflow-hidden">
+      <div className="relative bg-[#0b0d12] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-500 overflow-hidden">
         {/* Glow effect */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/5 blur-[50px] -mr-16 -mt-16" />
         

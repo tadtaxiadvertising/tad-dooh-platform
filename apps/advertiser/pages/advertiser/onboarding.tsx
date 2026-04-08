@@ -9,8 +9,10 @@ export default function AdvertiserOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [mounted, setMounted] = useState(false);
-  const [budget, setBudget] = useState(1500);
-  const reach = Math.floor(budget * 2.4); // Mock calculation: RD$1500 = 3600 impresiones
+  const [budget, setBudget] = useState(5000);
+  const itbis = budget * 0.18;
+  const totalWithTax = budget + itbis;
+  const reach = Math.floor(budget * 1.8); // 1.8 impressions per peso roughly
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -29,7 +31,7 @@ export default function AdvertiserOnboarding() {
       </div>
 
       <div className={clsx(
-        "w-full max-w-3xl bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl transition-all duration-700 relative",
+        "w-full max-w-4xl bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 lg:p-12 shadow-2xl transition-all duration-700 relative",
         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
       )}>
         {/* Progress */}
@@ -48,11 +50,11 @@ export default function AdvertiserOnboarding() {
                 <Map className="w-10 h-10 text-blue-500 relative z-10" />
               </div>
               <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Dominio Territorial</h1>
-              <p className="text-sm text-gray-400 font-medium">Visualiza los puntos calientes de la flota TAD. Tu marca estará donde está la gente.</p>
+              <p className="text-sm text-gray-400 font-medium">Segmentación dinámica vía <b>Real-Time Sync</b>. Tu marca donde está la gente.</p>
             </div>
 
             {/* Mockup Heatmap o Mapa visual */}
-            <div className="w-full h-56 bg-zinc-950 rounded-[2.5rem] border border-white/5 relative overflow-hidden group/map cursor-crosshair">
+            <div className="w-full h-64 bg-zinc-950 rounded-[2.5rem] border border-white/5 relative overflow-hidden group/map cursor-crosshair">
                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />
                
                {/* Simulación de Coordenadas y Heatmap */}
@@ -72,17 +74,17 @@ export default function AdvertiserOnboarding() {
                <div className="absolute top-4 right-4 z-10">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 px-4 py-2 bg-black/60 rounded-full border border-emerald-500/20 backdrop-blur-md flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Telemetría en Vivo
+                    Telemetría Gateways 4G
                   </span>
                </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Comercial', icon: <Briefcase className="w-5 h-5"/>, active: true },
-                { label: 'Residencial', icon: <Users className="w-5 h-5"/>, active: false },
-                { label: 'Turística', icon: <Map className="w-5 h-5"/>, active: true },
-                { label: 'Estudiantil', icon: <MousePointerClick className="w-5 h-5"/>, active: false }
+                { label: 'Santiago (STI)', icon: <Briefcase className="w-5 h-5"/>, active: true },
+                { label: 'Santo Domingo', icon: <Users className="w-5 h-5"/>, active: false },
+                { label: 'Zonas VIP', icon: <Map className="w-5 h-5"/>, active: true },
+                { label: 'Rutas Nocturnas', icon: <MousePointerClick className="w-5 h-5"/>, active: false }
               ].map((zone, i) => (
                 <button key={i} className={clsx(
                   "p-5 rounded-3xl border flex flex-col items-center gap-4 transition-all duration-500",
@@ -95,44 +97,48 @@ export default function AdvertiserOnboarding() {
             </div>
 
             <AntigravityButton actionName="next_step" variant="primary" onClick={nextStep} className="w-full h-16">
-               Definir Presupuesto y Arte <ArrowRight className="w-5 h-5 ml-2" />
+               Definir Inversión y Multimedia <ArrowRight className="w-5 h-5 ml-2" />
             </AntigravityButton>
           </div>
         )}
 
-        {/* ─── Fase 2: Creación con Facilidad Cognitiva (CPM y Cropping) ─── */}
+        {/* ─── Fase 2: CPM y Facturación Transparente ─── */}
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-right duration-500 space-y-8">
             <div className="text-center">
               <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 group">
                 <Calculator className="w-10 h-10 text-emerald-500 group-hover:rotate-12 transition-transform" />
               </div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Poder de Alcance</h1>
-              <p className="text-sm text-gray-400 font-medium">Obtén 3 veces más impacto que en redes sociales tradicionales.</p>
+              <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-2">Presupuesto & Impuestos</h1>
+              <p className="text-sm text-gray-400 font-medium">Facturación basada en <b>Playback Complete</b>. Solo pagas lo que se ve.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="bg-zinc-950 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
                   <div>
-                    <h3 className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-6">Presupuesto de Campaña</h3>
-                    <input type="range" min="500" max="10000" step="500" value={budget} onChange={e => setBudget(Number(e.target.value))} className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-tad-yellow" />
+                    <h3 className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-6">Presupuesto de Campaña (RD$)</h3>
+                    <input type="range" min="1000" max="50000" step="1000" value={budget} onChange={e => setBudget(Number(e.target.value))} className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-tad-yellow" />
                   </div>
                   
-                  <div className="flex justify-between items-end">
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Inversión Elegida</p>
-                      <span className="text-4xl font-black text-white tracking-tighter">RD${budget}</span>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-[11px] font-black uppercase text-zinc-500 tracking-widest">
+                       <span>Subtotal</span>
+                       <span className="text-white">RD${budget.toLocaleString()}</span>
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Reach Estimado</p>
-                      <span className="text-4xl font-black text-emerald-400 tracking-tighter">{reach.toLocaleString()}</span>
+                    <div className="flex justify-between items-center text-[11px] font-black uppercase text-zinc-500 tracking-widest">
+                       <span>ITBIS (18%)</span>
+                       <span className="text-rose-400">RD${itbis.toLocaleString()}</span>
+                    </div>
+                    <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                       <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Total Facturado</p>
+                       <span className="text-4xl font-black text-white tracking-tighter">RD${totalWithTax.toLocaleString()}</span>
                     </div>
                   </div>
                   
                   <div className="pt-6 border-t border-white/5 flex items-center gap-3">
                      <Zap className="w-5 h-5 text-tad-yellow" />
                      <p className="text-[10px] text-zinc-400 font-medium leading-relaxed uppercase tracking-wider">
-                       Este presupuesto supera en <span className="text-white font-black">240%</span> el promedio de clics convencionales.
+                       Impacto estimado: <span className="text-white font-black">{reach.toLocaleString()}</span> visualizaciones únicas verificadas.
                      </p>
                   </div>
                </div>
@@ -142,8 +148,8 @@ export default function AdvertiserOnboarding() {
                     <UploadCloud className="w-8 h-8 text-zinc-600 group-hover:text-tad-yellow group-hover:scale-110 transition-all" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Cargar Contenido</h3>
-                    <p className="text-[10px] text-zinc-500 mt-3 leading-relaxed">Sube JPG, PNG o MP4.<br/>Nuestro motor <strong>Nexus-Crop</strong> ajustará las dimensiones automáticamente a las tablets de los taxis.</p>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Cargar Arte (MP4/JPG/PNG)</h3>
+                    <p className="text-[10px] text-zinc-500 mt-3 leading-relaxed">Solo archivos optimizados para <b>STI Hardware</b>.<br/>Resolución máxima permitida: 1080p.</p>
                   </div>
                   <div className="flex gap-2">
                      {["16:9", "FullHD", "Smart-Fit"].map(tag => (

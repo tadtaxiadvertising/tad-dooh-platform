@@ -5,7 +5,7 @@ import api from '@tad/services';
 import {
   Car, Camera, DollarSign, ShieldCheck, CheckCircle2, ArrowRight,
   UploadCloud, Zap, Phone, Shield, Eye, EyeOff, MapPin, ChevronLeft,
-  Sparkles, BadgeCheck, Wifi, Clock
+  Sparkles, BadgeCheck, Wifi, Clock, Users
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -15,8 +15,8 @@ export default function DriverOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [mounted, setMounted] = useState(false);
-  const [hours, setHours] = useState(8);
-  const projectedEarnings = hours * 500;
+  const [campaigns, setCampaigns] = useState(5);
+  const projectedEarnings = (campaigns * 500) + 500; // Campaign pay + Availability bonus
 
   // Registration fields
   const [fullName, setFullName] = useState('');
@@ -124,17 +124,17 @@ export default function DriverOnboarding() {
                 <span className="text-tad-yellow">dinero extra</span>
               </h1>
               <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-[280px] mx-auto">
-                Mientras conduces, la pantalla digital de TAD muestra anuncios. Tú ganas sin hacer nada.
+                Evoluciona a <b>Hardware-as-a-Service</b>. Gana por cada campaña activa en tu unidad mientras trabajas tu ruta normal.
               </p>
             </div>
 
             {/* Benefit Cards */}
             <div className="space-y-3 flex-1">
               {[
-                { icon: <DollarSign className="w-5 h-5" />, title: 'Ingresos Pasivos', desc: 'Gana hasta RD$4,000 mensuales sin esfuerzo extra', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { icon: <Wifi className="w-5 h-5" />, title: 'Internet 5G Gratis', desc: 'Conectividad ilimitada para ti y tus pasajeros', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { icon: <ShieldCheck className="w-5 h-5" />, title: 'Seguro del Equipo', desc: 'Cobertura total contra robo y daño de la tablet', color: 'text-tad-yellow', bg: 'bg-tad-yellow/10' },
-                { icon: <Clock className="w-5 h-5" />, title: 'Sin Compromisos', desc: 'No cambias tu rutina. La tablet trabaja sola', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu tablet (Hasta 15 simultáneos)', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                { icon: <Wifi className="w-5 h-5" />, title: 'Internet 5G Ilimitado', desc: 'Conectividad premium para ti y tus pasajeros sin costo adicional', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                { icon: <BadgeCheck className="w-5 h-5" />, title: 'Bono de Disponibilidad', desc: 'RD$500 mensuales garantizados con solo mantener tu equipo encendido', color: 'text-tad-yellow', bg: 'bg-tad-yellow/10' },
+                { icon: <Users className="w-5 h-5" />, title: 'Plan de Referidos', desc: 'Gana RD$500 por cada nuevo socio o marca (Anunciante) que traigas a la flota', color: 'text-purple-400', bg: 'bg-purple-500/10' },
               ].map((b, i) => (
                 <div
                   key={i}
@@ -157,7 +157,7 @@ export default function DriverOnboarding() {
                 onClick={nextStep}
                 className="w-full bg-tad-yellow hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,212,0,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
               >
-                <span>VER CUÁNTO PUEDO GANAR</span>
+                <span>CALCULAR MIS GANANCIAS</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -170,33 +170,33 @@ export default function DriverOnboarding() {
             {/* Header */}
             <div className="text-center pt-6 pb-6">
               <div className="inline-flex px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">
-                Simulación Real 2026
+                Lógica Contable Certificada
               </div>
               <h1 className="text-[26px] font-black text-white uppercase tracking-tight leading-tight mb-2">
-                Tu Potencial<br />
-                <span className="text-emerald-400">de Ganancias</span>
+                Simulación de<br />
+                <span className="text-emerald-400">Ingresos</span>
               </h1>
-              <p className="text-xs text-gray-500 font-medium">Desliza para calcular tu ingreso mensual</p>
+              <p className="text-xs text-gray-500 font-medium">Desliza para proyectar tus bonos mensuales</p>
             </div>
 
             {/* Calculator Card */}
             <div className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 space-y-6">
-              {/* Hours Selector */}
+              {/* Campaigns Selector */}
               <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Horas al volante por día</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Campañas Activas en tu Unidad</p>
                 <div className="flex gap-2">
-                  {[4, 6, 8, 10, 12].map(h => (
+                  {[3, 6, 9, 12, 15].map(c => (
                     <button
-                      key={h}
-                      onClick={() => setHours(h)}
+                      key={c}
+                      onClick={() => setCampaigns(c)}
                       className={clsx(
                         "flex-1 py-3 rounded-xl text-xs font-black transition-all duration-300",
-                        hours === h
+                        campaigns === c
                           ? "bg-tad-yellow text-black shadow-[0_5px_20px_rgba(255,212,0,0.2)] scale-105"
                           : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
                       )}
                     >
-                      {h}h
+                      {c}
                     </button>
                   ))}
                 </div>
@@ -206,47 +206,54 @@ export default function DriverOnboarding() {
               <div className="bg-black/40 rounded-2xl p-6 border border-white/5">
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Ingreso Mensual</p>
+                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Pago Mensual (Estimado)</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-[10px] text-gray-500 font-bold">RD$</span>
                       <span className="text-4xl font-black text-white tracking-tighter">{projectedEarnings.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">+ Bonos</p>
-                    <span className="text-lg font-black text-emerald-400 tracking-tight">+15%</span>
+                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">+ Incentivos</p>
+                    <span className="text-lg font-black text-emerald-400 tracking-tight">VIP</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
-                  <p className="text-[10px] text-gray-500 leading-relaxed">
-                    Sin contar <span className="text-white font-bold">propinas digitales</span> de pasajeros vía QR
-                  </p>
+                <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2">
+                   <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
+                      <p className="text-[10px] text-gray-500 leading-relaxed">
+                        Incluye <b>Bono de Disponibilidad</b> (RD$500) por telemetría.
+                      </p>
+                   </div>
+                   <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                      <p className="text-[10px] text-gray-500 leading-relaxed">
+                        Potencial ilimitado por <b>Referidos</b> de Anunciantes.
+                      </p>
+                   </div>
                 </div>
               </div>
 
-              {/* Comparison */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3 text-center">
-                  <p className="text-[8px] font-black text-red-400/60 uppercase tracking-widest mb-1">Sin TAD</p>
-                  <p className="text-lg font-black text-red-400/40 line-through">RD$0</p>
-                </div>
-                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 text-center">
-                  <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-1">Con TAD</p>
-                  <p className="text-lg font-black text-emerald-400">+RD${projectedEarnings.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Kit Info */}
-            <div className="mt-4 bg-zinc-900/40 border border-white/5 rounded-2xl p-4 flex items-start gap-4">
-              <div className="w-10 h-10 bg-tad-yellow/10 rounded-xl flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5 text-tad-yellow" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-white uppercase tracking-tight">Starter Kit: RD$6,000</h4>
-                <p className="text-[10px] text-gray-500 mt-1 leading-relaxed">Tablet + Seguro + Internet + Soporte 24/7</p>
+              {/* Business Table info */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
+                    <span>Concepto</span>
+                    <span>Monto</span>
+                 </div>
+                 <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
+                       <span>Pago por Campaña</span>
+                       <span>RD$500 /u</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
+                       <span>Disponibilidad (100 GPS pts)</span>
+                       <span>RD$500</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
+                       <span>Suscripción Anual (Deducible)</span>
+                       <span>RD$6,000</span>
+                    </div>
+                 </div>
               </div>
             </div>
 
@@ -256,7 +263,7 @@ export default function DriverOnboarding() {
                 onClick={nextStep}
                 className="w-full bg-tad-yellow hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,212,0,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
               >
-                <span>QUIERO REGISTRARME</span>
+                <span>QUIERO MI STARTER KIT</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -268,9 +275,9 @@ export default function DriverOnboarding() {
           <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center pt-4 pb-4">
               <h1 className="text-[22px] font-black text-white uppercase tracking-tight leading-tight mb-1">
-                Crea tu Cuenta
+                Registro de Socio
               </h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Completa tus datos para unirte a TAD</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Adquiere tu membresía de RD$6,000 / año</p>
             </div>
 
             <form onSubmit={handleRegister} className="flex-1 flex flex-col">
@@ -375,8 +382,8 @@ export default function DriverOnboarding() {
                       onChange={e => setAgreements(prev => ({ ...prev, contract: e.target.checked }))}
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
-                    <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors">
-                      Acepto el <span className="text-tad-yellow font-bold">contrato de servicio</span> y términos de uso.
+                    <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors text-shadow-sm">
+                      Acepto el <span className="text-tad-yellow font-bold uppercase tracking-tighter">Handshake Operativo</span> y contrato de servicio.
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group/check">
@@ -384,8 +391,8 @@ export default function DriverOnboarding() {
                       onChange={e => setAgreements(prev => ({ ...prev, insurance: e.target.checked }))}
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
-                    <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors">
-                      Acepto el <span className="text-tad-yellow font-bold">seguro del equipo</span> y política de privacidad.
+                    <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors text-shadow-sm">
+                      Acepto el <span className="text-tad-yellow font-bold uppercase tracking-tighter">Seguro del Equipo Pro</span> (RD$6,000 cuota anual).
                     </span>
                   </label>
                 </div>
@@ -401,12 +408,12 @@ export default function DriverOnboarding() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      <span>REGISTRANDO...</span>
+                      <span>CONFIGURANDO NODO...</span>
                     </>
                   ) : (
                     <>
                       <BadgeCheck className="w-5 h-5" />
-                      <span>CREAR MI CUENTA</span>
+                      <span>ADSCRIPCIÓN AL SISTEMA</span>
                     </>
                   )}
                 </button>

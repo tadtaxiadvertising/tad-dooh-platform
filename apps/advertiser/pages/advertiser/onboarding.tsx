@@ -44,7 +44,7 @@ export default function AdvertiserOnboarding() {
     setError('');
     
     if (!agreements.terms) {
-      setError('Debes aceptar los términos y condiciones para continuar');
+      setError('Debes aceptar el Contrato de Anunciante para continuar');
       return;
     }
     if (password.length < 6) {
@@ -365,7 +365,7 @@ export default function AdvertiserOnboarding() {
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
                     <span className="text-[11px] text-zinc-400 leading-relaxed group-hover/check:text-zinc-300 transition-colors">
-                      Acepto las <span className="text-tad-yellow font-bold uppercase tracking-tight">políticas de privacidad</span> y autorizo a TAD a emitirme crédito y facturas con valor fiscal.
+                      Acepto el <span className="text-tad-yellow font-bold uppercase tracking-tight">Contrato de Anunciante</span> y las políticas de privacidad. Autorizo a TAD a facturar por reproducciones verificadas (Playback-Complete).
                     </span>
                   </label>
                 </div>

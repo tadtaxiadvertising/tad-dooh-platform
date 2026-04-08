@@ -25,7 +25,7 @@ export default function DriverOnboarding() {
   const [taxiPlate, setTaxiPlate] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreements, setAgreements] = useState({ contract: false, insurance: false });
+  const [agreements, setAgreements] = useState({ contract: false, hardware_liability: false });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +37,7 @@ export default function DriverOnboarding() {
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!agreements.contract || !agreements.insurance) {
+    if (!agreements.contract || !agreements.hardware_liability) {
       setError('Debes aceptar ambos acuerdos para continuar');
       return;
     }
@@ -49,7 +49,7 @@ export default function DriverOnboarding() {
     try {
       await api.post('/drivers', {
         fullName, phone, cedula, taxiPlate, password,
-        contractAccepted: true, insuranceAccepted: true,
+        contractAccepted: true,
         agreementVersion: '2.0'
       });
       nextStep(); // Go to success step
@@ -250,7 +250,7 @@ export default function DriverOnboarding() {
                        <span>RD$500</span>
                     </div>
                     <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
-                       <span>Suscripción Anual (Deducible)</span>
+                       <span>Starter Kit / Membresía Anual</span>
                        <span>RD$6,000</span>
                     </div>
                  </div>
@@ -387,12 +387,12 @@ export default function DriverOnboarding() {
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group/check">
-                    <input type="checkbox" checked={agreements.insurance}
-                      onChange={e => setAgreements(prev => ({ ...prev, insurance: e.target.checked }))}
+                    <input type="checkbox" checked={agreements.hardware_liability}
+                      onChange={e => setAgreements(prev => ({ ...prev, hardware_liability: e.target.checked }))}
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
                     <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors text-shadow-sm">
-                      Acepto el <span className="text-tad-yellow font-bold uppercase tracking-tighter">Seguro del Equipo Pro</span> (RD$6,000 cuota anual).
+                      Acepto la <span className="text-tad-yellow font-bold uppercase tracking-tighter">Responsabilidad de Hardware</span> y acuerdo de mantenimiento (Membresía RD$6,000/año).
                     </span>
                   </label>
                 </div>

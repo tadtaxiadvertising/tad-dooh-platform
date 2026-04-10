@@ -19,7 +19,8 @@ interface Notification {
 
 export const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: notifications = [], mutate } = useSWR<Notification[]>('/notifications');
+  const { data, mutate } = useSWR<Notification[]>('/notifications');
+  const notifications = Array.isArray(data) ? data : [];
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
@@ -139,6 +140,6 @@ export const NotificationCenter: React.FC = () => {
       )}
     </div>
   );
-}
+};
 
 

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -278,7 +278,7 @@ export class AdvertisersService {
     }
 
     if (!user.password) {
-      throw new UnauthorizedException('Debe configurar su contraseña con el administrador primero.');
+      throw new UnauthorizedException('Tu cuenta aún no tiene una contraseña configurada. Por favor, utiliza la opción "Recuperar Contraseña" para establecer una.');
     }
 
     const isMatch = await bcrypt.compare(pass, user.password);
@@ -336,5 +336,30 @@ export class AdvertisersService {
     this.logger.log(`[AUTH] Recovery token generado para ${email} — integrar con Resend/SendGrid`);
 
     return { success: true, message: 'Recovery instructions sent.' };
+  // RESET PASSWORD (POST-RECOVERY)
+  async resetPassword(token: string, newPass: string) {
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('Error de configuración del servidor.');
+    }
+
+    try {
+      const payload = jwt.verify(token, jwtSecret) as any;
+      if (payload.purpose !== 'reset') {
+        throw new BadRequestException('Token inválido para esta operación');
+      }
+
+      const hashedPassword = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
+      
+      await this.prisma.advertiser.update({
+        where: { id: payload.sub },
+        data: { password: hashedPassword }
+      });
+
+      return { success: true, message: 'Contraseña actualizada correctamente.' };
+    } catch (err) {
+      this.logger.error(`❌ [RESET_PASSWORD] Error: ${err.message}`);
+      throw new UnauthorizedException('El enlace ha expirado o es inválido.');
+    }
   }
 }

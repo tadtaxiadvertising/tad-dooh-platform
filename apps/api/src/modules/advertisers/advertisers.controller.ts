@@ -31,6 +31,15 @@ export class AdvertisersController {
     return this.advertisersService.recoverPassword(body.email);
   }
 
+  @Public()
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string; newPassword?: string }) {
+    if (!body.token || !body.newPassword) {
+      throw new BadRequestException('Token and newPassword are required');
+    }
+    return this.advertisersService.resetPassword(body.token, body.newPassword);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const adv = await this.advertisersService.findOne(id);

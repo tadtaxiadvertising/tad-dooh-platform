@@ -437,6 +437,8 @@ model Advertiser {
   referrer       Driver?         @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
   campaigns      Campaign[]
   portalRequests PortalRequest[]
+  subscriptions  AdvertiserSubscription[]
+  invoices       Invoice[]
 
   @@index([status])
   @@index([category])
@@ -560,4 +562,41 @@ model ContractAcceptance {
 
   @@index([driverId])
   @@map("contract_acceptances")
+}
+
+model AdvertiserSubscription {
+  id              String     @id @default(uuid())
+  advertiserId    String     @map("advertiser_id")
+  numberOfScreens Int        @map("number_of_screens")
+  monthlyRate     Float      @default(1500.0) @map("monthly_rate")
+  taxRate         Float      @default(0.18) @map("tax_rate")
+  status          String     @default("ACTIVE")
+  nextBillingDate DateTime   @map("next_billing_date")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  advertiser      Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+
+  @@index([advertiserId])
+  @@index([status])
+  @@map("advertiser_subscriptions")
+}
+
+model Invoice {
+  id           String     @id @default(uuid())
+  advertiserId String     @map("advertiser_id")
+  issueDate    DateTime   @default(now()) @map("issue_date")
+  dueDate      DateTime   @map("due_date")
+  subtotal     Float
+  taxAmount    Float      @map("tax_amount")
+  totalAmount  Float      @map("total_amount")
+  status       String     @default("PENDING") // PENDING, PAID, OVERDUE
+  pdfUrl       String?    @map("pdf_url")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  advertiser   Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+
+  @@index([advertiserId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
 }

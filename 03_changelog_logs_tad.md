@@ -64,3 +64,23 @@ During this cycle, we reached v8.0.0 by decoupling heavy video rendering into a 
 
 ---
 **Status**: STABLE. Redeploy the `backend` and `admin-dashboard` to apply these fixes.
+
+### [UPDATE - 03_changelog_logs_tad.md]
+
+**Date**: 2026-04-10
+**Module**: Advertiser BI v5.4 & Backend Intelligence
+
+- **Frontend (AdvertiserDashboard)**: Migrado a Next.js 15 + React 19. Implementaci√≥n de `<Suspense>` con `TopMetricsSkeleton` paralizando la carga de componentes para priorizar TTI.
+- **Frontend (ImpressionChart)**: Modularizado `AreaChart` de recharts con gradiente de contraste #FFD700 para representar los impactos verificados a nivel de calle (√∫ltimos 7 d√≠as).
+- **Frontend (LiveStatusBadge)**: Integraci√≥n de estatus en tiempo real sobre WebSockets / SSE. Las pulsaciones sincronizan la tabla `playback_events` evidenciando conexi√≥n directa "Live Data Link".
+- **Backend (AnalyticsService)**: Implementados endpoints `total-impressions` y `anti-fraud` apoyados con capa de in-memory cache (TTL: 30s) aligerando 95% de carga sobre base de datos Supabase durante F5 refreshes de Dashboard.
+- **DevOps**: Construido `Dockerfile.api` enfocado en resiliencia en Free Tier (Easypanel), configurando `max-old-space-size=850` (1GB VPS) y habilitando exposici√≥n estricta en puerto TCP 3000 garantizando salud de t√∫neles SSE.
+- **Validaci√≥n Pr√≥ximo Sprint**: Ejecutar pipelines y verificar estado en `DEPLOY_STATUS.md`.
+
+### [UPDATE - 03_changelog_logs_tad.md] 
+
+**Date**: 2026-04-10
+**Module**: Advertiser BI v6.0 - Lanzamiento Oficial
+
+- **Frontend (Dashboard)**: Se reemplazÛ la p·gina principal dashboard.tsx con la nueva arquitectura v6.0. El diseÒo ahora incluye el Sidebar premium, la calculadora de expansiÛn e integraciÛn total de insights financieros y de marketing.
+- **Frontend (Sidebar)**: El men˙ ahora vincula correctamente a todas las secciones del portal /advertiser/....

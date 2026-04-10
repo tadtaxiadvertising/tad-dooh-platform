@@ -12,6 +12,8 @@ export class AnalyticsService {
     summary?: { data: any; expiry: number };
     topTaxis?: { data: any; expiry: number };
     hourly?: { data: any; expiry: number };
+    totalImpressions?: { data: number; expiry: number };
+    antiFraud?: { data: any; expiry: number };
   } = {};
 
   private deviceExistsCache = new Set<string>();
@@ -139,6 +141,54 @@ export class AnalyticsService {
     };
 
     this.cache.summary = { data, expiry: now + this.CACHE_TTL };
+    return data;
+  }
+
+  async getTotalImpressions() {
+    const now = Date.now();
+    if (this.cache.totalImpressions && this.cache.totalImpressions.expiry > now) {
+      return this.cache.totalImpressions.data;
+    }
+
+    const count = await this.prisma.playbackEvent.count({
+      where: { eventType: 'play_confirm' }
+    });
+
+    this.cache.totalImpressions = { data: count, expiry: now + this.CACHE_TTL };
+    return count;
+  }
+
+  async getAntiFraudMetrics() {
+    const now = Date.now();
+    if (this.cache.antiFraud && this.cache.antiFraud.expiry > now) {
+      return this.cache.antiFraud.data;
+    }
+
+    const [rawImpressions, gpsValidations] = await Promise.all([
+      this.prisma.playbackEvent.count({
+        where: { eventType: 'play_confirm' }
+      }),
+      this.prisma.playbackEvent.count({
+        where: {
+          eventType: 'play_confirm',
+          lat: { not: null },
+          lng: { not: null }
+        }
+      })
+    ]);
+
+    const validPercentage = rawImpressions > 0 
+      ? Math.round((gpsValidations / rawImpressions) * 100) 
+      : 0;
+
+    const data = {
+      rawImpressions,
+      gpsValidations,
+      validPercentage,
+      status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
+    };
+
+    this.cache.antiFraud = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 

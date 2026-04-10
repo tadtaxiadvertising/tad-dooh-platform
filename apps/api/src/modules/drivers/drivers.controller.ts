@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -8,6 +8,7 @@ import { UserRole } from '../auth/decorators/roles.decorator';
 @Controller('drivers')
 @Roles(UserRole.ADMIN)
 export class DriversController {
+  private readonly logger = new Logger(DriversController.name);
   constructor(private readonly driversService: DriversService) {}
 
   /**
@@ -188,14 +189,19 @@ export class DriversController {
     }
   }
   /**
-   * DELETE /api/drivers/purge-all — Purge ALL drivers and devices (TEST ONLY)
+   * POST /api/drivers/purge-all — Purge ALL drivers and devices
+   * FIX C-3: Requires ADMIN role (class-level guard) + x-admin-secret header.
+   * Double-gated to prevent accidental or unauthorized DB wipes.
    */
   @Post('purge-all')
-  async purgeAll(@Headers('x-admin-secret') secret: string) {
+  async purgeAll(@Headers('x-admin-secret') secret: string, @Req() req: any) {
     const adminSecret = process.env.ADMIN_SECRET;
     if (!adminSecret || secret !== adminSecret) {
+      this.logger.warn(`⚠️ [PURGE] Intento no autorizado desde IP: ${req.ip}`);
       throw new ForbiddenException('Unauthorized purge attempt');
     }
+    // Audit log — cada uso queda registrado
+    this.logger.warn(`🚨 [PURGE] Purga total iniciada por ADMIN autenticado. IP: ${req.ip}`);
     return this.driversService.purgeAll();
   }
 

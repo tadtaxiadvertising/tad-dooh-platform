@@ -5,11 +5,12 @@ import { throttledMap } from '../../utils/throttler.util';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { EmailService } from '../notifications/email.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class FinanceService {
   private readonly logger = new Logger(FinanceService.name);
-  private readonly PAY_PER_AD = 500; // RD$500 per active ad
+  private readonly PAY_PER_AD = BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD; // RD$500 per active ad
 
   constructor(
     private readonly prisma: PrismaService,
@@ -53,7 +54,7 @@ export class FinanceService {
         type: 'INCOMING',
         category: 'SUSCRIPCION',
         status: 'PENDING',
-        amount: 6000,
+        amount: BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD,
         entityId: device.driver?.id,
         reference: `REGLA-402-${deviceId.substring(0,8)}`,
         note: `Factura de morosidad generada automáticamente por Kill-Switch.`
@@ -133,7 +134,7 @@ export class FinanceService {
           timestamp: { gte: periodStart, lte: periodEnd }
         }
       });
-      const gpsBonus = gpsPointsCount >= 100 ? 500 : 0;
+      const gpsBonus = gpsPointsCount >= BUSINESS_RULES.GPS_BONUS_THRESHOLD ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
 
       // Iterate over all devices for this driver ONLY if subscription is paid
       const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
@@ -161,13 +162,13 @@ export class FinanceService {
       activeAdsCount = eligibleCampaignSet.size;
       const baseCommission = 0; // Removed fixed monthly commission as per new business rule
       
-      // Calculate referral commissions (500 per referral they brought in)
+      // Calculate referral commissions
       const referrals = driver.referrals ? driver.referrals.length : 0;
-      const driverReferralBonus = referrals * 500;
+      const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
 
-      // Calculate advertiser referral commissions (500 per advertiser they brought in)
+      // Calculate advertiser referral commissions
       const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
-      const advertiserReferralBonus = advertiserReferrals * 500;
+      const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
       const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
       const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus + gpsBonus;
@@ -226,14 +227,14 @@ export class FinanceService {
       return { success: true, message: 'No se encontraron montos a liquidar para este periodo.', count: 0 };
     }
 
-    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
+    // REGLA PERFORMANCE: Process with higher concurrency (Optimized for 8GB RAM)
     let count = 0;
     await throttledMap(recordsToCreate, async (record) => {
       await this.prisma.payrollPayment.create({
         data: record
       });
       count++;
-    }, 3);
+    }, 10);
 
     this.logger.log(`✅ Bulk billing completed: ${count} drivers credited.`);
     return { success: true, count };
@@ -279,7 +280,7 @@ export class FinanceService {
       }
     });
 
-    // REGLA SRE: Process with concurrency limits to avoid RAM spikes on 512MB VPS
+    // REGLA PERFORMANCE: Process with higher concurrency (Optimized for 8GB RAM)
     const reports = await throttledMap(campaigns, async (campaign) => {
       const mediaIds = campaign.media.map(m => m.id);
       const impressions = await this.prisma.playbackEvent.count({
@@ -295,7 +296,7 @@ export class FinanceService {
       mediaItems.forEach(media => {
         const duration = (media as any).durationSeconds || 30;
         const blocks = Math.ceil(duration / 30);
-        monthlyRevenue += blocks * 1500;
+        monthlyRevenue += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
       });
 
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
@@ -310,7 +311,7 @@ export class FinanceService {
         estimatedRevenue: totalRevenue,
         status: campaign.status
       };
-    }, 3); // Limit to 3 simultaneous campaign audits (more intensive)
+    }, 10); // Increase to 10 simultaneous audits
 
     return reports;
   }
@@ -338,14 +339,14 @@ export class FinanceService {
     campaign.media.forEach(m => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
-      monthlyBase += blocks * 1500;
+      monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
     });
 
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
     
     const subtotal = monthlyBase * diffMonths;
-    const taxes = subtotal * 0.18;
+    const taxes = subtotal * BUSINESS_RULES.ITBIS_RATE;
     const total = subtotal + taxes;
 
     const invoiceData = {
@@ -397,7 +398,7 @@ export class FinanceService {
     campaign.media.forEach(m => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
-      monthlyBase += blocks * 1500;
+      monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
     });
 
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
@@ -416,7 +417,7 @@ export class FinanceService {
     campaign.media.forEach(m => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
-      csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${blocks * 1500}\n`;
+      csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}\n`;
     });
 
     return csv;
@@ -431,8 +432,8 @@ export class FinanceService {
     return csv;
   }
 
-  private readonly ITBIS_RATE = 0.18;
-  private readonly RECURRING_SUB_BASE = 6000.0;
+  private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
+  private readonly RECURRING_SUB_BASE = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
   private readonly REFERRAL_RETENTION_RATE = 0.10; // 10% referred retention baseline
 
   /**
@@ -566,10 +567,10 @@ export class FinanceService {
     // LTV: Ingreso proyectado por taxi a 24 meses
     const ltv = monthlyRevPerTaxi * 24;
 
-    // Payback Period (Meses para recuperar RD$ 6,000 inicial)
+    // Payback Period (Meses para recuperar inversión inicial)
     const netMonthlyPerTaxi = monthlyRevPerTaxi - monthlyOpexPerTaxi;
-    const paybackPeriod = netMonthlyPerTaxi > 0 ? 6000 / netMonthlyPerTaxi : 999; // 999 if never
-
+    const paybackPeriod = netMonthlyPerTaxi > 0 ? BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD / netMonthlyPerTaxi : 999; // 999 if never
+    
     return {
       cac: cac.toFixed(2),
       ltv: ltv.toFixed(2),
@@ -578,7 +579,7 @@ export class FinanceService {
       activeTaxis,
       monthlyRevPerTaxi: monthlyRevPerTaxi.toFixed(2),
       monthlyOpexPerTaxi: monthlyOpexPerTaxi.toFixed(2),
-      hardwareCostPerUnit: 6000,
+      hardwareCostPerUnit: BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD,
       currency: 'DOP',
       generatedAt: new Date()
     };

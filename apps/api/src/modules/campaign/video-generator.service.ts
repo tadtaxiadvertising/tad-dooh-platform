@@ -1,12 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { bundle } from '@remotion/bundler';
-import { renderMedia, selectComposition } from '@remotion/renderer';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { PrismaService } from '../prisma/prisma.service';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import axios from 'axios';
 
 @Injectable()
 export class VideoGeneratorService {
@@ -23,44 +22,31 @@ export class VideoGeneratorService {
     primaryText: string;
     secondaryText: string;
   }) {
-    const entryPoint = path.resolve(__dirname, 'templates', 'index.tsx');
     const outputDir = path.join(os.tmpdir(), 'tad-videos');
-    
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-
     const outputLocation = path.join(outputDir, `ad-${campaignId}-${Date.now()}.mp4`);
 
-    this.logger.log(`🎬 Iniciando renderizado de video para campaña: ${campaignId}`);
+    this.logger.log(`🎬 Solicitando renderizado de video al microservicio Remotion para campaña: ${campaignId}`);
 
     try {
-      // 1. Bundle the composition
-      const bundled = await bundle(entryPoint);
+      const remotionServiceUrl = process.env.REMOTION_SERVICE_URL || 'http://localhost:8000/api/render';
 
-      // 2. Select the composition
-      const composition = await selectComposition({
-        serveUrl: bundled,
-        id: 'DynamicAd',
-        inputProps: props,
+      // 1. Solicitar renderizado al microservicio externo
+      const response = await axios.post(remotionServiceUrl, {
+        campaignId,
+        props
+      }, {
+        responseType: 'arraybuffer', // Necesitamos procesar el binario devuelto
+        timeout: 120000, // Dar hasta 2 minutos para renderizar
       });
 
-      // 3. Render the media (Optimized for STI Tablets)
-      await renderMedia({
-        composition,
-        serveUrl: bundled,
-        codec: 'h264',
-        outputLocation,
-        inputProps: props,
-        videoBitrate: '2000k',
-        pixelFormat: 'yuv420p', // Required for Android hardware acceleration
-        concurrency: 2, // Limit concurrency to save RAM in VPS
-      });
-
-      this.logger.log(`✅ Renderizado completado: ${outputLocation}`);
+      // 2. Escribir buffer temporalmente si se desea mantener el flujo local
+      const fileBuffer = Buffer.from(response.data);
+      fs.writeFileSync(outputLocation, fileBuffer);
 
       // 4. Upload to Supabase
-      const fileBuffer = fs.readFileSync(outputLocation);
       const fileName = `ads/${campaignId}/${path.basename(outputLocation)}`;
       const supabase = this.supabaseService.getClient();
 

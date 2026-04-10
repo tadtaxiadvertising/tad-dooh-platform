@@ -9,6 +9,7 @@ import { UserRole } from '../auth/decorators/roles.decorator';
 import { MediaService } from '../media/media.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { VideoGeneratorService } from './video-generator.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Controller('campaigns')
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
@@ -215,7 +216,7 @@ export class CampaignController {
         return {
           campaign_name: campaign.name,
           total_screens: assignedTaxis.length,
-          monthly_revenue: assignedTaxis.length * 1500,
+          monthly_revenue: assignedTaxis.length * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD,
           taxis: assignedTaxis
         };
       }
@@ -241,7 +242,7 @@ export class CampaignController {
       return {
         campaign_name: campaign.name,
         total_screens: assignedTaxis.length,
-        monthly_revenue: assignedTaxis.length * 1500,
+        monthly_revenue: assignedTaxis.length * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD,
         taxis: assignedTaxis
       };
     } catch (e) {

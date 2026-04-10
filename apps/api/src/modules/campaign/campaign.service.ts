@@ -4,6 +4,14 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import * as crypto from 'crypto';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  entityId?: string;
+}
 
 @Injectable()
 export class CampaignService {
@@ -82,7 +90,7 @@ export class CampaignService {
     return campaign;
   }
 
-  async createCampaign(dto: CreateCampaignDto, user?: any) {
+  async createCampaign(dto: CreateCampaignDto, user?: AuthUser) {
     const isAdmin = user?.role === 'ADMIN';
     const isAdvertiser = user?.role === 'ADVERTISER';
     let assignedAdvertiser = dto.advertiser;
@@ -158,8 +166,8 @@ export class CampaignService {
       console.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
     }
 
-    // 2. Identify available devices (respecting the 15-slot limit)
-    const availableDevices = devices.filter(d => d._count.campaigns < 15);
+    // 2. Identify available devices (respecting the limit)
+    const availableDevices = devices.filter(d => d._count.campaigns < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
     const skippedCount = devices.length - availableDevices.length;
     
     // 3. TRANSACTIONAL UPDATE: Clean old and insert new
@@ -211,8 +219,8 @@ export class CampaignService {
       where: { device_id: deviceId }
     });
 
-    if (currentCount >= 15) {
-      throw new BadRequestException('Este taxi ya tiene los 15 slots de 30s ocupados.');
+    if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+      throw new BadRequestException(`Este taxi ya tiene los ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
     }
 
     return await this.prisma.deviceCampaign.create({
@@ -223,7 +231,7 @@ export class CampaignService {
   /**
    * Registra metadatos de archivos subidos directamente a Supabase sin tocar la RAM.
    */
-  async registerDirectMedia(dto: any, user?: any) {
+  async registerDirectMedia(dto: any, user?: AuthUser) {
     if (user?.role !== 'ADMIN' && user?.email && dto.brandId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (!advertiser || advertiser.id !== dto.brandId) {
@@ -250,8 +258,8 @@ export class CampaignService {
     const deviceId = (dto as any).device_id;
     if (deviceId) {
       const activeData = await this.getActiveSyncVideos(deviceId);
-      if (activeData.media_assets.length >= 15) {
-        throw new BadRequestException("Pantalla llena (Límite de 15 slots alcanzado)");
+      if (activeData.media_assets.length >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+        throw new BadRequestException(`Pantalla llena (Límite de ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots alcanzado)`);
       }
     }
 
@@ -431,8 +439,8 @@ export class CampaignService {
       if ((campaign as any).videos) mediaAssets.push(...campaign.videos.map(mapMediaAsset));
     }
 
-    const MAX_SLOTS_PER_DEVICE = 15;
-    const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS_PER_DEVICE);
+    const MAX_SLOTS = BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER;
+    const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS);
     const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum || 'no-checksum'}`).join('|');
     const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
     const latestUpdate = activeCampaigns[0].updatedAt.getTime();

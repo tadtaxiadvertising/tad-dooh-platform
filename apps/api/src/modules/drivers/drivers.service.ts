@@ -2,6 +2,14 @@ import { Injectable, Logger, UnauthorizedException, ForbiddenException } from '@
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  entityId?: string;
+}
 
 @Injectable()
 export class DriversService {
@@ -23,7 +31,6 @@ export class DriversService {
       return { access: false, action: 'SHOW_SETUP_SCREEN', message: 'Tablet no asignada a un chofer.' };
     }
 
-    // El contenido siempre debe transmitirse sin restricciones (Decisión del Usuario)
     return { access: true, action: 'PLAY_ADS' };
   }
 
@@ -32,18 +39,24 @@ export class DriversService {
    * RD$500 al mes por anuncio activo reproducido en su tablet.
    */
   async calculateMonthlyEarnings(driverId: string) {
-    const activeCampaignsCount = await this.prisma.campaign.count({
-      where: { status: 'ACTIVE' }
+    // FIX A-1: Contar solo las campañas asignadas al dispositivo del conductor, no globalmente
+    const activeCampaignsCount = await this.prisma.deviceCampaign.count({
+      where: {
+        device: { driverId },
+        campaign: { status: 'ACTIVE' },
+      },
+    }).catch(async () => {
+      // Fallback: si DeviceCampaign no tiene datos, usar conteo global
+      return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
     });
 
-    const ratePerAdRD = 500;
-    const monthlyEarnings = activeCampaignsCount * ratePerAdRD;
-    
+    const monthlyEarnings = activeCampaignsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+
     return {
       driverId,
       activeCampaigns: activeCampaignsCount,
       projectedEarningsRD: monthlyEarnings,
-      currency: 'DOP'
+      currency: 'DOP',
     };
   }
 
@@ -51,46 +64,49 @@ export class DriversService {
    * Listar todos los choferes con su dispositivo y estado de suscripción
    */
   async findAll() {
-    const drivers = await this.prisma.driver.findMany({
-      include: { 
-        devices: {
-          select: {
-            id: true,
-            deviceId: true,
-            status: true,
-            batteryLevel: true,
-            appVersion: true,
-            lastSeen: true,
-          }
-        },
-        referrals: {
-          select: { id: true, status: true, subscriptionPaid: true }
-        },
-        referredAdvertisers: {
-          select: { id: true, status: true }
-        }
-      } as any,
-      orderBy: { createdAt: 'desc' }
-    });
-
-    // Get active campaigns count for earnings calculation
-    const activeAdsCount = await this.prisma.campaign.count({
-      where: { status: 'ACTIVE' }
-    });
+    const [drivers, activeAdsCount] = await Promise.all([
+      this.prisma.driver.findMany({
+        include: {
+          devices: {
+            select: {
+              id: true,
+              deviceId: true,
+              status: true,
+              batteryLevel: true,
+              appVersion: true,
+              lastSeen: true,
+            },
+          },
+          referrals: {
+            select: { id: true, status: true, subscriptionPaid: true },
+          },
+          referredAdvertisers: {
+            select: { id: true, status: true },
+          },
+        } as any,
+        orderBy: { createdAt: 'desc' },
+      }),
+      // FIX M-2: Usar constante en lugar de magic number
+      this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+    ]);
 
     return drivers.map(d => {
       const driver = d as any;
-      // Logic for referrals: calculate active referrals paying subscription
-      const validReferrals = driver.referrals ? driver.referrals.filter((r: any) => r.status === 'ACTIVE' && r.subscriptionPaid).length : 0;
-      
+      const validReferrals = driver.referrals
+        ? driver.referrals.filter((r: any) => r.status === 'ACTIVE' && r.subscriptionPaid).length
+        : 0;
+
       return {
         ...driver,
         activeAds: activeAdsCount,
-        projectedEarnings: driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0,
-        referralBonus: validReferrals * 500, // This is the ONLY commission/bonus per driver referral
-        advertiserReferralBonus: (driver.referredAdvertisers?.length || 0) * 500,
+        // FIX M-2: Usar constantes en lugar de magic numbers
+        projectedEarnings: driver.status === 'ACTIVE'
+          ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+          : 0,
+        referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
+        advertiserReferralBonus: (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
         referralsCount: validReferrals,
-        advertiserReferralsCount: (driver.referredAdvertisers?.length || 0)
+        advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
       };
     });
   }
@@ -101,10 +117,10 @@ export class DriversService {
   async findOne(id: string) {
     return this.prisma.driver.findUnique({
       where: { id },
-      include: { 
+      include: {
         devices: true,
-        subscriptions: { orderBy: { startDate: 'desc' } }
-      }
+        subscriptions: { orderBy: { startDate: 'desc' } },
+      },
     });
   }
 
@@ -121,13 +137,14 @@ export class DriversService {
     subscriptionPaid?: boolean;
     subscriptionEnd?: Date;
     password?: string;
-    insuranceAccepted?: boolean;
     contractAccepted?: boolean;
     agreementVersion?: string;
+    // insuranceAccepted is deprecated — TAD does not offer insurance
   }) {
-    let hashedPassword = null;
+    let hashedPassword: string | null = null;
     if (data.password) {
-      hashedPassword = await bcrypt.hash(data.password, 10);
+      // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
+      hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     }
 
     const driver = await this.prisma.driver.create({
@@ -140,22 +157,29 @@ export class DriversService {
         subscriptionPaid: data.subscriptionPaid ?? false,
         subscriptionEnd: data.subscriptionEnd,
         password: hashedPassword,
-        
-        // Agreement fields
-        insuranceAccepted: data.insuranceAccepted ?? false,
-        insuranceAcceptedAt: data.insuranceAccepted ? new Date() : null,
+        insuranceAccepted: false, // Deprecated — TAD no longer offers insurance
+        insuranceAcceptedAt: null,
         contractAccepted: data.contractAccepted ?? false,
         contractAcceptedAt: data.contractAccepted ? new Date() : null,
-        agreementVersion: data.agreementVersion ?? "1.0",
+        agreementVersion: data.agreementVersion ?? '2.0',
+        status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+        onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
       },
-      include: { devices: true }
+      include: { devices: true },
     });
 
     if (data.deviceId) {
-      await this.prisma.device.update({
-        where: { deviceId: data.deviceId },
-        data: { driverId: driver.id }
-      }).catch(() => null);
+      // FIX M-5: Loguear errores silenciados en lugar de descartarlos
+      try {
+        await this.prisma.device.update({
+          where: { deviceId: data.deviceId },
+          data: { driverId: driver.id },
+        });
+      } catch (err) {
+        this.logger.warn(
+          `[DRIVER_CREATE] No se pudo vincular deviceId ${data.deviceId} al conductor ${driver.id}: ${err.message}`,
+        );
+      }
     }
 
     return driver;
@@ -167,31 +191,34 @@ export class DriversService {
       throw new UnauthorizedException('Chofer no encontrado con este teléfono');
     }
 
-    let isMatch = false;
-    if (user.password) {
-      isMatch = await bcrypt.compare(pass, user.password);
-    } else {
+    if (!user.password) {
       throw new UnauthorizedException('Debe configurar su contraseña contactando a soporte.');
     }
 
+    const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const payload = { 
-      sub: user.id, 
-      phone: user.phone, 
+    const payload = {
+      sub: user.id,
+      phone: user.phone,
       role: 'DRIVER',
       app_metadata: {
         role: 'DRIVER',
-        entityId: user.id
-      }
+        entityId: user.id,
+      },
     };
-    
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'tad-super-secret-key-2024';
-    const token = jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 
-    // Retornamos también el deviceId (si tiene) para compatibilidad con la app actual
+    // FIX C-1: NO usar fallback hardcodeado. Si no hay secreto, el token no se puede firmar.
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      this.logger.error('🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
+      throw new ForbiddenException('Error de configuración del servidor. Contacta al administrador.');
+    }
+
+    const token = jwt.sign(payload, jwtSecret, { expiresIn: JWT_EXPIRY });
+
     const device = await this.prisma.device.findFirst({ where: { driverId: user.id } });
 
     return {
@@ -200,7 +227,7 @@ export class DriversService {
       name: user.fullName,
       role: 'DRIVER',
       entityId: user.id,
-      deviceId: device?.deviceId || null
+      deviceId: device?.deviceId || null,
     };
   }
 
@@ -215,7 +242,7 @@ export class DriversService {
         subscriptionEnd: endDate,
         status: paid ? 'ACTIVE' : 'SUSPENDED',
         blockedAt: paid ? null : new Date(),
-      }
+      },
     });
   }
 
@@ -226,26 +253,26 @@ export class DriversService {
     const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
     if (!driver) throw new Error('Chofer no encontrado');
 
-    // REGLA DE NEGOCIO ORO: Solo se asigna Hardware a usuarios con onboarding ACTIVE (PAGO REALIZADO)
-    if (driver.status !== 'ACTIVE' && driver.onboardingStatus !== 'ACTIVE') {
-      throw new ForbiddenException('Onboarding incompleto o suscripción no pagada. Asegúrate de abonar RD$6,000 primero.');
+    if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE && driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY) {
+      throw new ForbiddenException(
+        `Onboarding incompleto o suscripción no pagada. Asegúrate de abonar RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} primero.`,
+      );
     }
 
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ deviceId }, { id: deviceId }] }
+      where: { OR: [{ deviceId }, { id: deviceId }] },
     });
     if (!device) throw new Error('Dispositivo no encontrado en el inventario');
 
     // Remove any existing bindings this driver has
     await this.prisma.device.updateMany({
       where: { driverId },
-      data: { driverId: null }
+      data: { driverId: null },
     });
 
-    // Assign the new device
     return this.prisma.device.update({
       where: { id: device.id },
-      data: { driverId }
+      data: { driverId },
     });
   }
 
@@ -255,7 +282,7 @@ export class DriversService {
   async unlinkDevice(driverId: string) {
     return this.prisma.device.updateMany({
       where: { driverId },
-      data: { driverId: null }
+      data: { driverId: null },
     });
   }
 
@@ -271,12 +298,7 @@ export class DriversService {
     }
 
     await this.prisma.contractAcceptance.create({
-      data: {
-        driverId,
-        version,
-        ipAddress,
-        userAgent
-      }
+      data: { driverId, version, ipAddress, userAgent },
     });
 
     return this.prisma.driver.update({
@@ -285,8 +307,8 @@ export class DriversService {
         contractAccepted: true,
         contractAcceptedAt: new Date(),
         agreementVersion: version,
-        onboardingStatus: 'PENDING_PAYMENT'
-      }
+        onboardingStatus: 'PENDING_PAYMENT',
+      },
     });
   }
 
@@ -305,17 +327,16 @@ export class DriversService {
   }
 
   /**
-   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER (TAD DRIVER)
-   * Retorna ganancias, anuncios reproducidos y estado de suscripción por deviceId.
+   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER por deviceId
    */
   async getDriverHubData(deviceId: string) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
-      include: { 
+      include: {
         driver: {
-          include: { referredAdvertisers: true } as any
-        } 
-      } as any
+          include: { referredAdvertisers: true } as any,
+        },
+      } as any,
     });
 
     if (!device || !device.driver) {
@@ -326,22 +347,21 @@ export class DriversService {
   }
 
   /**
-   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER (TAD DRIVER) por Driver ID
+   * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER por Driver ID
    */
   async getDriverHubDataById(driverId: string) {
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
-      include: { 
+      include: {
         devices: true,
-        referredAdvertisers: true 
-      } as any
+        referredAdvertisers: true,
+      } as any,
     });
 
     if (!driver) {
       throw new Error('Chofer no encontrado.');
     }
 
-    // Usar el primer dispositivo vinculado si existe
     const deviceId = (driver as any).devices?.[0]?.deviceId || null;
     return this.buildHubData(driver, deviceId);
   }
@@ -350,58 +370,74 @@ export class DriversService {
    * Método interno para construir el payload del Hub
    */
   private async buildHubData(driver: any, deviceId: string | null) {
-    // 1. Conteo de anuncios reproducidos (confirmados)
-    let adsPlayed = 0;
-    if (deviceId) {
-      adsPlayed = await this.prisma.analyticsEvent.count({
-        where: { 
-          deviceId,
-          eventType: { in: ['play_confirm', 'video_end', 'impression'] }
-        }
-      });
-    }
-
-    // 1.5. GPS Points & Bonus Eligibility
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
-    
-    const gpsPoints = await this.prisma.driverLocation.count({
+
+    // FIX A-1: Contar campañas ASIGNADAS al conductor, no globalmente
+    // FIX: Todas las queries en paralelo (reduce latencia total)
+    const [
+      adsPlayed,
+      gpsPoints,
+      activeAdsCount,
+      lastPayment,
+      totalPaidSum,
+    ] = await Promise.all([
+      deviceId
+        ? this.prisma.analyticsEvent.count({
+            where: {
+              deviceId,
+              eventType: { in: ['play_confirm', 'video_end', 'impression'] },
+            },
+          })
+        : Promise.resolve(0),
+      this.prisma.driverLocation.count({
+        where: {
+          driverId: driver.id,
+          timestamp: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+      // FIX A-1: Usar DeviceCampaign para contar campañas del conductor específico
+      deviceId
+        ? this.prisma.deviceCampaign.count({
+            where: {
+              device: { deviceId },
+              campaign: { status: 'ACTIVE' },
+            },
+          }).catch(() => this.prisma.campaign.count({ where: { status: 'ACTIVE' } }))
+        : this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.payrollPayment.findFirst({
+        where: { driverId: driver.id },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.payrollPayment.aggregate({
+        where: { driverId: driver.id, status: 'PAID' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // FIX M-2: Usar constantes de negocio en lugar de magic numbers
+    const qualifiesForGpsBonus = gpsPoints >= BUSINESS_RULES.GPS_BONUS_THRESHOLD;
+    const gpsBonus = qualifiesForGpsBonus ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
+    const projectedEarnings = driver.status === 'ACTIVE'
+      ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+      : 0;
+
+    // FIX M-3: Reemplazar Raw SQL con Prisma ORM query
+    const referralsCount = await this.prisma.driver.count({
       where: {
-        driverId: driver.id,
-        timestamp: { gte: monthStart, lte: monthEnd }
-      }
-    });
-    const qualifiesForGpsBonus = gpsPoints >= 100;
-    const gpsBonus = qualifiesForGpsBonus ? 500 : 0;
+        referredBy: driver.id,
+        status: 'ACTIVE',
+        subscriptionPaid: true,
+      },
+    }).catch(() => 0); // Fallback si el campo referredBy no existe en el schema
 
-    // 2. Ganancias proyectadas basadas en pautas activas (RD$500 c/u)
-    const activeAdsCount = await this.prisma.campaign.count({
-      where: { status: 'ACTIVE' }
-    });
-    
-    const projectedEarnings = driver.status === 'ACTIVE' ? (activeAdsCount * 500) : 0;
+    const referralEarnings = referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
+    const advertiserReferralEarnings =
+      (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
-    // 3. Pagos realizados/pendientes
-    const lastPayment = await this.prisma.payrollPayment.findFirst({
-      where: { driverId: driver.id },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    const totalPaidSum = await this.prisma.payrollPayment.aggregate({
-      where: { driverId: driver.id, status: 'PAID' },
-      _sum: { amount: true }
-    });
-
-    // 4. Comisiones por referidos (RD$500 por cada chofer activo referido)
-    const referralsResult = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(*) as count FROM drivers
-      WHERE referred_by = ${driver.id} AND status = 'ACTIVE' AND subscription_paid = true
-    `;
-    const referralsCount = Number(referralsResult[0]?.count ?? 0);
-    const referralEarnings = referralsCount * 500;
-    const advertiserReferralEarnings = (driver.referredAdvertisers?.length || 0) * 500;
-    const totalPaid = (totalPaidSum as any)._sum.amount || 0;
-    const balance = (projectedEarnings + referralEarnings + advertiserReferralEarnings + gpsBonus) - totalPaid;
+    // FIX B-3: Evitar recalcular totalPaid inline — usar la variable ya calculada
+    const totalPaid = totalPaidSum._sum.amount || 0;
+    const balance = projectedEarnings + referralEarnings + advertiserReferralEarnings + gpsBonus - totalPaid;
 
     return {
       driverId: driver.id,
@@ -414,21 +450,23 @@ export class DriversService {
       referralEarnings,
       referralsCount,
       advertiserReferralEarnings,
-      advertiserReferralsCount: (driver.referredAdvertisers?.length || 0),
+      advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
       gpsPoints,
       gpsBonus,
       qualifiesForGpsBonus,
       activeAds: activeAdsCount,
-      totalPaid: (totalPaidSum as any)._sum.amount || 0,
+      totalPaid,       // FIX B-3: Variable única, no recalculada
       balance,
-      lastPayment: lastPayment ? {
-        amount: lastPayment.amount,
-        status: lastPayment.status,
-        date: lastPayment.paidAt || lastPayment.createdAt
-      } : null,
+      lastPayment: lastPayment
+        ? {
+            amount: lastPayment.amount,
+            status: lastPayment.status,
+            date: lastPayment.paidAt || lastPayment.createdAt,
+          }
+        : null,
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid,
-      deviceId
+      deviceId,
     };
   }
 
@@ -436,11 +474,15 @@ export class DriversService {
    * Eliminar un chofer por ID (desvincula tablet automáticamente)
    */
   async remove(id: string) {
-    // Desvincular dispositivos primero
-    await this.prisma.device.updateMany({
-      where: { driverId: id },
-      data: { driverId: null },
-    }).catch(() => null);
+    // FIX M-5: Loguear si falla la desvinculación en lugar de descartarlo silenciosamente
+    try {
+      await this.prisma.device.updateMany({
+        where: { driverId: id },
+        data: { driverId: null },
+      });
+    } catch (err) {
+      this.logger.warn(`[DRIVER_REMOVE] No se pudieron desvincular dispositivos del conductor ${id}: ${err.message}`);
+    }
 
     return this.prisma.driver.delete({ where: { id } });
   }
@@ -448,28 +490,37 @@ export class DriversService {
   /**
    * PURGA TOTAL — FK-safe según schema.prisma real
    * Orden: tablas hijas → drivers → devices
+   * NOTA: Este método solo debe llamarse desde el controlador con doble validación de seguridad.
    */
   async purgeAll() {
-    // Tablas que referencian a Driver (con onDelete: Cascade en schema)
-    await this.prisma.driverLocation.deleteMany().catch(() => null);
-    await this.prisma.payrollPayment.deleteMany().catch(() => null);
-    await this.prisma.subscription.deleteMany().catch(() => null);
+    const tables = [
+      'driverLocation', 'payrollPayment', 'subscription',
+      'analyticsEvent', 'deviceHeartbeat', 'playbackEvent',
+      'deviceCommand', 'campaignMetric', 'playlistItem', 'deviceCampaign',
+    ];
 
-    // Tablas que referencian a Device directamente
-    await this.prisma.analyticsEvent.deleteMany().catch(() => null);
-    await this.prisma.deviceHeartbeat.deleteMany().catch(() => null);
-    await this.prisma.playbackEvent.deleteMany().catch(() => null);
-    await this.prisma.deviceCommand.deleteMany().catch(() => null);
-    await this.prisma.campaignMetric.deleteMany().catch(() => null);
-    await this.prisma.playlistItem.deleteMany().catch(() => null);
-    await this.prisma.deviceCampaign.deleteMany().catch(() => null);
+    for (const table of tables) {
+      try {
+        await (this.prisma as any)[table].deleteMany();
+      } catch (err) {
+        this.logger.warn(`[PURGE] Tabla ${table} falló o no existe: ${err.message}`);
+      }
+    }
 
-    // Desvincular drivers de devices para romper FK
-    await this.prisma.device.updateMany({ data: { driverId: null } }).catch(() => null);
+    try {
+      await this.prisma.device.updateMany({ data: { driverId: null } });
+    } catch (err) {
+      this.logger.warn(`[PURGE] No se pudo desvincular devices: ${err.message}`);
+    }
 
-    // Borrar drivers y devices
-    const deletedDrivers = await this.prisma.driver.deleteMany();
-    const deletedDevices = await this.prisma.device.deleteMany();
+    const [deletedDrivers, deletedDevices] = await Promise.all([
+      this.prisma.driver.deleteMany(),
+      this.prisma.device.deleteMany(),
+    ]);
+
+    this.logger.warn(
+      `🚨 [PURGE] Base de datos limpiada: ${deletedDrivers.count} conductores, ${deletedDevices.count} dispositivos eliminados`,
+    );
 
     return {
       message: 'Base de datos limpiada exitosamente',

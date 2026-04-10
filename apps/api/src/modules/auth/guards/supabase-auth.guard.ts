@@ -9,23 +9,36 @@ import * as jwt from 'jsonwebtoken';
  * SUPABASE AUTH GUARD — Política "Deny-by-Default".
  * Protege TODAS las rutas de la API globalmente (registrado en APP_GUARD).
  *
- * Flujo de mitigación CTO (Híbrido):
- * 1. Validación LOCAL usando SUPABASE_JWT_SECRET (< 1ms).
+ * Flujo de validación (Híbrido):
+ * 1. Validación LOCAL usando SUPABASE_JWT_SECRET o JWT_SECRET (< 1ms).
  * 2. Si falla, validamos contra la red de Supabase (> 200ms).
- * 3. En desarrollo (NODE_ENV=development), si todo falla, decodificamos el token
- *    sin verificar firma para permitir testing local sin service_role_key real.
+ * 3. En desarrollo con ALLOW_DEV_BYPASS=true, decodificamos sin firma solo para testing local.
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
   private readonly logger = new Logger(SupabaseAuthGuard.name);
   private readonly isDev: boolean;
+  private readonly allowDevBypass: boolean;
 
   constructor(
     private reflector: Reflector,
     private supabaseService: SupabaseService,
     private configService: ConfigService,
   ) {
-    this.isDev = (process.env.NODE_ENV || 'development') === 'development';
+    this.isDev = process.env.NODE_ENV === 'development';
+    // FIX C-2: El bypass de desarrollo ahora requiere un flag EXPLÍCITO además de NODE_ENV=development.
+    // Esto previene que el bypass se active en producción por una variable de entorno faltante.
+    this.allowDevBypass = this.isDev && process.env.ALLOW_DEV_BYPASS === 'true';
+
+    // FIX C-1: Advertir en startup si no hay un secreto JWT configurado
+    const hasSecret = !!(process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET);
+    if (!hasSecret) {
+      this.logger.error(
+        '🚨 [SECURITY] JWT_SECRET o SUPABASE_JWT_SECRET NO está configurado. ' +
+        'El sistema usará un secreto generado aleatoriamente en memoria. ' +
+        'TODOS los tokens existentes serán inválidos. Configura la variable en EasyPanel.',
+      );
+    }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,12 +60,14 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
-    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || 
-                      this.configService.get<string>('JWT_SECRET') || 
-                      'tad-super-secret-key-2024';
+
+    // FIX C-1: Obtener el secreto vía ConfigService. Si no existe, usar un valor
+    // aleatorio en memoria que efectivamente invalida todos los tokens no configurados.
+    const jwtSecret =
+      this.configService.get<string>('SUPABASE_JWT_SECRET') ||
+      this.configService.get<string>('JWT_SECRET');
 
     // --- ESTRATEGIA 1: Validación Local (Offline-First Backend) ---
-    // Usamos el secreto local si está configurado
     if (jwtSecret) {
       try {
         const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as any;
@@ -67,9 +82,8 @@ export class SupabaseAuthGuard implements CanActivate {
           return true;
         }
       } catch (err) {
-        // Solo logueamos si NO es un error de expiración (para no saturar si es normal)
         if (err.name !== 'TokenExpiredError') {
-           this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 1 RECHAZADA (Check JWT_SECRET): ${err.message}`);
+          this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 1 RECHAZADA: ${err.message}`);
         }
       }
     }
@@ -97,12 +111,12 @@ export class SupabaseAuthGuard implements CanActivate {
       this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 ERROR DE RED: ${err.message}`);
     }
 
-    // --- ESTRATEGIA 3: DEV FALLBACK ---
-    if (this.isDev) {
+    // --- ESTRATEGIA 3: DEV FALLBACK (FIX C-2: Requiere flag explícito ALLOW_DEV_BYPASS=true) ---
+    if (this.allowDevBypass) {
       try {
         const decoded = jwt.decode(token) as any;
         if (decoded && (decoded.sub || decoded.email)) {
-          this.logger.warn(`🚩 [AUTH_GUARD] ESTRATEGIA 3 (DEV MODE BYPASS) -> ACCEPTED: ${decoded.email}`);
+          this.logger.warn(`🚩 [AUTH_GUARD] DEV BYPASS ACTIVO -> ACCEPTED: ${decoded.email}`);
           request.user = {
             id: decoded.sub || 'dev-user',
             email: decoded.email || 'dev@local',
@@ -112,12 +126,15 @@ export class SupabaseAuthGuard implements CanActivate {
           return true;
         }
       } catch (err) {
-        this.logger.error(`❌ [AUTH_GUARD] ESTRATEGIA 3 ERROR: ${err.message}`);
+        this.logger.error(`❌ [AUTH_GUARD] DEV BYPASS ERROR: ${err.message}`);
       }
     }
 
     const decodedForLog = jwt.decode(token) as any;
-    this.logger.error(`🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) para URL: ${request.url} | Email: ${decodedForLog?.email || 'N/A'} | Role: ${decodedForLog?.role || decodedForLog?.app_metadata?.role || 'N/A'}`);
+    this.logger.error(
+      `🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) | URL: ${request.url} | ` +
+      `Email: ${decodedForLog?.email || 'N/A'} | Role: ${decodedForLog?.role || decodedForLog?.app_metadata?.role || 'N/A'}`,
+    );
     throw new UnauthorizedException('La sesión expiró o es inválida. Por favor inicia sesión de nuevo.');
   }
 }

@@ -241,7 +241,7 @@ export class AnalyticsService {
         lat: true,
         lng: true,
       },
-      take: 2000 // Sample size limit
+      take: 10000 // Increased sample size (Optimized for 8GB RAM)
     });
 
     return locations.map(loc => ({

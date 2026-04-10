@@ -18,7 +18,13 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/driver/login', 
     '/driver/onboarding',
     '/advertiser/onboarding',
-    '/check-in'
+    '/check-in',
+    '/advertiser/dashboard',
+    '/advertiser/bi-v6',
+    '/advertiser/campaigns',
+    '/advertiser/billing',
+    '/advertiser/network',
+    '/advertiser/insights'
   ].includes(router.pathname) || router.pathname.startsWith('/p');
   
   // Initialize Realtime Sync Hook

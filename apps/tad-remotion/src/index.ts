@@ -383,8 +383,9 @@ app.post('/api/render', async (req, res) => {
       inputProps: props,
       videoBitrate: '2000k',
       pixelFormat: 'yuv420p',
-      concurrency: os.cpus().length, // Usar todos los cores
+      concurrency: 1, // Limitar a 1 para mayor estabilidad en VPS con poca RAM
     });
+
 
     console.log(`✅ Renderizado completado: ${outputLocation}. Enviando archivo...`);
 

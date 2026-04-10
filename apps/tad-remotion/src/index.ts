@@ -12,6 +12,14 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
+// Log environment state on boot
+console.log('--- Startup Config ---');
+console.log(`Environment: ${process.env.NODE_ENV}`);
+console.log(`Port Configured: ${PORT}`);
+console.log(`CPUs available: ${os.cpus().length}`);
+console.log('----------------------');
+
+
 app.get('/', (req, res) => {
   res.send(`
     <html>

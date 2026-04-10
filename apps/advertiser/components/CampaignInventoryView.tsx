@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Target, Users } from 'lucide-react';
+import { useAuth } from '@tad/ui';
 
 interface DistributionData {
   campaign_name: string;
@@ -16,12 +17,17 @@ interface DistributionData {
 }
 
 export default function CampaignInventoryView({ campaignId }: { campaignId: string }) {
+  const { session } = useAuth();
   const [data, setData] = useState<DistributionData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (campaignId) {
-      fetch(`/api/campaigns/stats/${campaignId}/distribution`)
+    if (campaignId && session?.access_token) {
+      fetch(`/api/proxy/campaigns/stats/${campaignId}/distribution`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
         .then(res => res.json())
         .then(data => {
             if (data.statusCode === 404 || data.statusCode === 401) {
@@ -36,7 +42,7 @@ export default function CampaignInventoryView({ campaignId }: { campaignId: stri
             setLoading(false);
         });
     }
-  }, [campaignId]);
+  }, [campaignId, session]);
 
   if (loading) return (
     <div className="bg-zinc-950 border border-white/5 p-8 rounded-3xl animate-pulse">

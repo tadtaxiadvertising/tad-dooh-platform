@@ -41,7 +41,7 @@ export default function AdvertiserCampaigns() {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campaigns`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/proxy/campaigns`, {
           headers: {
             'Authorization': `Bearer ${session?.access_token}`
           }
@@ -64,7 +64,7 @@ export default function AdvertiserCampaigns() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/portal-requests`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/proxy/portal-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -105,7 +105,7 @@ export default function AdvertiserCampaigns() {
 
     setRendering(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campaigns/${selectedCampaignId}/generate-video`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/proxy/campaigns/${selectedCampaignId}/generate-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

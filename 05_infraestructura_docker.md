@@ -17,11 +17,13 @@ graph TD
     Traefik --> |vía red interna| NestContainer[tad-api]
     
     subgraph Easypanel [VPS Easypanel - Red Aislada]
-        direction TB
-        NextContainer(Frontend - Next.js 15<br><i>Node.js 20-alpine</i>)
-        NestContainer(Backend - NestJS 10<br><i>Node.js 20-alpine</i>)
+    direction TB
+    NextContainer(Frontend - Next.js 15<br><i>Node.js 20-alpine</i>)
+    NestContainer(Backend - NestJS 10<br><i>Node.js 18-bullseye</i>)
+    RemotionService(Video Engine - Remotion<br><i>Chromium/Node.js 18</i>)
     end
     
+    NestContainer --> |vía red interna| RemotionService
     NestContainer --> |TCP 6543| Supavisor[Supabase Pooler]
     NextContainer --> |api/proxy| NestContainer
 ```
@@ -83,6 +85,31 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
+
+### 2.3 Video Engine (TAD Remotion Microservice)
+
+Este microservicio es el más demandante. Requiere Chromium, FFMPEG y dependencias nativas para renderizado.
+
+* **Estrategia RAM:** Se requiere un mínimo de **1GB RAM** dedicado para evitar que Chromium falle durante el renderizado de frames pesados.
+* **Nota Crítica:** El `Dockerfile.remotion` utiliza `node:18-bullseye` para máxima compatibilidad con las librerías nativas de Chrome.
+
+```yaml
+services:
+  tad-remotion:
+    image: tad-remotion:latest
+    deploy:
+      resources:
+        limits:
+          memory: 1024M # Mínimo recomendado para Chromium
+          cpus: '1.0'
+    environment:
+      - PORT=8000
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+    restart: unless-stopped
+```
 ```
 
 ## 🔒 3. GESTIÓN DEL ENTORNO Y SECRETOS

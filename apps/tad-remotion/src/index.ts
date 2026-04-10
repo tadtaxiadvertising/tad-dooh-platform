@@ -251,7 +251,11 @@ app.get('/', (req, res) => {
                   <input type="color" id="brandColor" value="#e51636" style="height: 45px; cursor: pointer; padding: 4px;">
                 </div>
                 <div class="form-group">
-                  <label>Logo URL (Opcional — dejar vacío para omitir)</label>
+                  <label>Background Video URL (Opcional - MP4)</label>
+                  <input type="url" id="bgUrl" placeholder="https://dominio.com/video.mp4">
+                </div>
+                <div class="form-group">
+                  <label>Logo URL (Opcional)</label>
                   <input type="url" id="logoUrl" placeholder="https://sudominio.com/logo.png">
                 </div>
 
@@ -290,6 +294,7 @@ app.get('/', (req, res) => {
               campaignId: document.getElementById('campaignId').value,
               props: {
                 logoUrl: document.getElementById('logoUrl').value,
+                bgUrl: document.getElementById('bgUrl').value,
                 brandColor: document.getElementById('brandColor').value,
                 primaryText: document.getElementById('primaryText').value,
                 secondaryText: 'Generado desde Control Center'

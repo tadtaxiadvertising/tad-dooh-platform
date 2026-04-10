@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   AbsoluteFill,
   Img,
@@ -7,6 +7,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
   Sequence,
+  Video,
+  OffthreadVideo,
 } from 'remotion';
 
 export interface DynamicAdProps {
@@ -21,8 +23,9 @@ export interface DynamicAdProps {
 export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
   logoUrl,
   brandColor = '#e51636',
-  primaryText = '¡OFERTA 2x1 SOLO POR HOY!',
-  secondaryText = 'Haz tu orden ahora',
+  bgUrl,
+  primaryText = '¡OFERTA TAD!',
+  secondaryText = 'Disponible ahora',
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -49,13 +52,22 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#0a0a0b', overflow: 'hidden' }}>
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(circle at center, ${brandColor} 0%, #0a0a0b 100%)`,
-          opacity: 0.4,
-          transform: `scale(${bgScale})`,
-        }}
-      />
+      {bgUrl ? (
+        <AbsoluteFill>
+          <OffthreadVideo 
+            src={bgUrl} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </AbsoluteFill>
+      ) : (
+        <AbsoluteFill
+          style={{
+            background: `radial-gradient(circle at center, ${brandColor} 0%, #0a0a0b 100%)`,
+            opacity: 0.4,
+            transform: `scale(${bgScale})`,
+          }}
+        />
+      )}
 
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
         {logoUrl ? (

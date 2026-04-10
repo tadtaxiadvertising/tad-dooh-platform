@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { supabase } from "@tad/services";
 import api from "@tad/services";
+import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 
 export default function AdvertiserMedia() {
   const { session } = useAuth();
@@ -28,10 +29,6 @@ export default function AdvertiserMedia() {
     if (uploadedFiles.length === 0) return;
 
     setUploading(true);
-    
-    // Direct-to-Supabase Logic (Conceptual Implementation for VPS Efficiency)
-    // 1. Upload to Supabase Storage
-    // 2. Register metadata in NestJS Backend
     
     for (const file of uploadedFiles) {
       try {
@@ -73,7 +70,7 @@ export default function AdvertiserMedia() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white p-8">
+    <AdvertiserLayout title="Librería de Media" subtitle="Gestión de Activos">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="space-y-1">
@@ -157,11 +154,6 @@ export default function AdvertiserMedia() {
           ))}
         </AnimatePresence>
       </div>
-    </div>
+    </AdvertiserLayout>
   );
 }
-
-
-
-
-

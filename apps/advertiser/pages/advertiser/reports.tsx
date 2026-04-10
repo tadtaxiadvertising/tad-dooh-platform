@@ -12,6 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import api from "@tad/services";
+import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 
 const COLORS = ['#fad400', '#3b82f6', '#10b981', '#a855f7', '#f43f5e'];
 
@@ -36,13 +37,15 @@ export default function AdvertiserReports() {
   }, [session]);
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
-       <div className="w-10 h-10 border-4 border-[#fad400] border-t-transparent rounded-full animate-spin" />
-    </div>
+    <AdvertiserLayout title="Reportes" subtitle="Business Intelligence">
+      <div className="flex items-center justify-center py-32">
+        <div className="w-10 h-10 border-4 border-[#fad400] border-t-transparent rounded-full animate-spin" />
+      </div>
+    </AdvertiserLayout>
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white p-8 pb-32">
+    <AdvertiserLayout title="Reportes de Impacto" subtitle="Business Intelligence">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="space-y-1">
@@ -175,11 +178,6 @@ export default function AdvertiserReports() {
             Descargar Reporte Ejecutivo
          </button>
       </div>
-    </div>
+    </AdvertiserLayout>
   );
 }
-
-
-
-
-

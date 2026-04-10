@@ -124,8 +124,7 @@ export default function AdvertiserCampaigns() {
     } catch (err: any) {
       alert('❌ Error de Renderizado: ' + err.message);
     } finally {
-      setRendering(true);
-      // We keep it true for a bit or just wait for reload
+      setRendering(false);
     }
   };
 

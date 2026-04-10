@@ -24,6 +24,8 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 app.post('/api/render', async (req, res) => {
   try {
     const { campaignId, props } = req.body;

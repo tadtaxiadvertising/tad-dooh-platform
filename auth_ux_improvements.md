@@ -31,6 +31,9 @@ Se ha realizado una actualización integral de los flujos de acceso para los tre
 
 - **Soporte de Contraseñas en Registro**: El endpoint `POST /advertisers` ahora acepta y hashea el campo `password` durante la creación.
 - **Saneamiento de Datos**: Los campos opcionales en el registro de conductores (cédula, placa) se limpian automáticamente para evitar errores de unicidad en la DB.
+- **RolesGuard Public Bypass**: Se corrigió un bloqueo 403 que afectaba a rutas públicas en controladores con restricciones de rol a nivel de clase.
+- **Flujo de Reset (Advertisers)**: Implementación completa del endpoint `POST /advertisers/reset-password` para permitir la configuración de contraseñas tras la recuperación.
+- **Onboarding de Anunciantes**: Soporte para establecer contraseñas en cuentas iniciales que no tenían una configurada previamente.
 
 ---
 

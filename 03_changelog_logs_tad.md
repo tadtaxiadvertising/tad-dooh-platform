@@ -1,6 +1,16 @@
 # TAD DOOH Platform Stabilization v6.7.0 (Stable Pilot)
 
-During this cycle, we reached v7.0.0 by stabilizing the Admin Dashboard UI, optimizing the authentication pipeline for ultra-low latency, and restoring full operational transparency via clean logging and Google Sheets synchronization.
+During this cycle, we reached v8.0.0 by decoupling heavy video rendering into a dedicated microservice, perfecting the authentication layer, and professionalizing the advertiser onboarding experience.
+
+## [v8.0.0] - 2026-04-10
+
+### Microservices Migration & Auth UX (v8.0.0)
+
+- **Architecture (Microservices)**: Successfully decoupled the video generation engine into a standalone service `tad-remotion`. This isolates heavy Chromium/FFMPEG processes, ensuring the main API remains responsive during peak rendering tasks.
+- **Backend (Auth Security)**: Enhanced `RolesGuard` to handle `@Public` routes correctly when class-level roles are defined. This fixes a critical 403 issue on login/register endpoints.
+- **Backend (Advertiser Onboarding)**: Implemented a robust `reset-password` flow and improved login feedback. The system now guides newer or legacy Advertisers to establish their credentials securely.
+- **UI (Status & Transparency)**: Deployed a premium Glassmorphism landing page for the `tad-remotion` microservice to provide clear operational status ("ONLINE").
+- **Dependency Management**: Upgraded the entire monorepo to React 19 types, resolving long-standing `ReactNode` conflict errors between packages.
 
 ## [v7.0.0] - 2026-04-08
 

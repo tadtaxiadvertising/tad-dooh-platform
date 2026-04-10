@@ -1,40 +1,36 @@
-# 🧠 11 — ESTADO ACTUAL Y HANDOVER (08 Abril 2026)
+# 🧠 11 — ESTADO ACTUAL Y HANDOVER (10 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Última actualización**: 08 de Abril de 2026 (v9.0)
+> **Última actualización**: 10 de Abril de 2026 (v10.0)
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base, la infraestructura, las reglas de negocio recientes y los siguientes pasos para la plataforma TAD DOOH.
 
 ---
 
-## 1. 🏗️ Infraestructura & Fleet Management (v8.2 - Tactical Update)
+## 1. 🏗️ Arquitectura de Microservicios & Video Engine (v10.0)
 
-- **Campaign-Advertiser Coupling (v8.2)**: Refactorizado el motor de creación de campañas para forzar vinculación con IDs de marcas del catálogo. Se eliminó la dependencia de texto libre para anunciantes, asegurando integridad total entre el Dashboard y el Portal de Anunciantes.
-- **Red Desierta Fix**: Corregida la visualización de hardware asignado en el detalle de campaña. La lógica de filtrado ahora combina asignaciones directas y segmentación por chofer, garantizando visibilidad 1/1 del fleet activo.
-- **Auto-Sync Deployment**: Implementado el trigger automático de `FORCE_SYNC` y `WAKE_UP_CALL` tras la aprobación de pautas en el Portal de Solicitudes. El contenido fluye a las tablets en <5 segundos tras la aprobación administrativa.
-- **UI Performance & Layering (v9.0)**: Corregido error crítico de `z-index` y posicionamiento en `Layout.tsx` que causaba que la cabecera cubriera el logotipo y menús superiores del Sidebar en resoluciones de escritorio.
-- **Backend Auth Strategy 1 (v9.0)**: Estabilizado `SupabaseAuthGuard` corrigiendo el error de `invalid algorithm` mediante la especificación explícita de `HS256`, permitiendo validación JWT local (offline-first) en <1ms.
-- **Zero-Bug Logging (v9.0)**: Refactorizado `LoggerMiddleware` para evitar salidas tipo `[[object Object]]` y asegurar un build de producción estable tras corregir fallas de alcance de variables (`statusCode`).
-- **Google Sheets Sync Stability**: Restaurada la sincronización bidireccional entre el Backend y el Master Sheet de Operaciones, resolviendo cuellos de botella en la autenticación de la Service Account.
+- **Desacoplamiento TAD Remotion**: Se migró el motor de generación de video de la API principal a un microservicio independiente (`apps/tad-remotion`). Esto resuelve problemas de agotamiento de recursos (RAM/CPU) en la API principal al aislar los procesos de Chromium/FFMPEG.
+- **Infraestructura de Renderizado**: El nuevo servicio corre sobre `node:18-bullseye` con todas las dependencias nativas de Linux para renderizado estable. Cuenta con una landing page Premium (Glassmorphism) para monitoreo de estado visual.
+- **Renderizado Distribuido**: Refactorizado `VideoGeneratorService` en la API para actuar como cliente HTTP del nuevo microservicio, delegando la carga pesada y recibiendo el binario final.
 
-## 2. 🧮 Ecosistema de Inteligencia Financiera & BI (v8.2)
+## 2. 🔐 Autenticación & Onboarding Premium (v10.0)
 
-- **Refined MRR Logic**: El motor de Business Intelligence ahora calcula el MRR de forma híbrida: (Suscripciones de Conductor RD$ 6,000) + (Ingresos por Publicidad estimulados por impresiones reales).
-- **Yield per Screen & ARPU**: Métricas actualizadas para inversionistas que desglosan la rentabilidad exacta por pantalla (DOP/u), integrando el costo operativo vs. el impacto publicitario.
-- **Delivery Rate Tracking**: Sistema de monitoreo de cumplimiento de pauta que compara impresiones servidas contra el target contratado (`target_impressions`), proveyendo un porcentaje de salud de entrega en tiempo real.
+- **RolesGuard Public Bypass**: Se corrigió un bug crítico donde rutas marcadas como `@Public()` (como login y registro) eran bloqueadas con 403 Forbidden si el controlador tenía roles definidos a nivel de clase.
+- **Advertiser Password Reset**: Implementado el flujo completo de recuperación (`recover-password`) y establecimiento de contraseña (`reset-password`). Esto profesionaliza el onboarding de anunciantes.
+- **Onboarding de Legados**: El sistema ahora guía proactivamente a los anunciantes con cuentas creadas manualmente (sin password) a configurar su acceso mediante el flujo de recuperación, eliminando fricción en el soporte técnico.
 
-## 3. 🎯 Flujo de Aprobación de Contenido (Nexus Hub)
+## 3. 📦 Monorepo & Dependencias (v10.0)
 
-- **Advertiser Request Hub**: Centralización de peticiones de contenido. El administrador ahora revisa, aprueba y despliega activos multimedia vinculados a campañas específicas con un solo click.
-- **Prisma Data Integrity**: El esquema ahora soporta `advertiserId` obligatorio en campañas para una trazabilidad financiera y de auditoría ininterrumpida.
+- **Alineación React 19**: Se actualizó todo el monorepo para usar tipos de React 19, eliminando conflictos de tipado (`ReactNode` / `bigint`) entre los paquetes de UI y el motor de Remotion.
+- **EasyPanel Optimization**: Configuración de recursos Dockerizada ajustada: 1GB RAM para `remotion` y 512MB para `api` y `dashboard`.
 
-## 4. 🚀 PRÓXIMAS ACCIONES (Backlog Crítico y Continuación)
+## 4. 🚀 PRÓXIMAS ACCIONES (Backlog Crítico)
 
-1. **BI Phase 4 (CPC/CPM Analysis)**: Transicionar de estimaciones de ingresos a cálculos exactos basados en pujas y rates configurados por anunciante.
-2. **Fleet Health (Deep Diagnostics)**: Integrar telemetría de temperatura y uso de CPU de las tablets para predecir fallas de hardware antes de que ocurran.
-3. **Optimización de Assets**: Implementar transcodificación automática en el backend para asegurar que todo video subido por anunciantes cumpla con el bitrate óptimo para la red móvil del fleet.
+1. **E2E Video Test**: Realizar una prueba real desde el portal de anunciantes para verificar que el video se renderiza en el microservicio y se guarda correctamente en Supabase.
+2. **KYC Automático**: Integrar validación básica de documentos para anunciantes que se registran de forma pública.
+3. **Optimización de Bitrate**: Implementar perfiles de renderizado en Remotion para optimizar el peso de los archivos según la red (4G vs WiFi).
 
-> ✅ **Nota de estilo UI:** Mantener la estética _Premium Dark Mode_ (#0a0a0a y #FFD400). Todo botón de acción debe ser un `AntigravityButton` con telemetry feedback activado o selectores personalizados de alto contraste.
+> ✅ **Nota de estilo UI:** Mantener la estética _Premium Dark Mode_ (#0a0a0a y #FFD400). Todo servicio nuevo debe incluir una vista de estado con efecto Glassmorphic.
 
 ---
 
-### FIN DEL REPORTE - ESTADO LISTO PARA DESARROLLO (v8.2)
+### FIN DEL REPORTE - ESTADO LISTO PARA DESARROLLO (v10.0)

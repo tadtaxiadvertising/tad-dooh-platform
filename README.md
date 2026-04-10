@@ -161,7 +161,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 | Tecnología | Versión | Propósito |
 | ---------- | ------- | --------- |
 | **Next.js** | 14.x | React framework |
-| **React** | 18.x | UI library |
+| **React** | 19.x | UI library |
 | **TailwindCSS** | 3.x | Styling |
 | **Recharts** | 2.x | Charts |
 
@@ -173,6 +173,13 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 | **IndexedDB** | - | Storage local |
 | **Workbox** | 7.x | Service Worker |
 | **HLS.js** | 1.x | Video streaming |
+
+### Motor de Video
+| Tecnología | Versión | Propósito |
+| ---------- | ------- | --------- |
+| **Remotion** | 4.x | Renderizado de videos programáticos |
+| **Chromium** | stable | Navegador para generación de frames |
+| **FFMPEG** | latest | Encoder de video final |
 
 ### Infraestructura
 
@@ -302,5 +309,5 @@ Propietario - TAD Dominicana, S.R.L.
 ---
 
 **Creado:** 6 de Marzo, 2026  
-**Versión:** 6.7.0 (Stable Pilot)  
-**Última Actualización:** 04 de Abril, 2026  
+**Versión:** 8.0.0 (Decoupled Architecture)  
+**Última Actualización:** 10 de Abril, 2026  

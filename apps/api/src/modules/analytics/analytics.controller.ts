@@ -79,6 +79,16 @@ export class AnalyticsController {
     return this.analyticsService.getAnalyticsSummary();
   }
 
+  @Get('total-impressions')
+  async getTotalImpressions() {
+    return this.analyticsService.getTotalImpressions();
+  }
+
+  @Get('anti-fraud')
+  async getAntiFraudMetrics() {
+    return this.analyticsService.getAntiFraudMetrics();
+  }
+
   @Get('top-taxis')
   async getTopTaxis() {
     return this.analyticsService.getTopTaxis();

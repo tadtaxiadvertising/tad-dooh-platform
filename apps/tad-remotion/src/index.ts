@@ -1,10 +1,19 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+
+dotenv.config();
+
+// --- AI Architect Setup ---
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -237,6 +246,21 @@ app.get('/', (req, res) => {
 
             <div class="card">
               <div class="card-title">🎬 Render Tester</div>
+              <!-- AI Prompt Section -->
+              <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <h3 style="color: #a78bfa; margin-top: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                  ✨ AI MAGIC ARCHITECT
+                </h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">Escribe lo que quieres y la IA diseñará el anuncio por ti.</p>
+                <div class="form-group" style="margin-bottom: 10px;">
+                  <textarea id="aiPrompt" placeholder="Ej: Un anuncio elegante para una joyería con colores dorados..." style="width: 100%; min-height: 80px; background: rgba(0,0,0,0.3); border: 1px solid #334155; border-radius: 8px; color: white; padding: 10px; font-family: inherit;"></textarea>
+                </div>
+                <button type="button" id="aiBtn" class="btn" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); width: auto; padding: 10px 20px; font-size: 13px;">
+                  <span id="aiBtnText">DISEÑAR CON IA</span>
+                  <div class="loader" id="aiLoader" style="width: 15px; height: 15px; border-width: 2px;"></div>
+                </button>
+              </div>
+
               <form id="renderForm">
                 <div class="form-group">
                   <label>ID de Campaña</label>
@@ -281,6 +305,44 @@ app.get('/', (req, res) => {
           const result = document.getElementById('renderResult');
           const resultMsg = document.getElementById('resultMsg');
           const downloadContainer = document.getElementById('downloadContainer');
+          const aiBtn = document.getElementById('aiBtn');
+          const aiPrompt = document.getElementById('aiPrompt');
+          const aiBtnText = document.getElementById('aiBtnText');
+          const aiLoader = document.getElementById('aiLoader');
+
+          // AI Architect logic
+          aiBtn.onclick = async () => {
+            const prompt = aiPrompt.value;
+            if (!prompt) return alert('Por favor, escribe un prompt para la IA');
+            
+            aiBtn.disabled = true;
+            aiBtnText.style.display = 'none';
+            aiLoader.style.display = 'block';
+
+            try {
+              const res = await fetch('/api/ai-generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+              });
+              const data = await res.json();
+              
+              if (data.error) throw new Error(data.error);
+
+              // Auto-fill form
+              document.getElementById('primaryText').value = data.primaryText;
+              document.getElementById('brandColor').value = data.brandColor;
+              if (data.bgUrl) document.getElementById('bgUrl').value = data.bgUrl;
+              
+              alert('✨ ¡Diseño generado por IA! Revisa los campos y presiona GENERAR VIDEO.');
+            } catch (err) {
+              alert('Error IA: ' + err.message);
+            } finally {
+              aiBtn.disabled = false;
+              aiBtnText.style.display = 'block';
+              aiLoader.style.display = 'none';
+            }
+          };
 
           form.onsubmit = async (e) => {
             e.preventDefault();
@@ -412,7 +474,43 @@ app.post('/api/render', async (req, res) => {
   }
 });
 
+app.post('/api/ai-generate', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(400).json({ error: 'GEMINI_API_KEY no configurada en el servidor' });
+    }
+
+    const systemPrompt = `Eres un arquitecto creativo de anuncios DOOH (Digital Out Of Home) para TAD. 
+    Tu tarea es recibir un prompt de un usuario y generar la configuración JSON para un anuncio de 10 segundos.
+    Debe ser visualmente impactante y profesional.
+    
+    Responde UNICAMENTE con un objeto JSON válido con esta estructura:
+    {
+      "primaryText": "Texto principal llamativo (máx 35 caracteres)",
+      "secondaryText": "Subtexto o llamado a la acción",
+      "brandColor": "Código Hexadecimal que combine con el tema del anuncio",
+      "logoUrl": "",
+      "bgUrl": ""
+    }
+    
+    Prompt del usuario: ${prompt}`;
+
+    const result = await model.generateContent(systemPrompt);
+    const response = await result.response;
+    const text = response.text().replace(/```json|```/g, '').trim();
+    const props = JSON.parse(text);
+
+    res.json(props);
+  } catch (error: any) {
+    console.error('❌ AI Error:', error);
+    res.status(500).json({ error: 'Error al generar con IA: ' + error.message });
+  }
+});
+
 app.get('/health', (req, res) => {
+
   res.status(200).send('OK');
 });
 

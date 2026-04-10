@@ -110,7 +110,6 @@ services:
       interval: 30s
     restart: unless-stopped
 ```
-```
 
 ## 🔒 3. GESTIÓN DEL ENTORNO Y SECRETOS
 

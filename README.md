@@ -175,6 +175,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 | **HLS.js** | 1.x | Video streaming |
 
 ### Motor de Video
+
 | Tecnología | Versión | Propósito |
 | ---------- | ------- | --------- |
 | **Remotion** | 4.x | Renderizado de videos programáticos |

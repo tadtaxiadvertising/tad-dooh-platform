@@ -128,7 +128,7 @@ export default function AdvertiserReports() {
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
                  <Pie
-                   data={data?.geographic || []}
+                   data={Array.isArray(data?.geographic) ? data.geographic : []}
                    cx="50%"
                    cy="50%"
                    innerRadius={60}
@@ -137,7 +137,7 @@ export default function AdvertiserReports() {
                    dataKey="impressions"
                    nameKey="city"
                  >
-                   {data?.geographic?.map((entry: any, index: number) => (
+                   {(Array.isArray(data?.geographic) ? data.geographic : []).map((entry: any, index: number) => (
                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                    ))}
                  </Pie>
@@ -150,7 +150,7 @@ export default function AdvertiserReports() {
            </div>
 
            <div className="space-y-3">
-              {data?.geographic?.map((item: any, i: number) => (
+              {(Array.isArray(data?.geographic) ? data.geographic : []).map((item: any, i: number) => (
                 <div key={item.city} className="flex justify-between items-center bg-black/40 p-4 rounded-2xl border border-white/[0.02]">
                    <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />

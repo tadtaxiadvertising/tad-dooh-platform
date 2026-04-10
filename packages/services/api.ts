@@ -469,7 +469,7 @@ export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => re
 export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
 export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
 export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
-export const getBiHotspots = () => api.get('/bi/hotspots').then(res => res.data);
+export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
 
 export default api;
 

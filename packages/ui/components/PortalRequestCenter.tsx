@@ -103,7 +103,7 @@ export function PortalRequestCenter({ portalType, userId }: PortalRequestCenterP
         </div>
       ) : (
         <div className="space-y-3">
-          {requests.slice(0, 3).map((req) => (
+          {(Array.isArray(requests) ? requests : []).slice(0, 3).map((req) => (
             <div 
               key={req.id}
               className="p-4 bg-zinc-900/40 border border-white/5 rounded-2xl flex items-center justify-between"
@@ -120,9 +120,9 @@ export function PortalRequestCenter({ portalType, userId }: PortalRequestCenterP
                     <XCircle className="w-5 h-5" />}
                  </div>
                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-tight">{req.title}</p>
+                    <p className="text-[11px] font-black uppercase tracking-tight">{req.title || 'Solicitud sin título'}</p>
                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                       {new Date(req.createdAt).toLocaleDateString()}
+                       {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Fecha desconocida'}
                     </p>
                  </div>
               </div>
@@ -137,7 +137,7 @@ export function PortalRequestCenter({ portalType, userId }: PortalRequestCenterP
             </div>
           ))}
 
-          {requests.length === 0 && (
+          {(!Array.isArray(requests) || requests.length === 0) && (
             <div className="py-10 text-center border border-dashed border-white/5 rounded-2xl">
                <AlertCircle className="w-6 h-6 text-zinc-800 mx-auto mb-2" />
                <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest">No tienes solicitudes activas</p>

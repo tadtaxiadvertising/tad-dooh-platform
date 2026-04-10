@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@tad/ui';
 import { 
   Plus, Search, Filter, MoreHorizontal, 
-  ExternalLink, Edit2, Trash2, Calendar, 
-  CheckCircle2, Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2
+  Edit2, Trash2, Calendar, 
+  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { AdvertiserLayout } from '../../../components/layout/AdvertiserLayout';
 
 export default function AdvertiserCampaigns() {
   const { session } = useAuth();
@@ -133,11 +134,10 @@ export default function AdvertiserCampaigns() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white p-8">
+    <AdvertiserLayout title="Mis Campañas" subtitle="Gestión de Pautas">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="space-y-1">
-           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Gestión de Pautas</p>
            <h1 className="text-4xl font-black uppercase tracking-tighter">Mis <span className="text-[#fad400]">Campañas</span></h1>
         </div>
 
@@ -490,11 +490,6 @@ export default function AdvertiserCampaigns() {
           )}
         </div>
       )}
-    </div>
+    </AdvertiserLayout>
   );
 }
-
-
-
-
-

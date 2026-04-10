@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
-import { MetricsGrid } from '../../components/bi/MetricsGrid';
-import { ScreenUpsellCalculator } from '../../components/bi/ScreenUpsellCalculator';
-import { BillingPortal } from '../../components/bi/BillingPortal';
+import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
+import { MetricsGrid } from '@/components/bi/MetricsGrid';
+import { ScreenUpsellCalculator } from '@/components/bi/ScreenUpsellCalculator';
+import { BillingPortal } from '@/components/bi/BillingPortal';
 import { 
   ShieldCheck, 
   Zap, 

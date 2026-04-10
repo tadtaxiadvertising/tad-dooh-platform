@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
+import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { CreditCard, Receipt, TrendingUp, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { BillingPortal } from '../../components/bi/BillingPortal';
+import { BillingPortal } from '@/components/bi/BillingPortal';
 
 export default function BillingPage() {
   const [mounted, setMounted] = useState(false);

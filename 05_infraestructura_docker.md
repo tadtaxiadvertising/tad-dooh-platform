@@ -106,9 +106,13 @@ services:
       - PORT=8000
       - NODE_ENV=production
     healthcheck:
+      # CRÍTICO: El Dockerfile debe tener instalado 'curl' (apt-get install -y curl)
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
+
 ```
 
 ## 🔒 3. GESTIÓN DEL ENTORNO Y SECRETOS

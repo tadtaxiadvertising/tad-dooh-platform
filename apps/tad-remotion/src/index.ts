@@ -12,6 +12,18 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'TAD Remotion Video Generator',
+    version: '1.0.0',
+    endpoints: {
+      render: 'POST /api/render',
+      health: 'GET /health'
+    }
+  });
+});
+
 app.post('/api/render', async (req, res) => {
   try {
     const { campaignId, props } = req.body;
@@ -22,7 +34,15 @@ app.post('/api/render', async (req, res) => {
 
     console.log(`🎬 Comenzando renderizado para campaña: ${campaignId}`);
 
-    const entryPoint = path.resolve(__dirname, 'templates', 'index.tsx');
+    // Intentar encontrar el template en src (desarrollo) o en dist/src (si tsc movió la estructura) o relativo al dist
+    let entryPoint = path.resolve(__dirname, 'templates', 'index.js');
+    
+    // Si estamos en dist, buscamos el archivo compilado o el original en src
+    if (!fs.existsSync(entryPoint)) {
+      entryPoint = path.resolve(__dirname, '..', 'src', 'templates', 'index.tsx');
+    }
+
+    console.log(`🔍 Usando entrypoint: ${entryPoint}`);
     const outputDir = path.join(os.tmpdir(), 'tad-videos');
     
     if (!fs.existsSync(outputDir)) {

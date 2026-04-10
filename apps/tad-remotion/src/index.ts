@@ -251,8 +251,8 @@ app.get('/', (req, res) => {
                   <input type="color" id="brandColor" value="#e51636" style="height: 45px; cursor: pointer; padding: 4px;">
                 </div>
                 <div class="form-group">
-                  <label>Logo URL (Opcional)</label>
-                  <input type="url" id="logoUrl" placeholder="https://..." value="https://tadtaxi.com/logo.png">
+                  <label>Logo URL (Opcional — dejar vacío para omitir)</label>
+                  <input type="url" id="logoUrl" placeholder="https://sudominio.com/logo.png">
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">

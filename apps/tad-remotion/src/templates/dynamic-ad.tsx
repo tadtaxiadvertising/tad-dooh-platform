@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AbsoluteFill,
   Img,
@@ -58,23 +58,27 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
       />
 
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div
-          style={{
-            transform: `scale(${logoScale})`,
-            background: 'white',
-            padding: '40px',
-            borderRadius: '50px',
-            boxShadow: `0px 20px 50px ${brandColor}80`,
-            marginBottom: '40px',
-          }}
-        >
-          {logoUrl && (
-            <Img 
-              src={logoUrl} 
-              style={{ width: '300px', height: 'auto', objectFit: 'contain' }} 
+        {logoUrl ? (
+          <div
+            style={{
+              transform: `scale(${logoScale})`,
+              background: 'white',
+              padding: '40px',
+              borderRadius: '50px',
+              boxShadow: `0px 20px 50px ${brandColor}80`,
+              marginBottom: '40px',
+            }}
+          >
+            <Img
+              src={logoUrl}
+              style={{ width: '300px', height: 'auto', objectFit: 'contain' }}
+              onError={() => {
+                // En caso de error de carga, simplemente no renderizamos el logo
+                // Remotion continuará el render normalmente
+              }}
             />
-          )}
-        </div>
+          </div>
+        ) : null}
 
         <Sequence from={25}>
           <div

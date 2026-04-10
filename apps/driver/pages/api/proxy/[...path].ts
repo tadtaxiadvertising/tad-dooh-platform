@@ -86,23 +86,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 2. Intentar petición al backend
-    const forwardHeaders = { ...req.headers } as Record<string, string>;
+    const allowedHeaders = ['authorization', 'content-type', 'x-device-id', 'accept', 'user-agent'];
+    const forwardHeaders: Record<string, string> = {};
     
-    // 🔑 Reenviar el token al backend
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      delete forwardHeaders['authorization'];
-      forwardHeaders['Authorization'] = authHeader;
-    } else {
-      console.warn(`[PROXY WARNING] No se detectó Header Authorization para: ${pathStr}`);
+    for (const key of allowedHeaders) {
+      if (req.headers[key]) {
+        forwardHeaders[key] = req.headers[key] as string;
+      }
     }
-    
+
     // 🛡️ SEGURIDAD y OPTIMIZACIÓN
-    delete forwardHeaders['accept-encoding'];
     forwardHeaders['accept-encoding'] = 'identity';
-    delete forwardHeaders['connection'];
     forwardHeaders['connection'] = 'close';
-    delete forwardHeaders['content-length'];
     forwardHeaders['host'] = new URL(targetUrl).host;
 
     const fetchOptions: RequestInit = {

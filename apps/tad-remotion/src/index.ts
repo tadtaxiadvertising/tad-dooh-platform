@@ -13,15 +13,54 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({
-    status: 'online',
-    service: 'TAD Remotion Video Generator',
-    version: '1.0.0',
-    endpoints: {
-      render: 'POST /api/render',
-      health: 'GET /health'
-    }
-  });
+  res.send(`
+    <html>
+      <head>
+        <title>TAD Remotion | Video Generator</title>
+        <style>
+          body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: #0a0a0b; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+          }
+          .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+          }
+          .status {
+            color: #10b981;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+          }
+          .dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1.5s infinite; }
+          @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+          h1 { margin: 0; font-size: 24px; letter-spacing: -0.5px; }
+          p { color: #8e8e93; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="status"><div class="dot"></div> ONLINE</div>
+          <h1>TAD Remotion Engine</h1>
+          <p>Worker v1.0.0 is ready for rendering.</p>
+        </div>
+      </body>
+    </html>
+  `);
 });
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());

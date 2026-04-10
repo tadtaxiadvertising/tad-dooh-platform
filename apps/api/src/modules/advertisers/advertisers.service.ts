@@ -336,6 +336,8 @@ export class AdvertisersService {
     this.logger.log(`[AUTH] Recovery token generado para ${email} — integrar con Resend/SendGrid`);
 
     return { success: true, message: 'Recovery instructions sent.' };
+  }
+
   // RESET PASSWORD (POST-RECOVERY)
   async resetPassword(token: string, newPass: string) {
     const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;

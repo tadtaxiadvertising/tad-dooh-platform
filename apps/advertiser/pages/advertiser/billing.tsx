@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
 import { CreditCard, Receipt, TrendingUp, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { BillingPortal } from '../../components/bi/BillingPortal';
 
 export default function BillingPage() {
   const [mounted, setMounted] = useState(false);
@@ -50,23 +51,8 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="bg-[#18181B] rounded-[2.5rem] border border-white/5 overflow-hidden">
-        <div className="p-8 border-b border-white/5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Receipt className="text-zinc-500" />
-            <h3 className="text-lg font-black uppercase tracking-tighter">Historial de Facturas</h3>
-          </div>
-          <button className="text-[10px] font-black uppercase tracking-widest text-[#FFD700] hover:underline">
-            Descargar Todo
-          </button>
-        </div>
-        
-        <div className="p-8">
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-            <Receipt className="w-12 h-12 text-zinc-800" />
-            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No hay facturas generadas todavía</p>
-          </div>
-        </div>
+      <div className="space-y-8">
+        <BillingPortal />
       </div>
     </AdvertiserLayout>
   );

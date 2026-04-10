@@ -44,11 +44,18 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     libglib2.0-0 \
     libxss1 \
+    libatk-bridge2.0-0 \
+    libpango-1.0-0 \
+    libcairo2 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Pre-instalar el navegador de Remotion para evitar descargas en runtime y fallos de permisos
+RUN npx remotion browser ensure
 
 ENV NODE_ENV=production
 ENV PORT=8000
+
 
 # Copiar Node Modules y código compilado desde el builder
 COPY --from=builder /app /app

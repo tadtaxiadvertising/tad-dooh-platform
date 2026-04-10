@@ -50,17 +50,17 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Copiar Node Modules y código compilado desde el builder
+COPY --from=builder /app /app
+
 # Pre-instalar el navegador de Remotion para evitar descargas en runtime y fallos de permisos
-RUN npx remotion browser ensure
+# Lo hacemos DESPUES de copiar los node_modules para que npx encuentre el binario
+WORKDIR /app/apps/tad-remotion
+RUN /app/node_modules/.bin/remotion browser ensure
 
 ENV NODE_ENV=production
 ENV PORT=8000
 
-
-# Copiar Node Modules y código compilado desde el builder
-COPY --from=builder /app /app
-
-WORKDIR /app/apps/tad-remotion
 
 # Remotion necesita al menos 1-2GB para renders pesados.
 # En Easypanel, asegúrese de asignar 1024M de RAM.

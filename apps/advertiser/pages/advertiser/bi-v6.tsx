@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
-import { BiMainDashboard } from '../../components/bi/BiMainDashboard';
+import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
+import { BiMainDashboard } from '@/components/bi/BiMainDashboard';
 import { LayoutDashboard } from 'lucide-react';
 
 export default function BiV6Page() {

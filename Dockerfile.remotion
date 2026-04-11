@@ -55,7 +55,7 @@ COPY --from=builder /app /app
 
 # Instalar el navegador de Remotion ANTES de podar dependencias
 WORKDIR /app/apps/tad-remotion
-RUN npx remotion browser ensure
+RUN npm run ensure-browser
 
 # Podar dependencias para el runtime
 WORKDIR /app

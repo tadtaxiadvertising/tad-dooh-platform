@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "ensure-browser": "remotion browser ensure"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

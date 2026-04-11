@@ -78,7 +78,7 @@ export class SupabaseAuthGuard implements CanActivate {
             role: payload.app_metadata?.role || payload.role || 'GUEST',
             entityId: payload.app_metadata?.entityId || null,
           };
-          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 1 OK (Local JWT): ${request.user.email} [${request.user.role}]`);
+          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
           return true;
         }
       } catch (err) {
@@ -86,40 +86,44 @@ export class SupabaseAuthGuard implements CanActivate {
           this.logger.warn(`🛑 [AUTH_GUARD] TOKEN EXPIRADO: ${err.message}`);
           throw new UnauthorizedException('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
         }
-        this.logger.error(`❌ [AUTH_GUARD] FALLO CRÍTICO ESTRATEGIA 1: ${err.message}`);
-        // Si el secreto existe pero la firma es inválida, no intentamos Strategy 2 (Aislamiento de Seguridad)
-        throw new UnauthorizedException('Firma de token inválida para esta red.');
+        this.logger.warn(`⚠️ [AUTH_GUARD] Fallo validación local (Firma/Algoritmo): ${err.message}. Intentando fallback a red...`);
+        // No lanzamos excepción aquí, permitimos que pase a Estrategia 2.
       }
     }
 
-    // --- ESTRATEGIA 2: Validación vía Red de Supabase (Last Resort / No Local Secret) ---
-    // Solo permitimos esto si NO tenemos el secreto local configurado (Legacy Fallback).
-    if (!jwtSecret) {
-      try {
-        this.logger.warn(`📢 [AUTH_GUARD] Iniciando FALLBACK de red (Supabase SDK)...`);
-        const supabase = this.supabaseService.getClient();
-        const { data, error } = await supabase.auth.getUser(token);
+    // --- ESTRATEGIA 2: Validación vía Red de Supabase (Supabase SDK) ---
+    try {
+      const supabase = this.supabaseService.getClient();
+      const { data, error } = await supabase.auth.getUser(token);
 
-        if (!error && data.user) {
-          request.user = {
-            id: data.user.id,
-            email: data.user.email,
-            role: data.user.app_metadata?.role || (data.user as any).role || 'GUEST',
-            entityId: data.user.app_metadata?.entityId || null,
-          };
-          this.logger.log(`✅ [AUTH_GUARD] ESTRATEGIA 2 OK: ${data.user.email}`);
-          return true;
+      if (!error && data.user) {
+        request.user = {
+          id: data.user.id,
+          email: data.user.email,
+          role: data.user.app_metadata?.role || (data.user as any).role || 'GUEST',
+          entityId: data.user.app_metadata?.entityId || null,
+        };
+        
+        if (jwtSecret) {
+          this.logger.warn(
+            `📢 [AUTH_GUARD] ESTRATEGIA 2 OK (Fallback). RECOMENDACIÓN: El secreto JWT local no coincide con el de Supabase. ` +
+            `Configura SUPABASE_JWT_SECRET correctamente para mejorar el rendimiento en EasyPanel.`
+          );
+        } else {
+          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 2 OK (Red): ${data.user.email}`);
         }
-
-        if (error) {
-          this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA: ${error.message}`);
-        }
-      } catch (err) {
-        this.logger.warn(`⚠️ [AUTH_GUARD] ESTRATEGIA 2 ERROR DE RED: ${err.message}`);
+        
+        return true;
       }
+
+      if (error) {
+        this.logger.warn(`❌ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA: ${error.message}`);
+      }
+    } catch (err) {
+      this.logger.error(`❌ [AUTH_GUARD] ESTRATEGIA 2 ERROR CRÍTICO: ${err.message}`);
     }
 
-    // --- ESTRATEGIA 3: DEV FALLBACK (FIX C-2: Requiere flag explícito ALLOW_DEV_BYPASS=true) ---
+    // --- ESTRATEGIA 3: DEV BYPASS ---
     if (this.allowDevBypass) {
       try {
         const decoded = jwt.decode(token) as any;

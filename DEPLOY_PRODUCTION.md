@@ -1,110 +1,79 @@
-# TAD DOOH Platform - Production Deployment Handbook
-> **Architecture Overview:** This document strictly defines the operational protocols orchestrating the global deployment of the entire DOOH Node Network explicitly scaling across serverless boundaries.
+# TAD DOOH Platform v10.0 - Production Deployment Handbook
+> **Monorepo Architecture Overview:** Este documento define los protocolos operacionales para desplegar la red TAD DOOH global, ajustada a la arquitectura de microservicios (apps/*) y límites de asfixia.
 
 ---
 
-## 1. System Structure
-Your ecosystem relies natively on 3 isolated deployment layers minimizing downtime securely:
+## 1. Topología del Sistema v10.0
+El ecosistema se apoya en servicios separados para escalabilidad y contención de costos:
 
-1. **Backend Integration Matrix** -> `api.tad.com` (NestJS + Prisma PostgreSQL + Redis Cache)
-2. **Admin Intel Dashboard** -> `dashboard.tad.com` (Next.js Application)
-3. **Player Runtime** -> `player.tad.com` (Vite / TypeScript Node Arrays natively)
+1. **Backend Integration Matrix** -> `api.tad.do` (NestJS / Prisma PostgreSQL) -> **EasyPanel VPS**
+2. **Video Render Engine** -> `remotion.tad.do` (Remotion) -> **EasyPanel VPS**
+3. **Admin Intelligence** -> `admin.tad.do` (Next.js) -> **Vercel**
+4. **Advertiser BI** -> `advertiser.tad.do` (Next.js) -> **Vercel**
+5. **Mobile Gateway** -> `driver.tad.do` (PWA Next.js) -> **Vercel**
+6. **Tablet Player** -> `player.tad.do` (Next.js Kiosk) -> **Vercel**
 
 ---
 
-## 2. Global Environment Variables
-Before deploying, securely allocate the following logical strings:
+## 2. Variables de Entorno Globales (Environment Variables)
 
-**Backend (Runtime `api.tad.com`)**
+### Backend (`apps/api` - EasyPanel)
 ```env
 # Infrastructure Storage
-DATABASE_URL="postgresql://user:password@aws-host.com:5432/tad_db"
-
-# Media Bucket Allocations
-STORAGE_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
-STORAGE_ACCESS_KEY="<your-access-key>"
-STORAGE_SECRET_KEY="<your-secret-key>"
-STORAGE_BUCKET="tad-media"
-STORAGE_CDN_URL="https://cdn.tad.com" # Explicit CDN mapping caching streams
-
-# Network Port 
+DATABASE_URL="postgresql://user:password@aws-host.com:6543/tad_db?connection_limit=5"
+SUPABASE_URL="https://<your-project>.supabase.co"
+SUPABASE_SERVICE_KEY="<your-service-key>"
 PORT=3000
 ```
 
-**Admin Dashboard (Runtime `dashboard.tad.com`)**
+### Frontends (`apps/admin`, `apps/advertiser`, `apps/driver`, `apps/tablet-player` - Vercel)
 ```env
-NEXT_PUBLIC_API_URL="https://api.tad.com/api"
-```
-
-**Tablet Player (Runtime `player.tad.com`)**
-```env
-VITE_API_URL="https://api.tad.com/api"
+NEXT_PUBLIC_API_URL="https://api.tad.do/api"
+NEXT_PUBLIC_SUPABASE_URL="https://<your-project>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<your-anon-key>"
 ```
 
 ---
 
-## 3. Step-by-Step Deployment Protocols
+## 3. Protocolo de Despliegue Paso a Paso
 
-### A. Backend Network (Railway or Render)
-*Platform resolves natively running Node natively using internal build configurations.*
+### A. Core Services (EasyPanel)
+1. En tu panel de EasyPanel, crea un nuevo proyecto e importa tu repositorio GitHub.
+2. Crea una aplicación para el **Backend API**:
+   - **Build Method:** Dockerfile
+   - **Dockerfile Path:** `Dockerfile.api`
+   - **Limits:** RAM=512MB
+   - **Env Vars:** Pega las variables de Backend (incluyendo Supabase).
+3. Crea una aplicación para **TAD Remotion**:
+   - **Build Method:** Dockerfile
+   - **Dockerfile Path:** `Dockerfile.remotion`
+   - **Limits:** RAM=1024MB (Requerido por Chromium Puppeteer).
 
-1. Fork/Push `tad-dooh-platform` onto a private GitHub Repository.
-2. Inside Railway/Render, map **Root Directory** = `/backend`.
-3. Select `Start Command` = `npm run start:prod` (We altered `package.json` to automatically invoke `npx prisma generate && npx prisma migrate deploy` natively parsing schema logic without manual interventions).
-4. Inject your Database Strings linking their Managed PostgreSQL Add-ons globally. 
-5. Run the node. Expect logs confirming Database Migrations resolving.
+### B. Ecosistema Frontend o Portales (Vercel)
+Dado que es un Monorepo, debes crear 4 proyectos separados en Vercel apuntando al mismo repositorio GitHub:
 
-### B. Admin Dashboard (Vercel)
-*Next.js SSR endpoints optimize rapidly upon Vercel directly out of the box.*
-
-1. Inside Vercel, attach the GitHub Repository.
-2. Configure **Root Directory** = `/admin-dashboard`.
-3. Insert `NEXT_PUBLIC_API_URL` environment variables logically securely aiming at your Backend API Domain.
-4. Deploy globally.
-
-### C. Tablet Player (Vercel)
-*Static HTML compilation routing deeply over Mobile Native logic perfectly suited for Vercel/Cloudflare static delivery pipelines.*
-
-1. Inside Vercel, attach the GitHub Repository.
-2. Configure **Root Directory** = `/player`.
-3. Vercel identifies `vite` automatically parsing explicit configurations.
-4. Insert `VITE_API_URL` environment variables logically mapping `api.tad.com`.
-5. Deploy securely.
-
----
-
-## 4. Domain & DNS Configuration Structure (via Cloudflare)
-
-When orchestrating domains, Cloudflare mappings should exclusively use `CNAME` records shielding traffic IPs effectively. Make sure SSL overrides configure strictly (Full / Strict).
-
-| Type | Target Subdomain | Proxy Rule | Resolving Point (Examples) |
-|---|---|---|---|
-| `CNAME` | `api.tad.com` | DNS Only / Proxied | `backend-production.up.railway.app` |
-| `CNAME` | `dashboard.tad.com` | Proxied | `tad-dashboard.vercel.app` |
-| `CNAME` | `player.tad.com` | Proxied | `tad-player.vercel.app` |
-
-*Ensure Vercel / Railway acknowledges the Custom Domains assigned verifying SSL TLS natively.*
+1. **Admin Console (`apps/admin`)**
+   - **Framework:** Next.js
+   - **Root Directory:** `apps/admin`
+   - Aplica variables de entorno frontend.
+2. **Advertiser Hub (`apps/advertiser`)**
+   - **Framework:** Next.js
+   - **Root Directory:** `apps/advertiser`
+   - Aplica variables de entorno frontend.
+3. **Driver Mobile Gateway (`apps/driver`)**
+   - **Framework:** Next.js
+   - **Root Directory:** `apps/driver`
+   - Aplica variables de entorno frontend.
+4. **Tablet Player (`apps/tablet-player`)**
+   - **Framework:** Next.js
+   - **Root Directory:** `apps/tablet-player`
+   - Aplica variables de entorno frontend.
 
 ---
 
-## 5. System Validation & End-to-End Checking
+## 4. Validación del Sistema
+1. **Verificar Asfixia:** Accede a EasyPanel y valida que el consumo de CPU/RAM de `tad-remotion` no sobrepase el GB en su render.
+2. **Validar Heatmap:** Inicia sesión en el Admin Console o Advertiser Hub y verifica la capa térmica en el `/network` map.
+3. **Validar Telemetría Background:** Loguéate en la app de Conductor, minimiza la web y vuelve a ella tras 2 minutos observando si los paquetes estancados detonan el Flush (`test:e2e:gps`).
 
-Upon deployment, verify nodes logic resolves comprehensively:
-
-### Task Execution Script (Automated Sequence)
-Run the internal validation script executing a full Network Cycle Simulation globally simulating physical nodes overriding explicit constraints.
-
-```bash
-chmod +x test_production.sh
-./test_production.sh https://api.tad.com/api taxi-physical-001
-```
-
-### Manual Validation Checklist
-
-- [ ] **Tablets Ping Logic:** Navigate explicitly `https://player.tad.com` locally via Desktop Chrome. Verify network traces (`F12`) mapping strictly resolving `/api/device/sync` correctly.
-- [ ] **Tablet Offline Isolation:** Pull Internet. Reload. Verify arrays flush efficiently using cached chunks effectively looping media implicitly.
-- [ ] **Fleet Analytics Push:** Navigate to `https://dashboard.tad.com/fleet`. Verify newly parsed telemetry values mapped correctly natively updating offline times aggressively.
-- [ ] **Campaign Allocation:** Upload a test `.mp4` loop binding onto active campaigns securely. Verify Cloudflare CDN URLs parsed visually rendering S3 outputs inside Network Traffic tools dynamically.
-- [ ] **Aggregated Proof:** Confirm Dashboard Chart endpoints parse hourly traffic loops correctly processing `top-taxis` cleanly!
-
-The platform is officially deployed and orchestrated to securely provision isolated fleet arrays without network overhead bleeding.
+✅ **TAD PLATFORM V10.0 ESTÁ OFICIALMENTE EN PRODUCCIÓN.**

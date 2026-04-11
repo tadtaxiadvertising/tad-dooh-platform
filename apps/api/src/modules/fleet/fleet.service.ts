@@ -1,12 +1,14 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from '../device/device.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class FleetService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly deviceService: DeviceService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   /**
@@ -606,7 +608,50 @@ export class FleetService {
       });
     }
 
-    return { success: true, count: records.length, driverId: resolvedDriverId };
+    return {
+      success: true,
+      count: records.length,
+      driverId: resolvedDriverId
+    };
+  }
+
+  /**
+   * Envía un comando a toda la flota activa (Realtime + Persistencia)
+   * Útil para el "Panic Button" o actualizaciones globales.
+   */
+  async broadcastCommand(type: string, params: any = {}) {
+    Logger.log(`[FLEET_C2] Broadcasting global command: ${type}`);
+
+    // 1. Emitir vía Realtime para efectos inmediatos en dispositivos conectados
+    await this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        command: type,
+        params,
+        timestamp: new Date().toISOString()
+    }).catch(e => Logger.error(`[FLEET_C2] Realtime broadcast failed: ${e.message}`));
+
+    // 2. Registrar en DeviceCommand para dispositivos offline/desconectados
+    const activeDevices = await this.prisma.device.findMany({
+        where: { status: 'ACTIVE' },
+        select: { id: true }
+    });
+
+    if (activeDevices.length > 0) {
+        await this.prisma.deviceCommand.createMany({
+            data: activeDevices.map(d => ({
+                deviceId: d.id,
+                commandType: type,
+                commandParams: JSON.stringify(params),
+                status: 'PENDING',
+                expiresAt: new Date(Date.now() + 48 * 3600 * 1000) // 48h de vida
+            }))
+        });
+    }
+
+    return { 
+        success: true, 
+        broadcastType: type,
+        deviceCount: activeDevices.length 
+    };
   }
 
   /**

@@ -1,7 +1,7 @@
 # 🧠 11 — ESTADO ACTUAL Y HANDOVER (10 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Última actualización**: 10 de Abril de 2026 (v10.0)
+> **Última actualización**: 10 de Abril de 2026 (v10.1)
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base, la infraestructura, las reglas de negocio recientes y los siguientes pasos para la plataforma TAD DOOH.
 
 ---
@@ -16,7 +16,8 @@
 
 - **RolesGuard Public Bypass**: Se corrigió un bug crítico donde rutas marcadas como `@Public()` (como login y registro) eran bloqueadas con 403 Forbidden si el controlador tenía roles definidos a nivel de clase.
 - **Advertiser Password Reset**: Implementado el flujo completo de recuperación (`recover-password`) y establecimiento de contraseña (`reset-password`). Esto profesionaliza el onboarding de anunciantes.
-- **Onboarding de Legados**: El sistema ahora guía proactivamente a los anunciantes con cuentas creadas manualmente (sin password) a configurar su acceso mediante el flujo de recuperación, eliminando fricción en el soporte técnico.
+- **Advertiser Route Stabilization**: Corregidos todos los errores 404 en el portal de anunciantes mediante la implementación de las rutas `billing`, `network`, `insights` y `bi-v6`.
+- **Driver Portal Tools**: Implementados los módulos de Soporte Técnico y Referidos dentro del dashboard del conductor, integrados con `/portal-requests`.
 
 ## 3. 📦 Monorepo & Dependencias (v10.0)
 

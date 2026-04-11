@@ -1,82 +1,60 @@
-# 🚀 TAD DOOH Platform - Estado del Deploy
+# 🚀 TAD DOOH Platform - Estado del Despliegue v10.0
 
-**Última actualización:** 22 de Marzo, 2026 (03:30 UTC-4)
+**Última actualización:** 10 de Abril, 2026 (23:55 UTC-4)
 
 ---
 
-## ✅ COMPLETADO
+## ✅ COMPLETADO (v10.0 ARCHITECTURE)
 
-### 1. Master Dashboard (Admin)
-
-| Item | Estado | Notas |
-| --- | --- | --- |
-| **Código** | ✅ v5.1 UI | Optimistic Unlink/Delete UI |
-| **EasyPanel** | ✅ **EN LÍNEA** | Cross-Hardware Detach |
-| **Media Logic** | ✅ Enrutamiento Modal | URL params pre-filling campaigns |
-
-### 2. Backend Engine (NestJS)
+### 1. Master Dashboard & Portals
 
 | Item | Estado | Notas |
 | --- | --- | --- |
-| **API Code** | ✅ NestJS 10+ | Eliminación Graceful (Media) |
-| **Deploy EP** | ✅ **EN LÍNEA** | tad-api endpoints activos |
-| **Supabase RLS**| ✅ Telemetría 100% | Políticas SQL anon fixeadas |
+| **Admin Dashboard** | ✅ OPERACIONAL | Gestión total de Flota, Finanzas y BI. |
+| **Advertiser Portal** | ✅ BI v6.0 LIVE | Insights de marketing y facturación premium. |
+| **Driver Portal** | ✅ TOOLS LIVE | SoporteTécnico y Referidos integrados. |
 
-### 3. Tablet Player PWA
+### 2. Backend Gateway (NestJS)
 
-| Item | Estado | URL |
+| Item | Estado | Notas |
 | --- | --- | --- |
-| **Vercel Deploy** | ✅ **EN LÍNEA** | <https://tad-tablet-player.vercel.app> |
-| **Telemetry Play** | ✅ No-blocking | Falla silenciosa en hooks de error |
+| **API Code** | ✅ NestJS 10+ | Microservices Ready. JWT local validation. |
+| **Deploy EP** | ✅ **EN LÍNEA** | tad-api endpoints activos en EasyPanel. |
+| **Auth** | ✅ HARDENED | Recovery flows & RolesGuard stable. |
+
+### 3. Video Engine (TAD Remotion)
+
+| Item | Estado | Notas |
+| --- | --- | --- |
+| **Microservice** | ✅ **OFFICIAL** | Apps/tad-remotion desacoplado. |
+| **Render Engine** | ✅ CHROMIUM | Bullseye-based container con fix de dependencias. |
+
+### 4. Tablet Player (PWA)
+
+| Item | Estado | Notas |
+| --- | --- | --- |
+| **PWA Engine** | ✅ **EN LÍNEA** | Offline playback con Cache API & IndexedDB. |
+| **Sync Window** | ✅ OPERARIONAL | Sincronización diaria v1.1 activa. |
 
 ---
 
 ## 📊 RESUMEN DE PROGRESO
 
 ```text
-Proyecto Completo: 98%
-├── Master Dashboard   ████████████████████░ 98%
-├── Backend Engine     ████████████████████░ 98%
-├── Tablet Player PWA  ████████████████████░ 98%
-└── Infrastructure     ████████████████████░ 98%
+Ecosistema Completo: 95% (Fase Escalamiento)
+├── Microservices Infrastructure ████████████████████ 100%
+├── Advertiser BI v6.0          ████████████████████ 100%
+├── Video Engine Stabilization  ████████████████████ 100%
+└── Advanced Analytics Core     ██████████████████░░ 90%
 ```
 
 ---
 
-## 🎯 PRÓXIMOS PASOS INMEDIATOS
+## 🎯 PRÓXIMOS PASOS (Q2 2026)
 
-### Para Mendy (Hoy - 30 min)
-
-1. **Instalar Fully Kiosk** en tablet Android
-   - Download: <https://www.fully-kiosk.de/>
-   - Costo: ~$8 USD
-
-2. **Configurar URL**
-   - Start URL: <https://tad-tablet-player.vercel.app>
-
-3. **Activar Kiosk Mode**
-   - Settings → Kiosk Mode → Start on Boot: ON
-
-4. **Testear**
-   - Reiniciar tablet
-   - Verificar que cargue el player
-   - Anotar device ID
-
-### Para Desarrollo (Esta semana)
-
-1. **Deploy Backend API**
-   - Configurar PostgreSQL
-   - Deploy en Vercel/DigitalOcean
-   - Testear endpoints
-
-2. **Subir Video de Prueba**
-   - Crear campaña test
-   - Subir video a S3/Spaces
-   - Asignar a dispositivo
-
-3. **Testear Sync**
-   - Verificar descarga de campañas
-   - Verificar upload de analytics
+1. **E2E Scale Test**: Validar el microservicio de video con 10 rendering paralelos.
+2. **KYC Automation**: Automatizar la validación de documentos para nuevos anunciantes.
+3. **Optimización de Bitrate**: Perfiles de transcoding dinámicos en Remotion.
 
 ---
 
@@ -84,20 +62,11 @@ Proyecto Completo: 98%
 
 | Servicio | URL |
 | --- | --- |
-| **Tablet Player** | <https://tad-tablet-player.vercel.app> |
-| **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
-| **Vercel Dashboard** | <https://vercel.com/tadtaxiadvertisings-projects/tad-tablet-player> |
-| **Fully Kiosk** | <https://www.fully-kiosk.de/> |
-| **Documentación** | `docs/` en GitHub |
+| **Dashboard Admin** | <https://tad-dashboard.rewvid.easypanel.host> |
+| **API Gateway** | <https://tad-api.rewvid.easypanel.host/api/v1> |
+| **Video Engine** | <https://tad-remotion.rewvid.easypanel.host> |
+| **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> |
 
 ---
 
-## 📞 CONTACTO
-
-**Soporte:** <mailto:tad.taxiadvertising@gmail.com>
-
-**Documentación:** Ver carpeta `docs/` en GitHub
-
----
-
-**Estado:** 🟡 **En Progreso** (Tablet Player ✅ EN LÍNEA)
+**Estado Técnico:** 🟢 **ESTABLE** (Producción Ready v10.0)

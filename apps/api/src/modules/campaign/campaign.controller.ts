@@ -412,38 +412,7 @@ export class CampaignController {
     @Body('mediaId') mediaId: string
   ) {
     if (!mediaId) throw new NotFoundException('mediaId is required');
-    const updated = await this.prisma.media.update({
-      where: { id: mediaId },
-      data: { campaign_id: campaignId },
-    });
-    
-    // Invalidate campaign cache and force sync devices
-    const campaign = await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: { updatedAt: new Date() }
-    });
-    
-    // Create FORCE_SYNC commands for assigned devices
-    let devicesToSync = [];
-    if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true } }));
-    } else {
-      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
-      devicesToSync = assignments.map(a => ({ id: a.device_id }));
-    }
-
-    if (devicesToSync.length > 0) {
-      await this.prisma.deviceCommand.createMany({
-        data: devicesToSync.map(d => ({
-          deviceId: d.id,
-          commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_linked' }),
-        }))
-      });
-    }
-
-    Logger.log(`[CONTENT_DIST] Linked media ${mediaId} → campaign ${campaignId}`);
-    return { success: true, media: updated };
+    return this.campaignService.linkMediaToCampaign(campaignId, mediaId);
   }
 
   // 5.1. Unlink media from a campaign

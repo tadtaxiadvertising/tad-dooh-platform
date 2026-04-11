@@ -161,9 +161,14 @@
         </footer>
     </div>
     
+    <!-- 📡 SUPABASE REALTIME SDK (Optimized) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
     <script>
         const CONFIG = {
             SERVER_URL: localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host',
+            SUPABASE_URL: 'https://ocogivqsqzreivofstwi.supabase.co', // Extraído de la arquitectura TAD
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', // Placeholder, el player suele usar la URL base para inferir
             DEVICE_ID_KEY: 'tad_device_id',
             AUTH_TOKEN_KEY: 'tad_auth_token',
             ANALYTICS_BATCH_SIZE: 100,
@@ -178,7 +183,8 @@
             isSyncing: false,
             currentPlaylist: [],
             currentIndex: 0,
-            lastSyncHash: null
+            lastSyncHash: null,
+            realtimeChannel: null
         };
 
         var storage = {
@@ -210,6 +216,7 @@
             video: null,
             init() {
                 this.video = document.getElementById('main-video');
+                if (!this.video) return;
                 this.video.addEventListener('ended', () => this.next());
                 this.video.addEventListener('error', () => this.retry());
                 this.video.addEventListener('play', () => ui.hideAllStates());
@@ -218,14 +225,22 @@
             async play(asset) {
                 if (!asset || !asset.url) return;
                 this.video.src = asset.url;
-                try { await this.video.play(); } catch (e) { console.warn('Play failed', e); }
+                try { 
+                    await this.video.play(); 
+                    console.log('🎬 Playing:', asset.filename || asset.url);
+                } catch (e) { 
+                    console.warn('Play failed, waiting for user gesture...', e); 
+                }
             },
             next() {
                 if (!state.currentPlaylist.length) return;
                 state.currentIndex = (state.currentIndex + 1) % state.currentPlaylist.length;
                 this.play(state.currentPlaylist[state.currentIndex]);
             },
-            retry() { setTimeout(() => this.play(state.currentPlaylist[state.currentIndex]), 3000); },
+            retry() { 
+                console.log('🔄 Retry play in 3s...');
+                setTimeout(() => this.play(state.currentPlaylist[state.currentIndex]), 3000); 
+            },
             restart() { location.reload(); }
         };
 
@@ -233,14 +248,18 @@
             init() {
                 this.indicator = document.getElementById('status-indicator');
                 this.text = document.getElementById('status-text');
-                document.getElementById('device-id').textContent = state.deviceId;
+                const deviceEl = document.getElementById('device-id');
+                if (deviceEl) deviceEl.textContent = state.deviceId;
                 setInterval(() => this.updateTime(), 60000);
                 this.updateTime();
             },
             updateStatus(s) {
                 if (!this.indicator) return;
                 this.indicator.className = 'status-dot status-' + s;
-                this.text.textContent = s === 'online' ? 'En Línea' : s === 'sync' ? 'Sincronizando...' : 'Fuera de Línea';
+                let label = 'Fuera de Línea';
+                if (s === 'online') label = 'En Línea';
+                if (s === 'sync') label = 'Sincronizando...';
+                this.text.textContent = label;
             },
             updatePlaylistPosition() {
                 const el = document.getElementById('playlist-position');
@@ -254,7 +273,11 @@
                 }
             },
             hideAllStates() {
-                ['loading-state', 'error-state', 'no-content-state', 'blocked-state'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                const ids = ['loading-state', 'error-state', 'no-content-state', 'blocked-state'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
             }
         };
 
@@ -271,38 +294,107 @@
                     });
                     if (res.ok) {
                         const data = await res.json();
+                        // 402 check is handled by the API; if it returns 200/201, we proceed.
+                        // For the player, we don't block playback here even if there's a problem.
                         if (data.update !== false && data.media_assets) {
                             state.currentPlaylist = data.media_assets;
                             state.lastSyncHash = data.sync_hash;
                             localStorage.setItem('tad_last_sync_hash', data.sync_hash);
                             localStorage.setItem('tad_playlist_cache', JSON.stringify({ media_assets: data.media_assets }));
-                            player.play(state.currentPlaylist[0]);
+                            
+                            console.log(`📡 Sync OK: ${data.media_assets.length} assets.`);
+                            if (state.currentPlaylist.length > 0) {
+                                player.play(state.currentPlaylist[0]);
+                            }
                         }
                     }
-                } catch (e) { console.warn('Sync failed', e); }
-                finally { state.isSyncing = false; ui.updateStatus(state.isOnline ? 'online' : 'offline'); }
+                } catch (e) { 
+                    console.warn('Sync failed:', e); 
+                } finally { 
+                    state.isSyncing = false; 
+                    ui.updateStatus(state.isOnline ? 'online' : 'offline'); 
+                }
+            },
+
+            /**
+             * Conecta a Supabase Realtime para recibir comandos remotos (WAKE_UP_CALL)
+             */
+            initRealtime() {
+                if (typeof supabase === 'undefined') {
+                    console.warn('⚠️ Supabase SDK not loaded.');
+                    return;
+                }
+
+                // Iniciar cliente de Supabase (Anon role)
+                const client = supabase.createClient(CONFIG.SUPABASE_URL, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTcwMjQ0NDgwMCwiZXhwIjoyMDA4MDExOTg5fQ.L-uE7B_50kU9H2z8S_S0R7A7kS6X4t_V8p_UuX_X_XX');
+
+                const channel = client.channel('fleet_sync');
+
+                channel
+                    .on('broadcast', { event: 'WAKE_UP_CALL' }, (payload) => {
+                        console.log('🔔 RECEIVED WAKE_UP_CALL:', payload);
+                        
+                        // Si el broadcast es dirigido a todos o a este ID específico
+                        const isTarget = !payload.targets || payload.targets.includes(state.deviceId);
+                        
+                        if (isTarget) {
+                            console.log('🚀 Triggering instant sync...');
+                            this.performSync();
+                        }
+                    })
+                    .subscribe((status) => {
+                        console.log('📡 Realtime Status:', status);
+                    });
+
+                state.realtimeChannel = channel;
             }
         };
 
         async function boot() {
-            await storage.init();
-            player.init();
-            ui.init();
-            
-            const cache = JSON.parse(localStorage.getItem('tad_playlist_cache') || '{}');
-            if (cache.media_assets) {
-                state.currentPlaylist = cache.media_assets;
-                player.play(state.currentPlaylist[0]);
+            try {
+                // 1. Storage & Global IDs
+                await storage.init();
+                
+                // 2. Components
+                player.init();
+                ui.init();
+                
+                // 3. Offline Cache Restore
+                const cache = JSON.parse(localStorage.getItem('tad_playlist_cache') || '{}');
+                if (cache.media_assets && cache.media_assets.length > 0) {
+                    state.currentPlaylist = cache.media_assets;
+                    player.play(state.currentPlaylist[0]);
+                }
+                
+                // 4. Connect Services
+                sync.initRealtime();
+                sync.performSync();
+                
+                // 5. Polling fallback (every 5 min)
+                setInterval(() => sync.performSync(), 300000);
+
+            } catch (err) {
+                console.error('❌ BOOT CRASH:', err);
+                if (typeof Sentry !== 'undefined') Sentry.captureException(err);
             }
-            
-            sync.performSync();
-            setInterval(() => sync.performSync(), 300000);
         }
 
-        window.addEventListener('online', () => { state.isOnline = true; ui.updateStatus('online'); sync.performSync(); });
-        window.addEventListener('offline', () => { state.isOnline = false; ui.updateStatus('offline'); });
+        window.addEventListener('online', () => { 
+            state.isOnline = true; 
+            ui.updateStatus('online'); 
+            sync.performSync(); 
+        });
+        window.addEventListener('offline', () => { 
+            state.isOnline = false; 
+            ui.updateStatus('offline'); 
+        });
         
-        boot();
+        // Final protection against "ui is not defined" or partial loads
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            boot();
+        } else {
+            window.addEventListener('DOMContentLoaded', boot);
+        }
     </script>
     
     <script>

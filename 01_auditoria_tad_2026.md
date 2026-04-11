@@ -1,38 +1,39 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
 > **Propósito**: Estado completo del ecosistema para continuidad de desarrollo con cualquier agente o desarrollador.
-> **Última Actualización**: 2026-04-04T05:45:00-04:00
-> **Estado Operativo Actual**: Master Console v6.7.0 (Financial & BI Ecosystem). Santiago Pilot LIVE (STI0001-STI0010). Ecosistema de Pauta Auditada Unificado.
+> **Última Actualización**: 2026-04-10T23:55:00-04:00
+> **Estado Operativo Actual**: v10.0.0 (Microservices & Premium Portals). Santiago Pilot LIVE. Ecosistema de Pauta Auditada Unificado.
 
 ---
 
-## 🏗️ 1. ARQUITECTURA GENERAL
+## 🏗️ 1. ARQUITECTURA GENERAL (MONOREPO)
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│             TAD DOOH PLATFORM — ARQUITECTURA                 │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [Admin Dashboard]       [API Backend]       [Tablet PWA]    │
-│   Next.js 15.1.7 (React 19) NestJS 10           HTML + SW     │
-│   Vercel (tad-dashboard)   Vercel (tad-api)    FullyKiosk    │
-│        │                      │                    │         │
-│        └──────────┬───────────┘                    │         │
-│                   ▼                                │         │
-│          [Supabase PostgreSQL]  ◄───────────────────┘        │
-│          [Supabase Storage]                                  │
-│          [Supabase Auth]                                     │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│             TAD DOOH PLATFORM — ARQUITECTURA v10.0               │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Admin/Adv/Driver]      [API Backend]      [TAD Remotion]       │
+│   Next.js 15 (R19)         NestJS 10         Video Engine        │
+│    Apps/Portals            Apps/API         Microservice         │
+│         │                      │                 │               │
+│         └──────────┬───────────┴─────────────────┘               │
+│                    ▼                                             │
+│           [Supabase PostgreSQL]  ◄────────────────────────┐      │
+│           [Supabase Storage]                              │      │
+│           [Supabase Auth]                         [Tablet PWA]   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 | Componente | Tecnología | URL Producción | Estado |
 | --- | --- | --- | --- |
-| **Dashboard Admin** | Next.js 15.2.6 / React 19 / Tailwind 4 | <https://tad-dashboard.vercel.app> | ✅ Operativo |
+| **Dashboard Admin** | Next.js 15 / React 19 / Tailwind 4 | <https://tad-dashboard.vercel.app> | ✅ Operativo |
 | **API Backend** | NestJS 10 / Prisma 5.22 / Express | <https://tad-api.vercel.app> | ✅ Operativo |
-| **Tablet Player** | PWA (HTML + Service Worker + Cache API) | Carga local vía FullyKiosk | ✅ Funcional |
+| **Portal Anunciante** | Next.js 15 (Advertiser BI v6.0) | <https://tad-advertiser.vercel.app> | ✅ v6.0 Live |
+| **Portal Conductor** | Next.js 15 (Wallet & Tools) | <https://tad-driver.vercel.app> | ✅ Live |
+| **Video Engine** | Remotion / Chromium Microservice | <https://tad-remotion.vercel.app> | ✅ ON-LINE |
+| **Tablet Player** | PWA (HTML + Service Worker) | Carga local vía FullyKiosk | ✅ Funcional |
 | **Base de Datos** | Supabase PostgreSQL (us-west-2) | Pool: puerto 6543 / Direct: 5432 | ✅ Conectada |
-| **Storage** | Supabase Storage (bucket: `campaign-videos`) | Via Browser-Direct Upload | ✅ Operativo |
-| **Auth** | Supabase Auth (email/password) | Via Supabase SDK | ✅ Funcional |
 
 ---
 
@@ -209,46 +210,22 @@
 
 ---
 
-## 📁 8. ESTRUCTURA DE ARCHIVOS CLAVE
+## 📁 8. ESTRUCTURA DE ARCHIVOS (MONOREPO)
 
 ```text
 tad-dooh-platform/
-├── admin-dashboard/           # Next.js 15 Dashboard
-│   ├── pages/                 # Rutas del dashboard
-│   │   ├── login.tsx
-│   │   ├── index.tsx          # Home/Dashboard
-│   │   ├── campaigns/         # CRUD campañas
-│   │   ├── fleet/             # Monitor de flota
-│   │   ├── drivers/           # Gestión choferes
-│   │   ├── advertisers/       # Gestión marcas
-│   │   ├── finance/           # Ingresos y pagos
-│   │   ├── analytics/         # Inteligencia
-│   │   ├── media/             # Galería
-│   │   └── devices/           # Inventario (mockup)
-│   ├── components/            # Componentes reutilizables
-│   ├── services/api.ts        # Axios client centralizado
-│   └── .env.local             # NEXT_PUBLIC_API_URL (local dev)
-├── backend/                   # NestJS API
-│   ├── src/
-│   │   ├── app.module.ts      # Root module
-│   │   ├── main.ts            # Bootstrap + CORS
-│   │   └── modules/
-│   │       ├── auth/          # Login + Guard + @Public()
-│   │       ├── campaign/      # CRUD + Upload + Targeting
-│   │       ├── fleet/         # Devices + C2 + Finance
-│   │       ├── drivers/       # Choferes + Suscripciones
-│   │       ├── advertisers/   # Marcas
-│   │       ├── media/         # Upload a Supabase Storage
-│   │       ├── finance/       # Reportes + Exportación CSV
-│   │       ├── analytics/     # Eventos + Top taxis
-│   │       ├── device/        # Sync + Heartbeat + Profile
-│   │       ├── prisma/        # PrismaService
-│   │       └── supabase/      # SupabaseService
-│   ├── api/index.ts           # Vercel serverless handler
-│   ├── prisma/schema.prisma   # Esquema completo de DB
-│   ├── vercel.json            # Routing config para Vercel
-│   └── .env                   # Variables locales
-└── tablet-player/             # PWA para tablets en taxis
+├── apps/
+│   ├── admin/                 # Dashboard Maestro (Next.js 15)
+│   ├── advertiser/            # Portal Anunciante (BI v6.0)
+│   │   └── pages/advertiser/  # bi-v6, billing, network, insights
+│   ├── driver/                # Portal Conductor (Support, Referrals)
+│   ├── api/                   # NestJS API (V1)
+│   ├── tad-remotion/          # Microservicio de Renderizado
+│   └── tablet-player/         # PWA Pauta Offline
+├── packages/
+│   ├── database/              # Shared Prisma & DB Logic
+│   └── ui/                    # Shared Components (AntigravityUI)
+└── docker/                    # Stacks de EasyPanel
 ```
 
 ---

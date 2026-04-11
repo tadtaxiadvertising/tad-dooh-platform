@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { SupabaseService } from '../supabase/supabase.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class MediaService {
@@ -26,6 +27,10 @@ export class MediaService {
   }
 
   async uploadFile(file: any, campaignId: string, qrUrl?: string) {
+    if (file.size > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    }
+
     // 0. Auto-create bucket if missing
     await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => {});
 
@@ -100,6 +105,10 @@ export class MediaService {
   }
 
   async registerBypassedMedia(data: any) {
+    if (data.size && Number(data.size) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      throw new BadRequestException(`El archivo registro excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    }
+
     try {
       const cdnPrefix = this.config.get('CDN_URL_PREFIX');
       let finalCdnUrl = data.publicUrl;
@@ -136,6 +145,10 @@ export class MediaService {
   }
 
   async registerFileMock(dto: { originalname: string; mimetype: string; size: number }) {
+    if (dto.size > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      throw new BadRequestException(`El mock excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    }
+
     const fileExt = extname(dto.originalname);
     const fileId = uuidv4();
     const fileName = `videos/mock-${fileId}${fileExt}`;
@@ -265,5 +278,33 @@ export class MediaService {
       this.logger.error(`Error deleting file: ${error.message}`);
       throw new BadRequestException(`Error al eliminar archivo: ${error.message}`);
     }
+  }
+
+  /**
+   * Finaliza un renderizado de Remotion, actualiza el asset y activa la flota.
+   */
+  async completeRemotionRender(mediaId: string, url: string, status: string = 'READY') {
+    const media = await this.prisma.media.update({
+      where: { id: mediaId },
+      data: { 
+        url, 
+        cdnUrl: url, 
+        status 
+      },
+      include: { campaign: true }
+    });
+
+    if (status === 'READY' && media.campaign_id) {
+      // Notificar a la flota vinculada vía Supabase Realtime
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'remotion_render_finished',
+        campaignId: media.campaign_id,
+        mediaId: media.id
+      }).catch(e => this.logger.error(`[Realtime] Failed broadcast: ${e.message}`));
+      
+      this.logger.log(`[REMOTION] Render finished for ${mediaId}. Fleet notified.`);
+    }
+
+    return media;
   }
 }

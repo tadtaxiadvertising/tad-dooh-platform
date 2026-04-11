@@ -54,6 +54,11 @@ export class FleetController {
     return this.fleetService.sendCommand(deviceId, body.type, body.params);
   }
 
+  @Post('broadcast-command')
+  async broadcastFleetCommand(@Body() body: { type: string; params?: any }) {
+    return this.fleetService.broadcastCommand(body.type, body.params);
+  }
+
   @Post('register')
   async registerDevice(@Body() body: { placa: string; driverName: string; deviceId?: string }) {
     if (!body.placa || !body.driverName) {

@@ -41,6 +41,11 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 │  │  Next.js  │ ────▶│  NestJS   │       │
 │  │ Dashboard │ (Proxy)│  API v1   │       │
 │  └───────────┘      └───────────┘       │
+│        │               │                │
+│        │        ┌──────▼──────────┐     │
+│        └───────▶│  TAD Remotion   │     │
+│                 │  (Video Engine) │     │
+│                 └─────────────────┘     │
 │              │            │             │
 │         ┌────▼────────────▼────┐        │
 │         │      PostgreSQL      │        │
@@ -66,48 +71,23 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Estructura del Proyecto (Monorepo)
 
 ```text
 TAD DOOH Platform/
-├── backend/                    # API NestJS
-│   ├── src/
-│   │   ├── campaigns/         # Servicio de campañas
-│   │   ├── devices/           # Servicio de dispositivos
-│   │   ├── media/             # Servicio de medios
-│   │   ├── analytics/         # Servicio de analytics
-│   │   ├── commands/          # Comandos remotos
-│   │   └── sync/              # Sync diario
-│   ├── tests/
-│   └── docker/
-│
-├── frontend/                   # Dashboard Next.js
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   └── services/
-│   └── public/
-│
-├── tablet-player/              # PWA para tablets
-│   ├── src/
-│   │   ├── player.js          # Video player
-│   │   ├── sync.js            # Sync client
-│   │   ├── analytics.js       # Event recorder
-│   │   └── watchdog.js        # Health monitor
-│   └── assets/
-│
-├── docs/                       # Documentación
-│   ├── ARQUITECTURA-COMPLETA.md
-│   ├── API.md
-│   └── DEPLOY.md
-│
-├── docker/                     # Docker configs
-│   ├── docker-compose.yml
-│   └── docker-compose.prod.yml
-│
-└── scripts/                    # Scripts de deploy
-    ├── setup.sh
-    └── backup.sh
+├── apps/
+│   ├── admin/                 # Dashboard Admin (Next.js)
+│   ├── advertiser/            # Portal de Anunciantes (Next.js)
+│   ├── driver/                # Portal de Conductores (Next.js)
+│   ├── api/                   # Backend API (NestJS)
+│   ├── tad-remotion/          # Microservicio de Video (Remotion)
+│   └── tablet-player/         # PWA para Tablets (HTML/JS)
+├── packages/
+│   ├── ui/                    # Componentes compartidos
+│   ├── database/              # Prisma Client & Schema
+│   └── config/                # Shared config (TS, ESLint)
+├── docker/                    # Docker configs & stacks
+└── docs/                      # Documentación Técnica
 ```
 
 ---
@@ -310,5 +290,5 @@ Propietario - TAD Dominicana, S.R.L.
 ---
 
 **Creado:** 6 de Marzo, 2026  
-**Versión:** 8.0.0 (Decoupled Architecture)  
+**Versión:** 10.0.0 (Microservices Architecture)  
 **Última Actualización:** 10 de Abril, 2026  

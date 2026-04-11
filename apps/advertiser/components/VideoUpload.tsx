@@ -1,0 +1,242 @@
+import React, { useState, useRef, useCallback } from 'react';
+import { useVideoTranscoder } from '../hooks/useVideoTranscoder';
+import { UploadCloud, FileVideo, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { supabase } from "@tad/services";
+import api from "@tad/services";
+import { useAuth } from '@tad/ui';
+
+const MAX_FILE_SIZE_MB = 100;
+const DIRECT_UPLOAD_LIMIT_MB = 15;
+
+interface VideoUploadProps {
+  onUploadComplete?: (media: any) => void;
+}
+
+export const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
+  const { session } = useAuth();
+  const { state, progress, transcode, errorMessage } = useVideoTranscoder();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processedBlob, setProcessedBlob] = useState<Blob | null>(null);
+  const [originalSize, setOriginalSize] = useState<number | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Verificamos soporte de WASM/SharedArrayBuffer de forma cruda para el Fallback
+  const [hasWasmSupport] = useState(() => {
+    return typeof typeof window !== "undefined" && typeof WebAssembly === 'object' && typeof SharedArrayBuffer === 'function';
+  });
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setValidationError(null);
+    setProcessedBlob(null);
+    setOriginalSize(null);
+    setSelectedFile(null);
+
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    if (fileSizeMB > MAX_FILE_SIZE_MB) {
+      setValidationError(`El archivo de ${fileSizeMB.toFixed(1)}MB excede el límite máximo de ${MAX_FILE_SIZE_MB}MB.`);
+      return;
+    }
+
+    if (!hasWasmSupport && fileSizeMB > DIRECT_UPLOAD_LIMIT_MB) {
+      setValidationError(`Tu navegador no soporta compresión local. Sube un archivo menor a ${DIRECT_UPLOAD_LIMIT_MB}MB o actualiza tu navegador.`);
+      return;
+    }
+
+    setOriginalSize(fileSizeMB);
+    setSelectedFile(file);
+  }, [hasWasmSupport]);
+
+  const handleStartTranscode = async () => {
+    if (!selectedFile) return;
+    try {
+      if (!hasWasmSupport && (selectedFile.size / (1024 * 1024)) <= DIRECT_UPLOAD_LIMIT_MB) {
+         // Fallback: Si no hay soporte y pesa menos de 15MB, subida directa sin procesamiento
+         setProcessedBlob(selectedFile);
+         return;
+      }
+      
+      const compressed = await transcode(selectedFile);
+      setProcessedBlob(compressed);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const [isFinalUploading, setIsFinalUploading] = useState(false);
+
+  const handleUploadToSupabase = async () => {
+    if (!processedBlob || !selectedFile) return;
+    
+    setIsFinalUploading(true);
+    try {
+      const fileExt = 'mp4';
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `advertiser-uploads/${fileName}`;
+
+      // 1. Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('media')
+        .upload(filePath, processedBlob, {
+          contentType: 'video/mp4',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      // 2. Register Metadata in Backend
+      const response = await api.post('/campaigns/register-media', {
+        fileName: selectedFile.name, // Keep original name for UI
+        storagePath: filePath,
+        url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
+        fileSize: processedBlob.size,
+        brandId: session?.user?.app_metadata?.entityId
+      });
+
+      if (response.data && onUploadComplete) {
+        onUploadComplete(response.data.media);
+        // Reset state
+        setSelectedFile(null);
+        setProcessedBlob(null);
+      }
+      
+      alert('¡Video optimizado y subido con éxito!');
+    } catch (error: any) {
+      console.error('Error en la subida:', error);
+      alert(`Error: ${error.message || 'No se pudo completar la subida'}`);
+    } finally {
+      setIsFinalUploading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 text-slate-100">
+      <h2 className="text-2xl font-semibold mb-4 flex items-center space-x-2">
+        <FileVideo className="w-6 h-6 text-indigo-400" />
+        <span>Subir Video Promocional</span>
+      </h2>
+
+      <div 
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          selectedFile ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700 hover:border-slate-600 bg-slate-800/50'
+        }`}
+      >
+        <input 
+          type="file" 
+          accept="video/mp4,video/quicktime" 
+          className="hidden" 
+          ref={fileInputRef} 
+          onChange={handleFileChange}
+        />
+        
+        {!selectedFile ? (
+          <div className="flex flex-col items-center cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <UploadCloud className="w-12 h-12 text-slate-400 mb-3" />
+            <p className="font-medium text-slate-300">Seleccionar video (MP4/MOV)</p>
+            <p className="text-sm text-slate-500 mt-2">Máximo permitido: {MAX_FILE_SIZE_MB}MB</p>
+            {!hasWasmSupport && (
+               <p className="text-xs text-amber-500 mt-2 flex items-center gap-1 justify-center">
+                 <AlertCircle className="w-3 h-3 flex-shrink-0" /> Fallback activo: Límite {DIRECT_UPLOAD_LIMIT_MB}MB (sin WASM)
+               </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <div className="flex items-center space-x-3 w-[70%]">
+                 <FileVideo className="w-8 h-8 text-indigo-400 shrink-0" />
+                 <div className="text-left font-medium overflow-hidden w-full">
+                   <p className="truncate w-full" title={selectedFile.name}>{selectedFile.name}</p>
+                   <p className="text-xs text-slate-400">{originalSize?.toFixed(1)} MB</p>
+                 </div>
+              </div>
+              <button 
+                onClick={() => { setSelectedFile(null); setProcessedBlob(null); }}
+                className="text-xs text-slate-400 hover:text-white px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded transition"
+              >
+                Cambiar
+              </button>
+            </div>
+
+            {state === 'idle' && !processedBlob && (
+              <button 
+                onClick={handleStartTranscode}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-600/20"
+              >
+                {hasWasmSupport ? 'Optimizar y Preparar Video' : 'Preparar Video'}
+              </button>
+            )}
+
+            {(state === 'loading_library' || state === 'transcoding') && (
+              <div className="space-y-3 py-4">
+                <div className="flex justify-between text-sm text-slate-300 mb-1">
+                  <span>{state === 'loading_library' ? 'Cargando motor de video...' : 'Optimizando al estándar TAD (1080p, H264)...'}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                  <div 
+                    className="bg-indigo-500 h-full rounded-full transition-all duration-300 relative overflow-hidden"
+                    style={{ width: `${Math.max(1, progress)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {state === 'error' && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-start space-x-3 text-sm text-left">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p>{errorMessage || validationError || 'Error procesando el video'}</p>
+              </div>
+            )}
+
+            {processedBlob && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg flex flex-col items-center justify-center space-y-3">
+                <div className="flex items-center space-x-2 text-emerald-400 font-medium">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Video Optimizado Exitosamente</span>
+                </div>
+                
+                <div className="flex w-full justify-between max-w-xs text-sm mt-2">
+                  <div className="text-center bg-slate-800 rounded p-2 flex-1 mx-1 border border-slate-700">
+                    <p className="text-slate-400 text-xs uppercase mb-1">Original</p>
+                    <span className="line-through opacity-70 text-slate-300">{originalSize?.toFixed(1)} MB</span>
+                  </div>
+                  <div className="text-center bg-indigo-500/10 rounded p-2 flex-1 mx-1 border border-indigo-500/20">
+                     <p className="text-indigo-300 text-xs uppercase mb-1">Nuevo</p>
+                     <span className="font-bold text-white">{(processedBlob.size / (1024*1024)).toFixed(1)} MB</span>
+                  </div>
+                </div>
+
+                <div className="text-emerald-400/80 text-xs mt-1 text-center">
+                   Reducción del {Math.round(100 - (processedBlob.size / (1024*1024) / (originalSize || 1) * 100))}% garantizando transmisión 4G eficiente en la flota.
+                </div>
+
+                <button 
+                  onClick={handleUploadToSupabase}
+                  disabled={isFinalUploading}
+                  className="w-full py-3 mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition shadow-lg shadow-emerald-600/20 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isFinalUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />} 
+                  {isFinalUploading ? 'Guardando en TAD...' : 'Subir a TAD'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {validationError && !selectedFile && (
+           <div className="mt-4 bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded flex items-center gap-2 text-sm text-left">
+             <AlertCircle className="w-5 h-5 shrink-0" />
+             <p>{validationError}</p>
+           </div>
+        )}
+      </div>
+    </div>
+  );
+};

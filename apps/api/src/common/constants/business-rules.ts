@@ -27,6 +27,10 @@ export const BUSINESS_RULES = {
   /** Máximo de campañas simultáneas que puede tener un conductor */
   MAX_CAMPAIGNS_PER_DRIVER: 15,
 
+  /** Límite de peso para archivos multimedia (55MB) en bytes (55 * 1024 * 1024) */
+  MAX_VIDEO_SIZE_MB: 55,
+  MAX_VIDEO_SIZE_BYTES: 57671680,
+
   /** Costo por campaña para el anunciante en RD$ (subtotal sin ITBIS) */
   ADVERTISER_COST_PER_CAMPAIGN_RD: 1500,
 

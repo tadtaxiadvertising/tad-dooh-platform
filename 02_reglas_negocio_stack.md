@@ -1,7 +1,7 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-04-04T05:50:00-04:00
+> **Última Actualización**: 2026-04-10T23:55:00-04:00
 
 ---
 
@@ -9,12 +9,12 @@
 
 | Recurso | URL |
 | :--- | :--- |
-| **Dashboard (Frontend)** | <https://proyecto-ia-tad-dashboard.rewvid.easypanel.host> |
-| **API (Backend Embebido)** | <https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1> |
-| **Santiago Dev Dashboard** | <https://tad-dashboard-sti.rewvid.easypanel.host> |
+| **Dashboard Admin** | <https://tad-dashboard.rewvid.easypanel.host> |
+| **API (Backend Gateway)** | <https://tad-api.rewvid.easypanel.host/api/v1> |
+| **Video Engine (Remotion)** | <https://tad-remotion.rewvid.easypanel.host> |
+| **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> |
 | **Supabase Dashboard** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
 | **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
-| **Swagger API Docs** | <https://proyecto-ia-tad-api.rewvid.easypanel.host/docs> |
 
 ---
 
@@ -82,21 +82,23 @@ DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
 | CORS | Configured in `main.ts` (Manual whitelist) | — |
 | Deployment | VPS (Docker / EasyPanel Free) | — |
 
-### Infraestructura
+### Microservicios & Infraestructura (v10.0)
 
-| Service | Provider | Propósito |
-| :--- | :--- | :--- |
-| Database | Supabase PostgreSQL | Persistencia de datos |
-| File Storage | Supabase Storage (`campaign-videos`) | Videos de campañas |
-| Authentication | Supabase Auth | Login email/password |
-| Hosting | VPS (Easypanel Free Tier) | Frontend + Backend en Contenedores |
-| Git | GitHub | Control de versiones |
+| Service | Provider | Propósito | RAM Limit |
+| :--- | :--- | :--- | :--- |
+| **API Gateway** | NestJS / Docker | Orquestación, Auth & Sync | 512 MB |
+| **TAD Remotion** | Remotion / Chromium | Renderizado de Video | 1024 MB |
+| **Admin Panel** | Next.js 15 | Gestión de Flota & BI | 512 MB |
+| **Advertiser Portal** | Next.js 15 | BI v6.0 & Campaign Mgmt | 512 MB |
+| **Driver Portal** | Next.js 15 | Support & Payments | 512 MB |
+| **Database** | Supabase Postgres | Persistencia de datos | — |
+| **Storage** | Supabase Storage | Media Storage | — |
 
 ---
 
 ## ⚡ REGLA DE ORO
 
-> **CERO COSTOS ADICIONALES**. Todo el stack utiliza tiers gratuitos (EasyPanel Free, Supabase Free). No se deben integrar servicios de pago (AWS S3, SendGrid Pro, etc.) sin autorización explícita del usuario.
+> **CERO COSTOS ADICIONALES**. Todo el stack utiliza tiers gratuitos. No se deben integrar servicios de pago sin autorización.
 
 ---
 

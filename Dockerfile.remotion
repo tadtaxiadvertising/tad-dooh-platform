@@ -53,13 +53,17 @@ RUN apt-get update && apt-get install -y \
 # Copiar Node Modules y código compilado desde el builder
 COPY --from=builder /app /app
 
-# Pre-instalar el navegador de Remotion para evitar descargas en runtime y fallos de permisos
-# Lo hacemos DESPUES de copiar los node_modules para que npx encuentre el binario
+# Instalar el navegador de Remotion ANTES de podar dependencias
 WORKDIR /app/apps/tad-remotion
-RUN node -e "const { ensureBrowser } = require('@remotion/renderer'); ensureBrowser().then(() => console.log('✅ Browser pre-installed')).catch(e => { console.error('❌ Error installing browser:', e); process.exit(1); })"
+RUN npx remotion browser ensure
+
+# Podar dependencias para el runtime
+WORKDIR /app
+RUN npm prune --production --force
 
 ENV NODE_ENV=production
 ENV PORT=8000
+ENV REMOTION_CONCURRENCY=1
 
 
 # Remotion necesita al menos 1-2GB para renders pesados.

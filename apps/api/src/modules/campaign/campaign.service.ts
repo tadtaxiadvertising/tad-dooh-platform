@@ -239,6 +239,10 @@ export class CampaignService {
       }
     }
 
+    if (dto.fileSize && Number(dto.fileSize) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    }
+
     const media = await this.prisma.media.create({
       data: {
         filename: dto.fileName,
@@ -321,13 +325,19 @@ export class CampaignService {
       }
     }
 
-    // ALWAYS broadcast WAKE_UP_CALL — tablets listening via Realtime will sync immediately
-    this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-      reason: 'media_asset_added',
-      campaignId,
-      assetId: asset.id,
-      count: devicesToSync.length
-    }).catch(() => {});
+    // BROADCAST WAKE_UP_CALL only if not rendering
+    const isRendering = dto.status === 'RENDERING';
+    
+    if (!isRendering) {
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'media_asset_added',
+        campaignId,
+        assetId: asset.id,
+        count: devicesToSync.length
+      }).catch(() => {});
+    } else {
+      Logger.log(`[CONTENT_DIST] MediaAsset ${asset.id} is rendering. WAKE_UP_CALL deferred.`);
+    }
 
     return asset;
   }
@@ -500,6 +510,51 @@ export class CampaignService {
       geographic: Object.values(byCity),
       totalRecords: metrics.length
     };
+  }
+
+  async linkMediaToCampaign(campaignId: string, mediaId: string) {
+    const updated = await this.prisma.media.update({
+      where: { id: mediaId },
+      data: { campaign_id: campaignId },
+    });
+
+    const campaign = await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { updatedAt: new Date() }
+    });
+
+    let devicesToSync = [];
+    if (campaign.targetAll || campaign.isGlobal) {
+      devicesToSync = await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } });
+    } else {
+      const assignments = await this.prisma.deviceCampaign.findMany({ 
+        where: { campaign_id: campaignId },
+        include: { device: { select: { deviceId: true } } }
+      });
+      devicesToSync = assignments.map(a => ({ id: a.device_id, deviceId: a.device.deviceId }));
+    }
+
+    if (devicesToSync.length > 0) {
+      await this.prisma.deviceCommand.createMany({
+        data: devicesToSync.map(d => ({
+          deviceId: d.id,
+          commandType: 'FORCE_SYNC',
+          commandParams: JSON.stringify({ reason: 'media_linked', campaignId, mediaId }),
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+        }))
+      });
+
+      // REALTIME BROADCAST
+      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+        reason: 'media_linked',
+        campaignId,
+        mediaId,
+        targets: devicesToSync.map(d => d.deviceId)
+      }).catch(() => {});
+    }
+
+    return updated;
   }
 }
 

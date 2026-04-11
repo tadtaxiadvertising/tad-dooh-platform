@@ -1,7 +1,7 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
 
-**Versión:** 1.6 (Auditoría v6.7.0 - SRE Approved)
-**Última Actualización:** 04 de Abril, 2026 (05:55)
+**Versión:** 2.0 (Auditoría v10.0.0 - SRE Microservices Approved)
+**Última Actualización:** 10 de Abril, 2026 (23:55)
 
 > ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. Cualquier flujo manual que escape a este diagrama de arquitectura se considerará una vulnerabilidad crítica. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable.
 
@@ -41,24 +41,26 @@ sequenceDiagram
 
 ---
 
-### Fase 3: Distribución del Contenido (El Proceso de "Inyección")
+### Fase 3: Distribución y Generación (Remotion Microservice)
 
-No subimos blobs de datos por el backend. Eso estrangularía un backend de 512MB RAM en Easypanel. Usamos "Direct Uploads" y luego asignamos apuntadores de medios.
+No subimos blobs de datos pesados por el backend. Además, la generación de videos programáticos se delega a un microservicio dedicado.
 
 ```mermaid
 graph TD
     classDef red fill:#f96,stroke:#333,stroke-width:2px;
     classDef green fill:#9f9,stroke:#333,stroke-width:2px;
 
-    DM[Dashboard Multimedia] -->|Upload Video Binario| S3[(Supabase Storage<br/>Bucket: campaign-videos)]
-    S3 -.->|Retorna S3_URL/CUID| DM
-    DM -->|POST /campaigns| DB[(Supabase DB<br/>Prisma ORM)]
+    DM[Advertiser Dashboard v6] -->|Requiere Render| RM[TAD Remotion Service]
+    RM -->|Genera MP4| S3[(Supabase Storage)]
     
-    DB --> R1{Supabase Realtime}
-    R1 --> |Broadcast: WAKE_UP_CALL| T1[Tablet STI-001]
-    R1 --> |Broadcast: WAKE_UP_CALL| T2[Tablet SDQ-015]
+    DM -->|Upload Directo| S3
+    S3 -.->|Retorna URL/CUID| DM
+    DM -->|POST /campaigns| DB[(Supabase DB)]
+    
+    DB --> R1{Realtime Sync}
+    R1 --> |Broadcast| T1[Tablet Fleet]
 
-    T1 --> |Fetch Playlist JSON| DB
+    T1 --> |Fetch Playlist| DB
     T1 --> |Pull Video Asset| S3
 ```
 

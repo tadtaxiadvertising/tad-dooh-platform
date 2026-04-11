@@ -23,14 +23,12 @@ He encontrado serias fisuras de consistencia entre la regla de negocio y la real
 * **Contradicción SRE:** El archivo 02 exige validación del 75% de "asistencia GPS/Tracking" en calle para desembolsar el pago. El archivo 01 dicta un esquema fijo de "RD$500 por anuncio". Si un chofer se conectó 2 días al mes (5%), ¿recibe el pago íntegro de 15 anuncios (RD$ 7,500)?
 * **Resolución SRE (Actualizada 01/Abr/2026):** Se ha integrado el motor de Heatmaps en `/analytics`. Esto permite cruzar la ubicación GPS con la "asistencia" de forma visual. El reporte de "Promociones (Ciclos)" ahora sustituye a los "Impactos" crudos, permitiendo una base de pago más justa basada en ciclos de reproducción en zonas de alta densidad detectadas por el Heatmap.
 
-### 3. La Mentira Serveless vs Los Contenedores Persistentes
+### 3. La Mentira Serverless vs Los Contenedores Persistentes ✅ RESUELTO
 
-* **Regla de Negocio (02):** "Deployment: Vercel Serverless (`api/index.ts`)".
-* **Implementación/Entorno:** El ecosistema está migrando o configurado en Docker vía Easypanel en un VPS propio para evadir límites de tráfico y memoria.
-* **Contradicción SRE:** Las funciones sin estado (Serverless) eliminan la fuga de memoria al morir post-request. En un VPS persistente con Docker, Node.js acumula memoria V8 y Prisma agota la conexión TCP. Prometer Vercel mientras usamos Easypanel requiere un rediseño de cómo matamos los objetos en memoria y cómo manejamos el pool (`PgBouncer`). Si seguimos usando el paradigma Serverless en Docker, Prisma crasheará el VPS en 48 horas bajo la carga de GPS de la flota.
+* **Resolución SRE (10/Abr/2026):** El ecosistema se ha movido oficialmente a una arquitectura de Microservicios sobre Easypanel (Docker). La migración de la API a su propio contenedor y el motor de renderizado a `tad-remotion` con límites de memoria estrictos (`max_old_space_size`) ha estabilizado el consumo de RAM. Ya no se depende de Vercel Serverless para la lógica crítica, eliminando los errores de timeout y cuotas.
 
 ---
 
-### VEREDICTO FINAL
+### VEREDICTO FINAL (v10.0)
 
-El sistema es brillante pero sufre una "esquizofrenia de arquitectura". Hay lógicas concebidas para un MVP en Vercel tratando de correr como un microservicio en un VPS austero. El plan de contingencia offline y los `max_old_space_size` implementados en los nuevos documentos resolverán el 90% de esto.
+El ecosistema ha alcanzado la madurez arquitectónica con el desacoplamiento de servicios. La esquizofrenia de arquitectura ha sido tratada mediante la unificación de despliegue en VPS (Easypanel) y el uso de microservicios dedicados para tareas pesadas (Remotion). El sistema es ahora determinista y escalable.

@@ -55,7 +55,7 @@ export type GatewayListener = (state: GatewayState) => void;
 // ============================================
 const STORAGE_KEY = 'tad_gps_batch';
 const BATCH_THRESHOLD = 10;           // Enviar cada 10 puntos
-const FALLBACK_INTERVAL_MS = 300_000; // Forzar envío cada 300 seg (5 min)
+const FALLBACK_INTERVAL_MS = 60_000;  // Forzar envío cada 60 seg (1 min) como máximo
 const GEO_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 10_000,   // Reusar posición de hasta 10s
@@ -222,15 +222,17 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
     return;
   }
 
-  // Si no tenemos currentDriverId, debemos hacer un único llamado de inicialización al servidor
-  // Esto valida la suscripción (HTTP 402) y resuelve qué conductor está asignado a este device.
+  // 1. PRIMER PASO: Obtener el driverId si no lo tenemos
   if (!currentDriverId) {
     emitState('SYNCING');
     try {
       const response = await fetch(`${apiBaseUrl}/fleet/track-batch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, locations: [] }), // Payload vacío solo para Init
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-device-id': deviceId 
+        },
+        body: JSON.stringify({ deviceId, locations: [] }), 
       });
 
       if (response.status === 402 || response.status === 403) {
@@ -238,25 +240,21 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
         return;
       }
 
-      if (response.status === 404) {
-        emitState('DEVICE_NOT_FOUND', 'Dispositivo no encontrado. Verifica el QR.');
-        return;
-      }
-
       if (response.ok) {
         const data = await response.json();
         currentDriverId = data.driverId;
       } else {
-        throw new Error('Error al inicializar sesión GPS con central');
+        throw new Error('Error de enlace con central');
       }
-    } catch {
-      console.warn('⚠️ No se pudo inicializar driver_id con la central en este ciclo.');
-      emitState('OFFLINE', 'Esperando conexión con central...');
-      return; // Esperamos al próximo ciclo
+    } catch (err: any) {
+      if (err.message === '402' || err.message === 'SUSPENDED') return;
+      console.warn('⚠️ Fallo enlace inicial:', err.message);
+      emitState('OFFLINE', 'Esperando red para enlazar...');
+      return; 
     }
   }
 
-  // Clonar el batch y limpiar inmediatamente (evita duplicados)
+  // 2. SEGUNDO PASO: Enviar el batch acumulado
   const payload = [...gpsBatch];
   gpsBatch = [];
   localStorage.removeItem(STORAGE_KEY);
@@ -264,39 +262,47 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
   emitState('SYNCING');
 
   try {
-    // 🚀 BYPASS VERCEL: Insertamos directo a la base de datos de Supabase
-    // Esto cuesta 0 invocaciones de Vercel API.
-    const { error } = await supabase
-      .from('driver_locations')
-      .insert(
-        payload.map(point => ({
-          driver_id: currentDriverId,
-          device_id: deviceId,
-          latitude: point.latitude,
-          longitude: point.longitude,
-          speed: point.speed,
-          timestamp: point.timestamp,
+    const response = await fetch(`${apiBaseUrl}/fleet/track-batch`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-device-id': deviceId 
+      },
+      body: JSON.stringify({ 
+        deviceId, 
+        driverId: currentDriverId,
+        locations: payload.map(p => ({
+          lat: p.latitude,
+          lng: p.longitude,
+          speed: p.speed,
+          ts: p.timestamp
         }))
-      );
+      }),
+    });
 
-    if (error) {
-      throw new Error(`Supabase Error: ${error.message}`);
+    if (response.status === 402 || response.status === 403) {
+      handleSuspension();
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Cloud API Error: ${response.status}`);
     }
 
     // Éxito
     totalSynced += payload.length;
     lastSyncAt = new Date().toISOString();
-    console.log(`✅ Batch de ${payload.length} coordenadas insertadas en Supabase (Bypass). Total: ${totalSynced}`);
+    console.log(`✅ Batch de ${payload.length} coordenadas sincronizado con API. Total: ${totalSynced}`);
     emitState('SYNCED');
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`☁️ Error insertando en Supabase: `, errorMessage);
+    console.warn(`☁️ Error de sincronización API: `, errorMessage);
 
     // Rollback: Restaurar datos al inicio del array para reintentar después
     gpsBatch = [...payload, ...gpsBatch];
     persistBatch();
-    emitState('OFFLINE', 'Error al guardar. Reteniendo localmente.');
+    emitState('OFFLINE', 'Modo Buffer: Red inestable.');
   }
 }
 

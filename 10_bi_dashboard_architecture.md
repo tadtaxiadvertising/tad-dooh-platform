@@ -1,7 +1,7 @@
 # 🧠 09 — ARQUITECTURA BI DASHBOARD TAD DOOH
 
-> **Versión**: 1.0 | **Fecha**: 2026-04-01 | **Sprint**: 4 — Business Intelligence  
-> **Audiencia**: Arquitecto Senior / Desarrollador asignado al módulo `/bi`  
+> **Versión**: 1.1 | **Fecha**: 2026-04-10 | **Sprint**: 6 — Scale & Microservices
+> **Estado**: ✅ BI v6.0 LIVE | **Audiencia**: Arquitecto Senior / DevOps
 > **Prerequisito**: Leer `01_auditoria_tad_2026.md` para contexto de stack y reglas de negocio.
 
 ---

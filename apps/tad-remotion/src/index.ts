@@ -21,12 +21,32 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
+let cachedBundleUrl: string | null = null;
+
 // Log environment state on boot
 console.log('--- Startup Config ---');
 console.log(`Environment: ${process.env.NODE_ENV}`);
 console.log(`Port Configured: ${PORT}`);
 console.log(`CPUs available: ${os.cpus().length}`);
 console.log('----------------------');
+
+// --- Periodic Cleanup Task ---
+// Clean tmp video folder every 30 minutes to save VPS disk space
+setInterval(() => {
+  const tmpDir = path.join(os.tmpdir(), 'tad-videos');
+  if (fs.existsSync(tmpDir)) {
+    const files = fs.readdirSync(tmpDir);
+    const now = Date.now();
+    files.forEach(file => {
+      const filePath = path.join(tmpDir, file);
+      const stats = fs.statSync(filePath);
+      // Delete if older than 10 minutes
+      if (now - stats.mtimeMs > 10 * 60 * 1000) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  }
+}, 30 * 60 * 1000);
 
 
 app.get('/', (req, res) => {
@@ -431,8 +451,12 @@ app.post('/api/render', async (req, res) => {
 
     const outputLocation = path.join(outputDir, `ad-${campaignId}-${Date.now()}.mp4`);
 
-    // 1. Bundle the composition
-    const bundled = await bundle(entryPoint);
+    // 1. Bundle the composition only once to save VPS resources (RAM/CPU)
+    if (!cachedBundleUrl) {
+      console.log(`📦 Compilando template de Remotion (esto ocurre solo una vez)...`);
+      cachedBundleUrl = await bundle(entryPoint);
+    }
+    const bundled = cachedBundleUrl;
 
     // 2. Select the composition
     const composition = await selectComposition({
@@ -442,19 +466,22 @@ app.post('/api/render', async (req, res) => {
     });
 
     // 3. Render the media
+    const startTime = Date.now();
     await renderMedia({
       composition,
       serveUrl: bundled,
       codec: 'h264',
       outputLocation,
       inputProps: props,
-      videoBitrate: '2000k',
+      videoBitrate: '1500k', // Reducido para ahorrar RAM y transferencias
       pixelFormat: 'yuv420p',
-      concurrency: 1, // Limitar a 1 para mayor estabilidad en VPS con poca RAM
+      concurrency: parseInt(process.env.REMOTION_CONCURRENCY || '1'), 
+      imageFormat: 'jpeg', // Mucho más rápido de codificar en Chrome que PNG
+      jpegQuality: 80, // Aumenta la velocidad sin pérdida notable en DOOH
     });
 
-
-    console.log(`✅ Renderizado completado: ${outputLocation}. Enviando archivo...`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`✅ Renderizado completado en ${duration}s: ${outputLocation}. Enviando archivo...`);
 
     // 4. Send the file back to the requestor
     res.download(outputLocation, `ad-${campaignId}.mp4`, (err) => {

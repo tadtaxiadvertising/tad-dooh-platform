@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Max } from 'class-validator';
 
 export class AddMediaAssetDto {
   @IsString()
@@ -15,6 +15,7 @@ export class AddMediaAssetDto {
 
   @IsNumber()
   @IsOptional()
+  @Max(57671680, { message: 'El archivo excede el límite permitido de 55MB' })
   fileSize?: number;
 
   @IsString()
@@ -24,4 +25,8 @@ export class AddMediaAssetDto {
   @IsNumber()
   @IsOptional()
   duration?: number;
+
+  @IsString()
+  @IsOptional()
+  status?: string; // 'READY', 'PENDING', 'RENDERING'
 }

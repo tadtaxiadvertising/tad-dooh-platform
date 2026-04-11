@@ -11,11 +11,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import api, { logout } from "@tad/services";
 
+import { portal_requests } from '@prisma/client';
+import Link from 'next/link';
+
 function DriverDashboard() {
   const { session } = useAuth();
   const [driverData, setDriverData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Tool Modal States
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [submittingSupport, setSubmittingSupport] = useState(false);
+
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const loadData = async () => {
     setRefreshing(true);
@@ -28,6 +38,33 @@ function DriverDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportMessage.trim()) return;
+    setSubmittingSupport(true);
+    try {
+      await api.post('/portal-requests', {
+        driverId: session?.user?.id,
+        type: 'SUPPORT_ISSUE',
+        title: 'Soporte Técnico / Taller',
+        data: JSON.stringify({ issue: supportMessage }),
+      });
+      toast.success('Solicitud de soporte enviada correctamente. TAD te contactará pronto.');
+      setShowSupportModal(false);
+      setSupportMessage('');
+    } catch (e) {
+      toast.error('Error al enviar la solicitud.');
+    } finally {
+      setSubmittingSupport(false);
+    }
+  };
+
+  const copyReferral = () => {
+    const link = `https://tad.do/driver/onboarding?ref=${session?.user?.id}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Enlace de referido copiado al portapapeles');
   };
 
   useEffect(() => {
@@ -243,20 +280,113 @@ function DriverDashboard() {
 
         {/* Strategic Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
-           {[
-             { label: 'Invite Driver', icon: Users, color: '#00E5FF', sub: '+RD$300' },
-             { label: 'Support HUD', icon: Zap, color: '#FFD400', sub: 'Instant' }
-           ].map((item) => (
-             <button key={item.label} className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl flex flex-col items-center gap-2 active:bg-white/[0.05] transition-all hover:border-white/10 group">
-                <item.icon className="w-6 h-6 transition-transform group-hover:scale-110" style={{ color: item.color }} />
-                <div className="text-center">
-                  <span className="block text-[10px] font-black uppercase tracking-tight text-white mb-0.5">{item.label}</span>
-                  <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-500">{item.sub}</span>
-                </div>
-             </button>
-           ))}
+           <button 
+             onClick={() => setShowInviteModal(true)}
+             className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl flex flex-col items-center gap-2 active:bg-white/[0.05] transition-all hover:border-white/10 group"
+           >
+              <Users className="w-6 h-6 transition-transform group-hover:scale-110 text-[#00E5FF]" />
+              <div className="text-center">
+                <span className="block text-[10px] font-black uppercase tracking-tight text-white mb-0.5">Invitar Chofer</span>
+                <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-500">+RD$300</span>
+              </div>
+           </button>
+           <button 
+             onClick={() => setShowSupportModal(true)}
+             className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl flex flex-col items-center gap-2 active:bg-white/[0.05] transition-all hover:border-white/10 group"
+           >
+              <Zap className="w-6 h-6 transition-transform group-hover:scale-110 text-[#FFD400]" />
+              <div className="text-center">
+                <span className="block text-[10px] font-black uppercase tracking-tight text-white mb-0.5">Soporte Técnico</span>
+                <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-500">Taller / App</span>
+              </div>
+           </button>
         </div>
       </main>
+
+      {/* Tool Modals */}
+      <AnimatePresence>
+        {showSupportModal && (
+          <div className="fixed inset-0 z-[200] flex flex-col justify-end p-4 bg-black/80 backdrop-blur-sm sm:items-center sm:justify-center">
+            <motion.div 
+               initial={{ opacity: 0, y: 100 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 100 }}
+               className="bg-[#0B0F1A] border border-white/10 rounded-[2rem] w-full max-w-sm p-8 shadow-2xl relative"
+            >
+               <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-2">Soporte <span className="text-[#FFD400]">Técnico</span></h3>
+               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-6 leading-relaxed">
+                 ¿Tienes problemas con la pantalla, la app, o necesitas mantenimiento táctico? Escribe el detalle abajo.
+               </p>
+               <form onSubmit={handleSupportSubmit} className="space-y-4">
+                 <textarea 
+                   required
+                   value={supportMessage}
+                   onChange={e => setSupportMessage(e.target.value)}
+                   className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#FFD400]/50 min-h-[120px] resize-none"
+                   placeholder="Ej: La tablet no enciende desde esta mañana..."
+                 />
+                 <div className="flex gap-3">
+                   <button 
+                     type="button" 
+                     onClick={() => setShowSupportModal(false)}
+                     className="flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"
+                   >
+                     Cancelar
+                   </button>
+                   <button 
+                     type="submit" 
+                     disabled={submittingSupport}
+                     className="flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[#FFD400] text-black hover:bg-white transition-colors disabled:opacity-50"
+                   >
+                     {submittingSupport ? 'Enviando...' : 'Enviar Reporte'}
+                   </button>
+                 </div>
+               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {showInviteModal && (
+           <div className="fixed inset-0 z-[200] flex flex-col justify-end p-4 bg-black/80 backdrop-blur-sm sm:items-center sm:justify-center">
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.95 }}
+               className="bg-[#0B0F1A] border border-white/10 rounded-[2rem] w-full max-w-sm p-8 shadow-2xl relative text-center"
+            >
+               <div className="w-16 h-16 rounded-full bg-[#00E5FF]/10 mx-auto mb-6 flex items-center justify-center border border-[#00E5FF]/20">
+                  <Users className="w-8 h-8 text-[#00E5FF]" />
+               </div>
+               <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-2">Programa de <span className="text-[#00E5FF]">Referidos</span></h3>
+               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-6 leading-relaxed">
+                 Gana RD$300 por cada chofer activo que invites a la flota de TAD. Copia tu enlace y envíaselo por WhatsApp.
+               </p>
+               
+               <div className="bg-black/50 border border-white/10 rounded-2xl p-4 mb-6 select-all">
+                  <p className="text-xs text-[#00E5FF] font-mono break-all line-clamp-2">
+                     https://tad.do/driver/onboarding?ref={session?.user?.id?.substring(0, 8) || 'tad_usr'}
+                  </p>
+               </div>
+
+               <div className="flex gap-3">
+                 <button 
+                   type="button" 
+                   onClick={() => setShowInviteModal(false)}
+                   className="w-1/3 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"
+                 >
+                   Cerrar
+                 </button>
+                 <button 
+                   onClick={copyReferral}
+                   className="w-2/3 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[#00E5FF] text-black hover:bg-white transition-colors"
+                 >
+                   Copiar Enlace
+                 </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Orbital Navigator */}
       <nav className="fixed bottom-8 left-6 right-6 h-22 bg-zinc-950/80 backdrop-blur-4xl border border-white/10 rounded-[2.5rem] shadow-[0_25px_50px_rgba(0,0,0,0.8)] flex items-center justify-around px-8 z-[100]">
@@ -264,12 +394,12 @@ function DriverDashboard() {
             <LayoutDashboard className="w-6 h-6" />
             <div className="absolute -bottom-4 w-2 h-2 rounded-full bg-tad-cyan shadow-[0_0_15px_rgba(0,229,255,1)]" />
          </button>
-         <button className="w-14 h-14 bg-tad-cyan rounded-2xl flex items-center justify-center -mt-12 shadow-[0_0_40px_rgba(0,229,255,0.4)] border-4 border-[#0B0F1A] active:scale-90 transition-transform">
+         <Link href="/check-in" className="w-14 h-14 bg-tad-cyan rounded-2xl flex items-center justify-center -mt-12 shadow-[0_0_40px_rgba(0,229,255,0.4)] border-4 border-[#0B0F1A] active:scale-90 transition-transform">
             <Activity className="w-6 h-6 text-black" />
-         </button>
-         <button className="text-zinc-500 hover:text-white transition-colors">
+         </Link>
+         <Link href="/driver/wallet" className="text-zinc-500 hover:text-white transition-colors">
             <Wallet className="w-6 h-6" />
-         </button>
+         </Link>
       </nav>
 
       <style jsx global>{`

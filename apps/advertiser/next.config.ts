@@ -41,23 +41,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
-          },
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
-          },
-        ],
-      },
-    ];
-  },
+  // Los headers de seguridad estrictos (COOP/COEP) bloquean los tiles de Leaflet desde OpenStreetMap.
+  // Se remueven para permitir visualización cartográfica fluida en EasyPanel.
+
   async redirects() {
     return [
       {

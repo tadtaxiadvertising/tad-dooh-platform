@@ -42,6 +42,7 @@ export class BiController {
   }
 
   @Get('hotspots')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getHotspots() {
     return this.biService.getHotspots();
   }

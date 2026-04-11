@@ -1,4 +1,4 @@
-// admin-dashboard/components/MapView.tsx
+// advertiser/components/MapView.tsx
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl, Polyline, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
@@ -38,7 +38,6 @@ const POLIGONO_CENTRAL: [number, number][] = [
   [19.4380, -70.7020], // Suroeste
 ];
 
-// Creates a premium cyber-taxi icon
 const createIcon = (status: string, selected: boolean, label = '', lastSeen?: string | null) => {
   const isActive = status === 'active';
   const mainColor = isActive ? '#FFD400' : '#52525b';
@@ -46,23 +45,22 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
   const H = 64;
   const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
   
-  // Determine number color based on connectivity
-  let numberColor = '#71717a'; // Default Gray (Weeks/Never)
+  let numberColor = '#71717a'; 
   let textGlow = 'none';
 
   if (isActive) {
-    numberColor = '#10b981'; // Green
+    numberColor = '#10b981';
     textGlow = '0 0 10px rgba(16,185,129,0.8)';
   } else if (lastSeen) {
     const diffHours = (Date.now() - new Date(lastSeen).getTime()) / (1000 * 60 * 60);
     if (diffHours <= 72) {
-      numberColor = '#eab308'; // Yellow
+      numberColor = '#eab308';
       textGlow = '0 0 8px rgba(234,179,8,0.6)';
-    } else if (diffHours <= 24 * 14) { // Up to 2 weeks
-      numberColor = '#ef4444'; // Red
+    } else if (diffHours <= 24 * 14) { 
+      numberColor = '#ef4444';
       textGlow = '0 0 8px rgba(239,68,68,0.6)';
     } else {
-      numberColor = '#52525b'; // Gray
+      numberColor = '#52525b';
     }
   }
 
@@ -79,57 +77,51 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
       justify-content: center;
       perspective: 1000px;
     ">
-      <!-- Radar Pulse Ring -->
-      ${isActive ? `
-        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}"></div>
-        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}; animation-delay: 0.8s;"></div>
-      ` : ''}
+      \${isActive ? \`
+        <div class="map-pulse-ring" style="border: 1.5px solid \${mainColor}"></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid \${mainColor}; animation-delay: 0.8s;"></div>
+      \` : ''}
 
-      <!-- 3D-Look Car Container -->
       <div style="
         width: 30px;
         height: 44px;
-        background: linear-gradient(145deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#27272a'} 100%);
+        background: linear-gradient(145deg, \${mainColor} 0%, \${isActive ? '#ccaa00' : '#27272a'} 100%);
         border-radius: 10px;
-        border: 2px solid ${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
-        box-shadow: ${glow}, 0 10px 20px rgba(0,0,0,0.5);
+        border: 2px solid \${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
+        box-shadow: \${glow}, 0 10px 20px rgba(0,0,0,0.5);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
         padding: 4px 0;
-        transform: ${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
+        transform: \${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2;
       ">
-        <!-- Roof/Antenna Detail -->
         <div style="width: 12px; height: 1.5px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
         
-        <!-- Center ID Label -->
         <div style="
           font-family: 'Inter', sans-serif;
           font-weight: 950;
           font-size: 10px;
-          color: ${numberColor};
+          color: \${numberColor};
           letter-spacing: -0.5px;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8), ${textGlow};
+          text-shadow: 0 1px 3px rgba(0,0,0,0.8), \${textGlow};
           transform: skew(-5deg);
         ">
-          ${short}
+          \${short}
         </div>
 
-        <!-- Light Bar / Tail lights -->
         <div style="
           width: 22px; 
           height: 3px; 
-          background: ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
+          background: \${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
           border-radius: 2px;
-          box-shadow: ${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
+          box-shadow: \${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
         "></div>
       </div>
 
-      <!-- Arrow Indicator for Selected (Cyber style) -->
-      ${selected ? `
+      \${selected ? \`
         <div style="
           width: 2px; 
           height: 12px; 
@@ -139,7 +131,7 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
           top: -20px;
           animation: map-float 1.5s infinite ease-in-out;
         "></div>
-      ` : ''}
+      \` : ''}
 
       <style>
         .map-pulse-ring {
@@ -161,7 +153,7 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
         }
       </style>
     </div>
-  `;
+  \`;
 
   return L.divIcon({
     className: '',
@@ -176,25 +168,22 @@ const createClusterIcon = (cluster: any) => {
   const n = cluster.getChildCount();
   const size = n < 10 ? 44 : n < 50 ? 52 : 64;
   return L.divIcon({
-    html: `
-      <div style="position: relative; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;">
+    html: \`
+      <div style="position: relative; width: \${size}px; height: \${size}px; display: flex; align-items: center; justify-content: center;">
         <div style="position: absolute; inset: 0; background: rgba(250,212,0,0.1); border: 2.5px solid #fad400; border-radius: 50%; box-shadow: 0 0 20px rgba(250,212,0,0.3); animation: cluster-spin 10s infinite linear;"></div>
-        <div style="position: relative; font-family: 'Inter', sans-serif; font-weight: 950; font-size: 13px; color: #fad400; text-shadow: 0 0 10px rgba(250,212,0,0.5);">${n}</div>
+        <div style="position: relative; font-family: 'Inter', sans-serif; font-weight: 950; font-size: 13px; color: #fad400; text-shadow: 0 0 10px rgba(250,212,0,0.5); font-weight: 900 !important;">\${n}</div>
         <style>
           @keyframes cluster-spin {
              from { transform: rotate(0deg); } to { transform: rotate(360deg); }
           }
         </style>
       </div>
-    `,
+    \`,
     className: '',
     iconSize: L.point(size, size, true),
   });
 };
 
-// ============================================
-// INTERFACES
-// ============================================
 interface MapLocation {
   deviceId?: string;
   taxiNumber?: string;
@@ -226,9 +215,6 @@ interface MapViewProps {
   onSyncCommand?: (v: MapLocation) => void;
 }
 
-// ============================================
-// MAP CONTROLLER — handles camera + events
-// ============================================
 function MapController({ center, zoom, onMapClick }: { center: [number, number]; zoom: number; onMapClick: () => void }) {
   const map = useMap();
 
@@ -267,7 +253,7 @@ function GeofenceLayer() {
 const MapView: React.FC<MapViewProps> = ({
   locations = [],
   heatmapData = [],
-  center = [19.4544, -70.6923], // Santiago, RD
+  center = [19.4544, -70.6923], 
   zoom = 13,
   mode = 'live',
   selectedId = null,
@@ -285,7 +271,6 @@ const MapView: React.FC<MapViewProps> = ({
     setReady(true); 
   }, []);
 
-  // Función Ray-Casting para detectar punto en polígono
   const isPointInPolygon = useCallback((lat: number, lng: number) => {
     let intersect = false;
     for (let i = 0, j = POLIGONO_CENTRAL.length - 1; i < POLIGONO_CENTRAL.length; j = i++) {
@@ -306,10 +291,7 @@ const MapView: React.FC<MapViewProps> = ({
           const sel = selectedId === loc.deviceId;
           const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
           const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
-          
-          // Si está fuera de rango y online, forzamos alerta
           const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
-
           const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
           return (
             <Marker
@@ -368,10 +350,8 @@ const MapView: React.FC<MapViewProps> = ({
         <ZoomControl position="bottomright" />
         <MapController center={center} zoom={zoom} onMapClick={handleClear} />
         
-        {/* GEOFENCE LAYER — Cobertura Oficial */}
         <GeofenceLayer />
 
-        {/* TRAIL — shown when vehicle is selected */}
         {selectedId && trail.length > 0 && (
           <Polyline
             positions={trail}
@@ -379,10 +359,8 @@ const MapView: React.FC<MapViewProps> = ({
           />
         )}
 
-        {/* LIVE MARKERS */}
         {liveMarkers}
 
-        {/* HEATMAP — Optimized Layer */}
         {mode === 'heatmap' && heatmapData.length > 0 && (
           <HeatmapLayer 
             points={heatmapData.map(p => [p.lat, p.lng, (p.count || 1) / 100])}
@@ -400,31 +378,25 @@ const MapView: React.FC<MapViewProps> = ({
         )}
       </MapContainer>
 
-      {/* NEW: HIGH-TECH OVERLAYS */}
       <div className={clsx(
         "absolute inset-0 pointer-events-none z-[1000] transition-opacity duration-700",
         mapTheme === 'light' ? 'opacity-30' : 'opacity-100'
       )}>
-        {/* Vignette Blur / Fade to Dashboard (Softer centering) */}
         <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.95)] opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         
-        {/* Animated Scanline (Subtle) */}
         {mapTheme === 'dark' && (
           <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
         )}
         
-        {/* Corner Accents */}
         <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-white/10 rounded-tl-2xl" />
         <div className="absolute top-8 right-16 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl" />
         <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-white/10 rounded-bl-2xl" />
         <div className="absolute bottom-8 right-24 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
       </div>
 
-      {/* MAP THEME TOGGLE is now managed by parent page — button removed from MapView */}
-
-      <style jsx global>{`
+      <style jsx global>{\`
         .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }
         .leaflet-tile { border: none !important; opacity: 1 !important; outline: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
         .leaflet-tile-container { border: none !important; outline: none !important; }
@@ -441,26 +413,22 @@ const MapView: React.FC<MapViewProps> = ({
           margin-bottom: 8px !important;
           font-weight: 900 !important;
           transition: all .3s;
-          backdrop-blur: 10px;
+          backdrop-filter: blur(10px);
         }
         .leaflet-control-zoom a:hover { 
           background: #fad400 !important; 
           color: #000 !important; 
           transform: translateY(-2px);
-          shadow: 0 10px 20px rgba(250,212,0,0.3);
+          box-shadow: 0 10px 20px rgba(250,212,0,0.3);
         }
         
         @keyframes map-scan {
           0% { transform: translateY(-100%); }
           100% { transform: translateY(800% ); }
         }
-      `}</style>
+      \`}</style>
     </div>
   );
 };
 
 export default MapView;
-
-
-
-

@@ -201,7 +201,8 @@ export const getFleetFinance = () => api.get('/fleet/finance').then(res => res.d
 export const sendCommand = (deviceId: string, type: string, params: Record<string, unknown> = {}) =>
   api.post(`/fleet/${deviceId}/command`, { type, params }).then(res => res.data);
 export const getFleetStatusSummary = () => api.get('/fleet/status-summary').then(res => res.data);
-export const getFleetLocations = () => api.get('/fleet/map').then(res => res.data);
+export const getFleetLocations = (advertiserId?: string) => 
+  api.get(`/fleet/map${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
 
 // Device Inventory
 export const getDeviceCampaigns = (deviceId: string) => api.get(`/devices/${deviceId}/campaigns`).then(res => res.data);
@@ -301,7 +302,8 @@ export const shareReportByWhatsApp = (campaignId: string, data: { phone: string;
 export const getTopTaxis = () => api.get('/analytics/top-taxis').then(res => res.data);
 export const getHourlyPlays = () => api.get('/analytics/hourly').then(res => res.data);
 export const getRecentPlays = () => api.get('/analytics/recent-plays').then(res => res.data);
-export const getHeatmapData = () => api.get('/analytics/heatmap').then(res => res.data);
+export const getHeatmapData = (advertiserId?: string) => 
+  api.get(`/analytics/heatmap${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
 
 // Drivers
 export const getDrivers = () => api.get('/drivers').then(res => res.data);
@@ -426,7 +428,8 @@ export const updateDeviceProfile = (deviceId: string, data: Record<string, unkno
 
 // GPS Tracking
 export const getTrackingData = () => api.get('/fleet/tracking').then(res => res.data);
-export const getTrackingSummary = () => api.get('/fleet/tracking/summary').then(res => res.data);
+export const getTrackingSummary = (advertiserId?: string) => 
+  api.get(`/fleet/tracking/summary${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
 export const getDeviceRecentPath = (deviceId: string) => api.get(`/fleet/devices/${deviceId}/recent-path`).then(res => res.data);
 export const getAdvertiserPortalData = (id: string) => api.get(`/advertisers/${id}/portal`).then(res => res.data);
 

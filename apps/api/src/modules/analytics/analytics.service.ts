@@ -274,19 +274,38 @@ export class AnalyticsService {
   /**
    * Heatmap of where ads are being played
    */
-  async getPlaybackHeatmap() {
-    this.logger.log('Generating playback heatmap data');
+  async getPlaybackHeatmap(advertiserId?: string) {
+    this.logger.log(`Generating playback heatmap data${advertiserId ? ` for advertiser: ${advertiserId}` : ''}`);
     
     // Get last 15 days of confirmed playback events with geography
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
+    const where: any = {
+      timestamp: { gte: fifteenDaysAgo },
+      lat: { not: null },
+      lng: { not: null }
+    };
+
+    if (advertiserId) {
+      // 1. Get all campaign video/asset IDs for this advertiser
+      const [videos, assets] = await Promise.all([
+        this.prisma.video.findMany({
+          where: { campaign: { advertiserId } },
+          select: { id: true }
+        }),
+        this.prisma.mediaAsset.findMany({
+          where: { campaign: { advertiserId } },
+          select: { id: true }
+        })
+      ]);
+
+      const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
+      where.videoId = { in: videoIds };
+    }
+
     const locations = await this.prisma.playbackEvent.findMany({
-      where: {
-        timestamp: { gte: fifteenDaysAgo },
-        lat: { not: null },
-        lng: { not: null }
-      },
+      where,
       select: {
         lat: true,
         lng: true,

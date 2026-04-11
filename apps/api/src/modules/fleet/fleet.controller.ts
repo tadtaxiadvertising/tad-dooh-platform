@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Req } from '@nestjs/common';
 import { FleetService } from './fleet.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -32,8 +32,11 @@ export class FleetController {
   }
 
   @Get('map')
-  async getFleetMap() {
-    return this.fleetService.getFleetMap();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getFleetMap(@Req() req: any) {
+    const user = req.user;
+    const advertiserId = user.role === UserRole.ADVERTISER ? user.entityId : undefined;
+    return this.fleetService.getFleetMap(advertiserId);
   }
 
   @Get('offline')
@@ -79,8 +82,11 @@ export class FleetController {
   }
 
   @Get('tracking/summary')
-  async getTrackingSummary() {
-    return this.fleetService.getTrackingSummary();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getTrackingSummary(@Req() req: any) {
+    const user = req.user;
+    const advertiserId = user.role === UserRole.ADVERTISER ? user.entityId : undefined;
+    return this.fleetService.getTrackingSummary(advertiserId);
   }
 
   @Public()

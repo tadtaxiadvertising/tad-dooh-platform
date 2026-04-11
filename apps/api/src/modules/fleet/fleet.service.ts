@@ -94,11 +94,22 @@ export class FleetService {
     };
   }
 
-  async getFleetMap() {
+  async getFleetMap(advertiserId?: string) {
     try {
-      // Simplified query — avoid nested subscriptions select which can fail
-      // if the production DB schema has a mismatch (common on EasyPanel Free).
+      // Build filter: if advertiserId is provided, only show devices assigned to their campaigns
+      const where: any = {};
+      if (advertiserId) {
+        where.campaigns = {
+          some: {
+            campaign: {
+              advertiserId: advertiserId
+            }
+          }
+        };
+      }
+
       const devices = await this.prisma.device.findMany({
+        where,
         select: {
           id: true,
           deviceId: true,
@@ -447,13 +458,30 @@ export class FleetService {
   /**
    * Retorna un resumen por chofer: total de puntos GPS, última ubicación, velocidad promedio.
    */
-  async getTrackingSummary() {
+  async getTrackingSummary(advertiserId?: string) {
     try {
       // 1. Obtener todos los drivers con su(s) tablet(s) vinculada(s)
+      const where: any = { devices: { some: {} } };
+      if (advertiserId) {
+        where.devices = {
+          some: {
+            campaigns: {
+              some: {
+                campaign: {
+                  advertiserId: advertiserId
+                }
+              }
+            }
+          }
+        };
+      }
+
       const drivers = await this.prisma.driver.findMany({
-        where: { devices: { some: {} } },
+        where,
         include: {
           devices: {
+             // We also want to filter the devices shown per driver if needed, 
+             // but usually a driver has 1 device and if that device is assigned to the advertiser, we show the driver.
             select: {
               deviceId: true,
               taxiNumber: true,

@@ -140,6 +140,23 @@ export function startTadTracking(deviceId: string, baseUrl: string): void {
   emitState('INITIALIZING');
   console.log(`📡 Iniciando Mobile Gateway para el dispositivo: ${deviceId}`);
 
+  // Registro de Background Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((reg) => {
+        console.log('✅ Service Worker registrado con éxito:', reg.scope);
+      })
+      .catch((err) => console.log('⚠️ Error registrando SW:', err));
+
+    // Escuchar comandos del SW (para sync en 2do plano)
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'FLUSH_TELEMETRY') {
+        console.log('🔄 SW Background Sync activado, flusheando datos...');
+        checkAndUpload(deviceId, true);
+      }
+    });
+  }
+
   // 1. watchPosition: Escucha cambios de posición (más eficiente que polling)
   watchId = navigator.geolocation.watchPosition(
     (position) => {
@@ -219,6 +236,13 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
   if (!navigator.onLine) {
     console.warn('📵 Sin conexión. Reteniendo coordenadas localmente...');
     emitState('OFFLINE');
+    // Si offline, registrar background sync para que se ejecute al reconectar
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready.then(sw => {
+        // @ts-ignore
+        sw.sync.register('sync-tad-telemetry').catch(e => console.error('Error registrando sync', e));
+      });
+    }
     return;
   }
 

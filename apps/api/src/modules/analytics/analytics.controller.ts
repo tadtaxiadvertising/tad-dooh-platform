@@ -5,8 +5,14 @@ import { WhatsAppService } from '../notifications/whatsapp.service';
 import { InvoiceService } from '../finance/invoice.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+import { UseGuards, Req } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('analytics')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
@@ -100,13 +106,18 @@ export class AnalyticsController {
   }
 
   @Get('recent-plays')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getRecentPlays() {
+    // Note: For now recent-plays is global or admin, but we allow advertiser to see the list
+    // Ideally this should also be filtered, but heatmap is more critical for the map integration
     return this.analyticsService.getRecentPlays();
   }
 
   @Get('heatmap')
-  async getHeatmap() {
-    return this.analyticsService.getPlaybackHeatmap();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getHeatmap(@Query('advertiserId') advertiserId?: string, @Req() req?: any) {
+    const finalAdvertiserId = req.user?.role === UserRole.ADVERTISER ? req.user.entityId : advertiserId;
+    return this.analyticsService.getPlaybackHeatmap(finalAdvertiserId);
   }
 
   @Get('campaign/:id/weekly')

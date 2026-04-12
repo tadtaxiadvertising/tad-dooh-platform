@@ -16,6 +16,7 @@ export class VideoEngine {
   private playlist: VideoAsset[] = [];
   private currentIndex = 0;
   private deviceId: string;
+  private player: HTMLVideoElement | null = null;
   private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
   public playerStatus: "playing" | "error" | "stopped" = "stopped";
 
@@ -33,7 +34,7 @@ export class VideoEngine {
 
   constructor(deviceId: string) {
     this.deviceId = deviceId;
-    this.player = document.querySelector('#tad-player');
+    this.player = document.querySelector('#tad-player') as HTMLVideoElement;
     
     // Intermission Elements
     this.intermissionScreen = document.querySelector('#intermission-screen');
@@ -43,7 +44,7 @@ export class VideoEngine {
 
     if (this.player) {
       this.player.onended = () => this.handleTransition();
-      this.player.onerror = (e) => {
+      this.player.onerror = (e: string | Event) => {
         console.error('Player Error:', e);
         this.onPlaybackError();
       };

@@ -216,59 +216,8 @@ export default function CheckIn() {
     );
   }
 
-  if (gatewayState.status === 'SUSPENDED') {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden font-sans">
-        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-rose-500/10 blur-[150px] rounded-full animate-pulse" />
-        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-rose-500/30 rounded-3xl p-10 shadow-lg relative overflow-hidden z-10">
-          <div className="relative z-10 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-rose-500/10 rounded-full mb-8 shadow-md border border-rose-500/20">
-              <Ban className="w-10 h-10 text-rose-500" />
-            </div>
-
-            <h1 className="text-2xl font-bold text-rose-500 mb-4 tracking-tight uppercase leading-none">
-              Servicio Suspendido
-            </h1>
-
-            <p className="text-gray-400 text-xs font-bold leading-relaxed mb-8 uppercase tracking-widest">
-              Este vehículo tiene una restricción activa.
-            </p>
-
-            <button
-              onClick={handleRetry}
-              disabled={isRetrying}
-              className="w-full bg-tad-yellow hover:bg-white text-black font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 group"
-            >
-              {isRetrying ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin text-black" />
-                  <span>Verificando...</span>
-                </>
-              ) : (
-                <span>Reintentar</span>
-              )}
-            </button>
-          </div>
-        </div>
-        
-        {/* Toast Notification Layer */}
-        {toastMsg && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] bg-gray-900 border border-t border-t-gray-800 rounded-2xl p-4 shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5">
-             <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                <Database className="w-5 h-5 text-blue-500" />
-             </div>
-             <div>
-                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">{toastMsg.title}</p>
-                <p className="text-xs font-bold text-gray-300 leading-tight">{toastMsg.msg}</p>
-             </div>
-             <button title="Cerrar Notificación" aria-label="Cerrar Notificación" onClick={() => setToastMsg(null)} className="ml-auto w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition">
-                 <Ban className="w-4 h-4 text-gray-500" />
-             </button>
-          </div>
-        )}
-      </div>
-    );
-  }
+  // TAD-DRIVER: Las pantallas de bloqueo se reemplazan por estados de UI no-bloqueantes
+  // EL código de SUSPENDED ahora se maneja dentro del render principal.
 
   const statusConfig = STATUS_CONFIG[gatewayState.status] || STATUS_CONFIG.IDLE;
 
@@ -283,6 +232,15 @@ export default function CheckIn() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
         
         <div className="relative z-10">
+          {gatewayState.status === 'SUSPENDED' && (
+            <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500/30 rounded-2xl flex items-center gap-4 animate-pulse">
+               <AlertCircle className="w-6 h-6 text-rose-500 shrink-0" />
+               <div>
+                  <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Servicio Suspendido</p>
+                  <p className="text-[11px] font-bold text-gray-300 leading-tight">Tu cuenta tiene una restricción activa. Contacta a soporte.</p>
+               </div>
+            </div>
+          )}
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-4 p-1.5 bg-gray-800/50 backdrop-blur-xl rounded-full border border-gray-700 mb-4 pl-6 pr-1.5 shadow-sm">
                <h1 className="text-xl font-bold tracking-tight text-white uppercase leading-none">

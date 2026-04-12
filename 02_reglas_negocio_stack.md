@@ -30,6 +30,7 @@ Password: TadAdmin2026!
 ### Supabase & Postgres (EasyPanel Secrets)
 
 Todas las variables de entorno están centralizadas en EasyPanel bajo el esquema de **Secrets**.
+
 - `DATABASE_URL`: Connection Pool (puerto 6543) para Prisma.
 - `DIRECT_URL`: Direct Connection (puerto 5432) para Migraciones.
 - `SUPABASE_SERVICE_ROLE_KEY`: JWT de alta prioridad para bypass de RLS en el Backend.
@@ -43,10 +44,10 @@ Todas las variables de entorno están centralizadas en EasyPanel bajo el esquema
 | Service | Technology | RAM Limit | Purpose |
 | :--- | :--- | :--- | :--- |
 | **API Gateway** | NestJS / Prisma | 512 MB | Core logic, Auth & Fleet sync. |
-| **TAD Remotion**| Remotion / Chromium | 1024 MB | Programmatic Video Rendering. |
+| **TAD Remotion** | Remotion / Chromium | 1024 MB | Programmatic Video Rendering. |
 | **Admin Panel** | Next.js 15 / Tailw4 | 512 MB | Fleet Operations & God Mode. |
-| **Adv Portal**  | Next.js 15 / Tailw4 | 512 MB | Advertiser BI v6.0. |
-| **Driver Portal**| Next.js 15 / Tailw4 | 512 MB | Mobile Gateway & Earnings. |
+| **Adv Portal** | Next.js 15 / Tailw4 | 512 MB | Advertiser BI v6.0. |
+| **Driver Portal** | Next.js 15 / Tailw4 | 512 MB | Mobile Gateway & Earnings. |
 
 ### Shared Core
 

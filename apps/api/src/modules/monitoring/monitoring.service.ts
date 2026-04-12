@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { GpsBatchDto } from './monitoring.dto';
 
@@ -13,6 +14,7 @@ const PILOT_DEVICE_IDS = [
 // Teléfono del administrador del piloto (para alertas críticas)
 const ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || '18098001234';
 const OFFLINE_THRESHOLD_MINUTES = 15;
+const PUSH_NOTIFICATION_HOURS = 12;
 
 @Injectable()
 export class MonitoringService {
@@ -21,6 +23,7 @@ export class MonitoringService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsAppService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -33,11 +36,24 @@ export class MonitoringService {
     this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
 
     try {
+      // 1. Resolver el Driver ID ligado al dispositivo si el recibido es dudoso
+      const device = await this.prisma.device.findUnique({
+        where: { deviceId },
+        include: { driver: true }
+      });
+
+      const resolvedDriverId = driverId || device?.driverId;
+
+      if (!resolvedDriverId) {
+        this.logger.warn(`⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`);
+        return { status: 'ignored', reason: 'no_driver_linked' };
+      }
+
       if (points.length > 0) {
         await this.prisma.driverLocation.createMany({
           data: points.map(p => ({
             deviceId,
-            driverId,
+            driverId: resolvedDriverId,
             latitude: p.latitude,
             longitude: p.longitude,
             speed: p.speed,
@@ -58,6 +74,8 @@ export class MonitoringService {
             lastSeen: new Date(),
             lastSyncAt: new Date(),
             lastSyncSuccess: true,
+            status: 'ACTIVE',
+            connectivityStatus: 'ONLINE',
           },
         });
       }
@@ -159,53 +177,79 @@ export class MonitoringService {
    */
   @Cron(CronExpression.EVERY_30_MINUTES)
   async checkOfflineDevices() {
-    this.logger.log('🔍 [CRON] Verificando dispositivos offline del piloto...');
+    this.logger.log('🔍 [CRON] Verificando dispositivos offline y conectividad...');
 
-    const thresholdTime = new Date(Date.now() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000);
+    const now = new Date();
+    const offlineThreshold = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000);
+    const criticalThreshold = new Date(now.getTime() - 48 * 60 * 60 * 1000); // 48 Horas
+    const pushThreshold = new Date(now.getTime() - PUSH_NOTIFICATION_HOURS * 60 * 60 * 1000); // 12 Horas
 
     try {
-      const offlineDevices = await this.prisma.device.findMany({
+      // 1. Marcar como OFFLINE (isOnline = false) los que pasen el threshold de 15 min
+      await this.prisma.device.updateMany({
         where: {
-          deviceId: { in: PILOT_DEVICE_IDS },
+          lastSeen: { lt: offlineThreshold },
+          isOnline: true,
+        },
+        data: { isOnline: false, status: 'OFFLINE' },
+      });
+
+      // 2. Marcar como connectivity_issue si llevan +48h sin reporte
+      const criticalCount = await this.prisma.device.updateMany({
+        where: {
           OR: [
-            { lastSeen: { lt: thresholdTime } },
+            { lastSeen: { lt: criticalThreshold } },
             { lastSeen: null },
           ],
-          isOnline: true,
+          connectivityStatus: { not: 'connectivity_issue' },
+        },
+        data: { connectivityStatus: 'connectivity_issue' },
+      });
+
+      if (criticalCount.count > 0) {
+        this.logger.warn(`🚨 [FLEET] ${criticalCount.count} dispositivos marcados con connectivity_issue (+48h offline).`);
+      }
+
+      // 3. Notificaciones PUSH a choferes cada 12h offline
+      const offlineDrivers = await this.prisma.device.findMany({
+        where: {
+          lastSeen: { lt: pushThreshold },
+          driverId: { not: null },
+        },
+        select: { driverId: true, deviceId: true }
+      });
+
+      for (const d of offlineDrivers) {
+        if (d.driverId) {
+          await this.notifications.sendPush(
+            d.driverId,
+            `⚠️ TAD: Tu equipo ${d.deviceId} lleva +12h sin conexión. Verifica el encendido de la tablet para no afectar tu nómina.`
+          );
+        }
+      }
+
+      // 4. Alerta por WhatsApp solo para el PILOTO (STI)
+      const offlinePilotDevices = await this.prisma.device.findMany({
+        where: {
+          deviceId: { in: PILOT_DEVICE_IDS },
+          lastSeen: { lt: offlineThreshold },
+          status: 'OFFLINE'
         },
         select: { deviceId: true, taxiNumber: true, lastSeen: true },
       });
 
-      if (offlineDevices.length === 0) {
-        this.logger.log('✅ [CRON] Todos los dispositivos piloto están activos.');
-        return;
+      if (offlinePilotDevices.length > 0) {
+        const deviceList = offlinePilotDevices
+          .map(d => `• ${d.deviceId} (${d.taxiNumber || 'S/N'}) — última: ${d.lastSeen ? d.lastSeen.toLocaleTimeString() : 'nunca'}`)
+          .join('\n');
+
+        const alertMessage = 
+          `🚨 *ALERTA TAD PILOTO SANTIAGO*\n\n` +
+          `${offlinePilotDevices.length} pantalla(s) sin señal:\n\n${deviceList}\n\n` +
+          `⏰ Umbral: ${OFFLINE_THRESHOLD_MINUTES} min.`;
+
+        await this.whatsapp.sendMessage(ADMIN_PHONE, alertMessage);
       }
-
-      // Marcar como offline en BD
-      await this.prisma.device.updateMany({
-        where: { deviceId: { in: offlineDevices.map(d => d.deviceId) } },
-        data: { isOnline: false, status: 'OFFLINE' },
-      });
-
-      const deviceList = offlineDevices
-        .map(d =>
-          `• ${d.deviceId} — última señal: ${
-            d.lastSeen
-              ? new Date(d.lastSeen).toLocaleTimeString('es-DO')
-              : 'nunca'
-          }`,
-        )
-        .join('\n');
-
-      const alertMessage =
-        `🚨 *ALERTA TAD PILOTO SANTIAGO*\n\n` +
-        `${offlineDevices.length} pantalla(s) sin GPS:\n\n${deviceList}\n\n` +
-        `⏰ Sin señal por más de ${OFFLINE_THRESHOLD_MINUTES} min.\n` +
-        `🔗 https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/dashboard/realtime`;
-
-      await this.whatsapp.sendMessage(ADMIN_PHONE, alertMessage);
-
-      this.logger.warn(`⚠️ [CRON] ${offlineDevices.length} dispositivos offline. Alerta enviada.`);
     } catch (err) {
       this.logger.error(`❌ [CRON] Error en checkOfflineDevices: ${err.message}`);
     }

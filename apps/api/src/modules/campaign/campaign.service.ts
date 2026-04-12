@@ -15,6 +15,8 @@ export interface AuthUser {
 
 @Injectable()
 export class CampaignService {
+  private readonly logger = new Logger(CampaignService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
@@ -135,8 +137,19 @@ export class CampaignService {
       } as any,
     });
 
-    if (dto.target_devices && dto.target_devices.length > 0) {
-      await this.assignCampaignToDevices(campaign.id, dto.target_devices);
+    // TAD-ADMIN: Distribución Inteligente de Inventario
+    // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
+    let devicesToAssign = dto.target_devices || [];
+    
+    if (devicesToAssign.length === 0 && !dto.target_all && dto.target_city) {
+      this.logger.log(`🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`);
+      const limit = Math.floor((dto.budget || 3000) / 3000) || 10; // Estimado de pantallas según presupuesto
+      const optimalDevices = await this.getOptimalDevicesForCampaign(dto.target_city, limit);
+      devicesToAssign = optimalDevices.map(d => d.deviceId);
+    }
+
+    if (devicesToAssign.length > 0) {
+      await this.assignCampaignToDevices(campaign.id, devicesToAssign);
     }
 
     if (campaign.status === 'ACTIVE') {

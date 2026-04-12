@@ -157,12 +157,16 @@ export class DriversService {
       hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     }
 
+    // SANEAMIENTO DE DATOS: Campos opcionales únicos deben ser null si están vacíos
+    const sanitizedCedula = data.cedula?.trim() || null;
+    const sanitizedTaxiPlate = (data.taxiPlate || data.licensePlate)?.trim() || null;
+
     const driver = await this.prisma.driver.create({
       data: {
         fullName: data.fullName,
-        cedula: data.cedula,
+        cedula: sanitizedCedula,
         phone: data.phone,
-        taxiPlate: data.taxiPlate,
+        taxiPlate: sanitizedTaxiPlate,
         licensePlate: data.licensePlate,
         subscriptionPaid: data.subscriptionPaid ?? false,
         subscriptionEnd: data.subscriptionEnd,
@@ -340,6 +344,7 @@ export class DriversService {
    * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER por deviceId
    */
   async getDriverHubData(deviceId: string) {
+    this.logger.debug(`[HUB] Realizando consulta por deviceId: ${deviceId}`);
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
       include: {
@@ -350,7 +355,8 @@ export class DriversService {
     });
 
     if (!device || !device.driver) {
-      throw new Error('Dispositivo no vinculado a un chofer.');
+      this.logger.warn(`[HUB] Hub solicitado para deviceId ${deviceId} pero no tiene conductor vinculado.`);
+      throw new ForbiddenException('Dispositivo no vinculado a un chofer o perfil inexistente.');
     }
 
     return this.buildHubData(device.driver, device.deviceId);
@@ -360,31 +366,82 @@ export class DriversService {
    * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER por Driver ID
    */
   async getDriverHubDataById(driverId: string) {
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
-      include: {
-        devices: true,
-        referredAdvertisers: true,
-      } as any,
-    });
+    this.logger.debug(`[HUB] Generando datos del hub para driverId: ${driverId}`);
+    try {
+      if (!driverId) {
+        throw new ForbiddenException('ID de conductor no proporcionado.');
+      }
 
-    if (!driver) {
-      throw new Error('Chofer no encontrado.');
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
+        include: {
+          devices: {
+            select: { id: true, deviceId: true, status: true }
+          },
+          referredAdvertisers: {
+            select: { id: true }
+          },
+        } as any,
+      });
+
+      if (!driver) {
+        this.logger.error(`[HUB_ERROR] Driver ID ${driverId} no encontrado en Base de Datos.`);
+        throw new ForbiddenException('Perfil de conductor no encontrado. Por favor, re-inicia sesión.');
+      }
+
+      const deviceId = (driver as any).devices?.[0]?.deviceId || null;
+      this.logger.debug(`[HUB] Conductor encontrado: ${driver.fullName}, DeviceId: ${deviceId}`);
+      
+      return await this.buildHubData(driver, deviceId);
+    } catch (err) {
+      this.logger.error(`🚨 [HUB_CRITICAL] Fallo en getDriverHubDataById para ID ${driverId}: ${err.message}`, err.stack);
+      // Evitar que el 500 rompa el portal si es posible devolver un error controlado
+      if (err instanceof ForbiddenException) throw err;
+      throw new Error(`Error al obtener datos del dashboard: ${err.message}`);
     }
-
-    const deviceId = (driver as any).devices?.[0]?.deviceId || null;
-    return this.buildHubData(driver, deviceId);
   }
 
   /**
    * Método interno para construir el payload del Hub
    */
   private async buildHubData(driver: any, deviceId: string | null) {
+    this.logger.debug(`[HUB_BUILD] Iniciando construcción para ${driver.id}`);
+    
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
 
-    // FIX A-1: Contar campañas ASIGNADAS al conductor, no globalmente
-    // FIX: Todas las queries en paralelo (reduce latencia total)
+    // Queries en paralelo con manejo individual de errores
+    const fetchAdsPlayed = deviceId 
+      ? this.prisma.analyticsEvent.count({
+          where: { deviceId, eventType: { in: ['play_confirm', 'video_end', 'impression'] } }
+        }).catch(e => { this.logger.warn(`[HUB_WARN] Error adsPlayed: ${e.message}`); return 0; })
+      : Promise.resolve(0);
+
+    const fetchGpsPoints = this.prisma.driverLocation.count({
+      where: { driverId: driver.id, timestamp: { gte: monthStart, lte: monthEnd } }
+    }).catch(e => { this.logger.warn(`[HUB_WARN] Error gpsPoints: ${e.message}`); return 0; });
+
+    const fetchActiveAds = deviceId
+      ? this.prisma.deviceCampaign.count({
+          where: { device: { deviceId }, campaign: { status: 'ACTIVE' } }
+        }).catch(e => { 
+          this.logger.warn(`[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`);
+          return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+        })
+      : this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+
+    const fetchLastPayment = this.prisma.payrollPayment.findFirst({
+      where: { driverId: driver.id },
+      orderBy: { createdAt: 'desc' },
+    }).catch(e => { this.logger.warn(`[HUB_WARN] Error lastPayment: ${e.message}`); return null; });
+
+    const fetchTotalPaid = this.prisma.payrollPayment.aggregate({
+      where: { driverId: driver.id, status: 'PAID' },
+      _sum: { amount: true },
+    }).catch(e => { this.logger.warn(`[HUB_WARN] Error totalPaid aggregate: ${e.message}`); return { _sum: { amount: 0 } }; });
+
+    this.logger.debug(`[HUB_BUILD] Ejecutando queries paralelas...`);
+
     const [
       adsPlayed,
       gpsPoints,
@@ -392,66 +449,51 @@ export class DriversService {
       lastPayment,
       totalPaidSum,
     ] = await Promise.all([
-      deviceId
-        ? this.prisma.analyticsEvent.count({
-            where: {
-              deviceId,
-              eventType: { in: ['play_confirm', 'video_end', 'impression'] },
-            },
-          })
-        : Promise.resolve(0),
-      this.prisma.driverLocation.count({
-        where: {
-          driverId: driver.id,
-          timestamp: { gte: monthStart, lte: monthEnd },
-        },
-      }),
-      // FIX A-1: Usar DeviceCampaign para contar campañas del conductor específico
-      deviceId
-        ? this.prisma.deviceCampaign.count({
-            where: {
-              device: { deviceId },
-              campaign: { status: 'ACTIVE' },
-            },
-          }).catch(() => this.prisma.campaign.count({ where: { status: 'ACTIVE' } }))
-        : this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.payrollPayment.findFirst({
-        where: { driverId: driver.id },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.payrollPayment.aggregate({
-        where: { driverId: driver.id, status: 'PAID' },
-        _sum: { amount: true },
-      }),
+      fetchAdsPlayed,
+      fetchGpsPoints,
+      fetchActiveAds,
+      fetchLastPayment,
+      fetchTotalPaid,
     ]);
 
-    // FIX M-2: Usar constantes de negocio en lugar de magic numbers
-    const qualifiesForGpsBonus = gpsPoints >= BUSINESS_RULES.GPS_BONUS_THRESHOLD;
+    this.logger.debug(`[HUB_BUILD] Datos base obtenidos. adsPlayed=${adsPlayed}, activeAds=${activeAdsCount}`);
+
+    const qualifiesForGpsBonus = (gpsPoints || 0) >= BUSINESS_RULES.GPS_BONUS_THRESHOLD;
     const gpsBonus = qualifiesForGpsBonus ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
+    
     const projectedEarnings = driver.status === 'ACTIVE'
-      ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+      ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
       : 0;
 
-    // FIX M-3: Reemplazar Raw SQL con Prisma ORM query
+    // Referidos (Conteo defensivo con catch)
     const referralsCount = await this.prisma.driver.count({
-      where: {
-        referredBy: driver.id,
-        status: 'ACTIVE',
-        subscriptionPaid: true,
-      },
-    }).catch(() => 0); // Fallback si el campo referredBy no existe en el schema
+      where: { referredBy: driver.id, status: 'ACTIVE', subscriptionPaid: true },
+    }).catch(() => 0);
 
     const referralEarnings = referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
-    const advertiserReferralEarnings =
-      (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
+    const advertiserReferralEarnings = (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
-    // FIX B-3: Evitar recalcular totalPaid inline — usar la variable ya calculada
-    const totalPaid = totalPaidSum._sum.amount || 0;
+    const totalPaid = (totalPaidSum as any)?._sum?.amount || 0;
+    
+    this.logger.debug(`[HUB_BUILD] Aplicando penalizaciones...`);
     
     // Aplicar penalizaciones al proyectado si aplica
-    const { amount: finalProjected, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driver.id, projectedEarnings);
+    let finalProjected = projectedEarnings;
+    let penaltyApplied = false;
+    let penaltyAmount = 0;
+
+    try {
+      const penaltyResult = await this.payrollAudit.applyPenaltyLogic(driver.id, projectedEarnings);
+      finalProjected = penaltyResult.amount;
+      penaltyApplied = penaltyResult.penaltyApplied;
+      penaltyAmount = penaltyResult.penaltyAmount;
+    } catch (pErr) {
+      this.logger.error(`[HUB_ERROR] Error en applyPenaltyLogic: ${pErr.message}`);
+    }
     
     const balance = finalProjected + referralEarnings + advertiserReferralEarnings + gpsBonus - totalPaid;
+
+    this.logger.log(`✅ [HUB_SUCCESS] Hub construido para ${driver.fullName} (${driver.id}). Balance: ${balance}`);
 
     return {
       driverId: driver.id,
@@ -474,7 +516,7 @@ export class DriversService {
       gpsBonus,
       qualifiesForGpsBonus,
       activeAds: activeAdsCount,
-      totalPaid,       // FIX B-3: Variable única, no recalculada
+      totalPaid,
       balance,
       lastPayment: lastPayment
         ? {

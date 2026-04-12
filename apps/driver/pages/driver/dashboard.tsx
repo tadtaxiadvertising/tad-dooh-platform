@@ -97,7 +97,7 @@ export default function DriverDashboard() {
         await api.post('/monitoring/gps-batch', {
           driverId: session.user.id,
           deviceId: driverData?.device?.deviceId || 'PWA',
-          locations: batch
+          points: batch
         });
         console.debug(`[Telemetry] Flushed ${batch.length} points.`);
       } catch (error) {
@@ -112,11 +112,11 @@ export default function DriverDashboard() {
     watchId = navigator.geolocation.watchPosition(
       (position) => {
         locationQueue.push({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          speed: position.coords.speed,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          speed: position.coords.speed || 0,
           heading: position.coords.heading,
-          ts: new Date(position.timestamp).toISOString()
+          timestamp: new Date(position.timestamp).toISOString()
         });
 
         // Forzar flush si la cola crece mucho

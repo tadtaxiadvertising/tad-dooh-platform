@@ -82,7 +82,17 @@ export class FleetService {
         where: { lastSeen: { gte: thirtyMinAgo } }
       }),
       this.prisma.device.count({
-        where: { playerStatus: { not: 'playing', notIn: [null, ''] } }
+        // Devices with a playerStatus that is not null and not empty string
+        where: {
+          playerStatus: {
+            not: null,
+          },
+          NOT: {
+            playerStatus: {
+              in: ['playing', '']
+            }
+          }
+        }
       })
     ]);
 
@@ -505,33 +515,41 @@ export class FleetService {
 
       const driverIds = drivers.map(d => d.id);
 
-      const counts = await this.prisma.driverLocation.groupBy({
-        by: ['driverId'],
-        _count: { id: true },
-        _avg: { speed: true },
-        where: {
-          driverId: { in: driverIds },
-          timestamp: { gte: todayStart },
-        },
-      });
+      // Defensive parallel queries — if either groupBy fails, degrade gracefully
+      let countMap = new Map<string, { count: number; avgSpeed: number }>();
+      let totalMap = new Map<string, number>();
 
-      const countMap = new Map(counts.map((c: any) => [
-        c.driverId, 
-        { 
-          count: (c._count as any).id, 
-          avgSpeed: (c._avg as any)?.speed || 0 
-        }
-      ]));
+      try {
+        const [counts, totalCounts] = await Promise.all([
+          this.prisma.driverLocation.groupBy({
+            by: ['driverId'],
+            _count: { id: true },
+            _avg: { speed: true },
+            where: {
+              driverId: { in: driverIds },
+              timestamp: { gte: todayStart },
+            },
+          }),
+          this.prisma.driverLocation.groupBy({
+            by: ['driverId'],
+            _count: { id: true },
+            where: { driverId: { in: driverIds } },
+          }),
+        ]);
 
-      // 3. Total histórico por chofer
-      const totalCounts = await this.prisma.driverLocation.groupBy({
-        by: ['driverId'],
-        _count: { id: true },
-        where: {
-          driverId: { in: driverIds }
-        }
-      });
-      const totalMap = new Map(totalCounts.map((c: any) => [c.driverId, (c._count as any).id]));
+        countMap = new Map(counts.map((c: any) => [
+          c.driverId, 
+          { 
+            count: (c._count as any).id, 
+            avgSpeed: (c._avg as any)?.speed ?? 0 
+          }
+        ]));
+
+        totalMap = new Map(totalCounts.map((c: any) => [c.driverId, (c._count as any).id]));
+      } catch (groupByError) {
+        // Degraded mode: return basic driver data without GPS stats
+        console.warn('[FleetService] groupBy on driverLocation failed, degrading gracefully:', groupByError?.message);
+      }
 
       const now = new Date();
       const fiveMinMs = 5 * 60 * 1000;
@@ -578,11 +596,8 @@ export class FleetService {
       });
     } catch (error) {
       console.error('CRITICAL: Error in getTrackingSummary:', error);
-      throw new HttpException({
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Error al procesar el resumen de rastreo.',
-        error: error.message
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      // Return empty array instead of throwing 500 — the UI handles empty state gracefully
+      return [];
     }
   }
 
@@ -631,8 +646,28 @@ export class FleetService {
     }));
 
     if (records.length > 0) {
+      // 2.1 GUARDADO MASIVO
       await this.prisma.driverLocation.createMany({
         data: records
+      });
+
+      // 2.2 ACTUALIZAR ESTADO DEL DISPOSITIVO (Crucial para el Mapa Realtime)
+      const latestPoint = data.locations.reduce((prev, curr) => 
+        (curr.ts > prev.ts) ? curr : prev
+      );
+
+      await this.prisma.device.update({
+        where: { deviceId: data.deviceId },
+        data: {
+          lastLat: latestPoint.lat,
+          lastLng: latestPoint.lng,
+          isOnline: true,
+          lastSeen: new Date(),
+          lastSyncAt: new Date(),
+          lastSyncSuccess: true,
+          status: 'ACTIVE',
+          connectivityStatus: 'ONLINE' // Restaurar si estaba en issue
+        }
       });
     }
 

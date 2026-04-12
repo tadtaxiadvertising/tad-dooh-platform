@@ -1,6 +1,6 @@
-# 🏗️ TAD DOOH Platform - Arquitectura del Sistema
+# TAD DOOH Platform - Arquitectura del Sistema
 
-**Taxi Advertising Distribution - Digital Out-Of-Home Network**
+## Taxi Advertising Distribution - Digital Out-Of-Home Network
 
 ---
 
@@ -14,11 +14,11 @@
 6. [API Endpoints](#api-endpoints)
 7. [Estrategias de Optimización](#estrategias-de-optimización)
 8. [Seguridad](#seguridad)
-9. [Deploy y Infraestructura](#deploy-y-infraestructura)
+9. [Deploy e Infraestructura](#deploy-e-infraestructura)
 
 ---
 
-## 👁️ VISIÓN GENERAL
+## VISIÓN GENERAL
 
 ### Problema a Resolver
 
@@ -36,7 +36,7 @@ Gestionar **miles de tablets Android** instaladas en taxis que reproducen conten
 
 **Arquitectura Offline-First** con sincronización diaria:
 
-```
+```text
 DÍA TÍPICO EN UN TAXI:
 
 05:00 AM - Taxi inicia turno
@@ -63,7 +63,7 @@ DÍA TÍPICO EN UN TAXI:
 
 ---
 
-## 🏛️ ARQUITECTURA DEL SISTEMA
+## ARQUITECTURA DEL SISTEMA
 
 ### Diagrama de Componentes
 
@@ -168,11 +168,12 @@ DÍA TÍPICO EN UN TAXI:
 
 ---
 
-## 🔧 COMPONENTES PRINCIPALES
+## COMPONENTES PRINCIPALES
 
 ### 1. Backend API (NestJS)
 
 **Responsabilidades:**
+
 - Autenticación de dispositivos
 - Gestión de campañas
 - Distribución de contenido
@@ -181,7 +182,7 @@ DÍA TÍPICO EN UN TAXI:
 
 **Estructura de servicios:**
 
-```
+```bash
 backend/
 ├── src/
 │   ├── campaigns/
@@ -223,7 +224,7 @@ backend/
 
 **Páginas principales:**
 
-```
+```bash
 frontend/
 ├── src/
 │   ├── pages/
@@ -259,7 +260,7 @@ frontend/
 **Características clave:**
 
 | Feature | Implementación |
-|---------|----------------|
+| :--- | :--- |
 | **Offline-first** | Service Worker + IndexedDB |
 | **Video playback** | HTML5 Video API |
 | **Analytics local** | IndexedDB queue |
@@ -269,7 +270,7 @@ frontend/
 
 **Estructura:**
 
-```
+```bash
 tablet-player/
 ├── src/
 │   ├── index.html
@@ -291,7 +292,7 @@ tablet-player/
 
 **Pipeline de datos:**
 
-```
+```text
 Tablet Events (10,000 devices)
         │
         ▼
@@ -334,7 +335,7 @@ Tablet Events (10,000 devices)
 **Eventos trackeados:**
 
 | Evento | Campos | Frecuencia |
-|--------|--------|------------|
+| :--- | :--- | :--- |
 | `video_started` | device_id, campaign_id, video_id, timestamp | ~500K/día |
 | `video_completed` | device_id, campaign_id, video_id, timestamp, duration | ~500K/día |
 | `video_error` | device_id, video_id, error_code, timestamp | ~1K/día |
@@ -343,11 +344,11 @@ Tablet Events (10,000 devices)
 
 ---
 
-## 🔄 FLUJO DE SINCRONIZACIÓN DIARIA
+## FLUJO DE SINCRONIZACIÓN DIARIA
 
 ### Secuencia Detallada
 
-```
+```text
 ┌─────────────┐                              ┌─────────────┐
 │   TABLET    │                              │   SERVER    │
 │  (Android)  │                              │   (Cloud)   │
@@ -401,7 +402,7 @@ Tablet Events (10,000 devices)
 ### Optimizaciones de Datos
 
 | Estrategia | Ahorro | Implementación |
-|------------|--------|----------------|
+| :--- | :--- | :--- |
 | **Delta sync** | 80-90% | Solo descarga campañas nuevas/modificadas |
 | **Compresión** | 60-70% | Gzip para JSON, H265 para videos |
 | **Batch upload** | 90% | Analytics en lote (1 request vs 1000) |
@@ -411,18 +412,19 @@ Tablet Events (10,000 devices)
 **Estimado de datos por tablet/día:**
 
 | Operación | Sin optimizar | Con optimización |
-|-----------|---------------|------------------|
+| :--- | :--- | :--- |
 | Download campaigns | 500 MB | 50 MB |
 | Upload analytics | 10 MB | 1 MB |
 | **Total** | **510 MB** | **51 MB** |
 
 **Costo mensual estimado (1000 tablets):**
+
 - Plan de datos: 50 MB × 1000 × 30 días = 1.5 TB
 - Costo RD: ~RD$3,000-5,000/mes (plan empresarial)
 
 ---
 
-## 📊 MODELO DE DATOS
+## MODELO DE DATOS
 
 ### PostgreSQL Schema
 
@@ -584,12 +586,12 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 
 ---
 
-## 🔌 API ENDPOINTS
+## API ENDPOINTS
 
 ### Authentication
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `POST` | `/api/auth/login` | Login admin |
 | `POST` | `/api/auth/device` | Auth dispositivo (token) |
 | `POST` | `/api/auth/refresh` | Refresh token |
@@ -597,7 +599,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 ### Devices
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `GET` | `/api/devices` | Lista de dispositivos |
 | `GET` | `/api/devices/:id` | Detalle dispositivo |
 | `GET` | `/api/devices/:id/health` | Health status |
@@ -609,7 +611,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 ### Campaigns
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `GET` | `/api/campaigns` | Lista de campañas |
 | `GET` | `/api/campaigns/:id` | Detalle campaña |
 | `GET` | `/api/campaigns/:id/metrics` | Métricas de campaña |
@@ -621,7 +623,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 ### Media
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `GET` | `/api/media` | Lista de archivos |
 | `POST` | `/api/media/upload` | Upload archivo |
 | `GET` | `/api/media/:id` | Detalle archivo |
@@ -631,7 +633,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 ### Sync
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `POST` | `/api/sync/init` | Iniciar sync diario |
 | `GET` | `/api/sync/package/:id` | Descargar paquete |
 | `POST` | `/api/sync/complete` | Completar sync |
@@ -639,7 +641,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 ### Analytics
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| :--- | :--- | :--- |
 | `POST` | `/api/analytics/batch` | Upload batch de eventos |
 | `GET` | `/api/analytics/summary` | Resumen general |
 | `GET` | `/api/analytics/campaigns` | Por campañas |
@@ -648,7 +650,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 
 ---
 
-## 📦 ESTRATEGIAS DE OPTIMIZACIÓN
+## ESTRATEGIAS DE OPTIMIZACIÓN
 
 ### 1. Delta Sync
 
@@ -698,7 +700,7 @@ CREATE INDEX idx_commands_status ON device_commands(status);
 
 **Solución:** Empaquetar campañas en un solo archivo.
 
-```
+```text
 campaign-package-001.zip
 ├── manifest.json          # Metadata de la campaña
 ├── playlist.json          # Orden de reproducción
@@ -711,6 +713,7 @@ campaign-package-001.zip
 ```
 
 **Beneficios:**
+
 - 1 request HTTP en lugar de 10
 - Mejor compresión (ZIP vs archivos individuales)
 - Verificación de integridad simplificada
@@ -720,7 +723,7 @@ campaign-package-001.zip
 **Codecs recomendados:**
 
 | Codec | Compresión | Compatibilidad | Uso |
-|-------|------------|----------------|-----|
+| :--- | :--- | :--- | :--- |
 | **H.264** | 1x | 100% | Fallback universal |
 | **H.265 (HEVC)** | 2x | 80% (Android 5+) | Primary |
 | **AV1** | 2.5x | 60% (Android 10+) | Futuro |
@@ -769,13 +772,13 @@ if (eventQueue.length >= 100 || timeSinceLastSync > 3600000) {
 
 ---
 
-## 🔐 SEGURIDAD
+## SEGURIDAD
 
 ### 1. Device Authentication
 
 **Token-based auth con rotación:**
 
-```
+```text
 1. Tablet se registra → recibe device_token
 2. Token se guarda en Secure SharedPreferences
 3. Cada request incluye: Authorization: Bearer <token>
@@ -801,7 +804,7 @@ if (downloadedHash !== expectedHash) {
 ### 3. API Security
 
 | Protección | Implementación |
-|------------|----------------|
+| :--- | :--- |
 | **Rate limiting** | 100 requests/min por dispositivo |
 | **CORS** | Orígenes específicos |
 | **HTTPS** | TLS 1.3 obligatorio |
@@ -811,12 +814,12 @@ if (downloadedHash !== expectedHash) {
 
 ---
 
-## 🚀 DEPLOY Y INFRAESTRUCTURA
+## DEPLOY E INFRAESTRUCTURA
 
 ### Stack Recomendado (Startup-Friendly)
 
 | Componente | Tecnología | Costo Estimado |
-|------------|------------|----------------|
+| :--- | :--- | :--- |
 | **Cloud** | DigitalOcean Droplet | $40/mes |
 | **Database** | Managed PostgreSQL (DO) | $30/mes |
 | **Storage** | DigitalOcean Spaces (S3) | $5/mes + $0.02/GB |
@@ -906,7 +909,7 @@ docker-compose -f docker-compose.prod.yml up -d
 ### Crecimiento por Fases
 
 | Fase | Dispositivos | Infraestructura | Costo/mes |
-|------|--------------|-----------------|-----------|
+| :--- | :--- | :--- | :--- |
 | **Piloto** | 10-50 | 1 droplet small | $50 |
 | **Launch** | 50-500 | 2 droplets + managed DB | $150 |
 | **Growth** | 500-2000 | Load balancer + 3 droplets | $400 |
@@ -915,16 +918,19 @@ docker-compose -f docker-compose.prod.yml up -d
 ### Optimizaciones por Escala
 
 **100-500 dispositivos:**
+
 - Monolito NestJS
 - PostgreSQL single instance
 - Redis para cache
 
 **500-2000 dispositivos:**
+
 - Separar servicios (campaigns, devices, analytics)
 - PostgreSQL con read replicas
 - Redis cluster
 
 **2000-10000 dispositivos:**
+
 - Kubernetes cluster
 - Database sharding por ciudad
 - Message queue (Kafka/RabbitMQ)

@@ -39,7 +39,7 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 │                                         │
 │  ┌───────────┐      ┌───────────┐       │
 │  │  Next.js  │ ────▶│  NestJS   │       │
-│  │ Dashboard │ (Proxy)│  API v1   │       │
+│  │ Portals   │ (Proxy)│  API v1   │       │
 │  └───────────┘      └───────────┘       │
 │        │               │                │
 │        │        ┌──────▼──────────┐     │
@@ -140,9 +140,9 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 
 | Tecnología | Versión | Propósito |
 | ---------- | ------- | --------- |
-| **Next.js** | 14.x | React framework |
+| **Next.js** | 15.x | React framework |
 | **React** | 19.x | UI library |
-| **TailwindCSS** | 3.x | Styling |
+| **TailwindCSS** | 4.x | Styling |
 | **Recharts** | 2.x | Charts |
 
 ### Tablet Player
@@ -291,4 +291,4 @@ Propietario - TAD Dominicana, S.R.L.
 
 **Creado:** 6 de Marzo, 2026  
 **Versión:** 10.0.0 (Microservices Architecture)  
-**Última Actualización:** 10 de Abril, 2026  
+**Última Actualización:** 11 de Abril, 2026  

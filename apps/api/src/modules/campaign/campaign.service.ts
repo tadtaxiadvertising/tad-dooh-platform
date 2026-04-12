@@ -556,5 +556,79 @@ export class CampaignService {
 
     return updated;
   }
+
+  /**
+   * TAD-ADMIN: Distribución de Inventario (Algoritmo de Prioridad)
+   * Filtra por ciudad y aplica prioridad por nivel del chofer (ORO > PLATA > BASE)
+   */
+  async getOptimalDevicesForCampaign(campaignCity: string, limit: number) {
+    const devices = await this.prisma.device.findMany({
+      where: {
+        city: campaignCity === 'Global' ? undefined : campaignCity,
+        status: 'ACTIVE',
+        connectivityStatus: 'ONLINE',
+      },
+      include: {
+        driver: {
+          select: { level: true },
+        },
+        _count: {
+          select: { campaigns: true },
+        },
+      },
+    });
+
+    // Filtrar los que ya tienen el máximo de campañas
+    const availableDevices = devices.filter(
+      (d) => d._count.campaigns < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER,
+    );
+
+    // Ordenar por Nivel (ORO: 3, PLATA: 2, BASE: 1)
+    const priorityMap: Record<string, number> = {
+      [BUSINESS_RULES.LEVELS.ORO.label]: BUSINESS_RULES.LEVELS.ORO.priority,
+      [BUSINESS_RULES.LEVELS.PLATA.label]: BUSINESS_RULES.LEVELS.PLATA.priority,
+      [BUSINESS_RULES.LEVELS.BASE.label]: BUSINESS_RULES.LEVELS.BASE.priority,
+    };
+
+    availableDevices.sort((a, b) => {
+      const priorityA = priorityMap[a.driver?.level || 'BASE'] || 0;
+      const priorityB = priorityMap[b.driver?.level || 'BASE'] || 0;
+      return priorityB - priorityA; // Descendente
+    });
+
+    return availableDevices.slice(0, limit);
+  }
+
+  /**
+   * TAD-ADVERTISER: Simulador de Presupuesto
+   */
+  async simulateImpact(budgetRD: number, city: string) {
+    const avgCpm = 1500; // Referencia de costo por campaña
+    const estimatedImpactsPerScreen = 10000; // Estimación mensual por pantalla
+
+    // Contar pantallas disponibles en la zona
+    const onlineScreensCount = await this.prisma.device.count({
+      where: {
+        city: city === 'Global' ? undefined : city,
+        status: 'ACTIVE',
+        connectivityStatus: 'ONLINE',
+      },
+    });
+
+    const recommendedScreens = Math.min(
+      onlineScreensCount,
+      Math.floor(budgetRD / avgCpm),
+    );
+
+    const totalEstimatedImpacts = recommendedScreens * estimatedImpactsPerScreen;
+
+    return {
+      budget: budgetRD,
+      city,
+      recommendedScreens,
+      estimatedImpacts: totalEstimatedImpacts,
+      onlineScreensInZone: onlineScreensCount,
+    };
+  }
 }
 

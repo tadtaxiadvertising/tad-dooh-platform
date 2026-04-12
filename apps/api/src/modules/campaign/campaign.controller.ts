@@ -121,6 +121,12 @@ export class CampaignController {
     return this.campaignService.registerDirectMedia(dto, req.user);
   }
 
+  @Post('simulate-budget')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async simulateBudget(@Body() body: { budgetRD: number; city: string }) {
+    return this.campaignService.simulateImpact(body.budgetRD, body.city);
+  }
+
   @Post(':id/generate-video')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async generateVideo(

@@ -1,6 +1,6 @@
 # 🚀 TAD DOOH Platform - Estado del Despliegue v10.0
 
-**Última actualización:** 10 de Abril, 2026 (23:55 UTC-4)
+**Última actualización:** 11 de Abril, 2026 (22:45 UTC-4)
 
 ---
 
@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | **Admin Dashboard** | ✅ OPERACIONAL | Gestión total de Flota, Finanzas y BI. |
 | **Advertiser Portal** | ✅ BI v6.0 LIVE | Insights de marketing y facturación premium. |
-| **Driver Portal** | ✅ TOOLS LIVE | SoporteTécnico y Referidos integrados. |
+| **Driver Portal** | ✅ TOOLS LIVE | Soporte Técnico y Referidos integrados. |
 
 ### 2. Backend Gateway (NestJS)
 
@@ -29,23 +29,23 @@
 | **Microservice** | ✅ **OFFICIAL** | Apps/tad-remotion desacoplado. |
 | **Render Engine** | ✅ CHROMIUM | Bullseye-based container con fix de dependencias. |
 
-### 4. Tablet Player (PWA)
+### 4. Fleet Orchestration & Sync
 
 | Item | Estado | Notas |
 | --- | --- | --- |
-| **PWA Engine** | ✅ **EN LÍNEA** | Offline playback con Cache API & IndexedDB. |
-| **Sync Window** | ✅ OPERARIONAL | Sincronización diaria v1.1 activa. |
+| **Realtime Sync** | ✅ **LIVE** | Supabase Broadcast (Realtime v2) activo. |
+| **Tablet Player**| ✅ **EN LÍNEA** | Offline playback con WAKE_UP_CALL sync. |
 
 ---
 
 ## 📊 RESUMEN DE PROGRESO
 
 ```text
-Ecosistema Completo: 95% (Fase Escalamiento)
+Ecosistema Completo: 98% (Fase Post-Escalado)
 ├── Microservices Infrastructure ████████████████████ 100%
 ├── Advertiser BI v6.0          ████████████████████ 100%
 ├── Video Engine Stabilization  ████████████████████ 100%
-└── Advanced Analytics Core     ██████████████████░░ 90%
+└── Fleet Realtime Orchestration ████████████████████ 100%
 ```
 
 ---
@@ -53,7 +53,7 @@ Ecosistema Completo: 95% (Fase Escalamiento)
 ## 🎯 PRÓXIMOS PASOS (Q2 2026)
 
 1. **E2E Scale Test**: Validar el microservicio de video con 10 rendering paralelos.
-2. **KYC Automation**: Automatizar la validación de documentos para nuevos anunciantes.
+2. **CDN Integration**: Configurar Cloudflare para `media.tad.do`.
 3. **Optimización de Bitrate**: Perfiles de transcoding dinámicos en Remotion.
 
 ---
@@ -66,6 +66,7 @@ Ecosistema Completo: 95% (Fase Escalamiento)
 | **API Gateway** | <https://tad-api.rewvid.easypanel.host/api/v1> |
 | **Video Engine** | <https://tad-remotion.rewvid.easypanel.host> |
 | **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> |
+| **Portal Conductor** | <https://tad-driver.rewvid.easypanel.host> |
 
 ---
 

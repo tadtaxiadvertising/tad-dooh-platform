@@ -1,7 +1,7 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
 
 **Versión:** 2.0 (Auditoría v10.0.0 - SRE Microservices Approved)
-**Última Actualización:** 10 de Abril, 2026 (23:55)
+**Última Actualización:** 11 de Abril, 2026
 
 > ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. Cualquier flujo manual que escape a este diagrama de arquitectura se considerará una vulnerabilidad crítica. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable.
 
@@ -124,6 +124,6 @@ sequenceDiagram
 
 ## 🛠️ PARCHES DE SRE ESTABLECIDOS
 
-* [x] **Timeout Limits**: Las transferencias multimedia ahora expiran a los 300s en Vercel/Easypanel.
+* [x] **Timeout Limits**: Las transferencias multimedia ahora expiran a los 300s en EasyPanel.
 * [x] **Batching GPS 10:1**: Prohibidas las llamadas HTTP individuales desde el celular.
 * [x] **CORS Asesino**: El Header `x-device-id` ha sido bluelisted globalmente para evitar caídas en el handshake entre la app móvil y el gateway de NestJS.

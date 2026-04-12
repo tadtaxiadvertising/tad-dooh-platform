@@ -1,20 +1,20 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-04-10T23:55:00-04:00
+> **Última Actualización**: 2026-04-11T22:45:00-04:00
 
 ---
 
-## 🌐 URLS DE PRODUCCIÓN
+## 🌐 URLS DE PRODUCCIÓN (EasyPanel)
 
 | Recurso | URL |
 | :--- | :--- |
 | **Dashboard Admin** | <https://tad-dashboard.rewvid.easypanel.host> |
-| **API (Backend Gateway)** | <https://tad-api.rewvid.easypanel.host/api/v1> |
-| **Video Engine (Remotion)** | <https://tad-remotion.rewvid.easypanel.host> |
+| **API (Gateway)** | <https://tad-api.rewvid.easypanel.host/api/v1> |
+| **Video Engine** | <https://tad-remotion.rewvid.easypanel.host> |
 | **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> |
-| **Supabase Dashboard** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
-| **GitHub Repo** | <https://github.com/tadtaxiadvertising/tad-dooh-platform> |
+| **Portal Conductor** | <https://tad-driver.rewvid.easypanel.host> |
+| **Supabase Project** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> |
 
 ---
 
@@ -27,165 +27,69 @@ Email:    admin@tad.do
 Password: TadAdmin2026!
 ```
 
-- Autenticación vía **Supabase Auth** (signInWithPassword).
-- El backend valida el JWT de Supabase en cada request (excepto rutas `@Public()`).
+### Supabase & Postgres (EasyPanel Secrets)
 
-### Supabase Project
-
-```text
-PROJECT_ID:    ltdcdhqixvbpdcitthqf
-Region:        us-west-2 (AWS)
-SUPABASE_URL:  https://ltdcdhqixvbpdcitthqf.supabase.co
-SUPABASE_KEY:  (ver archivo .env del backend → SUPABASE_KEY)
-SERVICE_ROLE:  (ver archivo .env del backend → SUPABASE_SERVICE_ROLE_KEY)
-💡 IMPORTANTE: La SERVICE_ROLE key debe ser el JWT del proyecto, NO la sb_secret management key.
-```
-
-### Base de Datos PostgreSQL
-
-```text
-# Pooled Connection (para app/queries — puerto 6543)
-DATABASE_URL=(ver archivo backend/.env → DATABASE_URL)
-
-# Direct Connection (para migraciones/DDL — puerto 5432)
-DIRECT_URL=(ver archivo backend/.env → DIRECT_URL)
-```
-
-> ⚠️ Las credenciales reales están en `backend/.env`. NO commitear al repo.
+Todas las variables de entorno están centralizadas en EasyPanel bajo el esquema de **Secrets**.
+- `DATABASE_URL`: Connection Pool (puerto 6543) para Prisma.
+- `DIRECT_URL`: Direct Connection (puerto 5432) para Migraciones.
+- `SUPABASE_SERVICE_ROLE_KEY`: JWT de alta prioridad para bypass de RLS en el Backend.
 
 ---
 
-## 🏗️ STACK TÉCNICO
+## 🏗️ STACK TÉCNICO v10.0.0
 
-### Frontend (admin-dashboard)
+### Microservicios (Dockerized on EasyPanel)
 
-| Layer | Tecnología | Versión |
-| :--- | :--- | :--- |
-| Framework | Next.js (Pages Router) | 15.1.7 |
-| UI Library | React | 19.0.0 |
-| Styling | Tailwind CSS + PostCSS | 4.0.0 |
-| Icons | lucide-react | Latest |
-| HTTP Client | Axios | Latest |
-| Utilities | clsx, date-fns | Latest |
-| Deployment | VPS (Docker / EasyPanel Free) | Auto-deploy on push to `main` |
-
-### Backend (backend)
-
-| Layer | Tecnología | Versión |
-| :--- | :--- | :--- |
-| Framework | NestJS | 10.x |
-| ORM | Prisma Client | 5.22.0 |
-| Auth Guard | Custom `SupabaseAuthGuard` | — |
-| File Upload | Direct-to-Supabase Storage (Browser) | — |
-| Validation | `class-validator` + `ValidationPipe` | — |
-| Rate Limiting | `@nestjs/throttler` (100 req/min) | — |
-| CORS | Configured in `main.ts` (Manual whitelist) | — |
-| Deployment | VPS (Docker / EasyPanel Free) | — |
-
-### Microservicios & Infraestructura (v10.0)
-
-| Service | Provider | Propósito | RAM Limit |
+| Service | Technology | RAM Limit | Purpose |
 | :--- | :--- | :--- | :--- |
-| **API Gateway** | NestJS / Docker | Orquestación, Auth & Sync | 512 MB |
-| **TAD Remotion** | Remotion / Chromium | Renderizado de Video | 1024 MB |
-| **Admin Panel** | Next.js 15 | Gestión de Flota & BI | 512 MB |
-| **Advertiser Portal** | Next.js 15 | BI v6.0 & Campaign Mgmt | 512 MB |
-| **Driver Portal** | Next.js 15 | Support & Payments | 512 MB |
-| **Database** | Supabase Postgres | Persistencia de datos | — |
-| **Storage** | Supabase Storage | Media Storage | — |
+| **API Gateway** | NestJS / Prisma | 512 MB | Core logic, Auth & Fleet sync. |
+| **TAD Remotion**| Remotion / Chromium | 1024 MB | Programmatic Video Rendering. |
+| **Admin Panel** | Next.js 15 / Tailw4 | 512 MB | Fleet Operations & God Mode. |
+| **Adv Portal**  | Next.js 15 / Tailw4 | 512 MB | Advertiser BI v6.0. |
+| **Driver Portal**| Next.js 15 / Tailw4 | 512 MB | Mobile Gateway & Earnings. |
+
+### Shared Core
+
+- **Runtime**: Node.js 20.x
+- **Database**: PostgreSQL 15 (Supabase)
+- **Realtime**: Supabase Broadcast (Realtime v2)
+- **Styling**: Tailwind CSS v4.x
 
 ---
 
 ## ⚡ REGLA DE ORO
 
-> **CERO COSTOS ADICIONALES**. Todo el stack utiliza tiers gratuitos. No se deben integrar servicios de pago sin autorización.
+> **CERO COSTOS ADICIONALES**. Todo el stack debe mantenerse dentro de los tiers gratuitos de EasyPanel, Supabase y Cloudflare.
 
 ---
 
-## 🔧 COMANDOS DE DESARROLLO
+## 🔧 COMANDOS DE DESARROLLO (Monorepo)
 
 ```bash
-# Instalar dependencias
-npm install                              # Raíz (workspaces)
+# Instalación raíz
+npm install
 
-# Backend local
-cd backend
-npm run start:dev                        # http://localhost:3000
+# Iniciar ecosistema local
+npm run dev           # Lanza todos los servicios vía Turborepo (si aplica)
 
-# Dashboard local  
-cd admin-dashboard
-npm run dev                              # http://localhost:3001
-
-# Prisma
-cd backend
-npx prisma generate                      # Genera el client
-npx prisma db push                       # Sincroniza schema → DB
-npx prisma studio                        # GUI para inspeccionar datos
-
-# Deploy (automático on push)
-git add . && git commit -m "msg" && git push origin main
+# Prisma (dentro de apps/api o packages/database)
+npx prisma generate
+npx prisma db push
 ```
 
 ---
 
-## 🚨 VARIABLES DE ENTORNO EN VERCEL
+## 📍 REGLAS DE NEGOCIO (Core Principles)
 
-### Proyecto: tad-api (Backend)
-
-| Variable | Valor |
-| :--- | :--- |
-| `DATABASE_URL` | (copiar de `backend/.env` → DATABASE_URL) |
-| `DIRECT_URL` | (copiar de `backend/.env` → DIRECT_URL) |
-| `SUPABASE_URL` | `https://ltdcdhqixvbpdcitthqf.supabase.co` |
-| `SUPABASE_KEY` | (copiar de `backend/.env` → SUPABASE_KEY) |
-| `SUPABASE_SERVICE_ROLE_KEY` | (copiar de `backend/.env` → SUPABASE_SERVICE_ROLE_KEY) |
-| `NODE_ENV` | `production` |
-
-### Proyecto: tad-dashboard (Frontend)
-
-| Variable | Valor |
-| :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | `https://tad-api.vercel.app/api` |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://ltdcdhqixvbpdcitthqf.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (copiar de `admin-dashboard/.env.local` → NEXT_PUBLIC_SUPABASE_ANON_KEY) |
-
-> ⚠️ Si `NEXT_PUBLIC_API_URL` no está configurado en Vercel, el frontend usará el fallback hardcodeado en `services/api.ts` → `https://tad-api.vercel.app/api`.
+1. **Offline-First Delivery**: El TAD Player debe ser capaz de reproducir contenido durante 48 horas sin internet. El token de sesión (`JWT`) expira transcurrido ese tiempo forzando un re-sync.
+2. **Batching de Telemetría**: El Mobile Gateway (Smartphone del chofer) acumula coordenadas y las envía en bloques (10 puntos o 60 segundos) para optimizar la carga del API Gateway.
+3. **Kill-Switch Suscripción**: Los dispositivos sin pago activo (`subscriptionPaid: false`) reciben un comando de bloqueo inmediato que inhabilita el playback.
+4. **Validación de Inventario (Regla 15 Slots)**: Ninguna tablet puede tener más de 15 campañas activas simultáneamente para asegurar la equidad de impresiones.
+5. **Realtime Sync (Wake-up Call)**: El Admin puede forzar una sincronización inmediata emitiendo un comando vía Supabase Realtime a todo el canal `fleet_sync`.
+6. **Double-Entry Ledger**: Todas las impresiones publicitarias generan un débito al anunciante y un crédito (comisión) al conductor proporcional a la pauta validada por GPS.
+7. **Seguridad Bcrypt & JWT**: Rotación de tokens con verificación de identidad desde la API descentralizada.
+8. **Validación Multimedia**: El sistema solo acepta `video/mp4` con encoding compatible H.264 para asegurar el playback en hardware STI.
 
 ---
 
-## 🛡️ SEGURIDAD — PUNTOS CLAVE
-
-1. **Auth Global**: `SupabaseAuthGuard` (APP_GUARD) protege todas las rutas.
-2. **Rutas Públicas**: Decorador `@Public()` en controladores de tablet/player.
-3. **CORS**: Whitelist explícita en `main.ts` y `api/index.ts` (solo dominios de Vercel + localhost dev).
-4. **Rate Limiting**: 100 requests/min via `@nestjs/throttler`.
-5. **Validation**: `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`.
-6. **Supabase Storage**: Bucket `campaign-videos` con acceso via Service Role Key.
-
----
-
-## 📐 CONVENCIONES DE CÓDIGO
-
-- **Idioma de UI**: Español (frontend en español para el mercado dominicano).
-- **Idioma de código**: Inglés (variables, funciones, clases).
-- **Prisma Maps**: Todos los modelos usan `@@map("snake_case")` para compatibilidad SQL.
-- **API Prefix**: Todas las rutas bajo `/api/v1` (Regla de Negocio).
-- **Frontend routing**: Next.js Pages Router (NO App Router).
-- **Estilos**: Tailwind 4 con color personalizado `tad-yellow` (#fad400).
-
----
-
-## 📍 REGLAS: SISTEMA DE TRACKING Y GATEWAY
-
-1. **Arquitectura Gateway**: La tablet (offline) vincula al chofer vía QR. El celular del chofer (4G) actúa como puente (Mobile Gateway) enviando datos al servidor.
-2. **GPS Batching**: Para optimizar batería y nube, los datos se agrupan:
-   - Envío cada **10 coordenadas acumuladas**.
-   - Envío forzado cada **60 segundos** (si hay menos de 10 puntos).
-3. **Bloqueo RD$6,000**: Si la suscripción anual del dispositivo no está `ACTIVE`/Pagada, el endpoint `/fleet/track-batch` devuelve **402 Payment Required**.
-4. **Validación de Identidad**: El chofer debe estar autenticado en la PWA. No se permiten reportes de GPS para un `deviceId` que no tenga asignado en la base de datos.
-5. **Cálculo de Comisión**: El Bono de Disponibilidad de **RD$500/mes** se desbloquea automáticamente al registrar al menos **100 puntos GPS** válidos durante el mes calendario.
-6. **Restricción de Formato (Codecs)**: En el módulo de Multimedia (`/media`), se bloquea cualquier carga que no sea `video/mp4`. Esto garantiza compatibilidad nativa con el motor de renderizado de las tablets STI.
-7. **Broadcast de Sincronización**: La consola de administración (`/fleet`) tiene la capacidad de emitir un `WAKE_UP_CALL` vía el canal `fleet_sync` de Supabase Realtime para forzar una actualización inmediata de contenido en toda la flota activa.
-8. **Comisiones por Referidos (Advertiser Referral)**: Los conductores (TAD DRIVERS) que refieran marcas o anunciantes a la plataforma reciben una comisión de **RD$ 500.00** mensuales, calculada y liquidada automáticamente por el módulo de Inteligencia Financiera.
-9. **Transmisión Dinámica (Selective Targeting)**: Las campañas pueden ser asignadas globalmente, por ciudad o a dispositivos/conductores específicos. El motor de sincronización (`SyncModule`) orquesta los manifiestos JSON individuales para cada tablet basándose en estas reglas de segmentación.
-10. **Auditoría de Cumplimiento**: La plataforma genera un reporte de auditoría en tiempo real para cada conductor, desglosando el Bono de Disponibilidad (RD$500), Bono por Transmisión (RD$500/ad), Referidos de Socios (RD$500/driver) y Referidos de Anunciantes (RD$500/brand).
+*Nota: Cualquier desviación de estas reglas debe ser aprobada por el Arquitecto de Producto.*

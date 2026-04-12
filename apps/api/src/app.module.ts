@@ -1,5 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';

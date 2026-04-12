@@ -426,9 +426,9 @@ export class DriversService {
           where: { device: { deviceId }, campaign: { status: 'ACTIVE' } }
         }).catch(e => { 
           this.logger.warn(`[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`);
-          return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+          return this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
         })
-      : this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+      : this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
 
     const fetchLastPayment = this.prisma.payrollPayment.findFirst({
       where: { driverId: driver.id },

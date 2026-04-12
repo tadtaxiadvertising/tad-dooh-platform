@@ -115,7 +115,6 @@ export default function DriverDashboard() {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           speed: position.coords.speed || 0,
-          heading: position.coords.heading,
           timestamp: new Date(position.timestamp).toISOString()
         });
 

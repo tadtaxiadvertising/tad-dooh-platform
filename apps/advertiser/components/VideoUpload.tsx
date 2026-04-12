@@ -76,11 +76,18 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) =>
     try {
       const fileExt = 'mp4';
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      // Use 'ads-videos' bucket — auto-created by the backend MediaService
+      const BUCKET = 'ads-videos';
       const filePath = `advertiser-uploads/${fileName}`;
+
+      // 0. Ensure the Supabase bucket exists by calling the backend endpoint that auto-creates it.
+      //    This is a lightweight GET that's a no-op if the bucket already exists.
+      await api.get(`/media/upload-url?fileName=${encodeURIComponent(fileName)}&fileType=video%2Fmp4`)
+        .catch(() => {}); // Non-blocking — bucket creation is best-effort
 
       // 1. Upload to Supabase Storage
       const { data, error } = await supabase.storage
-        .from('media')
+        .from(BUCKET)
         .upload(filePath, processedBlob, {
           contentType: 'video/mp4',
           upsert: true
@@ -92,7 +99,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) =>
       const response = await api.post('/campaigns/register-media', {
         fileName: selectedFile.name, // Keep original name for UI
         storagePath: filePath,
-        url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
+        url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${filePath}`,
         fileSize: processedBlob.size,
         brandId: session?.user?.app_metadata?.entityId
       });

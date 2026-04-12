@@ -34,7 +34,7 @@
 | Item | Estado | Notas |
 | --- | --- | --- |
 | **Realtime Sync** | ✅ **LIVE** | Supabase Broadcast (Realtime v2) activo. |
-| **Tablet Player**| ✅ **EN LÍNEA** | Offline playback con WAKE_UP_CALL sync. |
+| **Tablet Player** | ✅ **EN LÍNEA** | Offline playback con WAKE_UP_CALL sync. |
 
 ---
 

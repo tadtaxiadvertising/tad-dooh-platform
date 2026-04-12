@@ -456,6 +456,8 @@ export default function AdvertiserCampaigns() {
                   </div>
 
                       <div className="flex gap-2">
+                         {/* TAD-ADVERTISER: Remotion generator temporarily disabled as per plan */}
+                         {/* 
                          <button 
                            onClick={() => {
                              setSelectedCampaignId(campaign.id);
@@ -466,6 +468,7 @@ export default function AdvertiserCampaigns() {
                          >
                             <Wand2 className="w-4 h-4" />
                          </button>
+                         */}
                          <button className="p-3 bg-zinc-800/50 hover:bg-[#fad400] hover:text-black rounded-xl transition-all">
                             <Edit2 className="w-4 h-4" />
                          </button>

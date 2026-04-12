@@ -62,7 +62,7 @@ export class PayrollAuditService {
       select: { consecutiveMonthsUnderGoal: true, level: true }
     });
 
-    if (!driver) return { amount, penaltyApplied: false };
+    if (!driver) return { amount, penaltyApplied: false, penaltyAmount: 0 };
 
     // Penalización del 10% si lleva 2 o más meses incumpliendo
     if (driver.consecutiveMonthsUnderGoal >= 2) {

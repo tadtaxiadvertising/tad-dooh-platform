@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bull';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import * as zod from 'zod';
@@ -66,6 +67,12 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
     // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        url: config.get('REDIS_URL') || 'redis://localhost:6379',
+      }),
+    }),
     PrismaModule,
     AuthModule,
     SupabaseModule,

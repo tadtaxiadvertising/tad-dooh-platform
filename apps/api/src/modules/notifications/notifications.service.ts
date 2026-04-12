@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Injectable()
 export class NotificationsService {
@@ -9,6 +11,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
+    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
   ) {}
 
   /**
@@ -76,14 +79,30 @@ export class NotificationsService {
   }
 
   /**
-   * Enviar una notificación push (Simulado para Mobile Gateway)
+   * Enviar una notificación push (Encola para procesamiento persistente)
    */
   async sendPush(driverId: string, message: string) {
-    this.logger.log(`📱 [PUSH] Enviando a Chofer ${driverId}: ${message}`);
+    this.logger.log(`📱 Encolando PUSH para Chofer ${driverId}`);
     
-    // Fallback: Creamos una alerta de sistema para que sea visible en el panel
+    // TAREA DEVOPS_001: Persistencia vía Redis (BullMQ)
+    await this.notificationsQueue.add('send-push', { 
+      driverId, 
+      message 
+    }, { 
+      attempts: 5, 
+      backoff: 5000 
+    });
+  }
+
+  /**
+   * Ejecución real del delivery (Llamado por el Processor)
+   */
+  async executePushDelivery(driverId: string, message: string) {
+    this.logger.log(`🚀 [PUSH DELIVERY] Entregando a ${driverId}: ${message}`);
+    
+    // For now, we mirror it as a system alert for auditability
     return this.createAlert({
-      title: 'Notificación Mobile',
+      title: 'Notificación Mobile (Push)',
       message: message,
       type: 'WARNING',
       category: 'DEVICE',

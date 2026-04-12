@@ -174,13 +174,52 @@ function DriverDashboard() {
             <div className="absolute bottom-0 -right-4 w-32 h-32 bg-tad-purple/10 blur-[60px] rounded-full pointer-events-none" />
             
             <div className="relative glass border-white/5 p-8 rounded-[2.5rem] space-y-8 overflow-hidden">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Balance Total</p>
-                <div className="flex items-baseline gap-2">
-                  <h2 className="text-5xl font-black tracking-tighter text-white">{stats.balance}</h2>
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] mb-1" />
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Award className={clsx("w-4 h-4", 
+                      driverData?.level === 'ORO' ? 'text-[#FFD700]' : 
+                      driverData?.level === 'PLATA' ? 'text-zinc-300' : 'text-orange-400'
+                    )} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      Nivel {driverData?.level || 'BASE'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Balance Total</p>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-5xl font-black tracking-tighter text-white">{stats.balance}</h2>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] mb-1" />
+                  </div>
                 </div>
+
+                {driverData?.performance && (
+                   <div className="text-right">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Meta Mensual</p>
+                      <div className="flex flex-col items-end">
+                         <span className={clsx("text-lg font-black", 
+                           driverData.performance.hours >= driverData.performance.goal ? "text-emerald-400" : "text-tad-cyan"
+                         )}>
+                           {Math.floor(driverData.performance.hours)}h / {driverData.performance.goal}h
+                         </span>
+                         <div className="w-24 h-1 bg-white/5 rounded-full mt-1 overflow-hidden">
+                            <div 
+                              className="h-full bg-tad-cyan transition-all duration-1000" 
+                              style={{ width: `${Math.min(100, (driverData.performance.hours / driverData.performance.goal) * 100)}%` }}
+                            />
+                         </div>
+                      </div>
+                   </div>
+                )}
               </div>
+
+              {driverData?.penaltyStatus?.isAtRisk && (
+                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-4 animate-pulse">
+                  <ShieldAlert className="text-orange-500 shrink-0 w-6 h-6" />
+                  <p className="text-[10px] font-bold text-orange-200/80 uppercase leading-relaxed">
+                    ALERTA: Te faltan {driverData.performance.goal - Math.floor(driverData.performance.hours)}h para evitar la penalización de nómina del 10%.
+                  </p>
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4">
                  <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5 space-y-1 group/stat transition-all hover:bg-white/[0.05]">

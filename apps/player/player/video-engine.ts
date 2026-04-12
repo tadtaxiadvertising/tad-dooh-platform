@@ -15,16 +15,12 @@ export interface VideoAsset {
 export class VideoEngine {
   private player: HTMLVideoElement | null;
   private qrContainer: HTMLElement | null;
-  private playlist: VideoAsset[] = [];
-  private currentIndex = 0;
-  private deviceId: string;
-  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
-  public playerStatus: "playing" | "error" | "stopped" = "stopped";
-
-  private intermissionScreen: HTMLElement | null;
-  private intermissionQr: HTMLImageElement | null;
-  private intermissionName: HTMLElement | null;
-  private intermissionTimerBar: HTMLElement | null;
+  private consecutiveErrors = 0;
+  private readonly MAX_CONSECUTIVE_ERRORS = 3;
+  private readonly GENERIC_FALLBACK_URLS = [
+    'https://proyecto-ia-tad.storage.googleapis.com/generic/TAD_GENERIC_LOOP_01.mp4',
+    'https://proyecto-ia-tad.storage.googleapis.com/generic/TAD_GENERIC_LOOP_02.mp4'
+  ];
 
   constructor(deviceId: string) {
     this.deviceId = deviceId;
@@ -45,6 +41,7 @@ export class VideoEngine {
       };
       this.player.addEventListener("playing", () => {
         this.playerStatus = "playing";
+        this.consecutiveErrors = 0; // Reset errors on successful play
         this.resetWatchdog();
       });
     }
@@ -53,39 +50,61 @@ export class VideoEngine {
   public setPlaylist(assets: VideoAsset[]) {
     this.playlist = assets;
     this.currentIndex = 0;
+    this.consecutiveErrors = 0;
+    
     if (this.playlist.length > 0) {
       this.playNext();
     } else {
-      console.warn('Playlist empty, stopping playback...');
-      this.playerStatus = "stopped";
-      if (this.player) {
-         this.player.pause();
-         this.player.src = '';
-         this.player.load();
-      }
-      if (this.intermissionScreen) {
-         this.intermissionScreen.style.display = 'block';
-      }
+      console.warn('Playlist empty, playing fallback loop...');
+      this.playFallback();
     }
   }
 
   private async handleTransition() {
     clearTimeout(this.watchdogTimer!);
     
-    // Track playback of JUST finished video
+    // Track playback of JUST finished video if it wasn't a fallback
     const playedVideo = this.playlist[this.currentIndex];
-    this.trackPlayback(playedVideo);
+    if (playedVideo && !this.GENERIC_FALLBACK_URLS.includes(playedVideo.url)) {
+      this.trackPlayback(playedVideo);
+    }
 
     // Ciclo al siguiente
-    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
-    const nextVideo = this.playlist[this.currentIndex];
+    if (this.playlist.length > 0) {
+      this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+      const nextVideo = this.playlist[this.currentIndex];
 
-    // Mostrar Intermission (5s) antes de playNext
-    if (nextVideo && this.intermissionScreen && this.intermissionQr) {
-      await this.showIntermission(nextVideo);
+      // Mostrar Intermission (5s) antes de playNext
+      if (nextVideo && this.intermissionScreen && this.intermissionQr) {
+        await this.showIntermission(nextVideo);
+      }
+      this.playNext();
+    } else {
+      this.playFallback();
     }
+  }
+
+  private async playFallback() {
+    if (!this.player) return;
     
-    this.playNext();
+    // Pick a random fallback or use an internal index
+    const fallbackUrl = this.GENERIC_FALLBACK_URLS[Math.floor(Math.random() * this.GENERIC_FALLBACK_URLS.length)];
+    
+    console.log('🛡️ Playing fallback:', fallbackUrl);
+    
+    try {
+      if (this.intermissionScreen) this.intermissionScreen.style.display = 'none';
+      if (this.qrContainer) this.qrContainer.style.display = 'none';
+      
+      const sourceURL = await VideoCache.getVideoSource(fallbackUrl);
+      this.player.src = sourceURL;
+      await this.player.play();
+      this.playerStatus = "playing";
+    } catch (e) {
+      console.error('Critical fallback failure:', e);
+      // If even fallback fails, retry after 5s
+      setTimeout(() => this.playFallback(), 5000);
+    }
   }
 
   private async showIntermission(video: VideoAsset): Promise<void> {
@@ -131,18 +150,18 @@ export class VideoEngine {
   }
 
   private async playNext() {
-    if (this.playlist.length === 0) return;
+    if (this.playlist.length === 0) {
+      this.playFallback();
+      return;
+    }
     const currentVideo = this.playlist[this.currentIndex];
     if (!currentVideo || !this.player) return;
 
     if (this.qrContainer) this.qrContainer.style.display = 'none';
 
     try {
-      // TAREA SW_001 & SW_004: 
-      // 1. Obtener fuente (Caché local si existe)
       const sourceURL = await VideoCache.getVideoSource(currentVideo.url);
       
-      // 2. Limpieza de memoria (Revocar Blob URL anterior para evitar leaks en RAM)
       const oldSrc = this.player.src;
       if (oldSrc.startsWith('blob:')) {
         URL.revokeObjectURL(oldSrc);
@@ -165,10 +184,8 @@ export class VideoEngine {
       timestamp: new Date().toISOString()
     };
 
-    // TAREA GPS_001: Siempre encolar para permitir Batching
     EventQueue.saveToQueue(payload);
     
-    // Si hay red, intentar flush inmediato (batch)
     if (navigator.onLine) {
       EventQueue.flushQueue();
     }
@@ -176,6 +193,14 @@ export class VideoEngine {
 
   private onPlaybackError() {
     this.playerStatus = "error";
+    this.consecutiveErrors++;
+    
+    if (this.consecutiveErrors >= this.MAX_CONSECUTIVE_ERRORS) {
+      console.error('Too many errors, forcing fallback loop.');
+      this.playFallback();
+      return;
+    }
+
     this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
     setTimeout(() => this.playNext(), 2000);
   }

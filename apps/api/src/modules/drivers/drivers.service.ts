@@ -15,7 +15,10 @@ export interface AuthUser {
 export class DriversService {
   private readonly logger = new Logger(DriversService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly payrollAudit: PayrollAuditService
+  ) {}
 
   /**
    * REGLA DE NEGOCIO 1: Validar acceso a la publicidad
@@ -50,12 +53,18 @@ export class DriversService {
       return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
     });
 
-    const monthlyEarnings = activeCampaignsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+    const baseEarnings = activeCampaignsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+    
+    // Aplicar lógica de auditoría y penalizaciones
+    const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driverId, baseEarnings);
 
     return {
       driverId,
       activeCampaigns: activeCampaignsCount,
-      projectedEarningsRD: monthlyEarnings,
+      baseEarningsRD: baseEarnings,
+      projectedEarningsRD: amount,
+      penaltyApplied,
+      penaltyAmount,
       currency: 'DOP',
     };
   }
@@ -437,16 +446,25 @@ export class DriversService {
 
     // FIX B-3: Evitar recalcular totalPaid inline — usar la variable ya calculada
     const totalPaid = totalPaidSum._sum.amount || 0;
-    const balance = projectedEarnings + referralEarnings + advertiserReferralEarnings + gpsBonus - totalPaid;
+    
+    // Aplicar penalizaciones al proyectado si aplica
+    const { amount: finalProjected, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driver.id, projectedEarnings);
+    
+    const balance = finalProjected + referralEarnings + advertiserReferralEarnings + gpsBonus - totalPaid;
 
     return {
       driverId: driver.id,
       driverName: driver.fullName,
+      level: driver.level,
+      consecutiveMonthsUnderGoal: driver.consecutiveMonthsUnderGoal,
       phone: driver.phone,
       cedula: driver.cedula,
       taxiNumber: driver.taxiNumber || driver.taxiPlate || 'S/N',
       adsPlayed,
-      projectedEarnings,
+      projectedEarnings: finalProjected,
+      baseEarnings: projectedEarnings,
+      penaltyApplied,
+      penaltyAmount,
       referralEarnings,
       referralsCount,
       advertiserReferralEarnings,

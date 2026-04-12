@@ -60,11 +60,14 @@ model Device {
   assignedCampaigns PlaylistItem[]
   subscriptions     Subscription[]
 
+  connectivityStatus String           @default("ONLINE") @map("connectivity_status")
+
   @@index([status])
   @@index([lastSync])
   @@index([city])
   @@index([lastSeen])
   @@index([driverId])
+  @@index([connectivityStatus])
   @@map("devices")
 }
 
@@ -328,6 +331,8 @@ model Driver {
   updatedAt           DateTime         @updatedAt @map("updated_at")
   referredBy          String?          @map("referred_by")
   password            String?
+  level               String           @default("BASE")
+  consecutiveMonthsUnderGoal Int       @default(0) @map("consecutive_months_under_goal")
   referredAdvertisers Advertiser[]     @relation("AdvertiserReferrals")
 
   // LEGAL COMPLIANCE: Acceptance of agreements
@@ -383,6 +388,10 @@ model PayrollPayment {
   paidAt       DateTime? @map("paid_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   driver       Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  penaltyApplied     Boolean   @default(false) @map("penalty_applied")
+  penaltyPercentage  Float     @default(0)     @map("penalty_percentage")
+  transmissionHours  Float     @default(0)     @map("transmission_hours")
 
   @@unique([driverId, month, year])
   @@index([driverId])

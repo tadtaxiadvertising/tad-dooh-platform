@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { MetricsGrid } from '@/components/bi/MetricsGrid';
-import { ScreenUpsellCalculator } from '@/components/bi/ScreenUpsellCalculator';
+import { BudgetSimulator } from '@/components/bi/BudgetSimulator';
 import { BillingPortal } from '@/components/bi/BillingPortal';
 import { 
   ShieldCheck, 
@@ -52,13 +52,13 @@ export default function AdvertiserDashboard() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Module 2: Expansion of Inventory */}
+        {/* Module 2: Expansion of Inventory / Budget Simulation */}
         <div className="lg:col-span-2">
-          <ScreenUpsellCalculator />
+          <BudgetSimulator />
           
           <div className="mt-6 p-6 bg-gradient-to-br from-[#18181B] to-[#09090B] rounded-2xl border border-[#F4F4F5]/5">
             <div className="flex items-center gap-3 mb-4">
-              <Zap className="text-[#FFD700]" size={20} />
+              <Zap className="text-[#fad400]" size={20} />
               <h4 className="font-bold text-white uppercase text-sm tracking-wider">Despliegue Instantáneo</h4>
             </div>
             <p className="text-xs text-[#F4F4F5]/50 leading-relaxed italic">

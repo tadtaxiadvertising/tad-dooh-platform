@@ -74,4 +74,20 @@ export class NotificationsService {
       data: { read: true },
     });
   }
+
+  /**
+   * Enviar una notificación push (Simulado para Mobile Gateway)
+   */
+  async sendPush(driverId: string, message: string) {
+    this.logger.log(`📱 [PUSH] Enviando a Chofer ${driverId}: ${message}`);
+    
+    // Fallback: Creamos una alerta de sistema para que sea visible en el panel
+    return this.createAlert({
+      title: 'Notificación Mobile',
+      message: message,
+      type: 'WARNING',
+      category: 'DEVICE',
+      entityId: driverId,
+    });
+  }
 }

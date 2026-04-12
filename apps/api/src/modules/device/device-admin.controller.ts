@@ -185,44 +185,58 @@ export class DeviceAdminController {
   // Perfil completo del nodo (device + driver + campaigns)
   @Get(':deviceId/profile')
   async getDeviceProfile(@Param('deviceId') deviceId: string) {
-    const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
-      include: {
-        driver: true,
-        campaigns: { include: { campaign: { select: { id: true, name: true, advertiser: true, active: true } } } },
+    try {
+      const device = await this.prisma.device.findFirst({
+        where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+        include: {
+          driver: true,
+          campaigns: { include: { campaign: { select: { id: true, name: true, advertiser: true, active: true } } } },
+        }
+      });
+      
+      if (!device) {
+        this.logger.warn(`🔍 Perfil solicitado para dispositivo inexistente: ${deviceId}`);
+        return { error: 'Dispositivo no encontrado' };
       }
-    });
-    if (!device) return { error: 'Dispositivo no encontrado' };
 
-    return {
-      id: device.id,
-      device_id: device.deviceId,
-      taxi_number: device.taxiNumber,
-      city: device.city,
-      status: device.status,
-      battery_level: device.batteryLevel,
-      storage_free: device.storageFree,
-      app_version: device.appVersion,
-      last_seen: device.lastSeen,
-      player_status: device.playerStatus,
-      driver: device.driver ? {
-        id: device.driver.id,
-        fullName: device.driver.fullName,
-        phone: device.driver.phone,
-        cedula: device.driver.cedula,
-        licensePlate: device.driver.licensePlate,
-        taxiPlate: device.driver.taxiPlate,
-        subscriptionPaid: device.driver.subscriptionPaid,
-        status: device.driver.status,
-      } : null,
-      campaigns: device.campaigns.map(c => ({
-        id: c.campaign.id,
-        name: c.campaign.name,
-        advertiser: c.campaign.advertiser,
-        active: c.campaign.active,
-        assigned_at: c.assigned_at,
-      })),
-    };
+      return {
+        id: device.id,
+        device_id: device.deviceId,
+        taxi_number: device.taxiNumber,
+        city: device.city,
+        status: device.status,
+        battery_level: device.batteryLevel,
+        storage_free: device.storageFree,
+        app_version: device.appVersion,
+        last_seen: device.lastSeen,
+        player_status: device.playerStatus,
+        driver: device.driver ? {
+          id: device.driver.id,
+          fullName: device.driver.fullName,
+          phone: device.driver.phone,
+          cedula: device.driver.cedula,
+          licensePlate: device.driver.licensePlate,
+          taxiPlate: device.driver.taxiPlate,
+          subscriptionPaid: device.driver.subscriptionPaid,
+          status: device.driver.status,
+        } : null,
+        campaigns: device.campaigns
+          .filter(c => c.campaign) // Defensa contra campañas huérfanas
+          .map(c => ({
+            id: c.campaign.id,
+            name: c.campaign.name,
+            advertiser: c.campaign.advertiser,
+            active: c.campaign.active,
+            assigned_at: c.assigned_at,
+          })),
+      };
+    } catch (error: any) {
+      this.logger.error(`❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`);
+      return { 
+        error: 'Excepción interna al procesar el perfil',
+        message: error.message
+      };
+    }
   }
 
   // Actualizar perfil completo (dispositivo y chofer)

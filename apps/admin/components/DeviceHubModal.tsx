@@ -140,22 +140,34 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                <RefreshCw className="w-12 h-12 animate-spin mb-4" />
                <p className="text-xs font-black uppercase tracking-widest">Sincronizando con nodo...</p>
              </div>
+          ) : error || (!profile || profile.error) ? (
+            <div className="flex flex-col items-center justify-center h-64 text-rose-500/80 animate-in fade-in zoom-in duration-500">
+              <AlertCircle className="w-12 h-12 mb-4" />
+              <p className="text-xs font-black uppercase tracking-widest mb-2">{error || profile?.error || 'Nodo no disponible en este momento'}</p>
+              <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mb-6">La telemetría no pudo ser sincronizada</p>
+              <button 
+                onClick={loadProfile}
+                className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white transition-all active:scale-95"
+              >
+                Reintentar Conexión
+              </button>
+            </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               
               {activeTab === 'status' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <StatusMetric label="Batería" value={`${profile.battery_level || 0}%`} icon={Zap} sub="Carga Nominal" />
-                  <StatusMetric label="Almacenamiento" value={profile.storage_free || '0B'} icon={Database} sub="Vault Interno" />
-                  <StatusMetric label="Versión App" value={profile.app_version || 'v2.0.1'} icon={ShieldCheck} sub="Build Estable" />
-                  <StatusMetric label="Última Señal" value={profile.last_seen ? formatDistanceToNow(new Date(profile.last_seen), { addSuffix: true }) : 'Sin señal'} icon={Clock} sub="Telemetría GPS" />
-                  <StatusMetric label="Estado Player" value={profile.player_status || 'IDLE'} icon={Play} sub="Motor de Render" />
+                  <StatusMetric label="Batería" value={`${profile?.battery_level || 0}%`} icon={Zap} sub="Carga Nominal" />
+                  <StatusMetric label="Almacenamiento" value={profile?.storage_free || '0B'} icon={Database} sub="Vault Interno" />
+                  <StatusMetric label="Versión App" value={profile?.app_version || 'v2.0.1'} icon={ShieldCheck} sub="Build Estable" />
+                  <StatusMetric label="Última Señal" value={profile?.last_seen ? formatDistanceToNow(new Date(profile.last_seen), { addSuffix: true }) : 'Sin señal'} icon={Clock} sub="Telemetría GPS" />
+                  <StatusMetric label="Estado Player" value={profile?.player_status || 'IDLE'} icon={Play} sub="Motor de Render" />
                   <StatusMetric 
                     label="Salud de Red" 
-                    value={profile.status === 'online' ? '98ms' : 'OFFLINE'} 
+                    value={profile?.status === 'online' ? '98ms' : 'OFFLINE'} 
                     icon={Globe} 
                     sub="Latencia Promedio"
-                    color={profile.status === 'online' ? 'text-emerald-500' : 'text-rose-500'} 
+                    color={profile?.status === 'online' ? 'text-emerald-500' : 'text-rose-500'} 
                   />
 
                   {/* Resource Drill-down */}
@@ -163,24 +175,24 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                     <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Carga de CPU</span>
-                        <span className="text-[10px] font-black text-white italic">{(profile.is_online ? Math.floor(Math.random() * 20) + 5 : 0)}%</span>
+                        <span className="text-[10px] font-black text-white italic">{(profile?.is_online ? Math.floor(Math.random() * 20) + 5 : 0)}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-tad-yellow rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(255,212,0,0.4)]" 
-                          style={{ width: `${profile.is_online ? Math.floor(Math.random() * 20) + 5 : 0}%` }}
+                          style={{ width: `${profile?.is_online ? Math.floor(Math.random() * 20) + 5 : 0}%` }}
                         />
                       </div>
                     </div>
                     <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Uso de Memoria</span>
-                        <span className="text-[10px] font-black text-white italic">{(profile.is_online ? 42 : 0)}%</span>
+                        <span className="text-[10px] font-black text-white italic">{(profile?.is_online ? 42 : 0)}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.4)]" 
-                          style={{ width: `${profile.is_online ? 42 : 0}%` }}
+                          style={{ width: `${profile?.is_online ? 42 : 0}%` }}
                         />
                       </div>
                     </div>
@@ -193,7 +205,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                       <CommandBtn label="Reiniciar App" icon={RefreshCw} loading={commandLoading === 'RELOAD'} onClick={() => handleCommand('RELOAD')} />
                       <CommandBtn label="Forzar Sync" icon={Zap} loading={commandLoading === 'SYNC'} onClick={() => handleCommand('SYNC')} />
                       <a 
-                        href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${profile.device_id}`}
+                        href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${profile?.device_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 px-6 py-4 bg-tad-yellow border border-tad-yellow/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-black hover:scale-[1.02] transition-all"

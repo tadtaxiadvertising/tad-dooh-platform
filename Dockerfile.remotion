@@ -7,10 +7,10 @@ WORKDIR /app
 
 # Archivos core del monorepo
 COPY package*.json ./
-# Copiar el package.json de la app para que npm instal lo reconozca como workspace
+# Copiar el package.json de la app para que npm install lo reconozca como workspace
 COPY apps/tad-remotion/package.json ./apps/tad-remotion/
 
-# Instalar dependencias (esto instalará remotion en el root node_modules)
+# Instalar dependencias
 RUN npm install
 
 # Copiar el resto de la app
@@ -19,6 +19,14 @@ COPY apps/tad-remotion ./apps/tad-remotion
 # Build de tad-remotion
 WORKDIR /app/apps/tad-remotion
 RUN npm run build
+
+# Descargar el navegador de Remotion en el builder
+# Aquí los node_modules ya están instalados correctamente.
+# Probamos múltiples rutas posibles según donde npm haya colocado el binario.
+WORKDIR /app
+RUN /app/node_modules/.bin/remotion browser ensure \
+    || /app/apps/tad-remotion/node_modules/.bin/remotion browser ensure \
+    || node -e "require('@remotion/renderer').ensureBrowser().then(()=>console.log('Browser ready')).catch(e=>{console.error(e);process.exit(1)})"
 
 # ---- Runner (Production) ----
 FROM node:20-bullseye AS runner
@@ -52,13 +60,12 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar TODO el proyecto desde el builder (incluyendo node_modules con symlinks)
+# Copiar app desde el builder (incluyendo node_modules)
 COPY --from=builder /app /app
 
-# Instalar el navegador de Remotion ANTES de podar dependencias
-# Llamamos al binario directamente para evitar fallos de resolución de npx en monorepos
-WORKDIR /app/apps/tad-remotion
-RUN /app/node_modules/.bin/remotion browser ensure
+# Copiar la caché del navegador descargado en el builder
+# Remotion/Puppeteer guarda el binario de Chromium en /root/.cache
+COPY --from=builder /root/.cache /root/.cache
 
 # Podar dependencias para el runtime
 WORKDIR /app

@@ -83,25 +83,41 @@ export class MediaService {
   /**
    * REGLA DE SEGURIDAD 07: Signed URL — El video NO pasa por NestJS RAM
    * Genera una URL firmada válida por 15 minutos para subir directo a Supabase.
+   * Esto evita errores de RLS en el frontend y permite archivos de hasta 100MB.
    */
   async generateUploadUrl(fileName: string, fileType: string) {
-    await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(() => {});
-    
-    const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-    const { data, error } = await this.supabase.storage
-      .from('ads-videos')
-      .createSignedUploadUrl(safeName);
+    try {
+      // 0. Auto-create bucket if missing
+      await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(() => {});
+      
+      // 1. Sanitize and path
+      const sanitized = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const path = `advertiser-uploads/${Date.now()}-${sanitized}`;
+      
+      this.logger.log(`Generando URL firmada para: ${path} (${fileType})`);
+      
+      // 2. Create signed upload URL
+      const { data, error } = await this.supabase.storage
+        .from('ads-videos')
+        .createSignedUploadUrl(path);
 
-    if (error) throw new BadRequestException(`Storage Error: ${error.message}`);
+      if (error) {
+        this.logger.error(`Error de Supabase creando URL firmada: ${error.message}`);
+        throw new Error(error.message);
+      }
 
-    const basePrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
-    const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${data.path}`;
-    
-    return {
-      uploadUrl: data.signedUrl,
-      path: data.path,
-      publicUrl,
-    };
+      const basePrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
+      const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${path}`;
+      
+      return {
+        uploadUrl: data.signedUrl,
+        path: path,
+        publicUrl,
+      };
+    } catch (e: any) {
+      this.logger.error(`Falla en generateUploadUrl: ${e.message}`);
+      throw new BadRequestException(`Storage temporary error: ${e.message}`);
+    }
   }
 
   async registerBypassedMedia(data: any) {

@@ -13,8 +13,17 @@ export interface VideoAsset {
 }
 
 export class VideoEngine {
-  private player: HTMLVideoElement | null;
-  private qrContainer: HTMLElement | null;
+  private playlist: VideoAsset[] = [];
+  private currentIndex = 0;
+  private deviceId: string;
+  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+  public playerStatus: "playing" | "error" | "stopped" = "stopped";
+
+  private intermissionScreen: HTMLElement | null;
+  private intermissionQr: HTMLImageElement | null;
+  private intermissionName: HTMLElement | null;
+  private intermissionTimerBar: HTMLElement | null;
+
   private consecutiveErrors = 0;
   private readonly MAX_CONSECUTIVE_ERRORS = 3;
   private readonly GENERIC_FALLBACK_URLS = [
@@ -25,7 +34,6 @@ export class VideoEngine {
   constructor(deviceId: string) {
     this.deviceId = deviceId;
     this.player = document.querySelector('#tad-player');
-    this.qrContainer = document.querySelector('#qr-container');
     
     // Intermission Elements
     this.intermissionScreen = document.querySelector('#intermission-screen');
@@ -94,7 +102,6 @@ export class VideoEngine {
     
     try {
       if (this.intermissionScreen) this.intermissionScreen.style.display = 'none';
-      if (this.qrContainer) this.qrContainer.style.display = 'none';
       
       const sourceURL = await VideoCache.getVideoSource(fallbackUrl);
       this.player.src = sourceURL;
@@ -156,8 +163,6 @@ export class VideoEngine {
     }
     const currentVideo = this.playlist[this.currentIndex];
     if (!currentVideo || !this.player) return;
-
-    if (this.qrContainer) this.qrContainer.style.display = 'none';
 
     try {
       const sourceURL = await VideoCache.getVideoSource(currentVideo.url);

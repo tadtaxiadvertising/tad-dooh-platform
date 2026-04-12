@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
+import { PayrollAuditService } from './payroll-audit.service';
 
 export interface AuthUser {
   id: string;

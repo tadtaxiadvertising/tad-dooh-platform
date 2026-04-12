@@ -280,31 +280,4 @@ export class MediaService {
     }
   }
 
-  /**
-   * Finaliza un renderizado de Remotion, actualiza el asset y activa la flota.
-   */
-  async completeRemotionRender(mediaId: string, url: string, status: string = 'READY') {
-    const media = await this.prisma.media.update({
-      where: { id: mediaId },
-      data: { 
-        url, 
-        cdnUrl: url, 
-        status 
-      },
-      include: { campaign: true }
-    });
-
-    if (status === 'READY' && media.campaign_id) {
-      // Notificar a la flota vinculada vía Supabase Realtime
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'remotion_render_finished',
-        campaignId: media.campaign_id,
-        mediaId: media.id
-      }).catch(e => this.logger.error(`[Realtime] Failed broadcast: ${e.message}`));
-      
-      this.logger.log(`[REMOTION] Render finished for ${mediaId}. Fleet notified.`);
-    }
-
-    return media;
-  }
 }

@@ -33,7 +33,7 @@ export class PayrollAuditService {
 
       if (!lastPayment) continue;
 
-      const underGoal = lastPayment.transmission_hours < levelConfig.hours;
+      const underGoal = lastPayment.transmissionHours < levelConfig.hours;
 
       if (underGoal) {
         await this.prisma.driver.update({
@@ -42,7 +42,7 @@ export class PayrollAuditService {
             consecutiveMonthsUnderGoal: { increment: 1 } 
           }
         });
-        this.logger.warn(`⚠️ Chofer ${driver.fullName}: ${lastPayment.transmission_hours}h vs Meta ${levelConfig.hours}h.`);
+        this.logger.warn(`⚠️ Chofer ${driver.fullName}: ${lastPayment.transmissionHours}h vs Meta ${levelConfig.hours}h.`);
       } else {
         await this.prisma.driver.update({
           where: { id: driver.id },

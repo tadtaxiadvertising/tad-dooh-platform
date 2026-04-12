@@ -84,12 +84,4 @@ export class MediaController {
     return this.mediaService.updateMedia(id, dto);
   }
 
-  @Post('remotion-webhook')
-  async handleRemotionWebhook(@Body() data: { mediaId: string; url: string; status: string }) {
-    if (!data.mediaId || !data.url) {
-       const { BadRequestException } = require('@nestjs/common');
-       throw new BadRequestException('mediaId and url are required');
-    }
-    return this.mediaService.completeRemotionRender(data.mediaId, data.url, data.status);
-  }
 }

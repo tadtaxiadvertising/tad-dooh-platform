@@ -38,11 +38,21 @@ COPY --from=builder /app/prisma ./prisma
 RUN npm prune --production
 
 # Create entrypoint script
-# CRITICAL: do NOT use 'set -e' — a failed prisma push must NOT stop the app
+# CRITICAL: If main.js is at dist/main.js (flattened) or dist/src/main.js (nested)
 RUN printf '#!/bin/sh\n\
 echo "=== TAD Backend Entrypoint ==="\n\
-echo "Starting NestJS application immediately to pass healthchecks..."\n\
-exec node dist/src/main\n\
+echo "Finding NestJS main module..."\n\
+if [ -f "dist/main.js" ]; then\n\
+  echo "Starting from dist/main.js..."\n\
+  exec node dist/main.js\n\
+elif [ -f "dist/src/main.js" ]; then\n\
+  echo "Starting from dist/src/main.js..."\n\
+  exec node dist/src/main.js\n\
+else\n\
+  echo "Error: Could not find main.js in dist/ or dist/src/"\n\
+  ls -R dist/\n\
+  exit 1\n\
+fi\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 3000

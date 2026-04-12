@@ -56,9 +56,9 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app /app
 
 # Instalar el navegador de Remotion ANTES de podar dependencias
-# Usamos npx para asegurar que encuentra el binario en el monorepo
+# Llamamos al binario directamente para evitar fallos de resolución de npx en monorepos
 WORKDIR /app/apps/tad-remotion
-RUN npx remotion browser ensure
+RUN /app/node_modules/.bin/remotion browser ensure
 
 # Podar dependencias para el runtime
 WORKDIR /app

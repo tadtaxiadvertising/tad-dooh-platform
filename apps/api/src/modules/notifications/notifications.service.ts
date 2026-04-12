@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
 
 @Injectable()
 export class NotificationsService {
@@ -11,7 +9,6 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
-    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
   ) {}
 
   /**
@@ -79,28 +76,24 @@ export class NotificationsService {
   }
 
   /**
-   * Enviar una notificación push (Encola para procesamiento persistente)
+   * Enviar una notificación push (fire-and-forget directo)
+   * TODO: Migrar a BullMQ cuando Redis esté provisionado en EasyPanel
    */
   async sendPush(driverId: string, message: string) {
-    this.logger.log(`📱 Encolando PUSH para Chofer ${driverId}`);
-    
-    // TAREA DEVOPS_001: Persistencia vía Redis (BullMQ)
-    await this.notificationsQueue.add('send-push', { 
-      driverId, 
-      message 
-    }, { 
-      attempts: 5, 
-      backoff: 5000 
-    });
+    this.logger.log(`📱 Procesando PUSH para Chofer ${driverId}`);
+    // Fire-and-forget: no bloqueamos la respuesta al llamador
+    this.executePushDelivery(driverId, message).catch((err) =>
+      this.logger.error(`[PUSH] Error entregando a ${driverId}: ${err.message}`),
+    );
   }
 
   /**
-   * Ejecución real del delivery (Llamado por el Processor)
+   * Ejecución real del delivery
    */
   async executePushDelivery(driverId: string, message: string) {
     this.logger.log(`🚀 [PUSH DELIVERY] Entregando a ${driverId}: ${message}`);
-    
-    // For now, we mirror it as a system alert for auditability
+
+    // Mirror as system alert for auditability
     return this.createAlert({
       title: 'Notificación Mobile (Push)',
       message: message,

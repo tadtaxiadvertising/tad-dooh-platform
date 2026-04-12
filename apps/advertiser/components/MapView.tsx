@@ -77,24 +77,24 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
       justify-content: center;
       perspective: 1000px;
     ">
-      \${isActive ? \`
-        <div class="map-pulse-ring" style="border: 1.5px solid \${mainColor}"></div>
-        <div class="map-pulse-ring" style="border: 1.5px solid \${mainColor}; animation-delay: 0.8s;"></div>
-      \` : ''}
+      ${isActive ? `
+        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}"></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}; animation-delay: 0.8s;"></div>
+      ` : ''}
 
       <div style="
         width: 30px;
         height: 44px;
-        background: linear-gradient(145deg, \${mainColor} 0%, \${isActive ? '#ccaa00' : '#27272a'} 100%);
+        background: linear-gradient(145deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#27272a'} 100%);
         border-radius: 10px;
-        border: 2px solid \${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
-        box-shadow: \${glow}, 0 10px 20px rgba(0,0,0,0.5);
+        border: 2px solid ${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
+        box-shadow: ${glow}, 0 10px 20px rgba(0,0,0,0.5);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
         padding: 4px 0;
-        transform: \${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
+        transform: ${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2;
       ">
@@ -104,24 +104,24 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
           font-family: 'Inter', sans-serif;
           font-weight: 950;
           font-size: 10px;
-          color: \${numberColor};
+          color: ${numberColor};
           letter-spacing: -0.5px;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8), \${textGlow};
+          text-shadow: 0 1px 3px rgba(0,0,0,0.8), ${textGlow};
           transform: skew(-5deg);
         ">
-          \${short}
+          ${short}
         </div>
 
         <div style="
           width: 22px; 
           height: 3px; 
-          background: \${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
+          background: ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
           border-radius: 2px;
-          box-shadow: \${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
+          box-shadow: ${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
         "></div>
       </div>
 
-      \${selected ? \`
+      ${selected ? `
         <div style="
           width: 2px; 
           height: 12px; 
@@ -131,7 +131,7 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
           top: -20px;
           animation: map-float 1.5s infinite ease-in-out;
         "></div>
-      \` : ''}
+      ` : ''}
 
       <style>
         .map-pulse-ring {
@@ -153,7 +153,7 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
         }
       </style>
     </div>
-  \`;
+  `;
 
   return L.divIcon({
     className: '',
@@ -168,17 +168,17 @@ const createClusterIcon = (cluster: any) => {
   const n = cluster.getChildCount();
   const size = n < 10 ? 44 : n < 50 ? 52 : 64;
   return L.divIcon({
-    html: \`
-      <div style="position: relative; width: \${size}px; height: \${size}px; display: flex; align-items: center; justify-content: center;">
+    html: `
+      <div style="position: relative; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;">
         <div style="position: absolute; inset: 0; background: rgba(250,212,0,0.1); border: 2.5px solid #fad400; border-radius: 50%; box-shadow: 0 0 20px rgba(250,212,0,0.3); animation: cluster-spin 10s infinite linear;"></div>
-        <div style="position: relative; font-family: 'Inter', sans-serif; font-weight: 950; font-size: 13px; color: #fad400; text-shadow: 0 0 10px rgba(250,212,0,0.5); font-weight: 900 !important;">\${n}</div>
+        <div style="position: relative; font-family: 'Inter', sans-serif; font-weight: 950; font-size: 13px; color: #fad400; text-shadow: 0 0 10px rgba(250,212,0,0.5); font-weight: 900 !important;">${n}</div>
         <style>
           @keyframes cluster-spin {
              from { transform: rotate(0deg); } to { transform: rotate(360deg); }
           }
         </style>
       </div>
-    \`,
+    `,
     className: '',
     iconSize: L.point(size, size, true),
   });
@@ -396,7 +396,7 @@ const MapView: React.FC<MapViewProps> = ({
         <div className="absolute bottom-8 right-24 w-12 h-12 border-b-2 border-r-2 border-white/10 rounded-br-2xl" />
       </div>
 
-      <style jsx global>{\`
+      <style jsx global>{`
         .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }
         .leaflet-tile { border: none !important; opacity: 1 !important; outline: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
         .leaflet-tile-container { border: none !important; outline: none !important; }
@@ -426,7 +426,7 @@ const MapView: React.FC<MapViewProps> = ({
           0% { transform: translateY(-100%); }
           100% { transform: translateY(800% ); }
         }
-      \`}</style>
+      `}</style>
     </div>
   );
 };

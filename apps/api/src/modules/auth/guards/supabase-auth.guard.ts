@@ -15,9 +15,9 @@ import * as jwt from 'jsonwebtoken';
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
-  private readonly logger = new Logger(SupabaseAuthGuard.name);
-  private readonly isDev: boolean;
-  private readonly allowDevBypass: boolean;
+  // In-memory cache to avoid repeated network calls for the same token in a short window
+  private static sessionCache = new Map<string, { user: any; expiry: number }>();
+  private readonly CACHE_TTL_MS = 10000; // 10 seconds cache for same token
 
   constructor(
     private reflector: Reflector,
@@ -30,6 +30,14 @@ export class SupabaseAuthGuard implements CanActivate {
     const hasSecret = !!(this.configService.get('SUPABASE_JWT_SECRET') || this.configService.get('JWT_SECRET'));
     if (!hasSecret) {
       this.logger.warn('⚠️ [SECURITY] No hay JWT_SECRET configurado. Solo funcionará Estrategia 2 (Red).');
+    }
+
+    // Cleanup stale cache occasionally
+    if (Math.random() > 0.95) {
+      const now = Date.now();
+      for (const [token, data] of SupabaseAuthGuard.sessionCache.entries()) {
+        if (data.expiry < now) SupabaseAuthGuard.sessionCache.delete(token);
+      }
     }
   }
 
@@ -50,6 +58,14 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
+
+    // --- CACHE LOOKUP ---
+    const cached = SupabaseAuthGuard.sessionCache.get(token);
+    if (cached && cached.expiry > Date.now()) {
+      request.user = cached.user;
+      return true;
+    }
+
     const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
 
     // --- ESTRATEGIA 1: Validación Local JWT ---
@@ -63,6 +79,13 @@ export class SupabaseAuthGuard implements CanActivate {
             role: payload.app_metadata?.role || payload.role || 'GUEST',
             entityId: payload.app_metadata?.entityId || null,
           };
+          
+          // Cache sucessful validation
+          SupabaseAuthGuard.sessionCache.set(token, { 
+            user: request.user, 
+            expiry: Date.now() + this.CACHE_TTL_MS 
+          });
+
           this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
           return true;
         }
@@ -100,6 +123,12 @@ export class SupabaseAuthGuard implements CanActivate {
           role: roleFromMeta,
           entityId,
         };
+
+        // Cache sucessful validation
+        SupabaseAuthGuard.sessionCache.set(token, { 
+          user: request.user, 
+          expiry: Date.now() + this.CACHE_TTL_MS 
+        });
         
         if (roleFromMeta === 'GUEST') {
           this.logger.debug(

@@ -35,7 +35,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 25000, // 25s — suficiente para EasyPanel free tier con cold starts
+  timeout: 60000, // 60s — suficiente para reportes pesados y EasyPanel cold starts
 });
 
 // ============================================

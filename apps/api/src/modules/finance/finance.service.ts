@@ -116,37 +116,53 @@ export class FinanceService {
     });
 
     const drivers = await this.prisma.driver.findMany({
-      include: {
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        licensePlate: true,
+        taxiNumber: true,
+        subscriptionPaid: true,
+        subscriptionEnd: true,
         devices: {
-          include: {
-            campaigns: true // explicitly assigned campaigns
+          select: {
+            city: true,
+            taxiNumber: true,
+            campaigns: {
+              select: { campaign_id: true }
+            }
           }
         },
-        referrals: true, // Get drivers referred by this partner
-        referredAdvertisers: true // Get advertisers referred by this partner
-      } as any
-    });
+        referrals: { select: { id: true } },
+        referredAdvertisers: { select: { id: true } }
+      }
+    }) as any[];
 
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
 
+    // OPTIMIZACIÓN: Pre-calcular todos los conteos de GPS en una sola query
+    this.logger.log(`🔍 [OPTIMIZACIÓN] Pre-calculando conteos GPS para ${drivers.length} choferes...`);
+    const gpsCountsRaw = await this.prisma.driverLocation.groupBy({
+      by: ['driverId'],
+      where: {
+        timestamp: { gte: periodStart, lte: periodEnd }
+      },
+      _count: {
+        _all: true
+      }
+    });
+
+    // Crear un mapa para búsqueda rápida O(1)
+    const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
+
     // REGLA PERFORMANCE: Process with throttledMap to avoid DB pool exhaustion (Optimized for 8GB RAM)
-    const payroll = await throttledMap(drivers, async (d) => {
+    const payroll = await throttledMap(drivers, async (driver) => {
       try {
-        const driver = d as any;
         let activeAdsCount = 0;
 
-        // 2. Calculate GPS Usage Bonus
-        // Condition: At least 100 entries in DriverLocation during the month
-        const gpsPointsCount = await this.prisma.driverLocation.count({
-          where: {
-            driverId: driver.id,
-            timestamp: { gte: periodStart, lte: periodEnd }
-          }
-        }).catch(err => {
-          this.logger.error(`Error counting GPS points for driver ${driver.id}: ${err.message}`);
-          return 0;
-        });
+        // 2. BUSCAR EN EL MAPA (O(1)) en lugar de query N+1
+        const gpsPointsCount = gpsCountsMap.get(driver.id) || 0;
 
         const gpsBonus = gpsPointsCount >= BUSINESS_RULES.GPS_BONUS_THRESHOLD ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
 
@@ -228,6 +244,7 @@ export class FinanceService {
     }, 5);
 
     return payroll;
+
   }
 
   /**
@@ -308,26 +325,38 @@ export class FinanceService {
     this.logger.log('Generating campaign billing report');
 
     const campaigns = await this.prisma.campaign.findMany({
-      include: {
-        media: { select: { id: true } },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        media: { select: { id: true, durationSeconds: true } },
         _count: { select: { devices: true } }
       }
     });
 
+    // OPTIMIZACIÓN: Pre-calcular todas las impresiones en una sola query grupal
+    this.logger.log('🔍 [OPTIMIZACIÓN] Pre-calculando impresiones totales...');
+    const impressionCountsRaw = await this.prisma.playbackEvent.groupBy({
+      by: ['videoId'],
+      where: { eventType: 'play_confirm' },
+      _count: { _all: true }
+    });
+
+    const impressionMap = new Map(impressionCountsRaw.map(i => [i.videoId, i._count._all]));
+
     // REGLA PERFORMANCE: Process with higher concurrency (Optimized for 8GB RAM)
-    const reports = await throttledMap(campaigns, async (campaign) => {
-      const mediaIds = campaign.media.map(m => m.id);
-      const impressions = await this.prisma.playbackEvent.count({
-        where: { videoId: { in: mediaIds }, eventType: 'play_confirm' }
+    const reports = campaigns.map((campaign) => {
+      // 1. Obtener impresiones sumando cada media asset ligado a la campaña
+      let totalImpressions = 0;
+      campaign.media.forEach(m => {
+        totalImpressions += impressionMap.get(m.id) || 0;
       });
 
-      const mediaItems = await this.prisma.media.findMany({
-        where: { id: { in: mediaIds } }
-      });
-
-      // Pricing model: RD$1,500 per 30-second block per media asset
+      // 2. Pricing model: RD$1,500 per 30-second block per media asset
       let monthlyRevenue = 0;
-      mediaItems.forEach(media => {
+      campaign.media.forEach(media => {
         const duration = (media as any).durationSeconds || 30;
         const blocks = Math.ceil(duration / 30);
         monthlyRevenue += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
@@ -340,12 +369,12 @@ export class FinanceService {
       return {
         campaignId: campaign.id,
         campaignName: campaign.name,
-        totalImpressions: impressions,
+        totalImpressions,
         assignedTaxis: campaign._count.devices,
         estimatedRevenue: totalRevenue,
         status: campaign.status
       };
-    }, 10); // Increase to 10 simultaneous audits
+    });
 
     return reports;
   }

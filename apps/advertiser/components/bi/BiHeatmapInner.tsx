@@ -1,54 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet.heat';
-import 'leaflet/dist/leaflet.css';
-import { getBiHotspots } from "@tad/services";
-
-// Plugin component to handle the heat layer
-const HeatLayer = ({ points }: { points: any[] }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !points || points.length === 0) return;
-
-    // @ts-ignore
-    const heatLayer = L.heatLayer(points, {
-      radius: 20,
-      blur: 15,
-      maxZoom: 17,
-      gradient: {
-        0.4: '#1e1b4b', // Deep indigo
-        0.6: '#4338ca', // Indigo
-        0.7: '#facc15', // TAD Yellow
-        1.0: '#fbbf24'  // Amber
-      }
-    }).addTo(map);
-
-    return () => {
-      map.removeLayer(heatLayer);
-    };
-  }, [map, points]);
-
-  return null;
-};
+import { getFleetLocations } from "@tad/services";
+import MapView from '../MapView';
 
 const BiHeatmapInner = () => {
-  const [points, setPoints] = useState<any[]>([]);
+  const [fleetLocations, setFleetLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPoints = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getBiHotspots();
-        setPoints(data);
+        const locations = await getFleetLocations();
+        setFleetLocations(locations || []);
       } catch (error) {
-        console.error('Error fetching hotspots:', error);
+        console.error('Error fetching fleet locations:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchPoints();
+    fetchData();
   }, []);
 
   return (
@@ -59,22 +28,17 @@ const BiHeatmapInner = () => {
         </div>
       )}
       
-      <MapContainer 
-        center={[18.4861, -69.9312]} // Santo Domingo
-        zoom={12} 
-        style={{ height: '100%', width: '100%', filter: 'invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9)' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      {!loading && (
+        <MapView 
+          locations={fleetLocations}
+          mode="live"
+          mapTheme="dark"
         />
-        <HeatLayer points={points} />
-      </MapContainer>
+      )}
 
       {/* Overlay controls */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-black/80 border border-zinc-800 px-3 py-1.5 rounded-lg backdrop-blur-md">
-        <p className="text-[9px] font-black tracking-widest text-zinc-400 uppercase">Hotspots de Impacto (MTD)</p>
+      <div className="absolute bottom-4 left-4 z-[1000] bg-black/80 border border-zinc-800 px-3 py-1.5 rounded-lg backdrop-blur-md pointer-events-none">
+        <p className="text-[9px] font-black tracking-widest text-[#FFD700] uppercase">Red Operativa en Tiempo Real</p>
       </div>
     </div>
   );

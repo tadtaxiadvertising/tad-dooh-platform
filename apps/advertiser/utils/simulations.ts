@@ -1,50 +1,54 @@
 /**
  * TAD ADVERTISER — Impression & Impact Simulation Utility
  * ========================================================
- * Implements deterministic algorithms to estimate reach based on traffic density.
+ * v10.1.0: Alcance Único (uniqueReach) + Impresiones Totales (2x frecuencia).
+ *
+ * Reglas de Negocio:
+ * - Costo: RD$1,500 por pantalla/mes (bloque 30s).
+ * - Alcance Único por pantalla: ~2,000 personas/mes.
+ * - Frecuencia: mínimo 2 visualizaciones por pasajero por viaje.
+ * - Densidad: 2-3 pasajeros promedio por viaje (factor informativo).
  */
 
 export interface SimulationResult {
   budget: number;
   city: string;
   recommendedScreens: number;
-  estimatedImpacts: number;
+  uniqueReach: number;
+  totalImpressions: number;
   onlineScreensInZone: number;
   cpm: number;
 }
 
 /**
- * Simulates campaign impact for an advertiser before creation.
- * Rules:
- * - AVG CPM: RD$ 1,500 per month per screen (Base)
- * - Impacts: ~10,000 monthly verified impressions per screen in Santo Domingo.
- * - Multiplier: Santiago +15% density, Others -20%.
+ * Simula el impacto de campaña antes de creación (cálculo client-side).
+ * El backend en /campaigns/simulate-budget aplica la misma lógica con
+ * datos reales de pantallas online.
  */
 export const simulateImpact = (
-  budgetRD: number, 
-  city: string, 
-  onlineScreensCount: number = 50 // Default for UI simulation if no backend value
+  budgetRD: number,
+  city: string,
+  onlineScreensCount: number = 50 // Default para simulación UI sin backend
 ): SimulationResult => {
-  const avgCpm = 1500;
-  let estimatedImpactsPerScreen = 10000;
-
-  // Regional adjustments
-  if (city === 'Santiago') estimatedImpactsPerScreen *= 1.15;
-  if (city === 'Otro') estimatedImpactsPerScreen *= 0.8;
+  const costPerScreen = 1500;
+  const uniqueReachPerScreen = 2000; // Personas alcanzadas por pantalla/mes
+  const viewFrequency = 2; // Visualizaciones mínimas por pasajero por viaje
 
   const recommendedScreens = Math.min(
     onlineScreensCount,
-    Math.floor(budgetRD / avgCpm)
+    Math.floor(budgetRD / costPerScreen)
   );
 
-  const totalEstimatedImpacts = recommendedScreens * estimatedImpactsPerScreen;
+  const uniqueReach = recommendedScreens * uniqueReachPerScreen;
+  const totalImpressions = uniqueReach * viewFrequency;
 
   return {
     budget: budgetRD,
     city,
     recommendedScreens,
-    estimatedImpacts: totalEstimatedImpacts,
+    uniqueReach,
+    totalImpressions,
     onlineScreensInZone: onlineScreensCount,
-    cpm: avgCpm
+    cpm: costPerScreen,
   };
 };

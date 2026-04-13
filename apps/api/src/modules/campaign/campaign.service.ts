@@ -608,10 +608,16 @@ export class CampaignService {
 
   /**
    * TAD-ADVERTISER: Simulador de Presupuesto
+   *
+   * Lógica v10.1.0:
+   * - Alcance Único (uniqueReach): 2,000 personas por pantalla/mes.
+   * - Impresiones Totales (totalImpressions): uniqueReach × 2 (frecuencia mínima por viaje).
+   * - Factor de Densidad: 2-3 pasajeros promedio por viaje (documentado, no multiplicado aquí).
    */
   async simulateImpact(budgetRD: number, city: string) {
-    const avgCpm = 1500; // Referencia de costo por campaña
-    const estimatedImpactsPerScreen = 10000; // Estimación mensual por pantalla
+    const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500
+    const uniqueReachPerScreen = 2000; // Personas alcanzadas por pantalla/mes
+    const viewFrequency = 2; // Visualizaciones mínimas por pasajero por viaje
 
     // Contar pantallas disponibles en la zona
     const onlineScreensCount = await this.prisma.device.count({
@@ -624,16 +630,18 @@ export class CampaignService {
 
     const recommendedScreens = Math.min(
       onlineScreensCount,
-      Math.floor(budgetRD / avgCpm),
+      Math.floor(budgetRD / costPerScreen),
     );
 
-    const totalEstimatedImpacts = recommendedScreens * estimatedImpactsPerScreen;
+    const uniqueReach = recommendedScreens * uniqueReachPerScreen;
+    const totalImpressions = uniqueReach * viewFrequency;
 
     return {
       budget: budgetRD,
       city,
       recommendedScreens,
-      estimatedImpacts: totalEstimatedImpacts,
+      uniqueReach,
+      totalImpressions,
       onlineScreensInZone: onlineScreensCount,
     };
   }

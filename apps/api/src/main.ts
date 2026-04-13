@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
@@ -16,19 +16,20 @@ import { initializeSentry } from './utils/sentry';
 initializeSentry();
 
 async function bootstrap() {
-  console.log('🚀 TAD DOOH API - Iniciando proceso de arranque...');
+  const loggerInstance = new Logger('Bootstrap');
+  loggerInstance.log('🚀 TAD DOOH API - Iniciando proceso de arranque...');
   
   try {
-    const logger = createWinstonLogger();
-    const app = await NestFactory.create(AppModule, { logger });
+    const winstonLogger = createWinstonLogger();
+    const app = await NestFactory.create(AppModule, { logger: winstonLogger });
 
     // Config service
     const configService = app.get(ConfigService);
     const nodeEnv = configService.get('NODE_ENV') || 'development';
     const port = configService.get('PORT') || 3000;
 
-    console.log(`🔧 Entorno Detectado: ${nodeEnv}`);
-    console.log(`🔧 Puerto Configurado: ${port}`);
+    loggerInstance.log(`🔧 Entorno Detectado: ${nodeEnv}`);
+    loggerInstance.log(`🔧 Puerto Configurado: ${port}`);
 
     // Global validation pipe
     app.useGlobalPipes(
@@ -52,12 +53,9 @@ async function bootstrap() {
 
     app.enableCors({
       origin: (origin, callback) => {
-        // En producción, si origin es undefined (ej. wget/curl), podemos permitir o denegar.
-        // Los navegadores siempre envían Origin.
         if (!origin || allowedOriginsStr === '*' || allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          // Para debugging, permitimos orígenes de easypanel localmente si fallan
           if (origin.includes('easypanel.host')) {
              callback(null, true);
           } else {
@@ -70,10 +68,10 @@ async function bootstrap() {
       credentials: true,
     });
 
-    // API prefix (Regla de Negocio: Prefijo obligatorio para versionamiento)
+    // API prefix
     app.setGlobalPrefix('api/v1');
 
-    // Swagger SÓLO en desarrollo (ahorra ~150MB de RAM en producción)
+    // Swagger SÓLO en desarrollo
     if (nodeEnv !== 'production') {
       const config = new DocumentBuilder()
         .setTitle('TAD DOOH Platform API')
@@ -85,14 +83,12 @@ async function bootstrap() {
       SwaggerModule.setup('docs', app, document);
     }
 
-    // CRÍTICO PARA EASYPANEL/DOCKER:
-    // Habilitar Shutdown Hooks para evitar conexiones zombie de Prisma (Doc 05)
+    // Shutdown Hooks
     app.enableShutdownHooks();
 
-    // Escuchar en todas las interfaces para Docker
     await app.listen(port, '0.0.0.0');
     
-    console.log(`
+    loggerInstance.log(`
   ╔════════════════════════════════════════════════════════╗
   ║           🚗 TAD DOOH Platform API                     ║
   ║   URL: http://0.0.0.0:${port}/api/v1                       ║
@@ -100,7 +96,7 @@ async function bootstrap() {
   ╚════════════════════════════════════════════════════════╝
     `);
   } catch (error) {
-    console.error('❌ ERROR FATAL DURANTE EL ARRANQUE DEL API:', error);
+    loggerInstance.error('❌ ERROR FATAL DURANTE EL ARRANQUE DEL API:', error);
     process.exit(1);
   }
 }

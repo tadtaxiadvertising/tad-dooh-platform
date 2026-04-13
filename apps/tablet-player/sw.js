@@ -15,7 +15,6 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    console.log('[TAD SW 5.3] Installing App Shell...');
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(APP_SHELL);
@@ -29,7 +28,6 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        console.log('[TAD SW 5.3] Purging old cache:', cache);
                         return caches.delete(cache);
                     }
                 })

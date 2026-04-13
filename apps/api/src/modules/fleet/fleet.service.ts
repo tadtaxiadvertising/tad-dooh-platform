@@ -107,7 +107,7 @@ export class FleetService {
   async getFleetMap(advertiserId?: string) {
     try {
       // Build filter: if advertiserId is provided, only show devices assigned to their campaigns
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       if (advertiserId) {
         where.campaigns = {
           some: {
@@ -174,9 +174,11 @@ export class FleetService {
           subscriptionStatus,
         };
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Never crash the map page — return empty array with a warning log
-      console.error('[FleetService] getFleetMap() failed — returning empty array:', error?.message);
+      const logger = new Logger('FleetService');
+      logger.error(`[FleetService] getFleetMap() failed — returning empty array: ${errorMessage}`);
       return [];
     }
   }
@@ -285,7 +287,7 @@ export class FleetService {
     };
   }
 
-  async sendCommand(deviceId: string, type: string, params: any) {
+  async sendCommand(deviceId: string, type: string, params: Record<string, unknown> = {}) {
     return this.prisma.deviceCommand.create({
       data: {
         deviceId: (await this.prisma.device.findUnique({ where: { deviceId } }))?.id || deviceId,
@@ -471,7 +473,7 @@ export class FleetService {
   async getTrackingSummary(advertiserId?: string) {
     try {
       // 1. Obtener todos los drivers con su(s) tablet(s) vinculada(s)
-      const where: any = { devices: { some: {} } };
+      const where: Record<string, unknown> = { devices: { some: {} } };
       if (advertiserId) {
         where.devices = {
           some: {
@@ -537,18 +539,20 @@ export class FleetService {
           }),
         ]);
 
-        countMap = new Map(counts.map((c: any) => [
+        countMap = new Map(counts.map((c) => [
           c.driverId, 
           { 
-            count: (c._count as any).id, 
-            avgSpeed: (c._avg as any)?.speed ?? 0 
+            count: (c._count as { id: number }).id, 
+            avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0 
           }
         ]));
 
-        totalMap = new Map(totalCounts.map((c: any) => [c.driverId, (c._count as any).id]));
-      } catch (groupByError) {
+        totalMap = new Map((totalCounts as Array<{ driverId: string; _count: { id: number } }>).map((c) => [c.driverId, c._count.id]));
+      } catch (groupByError: unknown) {
+        const errorMessage = groupByError instanceof Error ? groupByError.message : String(groupByError);
         // Degraded mode: return basic driver data without GPS stats
-        console.warn('[FleetService] groupBy on driverLocation failed, degrading gracefully:', groupByError?.message);
+        const logger = new Logger('FleetService');
+        logger.warn(`[FleetService] groupBy on driverLocation failed, degrading gracefully: ${errorMessage}`);
       }
 
       const now = new Date();
@@ -594,14 +598,16 @@ export class FleetService {
           },
         };
       });
-    } catch (error) {
-      console.error('CRITICAL: Error in getTrackingSummary:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const logger = new Logger('FleetService');
+      logger.error(`CRITICAL: Error in getTrackingSummary: ${errorMessage}`);
       // Return empty array instead of throwing 500 — the UI handles empty state gracefully
       return [];
     }
   }
 
-  async trackBatch(data: { driverId?: string; deviceId: string; locations?: any[]; points?: any[] }) {
+  async trackBatch(data: { driverId?: string; deviceId: string; locations?: Array<{ latitude?: number; latitude_deg?: number; p_lat?: number; lat?: number; longitude?: number; longitude_deg?: number; p_lng?: number; lng?: number; speed?: number; timestamp?: string | number; ts?: string | number }>; points?: Array<{ latitude?: number; longitude?: number; speed?: number; timestamp?: string | number }> }) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
       include: { driver: true }
@@ -636,20 +642,32 @@ export class FleetService {
     }
 
     // 2. GUARDADO MASIVO (Soporta formato 'locations' con lat/lng y 'points' con latitude/longitude)
-    const rawPoints = data.points || data.locations || [];
+    interface BatchPoint {
+      latitude?: number;
+      longitude?: number;
+      lat?: number;
+      lng?: number;
+      speed?: number;
+      timestamp?: string | number;
+      ts?: string | number;
+    }
+
+    const rawPoints = (data.points || data.locations || []) as BatchPoint[];
     const records = rawPoints.map(p => ({
       driverId: resolvedDriverId,
       deviceId: data.deviceId,
-      latitude: p.latitude ?? p.lat,
-      longitude: p.longitude ?? p.lng,
+      latitude: p.latitude ?? p.lat ?? 0,
+      longitude: p.longitude ?? p.lng ?? 0,
       speed: p.speed || 0,
-      timestamp: new Date(p.timestamp || p.ts)
+      timestamp: new Date(p.timestamp || p.ts || Date.now())
     }));
 
     if (records.length > 0) {
-      const latestPoint = rawPoints.reduce((prev: any, curr: any) => 
-        (new Date(curr.timestamp || curr.ts) > new Date(prev.timestamp || prev.ts)) ? curr : prev
-      );
+      const latestPoint = rawPoints.reduce((prev, curr) => {
+        const currTime = new Date(curr.timestamp || curr.ts || 0).getTime();
+        const prevTime = new Date(prev.timestamp || prev.ts || 0).getTime();
+        return currTime > prevTime ? curr : prev;
+      });
 
       await this.prisma.driverLocation.createMany({
         data: records
@@ -680,7 +698,7 @@ export class FleetService {
    * Envía un comando a toda la flota activa (Realtime + Persistencia)
    * Útil para el "Panic Button" o actualizaciones globales.
    */
-  async broadcastCommand(type: string, params: any = {}) {
+  async broadcastCommand(type: string, params: Record<string, any> = {}) {
     Logger.log(`[FLEET_C2] Broadcasting global command: ${type}`);
 
     // 1. Emitir vía Realtime para efectos inmediatos en dispositivos conectados

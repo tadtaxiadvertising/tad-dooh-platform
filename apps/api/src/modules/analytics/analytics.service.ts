@@ -9,11 +9,11 @@ export class AnalyticsService {
   
   // Minimal in-memory cache for high-frequency dashboard data
   private cache: {
-    summary?: { data: any; expiry: number };
-    topTaxis?: { data: any; expiry: number };
-    hourly?: { data: any; expiry: number };
+    summary?: { data: AnalyticsSummary; expiry: number };
+    topTaxis?: { data: TopTaxi[]; expiry: number };
+    hourly?: { data: HourlyData[]; expiry: number };
     totalImpressions?: { data: number; expiry: number };
-    antiFraud?: { data: any; expiry: number };
+    antiFraud?: { data: AntiFraudData; expiry: number };
   } = {};
 
   private deviceExistsCache = new Set<string>();
@@ -24,7 +24,7 @@ export class AnalyticsService {
     private readonly notifications: NotificationsService
   ) {}
 
-  async ingestEvent(dto: any) {
+  async ingestEvent(dto: IngestEventDto) {
     // 🔥 Optimization: Skip DB check if we already know this device exists in this session
     if (!this.deviceExistsCache.has(dto.deviceId)) {
       let device = await this.prisma.device.findUnique({
@@ -68,7 +68,7 @@ export class AnalyticsService {
     });
   }
 
-  async ingestBatchEvents(dtos: any[]) {
+  async ingestBatchEvents(dtos: IngestEventDto[]) {
     if (!dtos || dtos.length === 0) {
       return { count: 0 };
     }
@@ -225,7 +225,7 @@ export class AnalyticsService {
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Using Raw SQL for grouped aggregation on PostgreSQL
-    const results: any[] = await this.prisma.$queryRaw`
+    const results: Array<{ hour: number; plays: number }> = await this.prisma.$queryRaw`
       SELECT 
         EXTRACT(HOUR FROM "timestamp") as "hour",
         COUNT(id)::int as "plays"
@@ -281,7 +281,7 @@ export class AnalyticsService {
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    const where: any = {
+    const where: { timestamp: { gte: Date }; lat: { not: null }; lng: { not: null }; videoId?: { in: string[] } } = {
       timestamp: { gte: fifteenDaysAgo },
       lat: { not: null },
       lng: { not: null }
@@ -466,4 +466,40 @@ export class AnalyticsService {
     
     return umami.getWebsiteStats(websiteId, startAt, now);
   }
+}
+
+interface AnalyticsSummary {
+  totalImpressions: number;
+  activeNodes: number;
+  totalScans: number;
+  ctr: number;
+  hourlyAverage: number;
+}
+
+interface TopTaxi {
+  device_id: string;
+  plays: number;
+}
+
+interface HourlyData {
+  hour: string;
+  plays: number;
+}
+
+interface AntiFraudData {
+  rawImpressions: number;
+  gpsValidations: number;
+  validPercentage: number;
+  status: string;
+}
+
+interface IngestEventDto {
+  deviceId: string;
+  campaignId?: string;
+  eventType: string;
+  type?: string;
+  timestamp?: string | Date;
+  occurredAt?: string | Date;
+  lat?: number;
+  lng?: number;
 }

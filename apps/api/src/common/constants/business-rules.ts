@@ -68,7 +68,10 @@ export const BUSINESS_RULES = {
     BASE: { hours: 120, label: 'BASE', priority: 1, penalty: 0.10 },
     PLATA: { hours: 160, label: 'PLATA', priority: 2, penalty: 0 },
     ORO: { hours: 200, label: 'ORO', priority: 3, penalty: 0 },
-  }
+  },
+
+  /** TTL de comandos de dispositivo en días */
+  COMMAND_TTL_DAYS: 7,
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

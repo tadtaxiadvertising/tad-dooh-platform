@@ -236,32 +236,53 @@ export class CampaignService {
   }
 
   /**
-   * Registra metadatos de archivos subidos directamente a Supabase sin tocar la RAM.
+   * Single Source of Truth: Registra metadatos de un archivo ya subido a Supabase.
    */
   async registerDirectMedia(dto: { brandId: string; fileName: string; url: string; fileSize?: number; storagePath: string }, user?: AuthUser) {
-    if (user?.role !== 'ADMIN' && user?.email && dto.brandId) {
-      const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
-      if (!advertiser || advertiser.id !== dto.brandId) {
-        throw new BadRequestException('No tiene permisos para registrar contenido en esta marca');
+    this.logger.debug(`[MEDIA_REG] Intentando registro de ${dto.fileName} (${dto.fileSize} bytes)`);
+    
+    // 🛡️ REGLA DE SEGURIDAD 10.2: Validación de Propiedad
+    if (user?.role !== 'ADMIN') {
+      // 1. Intentamos validar por entityId (Token) - Más rápido y seguro
+      if (user?.entityId) {
+        if (dto.brandId && user.entityId !== dto.brandId) {
+          this.logger.warn(`[MEDIA_REG] Rechazado: Entidad no coincide. Token=${user.entityId}, DTO=${dto.brandId}`);
+          throw new BadRequestException('ID de marca no coincide con tu perfíl de anunciante');
+        }
+      } 
+      // 2. Fallback a búsqueda por Email (Base de Datos)
+      else if (user?.email && dto.brandId) {
+        const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
+        if (!advertiser || advertiser.id !== dto.brandId) {
+          this.logger.warn(`[MEDIA_REG] Rechazado: No se encontró anunciante o ID incorrecto para ${user.email}`);
+          throw new BadRequestException('No tienes permisos suficientes para esta marca');
+        }
       }
     }
 
     if (dto.fileSize && Number(dto.fileSize) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      this.logger.warn(`[MEDIA_REG] Archivo demasiado grande: ${dto.fileSize} > ${BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES}`);
       throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
     }
 
-    const media = await this.prisma.media.create({
-      data: {
-        filename: dto.fileName,
-        originalFilename: dto.fileName,
-        url: dto.url,
-        fileSize: dto.fileSize ? Math.round(Number(dto.fileSize)) : 0,
-        storageKey: dto.storagePath,
-        status: 'READY'
-      }
-    });
+    try {
+      const media = await this.prisma.media.create({
+        data: {
+          filename: dto.fileName,
+          originalFilename: dto.fileName,
+          url: dto.url,
+          fileSize: dto.fileSize ? BigInt(Math.round(Number(dto.fileSize))) : BigInt(0),
+          storageKey: dto.storagePath,
+          status: 'READY'
+        }
+      });
 
-    return { success: true, media };
+      this.logger.log(`✅ [MEDIA_REG] Media registrada con éxito: ${media.id}`);
+      return { success: true, media };
+    } catch (e: any) {
+      this.logger.error(`❌ [MEDIA_REG] Error en base de datos: ${e.message}`);
+      throw new BadRequestException(`Error al guardar en base de datos: ${e.message}`);
+    }
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {

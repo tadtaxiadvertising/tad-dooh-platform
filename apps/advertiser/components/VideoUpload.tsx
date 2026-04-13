@@ -97,25 +97,35 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) =>
       }
 
       // 2. Register Metadata in Backend
-      const response = await api.post('/campaigns/register-media', {
+      const payload = {
         fileName: selectedFile.name,
         storagePath: storagePath,
         url: publicUrl,
         fileSize: processedBlob.size,
-        brandId: session?.user?.app_metadata?.entityId
+        brandId: session?.user?.app_metadata?.entityId || (session?.user as any)?.entityId
+      };
+
+      console.log('[UPLOAD] Registrando media:', payload);
+
+      const response = await api.post('/campaigns/register-media', payload).catch(err => {
+        const msg = err.response?.data?.message || err.message;
+        throw new Error(`Error en el registro: ${msg}`);
       });
 
       if (response.data && onUploadComplete) {
-        onUploadComplete(response.data.media);
+        // El backend devuelve { success: true, media: {...} }
+        const mediaData = response.data.media || response.data;
+        onUploadComplete(mediaData);
+        
         // Reset state
         setSelectedFile(null);
         setProcessedBlob(null);
       }
       
-      alert('¡Video optimizado y subido con éxito!');
+      alert('¡Video optimizado, subido y registrado con éxito!');
     } catch (error: any) {
-      console.error('Error en la subida:', error);
-      alert(`Error: ${error.message || 'No se pudo completar la subida'}`);
+      console.error('❌ Error en el flujo de subida:', error);
+      alert(error.message || 'No se pudo completar la subida del video');
     } finally {
       setIsFinalUploading(false);
     }

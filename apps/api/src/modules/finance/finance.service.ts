@@ -20,6 +20,14 @@ export class FinanceService {
   ) {}
 
   /**
+   * RECOVERY: On module init, check if the system missed any critical delinquency scans
+   */
+  async onModuleInit() {
+    this.logger.log('🔄 [RECOVERY] Checking for missed automated tasks...');
+    await this.checkHighDelinquency();
+  }
+
+  /**
    * Proceso de Notificación Automática por Morosidad (Regla 402)
    */
   async notifyMorosidad(deviceId: string) {
@@ -75,20 +83,20 @@ export class FinanceService {
    * and triggers the delinquency protocol.
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async checkHighDelinquency() {
-    this.logger.log('🛡️ [CRON_DELINQUENCY] Iniciando escaneo diario de morosidad...');
+  async checkHighDelinquency(targetDate: Date = new Date()) {
+    this.logger.log(`🛡️ [CRON_DELINQUENCY] Iniciando escaneo de morosidad para fecha: ${targetDate.toDateString()}...`);
 
     const delinquentDrivers = await this.prisma.driver.findMany({
       where: {
         status: 'ACTIVE',
         subscriptionPaid: false,
-        subscriptionEnd: { lt: new Date() } // Past due
+        subscriptionEnd: { lt: targetDate } // Past due
       },
       include: { devices: true }
     });
 
     if (delinquentDrivers.length === 0) {
-      this.logger.log('✅ No hay morosos críticos detectados hoy.');
+      this.logger.log(`✅ No hay morosos críticos detectados para ${targetDate.toDateString()}.`);
       return;
     }
 
@@ -141,54 +149,63 @@ export class FinanceService {
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
 
-    // OPTIMIZACIÓN: Pre-calcular todos los conteos de GPS en una sola query
-    this.logger.log(`🔍 [OPTIMIZACIÓN] Pre-calculando conteos GPS para ${drivers.length} choferes...`);
-    const gpsCountsRaw = await this.prisma.driverLocation.groupBy({
-      by: ['driverId'],
-      where: {
-        timestamp: { gte: periodStart, lte: periodEnd }
-      },
-      _count: {
-        _all: true
+    // OPTIMIZACIÓN: Pre-calcular todos los conteos de GPS y PLAYBACKS en una sola query
+    this.logger.log(`🔍 [OPTIMIZACIÓN] Pre-calculando conteos GPS y PoP para ${drivers.length} choferes...`);
+    const [gpsCountsRaw, playbackEventsRaw] = await Promise.all([
+      this.prisma.driverLocation.groupBy({
+        by: ['driverId'],
+        where: { timestamp: { gte: periodStart, lte: periodEnd } },
+        _count: { _all: true }
+      }),
+      this.prisma.playbackEvent.findMany({
+        where: {
+          timestamp: { gte: periodStart, lte: periodEnd },
+          eventType: 'play_confirm'
+        },
+        select: { deviceId: true, videoId: true }
+      })
+    ]);
+
+    // MAPAS para búsqueda rápida O(1)
+    const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
+    
+    // Mapear Playbacks a Driver (PoP - Proof of Play)
+    // driverId -> Set of campaignIds played
+    const driverPoPMap = new Map<string, Set<string>>();
+    
+    // Necesitamos saber qué mediaId (videoId) pertenece a qué campaignId
+    const mediaToCampaignRaw = await this.prisma.media.findMany({
+      where: { campaign_id: { not: null } },
+      select: { id: true, campaign_id: true }
+    });
+    const mediaToCampaignMap = new Map(mediaToCampaignRaw.map(m => [m.id, m.campaign_id]));
+
+    // Mapear Device a Driver
+    const deviceToDriverMap = new Map<string, string>();
+    drivers.forEach(d => {
+      d.devices?.forEach(dev => deviceToDriverMap.set(dev.deviceId, d.id));
+    });
+
+    playbackEventsRaw.forEach(evt => {
+      const driverId = deviceToDriverMap.get(evt.deviceId);
+      const campaignId = mediaToCampaignMap.get(evt.videoId);
+      if (driverId && campaignId) {
+        if (!driverPoPMap.has(driverId)) driverPoPMap.set(driverId, new Set());
+        driverPoPMap.get(driverId).add(campaignId);
       }
     });
 
-    // Crear un mapa para búsqueda rápida O(1)
-    const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
-
-    // REGLA PERFORMANCE: Process with throttledMap to avoid DB pool exhaustion (Optimized for 8GB RAM)
+    // REGLA PERFORMANCE: Process with throttledMap to avoid DB pool exhaustion
     const payroll = await throttledMap(drivers, async (driver) => {
       try {
-        let activeAdsCount = 0;
-
-        // 2. BUSCAR EN EL MAPA (O(1)) en lugar de query N+1
         const gpsPointsCount = gpsCountsMap.get(driver.id) || 0;
-        // Bono GPS eliminado (regla de negocio v10.1.0)
+        const playedCampaigns = driverPoPMap.get(driver.id) || new Set();
 
-        // Iterate over all devices for this driver ONLY if subscription is paid
+        // 2. PARADIGMA PoP: Solo se paga por anuncios TRANSMITIDOS (confirmados por playback)
+        // El driver debe tener suscripción paga para recibir el abono
         const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
-        const eligibleCampaignSet = new Set<string>();
-
-        if (isSubPaid) {
-          const devices = driver.devices || [];
-          devices.forEach((device: any) => {
-            const deviceCity = device.city || 'Santo Domingo';
-            
-            activeCampaigns.forEach(camp => {
-              const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
-              if (!matchesCity) return;
-
-              const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
-              const isExplicitlyAssigned = device.campaigns?.some((dc: any) => dc.campaign_id === camp.id) || false;
-              
-              if (isTargetAll || isExplicitlyAssigned) {
-                eligibleCampaignSet.add(camp.id);
-              }
-            });
-          });
-        }
-
-        activeAdsCount = eligibleCampaignSet.size;
+        
+        const activeAdsCount = isSubPaid ? playedCampaigns.size : 0;
         const baseCommission = 0; 
         
         // Calculate referral commissions
@@ -221,7 +238,6 @@ export class FinanceService {
         };
       } catch (err) {
         this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`);
-        // Return a zeroed entry to avoid breaking the entire map
         return {
           driverId: driver.id,
           driverName: (driver as any).fullName || 'ERROR',

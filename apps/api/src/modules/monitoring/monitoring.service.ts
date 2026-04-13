@@ -28,6 +28,14 @@ export class MonitoringService {
   ) {}
 
   /**
+   * RECOVERY: Check for offline devices on startup to ensure telemetry integrity
+   */
+  async onModuleInit() {
+    this.logger.log('🔄 [RECOVERY] Running startup connectivity scan...');
+    await this.checkOfflineDevices();
+  }
+
+  /**
    * Procesa un lote de coordenadas GPS enviadas por el conductor cada 5 minutos.
    * Agrupa los registros en DriverLocation y actualiza el estado del dispositivo.
    */

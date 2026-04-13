@@ -23,11 +23,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado
     webpackBuildWorker: true,
-    outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
     // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
     parallelServerCompiles: false,
   },

@@ -468,7 +468,7 @@ export class AnalyticsService {
   }
 }
 
-interface AnalyticsSummary {
+export interface AnalyticsSummary {
   totalImpressions: number;
   activeNodes: number;
   totalScans: number;
@@ -476,24 +476,24 @@ interface AnalyticsSummary {
   hourlyAverage: number;
 }
 
-interface TopTaxi {
+export interface TopTaxi {
   device_id: string;
   plays: number;
 }
 
-interface HourlyData {
+export interface HourlyData {
   hour: string;
   plays: number;
 }
 
-interface AntiFraudData {
+export interface AntiFraudData {
   rawImpressions: number;
   gpsValidations: number;
   validPercentage: number;
   status: string;
 }
 
-interface IngestEventDto {
+export interface IngestEventDto {
   deviceId: string;
   campaignId?: string;
   eventType: string;

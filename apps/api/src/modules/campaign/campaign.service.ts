@@ -5,13 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  role: string;
-  entityId?: string;
-}
+import { AuthUser } from '../auth/auth.types';
 
 @Injectable()
 export class CampaignService {
@@ -25,8 +19,8 @@ export class CampaignService {
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
 
-  async updateCampaign(id: string, dto: any) {
-    const data: any = {};
+  async updateCampaign(id: string, dto: Partial<CreateCampaignDto> & { target_devices?: string[]; active?: boolean; target_city?: string; target_all?: boolean; advertiser_id?: string }) {
+    const data: Record<string, unknown> = {};
     if (dto.name) data.name = dto.name;
     if (dto.advertiser) data.advertiser = dto.advertiser;
     if (dto.advertiser_id) data.advertiserId = dto.advertiser_id;
@@ -176,7 +170,7 @@ export class CampaignService {
     });
 
     if (devices.length === 0 && idOrHwIds.length > 0) {
-      console.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
+      this.logger.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
     }
 
     // 2. Identify available devices (respecting the limit)
@@ -220,7 +214,7 @@ export class CampaignService {
         reason: 'campaign_assigned',
         campaignId,
         targets: availableDevices.map(d => d.deviceId)
-      }).catch(e => console.warn('Realtime broadcast failed:', e.message));
+      }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
 
       return { count: availableDevices.length, skipped: skippedCount };
     });
@@ -244,7 +238,7 @@ export class CampaignService {
   /**
    * Registra metadatos de archivos subidos directamente a Supabase sin tocar la RAM.
    */
-  async registerDirectMedia(dto: any, user?: AuthUser) {
+  async registerDirectMedia(dto: { brandId: string; fileName: string; url: string; fileSize?: number; storagePath: string }, user?: AuthUser) {
     if (user?.role !== 'ADMIN' && user?.email && dto.brandId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (!advertiser || advertiser.id !== dto.brandId) {
@@ -272,7 +266,7 @@ export class CampaignService {
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {
     // Inventory Control: If targeted to specific devices, check their current slots
-    const deviceId = (dto as any).device_id;
+    const deviceId = (dto as any).deviceId;
     if (deviceId) {
       const activeData = await this.getActiveSyncVideos(deviceId);
       if (activeData.media_assets.length >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
@@ -374,7 +368,7 @@ export class CampaignService {
    */
   async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
-    console.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
+    this.logger.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
     
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
@@ -383,7 +377,7 @@ export class CampaignService {
     });
 
     if (!device) {
-      console.warn(`⚠️ getActiveSyncVideos: Device '${deviceIdOrUuid}' NOT FOUND in DB. Check if registerDevice was called first.`);
+      this.logger.warn(`⚠️ getActiveSyncVideos: Device '${deviceIdOrUuid}' NOT FOUND in DB. Check if registerDevice was called first.`);
       return { version: 0, sync_hash: 'not-found', media_assets: [] };
     }
 
@@ -391,7 +385,7 @@ export class CampaignService {
     const hwId = device.deviceId;
     const city = deviceCity || device.city || 'Santiago';
     const driverId = device.driverId;
-    console.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
+    this.logger.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
 
     let activeCampaigns: any[] = [];
     
@@ -421,8 +415,8 @@ export class CampaignService {
         },
         orderBy: { updatedAt: 'desc' }
       });
-    } catch (primaryError) {
-      console.error(`❌ getActiveSyncVideos primary query failed: ${primaryError?.message}`);
+    } catch (primaryError: any) {
+      this.logger.error(`❌ getActiveSyncVideos primary query failed: ${primaryError?.message}`);
       // Fallback
       activeCampaigns = await this.prisma.campaign.findMany({
         where: { active: true, targetAll: true },
@@ -431,14 +425,14 @@ export class CampaignService {
       });
     }
 
-    console.log(`📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`);
+    this.logger.log(`📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`);
     activeCampaigns.forEach(c => {
-      const assetsCount = ((c as any).mediaAssets?.length || 0) + ((c as any).media?.length || 0) + ((c as any).videos?.length || 0);
-      console.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
+      const assetsCount = (c.mediaAssets?.length || 0) + (c.media?.length || 0) + (c.videos?.length || 0);
+      this.logger.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
     });
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
-      console.warn(`⚠️ No active campaigns found for device ${hwId}. Check campaign dates, active flag, and device assignments.`);
+      this.logger.warn(`⚠️ No active campaigns found for device ${hwId}. Check campaign dates, active flag, and device assignments.`);
       return { version: 0, sync_hash: 'empty', media_assets: [] };
     }
 

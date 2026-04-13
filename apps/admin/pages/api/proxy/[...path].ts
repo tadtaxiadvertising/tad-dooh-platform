@@ -32,12 +32,7 @@ const BACKEND_BASE = rawBackendUrl
   .replace(/\/api\/?$/, '')
   .replace(/\/$/, '');
 
-// Diagnostic log on first load (server-side, visible in EasyPanel logs)
-console.log(`[PROXY_CONFIG] Backend target: ${BACKEND_BASE} (source: ${
-  process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' :
-  process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' :
-  'HARDCODED_FALLBACK'
-})`);
+// Diagnostic removed for Zero-Waste audit.
 
 export const config = {
   api: {
@@ -125,16 +120,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let backendResponse;
     try {
       backendResponse = await fetch(targetUrl, fetchOptions);
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
       // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
-      const isNetworkError = fetchError.message.includes('fetch failed') || 
-                            fetchError.message.includes('ENOTFOUND') || 
-                            fetchError.message.includes('ECONNREFUSED');
+      const isNetworkError = errorMessage.includes('fetch failed') || 
+                            errorMessage.includes('ENOTFOUND') || 
+                            errorMessage.includes('ECONNREFUSED');
       
       if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
         const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
-        console.warn(`[PROXY RETRY] Falló conexión interna. Reintentando vía pública: ${fallbackUrl}`);
         
         // REGENAR HEADERS: El host cambió a la URL pública
         fetchOptions.headers = getForwardHeaders(fallbackUrl);
@@ -146,8 +141,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (backendResponse.status === 401) {
+      // 401 Unauthorized log justified for security auditing
       const authHeader = req.headers.authorization ? 'PRESENTE' : 'AUSENTE';
-      console.warn(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authHeader}`);
+      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authHeader}`);
     }
 
     // Headers CORS de respuesta

@@ -1,48 +1,53 @@
+# Phase 1: Build & Generate
 FROM node:20-alpine AS builder
 
 WORKDIR /usr/src/app
-
-# Prisma needs openssl
 RUN apk add --no-cache openssl
 
-# Install dependencies (utilizing Docker layer caching)
+# Install ALL dependencies (for build)
+COPY package*.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/ ./packages/
+RUN npm ci
+
+# Copy source and build
+COPY . .
+RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
+RUN npm run build -w apps/api
+
+# Phase 2: Production Dependencies Only
+FROM node:20-alpine AS deps
+
+WORKDIR /usr/src/app
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/ ./packages/
 
-RUN npm ci
+# Install ONLY production dependencies
+RUN npm ci --omit=dev
 
-# Copy the rest of the application
-COPY . .
-
-# Generate Prisma Client
-RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
-
-# Build NestJS API
-RUN npm run build -w apps/api
-
-# Production Image
+# Phase 3: Runtime Stage (Zero-Waste)
 FROM node:20-alpine AS runner
 
 WORKDIR /usr/src/app
 RUN apk add --no-cache openssl
 
-# Set environment
 ENV NODE_ENV=production
-# Optimization for VPS Free Tier 1GB RAM limitation
+# Memory optimization for 1GB VPS
 ENV NODE_OPTIONS="--max-old-space-size=850"
 ENV PORT=3000
 
-# Copy node modules and build outputs
-COPY --from=builder /usr/src/app/package*.json ./
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/apps/api/package.json ./apps/api/
-COPY --from=builder /usr/src/app/apps/api/node_modules ./apps/api/node_modules
+# Copy minimal files from Phase 2 (prod node_modules)
+COPY --from=deps /usr/src/app/package*.json ./
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+COPY --from=deps /usr/src/app/apps/api/package.json ./apps/api/
+COPY --from=deps /usr/src/app/apps/api/node_modules ./apps/api/node_modules
+
+# Copy build output from Phase 1
 COPY --from=builder /usr/src/app/apps/api/dist ./apps/api/dist
 COPY --from=builder /usr/src/app/apps/api/prisma ./apps/api/prisma
 
-# Expose port for SSE, WebSockets and REST (Easypanel routing)
 EXPOSE 3000
-
-# Start command
 CMD ["npm", "run", "start:prod", "-w", "apps/api"]

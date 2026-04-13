@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { SupabaseService } from '../../supabase/supabase.service';
 import * as jwt from 'jsonwebtoken';
+import { AuthUser } from '../auth.types';
 
 /**
  * SUPABASE AUTH GUARD — Política "Deny-by-Default".
@@ -20,7 +21,7 @@ export class SupabaseAuthGuard implements CanActivate {
   private readonly allowDevBypass: boolean;
 
   // In-memory cache to avoid repeated network calls for the same token in a short window
-  private static sessionCache = new Map<string, { user: any; expiry: number }>();
+  private static sessionCache = new Map<string, { user: AuthUser; expiry: number }>();
   private readonly CACHE_TTL_MS = 10000; // 10 seconds cache for same token
 
   constructor(
@@ -75,7 +76,7 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 1: Validación Local JWT ---
     if (jwtSecret) {
       try {
-        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as any;
+        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as jwt.JwtPayload;
         if (payload) {
           request.user = {
             id: payload.sub,
@@ -93,12 +94,14 @@ export class SupabaseAuthGuard implements CanActivate {
           this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
           return true;
         }
-      } catch (err: any) {
-        if (err.name === 'TokenExpiredError') {
-          this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${err.message}`);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        const errName = err instanceof Error ? err.name : '';
+        if (errName === 'TokenExpiredError') {
+          this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
           throw new UnauthorizedException('Tu sesión ha expirado.');
         }
-        this.logger.debug(`[AUTH] Estrategia 1 falló (${err.message}). Intentando Estrategia 2 (Red)...`);
+        this.logger.debug(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
       }
     }
 
@@ -108,8 +111,7 @@ export class SupabaseAuthGuard implements CanActivate {
       const { data, error } = await supabase.auth.getUser(token);
 
       if (!error && data.user) {
-        // Decode the raw token to get app_metadata role even if Supabase user object doesn't include it
-        const decoded = jwt.decode(token) as any;
+        const decoded = jwt.decode(token) as jwt.JwtPayload;
         const roleFromMeta = 
           data.user.app_metadata?.role ||
           (decoded?.app_metadata?.role) ||
@@ -148,13 +150,14 @@ export class SupabaseAuthGuard implements CanActivate {
       if (error) {
         this.logger.warn(`❌ [AUTH] ESTRATEGIA 2 RECHAZÓ TOKEN: ${error.message}`);
       }
-    } catch (err: any) {
-      this.logger.error(`❌ [AUTH] ESTRATEGIA 2 ERROR CRÍTICO: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error(`❌ [AUTH] ESTRATEGIA 2 ERROR CRÍTICO: ${errorMessage}`);
     }
 
     // --- ESTRATEGIA 3: DEV BYPASS ---
     if (this.allowDevBypass) {
-      const decoded = jwt.decode(token) as any;
+      const decoded = jwt.decode(token) as jwt.JwtPayload;
       if (decoded) {
         this.logger.warn(`🚩 [AUTH] DEV BYPASS UTILIZADO: ${decoded.email}`);
         request.user = {

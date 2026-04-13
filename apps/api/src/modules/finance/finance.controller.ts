@@ -7,7 +7,8 @@ import {
   Query,
   Res, 
   HttpStatus, 
-  UseGuards 
+  UseGuards,
+  Req
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { InvoiceService } from './invoice.service';
@@ -15,9 +16,8 @@ import { WhatsAppService } from '../notifications/whatsapp.service';
 import { EmailService } from '../notifications/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../auth/decorators/roles.decorator';
-
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 @Controller('finance')
 @Roles(UserRole.ADMIN)
 export class FinanceController {
@@ -78,7 +78,7 @@ export class FinanceController {
    */
   @Get('transaction/:id/pdf')
   async downloadTransactionPdf(@Param('id') id: string, @Res() res: Response) {
-    const tx = await (this.prisma as any).financialTransaction.findUnique({ where: { id } });
+    const tx = await this.prisma.financialTransaction.findUnique({ where: { id } });
     if (!tx) return res.status(404).send('Transacción no encontrada');
 
     const pdf = await this.invoiceService.generateTransactionReceiptPDF(tx);
@@ -98,9 +98,19 @@ export class FinanceController {
     @Query('month') month?: string,
     @Query('year') year?: string
   ) {
-    const m = month ? parseInt(month) : new Date().getMonth() + 1;
-    const y = year ? parseInt(year) : new Date().getFullYear();
-    return this.financeService.calculateMonthlyPayroll(m, y);
+    try {
+      const m = month ? parseInt(month) : new Date().getMonth() + 1;
+      const y = year ? parseInt(year) : new Date().getFullYear();
+      const results = await this.financeService.calculateMonthlyPayroll(m, y);
+      return results;
+    } catch (error) {
+      console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', error);
+      return { 
+        error: 'Error al calcular la nómina', 
+        message: error.message,
+        timestamp: new Date().toISOString() 
+      };
+    }
   }
 
   /**
@@ -331,11 +341,11 @@ export class FinanceController {
     // Generate driver settlement PDF if driverId provided
     if (body.driverId) {
       try {
-        const driver = await (this.prisma as any).driver.findUnique({ where: { id: body.driverId } });
+        const driver = await this.prisma.driver.findUnique({ where: { id: body.driverId } });
         if (driver) {
           pdfBuffer = await this.invoiceService.generateDriverSettlementPDF({
-            chofer: driver.name,
-            placa: driver.vehiclePlate || 'N/A',
+            chofer: driver.fullName,
+            placa: driver.licensePlate || 'N/A',
             ingreso: body.amount.toString(),
             anuncios: '15',
           });

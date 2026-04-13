@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { GpsBatchDto } from './monitoring.dto';
+import { throttledMap } from '../../utils/throttler.util';
 
 // Los 10 dispositivos del Piloto de Santiago (Fase 1)
 const PILOT_DEVICE_IDS = [
@@ -31,7 +32,8 @@ export class MonitoringService {
    * Agrupa los registros en DriverLocation y actualiza el estado del dispositivo.
    */
   async processGpsBatch(batch: GpsBatchDto) {
-    const { deviceId, driverId, points } = batch;
+    const { deviceId, driverId } = batch;
+    const points = batch.points || batch.locations || [];
 
     this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
 
@@ -54,9 +56,9 @@ export class MonitoringService {
           data: points.map(p => ({
             deviceId,
             driverId: resolvedDriverId,
-            latitude: p.latitude,
-            longitude: p.longitude,
-            speed: p.speed,
+            latitude: p.latitude ?? p.lat,
+            longitude: p.longitude ?? p.lng,
+            speed: p.speed || 0,
             timestamp: new Date(p.timestamp),
           })),
         });
@@ -68,8 +70,8 @@ export class MonitoringService {
         await this.prisma.device.update({
           where: { deviceId },
           data: {
-            lastLat: latestPoint.latitude,
-            lastLng: latestPoint.longitude,
+            lastLat: latestPoint.latitude ?? latestPoint.lat,
+            lastLng: latestPoint.longitude ?? latestPoint.lng,
             isOnline: true,
             lastSeen: new Date(),
             lastSyncAt: new Date(),
@@ -219,14 +221,14 @@ export class MonitoringService {
         select: { driverId: true, deviceId: true }
       });
 
-      for (const d of offlineDrivers) {
+      await throttledMap(offlineDrivers, async (d) => {
         if (d.driverId) {
           await this.notifications.sendPush(
             d.driverId,
             `⚠️ TAD: Tu equipo ${d.deviceId} lleva +12h sin conexión. Verifica el encendido de la tablet para no afectar tu nómina.`
-          );
+          ).catch(e => this.logger.error(`Error enviando push a ${d.driverId}: ${e.message}`));
         }
-      }
+      }, 5);
 
       // 4. Alerta por WhatsApp solo para el PILOTO (STI)
       const offlinePilotDevices = await this.prisma.device.findMany({

@@ -8,10 +8,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 import { UseGuards, Req } from '@nestjs/common';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
 @Controller('analytics')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,

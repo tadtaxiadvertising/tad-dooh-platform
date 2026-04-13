@@ -49,12 +49,18 @@ export class FinanceService {
     }
 
     // 3. Registrar el intento de cobro en el Ledger
-    await (this.prisma as any).financialTransaction.create({
+    const amount = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+    const taxAmount = (amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
+    const netAmount = amount - taxAmount;
+
+    await this.prisma.financialTransaction.create({
       data: {
         type: 'INCOMING',
         category: 'SUSCRIPCION',
         status: 'PENDING',
-        amount: BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD,
+        amount,
+        taxAmount,
+        netAmount,
         entityId: device.driver?.id,
         reference: `REGLA-402-${deviceId.substring(0,8)}`,
         note: `Factura de morosidad generada automáticamente por Kill-Switch.`
@@ -88,11 +94,13 @@ export class FinanceService {
 
     this.logger.warn(`🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`);
 
-    for (const driver of delinquentDrivers) {
+    await throttledMap(delinquentDrivers, async (driver) => {
       for (const device of driver.devices) {
-        await this.notifyMorosidad(device.deviceId);
+        await this.notifyMorosidad(device.deviceId).catch(err => 
+          this.logger.error(`Error notifying morosidad for ${device.deviceId}: ${err.message}`)
+        );
       }
-    }
+    }, 5);
   }
 
   /**
@@ -122,76 +130,102 @@ export class FinanceService {
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
 
-    const payroll = await Promise.all(drivers.map(async (d) => {
-      const driver = d as any;
-      let activeAdsCount = 0;
+    // REGLA PERFORMANCE: Process with throttledMap to avoid DB pool exhaustion (Optimized for 8GB RAM)
+    const payroll = await throttledMap(drivers, async (d) => {
+      try {
+        const driver = d as any;
+        let activeAdsCount = 0;
 
-      // 2. Calculate GPS Usage Bonus
-      // Condition: At least 100 entries in DriverLocation during the month
-      const gpsPointsCount = await this.prisma.driverLocation.count({
-        where: {
-          driverId: driver.id,
-          timestamp: { gte: periodStart, lte: periodEnd }
-        }
-      });
-      const gpsBonus = gpsPointsCount >= BUSINESS_RULES.GPS_BONUS_THRESHOLD ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
-
-      // Iterate over all devices for this driver ONLY if subscription is paid
-      const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
-      const eligibleCampaignSet = new Set<string>();
-
-      if (isSubPaid) {
-        const devices = driver.devices || [];
-        devices.forEach((device: any) => {
-          const deviceCity = device.city || 'Santo Domingo';
-          
-          activeCampaigns.forEach(camp => {
-            const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
-            if (!matchesCity) return;
-
-            const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
-            const isExplicitlyAssigned = device.campaigns.some((dc: any) => dc.campaign_id === camp.id);
-            
-            if (isTargetAll || isExplicitlyAssigned) {
-              eligibleCampaignSet.add(camp.id);
-            }
-          });
+        // 2. Calculate GPS Usage Bonus
+        // Condition: At least 100 entries in DriverLocation during the month
+        const gpsPointsCount = await this.prisma.driverLocation.count({
+          where: {
+            driverId: driver.id,
+            timestamp: { gte: periodStart, lte: periodEnd }
+          }
+        }).catch(err => {
+          this.logger.error(`Error counting GPS points for driver ${driver.id}: ${err.message}`);
+          return 0;
         });
+
+        const gpsBonus = gpsPointsCount >= BUSINESS_RULES.GPS_BONUS_THRESHOLD ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
+
+        // Iterate over all devices for this driver ONLY if subscription is paid
+        const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
+        const eligibleCampaignSet = new Set<string>();
+
+        if (isSubPaid) {
+          const devices = driver.devices || [];
+          devices.forEach((device: any) => {
+            const deviceCity = device.city || 'Santo Domingo';
+            
+            activeCampaigns.forEach(camp => {
+              const matchesCity = camp.targetCity === 'Global' || camp.targetCity === deviceCity;
+              if (!matchesCity) return;
+
+              const isTargetAll = camp.targetAll === true || camp.isGlobal === true;
+              const isExplicitlyAssigned = device.campaigns?.some((dc: any) => dc.campaign_id === camp.id) || false;
+              
+              if (isTargetAll || isExplicitlyAssigned) {
+                eligibleCampaignSet.add(camp.id);
+              }
+            });
+          });
+        }
+
+        activeAdsCount = eligibleCampaignSet.size;
+        const baseCommission = 0; 
+        
+        // Calculate referral commissions
+        const referrals = driver.referrals ? driver.referrals.length : 0;
+        const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
+
+        // Calculate advertiser referral commissions
+        const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
+        const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
+
+        const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
+        const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus + gpsBonus;
+
+        // Enhanced: Get the actual taxi number from the assigned devices or driver record
+        const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
+
+        return {
+          driverId: driver.id,
+          driverName: driver.fullName || 'TAD DRIVER',
+          driverPhone: driver.phone || '',
+          taxiNumber: actualTaxiNumber,
+          activeAds: activeAdsCount,
+          adIncome: adTransmissionIncome,
+          baseCommission,
+          gpsPoints: gpsPointsCount,
+          gpsBonus: gpsBonus,
+          referralBonus: driverReferralBonus,
+          advertiserReferralBonus,
+          totalAmount: totalAmount,
+          currency: 'DOP'
+        };
+      } catch (err) {
+        this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${d.id}: ${err.message}`);
+        // Return a zeroed entry to avoid breaking the entire map
+        return {
+          driverId: d.id,
+          driverName: (d as any).fullName || 'ERROR',
+          driverPhone: (d as any).phone || '',
+          taxiNumber: 'ERR',
+          activeAds: 0,
+          adIncome: 0,
+          baseCommission: 0,
+          gpsPoints: 0,
+          gpsBonus: 0,
+          referralBonus: 0,
+          advertiserReferralBonus: 0,
+          totalAmount: 0,
+          currency: 'DOP',
+          error: true
+        };
       }
-
-      activeAdsCount = eligibleCampaignSet.size;
-      const baseCommission = 0; // Removed fixed monthly commission as per new business rule
-      
-      // Calculate referral commissions
-      const referrals = driver.referrals ? driver.referrals.length : 0;
-      const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
-
-      // Calculate advertiser referral commissions
-      const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
-      const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
-
-      const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-      const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus + gpsBonus;
-
-      // Enhanced: Get the actual taxi number from the assigned devices or driver record
-      const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
-
-      return {
-        driverId: driver.id,
-        driverName: driver.fullName || 'TAD DRIVER',
-        driverPhone: driver.phone || '',
-        taxiNumber: actualTaxiNumber,
-        activeAds: activeAdsCount,
-        adIncome: adTransmissionIncome,
-        baseCommission,
-        gpsPoints: gpsPointsCount,
-        gpsBonus: gpsBonus,
-        referralBonus: driverReferralBonus,
-        advertiserReferralBonus,
-        totalAmount: totalAmount,
-        currency: 'DOP'
-      };
-    }));
+    }, 5);
 
     return payroll;
   }
@@ -461,7 +495,7 @@ export class FinanceService {
 
     // Advanced Business Rule: If it's a subscription payment, check for referral retention
     if (data.category === 'SUSCRIPCION' && data.entityId) {
-      const driver = await (this.prisma.driver as any).findUnique({
+      const driver = await this.prisma.driver.findUnique({
         where: { id: data.entityId },
         select: { referredBy: true }
       });
@@ -475,7 +509,7 @@ export class FinanceService {
       }
     }
 
-    return (this.prisma as any).financialTransaction.create({
+    return this.prisma.financialTransaction.create({
       data: {
         type: data.type,
         category: data.category,
@@ -507,7 +541,7 @@ export class FinanceService {
     const monthStart = new Date();
     monthStart.setDate(1);
     
-    const monthlyExpenses = await (this.prisma as any).financialTransaction.aggregate({
+    const monthlyExpenses = await this.prisma.financialTransaction.aggregate({
       where: {
         type: 'OUTGOING',
         createdAt: { gte: monthStart }
@@ -535,7 +569,7 @@ export class FinanceService {
     this.logger.log('Generating investor metrics (Unit Economics)');
 
     // 1. CAC (Customer Acquisition Cost) = Total OPEX_MARKETING / Total Advertisers
-    const totalMarketing = await (this.prisma as any).financialTransaction.aggregate({
+    const totalMarketing = await this.prisma.financialTransaction.aggregate({
       where: { category: 'OPEX_MARKETING' },
       _sum: { amount: true }
     });
@@ -544,11 +578,11 @@ export class FinanceService {
     const cac = totalAdvertisers > 0 ? marketingSpend / totalAdvertisers : 0;
 
     // 2. EBITDA Operativo = Revenue (AD + SUB) - OPEX (PAYOUT + COMM + MKT) (Sin CAPEX, TAX_ITBIS)
-    const revenues = await (this.prisma as any).financialTransaction.aggregate({
+    const revenues = await this.prisma.financialTransaction.aggregate({
       where: { category: { in: ['REVENUE_AD', 'REVENUE_SUBSCRIPTION'] } },
       _sum: { amount: true }
     });
-    const opex = await (this.prisma as any).financialTransaction.aggregate({
+    const opex = await this.prisma.financialTransaction.aggregate({
       where: { category: { in: ['OPEX_DRIVER_PAYOUT', 'OPEX_COMMISSION', 'OPEX_MARKETING'] } },
       _sum: { amount: true }
     });
@@ -589,7 +623,7 @@ export class FinanceService {
    * Returns the ledger (historical transactions)
    */
   async getLedger() {
-    return (this.prisma as any).financialTransaction.findMany({
+    return this.prisma.financialTransaction.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50
     });

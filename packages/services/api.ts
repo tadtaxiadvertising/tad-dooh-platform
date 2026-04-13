@@ -246,43 +246,63 @@ const computeMD5 = async (file: File): Promise<string> => {
 };
 
 export const uploadMedia = async (file: File, campaignId: string = 'general', qrUrl?: string) => {
-  // 1. Calcular Checksum (SRE Rule 05)
-  const hashMd5 = await computeMD5(file);
+  try {
+    // 1. Calcular Checksum (SRE Rule 05)
+    // Usamos el hash como identificador único para deduplicación si fuera necesario
+    const hashMd5 = await computeMD5(file);
 
-  // 2. Pedir URL firmada de subida al backend
-  const urlRes = await api.get(`/media/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${file.type}`);
-  const { uploadUrl, path, publicUrl } = urlRes.data;
-
-  // 3. BYPASS: Subir directo a Supabase Storage (Node.js respira 🫁)
-  await fetch(uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: {
-      'Content-Type': file.type,
-      'Cache-Control': 'max-age=3600'
+    // 2. Pedir URL firmada de subida al backend
+    let urlRes;
+    try {
+      urlRes = await api.get(`/media/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${file.type}`);
+    } catch (e: any) {
+      console.error('❌ Error obteniendo Signed URL del Backend:', e.response?.data || e.message);
+      const backendMsg = e.response?.data?.message || e.message;
+      throw new Error(`Falla en autorización de Storage: ${backendMsg}`);
     }
-  });
 
-  // 4. Registrar el asset en la Base de Datos con el Hash calculado
-  const regRes = await api.post('/media/register-bypassed', {
-    filename: file.name,
-    contentType: file.type,
-    size: file.size,
-    campaignId,
-    storageKey: path,
-    publicUrl: publicUrl,
-    hashMd5, // Enviamos el hash para validación en tablet
-    qrUrl
-  });
+    const { uploadUrl, path, publicUrl } = urlRes.data;
 
-  return {
-    id: regRes.data.id,
-    url: regRes.data.url || regRes.data.cdnUrl,
-    fileSize: regRes.data.fileSize || regRes.data.size || 0,
-    hashMd5: regRes.data.hashMd5 || hashMd5,
-    name: file.name,
-    path: path
-  };
+    // 3. BYPASS: Subir directo a Supabase Storage (Node.js respira 🫁)
+    // Nota: fetch es usado aquí para evitar interceptores de Axios que podrían corromper el stream binario
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      }
+    });
+
+    if (!uploadRes.ok) {
+      const errorText = await uploadRes.text();
+      console.error('❌ Error en subida directa a Supabase:', errorText);
+      throw new Error(`Falla al subir a Supabase (${uploadRes.status}): ${errorText}`);
+    }
+
+    // 4. Registrar el asset en la Base de Datos con el Hash calculado
+    const regRes = await api.post('/media/register-bypassed', {
+      filename: file.name,
+      contentType: file.type,
+      size: file.size,
+      campaignId,
+      storageKey: path,
+      publicUrl: publicUrl,
+      hashMd5,
+      qrUrl
+    });
+
+    return {
+      id: regRes.data.id,
+      url: regRes.data.url || regRes.data.cdnUrl,
+      fileSize: regRes.data.fileSize || regRes.data.size || 0,
+      hashMd5: regRes.data.hashMd5 || hashMd5,
+      name: file.name,
+      path: path
+    };
+  } catch (err: any) {
+    console.error('🚀 CRITICAL_UPLOAD_ERROR:', err);
+    throw err;
+  }
 };
 
 export const uploadCampaignMedia = async (campaignId: string, file: File) => {

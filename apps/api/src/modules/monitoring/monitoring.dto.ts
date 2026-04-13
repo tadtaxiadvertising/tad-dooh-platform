@@ -17,6 +17,10 @@ export class GpsPointDto {
   @IsString()
   @IsNotEmpty()
   timestamp: string;
+  
+  // Mobile Legacy Support
+  lat?: number;
+  lng?: number;
 }
 
 export class GpsBatchDto {
@@ -31,5 +35,10 @@ export class GpsBatchDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GpsPointDto)
-  points: GpsPointDto[];
+  points?: GpsPointDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GpsPointDto)
+  locations?: GpsPointDto[];
 }

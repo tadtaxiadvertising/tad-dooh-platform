@@ -40,10 +40,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Sesión inválida o expirada en Supabase');
     }
 
+    const appMeta = user.app_metadata || {};
+
     return {
       id: user.id,
       email: user.email,
-      role: 'ADMIN',
+      role: appMeta.role || 'ADMIN',
+      entityId: appMeta.entityId || null,
     };
   }
 }

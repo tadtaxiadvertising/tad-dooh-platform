@@ -15,6 +15,10 @@ import * as jwt from 'jsonwebtoken';
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
+  private readonly logger = new Logger(SupabaseAuthGuard.name);
+  private readonly isDev: boolean;
+  private readonly allowDevBypass: boolean;
+
   // In-memory cache to avoid repeated network calls for the same token in a short window
   private static sessionCache = new Map<string, { user: any; expiry: number }>();
   private readonly CACHE_TTL_MS = 10000; // 10 seconds cache for same token

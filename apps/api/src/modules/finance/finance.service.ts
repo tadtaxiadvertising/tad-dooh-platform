@@ -222,12 +222,12 @@ export class FinanceService {
           currency: 'DOP'
         };
       } catch (err) {
-        this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${d.id}: ${err.message}`);
+        this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`);
         // Return a zeroed entry to avoid breaking the entire map
         return {
-          driverId: d.id,
-          driverName: (d as any).fullName || 'ERROR',
-          driverPhone: (d as any).phone || '',
+          driverId: driver.id,
+          driverName: (driver as any).fullName || 'ERROR',
+          driverPhone: (driver as any).phone || '',
           taxiNumber: 'ERR',
           activeAds: 0,
           adIncome: 0,

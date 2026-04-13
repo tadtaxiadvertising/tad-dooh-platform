@@ -88,7 +88,8 @@ export function useVideoTranscoder(): UseVideoTranscoderReturn {
       ]);
 
       const data = await ffmpeg.readFile(outputName);
-      const blob = new Blob([data as Uint8Array], { type: 'video/mp4' });
+      // @ts-ignore - Evitamos el error de Uint8Array (incompatibilidad de SharedArrayBuffer de ffmpeg en TS)
+      const blob = new Blob([data], { type: 'video/mp4' });
 
       // Limpieza de memoria (importante para evitar OOM en cliente)
       await ffmpeg.deleteFile(inputName);

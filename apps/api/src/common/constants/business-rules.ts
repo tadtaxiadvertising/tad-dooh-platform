@@ -9,12 +9,6 @@ export const BUSINESS_RULES = {
   /** RD$ que gana el conductor por cada campaña activa en su tablet al mes */
   DRIVER_RATE_PER_CAMPAIGN_RD: 500,
 
-  /** RD$ de bono mensual por disponibilidad GPS (requiere >= GPS_BONUS_THRESHOLD pings) */
-  AVAILABILITY_BONUS_RD: 500,
-
-  /** Número mínimo de pings GPS en el mes para calificar al bono de disponibilidad */
-  GPS_BONUS_THRESHOLD: 100,
-
   /** RD$ de comisión por cada conductor activo referido */
   DRIVER_REFERRAL_BONUS_RD: 500,
 

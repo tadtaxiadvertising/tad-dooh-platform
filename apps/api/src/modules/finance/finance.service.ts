@@ -163,8 +163,7 @@ export class FinanceService {
 
         // 2. BUSCAR EN EL MAPA (O(1)) en lugar de query N+1
         const gpsPointsCount = gpsCountsMap.get(driver.id) || 0;
-
-        const gpsBonus = gpsPointsCount >= BUSINESS_RULES.GPS_BONUS_THRESHOLD ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
+        // Bono GPS eliminado (regla de negocio v10.1.0)
 
         // Iterate over all devices for this driver ONLY if subscription is paid
         const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
@@ -201,7 +200,7 @@ export class FinanceService {
         const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
         const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-        const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus + gpsBonus;
+        const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
 
         // Enhanced: Get the actual taxi number from the assigned devices or driver record
         const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
@@ -215,7 +214,6 @@ export class FinanceService {
           adIncome: adTransmissionIncome,
           baseCommission,
           gpsPoints: gpsPointsCount,
-          gpsBonus: gpsBonus,
           referralBonus: driverReferralBonus,
           advertiserReferralBonus,
           totalAmount: totalAmount,
@@ -233,7 +231,6 @@ export class FinanceService {
           adIncome: 0,
           baseCommission: 0,
           gpsPoints: 0,
-          gpsBonus: 0,
           referralBonus: 0,
           advertiserReferralBonus: 0,
           totalAmount: 0,

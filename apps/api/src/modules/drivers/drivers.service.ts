@@ -458,9 +458,8 @@ export class DriversService {
 
     this.logger.debug(`[HUB_BUILD] Datos base obtenidos. adsPlayed=${adsPlayed}, activeAds=${activeAdsCount}`);
 
-    const qualifiesForGpsBonus = (gpsPoints || 0) >= BUSINESS_RULES.GPS_BONUS_THRESHOLD;
-    const gpsBonus = qualifiesForGpsBonus ? BUSINESS_RULES.AVAILABILITY_BONUS_RD : 0;
-    
+    // El bono GPS ha sido eliminado en v10.1.0
+
     const projectedEarnings = driver.status === 'ACTIVE'
       ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
       : 0;
@@ -491,7 +490,7 @@ export class DriversService {
       this.logger.error(`[HUB_ERROR] Error en applyPenaltyLogic: ${pErr.message}`);
     }
     
-    const balance = finalProjected + referralEarnings + advertiserReferralEarnings + gpsBonus - totalPaid;
+    const balance = finalProjected + referralEarnings + advertiserReferralEarnings - totalPaid;
 
     this.logger.log(`✅ [HUB_SUCCESS] Hub construido para ${driver.fullName} (${driver.id}). Balance: ${balance}`);
 
@@ -513,8 +512,6 @@ export class DriversService {
       advertiserReferralEarnings,
       advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
       gpsPoints,
-      gpsBonus,
-      qualifiesForGpsBonus,
       activeAds: activeAdsCount,
       totalPaid,
       balance,

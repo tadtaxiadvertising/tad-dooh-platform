@@ -432,9 +432,9 @@ export class FinanceService {
    */
   async exportPayrollCsv(month: number, year: number) {
     const data = await this.calculateMonthlyPayroll(month, year);
-    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Bono Disponibilidad,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
+    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
     data.forEach(d => {
-      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.gpsPoints},RD$ ${d.gpsBonus},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
+      csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.gpsPoints},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
     });
     return csv;
   }

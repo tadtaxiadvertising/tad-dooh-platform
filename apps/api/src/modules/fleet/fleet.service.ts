@@ -294,7 +294,7 @@ export class FleetService {
         commandType: type,
         commandParams: JSON.stringify(params || {}),
         status: 'PENDING',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h default
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       }
     });
   }
@@ -721,7 +721,7 @@ export class FleetService {
                 commandType: type,
                 commandParams: JSON.stringify(params),
                 status: 'PENDING',
-                expiresAt: new Date(Date.now() + 48 * 3600 * 1000) // 48h de vida
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days life
             }))
         });
     }

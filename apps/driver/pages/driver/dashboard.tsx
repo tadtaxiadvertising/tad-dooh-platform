@@ -87,11 +87,15 @@ export default function DriverDashboard() {
     // Si no estamos en el navegador o no hay PWA/Navegador con geolocalización, cancelamos
     if (typeof window === 'undefined' || !('geolocation' in navigator) || !session?.user?.id) return;
 
+    // HIBERNATION LOGIC for 402 errors
+    let backoffDelay = 60000; // 1 min initial
+    let isHibernating = false;
+
     const flushQueue = async () => {
-      if (locationQueue.length === 0 || !navigator.onLine) return;
+      if (locationQueue.length === 0 || !navigator.onLine || isHibernating) return;
       
       const batch = [...locationQueue];
-      locationQueue = []; // Clear inmediatamente para no duplicar
+      locationQueue = [];
 
       try {
         await api.post('/monitoring/gps-batch', {
@@ -100,9 +104,21 @@ export default function DriverDashboard() {
           points: batch
         });
         console.debug(`[Telemetry] Flushed ${batch.length} points.`);
-      } catch (error) {
-        // En caso de fallo, reencolar para enviar luego
+        backoffDelay = 60000; // Reset on success
+      } catch (error: any) {
+        // En caso de fallo, reencolar
         locationQueue = [...batch, ...locationQueue];
+        
+        // REGLA 402: Hibernación por Morosidad
+        if (error.response?.status === 402) {
+          isHibernating = true;
+          console.warn(`[KILL-SWITCH] 402 detected. Hibernating for ${backoffDelay/1000}s.`);
+          
+          setTimeout(() => {
+            isHibernating = false;
+            backoffDelay = Math.min(backoffDelay * 2, 3600000); // Max 1 hour
+          }, backoffDelay);
+        }
       }
     };
 

@@ -56,7 +56,16 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) =>
       }
       
       const compressed = await transcode(selectedFile);
-      setProcessedBlob(compressed);
+      
+      // Smart Fallback: Si el proceso de "optimización" termina generando un archivo 
+      // más pesado que el original (sucede con videos ya muy comprimidos),
+      // nos quedamos con el original para ahorrar transferencia y espacio.
+      if (compressed.size > selectedFile.size) {
+        console.warn(`[OPTIMIZATION] Bypassed: El video optimizado (${(compressed.size/1024/1024).toFixed(2)}MB) pesa más que el original (${(selectedFile.size/1024/1024).toFixed(2)}MB). Se utilizará el original.`);
+        setProcessedBlob(selectedFile);
+      } else {
+        setProcessedBlob(compressed);
+      }
     } catch (error) {
       console.error('Transcoding failed, falling back to direct upload:', error);
       // Si la optimización falla (ej. error de memoria), permitimos subida directa como último recurso

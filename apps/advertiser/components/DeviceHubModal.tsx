@@ -65,7 +65,8 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
 
   const handleUnlinkCampaign = async (campaignId: string) => {
     try {
-      const hwId = profile.device_id;
+      const hwId = profile?.device_id;
+      if (!hwId) throw new Error('Identificador de nodo no disponible');
       await removeCampaignFromDevice(hwId, campaignId);
       toast.warning('CAMPAÑA REMOVIDA DE ESTE NODO.');
       loadProfile();
@@ -223,7 +224,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-3xl flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-500">
-                          <CheckCircle2 className="w-6 h-6" />
+                           <CheckCircle2 className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-sm font-black text-white uppercase tracking-tighter italic">Distribución Saludable</p>
@@ -231,13 +232,13 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                         </div>
                       </div>
                       <div className="text-right">
-                         <span className="text-3xl font-black text-white italic">{profile.campaigns?.length || 0}</span>
+                         <span className="text-3xl font-black text-white italic">{profile?.campaigns?.length || 0}</span>
                          <span className="text-zinc-500 font-bold ml-2">SLOTS</span>
                       </div>
                    </div>
-
+ 
                    <div className="grid grid-cols-1 gap-4">
-                      {(profile.campaigns || []).map((camp: any) => (
+                      {(profile?.campaigns || []).map((camp: any) => (
                          <div key={camp.id} className="bg-zinc-900/50 border border-white/5 p-6 rounded-[24px] flex items-center justify-between group hover:border-tad-yellow/30 transition-all">
                           <div className="flex items-center gap-5">
                             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500 group-hover:text-tad-yellow transition-colors">
@@ -265,7 +266,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                           </div>
                         </div>
                       ))}
-                      {(!profile.campaigns || profile.campaigns.length === 0) && (
+                      {(!profile?.campaigns || profile?.campaigns.length === 0) && (
                         <div className="p-12 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30">
                            <LayoutGrid className="w-12 h-12 mx-auto mb-4" />
                            <p className="text-[10px] font-black uppercase tracking-widest leading-loose">No hay campañas individuales asignadas.<br/>El nodo solo recibe campañas globales.</p>
@@ -286,38 +287,38 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
                             <User className="w-8 h-8" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">{profile.driver?.fullName || 'No asignado'}</h3>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">{profile?.driver?.fullName || 'No asignado'}</h3>
                             <div className="flex items-center gap-4 mt-2">
                                <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                                 <Phone className="w-3 h-3" /> {profile.driver?.phone || 'S/N'}
+                                 <Phone className="w-3 h-3" /> {profile?.driver?.phone || 'S/N'}
                                </span>
                                <span className={clsx(
                                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
-                                 profile.driver?.subscriptionPaid ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                 profile?.driver?.subscriptionPaid ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                                )}>
-                                 {profile.driver?.subscriptionPaid ? 'Suscrito' : 'Deuda'}
+                                 {profile?.driver?.subscriptionPaid ? 'Suscrito' : 'Deuda'}
                                </span>
                             </div>
                           </div>
                         </div>
                       </div>
-
+ 
                       {/* Device Config Forms */}
                       <div className="space-y-4">
                          <LabelText label="Configuración del Nodo" />
                          <div className="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 space-y-4">
                             <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
                                <span>Ciudad de Operación</span>
-                               <span className="text-white italic">{profile.city}</span>
+                               <span className="text-white italic">{profile?.city || 'Desconocida'}</span>
                             </div>
                             <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
                                <span>Número Identificador</span>
-                               <span className="text-white italic font-mono">{profile.taxi_number}</span>
+                               <span className="text-white italic font-mono">{profile?.taxi_number || 'S/N'}</span>
                             </div>
                             <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
                                <span>Suscripción Driver</span>
-                               <span className={clsx("italic", profile.driver?.subscriptionPaid ? "text-emerald-500" : "text-rose-500")}>
-                                 {profile.driver?.subscriptionPaid ? 'ACTIVA' : 'PENDIENTE'}
+                               <span className={clsx("italic", profile?.driver?.subscriptionPaid ? "text-emerald-500" : "text-rose-500")}>
+                                 {profile?.driver?.subscriptionPaid ? 'ACTIVA' : 'PENDIENTE'}
                                </span>
                             </div>
                          </div>

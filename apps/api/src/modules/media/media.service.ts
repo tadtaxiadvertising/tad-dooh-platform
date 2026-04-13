@@ -87,8 +87,11 @@ export class MediaService {
    */
   async generateUploadUrl(fileName: string, fileType: string) {
     try {
-      // 0. Auto-create bucket if missing
-      await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(() => {});
+      // 0. Auto-create bucket if missing (Ensure we don't proceed if this fails silently)
+      const { error: bucketError } = await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(err => ({ error: err }));
+      if (bucketError && bucketError.message !== 'The resource already exists') {
+        this.logger.warn(`Potential issue creating bucket ads-videos: ${bucketError.message}`);
+      }
       
       // 1. Sanitize and path
       const sanitized = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
@@ -102,8 +105,13 @@ export class MediaService {
         .createSignedUploadUrl(path);
 
       if (error) {
-        this.logger.error(`Error de Supabase creando URL firmada: ${error.message}`);
-        throw new Error(error.message);
+        this.logger.error(`Error de Supabase creando URL firmada: ${JSON.stringify(error)}`);
+        // We include the Supabase error message in the exception so the developer can see it in the 400 response
+        throw new Error(`Supabase error: ${error.message} (Bucket: ads-videos, Path: ${path})`);
+      }
+
+      if (!data || !data.signedUrl) {
+        throw new Error('Supabase returned no signed URL');
       }
 
       const basePrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
@@ -116,7 +124,8 @@ export class MediaService {
       };
     } catch (e: any) {
       this.logger.error(`Falla en generateUploadUrl: ${e.message}`);
-      throw new BadRequestException(`Storage temporary error: ${e.message}`);
+      // REGLA SRE 01: Mensajes de error amigables pero con suficiente info para debug local
+      throw new BadRequestException(`${e.message}`);
     }
   }
 

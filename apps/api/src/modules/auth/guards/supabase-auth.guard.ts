@@ -12,7 +12,6 @@ import * as jwt from 'jsonwebtoken';
  * Flujo de validación (Híbrido):
  * 1. Validación LOCAL usando SUPABASE_JWT_SECRET o JWT_SECRET (< 1ms).
  * 2. Si falla, validamos contra la red de Supabase (> 200ms).
- * 3. En desarrollo con ALLOW_DEV_BYPASS=true, decodificamos sin firma solo para testing local.
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -26,18 +25,11 @@ export class SupabaseAuthGuard implements CanActivate {
     private configService: ConfigService,
   ) {
     this.isDev = process.env.NODE_ENV === 'development';
-    // FIX C-2: El bypass de desarrollo ahora requiere un flag EXPLÍCITO además de NODE_ENV=development.
-    // Esto previene que el bypass se active en producción por una variable de entorno faltante.
     this.allowDevBypass = this.isDev && process.env.ALLOW_DEV_BYPASS === 'true';
 
-    // FIX C-1: Advertir en startup si no hay un secreto JWT configurado
-    const hasSecret = !!(process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET);
+    const hasSecret = !!(this.configService.get('SUPABASE_JWT_SECRET') || this.configService.get('JWT_SECRET'));
     if (!hasSecret) {
-      this.logger.error(
-        '🚨 [SECURITY] JWT_SECRET o SUPABASE_JWT_SECRET NO está configurado. ' +
-        'El sistema usará un secreto generado aleatoriamente en memoria. ' +
-        'TODOS los tokens existentes serán inválidos. Configura la variable en EasyPanel.',
-      );
+      this.logger.warn('⚠️ [SECURITY] No hay JWT_SECRET configurado. Solo funcionará Estrategia 2 (Red).');
     }
   }
 
@@ -47,27 +39,20 @@ export class SupabaseAuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (isPublic) {
-      return true; // Bypass para rutas públicas (tablets, heartbeat, etc.)
-    }
+    if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
+    const authHeader = request.headers.authorization || request.headers.Authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      this.logger.warn(`❌ [AUTH_GUARD] Petición sin Header Authorization válido: ${request.url}`);
+      this.logger.warn(`❌ [AUTH] Petición sin Header Authorization válido: ${request.url}`);
       throw new UnauthorizedException('Token de acceso no válido o ausente.');
     }
 
     const token = authHeader.split(' ')[1];
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
 
-    // FIX C-1: Obtener el secreto vía ConfigService. Si no existe, usar un valor
-    // aleatorio en memoria que efectivamente invalida todos los tokens no configurados.
-    const jwtSecret =
-      this.configService.get<string>('SUPABASE_JWT_SECRET') ||
-      this.configService.get<string>('JWT_SECRET');
-
-    // --- ESTRATEGIA 1: Validación Local (Offline-First Backend) ---
+    // --- ESTRATEGIA 1: Validación Local JWT ---
     if (jwtSecret) {
       try {
         const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as any;
@@ -78,75 +63,77 @@ export class SupabaseAuthGuard implements CanActivate {
             role: payload.app_metadata?.role || payload.role || 'GUEST',
             entityId: payload.app_metadata?.entityId || null,
           };
-          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
+          this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
           return true;
         }
-      } catch (err) {
+      } catch (err: any) {
         if (err.name === 'TokenExpiredError') {
-          this.logger.warn(`🛑 [AUTH_GUARD] TOKEN EXPIRADO: ${err.message}`);
-          throw new UnauthorizedException('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+          this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${err.message}`);
+          throw new UnauthorizedException('Tu sesión ha expirado.');
         }
-        this.logger.warn(`⚠️ [AUTH_GUARD] Fallo validación local (Firma/Algoritmo): ${err.message}. Intentando fallback a red...`);
-        // No lanzamos excepción aquí, permitimos que pase a Estrategia 2.
+        this.logger.debug(`[AUTH] Estrategia 1 falló (${err.message}). Intentando Estrategia 2 (Red)...`);
       }
     }
 
-    // --- ESTRATEGIA 2: Validación vía Red de Supabase (Supabase SDK) ---
+    // --- ESTRATEGIA 2: Validación vía Supabase SDK (Red) ---
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase.auth.getUser(token);
 
       if (!error && data.user) {
+        // Decode the raw token to get app_metadata role even if Supabase user object doesn't include it
+        const decoded = jwt.decode(token) as any;
+        const roleFromMeta = 
+          data.user.app_metadata?.role ||
+          (decoded?.app_metadata?.role) ||
+          (data.user as any).role ||
+          decoded?.role ||
+          'GUEST';
+        const entityId =
+          data.user.app_metadata?.entityId ||
+          decoded?.app_metadata?.entityId ||
+          null;
+
         request.user = {
           id: data.user.id,
           email: data.user.email,
-          role: data.user.app_metadata?.role || (data.user as any).role || 'GUEST',
-          entityId: data.user.app_metadata?.entityId || null,
+          role: roleFromMeta,
+          entityId,
         };
         
-        if (jwtSecret) {
-          this.logger.warn(
-            `📢 [AUTH_GUARD] ESTRATEGIA 2 OK (Fallback). RECOMENDACIÓN: El secreto JWT local no coincide con el de Supabase. ` +
-            `Configura SUPABASE_JWT_SECRET correctamente para mejorar el rendimiento en EasyPanel.`
+        if (roleFromMeta === 'GUEST') {
+          this.logger.debug(
+            `⚠️ [AUTH_GUARD] Usuario autenticado pero sin rol en metadata: ${data.user.email}. ` +
+            `Configura SUPABASE_JWT_SECRET para optimizar rendimiento y role mapping.`
           );
         } else {
-          this.logger.debug(`✅ [AUTH_GUARD] ESTRATEGIA 2 OK (Red): ${data.user.email}`);
+          this.logger.debug(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
         }
-        
         return true;
       }
-
+      
       if (error) {
-        this.logger.warn(`❌ [AUTH_GUARD] ESTRATEGIA 2 FALLIDA: ${error.message}`);
+        this.logger.warn(`❌ [AUTH] ESTRATEGIA 2 RECHAZÓ TOKEN: ${error.message}`);
       }
-    } catch (err) {
-      this.logger.error(`❌ [AUTH_GUARD] ESTRATEGIA 2 ERROR CRÍTICO: ${err.message}`);
+    } catch (err: any) {
+      this.logger.error(`❌ [AUTH] ESTRATEGIA 2 ERROR CRÍTICO: ${err.message}`);
     }
 
     // --- ESTRATEGIA 3: DEV BYPASS ---
     if (this.allowDevBypass) {
-      try {
-        const decoded = jwt.decode(token) as any;
-        if (decoded && (decoded.sub || decoded.email)) {
-          this.logger.warn(`🚩 [AUTH_GUARD] DEV BYPASS ACTIVO -> ACCEPTED: ${decoded.email}`);
-          request.user = {
-            id: decoded.sub || 'dev-user',
-            email: decoded.email || 'dev@local',
-            role: decoded.app_metadata?.role || decoded.role || 'GUEST',
-            entityId: decoded.app_metadata?.entityId || null,
-          };
-          return true;
-        }
-      } catch (err) {
-        this.logger.error(`❌ [AUTH_GUARD] DEV BYPASS ERROR: ${err.message}`);
+      const decoded = jwt.decode(token) as any;
+      if (decoded) {
+        this.logger.warn(`🚩 [AUTH] DEV BYPASS UTILIZADO: ${decoded.email}`);
+        request.user = {
+          id: decoded.sub || 'dev-user',
+          email: decoded.email || 'dev@local',
+          role: decoded.app_metadata?.role || decoded.role || 'GUEST',
+          entityId: decoded.app_metadata?.entityId || null,
+        };
+        return true;
       }
     }
 
-    const decodedForLog = jwt.decode(token) as any;
-    this.logger.error(
-      `🚨 [AUTH_GUARD] ACCESO RECHAZADO (401) | URL: ${request.url} | ` +
-      `Email: ${decodedForLog?.email || 'N/A'} | Role: ${decodedForLog?.role || decodedForLog?.app_metadata?.role || 'N/A'}`,
-    );
-    throw new UnauthorizedException('La sesión expiró o es inválida. Por favor inicia sesión de nuevo.');
+    throw new UnauthorizedException('Sesión inválida.');
   }
 }

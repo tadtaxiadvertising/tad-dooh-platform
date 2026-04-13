@@ -601,7 +601,7 @@ export class FleetService {
     }
   }
 
-  async trackBatch(data: { driverId?: string; deviceId: string; locations: any[] }) {
+  async trackBatch(data: { driverId?: string; deviceId: string; locations?: any[]; points?: any[] }) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
       include: { driver: true }
@@ -635,32 +635,30 @@ export class FleetService {
       }, HttpStatus.PAYMENT_REQUIRED);
     }
 
-    // 2. GUARDADO MASIVO
-    const records = data.locations.map(loc => ({
+    // 2. GUARDADO MASIVO (Soporta formato 'locations' con lat/lng y 'points' con latitude/longitude)
+    const rawPoints = data.points || data.locations || [];
+    const records = rawPoints.map(p => ({
       driverId: resolvedDriverId,
       deviceId: data.deviceId,
-      latitude: loc.lat,
-      longitude: loc.lng,
-      speed: loc.speed || 0,
-      timestamp: new Date(loc.ts)
+      latitude: p.latitude ?? p.lat,
+      longitude: p.longitude ?? p.lng,
+      speed: p.speed || 0,
+      timestamp: new Date(p.timestamp || p.ts)
     }));
 
     if (records.length > 0) {
-      // 2.1 GUARDADO MASIVO
+      const latestPoint = rawPoints.reduce((prev: any, curr: any) => 
+        (new Date(curr.timestamp || curr.ts) > new Date(prev.timestamp || prev.ts)) ? curr : prev
+      );
+
       await this.prisma.driverLocation.createMany({
         data: records
       });
-
-      // 2.2 ACTUALIZAR ESTADO DEL DISPOSITIVO (Crucial para el Mapa Realtime)
-      const latestPoint = data.locations.reduce((prev, curr) => 
-        (curr.ts > prev.ts) ? curr : prev
-      );
-
       await this.prisma.device.update({
         where: { deviceId: data.deviceId },
         data: {
-          lastLat: latestPoint.lat,
-          lastLng: latestPoint.lng,
+          lastLat: latestPoint.latitude ?? latestPoint.lat,
+          lastLng: latestPoint.longitude ?? latestPoint.lng,
           isOnline: true,
           lastSeen: new Date(),
           lastSyncAt: new Date(),

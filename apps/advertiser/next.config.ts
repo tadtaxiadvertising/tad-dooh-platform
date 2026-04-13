@@ -79,11 +79,6 @@ export default withSentryConfig(nextConfig, {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
-  // Automatically annotate React components to show their full name in breadcrumbs and session replay
-  reactComponentAnnotation: {
-    enabled: true,
-  },
-
   // Route browser requests to Sentry through a dedicated Next.js API route.
   // IMPORTANT: Do NOT use '/monitoring' here — that conflicts with the Auditoría page.
   // tunnelRoute: "/api/sentry-tunnel",
@@ -93,8 +88,5 @@ export default withSentryConfig(nextConfig, {
      deleteSourcemapsAfterUpload: true,
   },
 
-  // Automatically tree-shake Sentry logger statements to reduce bundle size
-  disableLogger: true,
-});
 
 

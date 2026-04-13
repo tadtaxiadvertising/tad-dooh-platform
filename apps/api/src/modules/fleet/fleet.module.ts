@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { FleetController } from './fleet.controller';
 import { FleetService } from './fleet.service';
-import { FleetMonitorService } from './fleet-monitor.service';
 import { DeviceModule } from '../device/device.module';
 import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
   imports: [DeviceModule, SupabaseModule],
   controllers: [FleetController],
-  providers: [FleetService, FleetMonitorService],
+  providers: [FleetService],
 })
 export class FleetModule {}

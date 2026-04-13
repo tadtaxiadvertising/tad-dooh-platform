@@ -86,28 +86,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 2. Intentar petición al backend
-    const forwardHeaders = { ...req.headers } as Record<string, string>;
-    
-    // 🔑 Reenviar el token al backend
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      delete forwardHeaders['authorization'];
-      forwardHeaders['Authorization'] = authHeader;
-    } else {
-      console.warn(`[PROXY WARNING] No se detectó Header Authorization para: ${pathStr}`);
-    }
-    
-    // 🛡️ SEGURIDAD y OPTIMIZACIÓN
-    delete forwardHeaders['accept-encoding'];
-    forwardHeaders['accept-encoding'] = 'identity';
-    delete forwardHeaders['connection'];
-    forwardHeaders['connection'] = 'close';
-    delete forwardHeaders['content-length'];
-    forwardHeaders['host'] = new URL(targetUrl).host;
+    const getForwardHeaders = (target: string) => {
+      const headers = { ...req.headers } as Record<string, string>;
+      
+      // 🔑 Reenviar el token al backend (Normalizar a 'Authorization' con 'A' mayúscula)
+      const authHeader = req.headers.authorization || req.headers.Authorization;
+      if (authHeader) {
+        delete headers['authorization'];
+        delete headers['Authorization'];
+        headers['Authorization'] = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+      }
+      
+      // 🛡️ SEGURIDAD y OPTIMIZACIÓN
+      delete headers['accept-encoding'];
+      headers['accept-encoding'] = 'identity';
+      delete headers['connection'];
+      headers['connection'] = 'close';
+      delete headers['content-length'];
+      
+      // CRÍTICO: El Host DEBE coincidir con el target de la red (especialmente en EasyPanel/Nginx)
+      headers['host'] = new URL(target).host;
+      
+      return headers;
+    };
 
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
-      headers: forwardHeaders,
+      headers: getForwardHeaders(targetUrl),
       signal: AbortSignal.timeout(60000),
     };
 
@@ -131,18 +136,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         console.warn(`[PROXY RETRY] Falló conexión interna. Reintentando vía pública: ${fallbackUrl}`);
         
-        // El body de la original (req) ya pudo haber sido consumido si era POST/PUT. 
-        // En Next.js API routes, req es un stream. Si falló el primer fetch, 
-        // el reintento de un POST podría fallar si no clonamos o manejamos el stream.
-        // Pero para la mayoría de GETs de dashboard, esto funcionará perfecto.
+        // REGENAR HEADERS: El host cambió a la URL pública
+        fetchOptions.headers = getForwardHeaders(fallbackUrl);
+        
         backendResponse = await fetch(fallbackUrl, fetchOptions);
       } else {
-        throw fetchError; // Si no es un error de red o ya estamos en el fallback, lanzamos el error
+        throw fetchError; 
       }
     }
 
     if (backendResponse.status === 401) {
-      console.warn(`[PROXY 401] Backend rechazó credenciales: ${pathStr}`);
+      const authHeader = req.headers.authorization ? 'PRESENTE' : 'AUSENTE';
+      console.warn(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authHeader}`);
     }
 
     // Headers CORS de respuesta

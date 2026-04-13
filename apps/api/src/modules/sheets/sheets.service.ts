@@ -12,8 +12,14 @@ export class SheetsService implements OnModuleInit {
   
   private readonly SHEET_ID = '1x2PQInj1F5CJnotWVNkCuGEKqULeO9Vv7qkUvmtd-LY';
   private readonly CREDENTIALS_PATHS = [
-    '../../../../taxi-advertisig-c30861d203c5.json',
-    '../../../../../../taxi-advertisig-c30861d203c5.json' // Parent of project root
+    '../../../../taxi-advertisig-c30861d203c5.json', // Relative to dist/...
+    '../../../../../taxi-advertisig-c30861d203c5.json',
+    '../../../../../../taxi-advertisig-c30861d203c5.json',
+    './taxi-advertisig-c30861d203c5.json',
+    '../taxi-advertisig-c30861d203c5.json',
+    '../../taxi-advertisig-c30861d203c5.json',
+    path.join(process.cwd(), 'taxi-advertisig-c30861d203c5.json'),
+    path.join(process.cwd(), 'apps/api', 'taxi-advertisig-c30861d203c5.json'),
   ];
 
   constructor(private readonly prisma: PrismaService) {}

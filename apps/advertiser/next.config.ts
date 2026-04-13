@@ -24,10 +24,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
-  outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado
     webpackBuildWorker: true,
+    outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
     // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
     parallelServerCompiles: false,
   },
@@ -41,9 +41,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Los headers de seguridad estrictos (COOP/COEP) bloquean los tiles de Leaflet desde OpenStreetMap.
-  // Se remueven para permitir visualización cartográfica fluida en EasyPanel.
-
   async redirects() {
     return [
       {
@@ -87,6 +84,4 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
      deleteSourcemapsAfterUpload: true,
   },
-
-
-
+});

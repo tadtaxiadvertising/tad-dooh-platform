@@ -1,17 +1,15 @@
-# .dockerignore - Zero-Waste Extreme Optimization for TAD Platform
 **
+!apps/**
+!packages/**
 !package.json
 !package-lock.json
-!apps/**/package.json
-!packages/**/package.json
-!apps/api/prisma
-!apps/api/src
-!apps/api/tsconfig.json
-!packages/*/src
-!packages/*/tsconfig.json
 
-# Build outputs
+# Exclude heavy/unnecessary items from allowed folders
+**/node_modules
 **/dist
+**/.next
+**/out
+**/build
 **/.next
 **/out
 **/build

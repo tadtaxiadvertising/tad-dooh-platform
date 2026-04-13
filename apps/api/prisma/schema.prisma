@@ -491,6 +491,7 @@ model DriverLocation {
   @@index([deviceId, timestamp])
   @@index([driverId, timestamp])
   @@index([driverId])
+  @@index([timestamp])
   @@map("driver_locations")
 }
 

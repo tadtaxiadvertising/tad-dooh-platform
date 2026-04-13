@@ -71,13 +71,19 @@ export function useVideoTranscoder(): UseVideoTranscoderReturn {
 
       await ffmpeg.writeFile(inputName, await fetchFile(file));
 
-      // Parámetros recomendados por el CTO: -vcodec libx264, -b:v 3M, -vf scale=1920:1080, -preset veryfast
+      // Optimizaciones Inteligentes:
+      // - vcodec libx264: Compatibilidad universal
+      // - crf 28: Constant Rate Factor (0-51). 28 es el punto dulce para mantener calidad visual bajando el peso drásticamente en lugar de forzar un bitrate fijo alto.
+      // - vf scale='min(1920,iw)':-2 : Solo reduce si el ancho original es mayor a 1920, pero NO lo estira si es más pequeño. Mantiene relación de aspecto válida (múltiplo de 2).
+      // - preset superfast: Gran velocidad de transcodificación (Ideal de nuevo para WebAssembly)
+      // - movflags +faststart: Reorganiza metadata para que inicie la reproducción del video en web sin descargarse por completo.
       await ffmpeg.exec([
         '-i', inputName,
         '-vcodec', 'libx264',
-        '-b:v', '3M',
-        '-vf', 'scale=1920:1080',
-        '-preset', 'veryfast',
+        '-crf', '28',
+        '-vf', "scale='min(1920,iw)':-2",
+        '-preset', 'superfast',
+        '-movflags', '+faststart',
         outputName
       ]);
 

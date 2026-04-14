@@ -1,9 +1,14 @@
 import { Controller, Post, Body, Delete } from '@nestjs/common';
 import { SimulationService, ScenarioConfig } from './simulation.service';
 
-@Controller('api/simulation')
+@Controller('simulation')
 export class SimulationController {
   constructor(private readonly simService: SimulationService) {}
+
+  @Get('state')
+  async getState() {
+    return { success: true, data: this.simService.getState() };
+  }
 
   @Post('scenario')
   async startScenario(@Body() config: Partial<ScenarioConfig>) {
@@ -20,6 +25,12 @@ export class SimulationController {
     
     await this.simService.loadScenario(defaultSantiagoScenario);
     return { success: true, message: `Escenario ${defaultSantiagoScenario.name} iniciado en Santiago.` };
+  }
+
+  @Post('stop')
+  async stop() {
+    await this.simService.stopSimulation();
+    return { success: true, message: 'Simulación detenida.' };
   }
 
   @Delete('purge')

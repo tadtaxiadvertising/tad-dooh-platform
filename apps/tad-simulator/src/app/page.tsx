@@ -1,0 +1,105 @@
+'use client';
+
+import { useState } from 'react';
+import ControlPanel from '@/components/dashboard/ControlPanel';
+import LiveMap from '@/components/dashboard/LiveMap';
+import PerformanceChart from '@/components/dashboard/PerformanceChart';
+import ScenarioUploader from '@/components/dashboard/ScenarioUploader';
+import { Activity, Database, Server } from 'lucide-react';
+
+export default function ControlCenterPage() {
+  const [isRunning, setIsRunning] = useState(false);
+  const [simConfig, setSimConfig] = useState({
+    driverCount: 150,
+    activeCampaigns: 5,
+    errorRate: 0.05,
+    telemetryFrequency: 30,
+  });
+
+  const toggleSimulation = () => {
+    setIsRunning(!isRunning);
+    // Here we would interact with `/api/simulate`
+  };
+
+  return (
+    <main className="p-6 max-w-7xl mx-auto w-full space-y-6">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+            TAD Simulator Control Center
+          </h1>
+          <p className="text-tad-text-muted mt-1 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              {isRunning && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tad-accent opacity-75"></span>}
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isRunning ? 'bg-tad-accent' : 'bg-gray-500'}`}></span>
+            </span>
+            {isRunning ? 'Simulation Engine ACTIVE' : 'Engine Idle'}
+          </p>
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="glass-panel px-4 py-2 flex items-center gap-3">
+            <Server className="w-5 h-5 text-tad-accent" />
+            <div className="text-sm">
+              <p className="text-gray-400 text-xs">tad-api Status</p>
+              <p className="font-medium text-green-400">ONLINE</p>
+            </div>
+          </div>
+          <div className="glass-panel px-4 py-2 flex items-center gap-3">
+            <Database className="w-5 h-5 text-tad-accent" />
+            <div className="text-sm">
+              <p className="text-gray-400 text-xs">Prisma Bottleneck</p>
+              <p className="font-medium text-green-400">SECURE</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column - Controls */}
+        <div className="space-y-6 lg:col-span-1 border-r border-white/5 pr-0 lg:pr-6">
+          <ControlPanel 
+            isRunning={isRunning} 
+            toggleSimulation={toggleSimulation} 
+            config={simConfig}
+            setConfig={setSimConfig}
+          />
+          <ScenarioUploader />
+        </div>
+
+        {/* Right Column - Visuals */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Map Section */}
+          <div className="glass-panel p-1 border border-white/10 overflow-hidden relative">
+            <div className="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-tad-accent" />
+                Fleet Telemetry Live View
+              </h2>
+              {isRunning && (
+                <span className="text-xs px-2 py-1 bg-tad-accent/20 text-tad-accent rounded-full border border-tad-accent/30 heartbeat">
+                  Live Socket
+                </span>
+              )}
+            </div>
+            <div className="h-[400px] w-full bg-[#050505] relative isolation-auto">
+               <LiveMap isRunning={isRunning} driverCount={simConfig.driverCount} />
+            </div>
+          </div>
+
+          {/* Performance Chart Section */}
+          <div className="glass-panel p-5 border border-white/10">
+            <h2 className="font-semibold text-lg mb-4">API Latency & Bottleneck Analysis</h2>
+            <div className="h-[250px] w-full">
+              <PerformanceChart isRunning={isRunning} />
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </main>
+  );
+}

@@ -12,6 +12,7 @@ export default function ControlCenterPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiLatency, setApiLatency] = useState<number | null>(null);
+  const [recentLogs, setRecentLogs] = useState<string[]>([]);
   const [simConfig, setSimConfig] = useState({
     driverCount: 150,
     activeCampaigns: 5,
@@ -33,6 +34,9 @@ export default function ControlCenterPage() {
           if (json.data.config) {
             setSimConfig(prev => ({ ...prev, ...json.data.config }));
           }
+          if (json.data.recentLogs) {
+            setRecentLogs(json.data.recentLogs);
+          }
         }
       } catch (e) {
         console.error('Failed to fetch state', e);
@@ -40,6 +44,20 @@ export default function ControlCenterPage() {
     }, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  // Update config on server whenever a slider changes and we're running
+  const updateConfigLive = async (newConfig: any) => {
+    if (!isRunning) return;
+    try {
+      await fetch('/api/simulation/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: newConfig })
+      });
+    } catch (e) {
+      console.error('Failed to update config live');
+    }
+  };
 
   const toggleSimulation = async () => {
     setLoading(true);
@@ -109,9 +127,35 @@ export default function ControlCenterPage() {
             loading={loading}
             toggleSimulation={toggleSimulation} 
             config={simConfig}
-            setConfig={setSimConfig}
+            setConfig={(newConfig) => {
+               setSimConfig(newConfig);
+               if (typeof newConfig === 'function') {
+                  // If it's a functional update, we can't easily sync here, 
+                  // but usually it's used with small objects in this app.
+               } else {
+                  updateConfigLive(newConfig);
+               }
+            }}
           />
-          <ScenarioUploader />
+          
+          {/* Real-time Activity Logs */}
+          <div className="glass-panel p-5 border border-white/10 min-h-[300px] flex flex-col">
+            <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
+               <Activity className="w-5 h-5 text-tad-accent animate-pulse" />
+               Real-time Event Stream
+            </h2>
+            <div className="flex-1 overflow-y-auto space-y-2 font-mono text-[11px]">
+               {recentLogs.length === 0 ? (
+                  <p className="text-gray-600 italic">Awaiting events...</p>
+               ) : (
+                  recentLogs.map((log, i) => (
+                     <div key={i} className={`pb-1 border-b border-white/5 ${i === 0 ? 'text-tad-accent font-bold' : 'text-gray-400 opacity-80'}`}>
+                        {log}
+                     </div>
+                  ))
+               )}
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Visuals */}

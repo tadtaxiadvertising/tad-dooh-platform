@@ -1,19 +1,24 @@
+
 import { NextResponse } from 'next/server';
-import { getSimulationNode } from '@/engine/server-store';
+import { getSimulationEngine } from '@/engine/server-store';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const node = getSimulationNode();
+    let body = {};
+    try {
+        body = await request.json();
+    } catch (e) {}
+    const engine = getSimulationEngine();
     
-    // Only pass config if provided, else it uses defaults/previous
-    node.start(body.config);
+    // Provisioning is handled inside start()
+    await engine.start();
 
     return NextResponse.json({
       success: true,
       message: 'Simulation Engine Deployed'
     });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to start engine' }, { status: 500 });
+  } catch (error: any) {
+    console.error('API_START_ERROR:', error.message);
+    return NextResponse.json({ success: false, error: 'Failed to start engine', details: error.message }, { status: 500 });
   }
 }

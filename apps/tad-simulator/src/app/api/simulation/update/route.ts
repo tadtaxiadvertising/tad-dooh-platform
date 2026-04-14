@@ -1,18 +1,21 @@
+
 import { NextResponse } from 'next/server';
-import { getSimulationNode } from '@/engine/server-store';
+import { getSimulationEngine } from '@/engine/server-store';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const node = getSimulationNode();
+    const engine = getSimulationEngine();
     
-    node.updateConfig(body.config);
+    if (body.config) {
+      engine.updateConfig(body.config);
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Configuration updated live'
+      message: 'Config Updated'
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to update configuration' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to update config' }, { status: 500 });
   }
 }

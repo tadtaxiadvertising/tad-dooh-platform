@@ -281,6 +281,7 @@ export class DeviceService {
         timestamp: new Date(dto.timestamp),
         lat: dto.lat,
         lng: dto.lng,
+        isSimulated: dto.isSimulated || false,
       },
     });
   }
@@ -472,7 +473,8 @@ export class DeviceService {
         eventType: 'play_confirm',
         timestamp: new Date(p.timestamp),
         lat: p.lat,
-        lng: p.lng
+        lng: p.lng,
+        isSimulated: p.isSimulated || dto.isSimulated || false
       }));
       await this.prisma.playbackEvent.createMany({
         data: playbackData,
@@ -494,7 +496,8 @@ export class DeviceService {
         driverId: device.driverId,
         latitude: l.lat,
         longitude: l.lng,
-        timestamp: new Date(l.timestamp)
+        timestamp: new Date(l.timestamp),
+        isSimulated: l.isSimulated || dto.isSimulated || false
       }));
       
       await this.prisma.driverLocation.createMany({

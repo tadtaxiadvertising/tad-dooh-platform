@@ -1,20 +1,21 @@
+
 import { NextResponse } from 'next/server';
-import { getSimulationNode } from '@/engine/server-store';
+import { getSimulationEngine } from '@/engine/server-store';
 
 export async function GET() {
-  try {
-    const node = getSimulationNode();
-    const state = node.getState();
-    const latency = await node.getSyncEngine().measureLatency();
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...state,
-        apiLatency: latency
-      }
-    });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to retrieve state' }, { status: 500 });
-  }
+  const engine = getSimulationEngine();
+  
+  return NextResponse.json({
+    success: true,
+    data: {
+      isRunning: engine.isRunning,
+      config: engine.currentConfig,
+      // We could add more metrics here like total drivers online, etc.
+      recentLogs: [
+        `System Status: ${engine.isRunning ? 'ACTIVE' : 'IDLE'}`,
+        `Target Load: ${engine.currentConfig.driverCount} units`,
+        `Environment: ${process.env.NODE_ENV}`
+      ]
+    }
+  });
 }

@@ -62,7 +62,7 @@ export class SimulationService {
   private readonly logger = new Logger(SimulationService.name);
   private isRunning = false;
   private currentScenario: ScenarioConfig | null = null;
-  private fleetState: Map<string, VirtualVehicle> = new Map();
+  private fleetState: Map<string, { vehicle: VirtualVehicle; deviceId: string }> = new Map();
 
   constructor(private prisma: PrismaService) {}
 

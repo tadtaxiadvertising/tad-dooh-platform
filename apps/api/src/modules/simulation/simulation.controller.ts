@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Delete, Get } from '@nestjs/common';
 import { SimulationService, ScenarioConfig } from './simulation.service';
 
 @Controller('simulation')

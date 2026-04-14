@@ -20,7 +20,7 @@ services:
 
   tad-simulator:
     build:
-      dockerfile: ./Dockerfile.simulator
+      dockerfile: "Dockerfile.simulator"
     deploy:
       resources:
         limits:

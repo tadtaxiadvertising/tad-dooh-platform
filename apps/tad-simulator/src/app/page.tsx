@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ControlPanel from '@/components/dashboard/ControlPanel';
 import LiveMap from '@/components/dashboard/LiveMap';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import ScenarioUploader from '@/components/dashboard/ScenarioUploader';
 import { Activity, Database, Server } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function ControlCenterPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiLatency, setApiLatency] = useState<number | null>(null);
   const [simConfig, setSimConfig] = useState({
     driverCount: 150,
     activeCampaigns: 5,
@@ -16,9 +19,49 @@ export default function ControlCenterPage() {
     telemetryFrequency: 30,
   });
 
-  const toggleSimulation = () => {
-    setIsRunning(!isRunning);
-    // Here we would interact with `/api/simulate`
+  useEffect(() => {
+    // Poll state every 2 seconds
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/simulation/state');
+        const json = await res.json();
+        if (json.success) {
+          setIsRunning(json.data.isRunning);
+          if (json.data.apiLatency !== undefined && json.data.apiLatency > 0) {
+            setApiLatency(json.data.apiLatency);
+          }
+          if (json.data.config) {
+            setSimConfig(prev => ({ ...prev, ...json.data.config }));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch state', e);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleSimulation = async () => {
+    setLoading(true);
+    try {
+      const endpoint = isRunning ? '/api/simulation/stop' : '/api/simulation/start';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: isRunning ? undefined : JSON.stringify({ config: simConfig })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setIsRunning(!isRunning);
+      } else {
+        toast.error(data.error || 'Failed to toggle simulation');
+      }
+    } catch (e) {
+      toast.error('Network error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,6 +106,7 @@ export default function ControlCenterPage() {
         <div className="space-y-6 lg:col-span-1 border-r border-white/5 pr-0 lg:pr-6">
           <ControlPanel 
             isRunning={isRunning} 
+            loading={loading}
             toggleSimulation={toggleSimulation} 
             config={simConfig}
             setConfig={setSimConfig}
@@ -94,7 +138,7 @@ export default function ControlCenterPage() {
           <div className="glass-panel p-5 border border-white/10">
             <h2 className="font-semibold text-lg mb-4">API Latency & Bottleneck Analysis</h2>
             <div className="h-[250px] w-full">
-              <PerformanceChart isRunning={isRunning} />
+              <PerformanceChart isRunning={isRunning} externalLatency={apiLatency} />
             </div>
           </div>
         </div>

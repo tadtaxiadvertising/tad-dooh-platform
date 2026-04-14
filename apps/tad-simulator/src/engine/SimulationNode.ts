@@ -17,7 +17,29 @@ export class SimulationNode {
     this.sync = new SyncEngine();
   }
 
-  start() {
+  public getState() {
+    return {
+      isRunning: this.isRunning,
+      fleetSize: this.fleet.length,
+      config: this.config
+    };
+  }
+
+  public getSyncEngine() {
+    return this.sync;
+  }
+
+  start(newConfig?: { driverCount: number, activeCampaigns: number, errorRate: number, telemetryFrequency: number }) {
+    if (newConfig) {
+      this.config = {
+        driverCount: newConfig.driverCount,
+        telemetryFreq: newConfig.telemetryFrequency,
+        errorRate: newConfig.errorRate
+      };
+    }
+
+    if (this.isRunning) return;
+
     this.isRunning = true;
     console.log(`[Engine] Initializing simulation with ${this.config.driverCount} drivers...`);
     
@@ -64,6 +86,7 @@ export class SimulationNode {
   stop() {
     this.isRunning = false;
     if (this.interval) clearInterval(this.interval);
+    this.interval = null;
     console.log('[Engine] Simulation sequence HALTED');
   }
 }

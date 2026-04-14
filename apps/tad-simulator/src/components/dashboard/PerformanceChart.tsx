@@ -7,7 +7,7 @@ interface DataPoint {
   latencyMs: number;
 }
 
-export default function PerformanceChart({ isRunning }: { isRunning: boolean }) {
+export default function PerformanceChart({ isRunning, externalLatency }: { isRunning: boolean, externalLatency: number | null }) {
   const [data, setData] = useState<DataPoint[]>([]);
 
   useEffect(() => {
@@ -18,8 +18,8 @@ export default function PerformanceChart({ isRunning }: { isRunning: boolean }) 
       setData(prev => {
         const newData = [...prev, {
           time: localTime,
-          // Generate mock latency. Sometimes spike if over 200 to simulate a bottleneck
-          latencyMs: Math.floor(Math.random() * 120) + 40 + (Math.random() > 0.9 ? 150 : 0)
+          // Use real latency if provided, otherwise mock it with a base and random noise
+          latencyMs: externalLatency !== null ? externalLatency + Math.floor(Math.random() * 20 - 10) : Math.floor(Math.random() * 120) + 40
         }];
         // Keep only last 30 points
         if (newData.length > 30) newData.shift();
@@ -29,7 +29,7 @@ export default function PerformanceChart({ isRunning }: { isRunning: boolean }) 
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isRunning, externalLatency]);
 
   // SVG dimensions
   const width = 600;

@@ -7,6 +7,7 @@ export class SimulationNode {
   private isRunning: boolean = false;
   private fleet: VirtualDriver[] = [];
   private interval: NodeJS.Timeout | null = null;
+  private sync: SyncEngine;
   private logs: string[] = [];
 
   constructor(private config: { 

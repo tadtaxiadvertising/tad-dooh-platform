@@ -16,11 +16,12 @@ export interface VirtualDriver {
 
 export class DriverModule {
   // Generates a complete fake profile (Dominican Republic context)
-  static generateProfile(): VirtualDriver {
+  static generateProfile(index: number = 1): VirtualDriver {
+    const paddedId = String(index).padStart(4, '0');
     return {
-      id: faker.string.uuid(),
+      id: faker.string.uuid(), // This will be ignored/overridden if we use real driver IDs
       name: `${faker.person.firstName()} ${faker.person.lastName()}`,
-      vehicleId: `STI-${faker.number.int({ min: 1000, max: 9999 })}`,
+      vehicleId: `STI${paddedId}`,
       points: []
     };
   }

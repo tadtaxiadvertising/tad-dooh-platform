@@ -88,7 +88,7 @@ export class SimulationNode {
     console.log(`[Engine] Initializing simulation with ${this.config.driverCount} drivers...`);
     
     // 1. Generate virtual fleet
-    this.fleet = Array.from({ length: this.config.driverCount }, () => DriverModule.generateProfile());
+    this.fleet = Array.from({ length: this.config.driverCount }, (_, i) => DriverModule.generateProfile(i + 1));
 
     // 2. Start simulation loop
     this.restartLoop();
@@ -100,36 +100,41 @@ export class SimulationNode {
   private async tick() {
     if (!this.isRunning) return;
 
-    for (const driver of this.fleet) {
-      // Check Subscription (Debtor Mode)
-      if (SubscriptionModule.shouldTriggerDebtorMode(this.config.errorRate)) {
-        console.warn(`[Engine] Driver ${driver.vehicleId} simulation of HTTP 402 interruption.`);
-        continue;
-      }
-
-      // 1. Generate & Send GPS Batch
-      const gpsBatch = DriverModule.generateGpsBatch();
-      const gpsStatus = await this.sync.sendGpsBatch(driver, gpsBatch);
+    console.log(`[Engine] Tick started for ${this.fleet.length} drivers...`);
+    
+    // Process in chunks of 20 to stay within memory limits
+    const CHUNK_SIZE = 20;
+    for (let i = 0; i < this.fleet.length; i += CHUNK_SIZE) {
+      const chunk = this.fleet.slice(i, i + CHUNK_SIZE);
       
-      // 2. Generate & Send Financial event (Strictly RD$500)
-      const playback = FinanceModule.generatePlaybackEvent(driver.vehicleId, 'CAMP-001', 'AD-001');
-      const finStatus = await this.sync.sendPlaybackBatch([playback]);
+      await Promise.all(chunk.map(async (driver) => {
+        // Check Subscription (Debtor Mode)
+        if (SubscriptionModule.shouldTriggerDebtorMode(this.config.errorRate)) {
+          return;
+        }
 
-      // 3. Subscription handling from API response
-      const subAction = SubscriptionModule.handleApiResponse(gpsStatus === 402 ? 402 : finStatus);
-      if (subAction.stopActivity) {
-         console.error(`[Engine] ${driver.vehicleId} HALTED: ${subAction.message}`);
-         continue;
-      }
+        try {
+          // 1. Generate & Send GPS Batch
+          const gpsBatch = DriverModule.generateGpsBatch();
+          const gpsStatus = await this.sync.sendGpsBatch(driver, gpsBatch);
+          
+          // 2. Generate & Send Financial event (Strictly RD$500)
+          const playback = FinanceModule.generatePlaybackEvent(driver.vehicleId, 'CAMP-001', 'AD-001');
+          const finStatus = await this.sync.sendPlaybackBatch([playback]);
 
-      console.log(`[Sync] ${driver.vehicleId}: GPS ${gpsStatus} | Finance ${finStatus} (RD$${playback.revenue})`);
-      if (gpsStatus === 200 || gpsStatus === 201) {
-        this.addLog(`Driver ${driver.vehicleId}: GPS Sync SUCCESS`);
-      }
-      if (finStatus === 200 || finStatus === 201) {
-        this.addLog(`Campaign ${playback.campaignId}: RD$500 Injected`);
-      }
+          // 3. Subscription handling from API response
+          const subAction = SubscriptionModule.handleApiResponse(gpsStatus === 402 ? 402 : finStatus);
+          
+          if (gpsStatus === 200 || gpsStatus === 201) {
+            this.addLog(`Driver ${driver.vehicleId}: GPS Sync SUCCESS`);
+          }
+        } catch (err: any) {
+          console.error(`[Sync] Error for ${driver.vehicleId}:`, err.message);
+        }
+      }));
     }
+    
+    this.addLog(`Cycle COMPLETE: ${this.fleet.length} drivers processed`);
   }
 
   stop() {

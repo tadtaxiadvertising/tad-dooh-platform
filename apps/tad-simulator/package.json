@@ -15,10 +15,13 @@
     "next": "15.2.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
+    "prisma": "^5.22.0",
     "@tailwindcss/postcss": "4.1.0",
+
     "@types/node": "^20",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",

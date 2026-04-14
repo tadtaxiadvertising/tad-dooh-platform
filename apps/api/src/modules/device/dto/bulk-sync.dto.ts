@@ -17,6 +17,9 @@ export class BulkPlaybackDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  @IsOptional()
+  isSimulated?: boolean;
 }
 
 export class BulkLocationDto {
@@ -28,6 +31,9 @@ export class BulkLocationDto {
 
   @IsDateString()
   timestamp: string;
+
+  @IsOptional()
+  isSimulated?: boolean;
 }
 
 export class BulkSyncDto {
@@ -57,4 +63,7 @@ export class BulkSyncDto {
   @ValidateNested({ each: true })
   @Type(() => BulkLocationDto)
   locations: BulkLocationDto[];
+
+  @IsOptional()
+  isSimulated?: boolean;
 }

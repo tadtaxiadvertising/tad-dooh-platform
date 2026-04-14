@@ -20,4 +20,7 @@ export class PlaybackConfirmationDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  @IsOptional()
+  isSimulated?: boolean;
 }

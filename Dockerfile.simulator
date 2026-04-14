@@ -1,7 +1,7 @@
 # ============================================
 # TAD DOOH Simulator - Production Dockerfile
 # Optimized for EasyPanel (1GB RAM)
-# BUILD_ID: 2026-04-14-T0255
+# BUILD_ID: 2026-04-14-T0310
 # ============================================
 
 FROM node:20-alpine AS builder
@@ -25,15 +25,23 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV TAD_API_URL=$TAD_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Instalar dependencias
+# Instalar dependencias del monorepo raíz
 RUN npm install --legacy-peer-deps
 
-# Generar Prisma Client (Crucial para que Next.js encuentre los tipos)
+
+# 1️⃣ Generar el cliente Prisma del API (PostgreSQL / AppPrisma)
+#    Esto resuelve: import { PrismaClient as AppPrisma } from '@prisma/client'
 RUN npx prisma generate --schema=./prisma-schema/schema.prisma
 
-# Build
+# 2️⃣ Generar el cliente Prisma local del Simulator (SQLite)
+#    Esto resuelve: import { PrismaClient as SimulatorPrisma } from '../generated/client'
+#    Lo hacemos DESDE el directorio de la app para asegurar rutas relativas correctas
 WORKDIR /app/apps/tad-simulator
+RUN npx prisma generate
+
+# Build de Next.js
 RUN npm run build
+
 
 # ---- Runner (Production) ----
 FROM node:20-alpine AS runner

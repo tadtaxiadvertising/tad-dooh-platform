@@ -5,6 +5,7 @@ import ControlPanel from '@/components/dashboard/ControlPanel';
 import LiveMap from '@/components/dashboard/LiveMap';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import ScenarioUploader from '@/components/dashboard/ScenarioUploader';
+import HealthMonitor from '@/components/dashboard/HealthMonitor';
 import { Activity, Database, Server } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -177,6 +178,9 @@ export default function ControlCenterPage() {
                <LiveMap isRunning={isRunning} driverCount={simConfig.driverCount} />
             </div>
           </div>
+
+          {/* Health & SRE Metrics */}
+          <HealthMonitor />
 
           {/* Performance Chart Section */}
           <div className="glass-panel p-5 border border-white/10">

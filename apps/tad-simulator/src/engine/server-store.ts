@@ -1,18 +1,12 @@
-import { SimulationNode } from './SimulationNode';
+import { SimulationEngine } from './SimulationEngine';
 
-// Use a global variable to preserve the instance during HMR in development
-// and act as a singleton in production.
 const globalForSimulation = global as unknown as {
-  simulationNode?: SimulationNode;
+  simulationEngine?: SimulationEngine;
 };
 
-export function getSimulationNode(): SimulationNode {
-  if (!globalForSimulation.simulationNode) {
-    globalForSimulation.simulationNode = new SimulationNode({
-      driverCount: 150,
-      telemetryFreq: 30,
-      errorRate: 0.05
-    });
+export function getSimulationEngine(): SimulationEngine {
+  if (!globalForSimulation.simulationEngine) {
+    globalForSimulation.simulationEngine = new SimulationEngine();
   }
-  return globalForSimulation.simulationNode;
+  return globalForSimulation.simulationEngine;
 }

@@ -60,6 +60,7 @@ model Device {
   playbackEvents    PlaybackEvent[]
   assignedCampaigns PlaylistItem[]
   subscriptions     Subscription[]
+  isSimulated       Boolean           @default(false) @map("is_simulated")
 
   connectivityStatus String           @default("ONLINE") @map("connectivity_status")
 
@@ -194,6 +195,7 @@ model AnalyticsEvent {
   occurredAt DateTime @map("occurred_at")
   receivedAt DateTime @default(now()) @map("received_at")
   processed  Boolean  @default(false)
+  isSimulated Boolean @default(false) @map("is_simulated")
   device     Device   @relation(fields: [deviceId], references: [deviceId])
 
   @@index([deviceId])
@@ -279,6 +281,7 @@ model PlaybackEvent {
   lat       Float?
   lng       Float?
   timestamp DateTime @default(now())
+  isSimulated Boolean @default(false) @map("is_simulated")
   device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
   @@index([deviceId])
@@ -351,6 +354,7 @@ model Driver {
   campaigns           Campaign[]       @relation("CampaignToDriver")
   contractAcceptances ContractAcceptance[]
   portalRequests      PortalRequest[]
+  isSimulated         Boolean          @default(false) @map("is_simulated")
 
   @@index([status])
   @@index([phone])
@@ -413,6 +417,7 @@ model Subscription {
   paidAt        DateTime? @map("paid_at")
   paymentMethod String?   @map("payment_method")
   notes         String?
+  isSimulated   Boolean   @default(false) @map("is_simulated")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   device        Device?   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
@@ -486,6 +491,7 @@ model DriverLocation {
   longitude Float
   speed     Float    @default(0)
   timestamp DateTime @default(now())
+  isSimulated Boolean @default(false) @map("is_simulated")
   device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
   driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Play, Square, Settings2, AlertTriangle, Users, Hash, Clock } from 'lucide-react';
+import { Play, Square, Settings2, AlertTriangle, Users, Hash, Clock, Database } from 'lucide-react';
 
 interface ConfigDetails {
   driverCount: number;
@@ -98,7 +98,7 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-4">
         <button 
           onClick={toggleSimulation}
           disabled={loading}
@@ -122,6 +122,22 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
           ) : (
              <><Play className="w-5 h-5 fill-current" /> DEPLOY ENGINE</>
           )}
+        </button>
+
+        <button 
+          onClick={async () => {
+            const t = (await import('react-hot-toast')).default;
+            try {
+              const res = await fetch('/api/simulation/refresh-views', { method: 'POST' });
+              if (res.ok) t.success('Vistas Materializadas (mv_fleet_health) Actualizadas');
+              else t.error('Fallo al actualizar vistas');
+            } catch (e) {
+              t.error('Error de red');
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/5 transition-colors"
+        >
+          <Database className="w-4 h-4" /> REFRESH MATERIALIZED VIEWS
         </button>
       </div>
     </div>

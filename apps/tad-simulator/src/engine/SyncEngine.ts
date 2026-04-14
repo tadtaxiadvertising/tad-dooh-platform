@@ -6,73 +6,76 @@ export class SyncEngine {
   private apiKey: string;
 
   constructor() {
-    this.apiUrl = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
+    let rawUrl = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
+    // SRE Fix: Fallback for unresolvable domain in monorepo
+    if (rawUrl.includes('proyecto_ia.ibusiness.com.do')) {
+        rawUrl = 'http://localhost:3000/api/v1';
+    }
+    this.apiUrl = rawUrl;
     this.apiKey = process.env.SIMULATOR_API_KEY || process.env.TAD_API_KEY || 'xxx-sim-secret-xxx';
   }
 
   /**
-   * Sends a batch of GPS points to the monitoring endpoint.
+   * Professional Synchronizer: Uses the production payload format (bulk-sync)
    */
-  async sendGpsBatch(driver: VirtualDriver, points: GpsPoint[]): Promise<number> {
+  private async unifiedSync(deviceId: string, data: { locations?: any[], playbacks?: any[] }): Promise<number> {
+    if (!this.apiUrl) return 500;
+
     try {
       const payload = {
-        deviceId: driver.vehicleId,
-        driverId: driver.id,
-        points: points.map(p => ({
-          latitude: p.latitude,
-          longitude: p.longitude,
-          speed: p.speed,
-          timestamp: p.timestamp
-        }))
+        device_id: deviceId,
+        isSimulated: true, // SRE Requirement: Flag every simulated request
+        battery_level: 95,
+        storage_free: '12GB',
+        lat: data.locations?.[data.locations.length - 1]?.lat,
+        lng: data.locations?.[data.locations.length - 1]?.lng,
+        locations: (data.locations || []).map(l => ({ ...l, isSimulated: true })),
+        playbacks: (data.playbacks || []).map(p => ({ ...p, isSimulated: true }))
       };
 
-      const response = await fetch(`${this.apiUrl}/monitoring/gps-batch`, {
+      const response = await fetch(`${this.apiUrl}/device/bulk-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey // Custom header for simulator auth
+          'x-api-key': this.apiKey
         },
         body: JSON.stringify(payload)
       });
 
       return response.status;
     } catch (error) {
-      console.error(`[SyncEngine] Failed to send GPS batch for ${driver.vehicleId}:`, error);
+      console.error(`[SyncEngine] Bulk Sync Failed for ${deviceId}:`, error);
       return 500;
     }
+  }
+
+  /**
+   * Sends a batch of GPS points to the monitoring endpoint.
+   */
+  async sendGpsBatch(driver: VirtualDriver, points: GpsPoint[]): Promise<number> {
+    const locations = points.map(p => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      timestamp: p.timestamp
+    }));
+    return this.unifiedSync(driver.vehicleId, { locations });
   }
 
   /**
    * Sends a batch of playback events to the analytics endpoint.
    */
   async sendPlaybackBatch(events: PlaybackEvent[]): Promise<number> {
-    try {
-      const payload = events.map(e => ({
-        deviceId: e.deviceId,
-        campaignId: e.campaignId,
-        adId: e.adId,
-        eventType: 'play_confirm',
-        timestamp: e.timestamp,
-        metadata: {
-          revenue: e.revenue,
-          isSimulated: true
-        }
-      }));
-
-      const response = await fetch(`${this.apiUrl}/analytics/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey
-        },
-        body: JSON.stringify({ events: payload })
-      });
-
-      return response.status;
-    } catch (error) {
-      console.error(`[SyncEngine] Failed to send playback batch:`, error);
-      return 500;
-    }
+    if (events.length === 0) return 200;
+    const deviceId = events[0].deviceId;
+    
+    const playbacks = events.map(e => ({
+      video_id: e.campaignId, // Map to video_id
+      timestamp: e.timestamp,
+      lat: 19.45, // Fallback lat for Santiago if not provided
+      lng: -70.69
+    }));
+    
+    return this.unifiedSync(deviceId, { playbacks });
   }
 
   /**

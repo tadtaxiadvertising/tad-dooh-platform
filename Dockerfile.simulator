@@ -6,6 +6,9 @@
 
 FROM node:20-alpine AS builder
 
+# Install dependencies needed for Prisma/Next build
+RUN apk add --no-cache openssl libcrypto3 libc6-compat
+
 WORKDIR /app
 
 # Archivos core del monorepo
@@ -46,6 +49,9 @@ RUN npm run build
 # ---- Runner (Production) ----
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+# Essential for Prisma runtime
+RUN apk add --no-cache openssl libcrypto3
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

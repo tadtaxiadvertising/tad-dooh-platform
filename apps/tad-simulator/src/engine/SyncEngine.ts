@@ -6,10 +6,11 @@ export class SyncEngine {
   private apiKey: string;
 
   constructor() {
-    let rawUrl = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
-    // SRE Fix: Fallback for unresolvable domain in monorepo
-    if (rawUrl.includes('proyecto_ia.ibusiness.com.do')) {
-        rawUrl = 'http://localhost:3000/api/v1';
+    let rawUrl = process.env.TAD_API_URL || 'http://tad-api:3000/api/v1';
+    // SRE Fix: Fallback for unresolvable domain in monorepo/docker
+    if (rawUrl.includes('proyecto_ia.ibusiness.com.do') || rawUrl.includes('localhost')) {
+        // In EasyPanel/Docker, 'tad-api' is the typically internal hostname
+        rawUrl = 'http://tad-api:3000/api/v1'; 
     }
     this.apiUrl = rawUrl;
     this.apiKey = process.env.SIMULATOR_API_KEY || process.env.TAD_API_KEY || 'xxx-sim-secret-xxx';

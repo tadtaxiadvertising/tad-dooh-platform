@@ -139,6 +139,27 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         >
           <Database className="w-4 h-4" /> REFRESH MATERIALIZED VIEWS
         </button>
+
+        <button 
+          onClick={async () => {
+             const t = (await import('react-hot-toast')).default;
+             try {
+                t.loading('Purging simulation data...', { id: 'purge' });
+                const res = await fetch('/api/simulation/cleanup', { method: 'POST' });
+                const json = await res.json();
+                if (res.ok && json.success) {
+                   t.success(json.message, { id: 'purge' });
+                } else {
+                   t.error('Failed to purge simulation data', { id: 'purge' });
+                }
+             } catch (e) {
+                t.error('Network error', { id: 'purge' });
+             }
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors mt-2"
+        >
+           <AlertTriangle className="w-4 h-4" /> DELETE SIMULATION DATA
+        </button>
       </div>
     </div>
   );

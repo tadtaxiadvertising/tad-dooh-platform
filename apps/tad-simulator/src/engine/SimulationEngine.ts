@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { PrismaClient as SimulatorPrisma } from '../generated/client';
 import { PrismaClient as AppPrisma } from '@prisma/client';
+import { DriverModule } from './modules/drivers';
+import { FinanceModule } from './modules/finance';
 
 export class SimulationEngine {
   private workers: Map<string, Worker> = new Map();
@@ -38,7 +40,7 @@ export class SimulationEngine {
         for (let i = 1; i <= this.config.driverCount; i++) {
             const paddedId = String(i).padStart(4, '0');
             const driverId = `SIM_DRV_${paddedId}`;
-            const vehicleId = `SIM_DEV_${paddedId}`;
+            const vehicleId = `STI-${paddedId}`; // Using the expected STI prefix
             this.scheduleDriverLoop(driverId, vehicleId);
         }
     } catch (error: any) {
@@ -61,49 +63,80 @@ export class SimulationEngine {
   private scheduleDriverLoop(driverId: string, vehicleId: string) {
     const loop = async () => {
         try {
-            const points = Array.from({ length: 10 }, (_, i) => ({
-                lat: 19.4517 + (Math.random() - 0.5) * 0.01,
-                lng: -70.6970 + (Math.random() - 0.5) * 0.01,
-                speed: Math.floor(Math.random() * 60),
-                timestamp: new Date(Date.now() - (10 - i) * 5000).toISOString(),
+            // Determine base city (Expert: Switch between STO and STI)
+            const isSTI = Math.random() > 0.4;
+            const ref = isSTI ? DriverModule.getSantiagoRef() : DriverModule.getSantoDomingoRef();
+            
+            const points = DriverModule.generateGpsBatch(ref.lat, ref.lng).map(p => ({
+                lat: p.latitude,
+                lng: p.longitude,
+                speed: p.speed,
+                timestamp: p.timestamp,
                 isSimulated: true
             }));
+            // Expert Level: Direct Prisma Injection for Guaranteed Map Visibility
+            const latestPoint = points[points.length - 1];
+
+            // 1. Update Device state (for Admin Map real-time tracking)
+            await this.appPrisma.device.updateMany({
+                where: { deviceId: vehicleId },
+                data: {
+                    lastLat: latestPoint.lat,
+                    lastLng: latestPoint.lng,
+                    batteryLevel: 98,
+                    isOnline: true,
+                    lastSeen: new Date(),
+                    lastHeartbeat: new Date(),
+                    lastSync: new Date(),
+                    storageFree: "10GB"
+                }
+            });
+
+            // 2. Insert Historical locations
+            const locationInserts = points.map(p => ({
+                driverId,
+                deviceId: vehicleId,
+                latitude: p.lat,
+                longitude: p.lng,
+                speed: p.speed,
+                timestamp: new Date(p.timestamp),
+                isSimulated: true
+            }));
+
+            await this.appPrisma.driverLocation.createMany({
+                data: locationInserts,
+                skipDuplicates: true
+            });
             
-            const apiUrl = this.getResolvedApiUrl();
-            // In a real SRE env, we would fetch a real JWT here using a service account
-            const authToken = "eyJhY2Nlc3NfdG9rZW4iOiJzaW11bGF0ZWQtY29uZHVjdG9yLXRva2VuIn0="; 
-            
-            const sr = await fetch(`${apiUrl}/device/bulk-sync`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${authToken}`,
-                    'x-simulation-id': 'TAD-SIM-AUTO-2026'
-                },
-                body: JSON.stringify({ 
-                    device_id: vehicleId, 
-                    driverId, 
-                    locations: points,
-                    isSimulated: true,
-                    battery_level: 98,
-                    storage_free: "10GB"
-                })
-            }).catch(() => ({ status: 500 }));
-            
+            // 3. Simulate Playback Events
             if (Math.random() > 0.8) { 
-                await fetch(`${apiUrl}/device/playback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ 
-                        device_id: vehicleId, 
-                        video_id: 'campaign_sim_test', 
-                        timestamp: new Date().toISOString(), 
-                        revenue: 500, 
-                        isSimulated: true 
-                    })
-                }).catch(() => ({ status: 500 }));
+                await this.appPrisma.playbackEvent.create({
+                    data: {
+                        deviceId: vehicleId,
+                        eventType: 'PLAY',
+                        videoId: 'campaign_sim_test',
+                        timestamp: new Date(),
+                        isSimulated: true
+                    }
+                });
+                
+                await this.appPrisma.analyticsEvent.create({
+                    data: {
+                        deviceId: vehicleId,
+                        eventType: 'AD_PLAYED',
+                        campaignId: 'simulated_campaign_id',
+                        lat: latestPoint.lat,
+                        lng: latestPoint.lng,
+                        isSimulated: true,
+                        processed: true,
+                        occurredAt: new Date(),
+                        receivedAt: new Date()
+                    }
+                });
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error(`[Simulator Engine] Loop error for ${driverId}:`, e);
+        }
     };
 
     loop();
@@ -120,7 +153,7 @@ export class SimulationEngine {
             const currentId = i + j;
             const paddedId = String(currentId).padStart(4, '0');
             const driverId = `SIM_DRV_${paddedId}`;
-            const deviceId = `SIM_DEV_${paddedId}`;
+            const deviceId = `STI-${paddedId}`;
             
             batch.push((async () => {
                 try {
@@ -146,11 +179,28 @@ export class SimulationEngine {
                         update: { status: 'ACTIVE', isSimulated: true },
                         create: {
                             deviceId: deviceId,
-                            name: `ST-SIM-${paddedId}`,
+                            name: `TAD-SIM-${paddedId}`,
                             status: 'ACTIVE',
                             isOnline: true,
                             isSimulated: true,
-                            driverId: driverId
+                            driverId: driverId,
+                            city: paddedId.startsWith('00') ? 'Santiago' : 'Santo Domingo'
+                        }
+                    });
+
+                    // Create Sim Subscription
+                    await this.appPrisma.subscription.upsert({
+                        where: { id: `SIM_SUB_${paddedId}` },
+                        update: { status: 'ACTIVE', isSimulated: true, validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+                        create: {
+                            id: `SIM_SUB_${paddedId}`,
+                            driverId: driverId,
+                            deviceId: deviceId,
+                            plan: 'SIMULATED_PRO',
+                            status: 'ACTIVE',
+                            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                            validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                            isSimulated: true
                         }
                     });
                 } catch (e) {

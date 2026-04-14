@@ -18,6 +18,34 @@ services:
       retries: 5
       start_period: 150s
 
+  tad-simulator:
+    build:
+      dockerfile: ./Dockerfile.simulator
+    deploy:
+      resources:
+        limits:
+          memory: 1024M # Motor faker.js y next engine requieren RAM
+          cpus: '1.0'
+    env:
+      - NODE_ENV=production
+      - NODE_OPTIONS="--max-old-space-size=768"
+      - TAD_API_URL=http://tad-api:3000/api/v1 # Comunicación interna
+      - TAD_API_KEY=${SIMULATOR_API_KEY}
+      - DATABASE_URL=${SIMULATOR_DB_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DEFAULT_DRIVER_COUNT=150
+      - DEFAULT_TELEMETRY_FREQ=30
+      - MAX_LATENCY_THRESHOLD=200
+      - NEXT_TELEMETRY_DISABLED=1
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
   tad-redis:
     image: redis:7-alpine
     deploy:

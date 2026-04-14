@@ -45,7 +45,6 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
             min="10" max="1000" step="10" 
             value={config.driverCount} 
             onChange={handleChange}
-            disabled={isRunning}
             className="w-full accent-tad-accent cursor-pointer" 
           />
         </div>
@@ -62,7 +61,6 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
             min="1" max="15" step="1" 
             value={config.activeCampaigns} 
             onChange={handleChange}
-            disabled={isRunning}
             className="w-full accent-tad-accent cursor-pointer" 
           />
         </div>
@@ -79,7 +77,6 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
             min="5" max="60" step="5" 
             value={config.telemetryFrequency} 
             onChange={handleChange}
-            disabled={isRunning}
             className="w-full accent-tad-accent cursor-pointer" 
           />
         </div>
@@ -96,7 +93,6 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
             min="0" max="0.5" step="0.01" 
             value={config.errorRate} 
             onChange={handleChange}
-            disabled={isRunning}
             className="w-full accent-red-500 cursor-pointer" 
           />
         </div>

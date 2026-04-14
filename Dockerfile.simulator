@@ -1,29 +1,21 @@
 # ============================================
 # TAD DOOH Simulator - Production Dockerfile
 # Optimized for EasyPanel (1GB RAM)
-# BUILD_ID: 2026-04-13-T2253
+# BUILD_ID: 2026-04-14-T0255
 # ============================================
 
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Archivos core del monorepo para resolver dependencias
+# Archivos core del monorepo
 COPY package.json ./
+COPY package-lock.json ./
 COPY packages ./packages
 COPY apps/tad-simulator ./apps/tad-simulator
-RUN mkdir -p apps/tad-simulator/public
-COPY apps/tad-simulator/public ./apps/tad-simulator/public
+COPY apps/api/prisma ./prisma-schema
 
-# Instalar dependencias del monorepo
-# Se usa --legacy-peer-deps si es necesario por React 19/Next 15
-RUN npm install --legacy-peer-deps
-RUN mkdir -p apps/tad-simulator/public
-
-# Build específico para el simulador
-WORKDIR /app/apps/tad-simulator
-
-# Inyectamos variables de build si es necesario (Next.js las necesita en build time si se usan en el cliente)
+# Inyectamos variables de build
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG TAD_API_URL
@@ -33,6 +25,14 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV TAD_API_URL=$TAD_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Instalar dependencias
+RUN npm install --legacy-peer-deps
+
+# Generar Prisma Client (Crucial para que Next.js encuentre los tipos)
+RUN npx prisma generate --schema=./prisma-schema/schema.prisma
+
+# Build
+WORKDIR /app/apps/tad-simulator
 RUN npm run build
 
 # ---- Runner (Production) ----
@@ -41,7 +41,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-# Optimización de memoria para VPS pequeño
 ENV NODE_OPTIONS="--max-old-space-size=768"
 
 RUN addgroup --system --gid 1001 nodejs
@@ -58,5 +57,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# El entrypoint en modo standalone para monorepos
 CMD ["node", "apps/tad-simulator/server.js"]

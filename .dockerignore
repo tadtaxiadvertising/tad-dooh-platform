@@ -1,5 +1,6 @@
 **
 !apps/**
+!apps/tad-simulator/public/**
 !packages/**
 !package.json
 !package-lock.json

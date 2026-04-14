@@ -7,7 +7,7 @@ export class SyncEngine {
 
   constructor() {
     this.apiUrl = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
-    this.apiKey = process.env.TAD_API_KEY || 'xxx-sim-secret-xxx';
+    this.apiKey = process.env.SIMULATOR_API_KEY || process.env.TAD_API_KEY || 'xxx-sim-secret-xxx';
   }
 
   /**

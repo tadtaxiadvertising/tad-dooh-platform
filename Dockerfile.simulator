@@ -1,6 +1,7 @@
 # ============================================
 # TAD DOOH Simulator - Production Dockerfile
 # Optimized for EasyPanel (1GB RAM)
+# BUILD_ID: 2026-04-13-T2253
 # ============================================
 
 FROM node:20-alpine AS builder
@@ -11,10 +12,13 @@ WORKDIR /app
 COPY package.json ./
 COPY packages ./packages
 COPY apps/tad-simulator ./apps/tad-simulator
+RUN mkdir -p apps/tad-simulator/public
+COPY apps/tad-simulator/public ./apps/tad-simulator/public
 
 # Instalar dependencias del monorepo
 # Se usa --legacy-peer-deps si es necesario por React 19/Next 15
-RUN npm install
+RUN npm install --legacy-peer-deps
+RUN mkdir -p apps/tad-simulator/public
 
 # Build específico para el simulador
 WORKDIR /app/apps/tad-simulator

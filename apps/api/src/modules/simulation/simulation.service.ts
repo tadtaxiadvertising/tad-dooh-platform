@@ -66,6 +66,14 @@ export class SimulationService {
 
   constructor(private prisma: PrismaService) {}
 
+  getState() {
+    return {
+      isRunning: this.isRunning,
+      currentScenario: this.currentScenario,
+      fleetCount: this.fleetState.size,
+    };
+  }
+
   // Endpoint para inyectar un escenario desde el Panel de Control
   async loadScenario(config: ScenarioConfig) {
     this.logger.log(`Cargando escenario: ${config.name} en Santiago...`);
@@ -133,6 +141,12 @@ export class SimulationService {
     // Batch Insert optimizado para el VPS
     await this.prisma.driverLocation.createMany({ data: telemetryBatch });
     this.logger.log(`Batch STI inyectado: ${telemetryBatch.length} registros.`);
+  }
+
+  async stopSimulation() {
+    this.isRunning = false;
+    this.logger.log('Simulación detenida.');
+    return { success: true };
   }
 
   async clearTestData() {

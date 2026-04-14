@@ -26,6 +26,7 @@ import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { SimulationModule } from './modules/simulation/simulation.module';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
 @Module({
@@ -85,6 +86,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     PortalRequestsModule,
     BiModule,
     MonitoringModule,
+    SimulationModule,
   ],
 
   providers: [

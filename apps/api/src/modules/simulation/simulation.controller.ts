@@ -1,41 +1,110 @@
-import { Controller, Post, Body, Delete, Get } from '@nestjs/common';
+import { Controller, Post, Body, Delete, Get, Req, Logger, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { SimulationService, ScenarioConfig } from './simulation.service';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
 
+/**
+ * SimulationController
+ * Prefijo global: /api/v1 → estas rutas son:
+ *   GET    /api/v1/simulation/state    → público (para panel de control)
+ *   POST   /api/v1/simulation/scenario → solo ADMIN
+ *   POST   /api/v1/simulation/stop     → solo ADMIN
+ *   DELETE /api/v1/simulation/purge    → solo ADMIN
+ */
 @Controller('simulation')
 export class SimulationController {
-  constructor(private readonly simService: SimulationService) {}
+  constructor(
+    private readonly simService: SimulationService,
+    private readonly configService: ConfigService,
+  ) {}
 
+  private checkAuth(request: any) {
+    const simKey = this.configService.get('SIMULATOR_API_KEY') || 'xxx-sim-secret-xxx';
+    const incomingKey = request.headers['x-simulator-key'];
+    
+    if (incomingKey === simKey) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Estado de la simulación — PÚBLICO.
+   */
   @Get('state')
+  @Public()
   async getState() {
     return { success: true, data: this.simService.getState() };
   }
 
+  /**
+   * Iniciar un escenario de simulación.
+   */
   @Post('scenario')
-  async startScenario(@Body() config: Partial<ScenarioConfig>) {
+  @Public()
+  async startScenario(@Body() config: Partial<ScenarioConfig>, @Req() req: Request) {
+    if (!this.checkAuth(req)) {
+       throw new UnauthorizedException('Security Bypass for Simulator Failed');
+    }
+
     const defaultSantiagoScenario: ScenarioConfig = {
-      name: config.name || "Santiago Default",
+      name: config.name || 'Santiago Default',
       activeNodes: config.activeNodes || 50,
-      centerLat: config.centerLat || 19.4517, // Monumento Santiago
-      centerLng: config.centerLng || -70.6970,
-      radiusKm: config.radiusKm || 8, // Cubre el área metropolitana de STI
+      centerLat: config.centerLat || 19.4517,
+      centerLng: config.centerLng || -70.697,
+      radiusKm: config.radiusKm || 8,
       minSpeed: config.minSpeed || 15,
       maxSpeed: config.maxSpeed || 60,
       anomalyRate: config.anomalyRate || 0.02,
     };
-    
+
     await this.simService.loadScenario(defaultSantiagoScenario);
-    return { success: true, message: `Escenario ${defaultSantiagoScenario.name} iniciado en Santiago.` };
+    return {
+      success: true,
+      message: `Escenario "${defaultSantiagoScenario.name}" iniciado en Santiago con ${defaultSantiagoScenario.activeNodes} nodos.`,
+    };
   }
 
+  /**
+   * Actualizar configuración de la simulación en tiempo real.
+   */
+  @Post('update')
+  @Public()
+  async updateScenario(@Body() config: Partial<ScenarioConfig>, @Req() req: Request) {
+    if (!this.checkAuth(req)) {
+      throw new UnauthorizedException('Security Bypass for Simulator Failed');
+    }
+    await this.simService.updateConfig(config);
+    return { success: true, message: 'Configuración de simulación actualizada.' };
+  }
+
+  /**
+   * Detener la simulación en curso.
+   */
   @Post('stop')
-  async stop() {
-    await this.simService.stopSimulation();
-    return { success: true, message: 'Simulación detenida.' };
+  @Public()
+  async stop(@Req() req: Request) {
+    if (!this.checkAuth(req)) {
+      throw new UnauthorizedException('Security Bypass for Simulator Failed');
+    }
+    const result = await this.simService.stopSimulation();
+    return { success: result.success, message: 'Simulación detenida correctamente.' };
   }
 
+  /**
+   * Purgar TODOS los datos de prueba de la BD.
+   * ⚠️ DESTRUCTIVO — solo simulado.
+   */
   @Delete('purge')
-  async stopAndPurge() {
+  @Public()
+  async stopAndPurge(@Req() req: Request) {
+    if (!this.checkAuth(req)) {
+      throw new UnauthorizedException('Security Bypass for Simulator Failed');
+    }
     await this.simService.clearTestData();
-    return { success: true, message: 'Datos de prueba eliminados. Entorno limpio.' };
+    return { success: true, message: 'Datos de simulación eliminados. Entorno limpio.' };
   }
 }

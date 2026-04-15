@@ -5,6 +5,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
+import { TrackBatchDto } from './dto/track-batch.dto';
+
 @Controller('fleet')
 @Roles(UserRole.ADMIN)
 export class FleetController {
@@ -91,11 +93,7 @@ export class FleetController {
 
   @Public()
   @Post('track-batch')
-  async handleBatchTracking(@Body() data: { 
-    driverId?: string; 
-    deviceId: string; 
-    locations: any[];
-  }) {
-    return this.fleetService.trackBatch(data);
+  async handleBatchTracking(@Body() data: TrackBatchDto) {
+    return this.fleetService.processBatch(data);
   }
 }

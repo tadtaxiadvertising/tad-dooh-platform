@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { getSimulationEngine } from '@/engine/server-store';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const apiUrl = process.env.TAD_API_URL || 'http://localhost:3001/api/v1';
@@ -27,6 +29,11 @@ export async function GET() {
       }
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('SIMULATOR_STATE_FETCH_ERROR:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Internal Server Error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }

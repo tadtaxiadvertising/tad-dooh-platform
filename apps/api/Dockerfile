@@ -40,4 +40,4 @@ RUN npm prune --production && npm cache clean --force
 RUN printf '#!/bin/sh\necho "=== TAD Backend Entrypoint ==="\nif [ -f "dist/main.js" ]; then\n  exec node dist/main.js\nelif [ -f "dist/src/main.js" ]; then\n  exec node dist/src/main.js\nelse\n  echo "Error: dist/main.js no encontrado"\n  exit 1\nfi\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 3000
-ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]

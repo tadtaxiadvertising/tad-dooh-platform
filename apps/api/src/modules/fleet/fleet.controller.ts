@@ -93,7 +93,7 @@ export class FleetController {
 
   @Public()
   @Post('track-batch')
-  async handleBatchTracking(@Body() data: TrackBatchDto) {
+  async trackBatch(@Body() data: TrackBatchDto) {
     return this.fleetService.processBatch(data);
   }
 }

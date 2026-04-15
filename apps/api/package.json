@@ -129,11 +129,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "overrides": {
-    "webpack": "^5.94.0",
-    "tmp": "^0.2.3",
     "axios": "^1.13.6",
-    "path-to-regexp": "^6.3.0",
-    "micromatch": "^4.0.8",
-    "body-parser": "^1.20.3"
+    "path-to-regexp": "0.1.7"
   }
 }

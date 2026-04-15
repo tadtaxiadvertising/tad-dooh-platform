@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Interval } from '@nestjs/schedule';
 
@@ -88,7 +88,20 @@ export class SimulationService {
   }
 
   async loadScenario(config: ScenarioConfig) {
-    this.logger.log(`🎬 Cargando escenario: "${config.name}" (${config.activeNodes} nodos)...`);
+    try {
+      // 1. Validar que existan campañas activas primero (Evita 500 si la DB está vacía)
+      const campaigns = await this.prisma.campaign.findMany({ where: { status: 'ACTIVE' } });
+      if (campaigns.length === 0) {
+        throw new Error("No hay campañas ACTIVAS para simular. Crea una pauta primero en el Admin.");
+      }
+      
+      // 2. Validar conductores registrados (Prerrequisito de infraestructura)
+      const drivers = await this.prisma.driver.findMany();
+      if (drivers.length === 0) {
+        throw new Error("No hay conductores registrados en el sistema para asignar pantallas virtuales.");
+      }
+
+      this.logger.log(`🎬 Cargando escenario: "${config.name}" (${config.activeNodes} nodos)...`);
     this.currentScenario = config;
 
     // Limpiar datos anteriores antes de empezar
@@ -166,6 +179,9 @@ export class SimulationService {
       this.logger.log(
         `✅ Escenario "${config.name}" activo con ${this.fleetState.size} nodos.`,
       );
+    } catch (error: any) {
+      this.logger.error(`Error en Simulador: ${error.message}`);
+      throw new InternalServerErrorException(error.message);
     }
   }
 

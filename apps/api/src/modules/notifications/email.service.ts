@@ -5,6 +5,7 @@ import * as nodemailer from 'nodemailer';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter;
+  private smtpPass = '';
 
   constructor() {
     this.initTransporter();
@@ -17,10 +18,11 @@ export class EmailService {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = parseInt(process.env.SMTP_PORT || '587');
     const user = process.env.SMTP_USER || '';
-    const pass = process.env.SMTP_PASSWORD || '';
+    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || '';
+    this.smtpPass = pass;
 
     if (!pass) {
-      this.logger.warn('⚠️  SMTP_PASSWORD no configurado. Los emails operarán en modo MOCK (solo logs).');
+      this.logger.warn('⚠️  SMTP_PASSWORD/SMTP_PASS/SENDGRID_API_KEY no configurado. Los emails operarán en modo MOCK (solo logs).');
     }
 
     this.transporter = nodemailer.createTransport({
@@ -48,8 +50,8 @@ export class EmailService {
 
     this.logger.log(`📧 EMAIL_OUTGOING → ${options.to} | Asunto: ${options.subject}`);
 
-    // MOCK mode: if no SMTP_PASSWORD, just log and return success
-    if (!process.env.SMTP_PASSWORD) {
+    // MOCK mode: if no SMTP credentials, just log and return success
+    if (!this.smtpPass) {
       this.logger.log(`📧 [MOCK] Email que se enviaría:\n  Para: ${options.to}\n  Asunto: ${options.subject}\n  Adjuntos: ${options.attachments?.length || 0}`);
       return { success: true, messageId: `mock-${Date.now()}` };
     }

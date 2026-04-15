@@ -3,6 +3,7 @@ import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class SheetsService implements OnModuleInit {
@@ -11,6 +12,11 @@ export class SheetsService implements OnModuleInit {
   private isConnected = false;
   
   private readonly SHEET_ID = '1x2PQInj1F5CJnotWVNkCuGEKqULeO9Vv7qkUvmtd-LY';
+  private readonly CREDENTIALS_ENV_KEYS = [
+    'GOOGLE_SERVICE_ACCOUNT_JSON_BASE64',
+    'GOOGLE_SERVICE_ACCOUNT_JSON',
+    'GOOGLE_SHEETS_CREDS_JSON', // backward compatibility
+  ] as const;
   private readonly CREDENTIALS_PATHS = [
     '../../../../taxi-advertisig-c30861d203c5.json', // Relative to dist/...
     '../../../../../taxi-advertisig-c30861d203c5.json',
@@ -30,33 +36,10 @@ export class SheetsService implements OnModuleInit {
 
   private async connectToGoogleSheets() {
     try {
-      let creds;
-      
-      // 1. Intentar cargar desde Variable de Entorno (Prioridad para EasyPanel/Docker)
-      const envCreds = process.env.GOOGLE_SHEETS_CREDS_JSON;
-      if (envCreds) {
-          try {
-              // Puede estar en Base64 o JSON plano
-              creds = envCreds.startsWith('{') ? JSON.parse(envCreds) : JSON.parse(Buffer.from(envCreds, 'base64').toString());
-              this.logger.log('🔐 TAD-SRE: Credenciales cargadas desde Environment Variable.');
-          } catch (e) {
-              this.logger.error('🚨 Error parseando GOOGLE_SHEETS_CREDS_JSON: ' + e.message);
-          }
-      }
+      let creds = this.loadCredentialsFromEnv();
 
-      // 2. Si no hay env, intentar cargar desde archivo físico (Local fallback)
       if (!creds) {
-          for (const credPath of this.CREDENTIALS_PATHS) {
-              try {
-                  const absolutePath = path.resolve(__dirname, credPath);
-                  this.logger.log(`🔍 Intentando cargar credenciales desde: ${absolutePath} (Base: ${__dirname})`);
-                  creds = require(absolutePath);
-                  this.logger.log(`🔐 TAD-SRE: Credenciales cargadas desde ${absolutePath}`);
-                  break;
-              } catch (e) {
-                  this.logger.warn(`⚠️ No se encontró archivo en: ${credPath}`);
-              }
-          }
+        creds = this.loadCredentialsFromFileSystem();
       }
 
       if (!creds) throw new Error('No se encontraron credenciales de Google Sheets (Service Account).');
@@ -76,6 +59,90 @@ export class SheetsService implements OnModuleInit {
       this.isConnected = false;
       this.logger.error(`🚨 TAD-SRE: Fallo al conectar con Google Sheets: ${error.message}`);
     }
+  }
+
+  private normalizePrivateKey(value: string): string {
+    return value.replace(/\\n/g, '\n');
+  }
+
+  private isValidServiceAccount(value: unknown): value is { client_email: string; private_key: string } {
+    return Boolean(
+      value &&
+      typeof value === 'object' &&
+      typeof (value as { client_email?: unknown }).client_email === 'string' &&
+      typeof (value as { private_key?: unknown }).private_key === 'string',
+    );
+  }
+
+  private parseCredentials(rawValue: string, source: string) {
+    const candidates = [rawValue];
+    if (!rawValue.trim().startsWith('{')) {
+      candidates.push(Buffer.from(rawValue, 'base64').toString('utf8'));
+    }
+
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (this.isValidServiceAccount(parsed)) {
+          parsed.private_key = this.normalizePrivateKey(parsed.private_key);
+          this.logger.log(`🔐 TAD-SRE: Credenciales cargadas desde ${source}.`);
+          return parsed;
+        }
+      } catch {
+        // Intencional: seguimos probando formatos.
+      }
+    }
+
+    return null;
+  }
+
+  private loadCredentialsFromEnv() {
+    for (const envKey of this.CREDENTIALS_ENV_KEYS) {
+      const rawValue = process.env[envKey]?.trim();
+      if (!rawValue) continue;
+
+      const parsed = this.parseCredentials(rawValue, `env:${envKey}`);
+      if (parsed) return parsed;
+
+      this.logger.error(`🚨 Error parseando credenciales en ${envKey}. Formato esperado: JSON o Base64 válido.`);
+    }
+
+    return null;
+  }
+
+  private loadCredentialsFromFileSystem() {
+    const envCredentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
+    const candidatePaths = [
+      ...(envCredentialPath ? [envCredentialPath] : []),
+      ...this.CREDENTIALS_PATHS,
+    ];
+
+    const resolvedPaths = Array.from(
+      new Set(
+        candidatePaths.map((candidate) =>
+          path.isAbsolute(candidate) ? candidate : path.resolve(__dirname, candidate),
+        ),
+      ),
+    );
+
+    for (const absolutePath of resolvedPaths) {
+      if (!fs.existsSync(absolutePath)) continue;
+
+      try {
+        const fileContent = fs.readFileSync(absolutePath, 'utf8');
+        const parsed = this.parseCredentials(fileContent, `file:${absolutePath}`);
+        if (parsed) return parsed;
+      } catch (error) {
+        this.logger.error(`🚨 Error leyendo credenciales desde ${absolutePath}: ${(error as Error).message}`);
+      }
+    }
+
+    this.logger.warn(
+      `⚠️ No se encontró credencial de Google Sheets por env (${this.CREDENTIALS_ENV_KEYS.join(
+        ', ',
+      )}) ni en archivos candidateados.`,
+    );
+    return null;
   }
 
   async syncAllTables() {

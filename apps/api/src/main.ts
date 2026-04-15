@@ -12,6 +12,22 @@ import { initializeSentry } from './utils/sentry';
   return this.toString();
 };
 
+// TAD-SRE: Silenciar errores no capturados de @logtail cuando el token no está configurado.
+// Esto previene el spam de "Unauthorized" que llena el log con 800+ líneas inútiles.
+process.on('unhandledRejection', (reason: unknown) => {
+  if (
+    reason instanceof Error &&
+    (reason.message === 'Unauthorized' ||
+      reason.message.includes('Logtail') ||
+      (reason.stack && reason.stack.includes('@logtail')))
+  ) {
+    // Silenciado intencionalmente: token de BetterStack inválido o no configurado
+    return;
+  }
+  // Re-emitir errores genuinos para que NestJS/el proceso los maneje normalmente
+  console.error('[TAD] UnhandledRejection no silenciado:', reason);
+});
+
 // Initialize Sentry before anything else
 initializeSentry();
 

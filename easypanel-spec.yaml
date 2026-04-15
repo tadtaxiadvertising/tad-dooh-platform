@@ -8,8 +8,8 @@ services:
         limits:
           memory: 1024M
     env:
-      - NODE_OPTIONS="--max-old-space-size=850"
-      - DATABASE_URL="postgresql://...:6543/postgres?connection_limit=5" # Prisma Pooler
+      - NODE_OPTIONS="--max-old-space-size=256"
+      - DATABASE_URL="postgresql://postgres.ltdcdhqixvbpdcitthqf:REDACTED@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
       - REDIS_URL="redis://tad-redis:6379" # BullMQ Persistence
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]

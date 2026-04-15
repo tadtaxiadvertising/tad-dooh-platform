@@ -8,23 +8,82 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash('tad12345', 10);
 
-  // 1. TRANSACTIONAL PURGE (Resilient)
-  const tablesToClear = [
-    'analyticsEvent', 'playbackEvent', 'deviceHeartbeat', 'deviceCommand', 'driverLocation',
-    'playlistItem', 'deviceCampaign', 'mediaAsset', 'video', 'media', 'campaignMetric',
-    'campaign', 'advertiser', 'payrollPayment', 'subscription', 'device', 'driver', 'user', 'fleet'
-  ];
+  // 1. TRANSACTIONAL PURGE (Resilient) - PROTEGIDO EN PRODUCCIÓN
+  if (process.env.NODE_ENV !== 'production') {
+    const tablesToClear = [
+      'analyticsEvent', 'playbackEvent', 'deviceHeartbeat', 'deviceCommand', 'driverLocation',
+      'playlistItem', 'deviceCampaign', 'mediaAsset', 'video', 'media', 'campaignMetric',
+      'campaign', 'advertiser', 'payrollPayment', 'subscription', 'device', 'driver', 'user', 'fleet'
+    ];
 
-  console.log('🧹 Purging database tables...');
-  for (const table of tablesToClear) {
-    try {
-      await (prisma as any)[table].deleteMany();
-    } catch (e) {
-      console.warn(`⚠️ Warning: Could not clear table ${table}. It might not exist.`);
+    console.log('🧹 Purging database tables...');
+    for (const table of tablesToClear) {
+      try {
+        await (prisma as any)[table].deleteMany();
+      } catch (e) {
+        console.warn(`⚠️ Warning: Could not clear table ${table}. It might not exist.`);
+      }
     }
+    console.log('🧹 Database purged. Generating clean state (10 Advertisers, 10 Drivers, 10 Devices)...');
+  } else {
+    console.log('⚠️ PRODUCTION ENVIRONMENT DETECTED: Skipping full purge.');
+    console.log('🌱 Ensuring basic simulation data exists...');
   }
 
-  console.log('🧹 Database purged. Generating clean state (10 Advertisers, 10 Drivers, 10 Devices)...');
+
+  // CREACIÓN GARANTIZADA DE DATOS DE SIMULACIÓN (Demo)
+  const demoDriver = await prisma.driver.upsert({
+    where: { phone: '1000000000' }, // Dummy unique phone
+    update: {},
+    create: {
+      phone: '1000000000',
+      fullName: 'Chofer de Pruebas (Simulador)',
+      subscriptionPaid: true,
+      status: 'ACTIVE',
+      cedula: '000-0000000-0',
+    }
+  });
+
+  // Ensure Demo Advertiser exists
+  const demoAdvertiser = await prisma.advertiser.upsert({
+    where: { email: 'test@tad.do' },
+    update: {},
+    create: {
+      email: 'test@tad.do',
+      companyName: 'TAD Demo Advertiser',
+      contactName: 'Admin',
+      phone: '1000000001',
+      status: 'ACTIVE',
+      password: hashedPassword,
+      category: 'Tecnología'
+    }
+  });
+
+  // Ensure Demo Campaign exists
+  const demoCampaign = await prisma.campaign.upsert({
+    where: { id: 'demo-sim-campaign' },
+    update: {},
+    create: {
+      id: 'demo-sim-campaign',
+      name: 'Campaña Demo (Simulador)',
+      advertiser: demoAdvertiser.companyName,
+      advertiserId: demoAdvertiser.id,
+      status: 'ACTIVE',
+      active: true,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      targetImpressions: 50000,
+      budget: 10000,
+      category: 'Tecnología',
+      priority: 1,
+      targetAll: true,
+    }
+  });
+  console.log('✅ Base de datos lista para simulación con Driver y Campaña verificados.');
+
+  if (process.env.NODE_ENV === 'production') {
+    return; // Evita correr el resto del seed pesado en producción
+  }
 
   // 2. CREATE ADMIN
   const admin = await prisma.user.create({

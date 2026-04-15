@@ -759,6 +759,8 @@ export class FleetService {
       }
     });
     return locations;
+  }
+
   /**
    * Procesa un lote de puntos GPS con validación de reglas de negocio críticas.
    * R3: Kill-Switch si la suscripción no está al día.

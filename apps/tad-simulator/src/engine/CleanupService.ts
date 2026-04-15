@@ -1,8 +1,8 @@
-import { PrismaClient as AppPrisma } from '@prisma/client';
 import { PrismaClient as SimulatorPrisma } from '../generated/client';
+import { createAppPrismaClient } from './app-prisma';
 
 export class CleanupService {
-  private appPrisma = new AppPrisma();
+  private appPrisma = createAppPrismaClient();
   private localPrisma = new SimulatorPrisma();
 
   async nukeSimulationData() {

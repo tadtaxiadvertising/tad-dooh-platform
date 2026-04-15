@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { getSimulationEngine } from '@/engine/server-store';
 
 export const dynamic = 'force-dynamic';
 

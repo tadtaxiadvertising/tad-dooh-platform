@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { CleanupService } from '../../../../engine/CleanupService';
 
-export async function POST(req: Request) {
+export async function POST() {
     try {
         const apiUrl = process.env.TAD_API_URL || 'http://localhost:3001/api/v1';
         const response = await fetch(`${apiUrl}/simulation/purge`, { method: 'DELETE' });

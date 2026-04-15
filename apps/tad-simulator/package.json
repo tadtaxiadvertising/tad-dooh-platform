@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run prisma:generate:app",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate:app": "if [ -x ../../node_modules/.bin/prisma ]; then ../../node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; elif [ -x ./node_modules/.bin/prisma ]; then ./node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; else echo 'Skipping prisma generate: prisma CLI not installed'; fi"
   },
   "dependencies": {
-    "@faker-js/faker": "^8.4.1",
     "@supabase/supabase-js": "^2.99.1",
     "lucide-react": "^0.475.0",
     "next": "15.2.6",

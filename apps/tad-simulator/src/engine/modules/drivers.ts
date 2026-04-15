@@ -1,5 +1,3 @@
-import { fakerES as faker } from '@faker-js/faker';
-
 export interface GpsPoint {
   latitude: number;
   longitude: number;
@@ -15,12 +13,18 @@ export interface VirtualDriver {
 }
 
 export class DriverModule {
+  private static firstNames = ['Juan', 'Pedro', 'Luis', 'Carlos', 'Ana', 'María', 'Rosa', 'José'];
+  private static lastNames = ['Pérez', 'Gómez', 'Rodríguez', 'Santos', 'Martínez', 'López', 'Ramírez'];
+
   // Generates a complete fake profile (Dominican Republic context)
   static generateProfile(index: number = 1): VirtualDriver {
     const paddedId = String(index).padStart(4, '0');
+    const firstName = this.firstNames[index % this.firstNames.length];
+    const lastName = this.lastNames[index % this.lastNames.length];
+
     return {
-      id: faker.string.uuid(), // This will be ignored/overridden if we use real driver IDs
-      name: `${faker.person.firstName()} ${faker.person.lastName()}`,
+      id: `SIM_PROFILE_${paddedId}`,
+      name: `${firstName} ${lastName}`,
       vehicleId: `STI${paddedId}`,
       points: []
     };
@@ -40,7 +44,7 @@ export class DriverModule {
          latitude: baseLat + latOffset,
          longitude: baseLng + lngOffset,
          timestamp: new Date(now.getTime() - (10 - i) * 3000).toISOString(),
-         speed: faker.number.int({ min: 5, max: 45 }) // km/h
+         speed: Math.floor(Math.random() * 41) + 5 // km/h
        });
     }
 

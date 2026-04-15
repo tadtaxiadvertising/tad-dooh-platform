@@ -1,21 +1,18 @@
 
 import { Worker } from 'worker_threads';
-import path from 'path';
-import fs from 'fs';
 import { PrismaClient as SimulatorPrisma } from '../generated/client';
-import { PrismaClient as AppPrisma } from '@prisma/client';
+import { createAppPrismaClient } from './app-prisma';
 import { DriverModule } from './modules/drivers';
-import { FinanceModule } from './modules/finance';
 
 export class SimulationEngine {
   private workers: Map<string, Worker> = new Map();
   private localPrisma = new SimulatorPrisma();
-  private appPrisma = new AppPrisma();
+  private appPrisma = createAppPrismaClient();
   private activeDrivers: Set<NodeJS.Timeout> = new Set();
   
   private config = {
     driverCount: 150,
-    apiUrl: process.env.TAD_API_URL || 'http://localhost:3000/api/v1',
+    apiUrl: process.env.TAD_API_URL || 'http://localhost:3001/api/v1',
     jwtSecret: process.env.JWT_SECRET || 'tad-default-secret-2026',
     tickInterval: 15000 
   };
@@ -23,7 +20,7 @@ export class SimulationEngine {
   private getResolvedApiUrl() {
     if (this.config.apiUrl.includes('proyecto_ia.ibusiness.com.do')) {
         console.warn(`[Engine] Detected unresolvable domain. Falling back to internal networking.`);
-        return 'http://localhost:3000/api/v1';
+        return 'http://localhost:3001/api/v1';
     }
     return this.config.apiUrl;
   }

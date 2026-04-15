@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { PrismaService } from './modules/prisma/prisma.service';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
 import { createWinstonLogger } from './utils/winston.logger';
 import { initializeSentry } from './utils/sentry';
@@ -99,7 +100,11 @@ async function bootstrap() {
       SwaggerModule.setup('docs', app, document);
     }
 
-    // Shutdown Hooks
+    // TAREA SRE: Limitar memoria de V8 según auditoría 07
+    // NOTA: NODE_OPTIONS="--max_old_space_size=256" debe configurarse en el entorno de Easypanel
+
+    // Shutdown Hooks para evitar conexiones zombie en el Pooler (6543)
+    const prismaService = app.get(PrismaService);
     app.enableShutdownHooks();
 
     await app.listen(port, '0.0.0.0');

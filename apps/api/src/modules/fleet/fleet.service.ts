@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from '../device/device.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TrackBatchDto } from './dto/track-batch.dto';
 
 @Injectable()
 export class FleetService {
@@ -758,5 +759,37 @@ export class FleetService {
       }
     });
     return locations;
+  /**
+   * Procesa un lote de puntos GPS con validación de reglas de negocio críticas.
+   * R3: Kill-Switch si la suscripción no está al día.
+   * R2: Inserción masiva para optimizar latencia en producción.
+   */
+  async processBatch(data: TrackBatchDto) {
+    // 1. Validar estado del conductor y suscripción (Regla de Negocio #3)
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: data.driverId },
+      select: { subscriptionPaid: true, status: true }
+    });
+
+    if (!driver || driver.status !== 'ACTIVE' || !driver.subscriptionPaid) {
+      // Directiva Kill-Switch: El Mobile Gateway debe recibir 402 para bloquearse
+      throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    // 2. Inserción Masiva (Batching) para optimizar I/O (Regla de Negocio #2)
+    // Adaptado al modelo 'DriverLocation' y campo 'timestamp' del esquema actual
+    const telemetryData = data.points.map(p => ({
+      driverId: data.driverId,
+      deviceId: data.deviceId,
+      latitude: p.lat,
+      longitude: p.lng,
+      speed: p.speed,
+      timestamp: new Date(p.timestamp),
+    }));
+
+    return await this.prisma.driverLocation.createMany({
+      data: telemetryData,
+      skipDuplicates: true, // Evita duplicados por re-intentos de red
+    });
   }
 }

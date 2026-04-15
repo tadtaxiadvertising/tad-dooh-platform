@@ -179,6 +179,7 @@ export class SimulationService {
       this.logger.log(
         `✅ Escenario "${config.name}" activo con ${this.fleetState.size} nodos.`,
       );
+    }
     } catch (error: any) {
       this.logger.error(`Error en Simulador: ${error.message}`);
       throw new InternalServerErrorException(error.message);

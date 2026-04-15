@@ -1,56 +1,43 @@
-# Stage 1: Build
+# --- STAGE 1: Builder ---
 FROM node:20-alpine AS builder
 
-# Required for Prisma and build tools
+# Instalamos dependencias necesarias para Prisma y compilación en Alpine
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
-# Step 10: Optimizing dependency layer
+# Copiamos manifiestos primero para aprovechar el cache de capas
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies and immediately clean cache to save space in layer
-RUN npm ci && npm cache clean --force
+# Cambiamos 'npm ci' por 'npm install' si el lockfile falta, 
+# pero forzamos limpieza de cache para ahorrar espacio.
+RUN npm install && npm cache clean --force
 
 COPY . .
 
-# Step 18: Build and Generate
+# Generar cliente de Prisma (asegúrate que en schema.prisma esté 'linux-musl-openssl-3.0.x')
 RUN npx prisma generate
 RUN npm run build
 
-# Stage 2: Production runner
+# --- STAGE 2: Runner ---
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Copy essentials from builder
+# Solo copiamos lo estrictamente necesario del builder
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
-# Prune dev dependencies and clean cache again
+# Eliminamos dependencias de desarrollo para liberar espacio en el VPS
 RUN npm prune --production && npm cache clean --force
 
-# Create entrypoint script
-RUN printf '#!/bin/sh\n\
-echo "=== TAD Backend Entrypoint ==="\n\
-if [ -f "dist/main.js" ]; then\n\
-  exec node dist/main.js\n\
-elif [ -f "dist/src/main.js" ]; then\n\
-  exec node dist/src/main.js\n\
-else\n\
-  echo "Error: Could not find main.js"\n\
-  exit 1\n\
-fi\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Script de entrada (basado en el log anterior)
+RUN printf '#!/bin/sh\necho "=== TAD Backend Entrypoint ==="\nif [ -f "dist/main.js" ]; then\n  exec node dist/main.js\nelif [ -f "dist/src/main.js" ]; then\n  exec node dist/src/main.js\nelse\n  echo "Error: dist/main.js no encontrado"\n  exit 1\nfi\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 3000
-
-CMD ["/bin/sh", "/app/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

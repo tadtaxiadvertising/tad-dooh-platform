@@ -6,12 +6,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const apiUrl = getResolvedApiUrl();
+    const simKey = process.env.TAD_API_KEY || process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
     
     const response = await fetch(`${apiUrl}/simulation/update`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-simulator-key': 'xxx-sim-secret-xxx'
+        'x-simulator-key': simKey
       },
       body: JSON.stringify(body.config || {})
     });

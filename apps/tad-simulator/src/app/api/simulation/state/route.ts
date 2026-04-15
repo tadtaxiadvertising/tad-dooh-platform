@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getSimulationEngine } from '@/engine/server-store';
+import { getSimulationEngine, getResolvedApiUrl } from '@/engine/server-store';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const apiUrl = process.env.TAD_API_URL || (process.env.NODE_ENV === 'production' ? 'http://tad-api:3000/api/v1' : 'http://localhost:3000/api/v1');
+    const apiUrl = getResolvedApiUrl();
     const simKey = process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
 
     const response = await fetch(`${apiUrl}/simulation/state`, {
@@ -33,7 +33,7 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('SIMULATOR_STATE_FETCH_ERROR:', error);
-    const apiUrl = process.env.TAD_API_URL || 'http://tad-api:3000/api/v1';
+    const apiUrl = getResolvedApiUrl();
     return NextResponse.json({ 
       success: false, 
       error: `Failed to connect to backend at ${apiUrl}`,

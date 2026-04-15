@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const apiUrl = getResolvedApiUrl();
-    const simKey = process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
+    const simKey = process.env.TAD_API_KEY || process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
     
     const response = await fetch(`${apiUrl}/simulation/scenario`, {
       method: 'POST',

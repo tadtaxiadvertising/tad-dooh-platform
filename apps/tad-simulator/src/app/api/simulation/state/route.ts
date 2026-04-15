@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const apiUrl = getResolvedApiUrl();
-    const simKey = process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
+    const simKey = process.env.TAD_API_KEY || process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
 
     const response = await fetch(`${apiUrl}/simulation/state`, {
       headers: { 'x-simulator-key': simKey }

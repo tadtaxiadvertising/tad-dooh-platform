@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import ControlPanel from '@/components/dashboard/ControlPanel';
-import LiveMap from '@/components/dashboard/LiveMap';
+import dynamic from 'next/dynamic';
+const LiveMap = dynamic(() => import('@/components/dashboard/LiveMap'), { ssr: false });
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import ScenarioUploader from '@/components/dashboard/ScenarioUploader';
 import HealthMonitor from '@/components/dashboard/HealthMonitor';

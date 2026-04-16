@@ -29,10 +29,13 @@ export class MonitoringService {
 
   /**
    * RECOVERY: Check for offline devices on startup to ensure telemetry integrity
+   * SRE FIX: No usamos await para evitar bloquear el listen(3000) de NestJS (TAD-BOOT-FAST)
    */
   async onModuleInit() {
-    this.logger.log('🔄 [RECOVERY] Running startup connectivity scan...');
-    await this.checkOfflineDevices();
+    this.logger.log('🔄 [RECOVERY] Running startup connectivity scan in background...');
+    this.checkOfflineDevices().catch(err => 
+      this.logger.error(`❌ Startup connectivity scan failed: ${err.message}`)
+    );
   }
 
   /**

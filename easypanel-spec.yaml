@@ -11,6 +11,8 @@ services:
       - NODE_OPTIONS="--max-old-space-size=512"
       - DATABASE_URL="postgresql://postgres.ltdcdhqixvbpdcitthqf:REDACTED@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
       - REDIS_URL="redis://tad-redis:6379" # BullMQ Persistence
+      - SIMULATOR_API_KEY=${SIMULATOR_API_KEY}
+      - TAD_API_KEY=${TAD_API_KEY}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s

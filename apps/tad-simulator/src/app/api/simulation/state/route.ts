@@ -14,7 +14,11 @@ export async function GET() {
     const json = await response.json();
 
     if (!response.ok) {
-       throw new Error(`Backend returned ${response.status}: ${JSON.stringify(json)}`);
+       return NextResponse.json({ 
+         success: false, 
+         error: `Backend Error ${response.status}: ${json.message || 'Fallback Security Failed'}`,
+         details: json
+       }, { status: response.status });
     }
 
     const backendStatus = json.data;

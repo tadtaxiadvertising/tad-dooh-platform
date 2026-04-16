@@ -23,7 +23,11 @@ export async function POST(request: Request) {
     const data = await response.json();
 
     if (!response.ok) {
-       throw new Error(`Backend Error ${response.status}: ${data.message || 'Unknown error'}`);
+       return NextResponse.json({ 
+         success: false, 
+         error: `Backend Error ${response.status}: ${data.message || 'Unknown error'}`,
+         details: data
+       }, { status: response.status });
     }
 
     return NextResponse.json({

@@ -3,10 +3,15 @@
 import { Play, Square, Settings2, AlertTriangle, Users, Hash, Clock, Database } from 'lucide-react';
 
 interface ConfigDetails {
-  driverCount: number;
+  activeNodes: number;
   activeCampaigns: number;
-  errorRate: number;
+  anomalyRate: number;
   telemetryFrequency: number;
+  radiusKm: number;
+  minSpeed: number;
+  maxSpeed: number;
+  centerLat: number;
+  centerLng: number;
 }
 
 interface ControlPanelProps {
@@ -36,33 +41,83 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         {/* Virtual Drivers */}
         <div className="space-y-2">
           <label className="flex justify-between text-sm text-gray-300">
-            <span className="flex items-center gap-2"><Users className="w-4 h-4 text-gray-400" /> Virtual Drivers Target</span>
-            <span className="font-mono text-tad-accent">{config.driverCount}</span>
+            <span className="flex items-center gap-2"><Users className="w-4 h-4 text-gray-400" /> Virtual Drivers (Santiago)</span>
+            <span className="font-mono text-tad-accent">{config.activeNodes}</span>
           </label>
           <input 
             type="range" 
-            name="driverCount" 
-            min="10" max="1000" step="10" 
-            value={config.driverCount} 
+            name="activeNodes" 
+            min="10" max="500" step="10" 
+            value={config.activeNodes} 
             onChange={handleChange}
             className="w-full accent-tad-accent cursor-pointer" 
           />
         </div>
 
-        {/* Active Campaigns */}
+        {/* Radius & Area */}
         <div className="space-y-2">
           <label className="flex justify-between text-sm text-gray-300">
-            <span className="flex items-center gap-2"><Hash className="w-4 h-4 text-gray-400" /> Active Campaigns</span>
-            <span className="font-mono text-white">{config.activeCampaigns} (15 Max Slots)</span>
+            <span className="flex items-center gap-2"><Settings2 className="w-4 h-4 text-gray-400" /> Simulation Radius (Km)</span>
+            <span className="font-mono text-white">{config.radiusKm} Km</span>
           </label>
           <input 
             type="range" 
-            name="activeCampaigns" 
-            min="1" max="15" step="1" 
-            value={config.activeCampaigns} 
+            name="radiusKm" 
+            min="1" max="50" step="1" 
+            value={config.radiusKm} 
             onChange={handleChange}
             className="w-full accent-tad-accent cursor-pointer" 
           />
+        </div>
+
+        {/* Speed Controls */}
+        <div className="grid grid-cols-2 gap-4">
+           <div className="space-y-2">
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Min Speed</label>
+             <input 
+               type="number" 
+               name="minSpeed" 
+               value={config.minSpeed} 
+               onChange={handleChange}
+               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+             />
+           </div>
+           <div className="space-y-2">
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Max Speed</label>
+             <input 
+               type="number" 
+               name="maxSpeed" 
+               value={config.maxSpeed} 
+               onChange={handleChange}
+               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+             />
+           </div>
+        </div>
+
+        {/* Geolocation Center */}
+        <div className="grid grid-cols-2 gap-4">
+           <div className="space-y-2">
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Center Lat</label>
+             <input 
+               type="number" 
+               name="centerLat" 
+               step="0.0001"
+               value={config.centerLat} 
+               onChange={handleChange}
+               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+             />
+           </div>
+           <div className="space-y-2">
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Center Lng</label>
+             <input 
+               type="number" 
+               name="centerLng" 
+               step="0.0001"
+               value={config.centerLng} 
+               onChange={handleChange}
+               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+             />
+           </div>
         </div>
 
         {/* Telemetry Freq */}
@@ -85,13 +140,13 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         <div className="space-y-2 pt-2">
           <label className="flex justify-between text-sm text-gray-300">
              <span className="flex items-center gap-2 text-red-300"><AlertTriangle className="w-4 h-4" /> &quot;Debtor Mode&quot; (402) Rate</span>
-             <span className="font-mono text-red-400">{(config.errorRate * 100).toFixed(0)}%</span>
+             <span className="font-mono text-red-400">{(config.anomalyRate * 100).toFixed(0)}%</span>
           </label>
            <input 
             type="range" 
-            name="errorRate" 
+            name="anomalyRate" 
             min="0" max="0.5" step="0.01" 
-            value={config.errorRate} 
+            value={config.anomalyRate} 
             onChange={handleChange}
             className="w-full accent-red-500 cursor-pointer" 
           />
@@ -126,14 +181,14 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
 
         <button 
           onClick={async () => {
-            const t = (await import('react-hot-toast')).default;
-            try {
-              const res = await fetch('/api/simulation/refresh-views', { method: 'POST' });
-              if (res.ok) t.success('Vistas Materializadas (mv_fleet_health) Actualizadas');
-              else t.error('Fallo al actualizar vistas');
-            } catch (e) {
-              t.error('Error de red');
-            }
+             const t = (await import('react-hot-toast')).default;
+             try {
+                const res = await fetch('/api/simulation/refresh-views', { method: 'POST' });
+                if (res.ok) t.success('Vistas Materializadas (mv_fleet_health) Actualizadas');
+                else t.error('Fallo al actualizar vistas');
+             } catch (e) {
+                t.error('Error de red');
+             }
           }}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/5 transition-colors"
         >

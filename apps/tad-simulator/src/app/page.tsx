@@ -15,10 +15,15 @@ export default function ControlCenterPage() {
   const [apiLatency, setApiLatency] = useState<number | null>(null);
   const [recentLogs, setRecentLogs] = useState<string[]>([]);
   const [simConfig, setSimConfig] = useState({
-    driverCount: 150,
+    activeNodes: 150,
     activeCampaigns: 5,
-    errorRate: 0.05,
+    anomalyRate: 0.02,
     telemetryFrequency: 30,
+    radiusKm: 12,
+    minSpeed: 15,
+    maxSpeed: 60,
+    centerLat: 19.4517,
+    centerLng: -70.6970
   });
 
   useEffect(() => {
@@ -175,7 +180,7 @@ export default function ControlCenterPage() {
               )}
             </div>
             <div className="h-[400px] w-full bg-[#050505] relative isolation-auto">
-               <LiveMap isRunning={isRunning} driverCount={simConfig.driverCount} />
+               <LiveMap isRunning={isRunning} driverCount={simConfig.activeNodes} />
             </div>
           </div>
 

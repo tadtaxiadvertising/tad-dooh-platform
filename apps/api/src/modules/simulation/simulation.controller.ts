@@ -23,16 +23,22 @@ export class SimulationController {
 
   private checkAuth(request: any) {
     const simKey = 'tad_prod_v10_bypass_0416_secure_key';
-    const incomingKey = request.headers['x-simulator-key'];
     
-    if (incomingKey === simKey) {
-      return true;
-    }
+    // Búsqueda robusta de headers (case-insensitive)
+    const headerKeys = Object.keys(request.headers);
+    const keyName = headerKeys.find(k => k.toLowerCase() === 'x-simulator-key');
+    const rawKey = keyName ? request.headers[keyName] : null;
+    
+    const incomingKey = typeof rawKey === 'string' ? rawKey.trim() : (Array.isArray(rawKey) ? rawKey[0].trim() : null);
+    
+    if (incomingKey === simKey) return true;
 
     const logger = new Logger('SimulationAuth');
     logger.warn(`🛑 401 Unauthorized - Key Mismatch!`);
-    logger.warn(`   -> Incoming: ${incomingKey ? '***' + String(incomingKey).slice(-4) : 'MISSING'}`);
-    logger.warn(`   -> Expected: ${simKey ? '***' + String(simKey).slice(-4) : 'MISSING'}`);
+    logger.warn(`   -> Headers found: ${headerKeys.join(', ')}`);
+    logger.warn(`   -> Target Header: ${keyName || 'NOT_FOUND'}`);
+    logger.warn(`   -> Incoming Len: ${incomingKey?.length || 0}`);
+    logger.warn(`   -> Incoming (Mask): ${incomingKey ? '***' + String(incomingKey).slice(-4) : 'MISSING'}`);
     
     return false;
   }
@@ -58,10 +64,10 @@ export class SimulationController {
 
     const defaultSantiagoScenario: ScenarioConfig = {
       name: config.name || 'Santiago Default',
-      activeNodes: config.activeNodes || 50,
+      activeNodes: config.activeNodes || 150,
       centerLat: config.centerLat || 19.4517,
       centerLng: config.centerLng || -70.697,
-      radiusKm: config.radiusKm || 8,
+      radiusKm: config.radiusKm || 12,
       minSpeed: config.minSpeed || 15,
       maxSpeed: config.maxSpeed || 60,
       anomalyRate: config.anomalyRate || 0.02,

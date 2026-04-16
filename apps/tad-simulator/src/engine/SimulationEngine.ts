@@ -176,7 +176,7 @@ export class SimulationEngine {
                     // Create Sim Device
                     await this.appPrisma.device.upsert({
                         where: { deviceId: deviceId },
-                        update: { status: 'ACTIVE', isSimulated: true },
+                        update: { status: 'ACTIVE', isSimulated: true, taxiNumber: `TX-${paddedId}` },
                         create: {
                             deviceId: deviceId,
                             name: `TAD-SIM-${paddedId}`,
@@ -184,6 +184,7 @@ export class SimulationEngine {
                             isOnline: true,
                             isSimulated: true,
                             driverId: driverId,
+                            taxiNumber: `TX-${paddedId}`,
                             city: paddedId.startsWith('00') ? 'Santiago' : 'Santo Domingo'
                         }
                     });

@@ -740,13 +740,9 @@ export default function RealtimeDashboard() {
         api.get('/monitoring/campaigns-status'),
       ]);
       // Filtramos exclusivamente los 10 taxis del piloto STI
-      const pilotDevices = (devRes.data || []).filter((d: any) => {
-        const numMatch = d.deviceId.match(/STI0*(\d+)/);
-        if (!numMatch) return false;
-        const num = parseInt(numMatch[1], 10);
-        return num >= 1 && num <= 10;
-      });
-      setDevices(pilotDevices);
+      // Mostrar todos los dispositivos retornados por el backend (incluyendo el SIMULADOR)
+      // La segmentación en la UI se encargará de filtrarlos.
+      setDevices(devRes.data || []);
       setCampaigns(campRes.data || []);
       setLastUpdate(new Date());
     } catch (err) {

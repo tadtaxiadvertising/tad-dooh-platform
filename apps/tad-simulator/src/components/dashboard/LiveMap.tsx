@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useState, memo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -19,6 +19,9 @@ const Map_: any = MapContainer;
 const Tile_: any = TileLayer;
 const Marker_: any = Marker;
 const Popup_: any = Popup;
+
+// Definir centro fuera del componente para que la referencia sea estática
+const SANTIAGO_CENTER: [number, number] = [19.4517, -70.6970];
 
 // Cyber-Taxi Minimal Icon for Simulator
 const createSimIcon = (isRunning: boolean, hasError: boolean = false) => {
@@ -57,16 +60,41 @@ const createSimIcon = (isRunning: boolean, hasError: boolean = false) => {
   });
 };
 
-function MapController({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo(center, 13, { duration: 1.5 });
-  }, [center, map]);
-  return null;
+function LiveMarkers({ locations, isRunning }: { locations: any[], isRunning: boolean }) {
+  return (
+    <>
+      {locations.map((loc, i) => {
+        const battery = loc.batteryLevel ?? 100;
+        const hasError = loc.status === 'ERROR' || battery < 15;
+        
+        return (
+          <Marker_ 
+            key={loc.deviceId || i} 
+            position={[loc.lastLat || loc.lat, loc.lastLng || loc.lng]} 
+            icon={createSimIcon(isRunning, hasError)}
+          >
+            <Popup_ className="sim-popup">
+              <div className="bg-zinc-900 p-2 text-[10px] border border-white/10 rounded min-w-[120px]">
+                <p className="text-tad-accent font-bold uppercase tracking-tighter border-b border-white/5 pb-1 mb-1">
+                  Node: {loc.taxiNumber || loc.deviceId || `SIM-${i}`}
+                </p>
+                <p className={`${hasError ? 'text-red-400 font-bold' : 'text-gray-400'} mt-1`}>
+                  Status: {hasError ? '⚠ TECHNICAL ALERT' : (isRunning ? '● TRANSMITTING' : '○ IDLE')}
+                </p>
+                <div className="mt-1 flex items-center justify-between">
+                   <span className="text-gray-500">Power:</span>
+                   <span className={`${battery < 20 ? 'text-red-500' : 'text-green-500'}`}>{Math.round(battery)}%</span>
+                </div>
+              </div>
+            </Popup_>
+          </Marker_>
+        );
+      })}
+    </>
+  );
 }
 
-// Definir centro fuera del componente para que la referencia sea estática
-const SANTIAGO_CENTER: [number, number] = [19.4517, -70.6970];
+const MemoizedMarkers = memo(LiveMarkers);
 
 export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean, driverCount: number }) {
   const [locations, setLocations] = useState<any[]>([]);
@@ -74,7 +102,10 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
 
   useEffect(() => {
     setMounted(true);
-    if (!isRunning) return;
+  }, []);
+
+  useEffect(() => {
+    if (!isRunning || !mounted) return;
 
     const fetchLocations = async () => {
       try {
@@ -100,7 +131,7 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
     fetchLocations();
     const interval = setInterval(fetchLocations, 3000);
     return () => clearInterval(interval);
-  }, [isRunning, driverCount]);
+  }, [isRunning, driverCount, mounted]);
 
   if (!mounted) return <div className="w-full h-full bg-[#0a0a0a]" />;
 
@@ -110,6 +141,8 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
         center={SANTIAGO_CENTER}
         zoom={13}
         zoomControl={false}
+        scrollWheelZoom={true}
+        dragging={true}
         style={{ height: '100%', width: '100%', background: '#050505' }}
       >
         <Tile_
@@ -117,33 +150,7 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         
-        {locations.map((loc, i) => {
-          const battery = loc.batteryLevel ?? 100;
-          const hasError = loc.status === 'ERROR' || battery < 15;
-          
-          return (
-            <Marker_ 
-              key={loc.deviceId || i} 
-              position={[loc.lastLat || loc.lat, loc.lastLng || loc.lng]} 
-              icon={createSimIcon(isRunning, hasError)}
-            >
-              <Popup_ className="sim-popup">
-                <div className="bg-zinc-900 p-2 text-[10px] border border-white/10 rounded min-w-[120px]">
-                  <p className="text-tad-accent font-bold uppercase tracking-tighter border-b border-white/5 pb-1 mb-1">
-                    Node: {loc.taxiNumber || loc.deviceId || `SIM-${i}`}
-                  </p>
-                  <p className={`${hasError ? 'text-red-400 font-bold' : 'text-gray-400'} mt-1`}>
-                    Status: {hasError ? '⚠ TECHNICAL ALERT' : (isRunning ? '● TRANSMITTING' : '○ IDLE')}
-                  </p>
-                  <div className="mt-1 flex items-center justify-between">
-                     <span className="text-gray-500">Power:</span>
-                     <span className={`${battery < 20 ? 'text-red-500' : 'text-green-500'}`}>{Math.round(battery)}%</span>
-                  </div>
-                </div>
-              </Popup_>
-            </Marker_>
-          );
-        })}
+        <MemoizedMarkers locations={locations} isRunning={isRunning} />
       </Map_>
 
       {/* Overlay Effects */}
@@ -163,7 +170,8 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .leaflet-container { background: #050505 !important; font-family: 'Inter', sans-serif; }
+        .leaflet-container { background: #050505 !important; font-family: 'Inter', sans-serif; cursor: grab !important; }
+        .leaflet-container:active { cursor: grabbing !important; }
         .sim-popup .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .sim-popup .leaflet-popup-tip-container { display: none !important; }
         .sim-marker { border: none !important; background: transparent !important; }

@@ -58,6 +58,10 @@ class VirtualVehicle {
     this.lat = lat2 * (180 / Math.PI);
     this.lng = lng2 * (180 / Math.PI);
 
+    // Velocidad: Asegurar que nunca exceda el máximo y tenga inercia realista
+    const clampedMaxSpeed = Math.min(maxSpeed, 120); // Hard cap para evitar saltos locos
+    this.speed = Math.max(minSpeed, Math.min(this.speed, clampedMaxSpeed));
+
     // Contención: Si se sale del radio, apunta hacia el centro
     const distFromCenter =
       Math.sqrt(
@@ -298,6 +302,14 @@ export class SimulationService {
         .catch(() => {});
       await this.prisma.driver.deleteMany({ where: { isSimulated: true } })
         .catch(() => {});
+
+      // Refresh views but don't fail if they don't exist or are locked
+      try {
+        await this.prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health');
+        this.logger.log('✅ [Purge] Fleet health view refreshed.');
+      } catch (e) {
+        this.logger.warn(`⚠️ [Purge] View refresh skipped: ${e.message}`);
+      }
 
       this.logger.log('🧹 Datos de simulación purgados correctamente.');
     } catch (err: any) {

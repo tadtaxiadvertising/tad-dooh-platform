@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import dynamic from 'next/dynamic';
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
@@ -15,10 +14,16 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Aliasing components to any to satisfy strict React 19 JSX types
+const Map_: any = MapContainer;
+const Tile_: any = TileLayer;
+const Marker_: any = Marker;
+const Popup_: any = Popup;
+
 // Cyber-Taxi Minimal Icon for Simulator
-const createSimIcon = (isRunning: boolean) => {
-  const mainColor = isRunning ? '#FFD400' : '#52525b';
-  const glow = isRunning ? 'drop-shadow(0 0 8px rgba(255, 212, 0, 0.8))' : 'none';
+const createSimIcon = (isRunning: boolean, hasError: boolean = false) => {
+  const mainColor = hasError ? '#ef4444' : (isRunning ? '#FFD400' : '#52525b');
+  const glow = isRunning ? `drop-shadow(0 0 8px ${mainColor}cc)` : 'none';
   
   return L.divIcon({
     className: 'sim-marker',
@@ -32,7 +37,7 @@ const createSimIcon = (isRunning: boolean) => {
         filter: ${glow};
         transition: all 0.5s ease;
       ">
-        ${isRunning ? '<div class="sim-pulse"></div>' : ''}
+        ${isRunning && !hasError ? '<div class="sim-pulse"></div>' : ''}
       </div>
       <style>
         .sim-pulse {
@@ -70,18 +75,18 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
 
     const fetchLocations = async () => {
       try {
-        // En un entorno real, el simulador consultaría el estado de la flota
-        // Para este demo, generamos posiciones coherentes si no hay API disponible
         const res = await fetch('/api/v1/monitoring/fleet-status').catch(() => null);
         if (res && res.ok) {
            const data = await res.json();
            setLocations(data.filter((d: any) => d.isSimulated || d.deviceId.includes('SIM')));
         } else {
-           // Fallback: Mock de Santiago si la API no responde
+           // Fallback: Mock de Santiago con variaciones de salud si la API no responde
            const mockNodes = Array.from({ length: driverCount > 100 ? 100 : driverCount }, (_, i) => ({
               id: i,
               lat: 19.4517 + (Math.random() - 0.5) * 0.08,
               lng: -70.6970 + (Math.random() - 0.5) * 0.08,
+              batteryLevel: Math.random() < 0.1 ? 12 : 88,
+              status: Math.random() < 0.05 ? 'ERROR' : 'OK'
            }));
            setLocations(mockNodes);
         }
@@ -101,37 +106,51 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
 
   return (
     <div className="w-full h-full relative group">
-      <MapContainer
+      <Map_
         center={center}
         zoom={13}
         zoomControl={false}
         style={{ height: '100%', width: '100%', background: '#050505' }}
       >
-        <TileLayer
+        <Tile_
           attribution='&copy; CARTO'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         
         <MapController center={center} />
         
-        {locations.map((loc, i) => (
-          <Marker 
-            key={loc.deviceId || i} 
-            position={[loc.lastLat || loc.lat, loc.lastLng || loc.lng]} 
-            icon={createSimIcon(isRunning)}
-          >
-            <Popup className="sim-popup">
-              <div className="bg-zinc-900 p-2 text-[10px] border border-white/10 rounded">
-                <p className="text-tad-accent font-bold uppercase tracking-tighter">Node: ${loc.taxiNumber || loc.deviceId || i}</p>
-                <p className="text-gray-400 mt-1">Status: ${isRunning ? 'TRANSMITTING' : 'IDLE'}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+        {locations.map((loc, i) => {
+          const battery = loc.batteryLevel ?? 100;
+          const hasError = loc.status === 'ERROR' || battery < 15;
+          
+          return (
+            <Marker_ 
+              key={loc.deviceId || i} 
+              position={[loc.lastLat || loc.lat, loc.lastLng || loc.lng]} 
+              icon={createSimIcon(isRunning, hasError)}
+            >
+              <Popup_ className="sim-popup">
+                <div className="bg-zinc-900 p-2 text-[10px] border border-white/10 rounded min-w-[120px]">
+                  <p className="text-tad-accent font-bold uppercase tracking-tighter border-b border-white/5 pb-1 mb-1">
+                    Node: {loc.taxiNumber || loc.deviceId || `SIM-${i}`}
+                  </p>
+                  <p className={`${hasError ? 'text-red-400 font-bold' : 'text-gray-400'} mt-1`}>
+                    Status: {hasError ? '⚠ TECHNICAL ALERT' : (isRunning ? '● TRANSMITTING' : '○ IDLE')}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between">
+                     <span className="text-gray-500">Power:</span>
+                     <span className={`${battery < 20 ? 'text-red-500' : 'text-green-500'}`}>{Math.round(battery)}%</span>
+                  </div>
+                </div>
+              </Popup_>
+            </Marker_>
+          );
+        })}
+      </Map_>
 
       {/* Overlay Effects */}
       <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] z-[1000]" />
+      
       <div className="absolute top-4 right-4 z-[1001] bg-black/60 backdrop-blur-md p-2 rounded border border-white/10 text-[10px] text-tad-accent font-mono">
          MAP ENGINE: LEAFLET V1.9.4
       </div>
@@ -142,15 +161,15 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
            Santiago, DO 
          </span>
          <span className="text-white/20">|</span>
-         <span>Vis: {locations.length} nodes</span>
+         <span>Live: {locations.length} nodes</span>
       </div>
 
-      <style jsx global>{`
-        .leaflet-container { background: #050505 !important; }
+      <style dangerouslySetInnerHTML={{ __html: `
+        .leaflet-container { background: #050505 !important; font-family: 'Inter', sans-serif; }
         .sim-popup .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .sim-popup .leaflet-popup-tip-container { display: none !important; }
         .sim-marker { border: none !important; background: transparent !important; }
-      `}</style>
+      `}} />
     </div>
   );
 }

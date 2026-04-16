@@ -119,7 +119,10 @@ export class SimulationService {
   private currentScenario: ScenarioConfig | null = null;
   private fleetState: Map<string, { vehicle: VirtualVehicle; deviceId: string }> = new Map();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private analytics: AnalyticsService
+  ) {}
 
   getState() {
     return {
@@ -273,21 +276,57 @@ export class SimulationService {
   }
 
   async clearTestData(resetFleet = true) {
+    this.logger.log('🧹 Iniciando purga profunda de datos de simulación...');
+    
     if (resetFleet) {
       this.isRunning = false;
       this.fleetState.clear();
+      this.currentScenario = null;
     }
+
     try {
-      await this.prisma.driverLocation.deleteMany({ where: { isSimulated: true } }).catch(() => {});
-      await this.prisma.playbackEvent.deleteMany({ where: { isSimulated: true } }).catch(() => {});
-      await this.prisma.analyticsEvent.deleteMany({ where: { isSimulated: true } }).catch(() => {});
-      await this.prisma.device.deleteMany({ where: { isSimulated: true } }).catch(() => {});
-      await this.prisma.driver.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      // 1. Borrar datos atómicos primero (Foreign Key safety)
+      const whereSim = { where: { isSimulated: true } };
       
-      try {
-        await this.prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health').catch(() => {});
-      } catch (e) {}
-    } catch (err) {}
+      await this.prisma.driverLocation.deleteMany(whereSim).catch(() => {});
+      await this.prisma.playbackEvent.deleteMany(whereSim).catch(() => {});
+      await this.prisma.analyticsEvent.deleteMany(whereSim).catch(() => {});
+      await this.prisma.subscription.deleteMany(whereSim).catch(() => {});
+      await this.prisma.deviceCommand.deleteMany({ where: { device: { isSimulated: true } } }).catch(() => {});
+      await this.prisma.notification.deleteMany({ where: { message: { contains: 'Virtual' } } }).catch(() => {});
+      
+      // 2. Borrar entidades principales
+      await this.prisma.device.deleteMany(whereSim).catch(() => {});
+      await this.prisma.driver.deleteMany(whereSim).catch(() => {});
+      
+      // 3. Limpiar caché del servicio de analíticas
+      this.analytics.clearCache();
+
+      // 4. Refrescar vistas materializadas para el Admin
+      const viewsToRefresh = [
+        'mv_fleet_health', 
+        'mv_impressions_daily', 
+        'mv_campaign_performance'
+      ];
+
+      for (const view of viewsToRefresh) {
+        try {
+          await this.prisma.$executeRawUnsafe(`REFRESH MATERIALIZED VIEW ${view}`);
+          this.logger.log(`✅ Vista ${view} refrescada.`);
+        } catch (e) {
+          // Si falla sin CONCURRENTLY, intentar CONCURRENTLY o ignorar si no existe
+          try {
+             await this.prisma.$executeRawUnsafe(`REFRESH MATERIALIZED VIEW CONCURRENTLY ${view}`);
+          } catch (err) {}
+        }
+      }
+
+      this.logger.log('✨ Purga de simulación completada. El Admin debería estar limpio.');
+      return { success: true };
+    } catch (err: any) {
+      this.logger.error(`❌ Error durante purga: ${err.message}`);
+      return { success: false, error: err.message };
+    }
   }
 
   async updateConfig(config: Partial<ScenarioConfig>) {

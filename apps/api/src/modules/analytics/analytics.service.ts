@@ -24,6 +24,15 @@ export class AnalyticsService {
     private readonly notifications: NotificationsService
   ) {}
 
+  /**
+   * Clears all in-memory analytics caches to ensure fresh data
+   */
+  clearCache() {
+    this.logger.log('🧹 Limpiando caché de analíticas...');
+    this.cache = {};
+    this.deviceExistsCache.clear();
+  }
+
   async ingestEvent(dto: IngestEventDto) {
     // 🔥 Optimization: Skip DB check if we already know this device exists in this session
     if (!this.deviceExistsCache.has(dto.deviceId)) {

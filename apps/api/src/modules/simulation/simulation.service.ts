@@ -1,6 +1,7 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Interval } from '@nestjs/schedule';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export interface ScenarioConfig {
   name: string;

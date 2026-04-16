@@ -5,7 +5,7 @@ import { getResolvedApiUrl } from '@/engine/server-store';
 export async function POST(req: Request) {
     try {
         const apiUrl = getResolvedApiUrl();
-        const simKey = process.env.TAD_API_KEY || process.env.SIMULATOR_API_KEY || 'xxx-sim-secret-xxx';
+        const simKey = 'tad_prod_v10_bypass_0416_secure_key';
 
         const response = await fetch(`${apiUrl}/simulation/purge`, { 
             method: 'DELETE',

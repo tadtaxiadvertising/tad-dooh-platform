@@ -233,7 +233,11 @@ export class SimulationEngine {
         await this.appPrisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health');
         return true;
     } catch (e: any) { 
-        console.error('[Engine] Failed to refresh MV:', e.message);
+        if (e.message.includes('does not exist')) {
+            console.warn('[Engine] ⚠️ Materialized view "mv_fleet_health" is missing. Skipping refresh for now. Please ensure UI backend migrations are up to date.');
+        } else {
+            console.error('[Engine] Failed to refresh MV:', e.message);
+        }
         return false; 
     }
   }

@@ -11,14 +11,18 @@ export interface ScenarioConfig {
   minSpeed: number;
   maxSpeed: number;
   anomalyRate: number;
+  useRealStreets?: boolean;
 }
 
-// Mantiene el estado realista del movimiento de cada vehículo virtual
+// Vehículo con capacidad de navegación por rutas reales
 class VirtualVehicle {
   lat: number;
   lng: number;
   heading: number;
   speed: number;
+  path: [number, number][] = [];
+  pathIndex: number = 0;
+  isRouting: boolean = false;
 
   constructor(lat: number, lng: number) {
     this.lat = lat;
@@ -27,50 +31,84 @@ class VirtualVehicle {
     this.speed = 0;
   }
 
-  move(
+  // Mueve el vehículo un paso hacia el siguiente nodo de la ruta o de forma aleatoria si no hay ruta
+  async move(
     timeDeltaSecs: number,
     minSpeed: number,
     maxSpeed: number,
     centerLat: number,
     centerLng: number,
     radiusKm: number,
+    useRealStreets: boolean
   ) {
-    this.speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
-    this.heading += (Math.random() - 0.5) * 45;
+    // 1. Si tenemos una ruta y estamos en modo calles, seguimos los nodos
+    if (useRealStreets && this.path.length > 0 && this.pathIndex < this.path.length) {
+      const target = this.path[this.pathIndex];
+      const dist = this.getDistance(this.lat, this.lng, target[1], target[0]);
 
-    const distanceKm = (this.speed / 3600) * timeDeltaSecs;
-    const radiusEarthKm = 6371;
-    const lat1 = this.lat * (Math.PI / 180);
-    const lng1 = this.lng * (Math.PI / 180);
-    const brng = this.heading * (Math.PI / 180);
+      // Velocidad actual simula aceleración/frenado
+      this.speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+      const stepDist = (this.speed / 3600) * timeDeltaSecs;
 
-    const lat2 = Math.asin(
-      Math.sin(lat1) * Math.cos(distanceKm / radiusEarthKm) +
-        Math.cos(lat1) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(brng),
-    );
-    const lng2 =
-      lng1 +
-      Math.atan2(
-        Math.sin(brng) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(lat1),
-        Math.cos(distanceKm / radiusEarthKm) - Math.sin(lat1) * Math.sin(lat2),
+      if (dist < stepDist) {
+        // Llegamos al nodo, saltamos al siguiente
+        this.lat = target[1];
+        this.lng = target[0];
+        this.pathIndex++;
+      } else {
+        // Interpolación hacia el nodo
+        const ratio = stepDist / dist;
+        this.lat = this.lat + (target[1] - this.lat) * ratio;
+        this.lng = this.lng + (target[0] - this.lng) * ratio;
+        
+        // Actualizar heading para que el icono mire hacia donde va
+        this.heading = Math.atan2(target[0] - this.lng, target[1] - this.lat) * (180 / Math.PI);
+      }
+    } else {
+      // 2. Fallback: Movimiento tradicional (drunk walk) si no hay ruta o modo libre
+      this.speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+      this.heading += (Math.random() - 0.5) * 45;
+
+      const distanceKm = (this.speed / 3600) * timeDeltaSecs;
+      const radiusEarthKm = 6371;
+      const lat1 = this.lat * (Math.PI / 180);
+      const lng1 = this.lng * (Math.PI / 180);
+      const brng = this.heading * (Math.PI / 180);
+
+      const lat2 = Math.asin(
+        Math.sin(lat1) * Math.cos(distanceKm / radiusEarthKm) +
+          Math.cos(lat1) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(brng),
       );
+      const lng2 =
+        lng1 +
+        Math.atan2(
+          Math.sin(brng) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(lat1),
+          Math.cos(distanceKm / radiusEarthKm) - Math.sin(lat1) * Math.sin(lat2),
+        );
 
-    this.lat = lat2 * (180 / Math.PI);
-    this.lng = lng2 * (180 / Math.PI);
+      this.lat = lat2 * (180 / Math.PI);
+      this.lng = lng2 * (180 / Math.PI);
 
-    // Velocidad: Asegurar que nunca exceda el máximo y tenga inercia realista
-    const clampedMaxSpeed = Math.min(maxSpeed, 120); // Hard cap para evitar saltos locos
-    this.speed = Math.max(minSpeed, Math.min(this.speed, clampedMaxSpeed));
-
-    // Contención: Si se sale del radio, apunta hacia el centro
-    const distFromCenter =
-      Math.sqrt(
-        Math.pow(this.lat - centerLat, 2) + Math.pow(this.lng - centerLng, 2),
-      ) * 111;
-    if (distFromCenter > radiusKm) {
-      this.heading =
-        Math.atan2(centerLng - this.lng, centerLat - this.lat) * (180 / Math.PI);
+      // Contención circular
+      const distFromCenter = this.getDistance(this.lat, this.lng, centerLat, centerLng);
+      if (distFromCenter > radiusKm) {
+        this.heading = Math.atan2(centerLng - this.lng, centerLat - this.lat) * (180 / Math.PI);
+      }
+      
+      this.isRouting = false; // Reset routing flag for next attempt
     }
+  }
+
+  private getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLng = (lng2 - lng1) * (Math.PI / 180);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 }
 
@@ -93,58 +131,31 @@ export class SimulationService {
 
   async loadScenario(config: ScenarioConfig) {
     try {
-      // 1. Validar que existan campañas activas primero (Evita 500 si la DB está vacía)
-      const campaigns = await this.prisma.campaign.findMany({ where: { status: 'ACTIVE' } });
-      if (campaigns.length === 0) {
-        throw new Error("No hay campañas ACTIVAS para simular. Crea una pauta primero en el Admin.");
-      }
-      
-      // 2. Validar conductores registrados (Prerrequisito de infraestructura)
-      const drivers = await this.prisma.driver.findMany();
-      if (drivers.length === 0) {
-        throw new Error("No hay conductores registrados en el sistema para asignar pantallas virtuales.");
-      }
+      this.logger.log(`🎬 Cargando escenario: "${config.name}" con navegación por CALLES activa...`);
+      this.currentScenario = { ...config, useRealStreets: true };
 
-      this.logger.log(`🎬 Cargando escenario: "${config.name}" (${config.activeNodes} nodos)...`);
-    this.currentScenario = config;
+      // Limpiar datos anteriores
+      await this.clearTestData(false);
 
-    // Limpiar datos anteriores antes de empezar
-    await this.clearTestData(false);
-
-    const errors: string[] = [];
-
-    for (let i = 0; i < config.activeNodes; i++) {
-      const paddedId = String(i).padStart(4, '0');
-      const driverId = `SIM_DRV_${paddedId}`;
-      const deviceId = `STI-SIM-${paddedId}`;
-      const taxiNumber = `TX-${paddedId}`;
-      const phone = `+185500${paddedId}`;
-      const licensePlate = `SIM-${paddedId}`;
-
-      try {
-        // Inicializar estado del vehículo ANTES del upsert para persistir coordenadas
+      for (let i = 0; i < config.activeNodes; i++) {
+        const paddedId = String(i).padStart(4, '0');
+        const driverId = `SIM_DRV_${paddedId}`;
+        const deviceId = `STI-SIM-${paddedId}`;
+        
         const initialLat = config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
         const initialLng = config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
 
-        this.fleetState.set(driverId, {
-          vehicle: new VirtualVehicle(initialLat, initialLng),
-          deviceId,
-        });
+        const vehicle = new VirtualVehicle(initialLat, initialLng);
+        this.fleetState.set(driverId, { vehicle, deviceId });
 
-        // UPSERT para evitar violación de UNIQUE en phone/cedula al re-cargar escenario
         await this.prisma.driver.upsert({
           where: { id: driverId },
-          update: {
-            status: 'ACTIVE',
-            isSimulated: true,
-            subscriptionPaid: true,
-            subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          },
+          update: { status: 'ACTIVE', isSimulated: true },
           create: {
             id: driverId,
             fullName: `Virtual Pilot ${paddedId}`,
-            phone,
-            licensePlate,
+            phone: `+185500${paddedId}`,
+            licensePlate: `SIM-${paddedId}`,
             isSimulated: true,
             status: 'ACTIVE',
             subscriptionPaid: true,
@@ -153,18 +164,9 @@ export class SimulationService {
           },
         });
 
-        // UPSERT Device con coordenadas iniciales (Crucial para el mapa!)
         await this.prisma.device.upsert({
           where: { deviceId },
-          update: { 
-            status: 'ACTIVE', 
-            isSimulated: true, 
-            isOnline: true, 
-            taxiNumber,
-            lastLat: initialLat,
-            lastLng: initialLng,
-            lastSeen: new Date()
-          },
+          update: { status: 'ACTIVE', isSimulated: true, isOnline: true, lastLat: initialLat, lastLng: initialLng },
           create: {
             deviceId,
             name: `Virtual Screen ${paddedId}`,
@@ -172,161 +174,125 @@ export class SimulationService {
             isOnline: true,
             isSimulated: true,
             driverId,
-            taxiNumber,
+            taxiNumber: `TX-${paddedId}`,
             city: 'Santiago',
             lastLat: initialLat,
             lastLng: initialLng,
-            lastSeen: new Date()
           },
         });
-      } catch (err: any) {
-        const msg = `Nodo ${paddedId}: ${err.message}`;
-        this.logger.error(`❌ [Simulation] Error aprovisionando ${msg}`);
-        errors.push(msg);
       }
-    }
 
-    this.isRunning = true;
-
-    if (errors.length > 0) {
-      this.logger.warn(
-        `⚠️ Escenario cargado con ${this.fleetState.size}/${config.activeNodes} nodos. ` +
-          `Errores: ${errors.length}`,
-      );
-    } else {
-      this.logger.log(
-        `✅ Escenario "${config.name}" activo con ${this.fleetState.size} nodos.`,
-      );
-    }
+      this.isRunning = true;
+      this.logger.log(`✅ ${this.fleetState.size} taxis virtuales desplegados en las calles de Santiago.`);
     } catch (error: any) {
       this.logger.error(`Error en Simulador: ${error.message}`);
       throw new InternalServerErrorException(error.message);
     }
   }
 
-  @Interval(30000)
+  @Interval(15000) // Ticks cada 15 seg para telemetría densa
   async handleSimulationTick() {
     if (!this.isRunning || !this.currentScenario) return;
 
-    const telemetryBatch: Array<{
-      driverId: string;
-      deviceId: string;
-      latitude: number;
-      longitude: number;
-      speed: number;
-      isSimulated: boolean;
-      timestamp: Date;
-    }> = [];
-
+    const useStreets = this.currentScenario.useRealStreets !== false;
+    const batch: any[] = [];
     const timestamp = new Date();
 
     for (const [driverId, state] of this.fleetState.entries()) {
       const { vehicle, deviceId } = state;
-      const isAnomaly = Math.random() < this.currentScenario.anomalyRate;
 
-      if (!isAnomaly) {
-        vehicle.move(
-          30,
-          this.currentScenario.minSpeed,
-          this.currentScenario.maxSpeed,
-          this.currentScenario.centerLat,
-          this.currentScenario.centerLng,
-          this.currentScenario.radiusKm,
-        );
+      // Si no tenemos ruta o terminamos la ruta, pedimos una nueva (background)
+      if (useStreets && !vehicle.isRouting && (vehicle.path.length === 0 || vehicle.pathIndex >= vehicle.path.length)) {
+        this.fetchNewRoute(vehicle, this.currentScenario);
       }
 
-      telemetryBatch.push({
+      await vehicle.move(
+        30,
+        this.currentScenario.minSpeed,
+        this.currentScenario.maxSpeed,
+        this.currentScenario.centerLat,
+        this.currentScenario.centerLng,
+        this.currentScenario.radiusKm,
+        useStreets
+      );
+
+      batch.push({
         driverId,
         deviceId,
         latitude: vehicle.lat,
         longitude: vehicle.lng,
-        speed: isAnomaly ? 0 : vehicle.speed,
+        speed: vehicle.speed,
         isSimulated: true,
         timestamp,
       });
     }
 
-    if (telemetryBatch.length === 0) return;
-
     try {
-      // PRO TIP: Direct update into Device table for guaranteed real-time visibility
-      for (const batchItem of telemetryBatch) {
-        await this.prisma.device.update({
-             where: { deviceId: batchItem.deviceId },
-             data: {
-               lastLat: batchItem.latitude,
-               lastLng: batchItem.longitude,
-               lastSeen: batchItem.timestamp,
-               isOnline: true
-             }
-        }).catch(() => {/* silenciar si el device fue purgado */});
+      // PRO TIP: Actualización masiva de telemetría
+      await this.prisma.driverLocation.createMany({ data: batch, skipDuplicates: true });
+      
+      // Actualizar vista rápida de devices para el mapa
+      for (const item of batch) {
+          await this.prisma.device.update({
+              where: { deviceId: item.deviceId },
+              data: { lastLat: item.latitude, lastLng: item.longitude, lastSeen: timestamp }
+          }).catch(() => {});
       }
+    } catch (err) {
+      this.logger.error('Error in simulation tick');
+    }
+  }
 
-      await this.prisma.driverLocation.createMany({
-        data: telemetryBatch,
-        skipDuplicates: true,
-      });
-      this.logger.log(`📡 Tick STI-SIM: ${telemetryBatch.length} registros inyectados.`);
-    } catch (err: any) {
-      this.logger.error(`❌ Error en tick de telemetría: ${err.message}`);
+  // Lógica de enrutamiento OSRM para mover taxis por las calles
+  private async fetchNewRoute(vehicle: VirtualVehicle, config: ScenarioConfig) {
+    vehicle.isRouting = true;
+    try {
+      // Elegir destino aleatorio dentro del radio
+      const destLat = config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
+      const destLng = config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
+
+      const url = `http://router.project-osrm.org/route/v1/driving/${vehicle.lng},${vehicle.lat};${destLng},${destLat}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.code === 'Ok' && data.routes && data.routes[0]) {
+        vehicle.path = data.routes[0].geometry.coordinates; // Array of [lng, lat]
+        vehicle.pathIndex = 0;
+        this.logger.debug(`Ruta trazada para ${vehicle.lat},${vehicle.lng} -> ${destLat},${destLng}`);
+      }
+    } catch (e) {
+      this.logger.warn('OSRM Route service unavailable, using random walk fallback.');
+    } finally {
+      vehicle.isRouting = false;
     }
   }
 
   async stopSimulation() {
     this.isRunning = false;
-    this.logger.log('⏹️ Simulación detenida.');
     return { success: true };
   }
 
-  /**
-   * Elimina TODOS los datos de simulación de la BD.
-   * @param resetFleet Si true, también limpia el estado en memoria (default: true)
-   */
   async clearTestData(resetFleet = true) {
     if (resetFleet) {
       this.isRunning = false;
       this.fleetState.clear();
     }
-
     try {
-      // Orden de borrado: primero tablas dependientes, luego tablas padre
-      await this.prisma.driverLocation.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {/* silenciar si no hay registros */});
-      await this.prisma.playbackEvent.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {});
-      await this.prisma.analyticsEvent.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {});
-      await this.prisma.subscription.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {});
-      await this.prisma.device.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {});
-      await this.prisma.driver.deleteMany({ where: { isSimulated: true } })
-        .catch(() => {});
-
-      // Refresh views but don't fail if they don't exist or are locked
+      await this.prisma.driverLocation.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      await this.prisma.playbackEvent.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      await this.prisma.analyticsEvent.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      await this.prisma.device.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      await this.prisma.driver.deleteMany({ where: { isSimulated: true } }).catch(() => {});
+      
       try {
-        await this.prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health');
-        this.logger.log('✅ [Purge] Fleet health view refreshed.');
-      } catch (e) {
-        this.logger.warn(`⚠️ [Purge] View refresh skipped: ${e.message}`);
-      }
-
-      this.logger.log('🧹 Datos de simulación purgados correctamente.');
-    } catch (err: any) {
-      this.logger.error(`❌ Error durante purga de datos: ${err.message}`);
-      throw err;
-    }
+        await this.prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health').catch(() => {});
+      } catch (e) {}
+    } catch (err) {}
   }
 
-  /**
-   * Actualiza la configuración del escenario actual en caliente.
-   */
   async updateConfig(config: Partial<ScenarioConfig>) {
-    if (!this.currentScenario) {
-      this.logger.warn('⚠️ Intento de actualizar configuración sin escenario activo.');
-      return;
+    if (this.currentScenario) {
+      this.currentScenario = { ...this.currentScenario, ...config };
     }
-    this.currentScenario = { ...this.currentScenario, ...config };
-    this.logger.log(`⚙️ Configuración de escenario "${this.currentScenario.name}" actualizada.`);
   }
 }

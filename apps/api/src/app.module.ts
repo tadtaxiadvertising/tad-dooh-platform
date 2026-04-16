@@ -28,6 +28,7 @@ import { BiModule } from './modules/bi/bi.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { SimulationModule } from './modules/simulation/simulation.module';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -88,7 +89,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     MonitoringModule,
     SimulationModule,
   ],
-
+  controllers: [AppController],
   providers: [
     // Global JWT guard — protects ALL routes by default
     // Use @Public() decorator on tablet-facing routes to bypass

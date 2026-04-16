@@ -10,9 +10,8 @@ services:
     env:
       - NODE_OPTIONS="--max-old-space-size=512"
       - DATABASE_URL="postgresql://postgres.ltdcdhqixvbpdcitthqf:REDACTED@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
-      - REDIS_URL="redis://tad-redis:6379" # BullMQ Persistence
-      - SIMULATOR_API_KEY=${SIMULATOR_API_KEY}
-      - TAD_API_KEY=${TAD_API_KEY}
+      - REDIS_URL="redis://tad-redis:6379"
+      - SIMULATOR_API_KEY="tad_prod_v10_bypass_0416_secure_key"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s
@@ -32,7 +31,7 @@ services:
       - NODE_ENV=production
       - NODE_OPTIONS="--max-old-space-size=768"
       - TAD_API_URL=http://tad-api:3000/api/v1 # Comunicación interna
-      - TAD_API_KEY=${SIMULATOR_API_KEY}
+      - TAD_API_KEY="tad_prod_v10_bypass_0416_secure_key"
       - DATABASE_URL=${SIMULATOR_DB_URL}
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}

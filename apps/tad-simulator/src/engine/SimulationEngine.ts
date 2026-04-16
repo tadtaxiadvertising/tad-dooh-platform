@@ -35,7 +35,16 @@ export class SimulationEngine {
     console.log(`[Engine] Starting TAD Simulator Engine (${this.config.driverCount} drivers, SRE-Grade Isolation)...`);
     try {
         await this.stop();
-        await this.provisionBasics();
+        
+        // SRE: Run provisioning with a timeout to avoid 502 startup hangs
+        const provisionPromise = this.provisionBasics();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Provisioning timeout')), 5000)
+        );
+
+        await Promise.race([provisionPromise, timeoutPromise]).catch(err => {
+            console.warn(`[Engine] Provisioning warning: ${err.message}. Starting engine anyway.`);
+        });
 
         for (let i = 1; i <= this.config.driverCount; i++) {
             const paddedId = String(i).padStart(4, '0');

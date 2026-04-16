@@ -73,20 +73,24 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         {/* Speed Controls */}
         <div className="grid grid-cols-2 gap-4">
            <div className="space-y-2">
-             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Min Speed</label>
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Min Speed (km/h)</label>
              <input 
                type="number" 
                name="minSpeed" 
+               min="0"
+               max={config.maxSpeed}
                value={config.minSpeed} 
                onChange={handleChange}
                className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
              />
            </div>
            <div className="space-y-2">
-             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Max Speed</label>
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Max Speed (km/h)</label>
              <input 
                type="number" 
                name="maxSpeed" 
+               min={config.minSpeed}
+               max="120"
                value={config.maxSpeed} 
                onChange={handleChange}
                className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
@@ -97,25 +101,25 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         {/* Geolocation Center */}
         <div className="grid grid-cols-2 gap-4">
            <div className="space-y-2">
-             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Center Lat</label>
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest text-tad-accent">Center Lat</label>
              <input 
                type="number" 
                name="centerLat" 
                step="0.0001"
                value={config.centerLat} 
                onChange={handleChange}
-               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+               className="w-full bg-tad-accent/5 border border-tad-accent/20 rounded px-2 py-1 text-sm text-tad-accent font-mono"
              />
            </div>
            <div className="space-y-2">
-             <label className="text-[10px] text-gray-400 uppercase tracking-widest">Center Lng</label>
+             <label className="text-[10px] text-gray-400 uppercase tracking-widest text-tad-accent">Center Lng</label>
              <input 
                type="number" 
                name="centerLng" 
                step="0.0001"
                value={config.centerLng} 
                onChange={handleChange}
-               className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white font-mono"
+               className="w-full bg-tad-accent/5 border border-tad-accent/20 rounded px-2 py-1 text-sm text-tad-accent font-mono"
              />
            </div>
         </div>

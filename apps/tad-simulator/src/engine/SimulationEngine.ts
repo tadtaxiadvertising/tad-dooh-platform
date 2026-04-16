@@ -9,9 +9,19 @@ import { FinanceModule } from './modules/finance';
 
 export class SimulationEngine {
   private workers: Map<string, Worker> = new Map();
-  private localPrisma = new SimulatorPrisma();
-  private appPrisma = new AppPrisma();
+  private localPrisma: any;
+  private appPrisma: any;
   private activeDrivers: Set<NodeJS.Timeout> = new Set();
+  
+  constructor() {
+    try {
+      this.localPrisma = new SimulatorPrisma();
+      this.appPrisma = new AppPrisma();
+      console.log('[Engine] Prisma clients initialized successfully.');
+    } catch (e) {
+      console.error('[Engine] Critical: Failed to initialize Prisma clients. Check DATABASE_URL.', e);
+    }
+  }
   
   private config = {
     driverCount: 150,

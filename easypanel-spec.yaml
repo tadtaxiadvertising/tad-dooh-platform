@@ -8,7 +8,7 @@ services:
         limits:
           memory: 1024M
     env:
-      - NODE_OPTIONS="--max-old-space-size=256"
+      - NODE_OPTIONS="--max-old-space-size=512"
       - DATABASE_URL="postgresql://postgres.ltdcdhqixvbpdcitthqf:vxNb5MFAQypdgbT3@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
       - REDIS_URL="redis://tad-redis:6379" # BullMQ Persistence
     healthcheck:
@@ -41,7 +41,7 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       - NEXT_PUBLIC_API_URL=http://tad-api:3000/api/v1
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

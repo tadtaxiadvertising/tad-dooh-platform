@@ -28,6 +28,12 @@ export class SimulationController {
     if (incomingKey === simKey) {
       return true;
     }
+
+    const logger = new Logger('SimulationAuth');
+    logger.warn(`🛑 401 Unauthorized - Key Mismatch!`);
+    logger.warn(`   -> Incoming: ${incomingKey ? '***' + String(incomingKey).slice(-4) : 'MISSING'}`);
+    logger.warn(`   -> Expected: ${simKey ? '***' + String(simKey).slice(-4) : 'MISSING'}`);
+    
     return false;
   }
 

@@ -183,11 +183,14 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
           )}
         </button>
 
-        <button 
+         <button 
           onClick={async () => {
              const t = (await import('react-hot-toast')).default;
              try {
-                const res = await fetch('/api/simulation/refresh-views', { method: 'POST' });
+                const res = await fetch('/api/simulation/refresh-views', { 
+                  method: 'POST',
+                  headers: { 'x-simulator-key': 'tad_prod_v10_bypass_0416_secure_key' }
+                });
                 if (res.ok) t.success('Vistas Materializadas (mv_fleet_health) Actualizadas');
                 else t.error('Fallo al actualizar vistas');
              } catch (e) {
@@ -202,12 +205,17 @@ export default function ControlPanel({ isRunning, loading, toggleSimulation, con
         <button 
           onClick={async () => {
              const t = (await import('react-hot-toast')).default;
+             if (!confirm('¿Estás seguro de eliminar todos los datos virtuales de Santiago?')) return;
              try {
                 t.loading('Purging simulation data...', { id: 'purge' });
-                const res = await fetch('/api/simulation/cleanup', { method: 'POST' });
+                const res = await fetch('/api/simulation/purge', { 
+                  method: 'DELETE',
+                  headers: { 'x-simulator-key': 'tad_prod_v10_bypass_0416_secure_key' }
+                });
                 const json = await res.json();
                 if (res.ok && json.success) {
                    t.success(json.message, { id: 'purge' });
+                   window.location.reload(); // Recargar para limpiar el mapa
                 } else {
                    t.error('Failed to purge simulation data', { id: 'purge' });
                 }

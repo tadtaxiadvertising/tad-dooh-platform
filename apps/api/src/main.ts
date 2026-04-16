@@ -21,7 +21,9 @@ async function bootstrap() {
     const prismaService = app.get(PrismaService);
     app.enableShutdownHooks();
 
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['api/health', '/'],
+    });
     
     // Habilitar CORS para que el simulador y la PWA puedan comunicarse
     app.enableCors();

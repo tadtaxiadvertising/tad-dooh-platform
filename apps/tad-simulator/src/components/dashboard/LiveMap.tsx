@@ -65,6 +65,9 @@ function MapController({ center }: { center: [number, number] }) {
   return null;
 }
 
+// Definir centro fuera del componente para que la referencia sea estática
+const SANTIAGO_CENTER: [number, number] = [19.4517, -70.6970];
+
 export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean, driverCount: number }) {
   const [locations, setLocations] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -80,11 +83,10 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
            const data = await res.json();
            setLocations(data.filter((d: any) => d.isSimulated || d.deviceId.includes('SIM')));
         } else {
-           // Fallback: Mock de Santiago con variaciones de salud si la API no responde
            const mockNodes = Array.from({ length: driverCount > 100 ? 100 : driverCount }, (_, i) => ({
               id: i,
-              lat: 19.4517 + (Math.random() - 0.5) * 0.08,
-              lng: -70.6970 + (Math.random() - 0.5) * 0.08,
+              lat: SANTIAGO_CENTER[0] + (Math.random() - 0.5) * 0.08,
+              lng: SANTIAGO_CENTER[1] + (Math.random() - 0.5) * 0.08,
               batteryLevel: Math.random() < 0.1 ? 12 : 88,
               status: Math.random() < 0.05 ? 'ERROR' : 'OK'
            }));
@@ -102,12 +104,10 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
 
   if (!mounted) return <div className="w-full h-full bg-[#0a0a0a]" />;
 
-  const center: [number, number] = [19.4517, -70.6970]; // Santiago
-
   return (
     <div className="w-full h-full relative group">
       <Map_
-        center={center}
+        center={SANTIAGO_CENTER}
         zoom={13}
         zoomControl={false}
         style={{ height: '100%', width: '100%', background: '#050505' }}
@@ -116,8 +116,6 @@ export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean
           attribution='&copy; CARTO'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        
-        <MapController center={center} />
         
         {locations.map((loc, i) => {
           const battery = loc.batteryLevel ?? 100;

@@ -112,11 +112,21 @@ export class SimulationService {
     for (let i = 0; i < config.activeNodes; i++) {
       const paddedId = String(i).padStart(4, '0');
       const driverId = `SIM_DRV_${paddedId}`;
-      const deviceId = `SIM-DEV-${paddedId}`;
+      const deviceId = `STI-SIM-${paddedId}`;
+      const taxiNumber = `TX-${paddedId}`;
       const phone = `+185500${paddedId}`;
       const licensePlate = `SIM-${paddedId}`;
 
       try {
+        // Inicializar estado del vehículo ANTES del upsert para persistir coordenadas
+        const initialLat = config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
+        const initialLng = config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
+
+        this.fleetState.set(driverId, {
+          vehicle: new VirtualVehicle(initialLat, initialLng),
+          deviceId,
+        });
+
         // UPSERT para evitar violación de UNIQUE en phone/cedula al re-cargar escenario
         await this.prisma.driver.upsert({
           where: { id: driverId },
@@ -139,10 +149,18 @@ export class SimulationService {
           },
         });
 
-        // UPSERT Device
+        // UPSERT Device con coordenadas iniciales (Crucial para el mapa!)
         await this.prisma.device.upsert({
           where: { deviceId },
-          update: { status: 'ACTIVE', isSimulated: true, isOnline: true },
+          update: { 
+            status: 'ACTIVE', 
+            isSimulated: true, 
+            isOnline: true, 
+            taxiNumber,
+            lastLat: initialLat,
+            lastLng: initialLng,
+            lastSeen: new Date()
+          },
           create: {
             deviceId,
             name: `Virtual Screen ${paddedId}`,
@@ -150,16 +168,12 @@ export class SimulationService {
             isOnline: true,
             isSimulated: true,
             driverId,
+            taxiNumber,
+            city: 'Santiago',
+            lastLat: initialLat,
+            lastLng: initialLng,
+            lastSeen: new Date()
           },
-        });
-
-        // Inicializar estado del vehículo
-        const initialLat = config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
-        const initialLng = config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
-
-        this.fleetState.set(driverId, {
-          vehicle: new VirtualVehicle(initialLat, initialLng),
-          deviceId,
         });
       } catch (err: any) {
         const msg = `Nodo ${paddedId}: ${err.message}`;
@@ -231,11 +245,24 @@ export class SimulationService {
     if (telemetryBatch.length === 0) return;
 
     try {
+      // PRO TIP: Direct update into Device table for guaranteed real-time visibility
+      for (const batchItem of telemetryBatch) {
+        await this.prisma.device.update({
+             where: { deviceId: batchItem.deviceId },
+             data: {
+               lastLat: batchItem.latitude,
+               lastLng: batchItem.longitude,
+               lastSeen: batchItem.timestamp,
+               isOnline: true
+             }
+        }).catch(() => {/* silenciar si el device fue purgado */});
+      }
+
       await this.prisma.driverLocation.createMany({
         data: telemetryBatch,
         skipDuplicates: true,
       });
-      this.logger.log(`📡 Tick STI: ${telemetryBatch.length} registros inyectados.`);
+      this.logger.log(`📡 Tick STI-SIM: ${telemetryBatch.length} registros inyectados.`);
     } catch (err: any) {
       this.logger.error(`❌ Error en tick de telemetría: ${err.message}`);
     }

@@ -12,10 +12,13 @@ export function getSimulationEngine(): SimulationEngine {
 }
 
 export function getResolvedApiUrl(): string {
-  const rawUrl = process.env.TAD_API_URL || '';
-  // SRE: Forzar enrutamiento interno de Docker en producción para evitar ENOTFOUND
+  // SRE: Priorizar variable de entorno si está definida
+  const envUrl = process.env.TAD_API_URL;
+  if (envUrl) return envUrl;
+
+  // Fallbacks por defecto para infraestructura interna Docker
   if (process.env.NODE_ENV === 'production') {
     return 'http://tad-api:3000/api/v1';
   }
-  return rawUrl || 'http://localhost:3000/api/v1';
+  return 'http://localhost:3000/api/v1';
 }

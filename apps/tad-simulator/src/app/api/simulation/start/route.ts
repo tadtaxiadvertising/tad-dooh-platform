@@ -8,6 +8,9 @@ export async function POST(request: Request) {
     const apiUrl = getResolvedApiUrl();
     const simKey = 'tad_prod_v10_bypass_0416_secure_key';
     
+    console.log(`[SIMULATOR] Deploying scenario to: ${apiUrl}/simulation/scenario`);
+    console.log(`[SIMULATOR] Using Key (Last 4): ***${simKey.slice(-4)}`);
+
     const response = await fetch(`${apiUrl}/simulation/scenario`, {
       method: 'POST',
       headers: { 

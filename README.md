@@ -44,7 +44,12 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 │        │               │                │
 │        │        ┌──────▼──────────┐     │
 │        └───────▶│  TAD Remotion   │     │
-│                 │  (Video Engine) │     │
+│        │        │  (Video Engine) │     │
+│        │        └─────────────────┘     │
+│        │               │                │
+│        │        ┌──────▼──────────┐     │
+│        └───────▶│  TAD Simulator  │     │
+│                 │ (Engine & UI)   │     │
 │                 └─────────────────┘     │
 │              │            │             │
 │         ┌────▼────────────▼────┐        │
@@ -81,6 +86,7 @@ TAD DOOH Platform/
 │   ├── driver/                # Portal de Conductores (Next.js)
 │   ├── api/                   # Backend API (NestJS)
 │   ├── tad-remotion/          # Microservicio de Video (Remotion)
+│   ├── tad-simulator/         # Simulation Engine & Control Center (Next.js)
 │   └── tablet-player/         # PWA para Tablets (HTML/JS)
 ├── packages/
 │   ├── ui/                    # Componentes compartidos

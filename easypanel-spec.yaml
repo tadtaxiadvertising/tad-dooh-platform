@@ -2,7 +2,8 @@
 # TAD DOOH PLATFORM - CONFIGURACIÓN DE PRODUCCIÓN v10.1.0
 services:
   tad-api:
-    image: node:20-alpine
+    build:
+      dockerfile: "Dockerfile.api"
     deploy:
       resources:
         limits:

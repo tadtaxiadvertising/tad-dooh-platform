@@ -1,9 +1,9 @@
 # 📘 TAD DOOH — Documentación Maestra
 
-**Versión:** 10.1.0 (UX & Auth Enhanced)  
-**Última Actualización:** 13 de Abril, 2026 (02:35 AM)  
+**Versión:** 10.5.1 (SRE & BI Depth Enhanced)  
+**Última Actualización:** 20 de Abril, 2026 (11:42 PM)  
 **Propietario:** TAD Dominicana, S.R.L.  
-**Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · Glassmorphic UI
+**Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
 
 ---
 
@@ -15,17 +15,21 @@
    - [1.3 Métricas y Alcance (KPIs)](#13-métricas-y-alcance-kpis)
    - [1.4 Estados de Campaña](#14-estados-de-campaña)
    - [1.5 Actualización de Contenido (Media Pipeline)](#15-actualización-de-contenido-media-pipeline)
+   - [1.6 Perfiles Públicos Nexus (QR-to-Profile)](#16-perfiles-públicos-nexus-qr-to-profile)
 2. [Módulo de Admin/Ops (Supervisión y Escalabilidad)](#2-módulo-de-adminops-supervisión-y-escalabilidad)
    - [2.0 Experiencia de Usuario - Admin Node](#20-experiencia-de-usuario---admin-node)
    - [2.1 Gestión de Inventario de Hardware](#21-gestión-de-inventario-de-hardware)
-   - [2.2 Auditoría Financiera](#22-auditoría-financiera)
-   - [2.3 Control de Requerimientos Masivos](#23-control-de-requerimientos-masivos)
-   - [2.4 Acciones por Servicio (Panel Admin)](#24-acciones-por-servicio-panel-admin)
+   - [2.2 Auditoría Financiera y BI de Inversores](#22-auditoría-financiera-y-bi-de-inversores)
+   - [2.3 Control de Requerimientos Masivos (Portal Requests)](#23-control-de-requerimientos-masivos-portal-requests)
+   - [2.4 Motor de Simulación (TAD Simulator Engine)](#24-motor-de-simulación-tad-simulator-engine)
+   - [2.5 Flujos de Trabajo Administrativo](#25-flujos-de-trabajo-administrativo)
+   - [2.6 Matrices de Control y Auditoría](#26-matrices-de-control-y-auditoría)
 3. [Diccionario de Acciones por Servicio (Lógica Interna)](#3-diccionario-de-acciones-por-servicio-lógica-interna)
    - [3.1 Matriz de Acciones — Conductores (Driver)](#31-matriz-de-acciones--conductores-driver)
    - [3.2 Matriz de Acciones — Anunciantes (Advertiser)](#32-matriz-de-acciones--anunciantes-advertiser)
    - [3.3 Matriz de Acciones — Campañas y Contenido](#33-matriz-de-acciones--campañas-y-contenido)
    - [3.4 Matriz de Acciones — Flota y Monitoreo](#34-matriz-de-acciones--flota-y-monitoreo)
+   - [3.5 Matriz de Acciones — Sincronización (Sync Engine)](#35-matriz-de-acciones--sincronización-sync-engine)
 4. [Guía Maestra de Usuario (Knowledge Base / FAQ)](#4-guía-maestra-de-usuario-knowledge-base--faq)
    - [4.1 Preguntas Frecuentes — Conductores (Drivers)](#41-preguntas-frecuentes--conductores-drivers)
    - [4.2 Preguntas Frecuentes — Anunciantes (Advertisers)](#42-preguntas-frecuentes--anunciantes-advertisers)
@@ -221,6 +225,23 @@ sequenceDiagram
 
 ---
 
+## 1.6 Perfiles Públicos Nexus (QR-to-Profile)
+
+Cada anunciante cuenta con un **Perfil Público de Alta Fidelidad** alojado en el Portal del Conductor (`/p/[id]`), diseñado para ser el destino final de los escaneos de códigos QR en las tablets.
+
+### Capacidades del Perfil Nexus
+
+- **Landing Glassmorphic**: Interfaz premium optimizada para móviles con efectos de desenfoque y gradientes dinámicos.
+- **Call-to-Action Directo**: Botones integrados para WhatsApp, Sitio Web, PedidosYa y Uber Eats.
+- **Ecosistema Social**: Enlaces directos a Instagram y Facebook con validación visual.
+- **Catálogo de Productos**: Listado de productos destacados con imagen, precio y enlace de adquisición directa.
+- **Estado Verificado**: Badge de "Negocio Verificado" para aumentar la confianza del pasajero.
+
+> [!TIP]
+> Los anunciantes pueden actualizar sus enlaces y productos desde su Portal privado, y los cambios se reflejan instantáneamente en el perfil público.
+
+---
+
 ## 2. Módulo de Admin/Ops (Supervisión y Escalabilidad)
 
 ## 2.0 Experiencia de Usuario - Admin Node
@@ -277,60 +298,89 @@ stateDiagram-v2
 
 ---
 
-## 2.2 Auditoría Financiera
+## 2.2 Auditoría Financiera y BI de Inversores
 
-### Conciliación: Anunciantes vs. Conductores
+El sistema BI (`BiService`) consolida métricas críticas para la toma de decisiones estratégicas e inversión.
 
-La auditoría se ejecuta conciliando dos flujos:
+### Dashboard Snapshot (SRE Optimized)
 
-**Flujo INCOMING (Cobro a Anunciantes):**
+Para cumplir con los límites de 512MB de RAM en el VPS, el sistema genera **Instantáneas Diarias** (`BiDashboardSnapshot`). Esto evita recalcular toda la historia en cada petición, utilizando un modelo de caché persistente.
 
-```text
-SubtotalFactura = SUM(MediaAssets x bloques30s x RD$1,500 x mesesActivos)
-ITBIS           = SubtotalFactura x 0.18
-TotalFactura    = SubtotalFactura + ITBIS
-```
-
-**Flujo OUTGOING (Pago a Conductores):**
-
-```text
-IngresoAds      = CampañasActivas x RD$500
-BonoGPS         = (gpsPoints >= 100) ? RD$500 : RD$0
-BonoReferidos   = referidosConductores x RD$500 + referidosAnunciantes x RD$500
-TotalNómina     = IngresoAds + BonoGPS + BonoReferidos - Penalizaciones
-```
-
-**Fee de TAD (Margen Operativo):**
-
-```text
-MargenTAD = TotalFacturadoAnunciantes - TotalNóminaConductores - ITBIS - OPEX
-```
-
-> [!IMPORTANT]
-> **Verificación con `FinanceService.getFinancialSummary()`:**
-> - **MRR** = `COUNT(Driver WHERE ACTIVE AND subscriptionPaid) x RD$6,000`
-> - **Burn Rate** = `SUM(FinancialTransaction WHERE type='OUTGOING' AND month=current)`
-> - **Net Projection** = MRR - Burn Rate
-
-### Tabla `FinancialTransaction` — Categorías
-
-| Categoría | Tipo | Descripción |
+| Métrica | Descripción | Lógica de Cálculo |
 | :--- | :--- | :--- |
-| `SUSCRIPCION` | `INCOMING` | Pago de membresía anual RD$6,000 |
-| `PUBLICIDAD` | `INCOMING` | Facturación de campaña a anunciante |
-| `REVENUE_AD` | `INCOMING` | Ingreso neto por pauta publicitaria |
-| `REVENUE_SUBSCRIPTION` | `INCOMING` | Ingreso neto por suscripciones |
-| `OPEX_DRIVER_PAYOUT` | `OUTGOING` | Pago de nómina a conductores |
-| `OPEX_COMMISSION` | `OUTGOING` | Comisiones y bonos |
-| `OPEX_MARKETING` | `OUTGOING` | Gastos de adquisición de clientes |
+| **MRR (Monthly Recurring Revenue)** | Ingresos mensuales recurrentes | `(Subscripciones Activas * 6,000) + (Impresiones * 0.5)` |
+| **Yield per Screen** | Rendimiento promedio por pantalla | `MRR / Total Dispositivos` |
+| **Sync Health Rate** | Salud de la flota | `(Online Devices / Total Devices) * 100%` |
+| **Delivery Rate** | Eficacia de entrega | `(Impresiones / Target Impressions) * 100` |
+
+### Semáforos de Salud (Fleet Monitoring)
+
+El `BiService` implementa una lógica de semáforos para el monitoreo rápido en el Admin Node:
+
+- **Conectividad**:
+  - 🟢 **GREEN**: Último heartbeat < 5 minutos.
+  - 🟡 **YELLOW**: Último heartbeat < 24 horas.
+  - 🔴 **RED**: Desconectado por más de 24 horas.
+- **Batería**:
+  - 🟢 **GREEN**: > 40%.
+  - 🟡 **YELLOW**: 15% - 40%.
+  - 🔴 **RED**: < 15% (Riesgo de apagado inminente).
+
+### Reporte de Reconciliación (Auditoría Anti-Fraude)
+
+El motor de reconciliación busca discrepancias entre suscripciones, impresiones y nómina.
+- **Optimización SRE**: Procesa conductores en **lotes de 5** (Sequential Batching) para evitar picos de memoria.
+- **Detección de Anomalías**: Marca automáticamente como `LOW_DELIVERY` si un dispositivo reporta menos de 10 impresiones en el período activo.
 
 ---
 
-## 2.3 Control de Requerimientos Masivos
+## 2.3 Control de Requerimientos Masivos (Portal Requests)
 
-### Sistema de Colas y Estados
+El sistema centralizado de aprobaciones (`PortalRequestsService`) permite gestionar solicitudes críticas de anunciantes y conductores con un flujo de trabajo auditado.
 
-#### A) Nuevos Registros de Conductores
+### Tipos de Solicitudes y Automatización
+
+| Tipo de Solicitud | Acción tras Aprobación |
+| :--- | :--- |
+| `CAMPAIGN_CREATE` | Crea automáticamente la Campaña, el MediaAsset y despacha `FORCE_SYNC`. |
+| `CONTENT_UPDATE` | Actualiza el video de una campaña existente y notifica a la flota vía `WAKE_UP_CALL`. |
+| `PAYOUT` | Registra el pago en la nómina del conductor y marca como `PAID`. |
+
+> [!IMPORTANT]
+> La aprobación de una solicitud de contenido dispara automáticamente una señal vía **Supabase Realtime** al canal `fleet_sync`, forzando a las tablets a descargar el nuevo material en segundos.
+> Los comandos `FORCE_SYNC` generados tienen un **TTL de 24 horas** para asegurar que los dispositivos que están temporalmente offline reciban la orden al reconectarse.
+
+### Automatización de Pagos (Payout Workflow)
+
+El sistema de solicitudes procesa automáticamente los desembolsos a conductores:
+1. **Detección de Monto**: El sistema extrae el monto de la solicitud (`RD$`) mediante regex en la descripción o datos estructurados.
+2. **Registro de Nómina**: Al aprobar, se crea o actualiza un registro en `PayrollPayment` para el mes/año actual.
+3. **Estado de Pago**: Marca el pago como `PAID` instantáneamente y genera un número de referencia único (`REQ-[ID]`).
+
+---
+
+## 2.4 Motor de Simulación (TAD Simulator Engine)
+
+Diseñado para pruebas de carga y demostraciones, el motor genera telemetría realista sin necesidad de hardware físico.
+
+### Características del Simulador
+
+- **Navegación Real (OSRM)**: El simulador consulta el servicio `router.project-osrm.org` para trazar rutas reales por las calles de Santiago/Santo Domingo.
+- **Física de Movimiento**: Si el servicio de rutas falla, utiliza un "Drunk Walk" con interpolación Haversine y contención circular (Geofencing).
+- **Telemetría Densa**: Genera ticks de ubicación cada **15 segundos** para pruebas de estrés de los endpoints de monitoreo.
+- **Aislamiento de Datos**: Utiliza el flag `isSimulated: true` para que los datos de prueba no contaminen los reportes financieros reales.
+- **Purga Atómica**: El comando de limpieza refresca automáticamente las **Vistas Materializadas** (`mv_fleet_health`, `mv_impressions_daily`) para reflejar el estado limpio instantáneamente.
+
+| Endpoint | Acción |
+| :--- | :--- |
+| `POST /simulation/scenario` | Inicia una flota virtual de N nodos con navegación por calles activa. |
+| `DELETE /simulation/purge` | Limpia quirúrgicamente todos los datos simulados y refresca el BI. |
+
+---
+
+## 2.5 Flujos de Trabajo Administrativo
+
+### A) Nuevos Registros de Conductores
 
 | Paso | Estado `Driver.status` | `onboardingStatus` | Acción Requerida |
 | :--- | :--- | :--- | :--- |
@@ -342,7 +392,7 @@ MargenTAD = TotalFacturadoAnunciantes - TotalNóminaConductores - ITBIS - OPEX
 > [!IMPORTANT]
 > **Saneamiento de Registros:** El backend limpia automáticamente cédulas y placas para evitar errores de duplicidad silenciosos durante el registro.
 
-#### B) Retiros de Billetera (Payouts)
+### B) Retiros de Billetera (Payouts)
 
 1. Admin ejecuta `FinanceService.triggerMonthlyBilling(month, year)`.
 2. Sistema verifica si la nómina del periodo ya fue procesada (**idempotencia**).
@@ -351,7 +401,7 @@ MargenTAD = TotalFacturadoAnunciantes - TotalNóminaConductores - ITBIS - OPEX
 5. Admin procesa pagos individuales vía `processPayment()` con `status: 'PAID'`.
 6. Export CSV masivo disponible vía `exportPayrollCsv()`.
 
-#### C) Validación de Artes de Campaña
+### C) Validación de Artes de Campaña
 
 ```mermaid
 sequenceDiagram
@@ -374,7 +424,7 @@ sequenceDiagram
 
 ---
 
-## 2.4 Acciones por Servicio (Panel Admin)
+## 2.6 Matrices de Control y Auditoría
 
 ### SubscriptionGuard — Control de Suscripciones
 
@@ -457,6 +507,15 @@ sequenceDiagram
 | Admin registra taxi nuevo | `FleetService.registerDeviceByAdmin()` | Upsert `Device + Driver` con lógica de vinculación inteligente |
 | Admin consulta ruta reciente | `FleetService.getDeviceRecentPath(deviceId)` | `SELECT TOP 60 DriverLocation ORDER BY timestamp DESC` |
 | CRON marca connectivity_issue | `MonitoringService.checkOfflineDevices()` | `UPDATE Device SET connectivityStatus='connectivity_issue'` WHERE `lastSeen mas de 48h` |
+
+## 3.5 Matriz de Acciones — Sincronización (Sync Engine)
+
+| Escenario | Servicio Ejecuta | Optimización SRE |
+| :--- | :--- | :--- |
+| Tablet solicita playlist | `SyncService.getDeviceManifest()` | **ETagging**: Si el Hash no ha cambiado, retorna 304. Ahorra 80% CPU. |
+| Tablet descarga assets | Supabase CDN / Storage | Contenido servido desde el Edge para latencia mínima. |
+| Cambio en campaña | `refreshManifestView()` | Refresca **Materialized View** en Postgres para acceso O(1) a campañas activas. |
+| Tablet offline | Offline License Token | Token JWT firmado por 24h que permite reproducción sin internet. |
 
 ---
 
@@ -684,5 +743,5 @@ El sistema aplica **lógica de upsert inteligente:**
 
 ---
 
-> **TAD Dominicana, S.R.L.** — *Plataforma v10.0.0 (Microservices Architecture)*  
-> *Documento generado el 13 de Abril, 2026*
+> **TAD Dominicana, S.R.L.** — *Plataforma v10.5.0 (BI & Simulation Engine Enhanced)*  
+> *Documento generado el 20 de Abril, 2026*

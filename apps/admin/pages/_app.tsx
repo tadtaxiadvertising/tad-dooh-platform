@@ -1,0 +1,75 @@
+import '../styles/globals.css';
+import type { AppProps } from 'next/app';
+import { AuthProvider } from '@tad/ui';
+import { Layout } from '@tad/ui';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { PaymentLockOverlay } from '@tad/ui';
+import { useAntigravity } from '@tad/ui';
+import { useState } from 'react';
+
+const PUBLIC_PAGES = ['/login', '/check-in'];
+
+function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: QueryClient }) {
+  const isPublic = [
+    '/login', 
+    '/admin/login', 
+    '/advertiser/login', 
+    '/driver/login', 
+    '/check-in'
+  ].includes(router.pathname) || router.pathname.startsWith('/p');
+  
+  // Initialize Realtime Sync Hook
+  useAntigravity();
+
+  const content = (
+    <Component {...pageProps} />
+  );
+
+  if (isPublic) {
+    return (
+      <AuthProvider>
+        {content}
+      </AuthProvider>
+    );
+  }
+
+  return (
+    <AuthProvider>
+      <Layout>
+        {content}
+      </Layout>
+    </AuthProvider>
+  );
+}
+
+export default function App(props: AppProps) {
+  // Ensure QueryClient is only created once on the client
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes cache
+        retry: 3,
+        refetchOnWindowFocus: true,
+      },
+    },
+  }));
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppWrapper {...props} queryClient={queryClient} />
+      <Toaster richColors position="top-right" theme="dark" />
+      <PaymentLockOverlay />
+    </QueryClientProvider>
+  );
+}
+
+
+
+
+
+
+
+
+
+

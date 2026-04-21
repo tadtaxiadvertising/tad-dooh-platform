@@ -1,0 +1,60 @@
+**
+!apps/**
+!apps/tad-simulator/public/**
+!packages/**
+!package.json
+!package-lock.json
+
+# Exclude heavy/unnecessary items from allowed folders
+**/node_modules
+**/dist
+**/.next
+**/out
+**/build
+**/.next
+**/out
+**/build
+**/node_modules
+
+# Environment & Secrets
+.env*
+**/.env*
+
+# Logs & Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+
+# Tests
+**/tests
+**/__tests__
+**/*.test.*
+**/*.spec.*
+**/playwright-report
+**/test-results
+
+# Documentation
+**/docs
+**/README.md
+**/CHANGELOG.md
+
+# OS & IDE
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Media & Temporary
+**/*.mp4
+**/*.webm
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.pdf
+tmp/
+temp/

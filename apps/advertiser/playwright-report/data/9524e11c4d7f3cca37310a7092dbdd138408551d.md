@@ -1,0 +1,223 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - complementary [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+            - generic [ref=e13]:
+              - generic [ref=e14]: TAD
+              - generic [ref=e15]: Publicidad Digital en Taxis
+          - button "Alternar Menú" [ref=e16]:
+            - img [ref=e17]
+        - navigation [ref=e18]:
+          - generic [ref=e19]:
+            - paragraph [ref=e20]:
+              - generic [ref=e21]: Operaciones
+            - generic [ref=e23]:
+              - link "Resumen" [ref=e24] [cursor=pointer]:
+                - /url: /
+                - img [ref=e26]
+                - generic [ref=e31]: Resumen
+              - link "Pantallas TAD" [ref=e32] [cursor=pointer]:
+                - /url: /fleet
+                - img [ref=e34]
+                - generic [ref=e36]: Pantallas TAD
+              - link "Rastreo GPS" [ref=e37] [cursor=pointer]:
+                - /url: /tracking
+                - img [ref=e39]
+                - generic [ref=e41]: Rastreo GPS
+          - generic [ref=e42]:
+            - paragraph [ref=e43]:
+              - generic [ref=e44]: Red y Socios
+            - link "Conductores y Suscripciones" [ref=e47] [cursor=pointer]:
+              - /url: /drivers
+              - img [ref=e49]
+              - generic [ref=e53]: Conductores y Suscripciones
+          - generic [ref=e54]:
+            - paragraph [ref=e55]:
+              - generic [ref=e56]: Publicidad y Inteligencia
+            - generic [ref=e58]:
+              - link "Campañas" [ref=e59] [cursor=pointer]:
+                - /url: /campaigns
+                - img [ref=e63]
+                - generic [ref=e66]: Campañas
+              - link "Contenido Multimedia" [ref=e67] [cursor=pointer]:
+                - /url: /media
+                - img [ref=e69]
+                - generic [ref=e72]: Contenido Multimedia
+              - link "Marcas y Anunciantes" [ref=e73] [cursor=pointer]:
+                - /url: /advertisers
+                - img [ref=e75]
+                - generic [ref=e78]: Marcas y Anunciantes
+              - link "Ingresos y Pagos" [ref=e79] [cursor=pointer]:
+                - /url: /finance
+                - img [ref=e81]
+                - generic [ref=e84]: Ingresos y Pagos
+              - link "Inteligencia ROI" [ref=e85] [cursor=pointer]:
+                - /url: /analytics
+                - img [ref=e87]
+                - generic [ref=e89]: Inteligencia ROI
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: ad
+            - generic [ref=e93]:
+              - paragraph [ref=e94]:
+                - img [ref=e95]
+                - text: SYS_ADMIN
+              - paragraph [ref=e98]: admin@tad.do
+          - button "Desconectar" [ref=e99]:
+            - img [ref=e100]
+            - generic [ref=e103]: Desconectar
+      - generic [ref=e104]:
+        - banner [ref=e106]:
+          - generic [ref=e109]:
+            - img [ref=e110]
+            - textbox "CONSULAR PANTALLA, PILOTO O CAMPAÑA..." [ref=e113]
+            - generic:
+              - generic: CTRL
+              - generic: K
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - paragraph [ref=e117]: Status Red
+                - generic [ref=e118]:
+                  - generic [ref=e119]: STABLE
+                  - img [ref=e120]
+              - generic [ref=e122]:
+                - paragraph [ref=e123]: OS Build
+                - generic [ref=e124]:
+                  - generic [ref=e125]: V4.5.1
+                  - img [ref=e126]
+            - generic [ref=e129]:
+              - button "Centro de Alertas del Sistema" [ref=e131]:
+                - img [ref=e133]
+              - generic [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]:
+                  - paragraph [ref=e138]: Admin_Terminal
+                  - paragraph [ref=e139]: Level_SSS
+                - img [ref=e141]
+        - main [ref=e145]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - link "Cerrar Terminal" [ref=e150] [cursor=pointer]:
+                - /url: /campaigns
+                - img [ref=e151]
+                - generic [ref=e153]: Cerrar Terminal
+              - paragraph [ref=e156]: Injection Protocol 4.2
+            - generic [ref=e157]:
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - img [ref=e162]
+                  - generic [ref=e165]:
+                    - heading "Nueva Campaña" [level=1] [ref=e166]
+                    - paragraph [ref=e167]: Inyección de contenedor DOOH
+                - generic [ref=e168]:
+                  - img [ref=e169]
+                  - paragraph [ref=e172]: SECURED_API
+              - generic [ref=e173]:
+                - generic [ref=e174]:
+                  - generic [ref=e175]:
+                    - generic [ref=e176]:
+                      - generic [ref=e177]: Nombre del Proyecto
+                      - generic [ref=e178]:
+                        - img [ref=e179]
+                        - textbox "EJ. CAMPAÑA_VERANO_V4" [ref=e185]
+                    - generic [ref=e186]:
+                      - generic [ref=e187]: Marca / Anunciante
+                      - generic [ref=e188]:
+                        - img [ref=e189]
+                        - textbox "EJ. COCA-COLA" [ref=e192]
+                    - generic [ref=e193]:
+                      - generic [ref=e194]: Meta de Impactos
+                      - generic [ref=e195]:
+                        - img [ref=e196]
+                        - spinbutton [ref=e200]: "1000"
+                    - generic [ref=e201]:
+                      - generic [ref=e202]: Categoría de Segmentación
+                      - generic [ref=e203]:
+                        - img [ref=e204]
+                        - combobox "Categoría de Segmentación" [ref=e208]:
+                          - option "GENERAL" [selected]
+                          - option "RESTAURANTE"
+                          - option "ENTRETENIMIENTO"
+                          - option "SALUD / BIENESTAR"
+                          - option "SERVICIOS"
+                          - option "RETAIL / TIENDAS"
+                    - generic [ref=e209]:
+                      - generic [ref=e210]: Ciudad de Destino
+                      - generic [ref=e211]:
+                        - img [ref=e212]
+                        - combobox "Ciudad de Destino" [ref=e215]:
+                          - option "GLOBAL_NET (Toda la red)" [selected]
+                          - option "SANTO DOMINGO"
+                          - option "SANTIAGO"
+                          - option "PUNTA CANA"
+                          - option "PUERTO PLATA"
+                  - generic [ref=e216]:
+                    - generic [ref=e217]:
+                      - generic [ref=e218]:
+                        - generic [ref=e219]: Inicio de Difusión
+                        - generic [ref=e220]:
+                          - img [ref=e221]
+                          - textbox "Inicio de Difusión" [ref=e223]:
+                            - /placeholder: AAAA-MM-DD
+                      - generic [ref=e224]:
+                        - generic [ref=e225]: Término de Difusión
+                        - generic [ref=e226]:
+                          - img [ref=e227]
+                          - textbox "Término de Difusión" [ref=e229]:
+                            - /placeholder: AAAA-MM-DD
+                    - generic [ref=e230]:
+                      - generic [ref=e231]:
+                        - img [ref=e233]
+                        - generic [ref=e235]:
+                          - paragraph [ref=e236]: Autorizar Inyección
+                          - paragraph [ref=e237]: Activar campaña de forma inmediata
+                      - checkbox [checked] [ref=e239]
+                    - generic [ref=e241]:
+                      - img [ref=e242]
+                      - paragraph [ref=e244]: Tras la autorización, este contenedor será verificado por el clúster central y estará disponible para recibir activos en el Vault Digital.
+                - generic [ref=e246]:
+                  - generic [ref=e247]:
+                    - img [ref=e248]
+                    - heading "Protocolo de Conversión (QR Hub)" [level=3] [ref=e250]
+                  - generic [ref=e251]:
+                    - generic [ref=e252]:
+                      - generic [ref=e253]:
+                        - generic [ref=e254]: WhatsApp de Ventas
+                        - textbox "8091112222" [ref=e255]
+                      - generic [ref=e256]:
+                        - generic [ref=e257]: Instagram (@usuario)
+                        - textbox "@marca" [ref=e258]
+                      - generic [ref=e259]:
+                        - generic [ref=e260]: Sitio Web
+                        - textbox "https://..." [ref=e261]
+                    - generic [ref=e262]:
+                      - generic [ref=e263]:
+                        - generic [ref=e264]: Pedidos Ya (Link)
+                        - textbox "https://pedidosya.com/..." [ref=e265]
+                      - generic [ref=e266]:
+                        - generic [ref=e267]: Uber Eats (Link)
+                        - textbox "https://ubereats.com/..." [ref=e268]
+                      - paragraph [ref=e270]: Estos enlaces aparecerán en el hub interactivo cuando el pasajero escanee el código QR de esta campaña.
+                - generic [ref=e271]:
+                  - button "Confirmar e Iniciar" [ref=e272]:
+                    - img [ref=e273]
+                    - generic [ref=e277]: Confirmar e Iniciar
+                  - paragraph [ref=e278]:
+                    - img [ref=e279]
+                    - text: TAD_PROTOCOL_ACTIVE
+          - generic [ref=e281]:
+            - generic [ref=e282]:
+              - img [ref=e283]
+              - paragraph [ref=e285]: TAD NODE OS v4.5.1 STABLE
+            - generic [ref=e286]:
+              - paragraph [ref=e287]: "ECOSYSTEM REVISION: 04"
+              - paragraph [ref=e288]: © 2026 TECHNOLOGY ASSET DEPLOYMENT
+    - region "Notifications alt+T"
+  - alert [ref=e289]: NUEVA CAMPAÑA
+```

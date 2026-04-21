@@ -1,0 +1,75 @@
+# ============================================
+# TAD DOOH Simulator - Production Dockerfile
+# Optimized for EasyPanel (1GB RAM)
+# BUILD_ID: 2026-04-14-T0310
+# ============================================
+
+FROM node:20-alpine AS builder
+
+# Install dependencies needed for Prisma/Next build
+RUN apk add --no-cache openssl libcrypto3 libc6-compat
+
+WORKDIR /app
+
+# Archivos core del monorepo
+COPY package.json ./
+COPY package-lock.json ./
+COPY packages ./packages
+COPY apps/tad-simulator ./apps/tad-simulator
+COPY apps/api/prisma ./prisma-schema
+
+# Inyectamos variables de build
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG TAD_API_URL
+
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV TAD_API_URL=$TAD_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Instalar dependencias del monorepo raíz
+RUN npm install --legacy-peer-deps
+
+
+# 1️⃣ Generar el cliente Prisma del API (PostgreSQL / AppPrisma)
+#    Esto resuelve: import { PrismaClient as AppPrisma } from '@prisma/client'
+RUN npx prisma generate --schema=./prisma-schema/schema.prisma
+
+# 2️⃣ Generar el cliente Prisma local del Simulator (SQLite)
+#    Esto resuelve: import { PrismaClient as SimulatorPrisma } from '../generated/client'
+#    Lo hacemos DESDE el directorio de la app para asegurar rutas relativas correctas
+WORKDIR /app/apps/tad-simulator
+RUN npx prisma generate
+
+# Build de Next.js
+RUN npm run build
+
+
+# ---- Runner (Production) ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Essential for Prisma runtime
+RUN apk add --no-cache openssl libcrypto3
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=768"
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copiamos el output standalone
+COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/.next/static ./apps/tad-simulator/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/public ./apps/tad-simulator/public
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# SRE Corrected CMD for Monorepo Standalone
+CMD ["node", "apps/tad-simulator/server.js"]

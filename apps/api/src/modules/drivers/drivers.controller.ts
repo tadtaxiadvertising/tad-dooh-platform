@@ -1,0 +1,215 @@
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger } from '@nestjs/common';
+import { Request } from 'express';
+import { DriversService } from './drivers.service';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/decorators/roles.decorator';
+
+@Controller('drivers')
+@Roles(UserRole.ADMIN)
+export class DriversController {
+  private readonly logger = new Logger(DriversController.name);
+  constructor(private readonly driversService: DriversService) {}
+
+  /**
+   * GET /api/drivers — Listar todos los choferes
+   */
+  @Get()
+  async findAll() {
+    return this.driversService.findAll();
+  }
+
+  /**
+   * GET /api/drivers/stats — Estadísticas de la red
+   */
+  @Get('stats')
+  async getStats() {
+    return this.driversService.getStats();
+  }
+
+  /**
+   * GET /api/drivers/:id — Detalle de un chofer
+   */
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const driver = await this.driversService.findOne(id);
+    if (!driver) throw new BadRequestException('Chofer no encontrado');
+    return driver;
+  }
+
+  /**
+   * POST /api/drivers — Registrar un nuevo chofer
+   */
+  @Public()
+  @Post()
+  async create(@Body() body: {
+    fullName: string;
+    cedula?: string;
+    phone: string;
+    taxiPlate?: string;
+    licensePlate?: string;
+    deviceId?: string;
+    subscriptionPaid?: boolean;
+    subscriptionEnd?: string;
+    password?: string;
+    contractAccepted?: boolean;
+    agreementVersion?: string;
+    // insuranceAccepted is deprecated — TAD does not offer insurance
+  }) {
+    if (!body.fullName || !body.phone) {
+      throw new BadRequestException('fullName y phone son obligatorios');
+    }
+
+    if (!body.contractAccepted) {
+      throw new BadRequestException('Debes aceptar el contrato de servicio para unirte a TAD');
+    }
+
+    // Sanear campos opcionales: Convertir strings vacíos a undefined para evitar conflictos de unicidad en Prisma
+    const sanitize = (val?: string) => (val && val.trim() !== '' ? val : undefined);
+
+    return this.driversService.create({
+      ...body,
+      cedula: sanitize(body.cedula),
+      taxiPlate: sanitize(body.taxiPlate),
+      licensePlate: sanitize(body.licensePlate),
+      deviceId: sanitize(body.deviceId),
+      subscriptionEnd: body.subscriptionEnd ? new Date(body.subscriptionEnd) : undefined,
+      password: body.password,
+    });
+  }
+
+  /**
+   * POST /api/drivers/login — Iniciar sesión chofer
+   */
+  @Public()
+  @Post('login')
+  async login(@Body() body: { phone: string; password?: string }) {
+    if (!body.phone || !body.password) {
+      throw new BadRequestException('El número de teléfono y contraseña son obligatorios');
+    }
+    return this.driversService.login(body.phone, body.password);
+  }
+
+  /**
+   * GET /api/drivers/:id/earnings — Cálculo de ganancias mensuales
+   */
+  @Get(':id/earnings')
+  async getEarnings(@Param('id') id: string) {
+    return this.driversService.calculateMonthlyEarnings(id);
+  }
+
+  /**
+   * PUT /api/drivers/:id/subscription — Actualizar estado de suscripción
+   */
+  @Put(':id/subscription')
+  async updateSubscription(
+    @Param('id') id: string,
+    @Body() body: { paid: boolean; endDate?: string }
+  ) {
+    return this.driversService.updateSubscription(
+      id,
+      body.paid,
+      body.endDate ? new Date(body.endDate) : undefined,
+    );
+  }
+
+  /**
+   * POST /api/drivers/:id/accept-agreement — Firma Electrónica
+   */
+  @Post(':id/accept-agreement')
+  async acceptAgreement(
+    @Param('id') id: string,
+    @Body() body: { version: string },
+    @Req() req: Request
+  ) {
+    if (!body.version) throw new BadRequestException('version es requerida');
+    
+    // Fallbacks para IP address and headers
+    const ipAddress = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown') as string;
+    const userAgent = (req.headers['user-agent'] || 'unknown') as string;
+
+    try {
+      return await this.driversService.acceptAgreement(id, body.version, ipAddress, userAgent);
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  /**
+   * POST /api/drivers/:id/assign-device — Asignar pantalla al chofer
+   */
+  @Post(':id/assign-device')
+  async assignDevice(
+    @Param('id') id: string,
+    @Body() body: { deviceId: string }
+  ) {
+    if (!body.deviceId) throw new BadRequestException('deviceId es requerido');
+    return this.driversService.assignDevice(id, body.deviceId);
+  }
+
+  /**
+   * POST /api/drivers/:id/unlink-device — Desvincular pantalla
+   */
+  @Post(':id/unlink-device')
+  async unlinkDevice(@Param('id') id: string) {
+    return this.driversService.unlinkDevice(id);
+  }
+
+  /**
+   * GET /api/drivers/tablet/:tabletId/access — Verificar acceso de tablet
+   * Usado por la PWA/FullyKiosk para saber si debe bloquear la pantalla.
+   */
+  @Get('tablet/:tabletId/access')
+  async checkTabletAccess(@Param('tabletId') tabletId: string) {
+    return this.driversService.checkTabletAccess(tabletId);
+  }
+
+  /**
+   * GET /api/drivers/me/hub — Datos de negocio para el portal del chofer (Autenticado con JWT propio)
+   * Nuevo flujo: Los choferes registrados usan su JWT para entrar, tengan o no pauta activa.
+   */
+  @Get('me/hub')
+  @Roles(UserRole.DRIVER)
+  async getMyHub(@Req() req: any) {
+    const { entityId } = req.user;
+    if (!entityId) throw new ForbiddenException('No tienes un perfil de conductor asociado');
+    return this.driversService.getDriverHubDataById(entityId);
+  }
+
+  /**
+   * GET /api/drivers/tablet/:tabletId/hub — Datos de negocio para el portal del chofer
+   */
+  @Public() // El portal del chofer usa solo el ID del hardware para autenticarse
+  @Get('tablet/:tabletId/hub')
+  async getDriverHub(@Param('tabletId') tabletId: string) {
+    try {
+      return await this.driversService.getDriverHubData(tabletId);
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
+  }
+  /**
+   * POST /api/drivers/purge-all — Purge ALL drivers and devices
+   * FIX C-3: Requires ADMIN role (class-level guard) + x-admin-secret header.
+   * Double-gated to prevent accidental or unauthorized DB wipes.
+   */
+  @Post('purge-all')
+  async purgeAll(@Headers('x-admin-secret') secret: string, @Req() req: any) {
+    const adminSecret = process.env.ADMIN_SECRET;
+    if (!adminSecret || secret !== adminSecret) {
+      this.logger.warn(`⚠️ [PURGE] Intento no autorizado desde IP: ${req.ip}`);
+      throw new ForbiddenException('Unauthorized purge attempt');
+    }
+    // Audit log — cada uso queda registrado
+    this.logger.warn(`🚨 [PURGE] Purga total iniciada por ADMIN autenticado. IP: ${req.ip}`);
+    return this.driversService.purgeAll();
+  }
+
+  /**
+   * DELETE /api/drivers/:id — Eliminar un chofer
+   */
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.driversService.remove(id);
+  }
+}

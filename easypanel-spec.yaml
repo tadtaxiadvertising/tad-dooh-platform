@@ -1,0 +1,62 @@
+# easypanel-spec.yaml
+# TAD DOOH PLATFORM - CONFIGURACIÓN DE PRODUCCIÓN v10.1.0
+services:
+  tad-api:
+    image: node:20-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    env:
+      - NODE_OPTIONS="--max-old-space-size=512"
+      - DATABASE_URL="postgresql://postgres.ltdcdhqixvbpdcitthqf:REDACTED@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
+      - REDIS_URL="redis://tad-redis:6379"
+      - SIMULATOR_API_KEY="tad_prod_v10_bypass_0416_secure_key"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 150s
+
+  tad-simulator:
+    build:
+      dockerfile: "Dockerfile.simulator"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M # Motor faker.js y next engine requieren RAM
+          cpus: '1.0'
+    env:
+      - NODE_ENV=production
+      - NODE_OPTIONS="--max-old-space-size=768"
+      - TAD_API_URL=http://tad-api:3000/api/v1 # Comunicación interna
+      - TAD_API_KEY="tad_prod_v10_bypass_0416_secure_key"
+      - DATABASE_URL=${SIMULATOR_DB_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DEFAULT_DRIVER_COUNT=150
+      - DEFAULT_TELEMETRY_FREQ=30
+      - MAX_LATENCY_THRESHOLD=200
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_API_URL=http://tad-api:3000/api/v1
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  tad-redis:
+    image: redis:7-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    volumes:
+      - tad-redis-data:/data
+
+volumes:
+  tad-redis-data:

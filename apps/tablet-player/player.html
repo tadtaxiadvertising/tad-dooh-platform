@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>TAD Player</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            cursor: none;
+        }
+        #video-player {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            background: #000;
+            z-index: 1;
+        }
+        #waiting-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 2;
+        }
+        #waiting-screen.hidden { display: none; }
+        .debug-monitor { display: none; }
+    </style>
+</head>
+<body>
+    <!-- Video Player (fullscreen) -->
+    <video id="video-player" muted autoplay></video>
+
+    <!-- Waiting Screen: pure black, no branding visible to passengers -->
+    <div id="waiting-screen">
+        <!-- Hidden debug info for SRE tracing, invisible to passengers -->
+        <div class="debug-monitor">
+            <span id="node-id"></span>
+            <div class="status"></div>
+        </div>
+    </div>
+
+<script>
+// ============================================
+// TAD SYNC V7 — OFFLINE SYNC MANAGER (SRE)
+// ============================================
+const CACHE_NAME = 'tad-terminal-cache-v5.5'; // Debería coincidir con sw.js
+
+class OfflineSyncManager {
+  static async computeHash(blob) {
+    const buffer = await blob.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  static async synchronize(deviceId) {
+    try {
+      const SERVER_URL = localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+      const response = await fetch(`${SERVER_URL}/api/sync/${deviceId}`);
+      
+      if (!response.ok) return false;
+      
+      const manifest = await response.json();
+      const serverPlaylist = manifest.playlist;
+      const serverUrls = serverPlaylist.map(item => item.url);
+
+      const cache = await caches.open(CACHE_NAME);
+      const cachedRequests = await cache.keys();
+      const cachedUrls = cachedRequests.map(req => req.url);
+
+      let hasChanges = false;
+
+      for (const item of serverPlaylist) {
+        if (!cachedUrls.includes(item.url)) {
+          console.log(`[TAD SRE] ⬇️ Syncing asset: ${item.filename}`);
+          try {
+            const resp = await fetch(item.url);
+            if (!resp.ok) continue;
+            
+            const blob = await resp.blob();
+            // TODO: Integrar computeHash con item.checksum de v7.0
+            
+            await cache.put(item.url, new Response(blob, {
+               headers: { 
+                 'Content-Type': blob.type,
+                 'Content-Length': blob.size,
+                 'X-TAD-Sync-Date': new Date().toISOString()
+               }
+            }));
+            hasChanges = true;
+          } catch (err) { console.warn(`[TAD SRE] Download failed: ${item.url}`); }
+        }
+      }
+
+      for (const cachedReq of cachedRequests) {
+        if (!serverUrls.includes(cachedReq.url)) {
+          await cache.delete(cachedReq);
+          hasChanges = true;
+        }
+      }
+
+      localStorage.setItem('tad_active_playlist', JSON.stringify(serverPlaylist));
+      localStorage.setItem('tad_last_sync', new Date().toISOString());
+      localStorage.setItem('tad_sync_hash', manifest.sync_hash || '');
+      return hasChanges;
+    } catch (error) { return false; }
+  }
+}
+window.OfflineSyncManager = OfflineSyncManager;
+
+// ============================================
+// TAD MINIMAL PLAYER — Main Loop
+// ============================================
+(function() {
+    var urlParams = new URL(window.location.href).searchParams;
+    var SERVER = urlParams.get('apiUrl') || localStorage.getItem('tad_server_url') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+    var SYNC_INTERVAL = 60000;
+    var FALLBACK_TIMEOUT = 14400000; // 4 hours
+    var deviceId = '';
+    var playlist = [];
+    var currentIndex = 0;
+    var video = document.getElementById('video-player');
+    var waitingScreen = document.getElementById('waiting-screen');
+    var nodeIdEl = document.getElementById('node-id');
+
+    const FALLBACK_PLAYLIST = [
+      {
+        id: 'fallback-tad-01',
+        filename: 'branding-tad-v1.mp4',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        isFallback: true
+      }
+    ];
+
+    function getDeviceId() {
+        var params = new URLSearchParams(window.location.search);
+        var id = params.get('deviceId') || params.get('node') || params.get('id');
+        if (id) { localStorage.setItem('tad_device_id', id); return id; }
+        var saved = localStorage.getItem('tad_device_id');
+        if (saved) return saved;
+        var newId = 'TAD-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        localStorage.setItem('tad_device_id', newId);
+        return newId;
+    }
+
+    async function sync() {
+        updateStatus('SYNCING...');
+        try {
+            await window.OfflineSyncManager.synchronize(deviceId);
+            const savedPlaylist = JSON.parse(localStorage.getItem('tad_active_playlist') || '[]');
+            const lastSyncStr = localStorage.getItem('tad_last_sync');
+            const lastSyncTime = lastSyncStr ? new Date(lastSyncStr).getTime() : 0;
+            const now = Date.now();
+
+            if (now - lastSyncTime > FALLBACK_TIMEOUT) {
+                playlist = FALLBACK_PLAYLIST;
+                updateStatus('FALLBACK MODE');
+            } else if (savedPlaylist.length > 0) {
+                playlist = savedPlaylist;
+                updateStatus('ACTIVE: ' + playlist.length + ' VIDEOS');
+            } else {
+                playlist = FALLBACK_PLAYLIST;
+                updateStatus('NO CONTENT');
+            }
+            if (playlist.length > 0 && video.paused) startPlayback();
+        } catch (e) {
+            if (playlist.length === 0) playlist = FALLBACK_PLAYLIST;
+            if (playlist.length > 0 && video.src === '') startPlayback();
+        }
+    }
+
+    function startPlayback() {
+        if (playlist.length === 0) return showWaiting();
+        waitingScreen.classList.add('hidden');
+        playNext();
+    }
+
+    function playNext() {
+        if (playlist.length === 0) return;
+        var media = playlist[currentIndex];
+        video.src = media.url;
+        video.load();
+        video.play().catch(() => setTimeout(nextIndex, 3000));
+    }
+
+    function nextIndex() {
+        if (playlist.length === 0) return;
+        currentIndex = (currentIndex + 1) % playlist.length;
+        playNext();
+    }
+
+    video.addEventListener('ended', nextIndex);
+    video.addEventListener('error', () => setTimeout(nextIndex, 2000));
+
+    function showWaiting() { waitingScreen.classList.remove('hidden'); }
+    function updateStatus(text) {
+        var el = document.querySelector('.status');
+        if (el) el.innerHTML = '<span class="dot"></span> ' + text;
+    }
+
+    deviceId = getDeviceId();
+    nodeIdEl.textContent = deviceId;
+    sync();
+    setInterval(sync, SYNC_INTERVAL);
+})();
+</script>
+</body>
+</html>

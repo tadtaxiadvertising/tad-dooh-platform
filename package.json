@@ -10,9 +10,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:backend": "cd apps/api && npm run start:dev",
-    "dev:tablet": "cd apps/tablet-player && python -m http.server 8080",
+    "dev:backend": "npm run start:dev -workspace api",
     "dev:admin": "npm run dev -workspace admin",
+    "dev:advertiser": "npm run dev -workspace advertiser",
+    "dev:driver": "npm run dev -workspace driver",
+    "dev:tablet": "cd apps/tablet-player && python -m http.server 8080",
+    "dev:simulator": "npm run dev -workspace tad-simulator",
     "install:all": "npm install",
     "build": "npm run build -ws",
     "build:backend": "npm run build -workspace api",

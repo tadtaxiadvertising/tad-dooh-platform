@@ -121,7 +121,14 @@ export default function AdvertiserLoginPage() {
           <h1 className="text-3xl font-black text-white tracking-tight uppercase mb-2">
             ADVERTISER <span className="text-tad-yellow">HUB</span>
           </h1>
-          <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.3em]">Platform de Gestión de Campañas</p>
+          <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.3em]">Plataforma de Gestión de Campañas</p>
+          {/* Social Proof */}
+          <div className="mt-5 inline-flex items-center gap-2 px-5 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-full">
+            <div className="flex -space-x-2">
+              {[1,2,3].map(i => <div key={i} className="w-5 h-5 rounded-full bg-zinc-700 border-2 border-[#050505]" />)}
+            </div>
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">342+ empresas activas</span>
+          </div>
         </div>
 
         {/* Card Container */}
@@ -157,16 +164,17 @@ export default function AdvertiserLoginPage() {
 
               <SubmitButton loading={loading} text="Iniciar Sesión" loadingText="Validando..." />
 
-              {/* Register CTA */}
-              <div className="pt-6 border-t border-white/5 text-center">
-                <p className="text-[11px] text-gray-500 mb-3">¿Aún no tienes cuenta?</p>
+              {/* Register CTA with urgency */}
+              <div className="pt-6 border-t border-white/5 text-center space-y-3">
+                <p className="text-[11px] text-gray-500">¿Aún no anuncias tu marca en taxis?</p>
                 <button type="button" onClick={() => router.push('/advertiser/onboarding')}
                   className="inline-flex items-center gap-2 text-[11px] font-bold text-tad-yellow uppercase tracking-wider hover:text-white transition-colors group"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>Crear cuenta de anunciante</span>
+                  <span>Lanzar mi primera campaña</span>
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
+                <p className="text-[9px] text-zinc-700 uppercase tracking-wider">Espacios limitados · Desde RD$3,000/mes</p>
               </div>
             </form>
           )}

@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { PaymentLockOverlay } from '@tad/ui';
 import { useAntigravity } from '@tad/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { logger } from '../../../libs/logging/logger';
 
 const PUBLIC_PAGES = ['/login', '/check-in'];
 
@@ -20,6 +21,13 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/advertiser/onboarding',
     '/check-in'
   ].includes(router.pathname) || router.pathname.startsWith('/p');
+  
+  // Initialize Logger
+  useEffect(() => {
+    if (logger) {
+      logger.info('App', `Navigated to ${router.pathname}`);
+    }
+  }, [router.pathname]);
   
   // Initialize Realtime Sync Hook
   useAntigravity();

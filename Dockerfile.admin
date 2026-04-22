@@ -11,7 +11,6 @@ COPY package.json ./
 
 # Copiar configuración de workspaces
 COPY packages ./packages
-COPY libs ./libs
 COPY apps/admin ./apps/admin
 
 # Instalar TODO (para resolver las dependencias cruzadas como @tad/services)

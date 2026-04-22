@@ -7,6 +7,7 @@ RUN apk add --no-cache openssl
 # Install ALL dependencies (for build)
 COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 RUN npm ci
 
@@ -23,6 +24,7 @@ RUN apk add --no-cache openssl
 
 COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 
 # Install ONLY production dependencies

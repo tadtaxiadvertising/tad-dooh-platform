@@ -7,7 +7,8 @@ import { Toaster } from 'sonner';
 import { PaymentLockOverlay } from '@tad/ui';
 import { useAntigravity } from '@tad/ui';
 import { useState, useEffect } from 'react';
-import { logger } from '../../../libs/logging/logger';
+import { logger } from '@tad/logging';
+
 
 const PUBLIC_PAGES = ['/login', '/check-in'];
 

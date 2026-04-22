@@ -16,7 +16,7 @@ const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:30
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  transpilePackages: ["@tad/services", "@tad/ui", "@tad/store"],
+  transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
   eslint: {
     ignoreDuringBuilds: true,
   },

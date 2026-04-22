@@ -23,10 +23,11 @@
       "../../node_modules/@types"
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@tad/logging": ["../../packages/logging/index.ts"],
+      "@tad/logging/*": ["../../packages/logging/*"]
     }
+
   },
   "include": [
     "next-env.d.ts",

@@ -1,36 +1,26 @@
 import React from 'react';
-import { Headphones, AlertTriangle, UserPlus, FileText } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Headphones, AlertTriangle, UserPlus, Send } from 'lucide-react';
 
 const actions = [
-  { id: 'support', label: 'Soporte Técnico', icon: Headphones, color: '#FFD400' },
-  { id: 'report', label: 'Reportar Problema', icon: AlertTriangle, color: '#ef4444' },
-  { id: 'refer', label: 'Invitar Conductor', icon: UserPlus, color: '#3b82f6' },
-  { id: 'history', label: 'Historial', icon: FileText, color: '#a3a3a3' },
+  { id: 'support', label: 'Soporte', icon: Headphones, color: '#FFD400' },
+  { id: 'report', label: 'Reportar Falla', icon: AlertTriangle, color: '#EF4444' },
+  { id: 'sync', label: 'Sincronizar', icon: Send, color: '#22C55E' },
+  { id: 'refer', label: 'Referidos', icon: UserPlus, color: '#3B82F6' },
 ];
 
 export const QuickActions: React.FC = () => {
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {actions.map((action, index) => (
-        <motion.button
+    <div className="grid grid-cols-2 gap-2">
+      {actions.map((action) => (
+        <button
           key={action.id}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl gap-3 hover:bg-white/10 transition-colors"
+          className="flex flex-col items-center justify-center min-h-[100px] bg-neutral-900 border-b-4 border-neutral-800 active:bg-neutral-800 active:border-b-0 active:translate-y-1 transition-all p-4"
         >
-          <div 
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${action.color}20`, color: action.color }}
-          >
-            <action.icon size={24} />
-          </div>
-          <span className="text-white/80 text-xs font-semibold text-center leading-tight">
+          <action.icon size={28} style={{ color: action.color }} className="mb-2" />
+          <span className="text-white text-xs font-black uppercase tracking-tighter">
             {action.label}
           </span>
-        </motion.button>
+        </button>
       ))}
     </div>
   );

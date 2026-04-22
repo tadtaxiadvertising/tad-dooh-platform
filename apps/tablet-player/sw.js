@@ -93,7 +93,7 @@ self.addEventListener('fetch', (event) => {
     // 🛡️ SECURITY PATCH: Prevent Mixed Content Errors
     if (self.location.protocol === 'https:' && requestUrl.protocol === 'http:') {
         if (requestUrl.hostname.startsWith('10.') || requestUrl.hostname === 'localhost' || requestUrl.hostname.includes('easypanel.host')) {
-            const PROD_API = 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+            const PROD_API = 'https://tad-api.rewvid.easypanel.host';
             const secureUrl = event.request.url.replace(/^http:\/\/[^\/]+/, PROD_API).replace('http:', 'https:');
             event.respondWith(fetch(secureUrl, { method: event.request.method, headers: event.request.headers, mode: 'cors' }));
             return;

@@ -23,7 +23,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const rawBackendUrl = (
   process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL
-  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
+  || 'https://tad-api.rewvid.easypanel.host'
 );
 
 // Strip any trailing /api, /api/v1, or / to get a clean base
@@ -116,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             errorMessage.includes('ECONNREFUSED');
       
       if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
-        const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
+        const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         
         // El body de la original (req) ya pudo haber sido consumido si era POST/PUT. 
@@ -163,7 +163,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: 'Backend no disponible (Incluso tras reintento)',
       message: errorMessage,
       targetUrl,
-      hint: 'Asegúrate de que el backend proyecto-ia-tad-api esté encendido en EasyPanel',
+      hint: 'Asegúrate de que el backend tad-api esté encendido en EasyPanel',
     });
   }
 }

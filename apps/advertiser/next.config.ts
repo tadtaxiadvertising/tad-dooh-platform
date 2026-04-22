@@ -11,7 +11,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
   || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
-  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback hardcoded SOLO si todo lo demás falla
+  || 'https://tad-api.rewvid.easypanel.host';    // fallback hardcoded SOLO si todo lo demás falla
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

@@ -27,7 +27,7 @@ const getBaseURL = () => {
   // SSR: usar URL interna si está disponible, pública como fallback
   return process.env.BACKEND_INTERNAL_URL
     ? `${process.env.BACKEND_INTERNAL_URL}/api`
-    : (process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
+    : (process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api');
 };
 
 export const api = axios.create({

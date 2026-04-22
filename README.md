@@ -126,7 +126,19 @@ docker-compose up -d
 
 ### Production
 
-Ver `docs/DEPLOY.md` para instrucciones completas.
+🚀 **Guía completa de deployment:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+
+**⚠️ Problema Común en EasyPanel:** 
+Si ves `ERROR: failed to read dockerfile`, revisa [DOCKERFILE_ERROR_SOLUTION.md](DOCKERFILE_ERROR_SOLUTION.md) para la solución inmediata.
+
+**Documentación detallada por componente:**
+- 🔐 **SSH Key Management** → [docs/SSH_KEY_MANAGEMENT.md](docs/SSH_KEY_MANAGEMENT.md) (7 servicios, 7 claves SSH)
+- 🔧 **Dockerfile Paths** → [docs/DOCKERFILE_PATHS_QUICK_REF.md](docs/DOCKERFILE_PATHS_QUICK_REF.md) (referencia rápida)
+- 🚢 **EasyPanel Deployment** → [docs/DEPLOY_EASYPANEL.md](docs/DEPLOY_EASYPANEL.md)
+- 📊 **Production Handbook** → [DEPLOY_PRODUCTION.md](DEPLOY_PRODUCTION.md)
+- 🤖 **Automated DevOps** → [DEVOPS_AUTODEPLOY.md](DEVOPS_AUTODEPLOY.md)
+
+**Nota:** Cada servicio tiene su propia clave SSH (tad-api, tad-admin, tad-advertiser, tad-driver, tad-player, tad-simulator, tad-remotion).
 
 ---
 

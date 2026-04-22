@@ -19,10 +19,11 @@
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@tad/logging": ["../../packages/logging/index.ts"],
+      "@tad/logging/*": ["../../packages/logging/*"]
     }
+
   },
   "include": [
     "next-env.d.ts",

@@ -33,12 +33,16 @@
 4. [Guía Maestra de Usuario (Knowledge Base / FAQ)](#4-guía-maestra-de-usuario-knowledge-base--faq)
    - [4.1 Preguntas Frecuentes — Conductores (Drivers)](#41-preguntas-frecuentes--conductores-drivers)
    - [4.2 Preguntas Frecuentes — Anunciantes (Advertisers)](#42-preguntas-frecuentes--anunciantes-advertisers)
-   - [4.3 Preguntas Frecuentes — Operaciones (Ops / Admin)](#43-preguntas-frecuentes--operaciones-ops--admin)
-5. [Apéndice: Constantes de Negocio](#5-apéndice-constantes-de-negocio)
-
----
-
-## 1. Módulo de Advertisers (Gestión de Demanda)
+38:    - [4.3 Preguntas Frecuentes — Operaciones (Ops / Admin)](#43-preguntas-frecuentes--operaciones-ops--admin)
+39: 5. [Apéndice: Constantes de Negocio](#5-apéndice-constantes-de-negocio)
+40: 6. [Guía de Onboarding para Nuevos Agentes/Desarrolladores](#6-guía-de-onboarding-para-nuevos-agentesdesarrolladores)
+41:    - [6.1 Asignación de Puertos (Local Dev)](#61-asignación-de-puertos-local-dev)
+42:    - [6.2 Diferencias en Autenticación (Supabase vs Local)](#62-diferencias-en-autenticación-supabase-vs-local)
+43:    - [6.3 Credenciales por Defecto y Scripts de Ayuda](#63-credenciales-por-defecto-y-scripts-de-ayuda)
+44: 
+45: ---
+46: 
+47: ## 1. Módulo de Advertisers (Gestión de Demanda)
 
 ## 1.1 Flujo de Presupuesto
 
@@ -738,10 +742,57 @@ El sistema aplica **lógica de upsert inteligente:**
 
 | CRON | Frecuencia | Servicio | Acción |
 | :--- | :--- | :--- | :--- |
-| Detección Morosidad | Diario @ 3:00 AM | `FinanceService.checkHighDelinquency()` | Escaneo de drivers morosos. WhatsApp + ledger |
-| Detección Offline | Cada 30 min | `MonitoringService.checkOfflineDevices()` | Marca offline (15min). connectivity_issue (48h). Push 12h. WhatsApp piloto |
-
----
-
-> **TAD Dominicana, S.R.L.** — *Plataforma v10.5.0 (BI & Simulation Engine Enhanced)*  
-> *Documento generado el 20 de Abril, 2026*
+742: | Detección Morosidad | Diario @ 3:00 AM | `FinanceService.checkHighDelinquency()` | Escaneo de drivers morosos. WhatsApp + ledger |
+743: | Detección Offline | Cada 30 min | `MonitoringService.checkOfflineDevices()` | Marca offline (15min). connectivity_issue (48h). Push 12h. WhatsApp piloto |
+744: 
+745: ---
+746: 
+747: ## 6. Guía de Onboarding para Nuevos Agentes/Desarrolladores
+748: 
+749: Esta sección está diseñada para acelerar el proceso de entendimiento (ramp-up) de nuevos desarrolladores o agentes de IA que ingresen al proyecto TAD DOOH.
+750: 
+751: ### 6.1 Asignación de Puertos (Local Dev)
+752: 
+753: El entorno local se orquesta principalmente mediante el script `run_all_local.ps1`, el cual levanta los diferentes microservicios en puertos específicos:
+754: 
+755: - **API Backend (NestJS):** `http://localhost:3000`
+756: - **Admin Portal (Next.js):** `http://localhost:3001`
+757: - **Advertiser Portal (Next.js):** `http://localhost:3002`
+758: - **Driver Portal / PWA (Next.js):** `http://localhost:3003`
+759: - **Simulator UI:** `http://localhost:3004`
+760: 
+761: > [!TIP]
+762: > Si experimentas problemas de puertos ocupados, revisa las variables de entorno inyectadas en `run_all_local.ps1` y asegúrate de que no haya instancias zombie de Node corriendo.
+763: 
+764: ### 6.2 Diferencias en Autenticación (Supabase vs Local)
+765: 
+766: El sistema utiliza **dos métodos de autenticación completamente separados** dependiendo del rol del usuario. Es crítico entender esta diferencia para depurar problemas de acceso:
+767: 
+768: 1. **Administradores y Anunciantes (Supabase + App Metadata):**
+769:    - Utilizan `Supabase Auth` para el inicio de sesión (`AuthService.login()`).
+770:    - El flujo es: Cliente -> Supabase -> Si es válido, Backend intercepta -> Busca en BD local (`user` o `advertiser`) -> Si existe, inyecta `role: ADMIN` o `role: ADVERTISER` en `app_metadata` de Supabase.
+771:    - *Problema común:* Si creas un admin manualmente en Prisma pero no en Supabase, el usuario no podrá iniciar sesión.
+772: 
+773: 2. **Conductores / Drivers (Local DB + bcrypt):**
+774:    - Utilizan un flujo 100% independiente de Supabase (`DriversService.login()`).
+775:    - El flujo es: Cliente -> Backend -> Busca en tabla `driver` por `phone` -> Compara hash de `password` usando `bcrypt` -> Firma y devuelve un JWT local.
+776:    - *Problema común:* Durante el seedeo de prueba (`seed-dev.js`), a veces los conductores se crean sin contraseña. Si `HasPass` es `false`, el conductor nunca podrá iniciar sesión.
+777: 
+778: ### 6.3 Credenciales por Defecto y Scripts de Ayuda
+779: 
+780: Para facilitar el desarrollo local, se han creado scripts en la raíz del proyecto para consultar y resetear accesos si las contraseñas se pierden.
+781: 
+782: **Credenciales Estándar de Pruebas:**
+783: - **Admin:** `admin@tadtaxi.do` | Pass: `TadAdmin2026!`
+784: - **Advertiser:** `marketing1@brand.do` | Pass: `Tad2026!`
+785: - **Driver:** Teléfono `8295550000` | Pass: `TadDriver2026!`
+786: 
+787: **Scripts Utilitarios (Ejecutar con `npx tsx <script>`):**
+788: - `list-users.ts`: Escanea la base de datos y lista los emails/teléfonos de todos los usuarios registrados y si tienen password configurada.
+789: - `set-all-pass.ts`: Fuerza el reseteo de la contraseña del Admin principal y un Advertiser a las credenciales estándar de arriba.
+790: - `set-driver-pass.ts`: Asigna explícitamente la contraseña `TadDriver2026!` al conductor con el teléfono `8295550000`.
+791: 
+792: ---
+793: 
+794: > **TAD Dominicana, S.R.L.** — *Plataforma v10.5.1 (BI, Simulation Engine & Agent Onboarding Enhanced)*  
+795: > *Documento actualizado el 22 de Abril, 2026*

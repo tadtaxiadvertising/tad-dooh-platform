@@ -3,88 +3,87 @@ import Head from 'next/head';
 import { Header } from '../../components/dashboard/Header';
 import { EarningsCard } from '../../components/dashboard/EarningsCard';
 import { QuickActions } from '../../components/dashboard/QuickActions';
-import { BottomNavigation } from '../../components/dashboard/BottomNavigation';
 import { KillSwitchOverlay } from '../../components/dashboard/KillSwitchOverlay';
-import { motion } from 'framer-motion';
 
 export default function DriverDashboard() {
   const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline' | 'syncing'>('online');
   const [isSuspended, setIsSuspended] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
+  const [batchCount, setBatchCount] = useState(0);
 
-  // Simulación de estados para demostración
+  // Simulación de telemetría y red
   useEffect(() => {
-    // Simular sincronización cada 30 segundos
-    const syncInterval = setInterval(() => {
-      setConnectionStatus('syncing');
-      setTimeout(() => setConnectionStatus('online'), 2000);
-    }, 30000);
+    const interval = setInterval(() => {
+      setBatchCount(prev => {
+        if (prev >= 9) {
+          setConnectionStatus('syncing');
+          setTimeout(() => {
+            setConnectionStatus(window.navigator.onLine ? 'online' : 'offline');
+          }, 1500);
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 5000);
 
-    // Escuchar cambios de red reales
     const handleOnline = () => setConnectionStatus('online');
     const handleOffline = () => setConnectionStatus('offline');
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     return () => {
-      clearInterval(syncInterval);
+      clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white pb-32 pt-20">
+    <div className="min-h-screen bg-black text-white p-4 pt-18 pb-8 font-sans">
       <Head>
-        <title>Dashboard | TAD Driver</title>
+        <title>TAD Driver | Monitor</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
       </Head>
 
-      <Header connectionStatus={connectionStatus} />
+      <Header connectionStatus={connectionStatus} batchCount={batchCount} />
       
-      <main className="px-5 space-y-8 max-w-lg mx-auto">
-        {/* Sección de Bienvenida */}
+      <main className="max-w-md mx-auto space-y-6">
+        {/* Banner de Estado de Servicio */}
+        <div className="bg-green-950/30 border border-green-500/50 p-3 flex items-center justify-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">
+            Servicio Activo: Publicidad en Curso
+          </span>
+        </div>
+
+        {/* Ledger Financiero (Primer Tercio) */}
         <section>
-          <h2 className="text-neutral-500 font-bold text-xs uppercase tracking-widest mb-1">
-            Hola, Arismendy
-          </h2>
-          <h1 className="text-3xl font-bold tracking-tight">Tu Resumen de Hoy</h1>
+          <EarningsCard currentBalance={4500} maxLimit={7500} />
         </section>
 
-        {/* Tarjeta Principal de Ganancias */}
-        <EarningsCard currentBalance={4500} maxLimit={7500} />
-
-        {/* Acciones Rápidas */}
+        {/* Acciones de Bloque (Segundo Tercio) */}
         <section>
-          <h3 className="text-neutral-400 font-bold text-sm mb-4">Servicios y Soporte</h3>
+          <h3 className="text-neutral-600 font-black text-[10px] uppercase tracking-[0.2em] mb-3 ml-1">
+            Operaciones Tácticas
+          </h3>
           <QuickActions />
         </section>
 
-        {/* Estado del Servicio / Telemetría */}
-        <motion.section 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-5 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-between"
-        >
-          <div>
-            <p className="text-neutral-500 text-xs font-bold uppercase tracking-wider mb-1">GPS & Telemetría</p>
-            <p className="text-sm font-medium text-white/80">1,240 coordenadas enviadas hoy</p>
-          </div>
-          <div className="w-2 h-2 bg-[#FFD400] rounded-full animate-pulse shadow-[0_0_8px_#FFD400]" />
-        </motion.section>
-
-        {/* Botón de Test para Kill-Switch */}
-        <button 
-          onClick={() => setIsSuspended(true)}
-          className="w-full py-2 text-neutral-600 text-[10px] uppercase font-bold hover:text-red-500/50 transition-colors"
-        >
-          Simular Suspensión de Cuenta (402)
-        </button>
+        {/* Footer Informativo */}
+        <footer className="pt-8 text-center">
+          <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
+            TAD DOOH Platform v11.0.0
+          </p>
+          <button 
+            onClick={() => setIsSuspended(true)}
+            className="mt-4 text-neutral-800 text-[9px] uppercase font-bold border border-neutral-900 px-3 py-1 hover:text-red-900"
+          >
+            Debug: Forzar Bloqueo 402
+          </button>
+        </footer>
       </main>
 
-      <BottomNavigation activeTab={activeTab} />
-
-      {/* Pantalla de Bloqueo por Falta de Pago */}
+      {/* Pantalla de Lockdown */}
       <KillSwitchOverlay isVisible={isSuspended} />
-    </div>
+    </div >
   );
 }

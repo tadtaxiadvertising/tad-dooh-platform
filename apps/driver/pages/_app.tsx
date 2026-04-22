@@ -1,9 +1,5 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
 import { AuthProvider } from '@tad/ui';
 import { Layout } from '@tad/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,7 +34,7 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
   useAntigravity();
 
   const content = (
-    <div className={`${inter.variable} font-sans`}>
+    <div className="font-sans antialiased">
       <Component {...pageProps} />
     </div>
   );

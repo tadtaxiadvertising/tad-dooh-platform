@@ -11,7 +11,6 @@ COPY package.json ./
 
 # Copiar configuración de workspaces
 COPY packages ./packages
-COPY libs ./libs
 COPY apps/advertiser ./apps/advertiser
 
 # Instalar TODO (para resolver dependencias como @tad/services)

@@ -15,7 +15,6 @@ WORKDIR /app
 COPY package.json ./
 COPY package-lock.json ./
 COPY packages ./packages
-COPY libs ./libs
 COPY apps/tad-simulator ./apps/tad-simulator
 COPY apps/api/prisma ./prisma-schema
 

@@ -5,6 +5,16 @@
 
 ---
 
+## [v12.0.0] - 2026-04-23
+
+### Financial, Telemetry & Referral (TAD-DRIVER V12)
+
+- **Financial Logic**: Implemented the V12 compensation formula ($Earnings = \min(Ads, 15) \times 500 + CPA \times 500$). Added atomic transaction support for withdrawals.
+- **Telemetry System**: Created `useBackgroundTelemetry` hook with 5-minute debounce and background sync to minimize battery drain. Implemented batch sync in the API.
+- **Referral System**: Automated unique referral code generation and QR-code payload for advertiser recruitment.
+- **Banking (Offline-First)**: New 5-step bank account registration with `localStorage` persistence and auto-retry on reconnection.
+- **Database**: Updated schema with `ActiveAd`, `Commission`, and `Telemetry` models. Added `walletBalance`, `referralCode`, and `bankAccount` to the `Driver` model.
+
 ## [v10.0.0] - 2026-04-11
 
 ### Microservices Stabilization & Fleet Realtime Sync

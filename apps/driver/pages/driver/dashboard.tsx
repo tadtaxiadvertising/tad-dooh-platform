@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
+import { Phone } from 'lucide-react';
 
 // ─── Sub-componentes inline (sin librerías de UI externas) ────────────────────
 
@@ -12,11 +13,11 @@ function PulseDot({ color }: { color: string }) {
   return (
     <span className="relative inline-flex h-2 w-2">
       <span
-        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
         style={{ backgroundColor: color }}
       />
       <span
-        className="relative inline-flex rounded-full h-2 w-2"
+        className="relative inline-flex rounded-full h-2 w-2 shadow-[0_0_8px_rgba(255,212,0,0.5)]"
         style={{ backgroundColor: color }}
       />
     </span>
@@ -40,92 +41,70 @@ function StatusBar({
   let batchColor: string;
 
   if (isOffline) {
-    batchLabel = `OFFLINE · Guardado local (${offlineCount}/${500})`;
-    batchColor = '#71717a'; // zinc-500
+    batchLabel = `MODO LOCAL · ${offlineCount} pts`;
+    batchColor = '#ef4444'; // red-500 for attention
   } else if (isSyncing) {
     batchLabel = `SINCRONIZANDO...`;
     batchColor = '#FFD400';
   } else {
-    batchLabel = `LOTE GPS: ${batchCount}/10`;
+    batchLabel = `BATCH GPS: ${batchCount}/10`;
     batchColor = '#FFD400';
   }
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-40 h-14 bg-[#0a0a0a] border-b border-neutral-800 flex items-center justify-between px-4"
+      className="fixed top-0 left-0 right-0 z-40 h-16 bg-black/60 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-6"
       role="banner"
     >
       {/* GPS Status */}
-      <div className="flex items-center gap-2" aria-label="Estado GPS">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={isOffline ? '#52525b' : '#FFD400'}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-        </svg>
+      <div className="flex items-center gap-2.5" aria-label="Estado GPS">
+        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isOffline ? '#ef4444' : '#FFD400'}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+        </div>
         <span
-          className="text-[10px] font-black uppercase tracking-tighter"
-          style={{ color: isOffline ? '#52525b' : '#FFD400' }}
+          className="text-[10px] font-black uppercase tracking-[0.2em]"
+          style={{ color: isOffline ? '#ef4444' : '#FFD400' }}
         >
-          GPS
+          {isOffline ? 'Offline' : 'Tracking'}
         </span>
       </div>
 
       {/* Batch Monitor (centro) */}
       <div
-        className="flex items-center gap-2 px-3 py-1 border"
-        style={{
-          borderColor: isOffline ? '#3f3f46' : '#FFD400',
-          backgroundColor: isOffline ? '#18181b' : 'transparent',
-        }}
+        className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md"
         aria-live="polite"
         aria-label="Estado del lote de telemetría"
       >
         {isSyncing && <PulseDot color="#FFD400" />}
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={batchColor}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <ellipse cx="12" cy="5" rx="9" ry="3" />
-          <path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
-          <path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6" />
-        </svg>
-        <span className="text-[10px] font-black tracking-tight" style={{ color: batchColor }}>
+        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: batchColor }}>
           {batchLabel}
         </span>
       </div>
 
       {/* Red Status */}
-      <div aria-label={`Red: ${connectionStatus}`}>
+      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
         {isOffline ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="1" y1="1" x2="23" y2="23" />
             <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
             <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
-            <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
-            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
-            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-            <circle cx="12" cy="20" r="1" fill="currentColor" />
           </svg>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
             <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
             <circle cx="12" cy="20" r="1" fill="currentColor" />
           </svg>
@@ -237,19 +216,23 @@ function ActionButton({
     <button
       id={id}
       onClick={onClick}
-      className="flex flex-col items-center justify-center min-h-[110px] bg-neutral-900 border-b-4 border-neutral-800
-                 active:border-b-0 active:translate-y-[3px] active:bg-neutral-800
-                 transition-transform duration-75 p-4 cursor-pointer select-none"
+      className="flex flex-col items-center justify-center min-h-[120px] bg-white/[0.03] border border-white/5 rounded-3xl
+                 hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.96] active:bg-white/[0.1]
+                 transition-all duration-200 p-5 group relative overflow-hidden"
       aria-label={label}
     >
-      <span style={{ color }} aria-hidden="true">
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }}
+      />
+      <span className="relative z-10 transition-transform duration-300 group-hover:-translate-y-1" style={{ color }} aria-hidden="true">
         {icon}
       </span>
-      <span className="text-white text-xs font-black uppercase tracking-tighter mt-2">
+      <span className="text-white text-[11px] font-black uppercase tracking-tight mt-3 relative z-10">
         {label}
       </span>
       {sublabel && (
-        <span className="text-neutral-500 text-[9px] uppercase tracking-wider mt-0.5">
+        <span className="text-neutral-500 text-[9px] uppercase tracking-[0.1em] mt-1 relative z-10 font-bold">
           {sublabel}
         </span>
       )}
@@ -273,85 +256,79 @@ function LockdownScreen({ message }: { message: string | null }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col p-8 overflow-y-auto animate-in fade-in duration-700"
       role="alertdialog"
       aria-modal="true"
-      aria-labelledby="lockdown-title"
-      aria-describedby="lockdown-desc"
     >
-      <div className="flex flex-col items-center mt-12 mb-10">
-        {/* Shield Icon */}
-        <svg
-          width="80"
-          height="80"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mb-6"
-          aria-hidden="true"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
+      <div className="flex-1 flex flex-col items-center justify-center max-w-sm mx-auto text-center">
+        {/* Animated Shield */}
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-red-500/20 blur-[50px] rounded-full animate-pulse" />
+          <div className="relative w-24 h-24 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-center justify-center shadow-2xl">
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+        </div>
 
         <h1
-          id="lockdown-title"
-          className="text-white font-black tracking-tighter text-center leading-none mb-4"
-          style={{ fontSize: 'clamp(2rem, 8vw, 3rem)' }}
+          className="text-white font-black tracking-tighter uppercase leading-tight mb-4"
+          style={{ fontSize: 'clamp(2rem, 10vw, 2.75rem)' }}
         >
-          CUOTA NO PAGADA
+          Servicio<br />
+          <span className="text-red-500">Bloqueado</span>
         </h1>
 
-        <p
-          id="lockdown-desc"
-          className="text-neutral-400 text-center font-bold text-base leading-snug max-w-xs"
-        >
-          Tu cuenta ha sido suspendida. Regulariza tu pago de{' '}
-          <strong className="text-white">RD$6,000</strong> para reanudar el servicio y tus ganancias.
+        <p className="text-neutral-400 font-bold text-lg leading-snug mb-2">
+          Tu cuenta tiene un pago pendiente de
         </p>
+        <div className="inline-block px-6 py-3 bg-white/5 border border-white/10 rounded-2xl mb-8">
+          <span className="text-white text-3xl font-black tabular-nums">RD$6,000</span>
+          <span className="text-neutral-500 text-xs font-bold block mt-1 uppercase tracking-widest">Cuota Anual (Hardware)</span>
+        </div>
 
         {message && (
-          <p className="text-neutral-600 text-xs text-center mt-3 font-mono border border-neutral-800 px-3 py-1">
-            {message}
-          </p>
+          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-xl mb-10 w-full">
+            <p className="text-red-400 text-[10px] font-mono uppercase tracking-wider leading-relaxed">
+              {message}
+            </p>
+          </div>
         )}
+
+        <div className="w-full space-y-4">
+          <button
+            onClick={handleWhatsApp}
+            className="w-full h-20 bg-tad-yellow hover:bg-white text-black font-black text-lg uppercase tracking-tighter rounded-3xl transition-all shadow-2xl shadow-tad-yellow/10 flex items-center justify-center gap-3 active:scale-95"
+          >
+            <span>Pagar vía WhatsApp</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+          </button>
+
+          <button
+            onClick={handleCall}
+            className="w-full h-16 bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest rounded-2xl transition-all border border-white/10 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Phone className="w-5 h-5" />
+            <span>Llamar a Soporte</span>
+          </button>
+        </div>
       </div>
-
-      <div className="space-y-3 mt-auto mb-8 w-full max-w-sm mx-auto">
-        <button
-          id="lockdown-whatsapp-btn"
-          onClick={handleWhatsApp}
-          className="w-full flex items-center justify-center gap-3 h-20 font-black text-xl uppercase tracking-tighter
-                     bg-[#FFD400] text-black active:bg-[#e6bf00] transition-colors"
-          aria-label="Pagar via WhatsApp"
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
-          Pagar vía WhatsApp
-        </button>
-
-        <button
-          id="lockdown-call-btn"
-          onClick={handleCall}
-          className="w-full flex items-center justify-center gap-3 h-20 font-black text-xl uppercase tracking-tighter
-                     bg-white text-black active:bg-neutral-200 transition-colors"
-          aria-label="Llamar a soporte técnico"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 011 1.22 2 2 0 013 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
-          </svg>
-          Llamar a Soporte
-        </button>
-
-        <p className="text-neutral-700 text-[10px] text-center font-bold uppercase tracking-widest pt-2">
-          Tus datos acumulados están a salvo localmente
-        </p>
-      </div>
+      
+      <p className="mt-8 text-neutral-600 text-[10px] text-center font-bold uppercase tracking-[0.3em]">
+        Tus datos se guardan localmente
+      </p>
     </div>
   );
 }

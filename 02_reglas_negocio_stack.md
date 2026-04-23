@@ -1,7 +1,7 @@
 # 🔐 02 — REGLAS DE NEGOCIO, STACK TÉCNICO Y CREDENCIALES
 
 > **Propósito**: Referencia rápida de credenciales, URLs, stack y las reglas que el agente debe respetar.
-> **Última Actualización**: 2026-04-11T22:45:00-04:00
+> **Última Actualización**: 2026-04-23T07:00:00-04:00
 
 ---
 
@@ -37,7 +37,7 @@ Todas las variables de entorno están centralizadas en EasyPanel bajo el esquema
 
 ---
 
-## 🏗️ STACK TÉCNICO v10.0.0
+## 🏗️ STACK TÉCNICO v12.0.0
 
 ### Microservicios (Dockerized on EasyPanel)
 
@@ -83,13 +83,14 @@ npx prisma db push
 ## 📍 REGLAS DE NEGOCIO (Core Principles)
 
 1. **Offline-First Delivery**: El TAD Player debe ser capaz de reproducir contenido durante 48 horas sin internet. El token de sesión (`JWT`) expira transcurrido ese tiempo forzando un re-sync.
-2. **Batching de Telemetría**: El Mobile Gateway (Smartphone del chofer) acumula coordenadas y las envía en bloques (10 puntos o 60 segundos) para optimizar la carga del API Gateway.
+2. **Batching de Telemetría (V12)**: El Mobile Gateway acumula coordenadas y las envía en bloques masivos. El hook `useBackgroundTelemetry` aplica un debounce de 5 min para ahorro de batería.
 3. **Kill-Switch Suscripción**: Los dispositivos sin pago activo (`subscriptionPaid: false`) reciben un comando de bloqueo inmediato que inhabilita el playback.
-4. **Validación de Inventario (Regla 15 Slots)**: Ninguna tablet puede tener más de 15 campañas activas simultáneamente para asegurar la equidad de impresiones.
-5. **Realtime Sync (Wake-up Call)**: El Admin puede forzar una sincronización inmediata emitiendo un comando vía Supabase Realtime a todo el canal `fleet_sync`.
-6. **Double-Entry Ledger**: Todas las impresiones publicitarias generan un débito al anunciante y un crédito (comisión) al conductor proporcional a la pauta validada por GPS.
-7. **Seguridad Bcrypt & JWT**: Rotación de tokens con verificación de identidad desde la API descentralizada.
-8. **Validación Multimedia**: El sistema solo acepta `video/mp4` con encoding compatible H.264 para asegurar el playback en hardware STI.
+4. **Validación de Inventario (Regla 15 Slots)**: Ninguna tablet puede tener más de 15 campañas activas simultáneamente.
+5. **Realtime Sync (Wake-up Call)**: Sincronización inmediata vía Supabase Realtime al canal `fleet_sync`.
+6. **Compensación V12**: $Earnings = (\min(Ads, 15) \times 500) + (CPA_{Sales} \times 500)$. RD$500 por slot publicitario y RD$500 por referido de anunciante.
+7. **Gestión Bancaria Offline-First**: Persistencia en `localStorage` con sincronización automática ante reconexión.
+8. **Validación Multimedia**: Solo `video/mp4` H.264, máximo 55 MB por archivo.
+9. **Referido Automatizado**: Cada conductor tiene un `referralCode` (UUID) para captación de leads mediante QR.
 
 ---
 

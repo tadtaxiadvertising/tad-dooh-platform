@@ -1,19 +1,19 @@
 # TAD DOOH Platform: Flujo Operativo Estándar (SOP)
 
-**Versión:** 2.0 (Auditoría v10.0.0 - SRE Microservices Approved)
-**Última Actualización:** 11 de Abril, 2026
+**Versión:** 12.0.0 (Financial & Telemetry V12)
+**Última Actualización:** 23 de Abril, 2026
 
-> ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. Cualquier flujo manual que escape a este diagrama de arquitectura se considerará una vulnerabilidad crítica. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable.
+> ⚠️ Creado bajo el escrutinio de resiliencia y monitoreo obsesivo. El ciclo de vida de un anuncio debe ser predecible, determinista y auditable. La versión 12 introduce el ecosistema financiero automatizado y telemetría de bajo impacto.
 
 ## 📍 CICLO DE VIDA DEL ANUNCIO Y OPERACIÓN DEL TAXI
 
-El ecosistema se abstrae en 5 fases de alta disponibilidad, desde que ingresamos un conductor al sistema hasta que se emite la factura del anunciante. Todo ocurre en red, excepto cuando ocurre lo inevitable en RD (túnel 27 de febrero = 100% *Packet Loss*).
+El ecosistema se abstrae en fases de alta disponibilidad, desde que ingresamos un conductor al sistema hasta que se emite la factura del anunciante y el pago al conductor.
 
 ---
 
 ### Fase 1 & 2: Registro Inicial y Emparejamiento de Hardware (Onboarding)
 
-El "Mobile Gateway" (celular del conductor con 4G) da vida a la tablet en el cabezal del asiento. La tablet es una tumba de hierro (`FullyKiosk`) aislada que depende del escaneo QR inicial para autenticarse.
+El "Mobile Gateway" (celular del conductor con 4G) da vida a la tablet en el cabezal del asiento. La tablet depende del escaneo QR inicial para autenticarse.
 
 ```mermaid
 sequenceDiagram
@@ -50,7 +50,7 @@ graph TD
     classDef red fill:#f96,stroke:#333,stroke-width:2px;
     classDef green fill:#9f9,stroke:#333,stroke-width:2px;
 
-    DM[Advertiser Dashboard v6] -->|Requiere Render| RM[TAD Remotion Service]
+    DM[Advertiser Dashboard] -->|Requiere Render| RM[TAD Remotion Service]
     RM -->|Genera MP4| S3[(Supabase Storage)]
     
     DM -->|Upload Directo| S3
@@ -66,64 +66,74 @@ graph TD
 
 ---
 
-### Fase 4: Operación en Calle (Resiliencia Extrema / Offline-First)
+### Fase 4: Operación en Calle (Offline-First / Telemetría V12)
 
-El conductor viaja y su celular manda coordenadas. Si pierde conexión, hacemos "Batching". El backend NUNCA se inunda con peticiones unitarias de 100 taxis (reducción de I/O de red del 98%).
+El conductor viaja y su celular manda coordenadas. Si pierde conexión, hacemos "Batching". El hook `useBackgroundTelemetry` aplica un debounce de 5 min para ahorro de batería.
 
 ```mermaid
 stateDiagram-v2
     [*] --> MonitorGPS: Celular inicia PWA en 4G
     
     state MonitorGPS {
-        ConexiónEstable --> AcumulaLocal: Buffer = 10 puntos (Batching)
-        AcumulaLocal --> EnvíaBackend: POST /fleet/track-batch
+        ConexiónEstable --> AcumulaLocal: Buffer = Points (Batching)
+        AcumulaLocal --> EnvíaBackend: POST /fleet/track-batch (Debounce 5min)
         EnvíaBackend --> ConexiónEstable: ACKs
     }
 
     state FalloDeRed {
-        RedCaida --> AcumulaLocalOffline: Buffer crece infinitamente en localStorage
+        RedCaida --> AcumulaLocalOffline: Buffer en localStorage
         AcumulaLocalOffline --> RecuperaSeñal: Detecta navigator.onLine == true
-        RecuperaSeñal --> EnvíaBackendMasivo: POST Payload Gigante
+        RecuperaSeñal --> EnvíaBackendMasivo: Sincronización Automática
     }
 
     MonitorGPS --> FalloDeRed: Túnel o Zona Muerta
     FalloDeRed --> MonitorGPS: Salida de Túnel
 ```
 
-**Si la Respuesta del Backend al Celular es `HTTP 402` (Mora de pago):**
-El celular (Gateway) ejecuta la directiva **Kill-Switch**: La PWA destruye su Worker GPS y la pantalla advierte al pasajero/taxista.
-
 ---
 
-### Fase 5: Cierre Financiero Implacable (Auditoría/Liquidación)
+### Fase 5: Cierre Financiero (Wallet V12)
 
-Para evitar fraudes o discrepancias de "anuncios emitidos", liquidamos la nómina basados en impresiones efectivas.
+Liquidamos la nómina basados en la presencia de anuncios activos y referidos.
 
-1. **El Motor:** La base de datos agrupa `AnalyticsEvent` (`playback_complete`).
-2. **Cáculo a Chofer:** `COUNT(campaign_id)` $\times$ `RD$500` (con techo máximo de 15 slots = RD$7,500).
-3. **Cálculo a Marca:** Subtotales $\times$ ITBIS 18% vía generador PDF.
+1. **Compensación por Anuncio:** `min(Active_Ads, 15) * RD$500`.
+2. **Compensación por Referido:** `RD$500` por cada anunciante cerrado.
+3. **ITBIS:** 18% aplicado automáticamente en facturación a marcas.
 
 ```mermaid
 sequenceDiagram
     participant TBL as Fleet Tablets
     participant BKN as Analytics Engine (NestJS)
     participant FIN as Modulo Finanzas
-    participant EXT as CSV/PDF Export
+    participant EXT as Wallet / Dashboard
 
-    TBL->>BKN: POST /analytics (Batch de 100+ repros)
-    BKN->>BKN: Filtra reproducciones nulas (duración < 5s)
+    TBL->>BKN: Heartbeat / GPS Pings
+    BKN->>BKN: Valida anuncios activos en dispositivo
     
     Note right of BKN: Al final de mes:
-    ADM->>FIN: Trigger "Liquidación Automática"
-    FIN->>BKN: Sumar plays per Campaign + Driver
-    BKN-->>FIN: Matriz de Pagos [Chofer X: RD$500]
-    FIN->>EXT: Emite Factura (Cliente) / Recibo Pago (Chofer)
+    ADM->>FIN: Trigger "Monthly Payroll Billing"
+    FIN->>BKN: Recolectar datos financieros (Ads + Referrals)
+    BKN-->>FIN: Matriz de Pagos [RD$500 x Ad]
+    FIN->>EXT: Actualiza Balance en Wallet del Driver
 ```
+
+---
+
+### Fase 6: Ciclo de Referidos (Growth)
+
+Cada conductor actúa como un nodo de venta mediante su código QR único.
+
+1. **Generación:** El Driver genera un QR de referido desde su portal.
+2. **Captación:** El potencial anunciante escanea el QR y se registra.
+3. **Atribución:** El sistema vincula al anunciante con el `referralCode` del conductor.
+4. **Pago:** Tras la primera campaña pagada del anunciante, el conductor recibe su bono en el Wallet.
 
 ---
 
 ## 🛠️ PARCHES DE SRE ESTABLECIDOS
 
-* [x] **Timeout Limits**: Las transferencias multimedia ahora expiran a los 300s en EasyPanel.
-* [x] **Batching GPS 10:1**: Prohibidas las llamadas HTTP individuales desde el celular.
-* [x] **CORS Asesino**: El Header `x-device-id` ha sido bluelisted globalmente para evitar caídas en el handshake entre la app móvil y el gateway de NestJS.
+* [x] **Kill-Switch 402**: Bloqueo automático ante falta de pago de suscripción anual.
+* [x] **Background Telemetry**: Debounce de 5 min para preservar batería de dispositivos móviles.
+* [x] **Bypass API (PostgREST)**: Telemetría enviada directamente a la base de datos para saltar límites de Vercel/NestJS.
+* [x] **CORS & handshake**: Estabilizado vía `x-device-id` bluelisting.
+el handshake entre la app móvil y el gateway de NestJS.

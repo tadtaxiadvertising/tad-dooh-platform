@@ -328,7 +328,7 @@ model Driver {
   taxiNumber          String?          @map("taxi_number")
   subscriptionPaid    Boolean          @default(false) @map("subscription_paid")
   subscriptionEnd     DateTime?        @map("subscription_end")
-  status              String           @default("ACTIVE")
+  status              SystemStatus     @default(PENDIENTE_PAGO)
   onboardingStatus    String           @default("PENDING_AGREEMENT") @map("onboarding_status")
   onboardedAt         DateTime         @default(now()) @map("onboarded_at")
   blockedAt           DateTime?        @map("blocked_at")
@@ -339,6 +339,9 @@ model Driver {
   level               String           @default("BASE")
   consecutiveMonthsUnderGoal Int       @default(0) @map("consecutive_months_under_goal")
   referredAdvertisers Advertiser[]     @relation("AdvertiserReferrals")
+  identidadVehicular  Json?            @map("identidad_vehicular")
+  hardwareConfig      Json?            @map("hardware_config")
+  wallet              Wallet?
 
   // LEGAL COMPLIANCE: Acceptance of agreements
   insuranceAccepted    Boolean   @default(false) @map("insurance_accepted")
@@ -360,7 +363,7 @@ model Driver {
   referralCode        String?        @unique @default(uuid()) @map("referral_code")
   bankAccount         Json?          @map("bank_account")
   commissions         Commission[]
-  telemetryLogs       Telemetry[]
+  telemetryLogs       Telemetry[]    @relation("DriverTelemetry")
   activeAds           ActiveAd[]
 
   @@index([status])
@@ -651,12 +654,29 @@ model Commission {
 model Telemetry {
   id              String         @id @default(uuid())
   driverId        String         @map("driver_id")
-  latitude        Float
-  longitude       Float
+  coords          Unsupported("geography(Point, 4326)")
   speed           Float
-  batteryLevel    Float?         @map("battery_level")
+  battery         Int            @default(100)
+  network         String         @default("4G")
   timestamp       DateTime       @default(now())
-  driver          Driver         @relation(fields: [driverId], references: [id])
+  driver          Driver         @relation("DriverTelemetry", fields: [driverId], references: [id])
 
   @@map("telemetry")
+}
+
+model Wallet {
+  id                String   @id @default(uuid())
+  driverId          String   @unique @map("driver_id")
+  availableBalance  Float    @default(0.0) @map("available_balance")
+  pendingWithdrawal Float    @default(0.0) @map("pending_withdrawal")
+  bankInfo          Json?    @map("bank_info")
+  driver            Driver   @relation(fields: [driverId], references: [id])
+  
+  @@map("wallets")
+}
+
+enum SystemStatus {
+  OPERATIVO
+  PENDIENTE_PAGO
+  BLOQUEADO
 }

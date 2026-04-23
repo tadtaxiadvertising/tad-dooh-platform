@@ -56,7 +56,20 @@ export class WalletService {
         data: { walletBalance: { decrement: amount } },
       });
 
-      return { success: true, newBalance: updatedDriver.walletBalance };
+      const transaction = await tx.financialTransaction.create({
+        data: {
+          type: 'WITHDRAWAL',
+          category: 'DRIVER_PAYOUT',
+          amount: amount,
+          netAmount: amount,
+          taxAmount: 0,
+          status: 'PENDING',
+          entityId: driverId,
+          reference: `WD-${driverId.substring(0, 8)}-${Date.now()}`
+        }
+      });
+
+      return { success: true, newBalance: updatedDriver.walletBalance, transactionId: transaction.id };
     });
   }
 

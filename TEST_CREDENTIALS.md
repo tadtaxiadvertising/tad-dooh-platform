@@ -288,24 +288,62 @@ console.log('Current session:', data.session);
 
 ---
 
+---
+
+## 🧪 Escenarios de Prueba V12 (Financial & Telemetry)
+
+### 1. Validación de Billetera (Wallet)
+
+- **Login:** `driver@tad.do`
+- **Acción:** Navegar a "Earnings" o "Billetera".
+- **Verificar:**
+  - El balance se calcula según la fórmula: `(Ads * 500) + (Referrals * 500)`.
+  - Los gráficos de ingresos muestran datos históricos.
+  - El botón "Solicitar Retiro" valida que el balance sea > 0.
+
+### 2. Telemetría y GPS
+
+- **Acción:** Iniciar sesión en la Driver App y permitir ubicación.
+- **Verificar:**
+  - Se activa el hook `useBackgroundTelemetry`.
+  - El sistema envía coordenadas en lotes cada 5 minutos (o ante evento manual).
+  - En el Admin Panel, el dispositivo cambia de `OFFLINE` a `ONLINE`.
+
+### 3. Sistema de Referidos (QR-to-Lead)
+
+- **Acción:** En la Driver App, generar el código QR de referido.
+- **Verificar:**
+  - El QR contiene la URL: `https://advertiser.tad.do/register?ref=[REFERRAL_CODE]`.
+  - Al escanear, el formulario de registro del anunciante auto-completa el ID del referido.
+  - Tras el registro exitoso, el balance del conductor aumenta en **RD$500**.
+
+### 4. Bloqueo por Morosidad (Kill-Switch)
+
+- **Acción:** Cambiar `subscriptionPaid` a `false` en la base de datos para un driver.
+- **Verificar:**
+  - Al recargar la app del conductor, se muestra la pantalla de "Payment Required" (Error 402).
+  - El player de video en la tablet se detiene y muestra el mensaje de bloqueo.
+
+---
+
 ## 🔒 Seguridad en Testing
 
 ⚠️ **IMPORTANTE:**
-- ✅ Estas son credenciales de **TESTING SOLAMENTE**
-- ✅ Nunca compartas en pública
-- ❌ No usar en producción
-- ❌ Las contraseñas son ficticias y no funcionan en producción
-- ✅ Cambia en producción a credenciales reales
+- ✅ Estas son credenciales de **TESTING SOLAMENTE**.
+- ✅ Nunca las compartas en repositorios públicos.
+- ❌ No las uses en el entorno de producción real.
+- ✅ Cambia las contraseñas inmediatamente al pasar a Staging/Producción.
 
 ---
 
 ## 📞 Referencias
 
-- [apps/admin/tests/e2e/helpers/auth.helper.ts](../apps/admin/tests/e2e/helpers/auth.helper.ts) - Funciones de login
-- [apps/api/seed_testing.js](../apps/api/seed_testing.js) - Datos de seed
-- [LOGGING_AND_PERFORMANCE.md](./LOGGING_AND_PERFORMANCE.md) - Sistema de logging mejorado
+- [apps/admin/tests/e2e/helpers/auth.helper.ts](../apps/admin/tests/e2e/helpers/auth.helper.ts)
+- [apps/api/seed_testing.js](../apps/api/seed_testing.js)
+- [TAD_MASTER_DOCUMENTATION.md](./TAD_MASTER_DOCUMENTATION.md)
 
 ---
 
-**Última actualización:** 22 de Abril, 2026  
-**Testing Environment:** Development (localhost:3000-3001)
+**Última actualización:** 23 de Abril, 2026  
+**Versión de Docs:** 12.0.0  
+**Testing Environment:** Development & Staging  

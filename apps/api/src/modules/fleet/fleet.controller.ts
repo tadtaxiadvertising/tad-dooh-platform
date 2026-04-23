@@ -94,6 +94,6 @@ export class FleetController {
   @Public()
   @Post('track-batch')
   async trackBatch(@Body() data: TrackBatchDto) {
-    return this.fleetService.processBatch(data);
+    return this.fleetService.ingestTelemetryBatch(data);
   }
 }

@@ -229,7 +229,7 @@ export default function FinancePage() {
         <SummaryCard 
           icon={<TrendingUp className="w-6 h-6" />} 
           label="Ingresos (Impactos)" 
-          value={`RD$ ${campaignData.reduce((s, c) => s + (c.estimatedRevenue || 0), 0).toLocaleString()}`} 
+          value={`RD$ ${summary?.campaignRevenue?.toLocaleString() || '0'}`} 
           sub="Facturación Publicitaria"
           color="emerald"
         />

@@ -572,14 +572,34 @@ export class FinanceService {
   async getFinancialSummary() {
     this.logger.log('Generating financial summary and projections');
 
-    // MRR Calculation: Number of active drivers * Subscription Base
+    // 1. MRR Calculation: Number of active drivers * Subscription Base
     const activeSubscribedDrivers = await this.prisma.driver.count({
       where: { status: 'ACTIVE', subscriptionPaid: true }
     });
 
     const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
 
-    // Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
+    // 2. Campaign Revenue Calculation (Projected)
+    const activeCampaigns = await this.prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      include: { media: true }
+    });
+
+    let campaignRevenue = 0;
+    activeCampaigns.forEach(campaign => {
+      let monthlyBase = 0;
+      campaign.media.forEach(m => {
+        const dur = m.durationSeconds || 30;
+        const blocks = Math.ceil(dur / 30);
+        monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+      });
+      
+      const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+      campaignRevenue += monthlyBase * diffMonths;
+    });
+
+    // 3. Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
     const monthStart = new Date();
     monthStart.setDate(1);
     
@@ -595,9 +615,10 @@ export class FinanceService {
 
     return {
       mrr,
+      campaignRevenue,
       burnRate,
       activeSubscribers: activeSubscribedDrivers,
-      netProjection: mrr - burnRate,
+      netProjection: mrr + campaignRevenue - burnRate,
       currency: 'DOP',
       timestamp: new Date()
     };

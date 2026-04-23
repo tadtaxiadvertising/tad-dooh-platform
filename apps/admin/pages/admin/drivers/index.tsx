@@ -47,6 +47,7 @@ export default function DriversPage() {
     cedula?: string;
     licensePlate?: string;
     referralBonus?: number;
+    subscriptionEnd?: string;
   }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -348,24 +349,38 @@ export default function DriversPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-8 py-6">
-                        {driver.subscriptionPaid ? (
-                          <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <div className="flex items-center gap-2 group/tip">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Suscripción Activa</span>
-                             </div>
-                             <p className="text-[10px] text-emerald-500/80 font-bold uppercase ml-6">Pagado (RD$6K)</p>
-                          </div>
-                        ) : (
-                          <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <div className="flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Suscripción Vencida</span>
-                             </div>
-                             <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">Acción Requerida</p>
-                          </div>
-                        )}
+                       <td className="px-8 py-6">
+                        {(() => {
+                          const isExpired = driver.subscriptionPaid && driver.subscriptionEnd && new Date(driver.subscriptionEnd) < new Date();
+                          const isNearExpiry = driver.subscriptionPaid && driver.subscriptionEnd && 
+                            (new Date(driver.subscriptionEnd).getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000); // 7 days
+
+                          if (driver.subscriptionPaid && !isExpired) {
+                            return (
+                              <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                                 <div className="flex items-center gap-2">
+                                    <CheckCircle2 className={clsx("w-4 h-4", isNearExpiry ? "text-amber-500 animate-pulse" : "text-emerald-500")} />
+                                    <span className={clsx("text-[10px] font-bold uppercase tracking-widest", isNearExpiry ? "text-amber-500" : "text-white")}>
+                                      {isNearExpiry ? 'Próximo a Vencer' : 'Suscripción Activa'}
+                                    </span>
+                                 </div>
+                                 <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">
+                                   Vence: {driver.subscriptionEnd ? new Date(driver.subscriptionEnd).toLocaleDateString('es-DO') : 'N/A'}
+                                 </p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                               <div className="flex items-center gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
+                                  <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Suscripción Vencida</span>
+                               </div>
+                               <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">Acción Requerida</p>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className={"flex flex-col items-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
@@ -400,6 +415,14 @@ export default function DriversPage() {
                               >
                                 <Navigation className="w-4 h-4" />
                               </Link>
+                              {driver.phone && (
+                                <WhatsAppButton 
+                                  phone={driver.phone} 
+                                  message={`Hola ${driver.fullName}, te contactamos de TAD Advertising para dar seguimiento a tu suscripción.`}
+                                  className="p-2.5 rounded-xl transition-all border border-emerald-400/20 bg-emerald-400/5 text-emerald-400 hover:bg-emerald-400 hover:text-white flex items-center justify-center shadow-sm"
+                                  title="Enviar WhatsApp"
+                                />
+                              )}
                             </>
                           )}
                            <AntigravityButton 

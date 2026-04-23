@@ -96,7 +96,7 @@ curl -X POST http://localhost:3000/api/auth/verify \
 
 ## 🐛 Debugging
 
-### Si el login falla:
+### Si el login falla
 
 ```bash
 # 1. Verificar que Supabase está funcionando
@@ -109,7 +109,7 @@ localStorage.clear()
 # Ver TEST_CREDENTIALS.md
 ```
 
-### Si hay splash screen:
+### Si hay splash screen
 
 ```bash
 # 1. Verificar que middleware está actualizado
@@ -123,7 +123,7 @@ localStorage.clear()
 Ctrl+Shift+Delete (Windows) o Cmd+Shift+Delete (Mac)
 ```
 
-### Si el logging no funciona:
+### Si el logging no funciona
 
 ```bash
 # 1. Verificar env variables
@@ -152,13 +152,14 @@ import { logger } from '@libs/logging/logger';
 5. Analytics registra impresión
 ```
 
-### Testing de Comisión
+### Testing de Finanzas V12
 
 ```
-1. Campaña genera $100 de ingresos
-2. Sistema calcula comisiones (10% para driver)
-3. Driver ve $10 en su wallet
-4. Pago se procesa (cuando se ejecuta batch)
+1. Admin asigna 3 campañas a un dispositivo.
+2. Sistema calcula balance: 3 campañas × RD$500 = RD$1,500.
+3. Driver ve RD$1,500 en su "Total Earnings".
+4. Driver refiere a un anunciante: +RD$500.
+5. Balance final: RD$2,000.
 ```
 
 ---
@@ -252,9 +253,9 @@ http://[TU_IP]:3001
 
 **Duración:** ~5 minutos
 
-1. Abrir http://localhost:3001
+1. Abrir <http://localhost:3001>
 2. Ver redirección inmediata (sin splash)
-3. Login con admin@tad.do
+3. Login con <admin@tad.do>
 4. Esperar 2 segundos
 5. Verificar "Welcome, Admin"
 6. Navegar a Campañas

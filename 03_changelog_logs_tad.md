@@ -1,11 +1,25 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-04-11
+> **Última Actualización**: 2026-04-23
 
 ---
 
 ## [v12.0.0] - 2026-04-23
+
+### 💎 ARCHITECTURE: Master Engineering Specification (EMS) V1.0
+
+- **Cambio**: Elevación del sistema a arquitectura de alta disponibilidad con PostGIS para telemetría.
+- **Finanzas**: Lógica de RD$500 por anuncio y RD$500 por venta blindada con transacciones atómicas.
+- **Integración**: Definido el "Mirror Mode" para que el Admin gestione el Driver Hub directamente.
+- **Infra**: Configuración de límites de recursos Docker para estabilidad en Easypanel.
+
+### 🛡️ SECURITY & ARCHITECTURE: Anti-Error Protocol (Zero-Trust)
+
+- **Cambio**: Integración de directivas estrictas de mitigación de errores para el Agente IA.
+- **Backend**: Obligatoriedad de transacciones atómicas (`$transaction`) e Idempotency Keys para evitar duplicación de pagos.
+- **Frontend**: Colas en IndexedDB para manejo offline y validación Zod para datos bancarios.
+- **Estandarización**: Tabla global de códigos de error para manejo uniforme en la UI.
 
 ### Financial, Telemetry & Referral (TAD-DRIVER V12)
 

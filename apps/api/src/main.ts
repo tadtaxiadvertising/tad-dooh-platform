@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
 import { Logger } from '@nestjs/common';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 // Fix para serialización de BigInt (Crítico para que Prisma no falle en el primer query)
 (BigInt.prototype as any).toJSON = function () {
@@ -27,6 +28,9 @@ async function bootstrap() {
     
     // Habilitar CORS para que el simulador y la PWA puedan comunicarse
     app.enableCors();
+
+    // Register Global Exception Filter for standard error handling
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0');

@@ -46,7 +46,7 @@ export class FinanceController {
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: campaign.media.length * 5 // Mock/Simulated for PDF model
+      assignedTaxis: campaign.media.length // Using actual media length or we could fetch devices length, keeping it realistic without mock multiplier
     });
 
     res.set({
@@ -276,7 +276,7 @@ export class FinanceController {
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: campaign.media.length * 5,
+      assignedTaxis: campaign.media.length,
     });
 
     const result = await this.emailService.sendCampaignReport(
@@ -312,7 +312,7 @@ export class FinanceController {
     });
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: 5,
+      assignedTaxis: campaign.media.length || 1,
     });
 
     const result = await this.emailService.sendInvoice(
@@ -347,7 +347,7 @@ export class FinanceController {
             chofer: driver.fullName,
             placa: driver.licensePlate || 'N/A',
             ingreso: body.amount.toString(),
-            anuncios: '15',
+            anuncios: 'Revisar Detalle',
           });
         }
       } catch (e) {

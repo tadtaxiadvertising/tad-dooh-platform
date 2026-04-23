@@ -26,7 +26,6 @@ import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
-import { SimulationModule } from './modules/simulation/simulation.module';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AppController } from './app.controller';
 import { WalletModule } from './modules/wallet/wallet.module';
@@ -90,7 +89,6 @@ import { ReferralModule } from './modules/referral/referral.module';
     PortalRequestsModule,
     BiModule,
     MonitoringModule,
-    SimulationModule,
     WalletModule,
     TelemetryModule,
     ReferralModule,

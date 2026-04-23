@@ -24,24 +24,6 @@ export default function InvestorDashboard() {
     fetchMetrics();
   }, []);
 
-  // Simulator Logic
-  const SIMULATOR_VPS_FIXED = 5000;
-  const SIMULATOR_BANDWIDTH_PER_TAXI = 200; // RD$200/month in Data
-  const BASE_REV_PER_TAXI = metrics?.monthlyRevPerTaxi ? parseFloat(metrics.monthlyRevPerTaxi) : 15000;
-  const BASE_OPEX_PER_TAXI = metrics?.monthlyOpexPerTaxi ? parseFloat(metrics.monthlyOpexPerTaxi) : 5000;
-
-  const simRevenue = simulatorTaxis * BASE_REV_PER_TAXI;
-  const simOpex = (simulatorTaxis * BASE_OPEX_PER_TAXI) + SIMULATOR_VPS_FIXED + (simulatorTaxis * SIMULATOR_BANDWIDTH_PER_TAXI);
-  const simEbitda = simRevenue - simOpex;
-
-  const chartData = [
-    { month: 'Mes 1', revenue: (simulatorTaxis * BASE_REV_PER_TAXI) * 0.2, opex: simOpex },
-    { month: 'Mes 3', revenue: (simulatorTaxis * BASE_REV_PER_TAXI) * 0.5, opex: simOpex },
-    { month: 'Mes 6', revenue: (simulatorTaxis * BASE_REV_PER_TAXI) * 0.8, opex: simOpex },
-    { month: 'Mes 12', revenue: simRevenue, opex: simOpex },
-    { month: 'Mes 24', revenue: simRevenue * 1.2, opex: simOpex * 1.05 },
-  ];
-
   if (loading) return <div className="text-white p-8">Cargando métricas...</div>;
 
   return (
@@ -72,61 +54,15 @@ export default function InvestorDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        <div className="lg:col-span-2 bg-[#141414] border border-zinc-800 p-6 shadow-2xl relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400] opacity-5 blur-3xl rounded-full"></div>
-          <h2 className="text-xl font-bold mb-2 uppercase tracking-widest">Proyección de Escalabilidad</h2>
-          <p className="text-zinc-500 text-sm mb-6 max-w-lg">
-            Simulador de rentabilidad ajustado a costos fijos (VPS, Banda Ancha Supabase) y crecimiento exponencial.
+        <div className="lg:col-span-2 bg-[#141414] border border-zinc-800 p-8 shadow-2xl relative flex flex-col justify-center items-center text-center">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD400] opacity-5 blur-[100px] rounded-full"></div>
+          <div className="w-20 h-20 bg-zinc-900 rounded-2xl flex items-center justify-center border border-zinc-800 mb-6">
+            <Activity className="text-[#FFD400] w-10 h-10 animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4 uppercase tracking-tighter text-white">Análisis de Flota en Producción</h2>
+          <p className="text-zinc-500 text-sm max-w-md leading-relaxed">
+            El sistema está operando exclusivamente con datos de campo verificados. Las proyecciones simuladas han sido retiradas para priorizar la fidelidad financiera en tiempo real.
           </p>
-
-          <div className="mb-8">
-            <label className="block text-sm text-[#FFD400] font-bold mb-2">FLOTA ACTIVA: {simulatorTaxis} TAXIS</label>
-            <input 
-              type="range" 
-              min="10" 
-              max="2000" 
-              value={simulatorTaxis} 
-              onChange={(e) => setSimulatorTaxis(parseInt(e.target.value))}
-              className="w-full accent-[#FFD400] bg-zinc-800 h-2 rounded-lg appearance-none cursor-pointer"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mb-8 text-center divide-x divide-zinc-800">
-            <div>
-              <p className="text-zinc-500 text-xs">Revenue Estimado</p>
-              <p className="text-xl font-bold text-green-400">RD$ {(simRevenue/1000).toFixed(1)}k</p>
-            </div>
-            <div>
-              <p className="text-zinc-500 text-xs">OPEX + Fijos</p>
-              <p className="text-xl font-bold text-red-400">RD$ {(simOpex/1000).toFixed(1)}k</p>
-            </div>
-            <div>
-              <p className="text-zinc-500 text-xs">EBITDA Proyectado</p>
-              <p className="text-xl font-bold text-[#FFD400]">RD$ {(simEbitda/1000).toFixed(1)}k</p>
-            </div>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFD400" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#FFD400" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="month" stroke="#666" tick={{fill: '#666', fontSize: 12}} />
-                <YAxis stroke="#666" tick={{fill: '#666', fontSize: 12}} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#000', borderColor: '#333', color: '#fff' }}
-                  itemStyle={{ color: '#FFD400' }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#FFD400" fillOpacity={1} fill="url(#colorRev)" />
-                <Area type="monotone" dataKey="opex" stroke="#EF4444" fillOpacity={0.1} fill="#EF4444" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
         </div>
 
         <div className="bg-[#141414] border border-zinc-800 p-6">

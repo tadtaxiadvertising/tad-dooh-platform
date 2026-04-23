@@ -115,7 +115,10 @@ export function useTelemetry(): UseTelemetryReturn {
     setConnectionStatus('syncing');
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || '/backend-api';
+      const apiBase = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? 'http://localhost:3000/api'
+          : '/api/proxy';
       
       // Obtener IDs para el DTO
       const userRaw = localStorage.getItem('tad_driver_user');

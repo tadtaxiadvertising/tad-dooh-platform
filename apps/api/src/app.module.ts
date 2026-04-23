@@ -29,6 +29,9 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { SimulationModule } from './modules/simulation/simulation.module';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AppController } from './app.controller';
+import { WalletModule } from './modules/wallet/wallet.module';
+import { TelemetryModule } from './modules/telemetry/telemetry.module';
+import { ReferralModule } from './modules/referral/referral.module';
 
 @Module({
   imports: [
@@ -88,6 +91,9 @@ import { AppController } from './app.controller';
     BiModule,
     MonitoringModule,
     SimulationModule,
+    WalletModule,
+    TelemetryModule,
+    ReferralModule,
   ],
   controllers: [AppController],
   providers: [

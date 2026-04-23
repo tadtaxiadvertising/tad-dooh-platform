@@ -37,24 +37,42 @@ export default function DriverOnboarding() {
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!fullName || !phone || !cedula || !taxiPlate || !password) {
+      setError('Todos los campos son obligatorios');
+      return;
+    }
+
     if (!agreements.contract || !agreements.hardware_liability) {
       setError('Debes aceptar ambos acuerdos para continuar');
       return;
     }
+    
     if (password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+
     setLoading(true);
     try {
-      await api.post('/drivers', {
-        fullName, phone, cedula, taxiPlate, password,
+      const res = await api.post('/drivers', {
+        fullName,
+        phone,
+        cedula,
+        taxiPlate,
+        password,
         contractAccepted: true,
-        agreementVersion: '2.0'
+        agreementVersion: '2.0 (HaaS)',
+        subscriptionPaid: false
       });
-      nextStep(); // Go to success step
+
+      if (res.status === 201 || res.status === 200) {
+        // Success: Wait 1s for the premium feel
+        setTimeout(() => setStep(4), 1000);
+      }
     } catch (err: any) {
-      setError(err?.response?.data?.message || err.message || 'Error al registrar');
+      const msg = err.response?.data?.message || err.message || 'Error al registrar';
+      setError(Array.isArray(msg) ? msg[0] : msg);
     } finally {
       setLoading(false);
     }

@@ -29,10 +29,9 @@ class Logger {
 
   constructor(defaultLevel?: LogLevel) {
     this.logLevel = defaultLevel || (
-      typeof window !== 'undefined' && 
-      process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug' 
-        ? LogLevel.DEBUG 
-        : LogLevel.INFO
+      process.env.NODE_ENV === 'production'
+        ? (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel || LogLevel.WARN)
+        : (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug' ? LogLevel.DEBUG : LogLevel.INFO)
     );
     
     this.persistToLocalStorage = 

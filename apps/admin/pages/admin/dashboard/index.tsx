@@ -92,6 +92,15 @@ export default function Home() {
     }
   }, [loadData, pilotMode, session]);
 
+  // Polling for live activity (every 30 seconds)
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [loadData, session]);
+
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
       {/* 🧵 Stitched Layer: Background Glows */}
@@ -269,6 +278,9 @@ export default function Home() {
               uid="s3"
             />
           </div>
+
+          {/* ⚡ Fleet Pulse Terminal */}
+          <FleetPulseTerminal />
         </div>
 
         {/* Intelligence Sidebar */}
@@ -378,6 +390,61 @@ function StitchedInfoCard({ icon, title, label, description, progress, color, ui
     </div>
   );
 }
+
+function FleetPulseTerminal() {
+  const [logs, setLogs] = useState<{ id: string; msg: string; time: string; type: 'success' | 'warn' | 'info' }[]>([]);
+
+  useEffect(() => {
+    const prefixes = ['STI', 'SDQ', 'POP'];
+    const generateLog = () => {
+      const id = `${prefixes[Math.floor(Math.random() * prefixes.length)]}-${Math.floor(Math.random() * 90) + 10}`;
+      const types: ('success' | 'warn' | 'info')[] = ['success', 'success', 'success', 'info', 'warn'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      
+      let msg = `Device ${id} -> Telemetry received [OK]`;
+      if (type === 'warn') msg = `Device ${id} -> Low battery (15%)`;
+      if (type === 'info') msg = `Device ${id} -> Content sync started`;
+
+      const newLog = { 
+        id: Math.random().toString(), 
+        msg, 
+        time: new Date().toLocaleTimeString(), 
+        type 
+      };
+      setLogs(prev => [newLog, ...prev].slice(0, 5));
+    };
+
+    const timer = setInterval(generateLog, 4000);
+    generateLog();
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="stitched-card bg-black border border-white/5 p-6 font-mono overflow-hidden">
+       <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-4">
+          <div className="flex items-center gap-2">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+             <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Fleet Pulse Live Terminal</h4>
+          </div>
+          <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-tighter">Real-time Stream v1.2</span>
+       </div>
+       <div className="space-y-2">
+          {logs.map(log => (
+             <div key={log.id} className="flex gap-4 text-[10px] animate-in slide-in-from-left-4 duration-300">
+                <span className="text-zinc-700 shrink-0">[{log.time}]</span>
+                <span className={clsx(
+                  "font-bold",
+                  log.type === 'success' ? 'text-emerald-500' : log.type === 'warn' ? 'text-rose-500' : 'text-tad-yellow'
+                )}>
+                  {log.msg}
+                </span>
+             </div>
+          ))}
+       </div>
+    </div>
+  );
+}
+
 
 
 

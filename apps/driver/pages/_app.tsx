@@ -1,10 +1,9 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AuthProvider } from '@tad/ui';
-import { Layout } from '@tad/ui';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { PaymentLockOverlay } from '@tad/ui';
 import { useAntigravity } from '@tad/ui';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
@@ -49,9 +48,7 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
 
   return (
     <AuthProvider>
-      <Layout>
-        {content}
-      </Layout>
+      {content}
     </AuthProvider>
   );
 }
@@ -72,7 +69,6 @@ export default function App(props: AppProps) {
     <QueryClientProvider client={queryClient}>
       <AppWrapper {...props} queryClient={queryClient} />
       <Toaster richColors position="top-right" theme="dark" />
-      <PaymentLockOverlay />
     </QueryClientProvider>
   );
 }

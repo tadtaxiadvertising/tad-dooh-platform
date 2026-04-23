@@ -739,9 +739,7 @@ export default function RealtimeDashboard() {
         api.get('/monitoring/fleet-status'),
         api.get('/monitoring/campaigns-status'),
       ]);
-      // Filtramos exclusivamente los 10 taxis del piloto STI
-      // Mostrar todos los dispositivos retornados por el backend (incluyendo el SIMULADOR)
-      // La segmentación en la UI se encargará de filtrarlos.
+      // Actualizar dispositivos y campañas desde el backend
       setDevices(devRes.data || []);
       setCampaigns(campRes.data || []);
       setLastUpdate(new Date());

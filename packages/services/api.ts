@@ -336,7 +336,6 @@ export const unlinkDeviceFromDriver = (driverId: string) => api.post(`/drivers/$
 // Finance
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
-export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
 // URLs de export (Legacy, deprecating soon for authenticated methods below)
 const getProxyBase = () => typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api/proxy' : 'http://localhost:3000/api';
 export const getPayrollExportUrl = (month?: string) => `${getProxyBase()}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;

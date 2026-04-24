@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   password_hash TEXT NOT NULL,
   subscription_paid BOOLEAN DEFAULT FALSE,
   subscription_end TIMESTAMPTZ,
-  status TEXT DEFAULT 'PENDING_PAYMENT' CHECK (status IN ('ACTIVE', 'PENDING_PAYMENT', 'SUSPENDED', 'OFFLINE')),
+  status TEXT DEFAULT 'PENDIENTE_PAGO' CHECK (status IN ('OPERATIVO', 'PENDIENTE_PAGO', 'BLOQUEADO', 'OFFLINE')),
   onboarding_status TEXT DEFAULT 'TOS_PENDING',
   referral_code TEXT UNIQUE DEFAULT uuid_generate_v4()::text,
   referred_by UUID REFERENCES public.drivers(id),
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.devices (
   device_id TEXT UNIQUE NOT NULL,
   driver_id UUID REFERENCES public.drivers(id) ON DELETE SET NULL,
   taxi_number TEXT,
-  status TEXT DEFAULT 'PENDING' CHECK (status IN ('ACTIVE', 'INACTIVE', 'OFFLINE', 'PENDING')),
+  status TEXT DEFAULT 'PENDIENTE_PAGO' CHECK (status IN ('OPERATIVO', 'BLOQUEADO', 'OFFLINE', 'PENDIENTE_PAGO')),
   connectivity_status TEXT DEFAULT 'ONLINE',
   last_seen TIMESTAMPTZ,
   battery_level INTEGER DEFAULT 100,
@@ -59,6 +59,18 @@ CREATE TABLE IF NOT EXISTS public.devices (
   last_lng FLOAT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Telemetría (PostGIS habilitado)
+CREATE TABLE IF NOT EXISTS public.telemetry (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID REFERENCES public.drivers(id) ON DELETE CASCADE,
+  coords GEOGRAPHY(POINT, 4326) NOT NULL,
+  speed FLOAT DEFAULT 0,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(driver_id, timestamp) -- Evita duplicados exactos por reintentos
+);
+CREATE INDEX IF NOT EXISTS telemetry_coords_idx ON public.telemetry USING GIST (coords);
+CREATE INDEX IF NOT EXISTS telemetry_driver_ts_idx ON public.telemetry (driver_id, timestamp DESC);
 
 -- Campañas
 CREATE TABLE IF NOT EXISTS public.campaigns (
@@ -89,66 +101,191 @@ CREATE TABLE IF NOT EXISTS public.financial_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   type TEXT CHECK (type IN ('INCOMING', 'OUTGOING')),
   category TEXT CHECK (category IN ('SUSCRIPCION', 'AD_REVENUE', 'OPEX_COMMISSION', 'OPEX_DRIVER_PAYOUT')),
+  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED')),
   amount DECIMAL(12,2) NOT NULL,
   tax_amount DECIMAL(12,2) DEFAULT 0.00,
-  entity_id UUID NOT NULL,
+  net_amount DECIMAL(12,2) NOT NULL,
+  entity_id UUID NOT NULL REFERENCES public.profiles(id),
   note TEXT,
   reference_code TEXT UNIQUE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. FUNCIONES Y TRIGGERS (Automatización Financiera V12)
+-- 3. FUNCIONES Y TRIGGERS (Automatización Financiera V12 - Ledger Based)
 
-CREATE OR REPLACE FUNCTION public.calculate_driver_wallet_balance()
+/**
+ * Actualiza el balance del wallet del conductor basado en transacciones completadas.
+ * Garantiza que el balance sea la suma de su historial, no un conteo volátil.
+ */
+CREATE OR REPLACE FUNCTION public.handle_wallet_transaction()
 RETURNS TRIGGER AS $$
-DECLARE
-    ads_count INTEGER;
-    referrals_count INTEGER;
-    total_balance DECIMAL;
-    target_driver_id UUID;
 BEGIN
-    IF TG_TABLE_NAME = 'active_ads' THEN
-        IF TG_OP = 'DELETE' THEN target_driver_id := OLD.driver_id;
-        ELSE target_driver_id := NEW.driver_id;
+    -- Solo procesar si la transacción se marca como COMPLETED
+    IF (NEW.status = 'COMPLETED' AND (OLD.status IS NULL OR OLD.status <> 'COMPLETED')) THEN
+        IF NEW.type = 'INCOMING' THEN
+            UPDATE public.drivers 
+            SET wallet_balance = wallet_balance + NEW.net_amount,
+                updated_at = NOW()
+            WHERE id = NEW.entity_id;
+        ELSIF NEW.type = 'OUTGOING' THEN
+            UPDATE public.drivers 
+            SET wallet_balance = wallet_balance - NEW.amount,
+                updated_at = NOW()
+            WHERE id = NEW.entity_id;
         END IF;
-    ELSIF TG_TABLE_NAME = 'drivers' THEN
-        target_driver_id := NEW.referred_by;
     END IF;
-
-    IF target_driver_id IS NULL THEN RETURN NEW; END IF;
-
-    SELECT COUNT(*) INTO ads_count FROM public.active_ads WHERE driver_id = target_driver_id AND status = 'ACTIVE';
-    IF ads_count > 15 THEN ads_count := 15; END IF;
-
-    SELECT COUNT(*) INTO referrals_count FROM public.drivers WHERE referred_by = target_driver_id AND status = 'ACTIVE';
-
-    total_balance := (ads_count * 500) + (referrals_count * 500);
-    
-    UPDATE public.drivers SET wallet_balance = total_balance, updated_at = NOW() WHERE id = target_driver_id;
-
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Limpiar triggers antiguos para evitar duplicados
-DROP TRIGGER IF EXISTS trigger_update_wallet_on_ads ON public.active_ads;
-CREATE TRIGGER trigger_update_wallet_on_ads
-AFTER INSERT OR UPDATE OR DELETE ON public.active_ads
-FOR EACH ROW EXECUTE FUNCTION public.calculate_driver_wallet_balance();
+/**
+ * Sincroniza el estado de la suscripción del conductor cuando paga.
+ */
+CREATE OR REPLACE FUNCTION public.sync_subscription_on_payment()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (NEW.category = 'SUSCRIPCION' AND NEW.status = 'COMPLETED') THEN
+        UPDATE public.drivers 
+        SET subscription_paid = true,
+            subscription_end = NOW() + INTERVAL '1 year',
+            status = 'OPERATIVO',
+            updated_at = NOW()
+        WHERE id = NEW.entity_id;
+        
+        -- También activar dispositivos asociados
+        UPDATE public.devices
+        SET status = 'OPERATIVO'
+        WHERE driver_id = NEW.entity_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trigger_update_wallet_on_referrals ON public.drivers;
-CREATE TRIGGER trigger_update_wallet_on_referrals
-AFTER INSERT OR UPDATE OR DELETE ON public.drivers
-FOR EACH ROW EXECUTE FUNCTION public.calculate_driver_wallet_balance();
+-- Triggers para transacciones
+DROP TRIGGER IF EXISTS tr_wallet_update ON public.financial_transactions;
+CREATE TRIGGER tr_wallet_update
+AFTER INSERT OR UPDATE ON public.financial_transactions
+FOR EACH ROW EXECUTE FUNCTION public.handle_wallet_transaction();
 
--- 4. RLS
+DROP TRIGGER IF EXISTS tr_sync_subscription ON public.financial_transactions;
+CREATE TRIGGER tr_sync_subscription
+AFTER INSERT OR UPDATE ON public.financial_transactions
+FOR EACH ROW EXECUTE FUNCTION public.sync_subscription_on_payment();
+
+-- 4. RLS — SHELTER C-A2: Políticas de Aislamiento de Tenant
+-- ============================================================
+-- NOTA: El backend NestJS usa SUPABASE_SERVICE_ROLE_KEY que bypasea RLS.
+-- Estas políticas protegen acceso DIRECTO vía Supabase Client (frontends).
+-- ============================================================
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.financial_transactions ENABLE ROW LEVEL SECURITY;
 
+-- ── PROFILES ───────────────────────────────────────────────────
+-- Cada usuario solo ve su propio perfil
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+CREATE POLICY "profiles_select_own" ON public.profiles
+  FOR SELECT USING (
+    auth.uid() = id
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+CREATE POLICY "profiles_update_own" ON public.profiles
+  FOR UPDATE USING (
+    auth.uid() = id
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- ── DRIVERS ────────────────────────────────────────────────────
+-- Conductores solo ven su propio registro; ADMIN ve todos
+DROP POLICY IF EXISTS "drivers_select_own" ON public.drivers;
+CREATE POLICY "drivers_select_own" ON public.drivers
+  FOR SELECT USING (
+    auth.uid() = id
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "drivers_update_own" ON public.drivers;
+CREATE POLICY "drivers_update_own" ON public.drivers
+  FOR UPDATE USING (
+    auth.uid() = id
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- Permitir INSERT para el registro público (signup)
+DROP POLICY IF EXISTS "drivers_insert_public" ON public.drivers;
+CREATE POLICY "drivers_insert_public" ON public.drivers
+  FOR INSERT WITH CHECK (true);
+
+-- ── DEVICES ────────────────────────────────────────────────────
+-- Solo el conductor dueño o un ADMIN puede ver/modificar dispositivos
+DROP POLICY IF EXISTS "devices_select_own" ON public.devices;
+CREATE POLICY "devices_select_own" ON public.devices
+  FOR SELECT USING (
+    driver_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "devices_update_own" ON public.devices;
+CREATE POLICY "devices_update_own" ON public.devices
+  FOR UPDATE USING (
+    driver_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- ── CAMPAIGNS ──────────────────────────────────────────────────
+-- Anunciantes solo ven sus propias campañas
+DROP POLICY IF EXISTS "campaigns_select_own" ON public.campaigns;
+CREATE POLICY "campaigns_select_own" ON public.campaigns
+  FOR SELECT USING (
+    advertiser_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "campaigns_insert_own" ON public.campaigns;
+CREATE POLICY "campaigns_insert_own" ON public.campaigns
+  FOR INSERT WITH CHECK (
+    advertiser_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "campaigns_update_own" ON public.campaigns;
+CREATE POLICY "campaigns_update_own" ON public.campaigns
+  FOR UPDATE USING (
+    advertiser_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+DROP POLICY IF EXISTS "campaigns_delete_own" ON public.campaigns;
+CREATE POLICY "campaigns_delete_own" ON public.campaigns
+  FOR DELETE USING (
+    advertiser_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- ── FINANCIAL TRANSACTIONS ─────────────────────────────────────
+-- Solo el dueño de la transacción o un ADMIN puede verla
+DROP POLICY IF EXISTS "financial_tx_select_own" ON public.financial_transactions;
+CREATE POLICY "financial_tx_select_own" ON public.financial_transactions
+  FOR SELECT USING (
+    entity_id = auth.uid()
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- Solo ADMIN puede insertar transacciones (via backend service_role)
+DROP POLICY IF EXISTS "financial_tx_insert_admin" ON public.financial_transactions;
+CREATE POLICY "financial_tx_insert_admin" ON public.financial_transactions
+  FOR INSERT WITH CHECK (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
 -- 5. SEED (ON CONFLICT DO NOTHING)
 INSERT INTO public.profiles (email, role, full_name) 
 VALUES ('admin@tadtaxi.do', 'ADMIN', 'TAD Super Admin')
 ON CONFLICT (email) DO NOTHING;
+

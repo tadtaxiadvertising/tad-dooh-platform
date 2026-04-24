@@ -4,9 +4,10 @@ import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/decorators/roles.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { TenantGuard } from '../auth/guards/tenant.guard';
 
 @Controller('drivers')
-@Roles(UserRole.ADMIN)
 export class DriversController {
   private readonly logger = new Logger(DriversController.name);
   constructor(private readonly driversService: DriversService) {}
@@ -15,6 +16,7 @@ export class DriversController {
    * GET /api/drivers — Listar todos los choferes
    */
   @Get()
+  @Roles(UserRole.ADMIN)
   async findAll() {
     return this.driversService.findAll();
   }
@@ -23,6 +25,7 @@ export class DriversController {
    * GET /api/drivers/stats — Estadísticas de la red
    */
   @Get('stats')
+  @Roles(UserRole.ADMIN)
   async getStats() {
     return this.driversService.getStats();
   }
@@ -31,6 +34,8 @@ export class DriversController {
    * GET /api/drivers/:id — Detalle de un chofer
    */
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
   async findOne(@Param('id') id: string) {
     const driver = await this.driversService.findOne(id);
     if (!driver) throw new BadRequestException('Chofer no encontrado');
@@ -41,6 +46,7 @@ export class DriversController {
    * POST /api/drivers — Registrar un nuevo chofer
    */
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
   async create(@Body() body: {
     fullName: string;
@@ -82,6 +88,7 @@ export class DriversController {
    * POST /api/drivers/login — Iniciar sesión chofer
    */
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   async login(@Body() body: { phone: string; password?: string }) {
     if (!body.phone || !body.password) {
@@ -94,6 +101,8 @@ export class DriversController {
    * GET /api/drivers/:id/earnings — Cálculo de ganancias mensuales
    */
   @Get(':id/earnings')
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
   async getEarnings(@Param('id') id: string) {
     return this.driversService.calculateMonthlyEarnings(id);
   }
@@ -102,6 +111,7 @@ export class DriversController {
    * PUT /api/drivers/:id/subscription — Actualizar estado de suscripción
    */
   @Put(':id/subscription')
+  @Roles(UserRole.ADMIN)
   async updateSubscription(
     @Param('id') id: string,
     @Body() body: { paid: boolean; endDate?: string }
@@ -117,6 +127,8 @@ export class DriversController {
    * POST /api/drivers/:id/accept-agreement — Firma Electrónica
    */
   @Post(':id/accept-agreement')
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
   async acceptAgreement(
     @Param('id') id: string,
     @Body() body: { version: string },
@@ -139,6 +151,7 @@ export class DriversController {
    * POST /api/drivers/:id/assign-device — Asignar pantalla al chofer
    */
   @Post(':id/assign-device')
+  @Roles(UserRole.ADMIN)
   async assignDevice(
     @Param('id') id: string,
     @Body() body: { deviceId: string }
@@ -151,6 +164,7 @@ export class DriversController {
    * POST /api/drivers/:id/unlink-device — Desvincular pantalla
    */
   @Post(':id/unlink-device')
+  @Roles(UserRole.ADMIN)
   async unlinkDevice(@Param('id') id: string) {
     return this.driversService.unlinkDevice(id);
   }
@@ -160,6 +174,7 @@ export class DriversController {
    * Usado por la PWA/FullyKiosk para saber si debe bloquear la pantalla.
    */
   @Get('tablet/:tabletId/access')
+  @Public()
   async checkTabletAccess(@Param('tabletId') tabletId: string) {
     return this.driversService.checkTabletAccess(tabletId);
   }
@@ -181,7 +196,15 @@ export class DriversController {
    */
   @Public() // El portal del chofer usa solo el ID del hardware para autenticarse
   @Get('tablet/:tabletId/hub')
-  async getDriverHub(@Param('tabletId') tabletId: string) {
+  async getDriverHub(
+    @Param('tabletId') tabletId: string,
+    @Headers('x-tablet-key') tabletKey: string
+  ) {
+    const validKey = process.env.TABLET_HUB_KEY;
+    if (!validKey || tabletKey !== validKey) {
+      this.logger.warn(`🛑 [SECURITY] Intento de acceso a HUB sin TABLET_KEY válida. Tablet: ${tabletId}`);
+      throw new ForbiddenException('Invalid tablet authentication');
+    }
     try {
       return await this.driversService.getDriverHubData(tabletId);
     } catch (e) {
@@ -194,6 +217,7 @@ export class DriversController {
    * Double-gated to prevent accidental or unauthorized DB wipes.
    */
   @Post('purge-all')
+  @Roles(UserRole.ADMIN)
   async purgeAll(@Headers('x-admin-secret') secret: string, @Req() req: any) {
     const adminSecret = process.env.ADMIN_SECRET;
     if (!adminSecret || secret !== adminSecret) {
@@ -209,6 +233,7 @@ export class DriversController {
    * DELETE /api/drivers/:id — Eliminar un chofer
    */
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   async remove(@Param('id') id: string) {
     return this.driversService.remove(id);
   }

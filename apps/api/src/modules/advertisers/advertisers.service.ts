@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
@@ -25,7 +26,10 @@ export class AdvertisersService {
   // FIX B-1: Añadir NestJS Logger en lugar de console.*
   private readonly logger = new Logger(AdvertisersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService
+  ) {}
 
   async findAll() {
     return this.prisma.advertiser.findMany({
@@ -293,8 +297,8 @@ export class AdvertisersService {
       app_metadata: { role: 'ADVERTISER', entityId: user.id },
     };
 
-    // FIX C-1: NO usar fallback hardcodeado
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    // FIX C-1: NO usar fallback hardcodeado. Sincronizado con SupabaseAuthGuard.
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       this.logger.error('🚨 [ADVERTISER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
       throw new Error('Error de configuración del servidor.');

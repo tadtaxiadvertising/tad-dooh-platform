@@ -1,7 +1,11 @@
 // apps/driver/public/service-worker.js
-// VERSIÓN: v11 — Actualizar este string para forzar la re-instalación del SW
-const CACHE_NAME = 'tad-driver-v11';
+// VERSIÓN: v12-shelter — Cache LRU + Tamaño limitado
+const CACHE_NAME = 'tad-driver-v12';
 const OFFLINE_URL = '/driver/dashboard';
+
+// SHELTER C-D1: Límites de caché para prevenir memory leaks en FullyKiosk
+const MAX_CACHE_ITEMS = 50;          // Máximo 50 entradas en caché
+const MAX_CACHEABLE_SIZE = 512000;   // 500KB — no cachear archivos mayores
 
 // Archivos pre-cacheados en la instalación
 const PRE_CACHE_URLS = [
@@ -35,6 +39,21 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+/**
+ * SHELTER C-D1: Trim LRU — elimina las entradas más antiguas cuando se excede el límite.
+ * CacheStorage no tiene orden de inserción, así que eliminamos las primeras keys (FIFO).
+ */
+async function trimCache(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxItems) {
+    const excess = keys.length - maxItems;
+    for (let i = 0; i < excess; i++) {
+      await cache.delete(keys[i]);
+    }
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -48,10 +67,40 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((networkResponse) => {
-        // Guardar respuesta exitosa en cache
-        if (networkResponse.ok && request.method === 'GET') {
-          const cloned = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+        // SHELTER C-D1: Solo cachear respuestas GET exitosas Y menores a 500KB
+        if (
+          networkResponse.ok &&
+          request.method === 'GET' &&
+          networkResponse.headers.has('content-length')
+        ) {
+          const size = parseInt(networkResponse.headers.get('content-length') || '0', 10);
+          if (size <= MAX_CACHEABLE_SIZE) {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, cloned);
+              // Trim después de cada inserción
+              trimCache(CACHE_NAME, MAX_CACHE_ITEMS);
+            });
+          }
+        } else if (
+          networkResponse.ok &&
+          request.method === 'GET' &&
+          !networkResponse.headers.has('content-length')
+        ) {
+          // Si no hay content-length, cachear solo si es HTML/CSS/JS (no media)
+          const contentType = networkResponse.headers.get('content-type') || '';
+          if (
+            contentType.includes('text/html') ||
+            contentType.includes('text/css') ||
+            contentType.includes('application/javascript') ||
+            contentType.includes('application/json')
+          ) {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, cloned);
+              trimCache(CACHE_NAME, MAX_CACHE_ITEMS);
+            });
+          }
         }
         return networkResponse;
       })

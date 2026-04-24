@@ -29,7 +29,9 @@ export class TelemetryService {
       ]);
 
       await this.prisma.$executeRawUnsafe(
-        `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp) VALUES ${values}`,
+        `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp) 
+         VALUES ${values}
+         ON CONFLICT (driver_id, timestamp) DO NOTHING`,
         ...params
       );
     } catch (err) {

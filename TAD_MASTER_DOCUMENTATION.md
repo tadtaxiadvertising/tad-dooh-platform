@@ -1,7 +1,7 @@
 # 📘 TAD DOOH — Documentación Maestra
 
 **Versión:** 12.0.0 (Financial, Telemetry & Referral V12)  
-**Última Actualización:** 23 de Abril, 2026 (07:00 PM)  
+**Última Actualización:** 24 de Abril, 2026 (02:50 PM)  
 **Propietario:** TAD Dominicana, S.R.L.  
 **Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
 
@@ -255,7 +255,12 @@ El panel administrativo utiliza una estética **"High-Security Industrial Termin
 - Capas de desenfoque profundo (`backdrop-blur-xl`).
 - Animaciones de pulso para estados críticos.
 - Acceso restringido estrictamente a roles `ADMIN`.
-- Soporte de recuperación de cuenta orientado a soporte interno.
+
+### Optimizaciones de Carga (SRE Performance)
+
+- **Bypass de Splash Screen**: Se eliminó el "Loading Splash" mediante redirecciones en el lado del servidor (`middleware.ts`). El acceso al dashboard es instantáneo.
+- **Logging Centralizado**: Implementado en `libs/logging/logger.ts`. Permite debugging en producción mediante `logger.getLogs()` desde la consola del navegador.
+- **Zero-Flicker Routing**: El uso de `router.replace` con shallow routing en el cliente minimiza las re-renderizaciones innecesarias.
 
 ## 2.1 Gestión de Inventario de Hardware
 

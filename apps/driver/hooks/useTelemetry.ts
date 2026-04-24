@@ -158,27 +158,53 @@ export function useTelemetry(): UseTelemetryReturn {
       writeBatch([]);
       setBatchCount(0);
 
-      // Intentar también vaciar la cola offline acumulada
+      // SHELTER C-D2: Drip Sync — vaciar cola offline en chunks con jitter
+      // Previene saturación del backend cuando 50+ tablets reconectan a la vez
       const offlineQueue = readOfflineQueue();
       if (offlineQueue.length > 0) {
-        const retryRes = await fetch(`${apiBase}/fleet/track-batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            driverId,
-            deviceId,
-            points: offlineQueue.map(c => ({
-              lat: c.lat,
-              lng: c.lng,
-              speed: 0,
-              timestamp: c.ts
-            }))
-          }),
-          signal: AbortSignal.timeout(15_000),
-        });
-        if (retryRes.ok) {
+        const DRIP_CHUNK_SIZE = 50;
+        let allSynced = true;
+
+        for (let i = 0; i < offlineQueue.length; i += DRIP_CHUNK_SIZE) {
+          const chunk = offlineQueue.slice(i, i + DRIP_CHUNK_SIZE);
+
+          // Jitter aleatorio 0-5s entre chunks para evitar thundering herd
+          if (i > 0) {
+            await new Promise(r => setTimeout(r, Math.random() * 5000));
+          }
+
+          try {
+            const retryRes = await fetch(`${apiBase}/fleet/track-batch`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                driverId,
+                deviceId,
+                points: chunk.map(c => ({
+                  lat: c.lat,
+                  lng: c.lng,
+                  speed: 0,
+                  timestamp: c.ts
+                }))
+              }),
+              signal: AbortSignal.timeout(10_000),
+            });
+            if (!retryRes.ok) {
+              allSynced = false;
+              break; // Backend con problemas, parar el drain
+            }
+          } catch {
+            allSynced = false;
+            break; // Sin red de nuevo, abortar
+          }
+        }
+
+        if (allSynced) {
           clearOfflineQueue();
           setOfflineCount(0);
+        } else {
+          // Mantener los chunks no enviados
+          setOfflineCount(readOfflineQueue().length);
         }
       }
 

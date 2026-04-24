@@ -207,10 +207,12 @@ export const getFleetLocations = (advertiserId?: string) =>
 // BI & Reconciliation
 export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
 export const getFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
+export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
 export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
 export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
 export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
 export const getHotspots = () => api.get('/bi/hotspots').then(res => res.data);
+export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
 
 // Referrals
 export const getReferralStats = () => api.get('/referral/stats').then(res => res.data);
@@ -497,13 +499,7 @@ export const emailDriverPaymentConfirm = (data: {
   driverId?: string;
 }) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
-// Business Intelligence (BI)
-export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
-export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
-export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
-export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
-export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
-export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
+
 
 export default api;
 

@@ -48,7 +48,7 @@ export class CampaignService {
     } else {
       let devicesToSync = [];
       if (campaign.targetAll || campaign.isGlobal) {
-        devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } }));
+        devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } }));
       } else {
         // Broadcast to both v1 and v2 assignments
         const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
@@ -317,7 +317,7 @@ export class CampaignService {
     // Create FORCE_SYNC commands for assigned devices
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true } }));
+      devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
       devicesToSync = assignments.map(a => ({ id: a.device_id }));
@@ -337,7 +337,7 @@ export class CampaignService {
       // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
       // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
       const allActiveDevices = await this.prisma.device.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true }
       });
       if (allActiveDevices.length > 0) {
@@ -553,7 +553,7 @@ export class CampaignService {
 
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } });
+      devicesToSync = await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } });
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({ 
         where: { campaign_id: campaignId },
@@ -593,7 +593,7 @@ export class CampaignService {
     const devices = await this.prisma.device.findMany({
       where: {
         city: campaignCity === 'Global' ? undefined : campaignCity,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         connectivityStatus: 'ONLINE',
       },
       include: {
@@ -618,7 +618,7 @@ export class CampaignService {
       [BUSINESS_RULES.LEVELS.BASE.label]: BUSINESS_RULES.LEVELS.BASE.priority,
     };
 
-    availableDevices.sort((a, b) => {
+    availableDevices.sort((a: any, b: any) => {
       const priorityA = priorityMap[a.driver?.level || 'BASE'] || 0;
       const priorityB = priorityMap[b.driver?.level || 'BASE'] || 0;
       return priorityB - priorityA; // Descendente
@@ -644,7 +644,7 @@ export class CampaignService {
     const onlineScreensCount = await this.prisma.device.count({
       where: {
         city: city === 'Global' ? undefined : city,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         connectivityStatus: 'ONLINE',
       },
     });

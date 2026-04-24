@@ -18,7 +18,7 @@ export class PayrollAuditService {
     this.logger.log('Iniciando auditoría mensual de nómina y penalizaciones...');
     
     const drivers = await this.prisma.driver.findMany({
-      where: { status: 'ACTIVE' }
+      where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE }
     });
 
     for (const driver of drivers) {

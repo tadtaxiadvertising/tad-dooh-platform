@@ -16,9 +16,16 @@ export class TelemetryService {
       timestamp: item.timestamp ? new Date(item.timestamp) : new Date(),
     }));
 
-    await this.prisma.telemetry.createMany({
-      data: telemetryData,
-      skipDuplicates: true,
-    });
+    for (const item of telemetryData) {
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp) 
+           VALUES (gen_random_uuid(), $1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5)`,
+          item.driverId, item.longitude, item.latitude, item.speed, item.timestamp
+        );
+      } catch (err) {
+        console.error('Failed to sync telemetry point', err);
+      }
+    }
   }
 }

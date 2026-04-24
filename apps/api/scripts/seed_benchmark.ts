@@ -37,7 +37,7 @@ async function main() {
         taxiPlate: taxiPlate,
         subscriptionPaid: true,
         subscriptionEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year from now
-        status: 'ACTIVE',
+        status: 'OPERATIVO',
       }
     });
     
@@ -51,7 +51,7 @@ async function main() {
       const device = await prisma.device.create({
         data: {
           deviceId: deviceId,
-          status: 'ACTIVE',
+          status: 'OPERATIVO',
           lastSeen: new Date(),
           isOnline: true,
           batteryLevel: 100,

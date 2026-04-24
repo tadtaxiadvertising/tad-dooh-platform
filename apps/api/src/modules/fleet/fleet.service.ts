@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from '../device/device.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { TrackBatchDto } from './dto/track-batch.dto';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class FleetService {
@@ -59,7 +60,7 @@ export class FleetService {
         ...d,
         id: d.id,
         device_id: d.deviceId,
-        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
+        status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
         last_seen: d.lastSeen,
         battery_level: d.batteryLevel,
         player_status: d.playerStatus,
@@ -332,14 +333,14 @@ export class FleetService {
         where: { deviceId },
         data: {
           taxiNumber: placa,
-          status: 'ACTIVE',
+          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
           driver: existingDevice.driver 
             ? {
                 update: {
                   fullName: nombreChofer,
                   licensePlate: placa,
                   taxiNumber: placa,
-                  status: 'ACTIVE'
+                  status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                 }
               }
             : {
@@ -351,7 +352,7 @@ export class FleetService {
                     phone: phone,
                     licensePlate: placa,
                     taxiNumber: placa,
-                    status: 'ACTIVE'
+                    status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                   }
                 }
               }
@@ -365,7 +366,7 @@ export class FleetService {
       const device = await this.prisma.device.create({
         data: {
           deviceId,
-          status: 'ACTIVE',
+          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
           taxiNumber: placa,
           driver: {
             connect: { id: existingDriver.id }
@@ -375,7 +376,7 @@ export class FleetService {
       // Actualizar datos del driver vinculado
       await this.prisma.driver.update({
         where: { id: existingDriver.id },
-        data: { fullName: nombreChofer, status: 'ACTIVE' }
+        data: { fullName: nombreChofer, status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE }
       });
       return { success: true, device_id: device.deviceId, driver_name: nombreChofer, linked_driver: true };
     }
@@ -384,7 +385,7 @@ export class FleetService {
     const device = await this.prisma.device.create({
       data: {
         deviceId,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         taxiNumber: placa,
         appVersion: '3.0.0',
         lastSeen: new Date(),
@@ -394,7 +395,7 @@ export class FleetService {
             phone: phone,
             licensePlate: placa,
             taxiNumber: placa,
-            status: 'ACTIVE'
+            status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
           }
         }
       }
@@ -628,7 +629,7 @@ export class FleetService {
 
     // 2. Registrar en DeviceCommand para dispositivos offline/desconectados
     const activeDevices = await this.prisma.device.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true }
     });
 
@@ -698,7 +699,7 @@ export class FleetService {
     }
 
     // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
-    if (driver.status !== 'ACTIVE' || !driver.subscriptionPaid) {
+    if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
       logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
       throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);
     }

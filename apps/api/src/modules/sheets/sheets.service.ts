@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -329,7 +330,7 @@ export class SheetsService implements OnModuleInit {
       _sum: { amount: true }
     });
 
-    const devicesActivos = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    const devicesActivos = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
     const COSTO_HARDWARE_UNITARIO = 1500; // Depreciacion Fija por Tablet
     const costoHardware = devicesActivos * COSTO_HARDWARE_UNITARIO;
 

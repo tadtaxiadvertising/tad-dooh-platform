@@ -1,6 +1,7 @@
 import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Controller('devices')
 export class DeviceAdminController {
@@ -107,7 +108,7 @@ export class DeviceAdminController {
         deviceId: data.deviceId,
         taxiNumber: data.taxiNumber,
         city: data.city || 'Santo Domingo',
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
       }
     });
   }
@@ -123,7 +124,7 @@ export class DeviceAdminController {
       data: {
         taxiNumber: data.taxiNumber,
         city: data.city,
-        status: data.status,
+        status: data.status as any,
         ...(data.driverId !== undefined && { driverId: data.driverId }),
       },
       include: { driver: true }
@@ -252,7 +253,7 @@ export class DeviceAdminController {
     // Update Device
     const updateData: any = {};
     if (data.taxi_number !== undefined) updateData.taxiNumber = data.taxi_number;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.status !== undefined) updateData.status = data.status as any;
 
     // Update Driver if exists
     if (device.driver) {

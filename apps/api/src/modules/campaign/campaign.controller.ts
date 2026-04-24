@@ -276,7 +276,7 @@ export class CampaignController {
     // If global → return ALL active devices
     if (campaign.targetAll || campaign.isGlobal) {
       const allDevices = await this.prisma.device.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         orderBy: { lastSeen: 'desc' }
       });
 
@@ -472,7 +472,7 @@ export class CampaignController {
       
       let devicesToSync = [];
       if (campaign.targetAll || campaign.isGlobal) {
-        devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true } }));
+        devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
       } else {
         const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
         devicesToSync = assignments.map(a => ({ id: a.device_id }));

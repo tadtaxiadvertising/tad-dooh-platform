@@ -88,7 +88,7 @@ export class FinanceService {
 
     const delinquentDrivers = await this.prisma.driver.findMany({
       where: {
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE,
         subscriptionPaid: false,
         subscriptionEnd: { lt: targetDate } // Past due
       },
@@ -102,7 +102,7 @@ export class FinanceService {
 
     this.logger.warn(`🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`);
 
-    await throttledMap(delinquentDrivers, async (driver) => {
+    await throttledMap(delinquentDrivers as any[], async (driver) => {
       for (const device of driver.devices) {
         await this.notifyMorosidad(device.deviceId).catch(err => 
           this.logger.error(`Error notifying morosidad for ${device.deviceId}: ${err.message}`)
@@ -134,6 +134,7 @@ export class FinanceService {
         subscriptionEnd: true,
         devices: {
           select: {
+            deviceId: true,
             city: true,
             taxiNumber: true,
             campaigns: {
@@ -574,7 +575,7 @@ export class FinanceService {
 
     // 1. MRR Calculation: Number of active drivers * Subscription Base
     const activeSubscribedDrivers = await this.prisma.driver.count({
-      where: { status: 'ACTIVE', subscriptionPaid: true }
+      where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true }
     });
 
     const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
@@ -654,7 +655,7 @@ export class FinanceService {
     const ebitda = totalRev - totalOpex;
 
     // 3. Promedio Mensual por Taxi (Para LTV y Payback)
-    const activeTaxis = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    const activeTaxis = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
     
     // Ingresos promedio mensual (simplificado)
     const monthsActive = 12; // Suponemos 12 meses o calculamos base en oldest transaction

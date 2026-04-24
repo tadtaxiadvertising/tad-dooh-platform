@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class FleetMonitorService {
@@ -36,7 +37,7 @@ export class FleetMonitorService {
     const offlineDevices = await this.prisma.device.findMany({
       where: { 
         lastHeartbeat: { lt: threshold12h },
-        status: 'ACTIVE'
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE
       },
       include: { driver: true }
     });

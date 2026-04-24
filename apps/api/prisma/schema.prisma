@@ -28,7 +28,7 @@ model Device {
   name              String?
   taxiNumber        String?           @map("taxi_number")
   city              String?
-  status            String            @default("ACTIVE")
+  status            SystemStatus      @default(OPERATIVO)
   lastSync          DateTime?         @map("last_sync")
   lastHeartbeat     DateTime?         @map("last_heartbeat")
   batteryLevel      Int?              @default(100) @map("battery_level")

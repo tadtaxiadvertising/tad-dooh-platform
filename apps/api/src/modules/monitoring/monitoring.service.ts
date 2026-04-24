@@ -5,6 +5,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { GpsBatchDto } from './monitoring.dto';
 import { throttledMap } from '../../utils/throttler.util';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 // Los 10 dispositivos del Piloto de Santiago (Fase 1)
 const PILOT_DEVICE_IDS = [
@@ -87,7 +88,7 @@ export class MonitoringService {
             lastSeen: new Date(),
             lastSyncAt: new Date(),
             lastSyncSuccess: true,
-            status: 'ACTIVE',
+            status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
             connectivityStatus: 'ONLINE',
           },
         });
@@ -204,7 +205,7 @@ export class MonitoringService {
           lastSeen: { lt: offlineThreshold },
           isOnline: true,
         },
-        data: { isOnline: false, status: 'OFFLINE' },
+        data: { isOnline: false, status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED },
       });
 
       // 2. Marcar como connectivity_issue si llevan +48h sin reporte
@@ -246,7 +247,7 @@ export class MonitoringService {
         where: {
           deviceId: { in: PILOT_DEVICE_IDS },
           lastSeen: { lt: offlineThreshold },
-          status: 'OFFLINE'
+          status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED
         },
         select: { deviceId: true, taxiNumber: true, lastSeen: true },
       });

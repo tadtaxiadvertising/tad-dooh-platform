@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class PortalRequestsService {
@@ -254,7 +255,7 @@ export class PortalRequestsService {
           let devicesToSync: { id: string }[] = [];
           if (campaign?.targetAll || campaign?.isGlobal) {
             devicesToSync = await this.prisma.device.findMany({
-              where: { status: 'ACTIVE' }, select: { id: true }
+              where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true }
             });
 
             // Create DeviceCampaign assignments so sync endpoint serves this campaign

@@ -42,9 +42,9 @@ export const BUSINESS_RULES = {
   // ==========================================
   STATUS: {
     DRIVER: {
-      INITIAL: 'PENDING_PAYMENT',
-      ACTIVE: 'ACTIVE',
-      SUSPENDED: 'SUSPENDED',
+      INITIAL: 'PENDIENTE_PAGO',
+      ACTIVE: 'OPERATIVO',
+      SUSPENDED: 'BLOQUEADO',
       ONBOARDING: {
         TOS_PENDING: 'TOS_PENDING',
         READY: 'READY',
@@ -60,6 +60,11 @@ export const BUSINESS_RULES = {
       PENDING: 'PENDING_REVIEW',
       ACTIVE: 'ACTIVE',
       COMPLETED: 'COMPLETED',
+    },
+    DEVICE: {
+      ACTIVE: 'OPERATIVO',
+      SUSPENDED: 'BLOQUEADO',
+      INITIAL: 'PENDIENTE_PAGO',
     }
   },
 

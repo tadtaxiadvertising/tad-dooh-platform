@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class SyncService {
@@ -32,7 +33,7 @@ export class SyncService {
       throw new HttpException('DEVICE_NOT_FOUND_IN_CLUSTER', HttpStatus.NOT_FOUND);
     }
 
-    if (device.status !== 'ACTIVE') {
+    if (device.status !== BUSINESS_RULES.STATUS.DEVICE.ACTIVE) {
       await this.notifications.createAlert({
         title: 'Dispositivo Inactivo',
         message: `El dispositivo ${device.taxiNumber || deviceId} está intentando sincronizar pero su estado es ${device.status}.`,
@@ -48,7 +49,7 @@ export class SyncService {
     
     // Si no hay driver, permitimos solo campañas GLOBALES (no segmentadas)
     // Esto es vital para el primer encendido (Out-of-the-box experience)
-    const isDriverActive = driver && driver.status === 'ACTIVE';
+    const isDriverActive = driver && driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE;
     const isDriverPaid = (driver && driver.subscriptionPaid);
     
     let hasValidSubscription = isDriverPaid;

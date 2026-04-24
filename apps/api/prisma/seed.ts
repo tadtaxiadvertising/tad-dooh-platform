@@ -39,7 +39,7 @@ async function main() {
       phone: '1000000000',
       fullName: 'Chofer de Pruebas (Simulador)',
       subscriptionPaid: true,
-      status: 'ACTIVE',
+      status: 'OPERATIVO',
       cedula: '000-0000000-0',
     }
   });
@@ -154,7 +154,7 @@ async function main() {
         phone: `829555${(i-1).toString().padStart(4, '0')}`,
         cedula: `001-${1000000 + i}-1`,
         taxiPlate: `A${1000 + i}P`,
-        status: 'ACTIVE',
+        status: 'OPERATIVO',
         onboardingStatus: 'COMPLETED',
         password: hashedPassword,
         contractAccepted: true,
@@ -168,7 +168,7 @@ async function main() {
       data: {
         deviceId: hwId,
         name: `Terminal ${hwId}`,
-        status: 'ACTIVE',
+        status: 'OPERATIVO',
         isOnline: true,
         city,
         driverId: driver.id,

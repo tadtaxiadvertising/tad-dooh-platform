@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { createUmamiClient } from '../../utils/umami';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class AnalyticsService {
@@ -44,7 +45,7 @@ export class AnalyticsService {
         device = await this.prisma.device.create({
           data: {
             deviceId: dto.deviceId,
-            status: 'ACTIVE',
+            status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
             lastSeen: new Date(),
           },
         });

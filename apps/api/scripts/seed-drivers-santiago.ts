@@ -35,7 +35,7 @@ async function main() {
         insuranceAcceptedAt: new Date(),
         contractAcceptedAt: new Date(),
         agreementVersion: '1.0',
-        status: 'ACTIVE',
+        status: 'OPERATIVO',
         subscriptionPaid: true,
         subscriptionEnd: new Date('2026-12-31')
       }
@@ -56,7 +56,8 @@ async function main() {
          data: {
            deviceId: d.deviceId,
            driverId: driver?.id,
-           status: 'ONLINE',
+           status: 'OPERATIVO',
+           connectivityStatus: 'ONLINE',
            lastSeen: new Date()
          }
        });

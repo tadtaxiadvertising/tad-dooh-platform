@@ -103,14 +103,14 @@ export class DriversService {
     return drivers.map(d => {
       const driver = d as any;
       const validReferrals = driver.referrals
-        ? driver.referrals.filter((r: any) => r.status === 'ACTIVE' && r.subscriptionPaid).length
+        ? driver.referrals.filter((r: any) => r.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE && r.subscriptionPaid).length
         : 0;
 
       return {
         ...driver,
         activeAds: activeAdsCount,
         // FIX M-2: Usar constantes en lugar de magic numbers
-        projectedEarnings: driver.status === 'ACTIVE'
+        projectedEarnings: driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
           ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
           : 0,
         referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
@@ -254,7 +254,7 @@ export class DriversService {
       data: {
         subscriptionPaid: paid,
         subscriptionEnd: endDate,
-        status: paid ? 'ACTIVE' : 'SUSPENDED',
+        status: paid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.SUSPENDED,
         blockedAt: paid ? null : new Date(),
       },
     });
@@ -332,8 +332,8 @@ export class DriversService {
   async getStats() {
     const [total, active, suspended, unpaid] = await Promise.all([
       this.prisma.driver.count(),
-      this.prisma.driver.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.driver.count({ where: { status: 'SUSPENDED' } }),
+      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE } }),
+      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.SUSPENDED } }),
       this.prisma.driver.count({ where: { subscriptionPaid: false } }),
     ]);
 
@@ -460,13 +460,13 @@ export class DriversService {
 
     // El bono GPS ha sido eliminado en v10.1.0
 
-    const projectedEarnings = driver.status === 'ACTIVE'
+    const projectedEarnings = driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
       ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
       : 0;
 
     // Referidos (Conteo defensivo con catch)
     const referralsCount = await this.prisma.driver.count({
-      where: { referredBy: driver.id, status: 'ACTIVE', subscriptionPaid: true },
+      where: { referredBy: driver.id, status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true },
     }).catch(() => 0);
 
     const referralEarnings = referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;

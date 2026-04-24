@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
@@ -77,7 +78,7 @@ export class DeviceService {
       data: {
         deviceId: dto.device_id,
         appVersion: dto.app_version,
-        status: 'PENDING',          // 🔒 Requires admin approval before joining fleet
+        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,          // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
         driverId: dto.driver_id,
       },
@@ -87,7 +88,7 @@ export class DeviceService {
   /** Returns all devices that have PENDING approval — for the admin dashboard. */
   async getPendingDevices() {
     return this.prisma.device.findMany({
-      where: { status: 'PENDING' },
+      where: { status: BUSINESS_RULES.STATUS.DEVICE.INITIAL },
       orderBy: { lastSeen: 'desc' },
       select: { id: true, deviceId: true, appVersion: true, lastSeen: true },
     });
@@ -98,7 +99,7 @@ export class DeviceService {
     this.logger.log(`✅ Admin approved device: ${deviceId}`);
     return this.prisma.device.update({
       where: { deviceId },
-      data: { status: 'ACTIVE' },
+      data: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
     });
   }
 
@@ -117,7 +118,7 @@ export class DeviceService {
     const [devices, campaignAssignments] = await Promise.all([
       // 1. Fetch all non-pending devices with minimal fields
       this.prisma.device.findMany({
-        where: { status: { not: 'PENDING' } },
+        where: { status: { not: BUSINESS_RULES.STATUS.DEVICE.INITIAL } },
         select: {
           id: true,
           deviceId: true,
@@ -154,7 +155,7 @@ export class DeviceService {
         device_id: d.deviceId,
         deviceId: d.deviceId,
         taxi_number: d.taxiNumber,
-        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
+        status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
         is_online: isOnline,
         battery_level: d.batteryLevel,
         occupied_slots: assignedSlots,
@@ -182,7 +183,7 @@ export class DeviceService {
       await this.prisma.device.create({
         data: {
           deviceId: dto.device_id,
-          status: 'PENDING',
+          status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
           lastSeen: new Date(),
           batteryLevel: dto.battery_level,
           storageFree: dto.storage_free,
@@ -191,7 +192,7 @@ export class DeviceService {
       });
       // Return blocked so the tablet does not receive content
       return { success: true, blocked: true, reason: 'awaiting_approval' };
-    } else if (device.status === 'PENDING') {
+    } else if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       // Device exists but is still awaiting admin approval
       this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
       await this.prisma.device.update({
@@ -294,7 +295,7 @@ export class DeviceService {
     if (!deviceCheck) {
       return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
     }
-    if (deviceCheck.status === 'PENDING') {
+    if (deviceCheck.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       this.logger.log(`⏳ Sync blocked for PENDING device: ${deviceId}`);
       return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
     }
@@ -449,7 +450,7 @@ export class DeviceService {
       return { success: false, reason: 'unknown_device' };
     }
 
-    if (device.status === 'PENDING') {
+    if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       return { success: false, reason: 'awaiting_approval' };
     }
 

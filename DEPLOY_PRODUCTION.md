@@ -1,7 +1,7 @@
 # TAD DOOH Platform v10.0 - Production Deployment Handbook
 
 > **Monorepo Architecture Overview:** Este documento define los protocolos operacionales para desplegar la red TAD DOOH global, ajustada a la arquitectura de microservicios (apps/*) y límites de asfixia.
-
+>
 > ⚠️ **IMPORTANTE:** Cada servicio tiene su propia clave SSH. Ver [SSH_KEY_MANAGEMENT.md](docs/SSH_KEY_MANAGEMENT.md) para guía completa de gestión de claves.
 
 ---
@@ -11,15 +11,17 @@
 El ecosistema se apoya en 7 servicios independientes, cada uno con su propia clave SSH:
 
 ### Core Services (EasyPanel VPS)
+
 1. **Backend Integration Matrix** → `api.tad.do` (NestJS / Prisma PostgreSQL) → **SSH Key: `S1-api-<hash>`**
 2. **Video Render Engine** → `remotion.tad.do` (Remotion Chromium) → **SSH Key: `S1-remotion-<hash>`**
 3. **Device Simulator** → `simulator.tad.do` (Node.js) → **SSH Key: `S1-simulator-<hash>`**
 
 ### Frontend Services (Vercel / EasyPanel)
-4. **Admin Intelligence** → `admin.tad.do` (Next.js) → **SSH Key: `S1-admin-<hash>`**
-5. **Advertiser BI** → `advertiser.tad.do` (Next.js) → **SSH Key: `S1-advertiser-<hash>`**
-6. **Mobile Gateway** → `driver.tad.do` (PWA Next.js) → **SSH Key: `S1-driver-<hash>`**
-7. **Tablet Player** → `player.tad.do` (Next.js Kiosk) → **SSH Key: `S1-player-<hash>`**
+
+1. **Admin Intelligence** → `admin.tad.do` (Next.js) → **SSH Key: `S1-admin-<hash>`**
+2. **Advertiser BI** → `advertiser.tad.do` (Next.js) → **SSH Key: `S1-advertiser-<hash>`**
+3. **Mobile Gateway** → `driver.tad.do` (PWA Next.js) → **SSH Key: `S1-driver-<hash>`**
+4. **Tablet Player** → `player.tad.do` (Next.js Kiosk) → **SSH Key: `S1-player-<hash>`**
 
 ---
 

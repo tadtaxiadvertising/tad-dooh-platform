@@ -77,6 +77,9 @@ export const BUSINESS_RULES = {
 
   /** TTL de comandos de dispositivo en días */
   COMMAND_TTL_DAYS: 7,
+
+  /** Tasa de retención por referidos (10%) */
+  REFERRAL_RETENTION_RATE: 0.10,
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

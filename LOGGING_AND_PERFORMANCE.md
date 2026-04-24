@@ -465,6 +465,7 @@ export class LogsController {
 ## 🎯 Resultados Esperados
 
 ### Antes
+
 ```
 ❌ Loading page visible for 2-3 seconds
 ❌ Confusing UX with splash screen
@@ -473,6 +474,7 @@ export class LogsController {
 ```
 
 ### Después
+
 ```
 ✅ Instantaneous redirect (no splash)
 ✅ Smooth user experience

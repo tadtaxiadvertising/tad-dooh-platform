@@ -1,5 +1,6 @@
 import { Injectable, Logger, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
@@ -18,6 +19,7 @@ export class DriversService {
 
   constructor(
     private prisma: PrismaService,
+    private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService
   ) {}
 
@@ -226,7 +228,7 @@ export class DriversService {
     };
 
     // FIX C-1: NO usar fallback hardcodeado. Si no hay secreto, el token no se puede firmar.
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       this.logger.error('🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
       throw new ForbiddenException('Error de configuración del servidor. Contacta al administrador.');

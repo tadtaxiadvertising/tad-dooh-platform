@@ -26,8 +26,25 @@ async function bootstrap() {
       exclude: ['api/health', '/'],
     });
     
-    // Habilitar CORS para que el simulador y la PWA puedan comunicarse
-    app.enableCors();
+    // SHELTER C-I1: CORS restringido a dominios TAD conocidos
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : [
+          'https://tad-admin.rewvid.easypanel.host',
+          'https://tad-driver.rewvid.easypanel.host',
+          'https://tad-advertiser.rewvid.easypanel.host',
+        ];
+
+    // En desarrollo, permitir localhost
+    if (process.env.NODE_ENV !== 'production') {
+      allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003');
+    }
+
+    app.enableCors({
+      origin: allowedOrigins,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
 
     // Register Global Exception Filter for standard error handling
     app.useGlobalFilters(new GlobalExceptionFilter());

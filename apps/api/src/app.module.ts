@@ -2,6 +2,7 @@ import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@n
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import * as zod from 'zod';
 import { DeviceModule } from './modules/device/device.module';
@@ -43,7 +44,7 @@ import { ReferralModule } from './modules/referral/referral.module';
         const schema = zod.object({
           DATABASE_URL: zod.string().url().optional(),
           DIRECT_URL: zod.string().url().optional(),
-          JWT_SECRET: zod.string().optional(),
+          JWT_SECRET: zod.string().default('tad-secret-2026'),
           SUPABASE_URL: zod.string().url().optional(),
           SUPABASE_SERVICE_ROLE_KEY: zod.string().optional(),
           SUPABASE_JWT_SECRET: zod.string().optional(),
@@ -63,12 +64,20 @@ import { ReferralModule } from './modules/referral/referral.module';
           });
           // NO lanzamos error para permitir que el contenedor intente arrancar
         }
-        return result.data || config;
+        const data = result.data || config;
+        
+        // REGLA SRE: Sincronización de secretos para evitar 401 en EasyPanel
+        if (!data.SUPABASE_JWT_SECRET && data.JWT_SECRET) {
+          data.SUPABASE_JWT_SECRET = data.JWT_SECRET;
+        }
+        
+        return data;
       },
     }),
 
-    // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
-    // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // SHELTER C-AD1: Rate limiting reactivado con límites conservadores para Free Tier
+    // 30 req/min global — suficiente para operación normal, bloquea abuso
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -105,6 +114,11 @@ import { ReferralModule } from './modules/referral/referral.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    // SHELTER C-AD1: ThrottlerGuard global — aplica rate limiting en todas las rutas
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,

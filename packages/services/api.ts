@@ -41,33 +41,48 @@ export const api = axios.create({
 // ============================================
 // JWT Auth Interceptor
 // ============================================
+let cachedSession: any = null;
+let lastSessionCheck = 0;
+const SESSION_CACHE_TTL = 1000 * 60 * 2; // 2 minutes
+
 api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     try {
       const currentPath = window.location.pathname;
-      
-      // 1. Prioridad: Sesión activa de Supabase (Refresco automático)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
-      } else {
-        // 2. Fallback: LocalStorage (Priorizar según el portal actual para evitar colisiones)
-        let localToken = null;
-        
-        if (currentPath.includes('/advertiser/')) {
-          localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
-        } else if (currentPath.includes('/driver/')) {
-          localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
-        } else {
-          localToken = localStorage.getItem('tad_admin_token') || 
-                       localStorage.getItem('tad_advertiser_token') || 
-                       localStorage.getItem('tad_driver_token');
+      const isPublicPath = currentPath.includes('/login') || 
+                          currentPath.includes('/check-in') || 
+                          currentPath.includes('/onboarding') ||
+                          currentPath === '/';
+
+      // 1. Skip Supabase session check for public paths to avoid lock contention
+      if (!isPublicPath) {
+        const now = Date.now();
+        if (!cachedSession || (now - lastSessionCheck > SESSION_CACHE_TTL)) {
+          const { data: { session } } = await supabase.auth.getSession();
+          cachedSession = session;
+          lastSessionCheck = now;
         }
 
-        if (localToken) {
-          config.headers.Authorization = `Bearer ${localToken}`;
+        if (cachedSession?.access_token) {
+          config.headers.Authorization = `Bearer ${cachedSession.access_token}`;
+          return config;
         }
+      }
+      
+      // 2. Fallback: LocalStorage (Priorizar según el portal actual)
+      let localToken = null;
+      if (currentPath.includes('/advertiser/')) {
+        localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
+      } else if (currentPath.includes('/driver/')) {
+        localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
+      } else {
+        localToken = localStorage.getItem('tad_admin_token') || 
+                     localStorage.getItem('tad_advertiser_token') || 
+                     localStorage.getItem('tad_driver_token');
+      }
+
+      if (localToken) {
+        config.headers.Authorization = `Bearer ${localToken}`;
       }
     } catch (error) {
       console.error('🔐 AUTH_ERROR:', error);

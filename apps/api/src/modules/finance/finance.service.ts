@@ -377,7 +377,8 @@ export class FinanceService {
       });
 
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
-      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffMonths = Math.max(1, Math.round(diffDays / 30.44)); // Usando promedio orbital para mayor precisión financiera
       const totalRevenue = monthlyRevenue * diffMonths;
 
       return {
@@ -511,7 +512,7 @@ export class FinanceService {
 
   private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
   private readonly RECURRING_SUB_BASE = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-  private readonly REFERRAL_RETENTION_RATE = 0.10; // 10% referred retention baseline
+  private readonly REFERRAL_RETENTION_RATE = BUSINESS_RULES.REFERRAL_RETENTION_RATE;
 
   /**
    * FINANCIAL INTELLIGENCE: Registers a new transaction with automatic tax & referral logic.

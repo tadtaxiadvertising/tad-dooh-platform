@@ -216,6 +216,9 @@ export class CampaignService {
         targets: availableDevices.map(d => d.deviceId)
       }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
 
+      // SRE Optimization: Refresh view so heartbeats get the new state immediately
+      this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
+
       return { count: availableDevices.length, skipped: skippedCount };
     });
   }
@@ -411,20 +414,49 @@ export class CampaignService {
     let activeCampaigns: any[] = [];
     
     try {
-      // 2. Hybrid Query: Universal Campaigns + Geofencing + Manual (v1/v2) Assignments
+      // 2. MASTER SYNC (Materialized View)
+      // Pre-calculated targeting avoids complex joins in heartbeats.
+      const results: any[] = await this.prisma.$queryRaw`
+        SELECT campaign_id FROM mv_active_campaigns
+        WHERE active = true 
+          AND start_date <= NOW() 
+          AND end_date >= NOW()
+          AND (
+            target_all = true OR 
+            target_city = ${city} OR
+            target_cities::text LIKE ${`%${city}%`} OR
+            assigned_device_uuids::jsonb @> ${JSON.stringify([uuid])}::jsonb OR
+            assigned_hw_ids::jsonb @> ${JSON.stringify([hwId])}::jsonb OR
+            (assigned_driver_ids::jsonb @> ${JSON.stringify([driverId])}::jsonb AND ${!!driverId})
+          )
+      `;
+
+      const campaignIds = results.map(r => r.campaign_id);
+
+      if (campaignIds.length > 0) {
+        activeCampaigns = await this.prisma.campaign.findMany({
+          where: { id: { in: campaignIds } },
+          include: {
+            mediaAssets: true,
+            media: true,
+            videos: true,
+            advertiserRef: true,
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+      }
+    } catch (primaryError: any) {
+      this.logger.error(`❌ getActiveSyncVideos optimized query failed: ${primaryError?.message}. Falling back to legacy query.`);
+      // Fallback to legacy query if view fails
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
           active: true,
           startDate: { lte: now },
           endDate: { gte: now },
           OR: [
-            // Canal Global
             { targetAll: true, OR: [{ targetCity: 'Global' }, { targetCity: city }] },
-            // Canal Directo (v2 UUID)
             { devices: { some: { device_id: uuid } } },
-            // Canal Legacy (v1 Hardware ID)
             { targets: { some: { deviceId: hwId } } },
-            // Canal Segmentado (v2 Segmentación por Conductor)
             ...(driverId ? [{ targetDrivers: { some: { id: driverId } } }] : [])
           ]
         } as any,
@@ -434,14 +466,6 @@ export class CampaignService {
           videos: true,
           advertiserRef: true,
         },
-        orderBy: { updatedAt: 'desc' }
-      });
-    } catch (primaryError: any) {
-      this.logger.error(`❌ getActiveSyncVideos primary query failed: ${primaryError?.message}`);
-      // Fallback
-      activeCampaigns = await this.prisma.campaign.findMany({
-        where: { active: true, targetAll: true },
-        include: { mediaAssets: true, media: true, videos: true },
         orderBy: { updatedAt: 'desc' }
       });
     }

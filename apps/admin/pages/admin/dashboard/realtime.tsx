@@ -191,7 +191,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
 
       if (fleetFilter === 'active' && !dev.isOnline) return false;
       if (fleetFilter === 'offline' && dev.isOnline) return false;
-      if (fleetFilter === 'unpaid' && dev.subscriptionStatus === 'ACTIVE') return false;
+      if (fleetFilter === 'unpaid' && dev.subscriptionStatus === 'OPERATIVO') return false;
 
       if (selectedAdvertiser !== 'all' && dev.assignedAdvertiser !== selectedAdvertiser) return false;
 
@@ -424,7 +424,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
                 ['all',     'Todo',    visible.length,                              'text-slate-400'],
                 ['active',  'Online',  visible.filter(v => v.isOnline).length,      'text-emerald-500'],
                 ['offline', 'Offline', visible.filter(v => !v.isOnline).length,     'text-slate-600'],
-                ['unpaid',  'Mora',    visible.filter(v => v.subscriptionStatus !== 'ACTIVE').length, 'text-rose-500'],
+                ['unpaid',  'Mora',    visible.filter(v => v.subscriptionStatus !== 'OPERATIVO').length, 'text-rose-500'],
               ] as [FleetFilter, string, number, string][]).map(([val, lbl, cnt, col]) => (
                 <button key={val} onClick={() => setFleetFilter(val)}
                   className={clsx(

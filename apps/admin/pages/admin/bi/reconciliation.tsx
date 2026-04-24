@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { 
   Scale, 
@@ -13,21 +13,67 @@ import {
   Filter,
   Download,
   Terminal,
-  Activity
+  Activity,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AntigravityButton } from '@tad/ui';
+import { getReconciliationReport, generateReconciliation, getBiKpis } from '@tad/services';
+import { toast } from 'sonner';
+import AuditDrillDownModal from '@/components/AuditDrillDownModal';
 
 export default function ReconciliationPage() {
   const [search, setSearch] = useState('');
-  
-  // Mock data for reconciliation
-  const disputes = [
-    { id: 'REC-2900', target: 'Driver J. Perez', amount: 'RD$42.50', status: 'DISPUTE', reason: 'Offline 4h', date: '2026-04-01' },
-    { id: 'REC-2901', target: 'Advertiser Coca-Cola', amount: 'RD$1,200.00', status: 'RESOLVED', reason: 'Proof of play verified', date: '2026-04-01' },
-    { id: 'REC-2902', target: 'Driver L. Gomez', amount: 'RD$12.00', status: 'PENDING', reason: 'GPS inaccuracy', date: '2026-03-31' },
-    { id: 'REC-2903', target: 'Unit STI-451', amount: '-RD$150.00', status: 'CRITICAL', reason: 'Hardware failure > 12h', date: '2026-03-30' },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [period, setPeriod] = useState('2026-04');
+  const [reports, setReports] = useState<any[]>([]);
+  const [kpis, setKpis] = useState<any>(null);
+
+  // Modal State
+  const [drillDownOpen, setDrillDownOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState({ id: '', name: '' });
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [reportData, kpiData] = await Promise.all([
+        getReconciliationReport(period),
+        getBiKpis()
+      ]);
+      setReports(Array.isArray(reportData) ? reportData : []);
+      setKpis(kpiData);
+    } catch (error) {
+      console.error('Error fetching reconciliation data:', error);
+      toast.error('Error al cargar datos de conciliación');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [period]);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    toast.loading('Generando auditoría de flota...', { id: 'gen-recon' });
+    try {
+      await generateReconciliation(period);
+      toast.success('Reporte generado exitosamente', { id: 'gen-recon' });
+      fetchData();
+    } catch (error) {
+      toast.error('Error al generar reporte', { id: 'gen-recon' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const filteredReports = reports.filter(r => 
+    r.driver?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+    r.discrepancyType?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen pb-20 animate-in fade-in duration-700">
@@ -51,22 +97,49 @@ export default function ReconciliationPage() {
         </div>
 
         <div className="flex gap-3">
-          <button className="flex items-center gap-3 px-8 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
-            <Calendar className="w-4 h-4" />
-            MARZO 2026
-          </button>
-          <button className="flex items-center gap-3 px-8 py-4 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
-            <Download className="w-4 h-4" />
-            Exportar Reporte
+          <select 
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-6 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white outline-none focus:border-tad-yellow/40 transition-all"
+          >
+            <option value="2026-03">MARZO 2026</option>
+            <option value="2026-04">ABRIL 2026</option>
+            <option value="2026-05">MAYO 2026</option>
+          </select>
+          <button 
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex items-center gap-3 px-8 py-4 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+          >
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Recalcular Auditoría
           </button>
         </div>
       </div>
 
       {/* KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <ReconStat label="Ingreso Proyectado" value="RD$42,850.00" icon={DollarSign} trend="+12.5%" trendType="up" />
-        <ReconStat label="Brecha Operativa" value="-RD$1,240.50" icon={Activity} trend="-4.2%" trendType="down" />
-        <ReconStat label="Índice de Confianza" value="97.8%" icon={Scale} trend="+0.5%" trendType="up" />
+        <ReconStat 
+          label="Ingreso Proyectado" 
+          value={`RD$${(kpis?.projectedRevenue || 0).toLocaleString()}`} 
+          icon={DollarSign} 
+          trend="+12.5%" 
+          trendType="up" 
+        />
+        <ReconStat 
+          label="Discrepancias" 
+          value={kpis?.discrepancyCount || 0} 
+          icon={Activity} 
+          trend={kpis?.discrepancyCount > 0 ? "REQUIERE ACCIÓN" : "SANO"} 
+          trendType={kpis?.discrepancyCount > 0 ? "down" : "up"} 
+        />
+        <ReconStat 
+          label="Índice de Entrega" 
+          value={`${(kpis?.deliveryRateAvg || 0).toFixed(1)}%`} 
+          icon={Scale} 
+          trend="+0.5%" 
+          trendType="up" 
+        />
       </div>
 
       {/* RECONCILIATION TABLE */}
@@ -76,75 +149,98 @@ export default function ReconciliationPage() {
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
             <input 
               type="text" 
-              placeholder="FILTRAR POR ENTIDAD O RAZÓN..."
-              className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="FILTRAR POR SOCIO O RAZÓN..."
+              className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all text-white"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 text-white">
             <button className="p-4 bg-white/5 text-zinc-400 rounded-xl hover:bg-white/10 transition-all border border-white/5">
               <Filter className="w-4 h-4" />
             </button>
-            <button className="px-6 py-3 bg-white/5 text-zinc-400 rounded-xl hover:bg-white text-black font-black uppercase text-[10px] tracking-widest transition-all">
-              Audit Logs
+            <button className="px-6 py-3 bg-white/5 text-zinc-400 rounded-xl hover:bg-white hover:text-black font-black uppercase text-[10px] tracking-widest transition-all">
+              Descargar CSV
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-white/5 border-b border-white/5">
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">ID Log</th>
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Entidad / Sujeto</th>
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Discrepancia</th>
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Motivo SRE</th>
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status Fiscal</th>
-                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Acción</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.03]">
-              {disputes.map((d) => (
-                <tr key={d.id} className="hover:bg-white/[0.01] group transition-all">
-                  <td className="px-8 py-6">
-                    <span className="text-[10px] font-mono font-bold text-zinc-600 group-hover:text-tad-yellow transition-colors">{d.id}</span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <p className="text-xs font-black text-white uppercase tracking-tight italic">{d.target}</p>
-                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{d.date}</p>
-                  </td>
-                  <td className={clsx("px-8 py-6 text-xs font-black italic", d.amount.startsWith('-') ? 'text-rose-500' : 'text-emerald-500')}>
-                    {d.amount}
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-3 h-3 text-zinc-700" />
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{d.reason}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className={clsx(
-                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                      d.status === 'RESOLVED' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                      d.status === 'DISPUTE' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                      d.status === 'CRITICAL' ? "bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse" :
-                      "bg-zinc-800 text-zinc-500 border-white/5"
-                    )}>
-                      {d.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <AntigravityButton 
-                      actionName="resolve_dispute"
-                      variant="primary"
-                      className="px-4 py-2 h-auto text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      Resolver
-                    </AntigravityButton>
-                  </td>
+        <div className="overflow-x-auto min-h-[400px]">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-10 h-10 text-tad-yellow animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Procesando registros fiscales...</p>
+            </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-white/5 border-b border-white/5">
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Socio / Unidad</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Impactos</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contratado vs Recibido</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Payroll (Pend/Pagado)</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status / Motivo</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/[0.03]">
+                {filteredReports.map((r) => (
+                  <tr key={r.id} className="hover:bg-white/[0.01] group transition-all">
+                    <td className="px-8 py-6">
+                      <p className="text-xs font-black text-white uppercase tracking-tight italic">{r.driver?.fullName || 'Desconocido'}</p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">ID: {r.deviceId || 'S/N'}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <span className="text-[11px] font-black text-zinc-300 font-mono">{r.totalPlaybacks}</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-zinc-500 line-through">RD$ {r.revenueContracted}</span>
+                        <span className="text-xs font-black text-emerald-500 italic">RD$ {r.revenueReceived}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-rose-400">RD$ {r.payrollDue}</span>
+                        <span className="text-zinc-700">/</span>
+                        <span className="text-xs font-bold text-emerald-400">RD$ {r.payrollPaid}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1">
+                        <span className={clsx(
+                          "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
+                          r.hasDiscrepancy ? "bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        )}>
+                          {r.hasDiscrepancy ? 'DISCREPANCIA' : 'CONCILIADO'}
+                        </span>
+                        <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-tighter">{r.discrepancyType}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button 
+                        onClick={() => {
+                          setSelectedDevice({ id: r.deviceId, name: r.driver?.fullName || 'Socio Desconocido' });
+                          setDrillDownOpen(true);
+                        }}
+                        className="px-6 py-2 bg-white/5 hover:bg-white text-black font-black uppercase text-[9px] tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-xl"
+                      >
+                        Auditar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredReports.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-20 text-center">
+                      <AlertTriangle className="w-8 h-8 text-zinc-700 mx-auto mb-4" />
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No se encontraron registros para este período</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -155,13 +251,20 @@ export default function ReconciliationPage() {
         <div className="flex-1 space-y-2">
           <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Estabilidad de Red vs Facturación</h3>
           <p className="text-zinc-500 text-[11px] font-bold uppercase tracking-widest leading-loose max-w-2xl">
-            El sistema de conciliación detecta automáticamente cierres de sesión forzados o caídas de red que invalidan la certificación de impactos. Asegúrese de revisar los registros <span className="text-white italic">CRITICAL</span> para evitar sobre-cobros o pérdidas de driver.
+            El sistema de conciliación detecta automáticamente cierres de sesión forzados o caídas de red que invalidan la certificación de impactos. Asegúrese de revisar los registros <span className="text-white italic">DISCREPANCIA</span> para evitar sobre-cobros o pérdidas de driver.
           </p>
         </div>
         <button className="px-10 py-5 bg-white text-black font-black uppercase text-[12px] tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-2xl">
           Protocolo Cierre de Mes
         </button>
       </div>
+
+      <AuditDrillDownModal 
+        isOpen={drillDownOpen}
+        onClose={() => setDrillDownOpen(false)}
+        deviceId={selectedDevice.id}
+        driverName={selectedDevice.name}
+      />
     </div>
   );
 }

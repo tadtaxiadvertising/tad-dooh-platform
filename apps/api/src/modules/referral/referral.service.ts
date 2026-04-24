@@ -23,4 +23,54 @@ export class ReferralService {
       qrPayload: url
     };
   }
+
+  async getStats() {
+    const topRecruiters = await this.prisma.driver.findMany({
+      where: { referrals: { some: {} } },
+      select: {
+        id: true,
+        fullName: true,
+        referralCode: true,
+        _count: {
+          select: { referrals: true }
+        }
+      },
+      orderBy: { referrals: { _count: 'desc' } },
+      take: 10
+    });
+
+    const totalReferrals = await this.prisma.driver.count({
+      where: { referredBy: { not: null } }
+    });
+
+    const pendingCommissions = await this.prisma.commission.aggregate({
+      where: { status: 'PENDING', sourceType: 'DRIVER_REFERRAL' },
+      _sum: { amount: true }
+    });
+
+    return {
+      topRecruiters,
+      totalReferrals,
+      pendingCommissions: pendingCommissions._sum.amount || 0
+    };
+  }
+
+  async getNetwork() {
+    return this.prisma.driver.findMany({
+      where: { referredBy: { not: null } },
+      select: {
+        id: true,
+        fullName: true,
+        referredBy: true,
+        createdAt: true,
+        status: true,
+        referredByDriver: {
+          select: {
+            fullName: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 }

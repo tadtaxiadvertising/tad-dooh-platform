@@ -305,7 +305,7 @@ const MapView: React.FC<MapViewProps> = ({
           if (!loc.lastLat || !loc.lastLng) return null;
           const sel = selectedId === loc.deviceId;
           const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
-          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
+          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'OPERATIVO' ? 'unpaid' : 'active';
           
           // Si está fuera de rango y online, forzamos alerta
           const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;

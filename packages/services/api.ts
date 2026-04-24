@@ -19,15 +19,15 @@ const getBaseURL = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host === '0.0.0.0') {
-      return 'http://localhost:3000/api';
+      return 'http://localhost:3000/api/v1';
     }
     // Producción: usar el proxy interno de Next.js (API Route)
     return '/api/proxy';
   }
   // SSR: usar URL interna si está disponible, pública como fallback
   return process.env.BACKEND_INTERNAL_URL
-    ? `${process.env.BACKEND_INTERNAL_URL}/api`
-    : (process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api');
+    ? `${process.env.BACKEND_INTERNAL_URL}/api/v1`
+    : (process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api/v1');
 };
 
 export const api = axios.create({
@@ -203,6 +203,18 @@ export const sendCommand = (deviceId: string, type: string, params: Record<strin
 export const getFleetStatusSummary = () => api.get('/fleet/status-summary').then(res => res.data);
 export const getFleetLocations = (advertiserId?: string) => 
   api.get(`/fleet/map${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
+
+// BI & Reconciliation
+export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
+export const getFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
+export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
+export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
+export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
+export const getHotspots = () => api.get('/bi/hotspots').then(res => res.data);
+
+// Referrals
+export const getReferralStats = () => api.get('/referral/stats').then(res => res.data);
+export const getReferralNetwork = () => api.get('/referral/network').then(res => res.data);
 
 // Device Inventory
 export const getDeviceCampaigns = (deviceId: string) => api.get(`/devices/${deviceId}/campaigns`).then(res => res.data);

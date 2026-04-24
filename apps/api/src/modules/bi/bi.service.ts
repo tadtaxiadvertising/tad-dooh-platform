@@ -341,6 +341,22 @@ export class BiService {
     return { period, total: results.length };
   }
 
+  async getReconciliationReport(period: string) {
+    return this.prisma.reconciliationReport.findMany({
+      where: { period },
+      include: {
+        driver: {
+          select: {
+            fullName: true,
+            phone: true,
+            taxiPlate: true
+          }
+        }
+      },
+      orderBy: { hasDiscrepancy: 'desc' }
+    });
+  }
+
   async getFleetHealth() {
     const devices = await this.prisma.device.findMany({
       include: { driver: true }

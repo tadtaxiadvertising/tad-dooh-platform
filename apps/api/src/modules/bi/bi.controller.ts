@@ -36,9 +36,7 @@ export class BiController {
 
   @Get('reconciliation/:period')
   async getReconciliation(@Param('period') period: string) {
-    // In a real Phase 2 implementation, this would query the ReconciliationReport model
-    // For now, we reuse the generator logic or simplified queries
-    return this.biService.generateReconciliationReport(period);
+    return this.biService.getReconciliationReport(period);
   }
 
   @Get('hotspots')

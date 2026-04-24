@@ -365,6 +365,7 @@ model Driver {
   commissions         Commission[]
   telemetryLogs       Telemetry[]    @relation("DriverTelemetry")
   activeAds           ActiveAd[]
+  reconciliationReports ReconciliationReport[]
 
   @@index([status])
   @@index([phone])
@@ -571,6 +572,7 @@ model ReconciliationReport {
   discrepancyAmount   Float     @default(0) @map("discrepancy_amount")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
+  driver              Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@unique([period, driverId], name: "period_driverId")
   @@index([period])

@@ -138,7 +138,7 @@ export default function DriversPage() {
       await updateDriverSubscription(driverId, { paid: newStatus });
       setDrivers(prev => prev.map(d => {
         if (d.id === driverId) {
-          return { ...d, subscriptionPaid: newStatus, status: newStatus ? 'ACTIVE' : 'BLOCKED' };
+          return { ...d, subscriptionPaid: newStatus, status: newStatus ? 'OPERATIVO' : 'BLOQUEADO' };
         }
         return d;
       }));
@@ -174,17 +174,17 @@ export default function DriversPage() {
     const name = d.fullName || '';
     const plate = d.taxiPlate || '';
     const matchSearch = name.toLowerCase().includes(search.toLowerCase()) || plate.toLowerCase().includes(search.toLowerCase());
-    if (filter === 'active') return matchSearch && d.status === 'ACTIVE';
-    if (filter === 'blocked') return matchSearch && (d.status === 'BLOCKED' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
+    if (filter === 'active') return matchSearch && d.status === 'OPERATIVO';
+    if (filter === 'blocked') return matchSearch && (d.status === 'BLOQUEADO' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
     if (filter === 'unpaid') return matchSearch && !d.subscriptionPaid;
     return matchSearch;
   });
 
   const stats = {
     total: drivers.length,
-    active: drivers.filter(d => d.status === 'ACTIVE').length,
-    blocked: drivers.filter(d => d.status !== 'ACTIVE').length,
-    revenue: drivers.filter(d => d.status === 'ACTIVE').length * 6000,
+    active: drivers.filter(d => d.status === 'OPERATIVO').length,
+    blocked: drivers.filter(d => d.status !== 'OPERATIVO').length,
+    revenue: drivers.filter(d => d.status === 'OPERATIVO').length * 6000,
   };
 
   return (
@@ -386,12 +386,12 @@ export default function DriversPage() {
                         <div className={"flex flex-col items-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
                           <div className={clsx(
                             "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all",
-                            driver.status === 'ACTIVE' 
+                            driver.status === 'OPERATIVO' 
                               ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
                               : 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
                           )}>
-                            <span className={clsx("w-1.5 h-1.5 rounded-full", driver.status === 'ACTIVE' ? "bg-emerald-500" : "bg-rose-500")} />
-                            {driver.status === 'ACTIVE' ? 'Operativo' : 'Inhibido'}
+                            <span className={clsx("w-1.5 h-1.5 rounded-full", driver.status === 'OPERATIVO' ? "bg-emerald-500" : "bg-rose-500")} />
+                            {driver.status === 'OPERATIVO' ? 'Operativo' : 'Inhibido'}
                           </div>
                         </div>
                       </td>
@@ -426,18 +426,18 @@ export default function DriversPage() {
                             </>
                           )}
                            <AntigravityButton 
-                             actionName={driver.status === 'ACTIVE' ? 'lock_driver' : 'unlock_driver'}
+                             actionName={driver.status === 'OPERATIVO' ? 'lock_driver' : 'unlock_driver'}
                              onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
-                             confirmMessage={driver.status === 'ACTIVE' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
+                             confirmMessage={driver.status === 'OPERATIVO' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
                              className={clsx(
                                "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
-                               driver.status === 'ACTIVE' 
+                               driver.status === 'OPERATIVO' 
                                  ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white" 
                                  : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
                              )}
-                             title={driver.status === 'ACTIVE' ? 'Bloquear Socio' : 'Habilitar Socio'}
+                             title={driver.status === 'OPERATIVO' ? 'Bloquear Socio' : 'Habilitar Socio'}
                            >
-                             {driver.status === 'ACTIVE' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                             {driver.status === 'OPERATIVO' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                            </AntigravityButton>
                           <button 
                             onClick={() => setExpandedId(expandedId === driver.id ? null : driver.id)}

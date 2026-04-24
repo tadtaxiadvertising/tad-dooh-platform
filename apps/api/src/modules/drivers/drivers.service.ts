@@ -149,7 +149,7 @@ export class DriversService {
     password?: string;
     contractAccepted?: boolean;
     agreementVersion?: string;
-    // insuranceAccepted is deprecated — TAD does not offer insurance
+    referredBy?: string;
   }) {
     let hashedPassword: string | null = null;
     if (data.password) {
@@ -176,6 +176,7 @@ export class DriversService {
         contractAccepted: data.contractAccepted ?? false,
         contractAcceptedAt: data.contractAccepted ? new Date() : null,
         agreementVersion: data.agreementVersion ?? '2.0',
+        referredBy: data.referredBy || null,
         status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
         onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
       },
@@ -585,5 +586,25 @@ export class DriversService {
       deletedDrivers: deletedDrivers.count,
       deletedDevices: deletedDevices.count,
     };
+  }
+
+  /**
+   * Link an active ad to a driver (V12 Financial Logic)
+   */
+  async linkActiveAd(driverId: string, campaignId: string) {
+    return this.prisma.activeAd.upsert({
+      where: {
+        driverId_campaignId: {
+          driverId,
+          campaignId,
+        },
+      },
+      update: { status: 'ACTIVE' },
+      create: {
+        driverId,
+        campaignId,
+        status: 'ACTIVE',
+      },
+    });
   }
 }

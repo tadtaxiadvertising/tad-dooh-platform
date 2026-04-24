@@ -54,7 +54,7 @@ export class DriversController {
     password?: string;
     contractAccepted?: boolean;
     agreementVersion?: string;
-    // insuranceAccepted is deprecated — TAD does not offer insurance
+    referredBy?: string;
   }) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
@@ -211,5 +211,13 @@ export class DriversController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.driversService.remove(id);
+  }
+
+  /**
+   * POST /api/drivers/:id/active-ads — Vincular anuncio activo (V12)
+   */
+  @Post(':id/active-ads')
+  async linkActiveAd(@Param('id') id: string, @Body('campaignId') campaignId: string) {
+    return this.driversService.linkActiveAd(id, campaignId);
   }
 }

@@ -417,6 +417,7 @@ export class DeviceService {
       sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
+      videos: payload.media_assets, // Alias for legacy/TS player compatibility
       commands: pendingCommands.map(c => ({
         id: c.id,
         type: c.commandType,

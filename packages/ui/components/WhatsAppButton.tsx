@@ -6,10 +6,11 @@ interface WhatsAppButtonProps {
   phone?: string;
   name?: string;
   className?: string;
+  message?: string;
   variant?: 'icon' | 'full';
 }
 
-export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({ phone, name, className, variant = 'icon' }) => {
+export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({ phone, name, message, className, variant = 'icon' }) => {
   if (!phone) return null;
 
   // Sanear el teléfono: Solo números
@@ -18,7 +19,8 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({ phone, name, cla
   // Si no tiene prefijo de país, asumimos DR (+1)
   const finalPhone = cleanPhone.length === 10 ? `1${cleanPhone}` : cleanPhone;
   
-  const waUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(`Hola ${name || ''}, te escribo desde el panel de administración de TAD.`)}`;
+  const defaultText = `Hola ${name || ''}, te escribo desde el panel de administración de TAD.`;
+  const waUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message || defaultText)}`;
 
   if (variant === 'full') {
     return (

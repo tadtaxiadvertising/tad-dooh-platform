@@ -3,20 +3,24 @@
  * Validates the formula: (Ads * 500) + (Referrals * 500)
  */
 const http = require('http');
+const https = require('https');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../apps/api/.env') });
 
-const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';
+// Prioridad: 1. Env Var, 2. tad-api production, 3. localhost
+const API_BASE = process.env.API_BASE || 'https://tad-api.rewvid.easypanel.host/api/v1';
 
 async function request(method, path, body = null) {
   const url = `${API_BASE}${path}`;
+  const client = url.startsWith('https') ? https : http;
+  
   const options = {
     method,
     headers: { 'Content-Type': 'application/json' },
   };
   
   return new Promise((resolve, reject) => {
-    const req = http.request(url, options, (res) => {
+    const req = client.request(url, options, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -32,7 +36,7 @@ async function request(method, path, body = null) {
 }
 
 async function runTests() {
-  console.log('🧪 Starting V12 Financial Logic Validation...');
+  console.log(`🧪 Starting V12 Financial Logic Validation against: ${API_BASE}`);
 
   try {
     // 1. Create a Driver
@@ -58,7 +62,7 @@ async function runTests() {
     // 2. Initial Balance Check
     console.log('\nSTEP 2: Checking Initial Balance (Expected: 0)...');
     const hubRes = await request('GET', `/drivers/${driverId}/hub`);
-    let balance = hubRes.data?.balance || 0; // The hub property is 'balance'
+    let balance = hubRes.data?.balance || 0; 
     console.log(`Current Balance: RD$${balance}`);
 
     // 3. Assign an Active Ad
@@ -81,7 +85,7 @@ async function runTests() {
     console.log(`POST /drivers/${driverId}/active-ads -> ${linkRes.status}`);
     
     // Wait for DB trigger to process
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 2000));
 
     const hubRes2 = await request('GET', `/drivers/${driverId}/hub`);
     balance = hubRes2.data?.balance || 0;
@@ -97,14 +101,14 @@ async function runTests() {
       email: referralEmail,
       phone: `829${Math.floor(Math.random()*9000000 + 1000000)}`,
       licensePlate: `REF-${Date.now()}`,
-      referredBy: driverId, // The link
+      referredBy: driverId, 
       password: "password123",
       contractAccepted: true,
-      subscriptionPaid: true, // Required for referral bonus in buildHubData
+      subscriptionPaid: true, 
       status: "ACTIVE"
     });
 
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 2000));
     
     const hubRes3 = await request('GET', `/drivers/${driverId}/hub`);
     balance = hubRes3.data?.balance || 0;

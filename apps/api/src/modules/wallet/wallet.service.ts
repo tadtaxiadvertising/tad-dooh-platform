@@ -14,10 +14,15 @@ export class WalletService {
       where: { driverId, sourceType: 'ADVERTISER_SALE', status: 'APPROVED' },
     });
 
+    const referralCount = await this.prisma.driver.count({
+      where: { referredBy: driverId, status: 'OPERATIVO' },
+    });
+
     const effectiveAds = Math.min(activeAdsCount, 15);
     const adsEarnings = effectiveAds * 500;
     const cpaEarnings = cpaCount * 500;
-    const totalEarnings = adsEarnings + cpaEarnings;
+    const referralEarnings = referralCount * 500;
+    const totalEarnings = adsEarnings + cpaEarnings + referralEarnings;
 
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
@@ -28,6 +33,7 @@ export class WalletService {
       driverId,
       adsEarnings,
       cpaEarnings,
+      referralEarnings,
       totalEarnings,
       walletBalance: driver?.walletBalance || 0,
     };

@@ -168,7 +168,7 @@ export default function TrackingPage() {
         fleetFilter === 'all' ? true :
         fleetFilter === 'active' ? v.isOnline :
         fleetFilter === 'offline' ? !v.isOnline :
-        fleetFilter === 'unpaid' ? v.subscriptionStatus !== 'ACTIVE' : true;
+        fleetFilter === 'unpaid' ? v.subscriptionStatus !== 'OPERATIVO' : true;
       
       return matchSearch && matchFilter;
     });

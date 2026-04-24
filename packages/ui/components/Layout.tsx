@@ -6,7 +6,7 @@ import {
   BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, 
   LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, 
   ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale,
-  Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon, ChevronDown
+  Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon, ChevronDown, Network
 } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from "@tad/services";
@@ -32,6 +32,7 @@ const ADMIN_NAVIGATION = [
     label: 'Gestión Táctica',
     items: [
       { name: 'Conductores', href: '/admin/drivers', icon: Users },
+      { name: 'Referidos', href: '/admin/referrals', icon: Network },
       { name: 'Marcas', href: '/admin/advertisers', icon: Building2 },
       { name: 'Solicitudes', href: '/admin/advertisers/requests', icon: ClipboardList },
     ],

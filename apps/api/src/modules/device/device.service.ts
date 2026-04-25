@@ -164,6 +164,11 @@ export class DeviceService {
         player_status: d.playerStatus,
         last_seen: d.lastSeen,
         city: d.city || 'Santiago',
+        driver: d.driver ? {
+          id: d.driver.id,
+          fullName: d.driver.fullName,
+          subscriptionPaid: d.driver.subscriptionPaid
+        } : null,
         driver_id: d.driver?.id || null,
         driver_name: d.driver?.fullName || 'No asignado',
         subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'

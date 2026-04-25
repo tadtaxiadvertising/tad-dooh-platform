@@ -43,7 +43,10 @@ export default function FinancePage() {
     gpsBonus: number; 
     totalAmount: number; 
     driverEmail?: string; 
-    driverPhone?: string 
+    driverPhone?: string;
+    status?: string;
+    paidAt?: string;
+    reference?: string;
   }[]>([]);
   const [campaignData, setCampaignData] = useState<{ campaignId: string; campaignName: string; assignedTaxis: number; status: string; estimatedRevenue: number; totalImpressions?: number }[]>([]);
   const [ledger, setLedger] = useState<any[]>([]);
@@ -322,24 +325,49 @@ export default function FinancePage() {
                         <td className="px-8 py-6 text-right">
                           <div className="flex flex-col items-end">
                              <p className="text-2xl font-bold text-white tracking-tight leading-none mb-2">RD$ {item.totalAmount.toLocaleString()}</p>
-                             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Verificado</span>
+                             <div className={clsx(
+                               "flex items-center gap-1.5 px-2.5 py-1 rounded-md border",
+                               item.status === 'PAID' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20"
+                             )}>
+                                <span className={clsx(
+                                  "w-1.5 h-1.5 rounded-full",
+                                  item.status === 'PAID' ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-amber-500 shadow-[0_0_8px_#f59e0b]"
+                                )} />
+                                <span className={clsx(
+                                  "text-[9px] font-bold uppercase tracking-widest",
+                                  item.status === 'PAID' ? "text-emerald-500" : "text-amber-500"
+                                )}>
+                                  {item.status === 'PAID' ? 'Liquidado' : 'Pendiente'}
+                                </span>
                              </div>
                           </div>
                         </td>
                         <td className="px-8 py-6 text-center">
                           <div className="flex items-center gap-2">
-                            <AntigravityButton
-                              actionName="process_payment"
-                              critical={true}
-                              variant="primary"
-                              className="flex-1"
-                              onAsyncClick={() => handlePay(item.driverId, item.totalAmount)}
-                            >
-                              <RefreshCcw className="w-4 h-4" />
-                              Liquidar
-                            </AntigravityButton>
+                            {item.status === 'PAID' ? (
+                              <div className="flex-1 flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
+                                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                  <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Liquidado</span>
+                                </div>
+                                {item.paidAt && (
+                                  <span className="text-[9px] text-gray-500 font-bold uppercase">
+                                    {format(new Date(item.paidAt), 'dd MMM, HH:mm', { locale: es })}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <AntigravityButton
+                                actionName="process_payment"
+                                critical={true}
+                                variant="primary"
+                                className="flex-1"
+                                onAsyncClick={() => handlePay(item.driverId, item.totalAmount)}
+                              >
+                                <RefreshCcw className="w-4 h-4" />
+                                Liquidar
+                              </AntigravityButton>
+                            )}
                             
                             <button 
                               onClick={async () => {
@@ -542,8 +570,11 @@ export default function FinancePage() {
                       <tr key={item.id} className="hover:bg-gray-900/40 transition-all group">
                         <td className="px-8 py-6">
                            <div>
-                              <p className="text-white font-bold text-xs uppercase tracking-widest mb-1">{new Date(item.createdAt).toLocaleDateString()}</p>
-                              <p className="text-[10px] text-gray-500 font-mono uppercase truncate max-w-[150px]">{item.reference || 'SIN_HASH'}</p>
+                               <p className="text-white font-bold text-xs uppercase tracking-widest mb-1">{new Date(item.createdAt).toLocaleDateString()}</p>
+                               <p className="text-[10px] text-gray-500 font-mono uppercase truncate max-w-[200px]" title={item.reference}>{item.reference || 'SIN_HASH'}</p>
+                               {item.note && (
+                                 <p className="text-[9px] text-tad-yellow/60 font-medium mt-1 leading-tight">{item.note}</p>
+                               )}
                            </div>
                         </td>
                         <td className="px-8 py-6 text-center">

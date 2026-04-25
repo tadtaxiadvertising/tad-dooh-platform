@@ -135,11 +135,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const userEmail = session?.user?.email || 'Administrador';
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Auto-close mobile sidebar when route changes
   React.useEffect(() => {
     setIsSidebarOpen(false);
   }, [router.pathname]);
+
+  // Global Shortcut: CTRL + K to focus search
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const navigationGroups = React.useMemo(() => {
     if (role === 'ADVERTISER') return ADVERTISER_NAVIGATION;
@@ -319,7 +334,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
         
         {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
-        <header className="h-20 shrink-0 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative overflow-hidden">
+        <header className="h-20 shrink-0 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative">
           {/* Subtle glass light leak */}
           <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
           
@@ -363,9 +378,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="w-full max-w-sm relative group z-10 hidden md:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
                 <input 
+                  ref={searchInputRef}
                   type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="SEARCH PROTOCOL..." 
                   className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl py-2 pl-11 pr-16 text-[11px] font-medium outline-none focus:bg-white/10 focus-within:ring-2 focus-within:ring-[#FFCC00]/50 focus-within:border-[#FFCC00]/30 transition-all tracking-wider text-white placeholder:text-zinc-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery) {
+                      // Implement search logic or navigation
+                      console.log('Searching for:', searchQuery);
+                      // For example: router.push(`/admin/search?q=${searchQuery}`);
+                    }
+                  }}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50 group-focus-within:opacity-100 transition-opacity pointer-events-none">
                   <kbd className="shadow-sm bg-zinc-800 border-b border-zinc-700 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded">CTRL</kbd>
@@ -385,12 +410,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <span>{role === 'ADMIN' ? 'Admin Node' : role === 'ADVERTISER' ? 'Adv Hub' : 'Drive Node'}</span>
                 </div>
 
-                <div className="flex items-center gap-2 cursor-pointer group select-none">
-                  <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/5 group-hover:border-tad-yellow/30 group-hover:ring-4 group-hover:ring-tad-yellow/10 transition-all duration-300 flex items-center justify-center relative shadow-sm">
-                    <span className="text-[11px] font-bold text-white tracking-widest">{userEmail.slice(0, 2).toUpperCase()}</span>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a0a0b] animate-pulse shadow-[0_0_8px_#10b981]" />
+                <div className="relative">
+                  <div 
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 cursor-pointer group select-none"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/5 group-hover:border-tad-yellow/30 group-hover:ring-4 group-hover:ring-tad-yellow/10 transition-all duration-300 flex items-center justify-center relative shadow-sm">
+                      <span className="text-[11px] font-bold text-white tracking-widest">{userEmail.slice(0, 2).toUpperCase()}</span>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a0a0b] animate-pulse shadow-[0_0_8px_#10b981]" />
+                    </div>
+                    <ChevronDown className={clsx("w-4 h-4 text-zinc-500 group-hover:text-white transition-all", isUserMenuOpen && "rotate-180")} />
                   </div>
-                  <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+
+                  {isUserMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+                      <div className="absolute right-0 mt-4 w-56 bg-zinc-900/95 border border-white-[0.05] backdrop-blur-3xl rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                        <div className="p-4 border-b border-white-[0.05] bg-zinc-950/50">
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest truncate">{userEmail}</p>
+                          <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
+                        </div>
+                        <div className="p-2">
+                          <button 
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
+                          >
+                            <User className="w-4 h-4" />
+                            Mi Perfil
+                          </button>
+                          {role === 'ADMIN' && (
+                            <button 
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                router.push('/admin/settings');
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              Configuración
+                            </button>
+                          )}
+                          <div className="h-px bg-white-[0.05] my-2" />
+                          <button 
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              handleLogout();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all uppercase tracking-wider"
+                          >
+                            <LogIn className="w-4 h-4 rotate-180" />
+                            Desconectar
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

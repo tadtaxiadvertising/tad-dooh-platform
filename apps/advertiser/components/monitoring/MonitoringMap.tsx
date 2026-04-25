@@ -84,8 +84,8 @@ const createGlassIcon = (device: Device, selected: boolean = false) => {
           <text x="70" y="104" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="36" font-weight="900" fill="${numberColor}" text-anchor="middle" letter-spacing="-1.5" filter="url(#ts-${safeId})" style="text-shadow: ${textGlow};">${short}</text>
 
           <path d="M 45 130 Q 70 123 95 130 L 96 143 Q 70 150 44 143 Z" fill="url(#gg-${safeId})"/>
-          <rect x="42" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
-          <rect x="82" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
+          <rect x="42" y="15" width="16" height="5" rx="2" fill="#fad400"/>
+          <rect x="82" y="15" width="16" height="5" rx="2" fill="#fad400"/>
           <rect x="42" y="160" width="18" height="5" rx="2" fill="#dc2626"/>
           <rect x="80" y="160" width="18" height="5" rx="2" fill="#dc2626"/>
           <path d="M 60 18 Q 70 15 80 18" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>

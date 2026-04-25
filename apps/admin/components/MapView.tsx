@@ -180,8 +180,8 @@ const createIcon = (
           />
 
           <!-- Front headlights — match status color (yellow=on, red=off) -->
-          <rect x="42" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
-          <rect x="82" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
+          <rect x="42" y="15" width="16" height="5" rx="2" fill="#fad400"/>
+          <rect x="82" y="15" width="16" height="5" rx="2" fill="#fad400"/>
 
           <!-- Rear taillights — always red -->
           <rect x="42" y="160" width="18" height="5" rx="2" fill="#dc2626"/>

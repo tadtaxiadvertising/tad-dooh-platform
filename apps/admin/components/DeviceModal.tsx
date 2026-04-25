@@ -16,7 +16,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
     deviceId: '',
     taxiNumber: '',
     city: 'Santiago',
-    status: 'ACTIVE',
+    status: 'OPERATIVO',
     driverId: ''
   });
 
@@ -39,7 +39,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
           deviceId: device.device_id || device.deviceId || '',
           taxiNumber: device.taxi_number || device.taxiNumber || '',
           city: device.city || 'Santiago',
-          status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE'),
+          status: device.status === 'online' ? 'OPERATIVO' : (device.status || 'OPERATIVO'),
           driverId: (device as any).driverId || (device as any).driver?.id || ''
         });
       } else {
@@ -47,7 +47,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
           deviceId: '',
           taxiNumber: '',
           city: 'Santiago',
-          status: 'ACTIVE',
+          status: 'OPERATIVO',
           driverId: ''
         });
       }

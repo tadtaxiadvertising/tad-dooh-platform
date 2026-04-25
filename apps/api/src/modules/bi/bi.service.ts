@@ -66,7 +66,10 @@ export class BiService {
         this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
         this.prisma.campaign.findMany({ where: { status: 'ACTIVE' }, select: { targetImpressions: true } }),
         this.prisma.playbackEvent.aggregate({
-          where: { timestamp: { gte: monthStart }, eventType: 'play_confirm' },
+          where: { 
+            timestamp: { gte: monthStart }, 
+            eventType: { in: ['play_confirm', 'END'] } 
+          },
           _count: { id: true }
         }),
         this.prisma.reconciliationReport.count({ where: { hasDiscrepancy: true } }),
@@ -273,7 +276,7 @@ export class BiService {
         const deliveredImpressions = device ? await this.prisma.playbackEvent.count({
           where: { 
             deviceId: device.deviceId, 
-            eventType: 'play_confirm', 
+            eventType: { in: ['play_confirm', 'END'] }, 
             timestamp: { gte: periodStart, lte: periodEnd } 
           }
         }) : 0;

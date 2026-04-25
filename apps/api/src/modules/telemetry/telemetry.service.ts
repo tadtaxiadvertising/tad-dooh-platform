@@ -36,18 +36,33 @@ export class TelemetryService {
       );
     } catch (err) {
       this.logger.error('Failed to batch sync telemetry', err);
-      // Fallback to individual inserts if batch fails (e.g. one point is invalid)
-      for (const item of telemetryData) {
-        try {
-          await this.prisma.$executeRawUnsafe(
-            `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp) 
-             VALUES (gen_random_uuid(), $1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5)`,
-            item.driverId, item.longitude, item.latitude, item.speed, item.timestamp
-          );
-        } catch (innerErr) {
-          this.logger.error(`Individual fallback sync failed for driver ${item.driverId}`, innerErr);
-        }
-      }
+    }
+  }
+
+  /**
+   * REVENUE SHIELD: Registra una reproducción de video (Impacto)
+   */
+  async recordPlayback(data: {
+    deviceId: string;
+    videoId: string;
+    eventType: 'START' | 'END' | 'ERROR';
+    lat?: number;
+    lng?: number;
+  }) {
+    try {
+      return await this.prisma.playbackEvent.create({
+        data: {
+          deviceId: data.deviceId,
+          videoId: data.videoId,
+          eventType: data.eventType,
+          lat: data.lat,
+          lng: data.lng,
+          timestamp: new Date(),
+        },
+      });
+    } catch (err) {
+      this.logger.error(`Failed to record playback event for device ${data.deviceId}`, err);
+      throw err;
     }
   }
 }

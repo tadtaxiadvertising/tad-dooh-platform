@@ -105,20 +105,20 @@ export const ScreenUpsellCalculator = () => {
           <span className="font-mono text-[#F4F4F5]/80">{formatCurrency(taxes)}</span>
         </div>
         
-        <div className="border-t border-[#F4F4F5]/10 pt-4 flex justify-between items-end">
-          <div>
-            <p className="text-xs text-[#F4F4F5]/50 uppercase tracking-widest mb-1">Total Mensual</p>
-            <p className="text-3xl font-black text-[#FFD700] tracking-tighter">
+        <div className="border-t border-[#F4F4F5]/10 pt-4 flex justify-between items-center gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] text-[#F4F4F5]/50 uppercase tracking-widest mb-0.5">Total Mensual</p>
+            <p className="text-2xl font-black text-[#FFD700] tracking-tighter truncate">
               {formatCurrency(total)}
             </p>
           </div>
           <button 
             disabled={loading}
             onClick={handleRequest}
-            className="bg-[#F4F4F5] hover:bg-white text-black font-extrabold py-3 px-6 rounded-lg transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
+            className="bg-[#F4F4F5] hover:bg-white text-black font-extrabold py-2.5 px-5 rounded-lg transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 flex-shrink-0"
           >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : <TrendingUp size={18} />}
-            {loading ? 'Procesando...' : 'Solicitar'}
+            {loading ? <Loader2 className="animate-spin" size={16} /> : <TrendingUp size={16} />}
+            <span className="text-sm">{loading ? 'Procesando...' : 'Solicitar'}</span>
           </button>
         </div>
       </div>

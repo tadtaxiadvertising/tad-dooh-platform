@@ -86,9 +86,11 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
           <div className="flex items-center gap-6">
             <div className={clsx(
               "p-5 rounded-2xl border transition-all shadow-2xl",
-              profile?.status === 'ACTIVE' || profile?.status === 'online' ? "bg-tad-yellow border-tad-yellow shadow-tad-yellow/20" : "bg-zinc-800 border-white/10"
+              profile?.status === 'OPERATIVO' || profile?.status === 'online' ? "bg-tad-yellow border-tad-yellow shadow-tad-yellow/20" : "bg-zinc-800 border-white/10"
             )}>
-              <Tablet className={clsx("w-8 h-8", profile?.status === 'ACTIVE' || profile?.status === 'online' ? "text-black" : "text-zinc-500")} />
+              <div className="flex items-center justify-center w-full h-full">
+                <Tablet className={clsx("w-8 h-8", profile?.status === 'OPERATIVO' || profile?.status === 'online' ? "text-black" : "text-zinc-500")} />
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1">

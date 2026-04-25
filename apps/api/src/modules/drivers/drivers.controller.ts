@@ -201,6 +201,15 @@ export class DriversController {
   }
 
   /**
+   * GET /api/drivers/device/:deviceId/hub-preview — Datos de negocio para admins cuando el dispositivo no tiene conductor asignado o se busca por dispositivo
+   */
+  @Get('device/:deviceId/hub-preview')
+  @Roles(UserRole.ADMIN)
+  async getDeviceHubPreview(@Param('deviceId') deviceId: string) {
+    return this.driversService.getDriverHubDataByDeviceId(deviceId);
+  }
+
+  /**
    * GET /api/drivers/tablet/:tabletId/hub — Datos de negocio para el portal del chofer
    */
   @Public() // El portal del chofer usa solo el ID del hardware para autenticarse

@@ -27,21 +27,32 @@ async function bootstrap() {
     });
     
     // SHELTER C-I1: CORS restringido a dominios TAD conocidos
-    const allowedOrigins = process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-      : [
-          'https://tad-admin.rewvid.easypanel.host',
-          'https://tad-driver.rewvid.easypanel.host',
-          'https://tad-advertiser.rewvid.easypanel.host',
-        ];
-
-    // En desarrollo, permitir localhost
+    const envOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : [];
+    const baseOrigins = [
+      'https://tad-admin.rewvid.easypanel.host',
+      'https://tad-driver.rewvid.easypanel.host',
+      'https://tad-advertiser.rewvid.easypanel.host',
+      'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',
+      'https://proyecto-ia-tad-player.rewvid.easypanel.host',
+      'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
+    ];
+    
+    const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])];
     if (process.env.NODE_ENV !== 'production') {
-      allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003');
+      allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3000');
     }
 
     app.enableCors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl) 
+        // Allow specifically whitelisted origins
+        // Allow any subdomain of rewvid.easypanel.host
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.rewvid.easypanel.host')) {
+          callback(null, true);
+        } else {
+          callback(null, false);
+        }
+      },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,
     });

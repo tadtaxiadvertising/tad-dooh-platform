@@ -33,6 +33,7 @@ export default function AdminLoginPage() {
       }
       const isSecure = window.location.protocol === 'https:';
       document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+      localStorage.setItem('tad_admin_token', data.access_token);
       router.replace('/admin');
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || 'Error al iniciar sesión');

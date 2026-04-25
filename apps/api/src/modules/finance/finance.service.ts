@@ -223,19 +223,27 @@ export class FinanceService {
         // Enhanced: Get the actual taxi number from the assigned devices or driver record
         const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
 
+        // Check if already paid
+        const paymentRecord = await this.prisma.payrollPayment.findUnique({
+          where: { driverId_month_year: { driverId: driver.id, month, year } }
+        });
+
         return {
           driverId: driver.id,
           driverName: driver.fullName || 'TAD DRIVER',
           driverPhone: driver.phone || '',
           taxiNumber: actualTaxiNumber,
-          activeAds: activeAdsCount,
+          activeAds: paymentRecord?.status === 'PAID' ? paymentRecord.activeAds : activeAdsCount,
           adIncome: adTransmissionIncome,
           baseCommission,
-          gpsPoints: gpsPointsCount,
+          gpsPoints: paymentRecord?.status === 'PAID' ? paymentRecord.gpsPoints : gpsPointsCount,
           referralBonus: driverReferralBonus,
           advertiserReferralBonus,
-          totalAmount: totalAmount,
-          currency: 'DOP'
+          totalAmount: paymentRecord?.status === 'PAID' ? paymentRecord.amount : totalAmount,
+          currency: 'DOP',
+          status: paymentRecord?.status || 'PENDING',
+          paidAt: paymentRecord?.paidAt,
+          reference: paymentRecord?.referenceNum
         };
       } catch (err) {
         this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`);
@@ -252,6 +260,7 @@ export class FinanceService {
           advertiserReferralBonus: 0,
           totalAmount: 0,
           currency: 'DOP',
+          status: 'ERROR',
           error: true
         };
       }
@@ -311,7 +320,7 @@ export class FinanceService {
   async processPayment(driverId: string, month: number, year: number, reference: string) {
     this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
 
-    // Re-calculate to get current amount due
+    // Re-calculate to get current amount due and metrics
     const payrollData = await this.calculateMonthlyPayroll(month, year);
     const driverEntry = payrollData.find(p => p.driverId === driverId);
 
@@ -319,17 +328,44 @@ export class FinanceService {
       throw new Error('Driver not found for payroll calculation');
     }
 
-    return this.prisma.payrollPayment.create({
-      data: {
+    // 1. Record the payroll payment (Detailed record)
+    const payrollRecord = await this.prisma.payrollPayment.upsert({
+      where: {
+        driverId_month_year: { driverId, month, year }
+      },
+      update: {
+        amount: driverEntry.totalAmount,
+        referenceNum: reference,
+        status: 'PAID',
+        paidAt: new Date(),
+        activeAds: driverEntry.activeAds,
+        gpsPoints: driverEntry.gpsPoints
+      },
+      create: {
         driverId,
         month,
         year,
         amount: driverEntry.totalAmount,
         referenceNum: reference,
         status: 'PAID',
-        paidAt: new Date()
+        paidAt: new Date(),
+        activeAds: driverEntry.activeAds,
+        gpsPoints: driverEntry.gpsPoints
       }
     });
+
+    // 2. Record in the Financial Ledger (Unified truth)
+    await this.recordTransaction({
+      type: 'OUTGOING',
+      category: 'OPEX_DRIVER_PAYOUT',
+      amount: driverEntry.totalAmount,
+      entityId: driverId,
+      reference: reference || `PAY-${driverId.substring(0,4)}-${month}-${year}`,
+      note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
+      status: 'COMPLETED'
+    });
+
+    return payrollRecord;
   }
 
   /**

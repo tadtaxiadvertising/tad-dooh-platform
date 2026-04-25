@@ -408,6 +408,8 @@ model PayrollPayment {
   penaltyApplied     Boolean   @default(false) @map("penalty_applied")
   penaltyPercentage  Float     @default(0)     @map("penalty_percentage")
   transmissionHours  Float     @default(0)     @map("transmission_hours")
+  activeAds          Int       @default(0)     @map("active_ads")
+  gpsPoints          Int       @default(0)     @map("gps_points")
 
   @@unique([driverId, month, year])
   @@index([driverId])

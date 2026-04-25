@@ -870,17 +870,22 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
          >
            {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
          </button>
-         <a 
-           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/tad-driver.html?deviceId=${device.device_id}&driverId=${device.driver?.id || (device as any).driver_id || ''}&server=${encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api')}&token=${localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_token') || ''}`}
-           target="_blank"
-           rel="noopener noreferrer"
-           onClick={(e) => e.stopPropagation()}
+         <button 
+           onClick={(e) => {
+             e.stopPropagation();
+             const baseUrl = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
+             const apiServer = encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
+             const token = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_token') || '';
+             const driverId = device.driver?.id || (device as any).driver_id || '';
+             const url = `${baseUrl}/tad-driver.html?deviceId=${device.device_id}&driverId=${driverId}&server=${apiServer}&token=${token}`;
+             window.open(url, '_blank', 'noopener,noreferrer');
+           }}
            className="flex-1 py-3 bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
            title="Business Hub del Conductor"
          >
            <Smartphone className="w-3 h-3" />
            Hub
-         </a>
+         </button>
          <a 
            href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
            target="_blank"

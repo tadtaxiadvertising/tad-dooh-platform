@@ -21,14 +21,9 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// ============================================
-// TAXI PIN MARKER — Pin shape with white taxi ID label
-// ============================================
-const COLORS: Record<string, string> = {
-  active:  '#fad400',
-  offline: '#52525b',
-  unpaid:  '#ef4444',
-};
+// Status-driven number colors: yellow = on/active, red = off
+const NUMBER_COLOR_ACTIVE  = '#eab308'; // Yellow — encendido
+const NUMBER_COLOR_OFFLINE = '#dc2626'; // Red   — apagado
 
 // Coordenadas aproximadas del Centro de Santiago (Monumento y alrededores)
 const POLIGONO_CENTRAL: [number, number][] = [
@@ -38,36 +33,49 @@ const POLIGONO_CENTRAL: [number, number][] = [
   [19.4380, -70.7020], // Suroeste
 ];
 
-// Creates a premium cyber-taxi icon
-const createIcon = (status: string, selected: boolean, label = '', lastSeen?: string | null) => {
+/**
+ * createIcon — Taxi/Screen map marker
+ *
+ * Color rules (per design spec):
+ *  • Number color : yellow (#eab308) = encendido/active  |  red (#dc2626) = apagado/offline
+ *  • Car body     : white gradient in dark-map mode  |  dark/black gradient in light-map mode
+ *  • Headlights   : match number color (yellow/red)
+ *  • Taillights   : always red (#dc2626)
+ */
+const createIcon = (
+  status: string,
+  selected: boolean,
+  label = '',
+  lastSeen?: string | null,
+  deviceId = '',
+  mapTheme: 'dark' | 'light' = 'dark',
+) => {
   const isActive = status === 'active';
-  const mainColor = isActive ? '#FFD400' : '#52525b';
   const W = 52;
   const H = 64;
   const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
-  
-  // Determine number color based on connectivity
-  let numberColor = '#71717a'; // Default Gray (Weeks/Never)
-  let textGlow = 'none';
+  const safeId = (deviceId || label || 'v').replace(/[^a-zA-Z0-9]/g, '');
 
-  if (isActive) {
-    numberColor = '#10b981'; // Green
-    textGlow = '0 0 10px rgba(16,185,129,0.8)';
-  } else if (lastSeen) {
-    const diffHours = (Date.now() - new Date(lastSeen).getTime()) / (1000 * 60 * 60);
-    if (diffHours <= 72) {
-      numberColor = '#eab308'; // Yellow
-      textGlow = '0 0 8px rgba(234,179,8,0.6)';
-    } else if (diffHours <= 24 * 14) { // Up to 2 weeks
-      numberColor = '#ef4444'; // Red
-      textGlow = '0 0 8px rgba(239,68,68,0.6)';
-    } else {
-      numberColor = '#52525b'; // Gray
-    }
-  }
+  // ── Number & headlight color: simple binary rule ─────────────────────────
+  const numberColor = isActive ? NUMBER_COLOR_ACTIVE : NUMBER_COLOR_OFFLINE;
+  const textGlow    = isActive
+    ? '0 0 10px rgba(234,179,8,0.85)'
+    : '0 0 8px rgba(220,38,38,0.7)';
 
-  const glow = isActive ? '0 0 25px rgba(255, 212, 0, 0.6)' : 'none';
-  
+  // ── Car body colors adapt to map theme ───────────────────────────────────
+  const bodyGrad = mapTheme === 'dark'
+    ? { from: '#f1f5f9', mid: '#ffffff', to: '#e2e8f0' }  // white body
+    : { from: '#1e293b', mid: '#0f172a', to: '#0a0a0b' }; // black body
+
+  const bodyStroke  = mapTheme === 'dark' ? '#cbd5e1' : '#374151';
+  const screenFill  = mapTheme === 'dark' ? '#f8fafc' : '#1e293b';
+  const screenStrok = mapTheme === 'dark' ? '#e2e8f0' : '#334155';
+  const shineStroke = mapTheme === 'dark' ? '#e2e8f0' : '#475569';
+  const shineOpacity = mapTheme === 'dark' ? '0.6' : '0.3';
+  const glassGrad = { from: '#1e293b', to: '#020617' };
+
+  const pulseColor = isActive ? numberColor : 'transparent';
+
   const html = `
     <div style="
       position: relative;
@@ -79,62 +87,66 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
       justify-content: center;
       perspective: 1000px;
     ">
-      <!-- Radar Pulse Ring -->
+      <!-- Radar Pulse Ring (only when active) -->
       ${isActive ? `
-        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}"></div>
-        <div class="map-pulse-ring" style="border: 1.5px solid ${mainColor}; animation-delay: 0.8s;"></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid ${pulseColor}"></div>
+        <div class="map-pulse-ring" style="border: 1.5px solid ${pulseColor}; animation-delay: 0.8s;"></div>
       ` : ''}
 
-      <!-- 3D-Look Car Container -->
+      <!-- Car SVG Container -->
       <div style="
-        width: 30px;
-        height: 44px;
-        background: linear-gradient(145deg, ${mainColor} 0%, ${isActive ? '#ccaa00' : '#27272a'} 100%);
-        border-radius: 10px;
-        border: 2px solid ${selected ? '#fff' : 'rgba(0,0,0,0.6)'};
-        box-shadow: ${glow}, 0 10px 20px rgba(0,0,0,0.5);
+        width: 35px;
+        height: 45px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: space-between;
-        padding: 4px 0;
-        transform: ${selected ? 'scale(1.1) translateZ(20px)' : 'scale(1)'};
+        justify-content: center;
+        transform: ${selected ? 'scale(1.15)' : 'scale(1)'};
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2;
+        filter: ${selected ? `drop-shadow(0 0 8px ${numberColor}80)` : 'none'};
       ">
-        <!-- Roof/Antenna Detail -->
-        <div style="width: 12px; height: 1.5px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
-        
-        <!-- Center ID Label -->
-        <div style="
-          font-family: 'Inter', sans-serif;
-          font-weight: 950;
-          font-size: 10px;
-          color: ${numberColor};
-          letter-spacing: -0.5px;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8), ${textGlow};
-          transform: skew(-5deg);
-        ">
-          ${short}
-        </div>
+        <svg width="100%" height="100%" viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ds-${safeId}" x="-30%" y="-20%" width="160%" height="150%">
+              <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.35"/>
+            </filter>
+            <filter id="ts-${safeId}" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.25"/>
+            </filter>
+            <linearGradient id="bg-${safeId}" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="${bodyGrad.from}"/>
+              <stop offset="50%"  stop-color="${bodyGrad.mid}"/>
+              <stop offset="100%" stop-color="${bodyGrad.to}"/>
+            </linearGradient>
+            <linearGradient id="gg-${safeId}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   stop-color="${glassGrad.from}"/>
+              <stop offset="100%" stop-color="${glassGrad.to}"/>
+            </linearGradient>
+          </defs>
 
-        <!-- Light Bar / Tail lights -->
-        <div style="
-          width: 22px; 
-          height: 3px; 
-          background: ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
-          border-radius: 2px;
-          box-shadow: ${isActive ? '0 -2px 5px rgba(255,255,255,0.3)' : 'none'};
-        "></div>
+          <rect x="25" y="10" width="90" height="160" rx="20" fill="url(#bg-${safeId})" stroke="${bodyStroke}" stroke-width="1" filter="url(#ds-${safeId})"/>
+          <path d="M 32 60 Q 32 30 50 20" fill="none" stroke="${shineStroke}" stroke-width="2" stroke-linecap="round" opacity="${shineOpacity}"/>
+          <path d="M 45 45 Q 70 38 95 45 L 96 58 Q 70 65 44 58 Z" fill="url(#gg-${safeId})"/>
+          <rect x="30" y="65" width="80" height="55" rx="6" fill="${screenFill}" stroke="${screenStrok}" stroke-width="0.5"/>
+          
+          <text x="70" y="104" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="36" font-weight="900" fill="${numberColor}" text-anchor="middle" letter-spacing="-1.5" filter="url(#ts-${safeId})" style="text-shadow: ${textGlow};">${short}</text>
+
+          <path d="M 45 130 Q 70 123 95 130 L 96 143 Q 70 150 44 143 Z" fill="url(#gg-${safeId})"/>
+          <rect x="42" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
+          <rect x="82" y="15" width="16" height="5" rx="2" fill="${numberColor}"/>
+          <rect x="42" y="160" width="18" height="5" rx="2" fill="#dc2626"/>
+          <rect x="80" y="160" width="18" height="5" rx="2" fill="#dc2626"/>
+          <path d="M 60 18 Q 70 15 80 18" fill="none" stroke="${shineStroke}" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
       </div>
 
-      <!-- Arrow Indicator for Selected (Cyber style) -->
       ${selected ? `
         <div style="
-          width: 2px; 
-          height: 12px; 
-          background: white;
-          box-shadow: 0 0 10px white;
+          width: 2px;
+          height: 12px;
+          background: ${numberColor};
+          box-shadow: 0 0 10px ${numberColor};
           position: absolute;
           top: -20px;
           animation: map-float 1.5s infinite ease-in-out;
@@ -151,13 +163,13 @@ const createIcon = (status: string, selected: boolean, label = '', lastSeen?: st
           opacity: 0;
         }
         @keyframes map-pulse {
-          0% { transform: scale(0.6); opacity: 0; }
-          20% { opacity: 0.8; }
+          0%   { transform: scale(0.6); opacity: 0; }
+          20%  { opacity: 0.8; }
           100% { transform: scale(3.5); opacity: 0; }
         }
         @keyframes map-float {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
+          50%       { transform: translateY(-5px); }
         }
       </style>
     </div>
@@ -315,7 +327,7 @@ const MapView: React.FC<MapViewProps> = ({
             <Marker
               key={loc.deviceId || i}
               position={[loc.lastLat, loc.lastLng]}
-              icon={createIcon(markerStatus, sel, label, loc.lastSeen)}
+              icon={createIcon(markerStatus, sel, label, loc.lastSeen, loc.deviceId, mapTheme)}
               zIndexOffset={sel ? 1000 : 0}
             >
               <Popup className="popup-clean" offset={[0, -12]}>
@@ -330,7 +342,7 @@ const MapView: React.FC<MapViewProps> = ({
         })}
       </MarkerClusterGroup>
     );
-  }, [mode, locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand]);
+  }, [mode, locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand, mapTheme]);
 
   const trail = useMemo(() => {
     if (!recentPath || recentPath.length < 2) return [];
@@ -441,13 +453,13 @@ const MapView: React.FC<MapViewProps> = ({
           margin-bottom: 8px !important;
           font-weight: 900 !important;
           transition: all .3s;
-          backdrop-blur: 10px;
+          backdrop-filter: blur(10px);
         }
         .leaflet-control-zoom a:hover { 
           background: #fad400 !important; 
           color: #000 !important; 
           transform: translateY(-2px);
-          shadow: 0 10px 20px rgba(250,212,0,0.3);
+          box-shadow: 0 10px 20px rgba(250,212,0,0.3);
         }
         
         @keyframes map-scan {

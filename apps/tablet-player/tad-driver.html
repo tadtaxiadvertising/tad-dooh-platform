@@ -613,13 +613,18 @@ html,body{width:100%;min-height:100dvh;background:var(--bg);color:var(--t);font-
 
 <script>
 // ══ CONFIG ══
-const API   = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
+const qs  = new URLSearchParams(location.search);
+let API   = qs.get('server') || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
+if (API.endsWith('/api')) API += '/v1';
+else if (!API.endsWith('/v1') && API.includes('/api/')) { /* already has v1 or similar */ }
+else if (!API.includes('/v1')) API += '/v1';
+
 const STITCH_GQL = 'https://api.stitch.money/graphql';
 const STITCH_KEY = 'AQ.Ab8RN6L8TZijndTFsSCcOZy9PrfOHiWU2fAEvtfnQc50enWEfg';
 
-const qs  = new URLSearchParams(location.search);
 let DID = qs.get('deviceId') || localStorage.getItem('tad_did') || '';
-let JWT = localStorage.getItem('tad_token') || '';
+let JWT = qs.get('token') || localStorage.getItem('tad_token') || '';
+const DRIVER_ID = qs.get('driverId');
 const T0  = Date.now();
 
 let DATA = null, gpsOn = false, gpsW = null, gpsT = null, hbCount = +localStorage.getItem('tad_hb')||0;
@@ -829,7 +834,8 @@ async function load(){
   if(!checkAuth()) return;
   
   try{
-    const r = await fetch(`${API}/drivers/me/hub`, {
+    const endpoint = DRIVER_ID ? `${API}/drivers/${DRIVER_ID}/hub-preview` : `${API}/drivers/me/hub`;
+    const r = await fetch(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

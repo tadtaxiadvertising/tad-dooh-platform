@@ -20,6 +20,12 @@ interface FleetDevice {
   deviceId?: string;
   taxi_number?: string;
   taxiNumber?: string;
+  driver: {
+    id: string;
+    fullName: string;
+    phone: string;
+    subscriptionPaid: boolean;
+  } | null;
   status: string;
   is_online: boolean;
   battery_level?: number;
@@ -46,11 +52,12 @@ const getApiBase = () => {
   return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
 };
 
-const getTelemetryUrl = (deviceId: string) => {
+const getTelemetryUrl = (deviceId: string, driverId?: string) => {
   // Points to the new tad-driver.html business hub, pre-filling the deviceId and server via URL
   const base = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
   const api = getApiBase();
-  return `${base}/tad-driver.html?deviceId=${deviceId}&server=${encodeURIComponent(api)}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('tad_token') || '' : '';
+  return `${base}/tad-driver.html?deviceId=${deviceId}&driverId=${driverId || ''}&server=${encodeURIComponent(api)}&token=${token}`;
 };
 
 function CopyButton({ value, label = 'URL' }: { value: string; label?: string }) {
@@ -864,7 +871,7 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
            {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
          </button>
          <a 
-           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/tad-driver.html?deviceId=${device.device_id}&server=${encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api')}`}
+           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/tad-driver.html?deviceId=${device.device_id}&driverId=${device.driver?.id || ''}&server=${encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api')}&token=${localStorage.getItem('tad_token') || ''}`}
            target="_blank"
            rel="noopener noreferrer"
            onClick={(e) => e.stopPropagation()}

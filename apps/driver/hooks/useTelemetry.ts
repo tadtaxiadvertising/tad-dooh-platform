@@ -97,16 +97,25 @@ export function useTelemetry(): UseTelemetryReturn {
   const isOnlineRef = useRef(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const wakeLockRef = useRef<any>(null); // Screen Wake Lock sentinel
 
+  // ─── Memoria persistente durante la sesión ─────────────────────────────
+  const memoryBufferRef = useRef<TelemetryCoord[]>([]);
+
   // ─── Flush: envía el batch al backend ────────────────────────────────────
   const flushBatch = useCallback(async (forceFlush = false) => {
-    const batch = readBatch();
-    if (batch.length === 0) return;
-    if (!forceFlush && batch.length < BATCH_SIZE) return;
+    // 1. Sincronizar memoria con storage antes de procesar
+    const storageBatch = readBatch();
+    const combinedBatch = [...storageBatch, ...memoryBufferRef.current];
+    
+    if (combinedBatch.length === 0) return;
+    if (!forceFlush && combinedBatch.length < BATCH_SIZE) return;
+
+    // Limpiar buffers inmediatamente para evitar duplicados en re-entradas
+    memoryBufferRef.current = [];
+    writeBatch([]);
 
     if (!isOnlineRef.current) {
       // Sin red → guardar en cola offline
-      appendOfflineQueue(batch);
-      writeBatch([]);
+      appendOfflineQueue(combinedBatch);
       setBatchCount(0);
       setOfflineCount(readOfflineQueue().length);
       return;
@@ -120,7 +129,6 @@ export function useTelemetry(): UseTelemetryReturn {
           ? 'http://localhost:3000/api'
           : '/api/proxy';
       
-      // Obtener IDs para el DTO
       const userRaw = localStorage.getItem('tad_driver_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const driverId = user?.entityId || 'unknown';
@@ -132,10 +140,10 @@ export function useTelemetry(): UseTelemetryReturn {
         body: JSON.stringify({ 
           driverId,
           deviceId,
-          points: batch.map(c => ({
+          points: combinedBatch.map(c => ({
             lat: c.lat,
             lng: c.lng,
-            speed: 0, // No disponible en todas las plataformas, default 0
+            speed: 0,
             timestamp: c.ts
           }))
         }),
@@ -143,23 +151,17 @@ export function useTelemetry(): UseTelemetryReturn {
       });
 
       if (res.status === 402) {
-        // ⚠️ PARADOJA 402: Kill-Switch activado
         stopTracking();
         setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
         setConnectionStatus('offline');
         return;
       }
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Éxito: limpiar batch principal
-      writeBatch([]);
       setBatchCount(0);
 
-      // SHELTER C-D2: Drip Sync — vaciar cola offline en chunks con jitter
-      // Previene saturación del backend cuando 50+ tablets reconectan a la vez
+      // SHELTER C-D2: Drip Sync
       const offlineQueue = readOfflineQueue();
       if (offlineQueue.length > 0) {
         const DRIP_CHUNK_SIZE = 50;
@@ -167,52 +169,34 @@ export function useTelemetry(): UseTelemetryReturn {
 
         for (let i = 0; i < offlineQueue.length; i += DRIP_CHUNK_SIZE) {
           const chunk = offlineQueue.slice(i, i + DRIP_CHUNK_SIZE);
-
-          // Jitter aleatorio 0-5s entre chunks para evitar thundering herd
-          if (i > 0) {
-            await new Promise(r => setTimeout(r, Math.random() * 5000));
-          }
+          if (i > 0) await new Promise(r => setTimeout(r, Math.random() * 5000));
 
           try {
             const retryRes = await fetch(`${apiBase}/fleet/track-batch`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                driverId,
-                deviceId,
-                points: chunk.map(c => ({
-                  lat: c.lat,
-                  lng: c.lng,
-                  speed: 0,
-                  timestamp: c.ts
-                }))
+                driverId, deviceId,
+                points: chunk.map(c => ({ lat: c.lat, lng: c.lng, speed: 0, timestamp: c.ts }))
               }),
               signal: AbortSignal.timeout(10_000),
             });
-            if (!retryRes.ok) {
-              allSynced = false;
-              break; // Backend con problemas, parar el drain
-            }
-          } catch {
-            allSynced = false;
-            break; // Sin red de nuevo, abortar
-          }
+            if (!retryRes.ok) { allSynced = false; break; }
+          } catch { allSynced = false; break; }
         }
 
         if (allSynced) {
           clearOfflineQueue();
           setOfflineCount(0);
         } else {
-          // Mantener los chunks no enviados
           setOfflineCount(readOfflineQueue().length);
         }
       }
 
       setConnectionStatus('online');
     } catch {
-      // Fallo de red: mover a cola offline
-      appendOfflineQueue(batch);
-      writeBatch([]);
+      // Re-encolar si falló el envío
+      appendOfflineQueue(combinedBatch);
       setBatchCount(0);
       setOfflineCount(readOfflineQueue().length);
       setConnectionStatus(isOnlineRef.current ? 'online' : 'offline');
@@ -223,19 +207,19 @@ export function useTelemetry(): UseTelemetryReturn {
   const resetFlushTimer = useCallback(() => {
     if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
     flushTimerRef.current = setTimeout(() => {
-      flushBatch(true); // flush forzado por tiempo
+      flushBatch(true);
       resetFlushTimer();
     }, FLUSH_INTERVAL_MS);
   }, [flushBatch]);
 
-  // ─── Añadir coordenada al batch ───────────────────────────────────────────
+  // ─── Añadir coordenada al batch (OPTIMIZADO: Memoria primero) ─────────────
   const addCoord = useCallback((coord: TelemetryCoord) => {
-    const batch = readBatch();
-    batch.push(coord);
-    writeBatch(batch);
-    setBatchCount(batch.length);
+    memoryBufferRef.current.push(coord);
+    setBatchCount(prev => prev + 1);
 
-    if (batch.length >= BATCH_SIZE) {
+    // Persistir a disco solo si el buffer es grande o cada X tiempo 
+    // para evitar I/O constante en cada segundo de GPS
+    if (memoryBufferRef.current.length >= BATCH_SIZE) {
       flushBatch(false);
     }
   }, [flushBatch]);

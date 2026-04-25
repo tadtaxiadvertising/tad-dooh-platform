@@ -127,12 +127,12 @@ BEGIN
             UPDATE public.drivers 
             SET wallet_balance = wallet_balance + NEW.net_amount,
                 updated_at = NOW()
-            WHERE id = NEW.entity_id;
+            WHERE id = NEW.entity_id::uuid;
         ELSIF NEW.type = 'OUTGOING' THEN
             UPDATE public.drivers 
             SET wallet_balance = wallet_balance - NEW.amount,
                 updated_at = NOW()
-            WHERE id = NEW.entity_id;
+            WHERE id = NEW.entity_id::uuid;
         END IF;
     END IF;
     RETURN NEW;
@@ -151,12 +151,12 @@ BEGIN
             subscription_end = NOW() + INTERVAL '1 year',
             status = 'OPERATIVO',
             updated_at = NOW()
-        WHERE id = NEW.entity_id;
+        WHERE id = NEW.entity_id::uuid;
         
         -- También activar dispositivos asociados
         UPDATE public.devices
         SET status = 'OPERATIVO'
-        WHERE driver_id = NEW.entity_id;
+        WHERE driver_id = NEW.entity_id::uuid;
     END IF;
     RETURN NEW;
 END;
@@ -190,15 +190,15 @@ ALTER TABLE public.financial_transactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 CREATE POLICY "profiles_select_own" ON public.profiles
   FOR SELECT USING (
-    auth.uid() = id
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    auth.uid()::uuid = id::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 CREATE POLICY "profiles_update_own" ON public.profiles
   FOR UPDATE USING (
-    auth.uid() = id
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    auth.uid()::uuid = id::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 -- ── DRIVERS ────────────────────────────────────────────────────
@@ -206,15 +206,15 @@ CREATE POLICY "profiles_update_own" ON public.profiles
 DROP POLICY IF EXISTS "drivers_select_own" ON public.drivers;
 CREATE POLICY "drivers_select_own" ON public.drivers
   FOR SELECT USING (
-    auth.uid() = id
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    auth.uid()::uuid = id::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "drivers_update_own" ON public.drivers;
 CREATE POLICY "drivers_update_own" ON public.drivers
   FOR UPDATE USING (
-    auth.uid() = id
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    auth.uid()::uuid = id::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 -- Permitir INSERT para el registro público (signup)
@@ -227,15 +227,15 @@ CREATE POLICY "drivers_insert_public" ON public.drivers
 DROP POLICY IF EXISTS "devices_select_own" ON public.devices;
 CREATE POLICY "devices_select_own" ON public.devices
   FOR SELECT USING (
-    driver_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    driver_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "devices_update_own" ON public.devices;
 CREATE POLICY "devices_update_own" ON public.devices
   FOR UPDATE USING (
-    driver_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    driver_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 -- ── CAMPAIGNS ──────────────────────────────────────────────────
@@ -243,29 +243,29 @@ CREATE POLICY "devices_update_own" ON public.devices
 DROP POLICY IF EXISTS "campaigns_select_own" ON public.campaigns;
 CREATE POLICY "campaigns_select_own" ON public.campaigns
   FOR SELECT USING (
-    advertiser_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    advertiser_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "campaigns_insert_own" ON public.campaigns;
 CREATE POLICY "campaigns_insert_own" ON public.campaigns
   FOR INSERT WITH CHECK (
-    advertiser_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    advertiser_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "campaigns_update_own" ON public.campaigns;
 CREATE POLICY "campaigns_update_own" ON public.campaigns
   FOR UPDATE USING (
-    advertiser_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    advertiser_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 DROP POLICY IF EXISTS "campaigns_delete_own" ON public.campaigns;
 CREATE POLICY "campaigns_delete_own" ON public.campaigns
   FOR DELETE USING (
-    advertiser_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    advertiser_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 -- ── FINANCIAL TRANSACTIONS ─────────────────────────────────────
@@ -273,8 +273,8 @@ CREATE POLICY "campaigns_delete_own" ON public.campaigns
 DROP POLICY IF EXISTS "financial_tx_select_own" ON public.financial_transactions;
 CREATE POLICY "financial_tx_select_own" ON public.financial_transactions
   FOR SELECT USING (
-    entity_id = auth.uid()
-    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+    entity_id::uuid = auth.uid()::uuid
+    OR (auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text
   );
 
 -- Solo ADMIN puede insertar transacciones (via backend service_role)

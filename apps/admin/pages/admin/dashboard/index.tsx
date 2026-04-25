@@ -54,7 +54,7 @@ export default function Home() {
 
       setStats({
         devices: filteredDevices.length,
-        online: filteredDevices.filter((d: any) => d.status === 'online' || d.status === 'ACTIVE' || d.is_online).length,
+        online: filteredDevices.filter((d: any) => d.status === 'online' || d.status === 'OPERATIVO' || d.status === 'ACTIVE' || d.is_online).length,
         campaigns: Array.isArray(campaigns) ? campaigns.length : 0,
         activeCampaigns: Array.isArray(campaigns) ? (campaigns as { active: boolean }[]).filter((c) => c.active).length : 0,
         media: Array.isArray(media) ? media.length : 0,

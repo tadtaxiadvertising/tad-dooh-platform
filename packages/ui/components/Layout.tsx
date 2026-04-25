@@ -352,7 +352,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Center Section: Status Info & Search Bar */}
             <div className="flex flex-1 items-center justify-end lg:justify-start gap-8 min-w-0">
-              {role === 'ADMIN' && (
+              {(role === 'ADMIN' || role === 'ADVERTISER') && (
                 <div className="hidden xl:flex items-center gap-6 shrink-0 z-20">
                   <FleetHealthStatus hasSession={!!session} />
                   

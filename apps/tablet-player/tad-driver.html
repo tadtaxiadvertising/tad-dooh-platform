@@ -834,7 +834,16 @@ async function load(){
   if(!checkAuth()) return;
   
   try{
-    const endpoint = DRIVER_ID ? `${API}/drivers/${DRIVER_ID}/hub-preview` : `${API}/drivers/me/hub`;
+    let endpoint;
+    if (DRIVER_ID) {
+      endpoint = `${API}/drivers/${DRIVER_ID}/hub-preview`;
+    } else if (qs.has('driverId') && qs.get('driverId') === '') {
+      // If Admin clicks on a device without a driver, driverId parameter is present but empty
+      endpoint = `${API}/drivers/device/${DID}/hub-preview`;
+    } else {
+      endpoint = `${API}/drivers/me/hub`;
+    }
+    
     const r = await fetch(endpoint, {
       method: 'GET',
       headers: {

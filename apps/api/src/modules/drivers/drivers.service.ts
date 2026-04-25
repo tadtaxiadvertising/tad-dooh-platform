@@ -357,12 +357,40 @@ export class DriversService {
       } as any,
     });
 
-    if (!device || !device.driver) {
+    if (!device) {
+      throw new ForbiddenException('Dispositivo no encontrado.');
+    }
+
+    if (!device.driver) {
       this.logger.warn(`[HUB] Hub solicitado para deviceId ${deviceId} pero no tiene conductor vinculado.`);
-      throw new ForbiddenException('Dispositivo no vinculado a un chofer o perfil inexistente.');
+      // Retornar un hub vacío/default en lugar de throw para que el Admin Dashboard no se rompa
+      return {
+        driverName: 'Sín Conductor',
+        deviceId: device.deviceId,
+        taxiNumber: device.taxiNumber || '---',
+        phone: '---',
+        cedula: '---',
+        subscriptionPaid: false,
+        adsPlayed: 0,
+        activeAds: 0,
+        projectedEarnings: 0,
+        referralsCount: 0,
+        referralEarnings: 0,
+        lastPayment: null,
+        totalPaid: 0,
+        gpsPoints: 0,
+        notices: []
+      };
     }
 
     return this.buildHubData(device.driver, device.deviceId);
+  }
+
+  /**
+   * Alias de getDriverHubData usado por Admins
+   */
+  async getDriverHubDataByDeviceId(deviceId: string) {
+    return this.getDriverHubData(deviceId);
   }
 
   /**

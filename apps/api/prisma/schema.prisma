@@ -684,3 +684,15 @@ enum SystemStatus {
   PENDIENTE_PAGO
   BLOQUEADO
 }
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      String   @default("STRING") // STRING, NUMBER, BOOLEAN, JSON
+  group     String   @default("GENERAL") // GENERAL, FINANCIAL, FLEET, SYSTEM
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

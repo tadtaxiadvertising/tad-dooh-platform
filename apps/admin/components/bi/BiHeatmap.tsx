@@ -59,15 +59,8 @@ export const BiHeatmap = () => {
     const fetchPoints = async () => {
       try {
         const data = await getBiHotspots();
-        // Fallback points if empty for visual excellence
         if (!data || data.length === 0) {
-          setPoints([
-            [18.4861, -69.9312, 0.8],
-            [18.4761, -69.9412, 0.6],
-            [18.4961, -69.9212, 0.9],
-            [18.4661, -69.9512, 0.5],
-            [18.4561, -69.9312, 0.7],
-          ]);
+          setPoints([]);
         } else {
           setPoints(data);
         }

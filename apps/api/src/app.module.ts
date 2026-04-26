@@ -33,6 +33,7 @@ import { AppController } from './app.controller';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { TelemetryModule } from './modules/telemetry/telemetry.module';
 import { ReferralModule } from './modules/referral/referral.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ReferralModule } from './modules/referral/referral.module';
     WalletModule,
     TelemetryModule,
     ReferralModule,
+    SystemSettingsModule,
     SimulationModule,
   ],
   controllers: [AppController],
@@ -142,4 +144,3 @@ export class AppModule implements NestModule, OnModuleInit {
     this.logger.log('🚀 TAD Backend Iniciado.');
   }
 }
-

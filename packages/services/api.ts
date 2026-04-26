@@ -518,7 +518,11 @@ export const emailDriverPaymentConfirm = (data: {
   driverId?: string;
 }) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
-
+// ============================================
+// Auth & Profile
+// ============================================
+export const getMyProfile = () => api.get('/auth/profile').then(res => res.data);
+export const updateMyProfile = (data: { name?: string; password?: string; currentPassword?: string }) => api.put('/auth/profile', data).then(res => res.data);
 
 export default api;
 

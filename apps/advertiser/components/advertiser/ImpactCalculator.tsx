@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function ImpactCalculator({ onUpdate }: { onUpdate: (data: { screens: number, budget: number }) => void }) {
   const [screens, setScreens] = useState(1);
-  const costPerScreen = 500;
+  const costPerScreen = 1500;
   const impactsPerScreen = 1200;
 
   const totalBudget = screens * costPerScreen;

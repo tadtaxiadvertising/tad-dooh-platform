@@ -1,9 +1,11 @@
 # 📘 TAD DOOH — Documentación Maestra
 
-**Versión:** 12.1.0 (Professional Map Spec & Visual Sync)  
-**Última Actualización:** 26 de Abril, 2026 (03:30 AM)  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+**Estado:** Sistema purgado y listo para ingreso de datos reales.  
 **Propietario:** TAD Dominicana, S.R.L.  
 **Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
+
 
 ---
 

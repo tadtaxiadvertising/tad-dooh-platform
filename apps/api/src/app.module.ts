@@ -23,6 +23,7 @@ import { SheetsModule } from './modules/sheets/sheets.module';
 import { AuthService } from './modules/auth/auth.service';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { SimulationModule } from './modules/simulation/simulation.module';
 import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
@@ -101,6 +102,7 @@ import { ReferralModule } from './modules/referral/referral.module';
     WalletModule,
     TelemetryModule,
     ReferralModule,
+    SimulationModule,
   ],
   controllers: [AppController],
   providers: [

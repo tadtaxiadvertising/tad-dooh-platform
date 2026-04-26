@@ -1,14 +1,12 @@
 # Documentación de Traspaso de Agente (Agent Handover)
 
-## 🎯 Objetivo de la Sesión Completada (24 Abril 2026)
+## 🎯 Objetivo de la Sesión Completada (26 Abril 2026)
 
-**Estabilización V12.0.0**: Se completó la migración a la arquitectura financiera v12, se optimizó el rendimiento de carga del Admin Dashboard (eliminando el splash screen) y se implementó un sistema de logging centralizado. 
-
-Todas las fallas de duplicación de identificadores en el API shared service han sido resueltas y el sistema está listo para producción.
+**Estandarización Visual V12.1.0**: Se implementó con éxito la nueva especificación profesional de iconos de mapas (MAP-SPEC-2026) en toda la plataforma. Se sincronizaron los componentes de mapas en Admin, Advertiser y Driver, garantizando consistencia visual, claridad en la orientación de vehículos y una estética premium dark-mode.
 
 ---
 
-## 🏗️ Estado de la Plataforma (v12.0.0)
+## 🏗️ Estado de la Plataforma (v12.1.0)
 
 Para una visión detallada de la arquitectura actual, consultar:
 👉 [12_current_state_v12_handover.md](file:///c:/Users/Arismendy/OneDrive/Escritorio/TAD%20PLASTFORM/tad-dooh-platform/12_current_state_v12_handover.md)

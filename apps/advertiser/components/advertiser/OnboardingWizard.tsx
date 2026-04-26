@@ -60,7 +60,7 @@ export default function OnboardingWizard() {
         type: formData.file.type
       };
 
-      const response = await fetch('/api/campaigns/intent', {
+      const response = await fetch('/api/proxy/campaigns/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -690,5 +690,23 @@ export class CampaignService {
       onlineScreensInZone: onlineScreensCount,
     };
   }
+
+  async createIntent(dto: any) {
+    try {
+      const intent = await this.prisma.campaignIntent.create({
+        data: {
+          brandName: dto.brandName,
+          budget: dto.budget,
+          expectedScreens: dto.expectedScreens,
+          fileMetadata: dto.fileMetadata || {},
+          status: 'PENDING_PAYMENT',
+        },
+      });
+      return { success: true, data: intent };
+    } catch (error) {
+      this.logger.error('Error creating campaign intent:', error);
+      throw new BadRequestException('No se pudo registrar la intención de campaña.');
+    }
+  }
 }
 

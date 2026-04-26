@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./simulator.db"
+}
+
+model LatencyLog {
+  id         Int      @id @default(autoincrement())
+  driverId   String?
+  endpoint   String
+  latencyMs  Int
+  statusCode Int
+  timestamp  DateTime @default(now())
+
+  @@index([timestamp])
+}
+
+model SimulationConfig {
+  id          Int      @id @default(1)
+  driverCount Int      @default(150)
+  running     Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}

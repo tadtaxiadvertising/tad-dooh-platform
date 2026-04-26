@@ -1,0 +1,33 @@
+{
+  "name": "tad-simulator",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "npm run prisma:generate:app",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate:app": "if [ -x ../../node_modules/.bin/prisma ]; then ../../node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; elif [ -x ./node_modules/.bin/prisma ]; then ./node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; else echo 'Skipping prisma generate: prisma CLI not installed'; fi"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.1",
+    "lucide-react": "^0.475.0",
+    "next": "15.2.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0",
+    "@tailwindcss/postcss": "4.1.0",
+
+    "@types/node": "^20",
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "4.1.0",
+    "typescript": "^5"
+  }
+}

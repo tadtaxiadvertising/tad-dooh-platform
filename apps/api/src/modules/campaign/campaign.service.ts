@@ -703,9 +703,9 @@ export class CampaignService {
         },
       });
       return { success: true, data: intent };
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Error creating campaign intent:', error);
-      throw new BadRequestException('No se pudo registrar la intención de campaña.');
+      throw new BadRequestException(`No se pudo registrar la intención de campaña: ${error.message}`);
     }
   }
 }

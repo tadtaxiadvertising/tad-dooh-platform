@@ -1,9 +1,9 @@
-# 🧠 12 — ESTADO ACTUAL Y HANDOVER V12 (24 Abril 2026)
+# 🧠 12 — ESTADO ACTUAL Y HANDOVER V12 (26 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Versión Actual**: v12.0.0 (Financial, Telemetry & Referral)
-> **Última actualización**: 24 de Abril de 2026
-> **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base tras la estabilización de la arquitectura V12.
+> **Versión Actual**: v12.1.0 (Professional Map Spec & Visual Sync)
+> **Última actualización**: 26 de Abril de 2026
+> **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base tras la implementación del nuevo estándar visual de mapas.
 
 ---
 
@@ -20,20 +20,22 @@
   - Idempotencia en todas las mutaciones financieras mediante `Idempotency-Key`.
   - Transacciones atómicas con `Prisma.$transaction` para evitar estados inconsistentes en wallets.
 
-## 2. ⚡ Performance & SRE (Recent Fixes)
+## 2. ⚡ Performance & Visual Evolution (Recent Fixes)
 
+- **Map Icon Specification (MAP-SPEC-2026)**: 
+  - Rediseño radical de los marcadores de vehículos con SVG de alta fidelidad.
+  - Lógica binaria: Amarillo (#eab308) para Online, Rojo (#dc2626) para Offline.
+  - Control de orientación mediante faros delanteros fijos en Amarillo TAD (#fad400).
+  - Sincronización multiplataforma: Admin, Advertiser y Driver ahora comparten el mismo estándar visual.
 - **Eliminación de Splash Screens**: Se optimizó `apps/admin/middleware.ts` y `index.tsx` para realizar redirecciones inmediatas en el servidor, eliminando el parpadeo de "Iniciando TAD OS".
 - **Logging Centralizado**: Nuevo sistema `libs/logging/logger.ts` con niveles de log y persistencia opcional en `localStorage` para debugging remoto.
-- **Build Stabilization**: 
-  - Resueltos conflictos de duplicación de identificadores en `packages/services/api.ts`.
-  - Optimización de Dockerfiles para entornos de 512MB RAM (EasyPanel) mediante `outputFileTracingRoot`.
-- **JWT Strategy**: Migración de `SupabaseStrategy` (dependiente de red) a `JwtStrategy` local para validación instantánea de tokens.
 
 ## 3. 🔐 Portales & UX Premium
 
 - **Auditoría SRE (Admin)**: Nuevo modal de drill-down para inspeccionar la salud detallada de cada dispositivo (latencia, señal, integridad de assets).
 - **BI Real-Time**: Los KPIs ahora reflejan datos reales de la base de datos, reemplazando los mocks anteriores.
 - **Referral QR**: Sistema de generación de QR dinámico para referidos de conductores, integrado con el flujo de registro de anunciantes.
+- **Iconografía Unificada**: Se estandarizó el uso de `createIcon` y `createGlassIcon` en todos los componentes `MapView` y `MonitoringMap`.
 
 ## 4. 🚀 BACKLOG CRÍTICO (Para el Próximo Agente)
 

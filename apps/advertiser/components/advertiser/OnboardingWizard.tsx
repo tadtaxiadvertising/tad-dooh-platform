@@ -72,11 +72,11 @@ export default function OnboardingWizard() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al registrar la campaña.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al registrar la campaña.');
       }
 
-      alert('¡Campaña registrada con éxito! Redirigiendo a pago...');
-      // Aquí se redirigiría si hubiera pasarela de pago, pero no se implementa
+      setStep(4);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -153,6 +153,36 @@ export default function OnboardingWizard() {
                 {loading ? 'Procesando...' : 'Finalizar y Guardar'}
               </button>
             </div>
+          </motion.div>
+        )}
+        {step === 4 && (
+          <motion.div 
+            key="step4" 
+            initial={{ opacity: 0, scale: 0.9 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="text-center space-y-6 bg-slate-900/80 backdrop-blur-md p-10 rounded-3xl border border-slate-700 shadow-2xl"
+          >
+            <div className="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-white">¡Intención Registrada!</h2>
+            <p className="text-slate-300 text-lg">
+              Hemos recibido los detalles de tu marca **{formData.brandName}**. 
+              Tu solicitud está en estado <span className="text-[#fad400] font-bold">PENDIENTE DE PAGO</span>.
+            </p>
+            <div className="bg-slate-800/50 p-4 rounded-xl text-left border border-slate-700">
+              <p className="text-sm text-slate-400 mb-1">Presupuesto Estimado:</p>
+              <p className="text-2xl font-bold text-white">RD$ {formData.budget.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 mt-2">* Un representante de TAD se pondrá en contacto contigo para completar el pago.</p>
+            </div>
+            <button 
+              onClick={() => window.location.href = '/advertiser/dashboard'} 
+              className="w-full bg-[#fad400] text-slate-900 font-bold p-4 rounded-xl hover:bg-yellow-400 transition-all transform hover:scale-[1.02]"
+            >
+              Ir al Panel de Control
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

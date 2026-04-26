@@ -88,13 +88,13 @@ export class SimulationService {
           fullName: `Santiago Test Driver ${i}`,
           phone: `+1809sim${String(i).padStart(4, '0')}`,
           isSimulated: true,
-          status: 'ACTIVE',
+          status: 'OPERATIVO',
           licensePlate: `STI-TEST-${i}`,
           devices: {
             create: {
               deviceId: deviceId,
               name: `Virtual Screen ${i}`,
-              status: 'ACTIVE',
+              status: 'OPERATIVO',
               isSimulated: true,
             }
           }

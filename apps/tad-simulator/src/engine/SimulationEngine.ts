@@ -157,12 +157,12 @@ export class SimulationEngine {
                     // Create Sim Driver
                     await this.appPrisma.driver.upsert({
                         where: { id: driverId },
-                        update: { status: 'ACTIVE', isSimulated: true },
+                        update: { status: 'OPERATIVO', isSimulated: true },
                         create: {
                             id: driverId,
                             fullName: `Virtual Pilot ${paddedId}`,
                             phone: `1999${paddedId}`,
-                            status: 'ACTIVE',
+                            status: 'OPERATIVO',
                             subscriptionPaid: true,
                             subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                             onboardingStatus: 'COMPLETED',
@@ -173,11 +173,11 @@ export class SimulationEngine {
                     // Create Sim Device
                     await this.appPrisma.device.upsert({
                         where: { deviceId: deviceId },
-                        update: { status: 'ACTIVE', isSimulated: true },
+                        update: { status: 'OPERATIVO', isSimulated: true },
                         create: {
                             deviceId: deviceId,
                             name: `TAD-SIM-${paddedId}`,
-                            status: 'ACTIVE',
+                            status: 'OPERATIVO',
                             isOnline: true,
                             isSimulated: true,
                             driverId: driverId,

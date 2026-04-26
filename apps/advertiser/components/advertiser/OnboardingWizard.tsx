@@ -10,7 +10,7 @@ export default function OnboardingWizard() {
   
   const [formData, setFormData] = useState({
     brandName: '',
-    budget: 500,
+    budget: 1500,
     expectedScreens: 1,
     file: null as File | null
   });

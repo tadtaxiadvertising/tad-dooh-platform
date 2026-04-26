@@ -203,5 +203,6 @@ Propietario - TAD Dominicana, S.R.L.
 
 ---
 
-**Versión:** 12.1.0 (Professional Map Spec & Visual Sync)  
-**Última Actualización:** 26 de Abril, 2026  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+

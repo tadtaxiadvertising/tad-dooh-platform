@@ -1,9 +1,10 @@
 # 🧠 12 — ESTADO ACTUAL Y HANDOVER V12 (26 Abril 2026)
 
 > **Documento de Sincronización para Próximo Agente AI**
-> **Versión Actual**: v12.1.0 (Professional Map Spec & Visual Sync)
-> **Última actualización**: 26 de Abril de 2026
-> **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base tras la implementación del nuevo estándar visual de mapas.
+> **Versión Actual**: v12.1.1 (Ready for Real Tests - Clean State)
+> **Última actualización**: 26 de Abril de 2026 (12:45 PM)
+> **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base tras la purga de datos de prueba para iniciar el piloto real.
+
 
 ---
 

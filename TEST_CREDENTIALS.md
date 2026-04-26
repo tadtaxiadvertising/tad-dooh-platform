@@ -344,6 +344,7 @@ console.log('Current session:', data.session);
 
 ---
 
-**Última actualización:** 23 de Abril, 2026  
-**Versión de Docs:** 12.0.0  
-**Testing Environment:** Development & Staging  
+**Última actualización:** 26 de Abril, 2026 (12:45 PM)  
+**Versión de Docs:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Estado:** La base de datos ha sido purgada de datos de prueba. Los usuarios `driver@tad.do` y `advertiser@tad.do` deben ser recreados o sincronizados mediante `npm run sync-test-users` si se requieren para pruebas rápidas. El usuario `admin@tad.do` se mantiene activo.  
+**Testing Environment:** Real Tests Readiness

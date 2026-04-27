@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "6.0",
     "module": "ES2015",
     "target": "ES2021",
     "lib": ["ES2021", "DOM"],
@@ -22,7 +22,7 @@
       "*": ["node_modules/*", "backend/node_modules/*"]
     }
   },
-  "include": ["api/**/*", "backend/src/**/*", "packages/**/*"],
+  "include": ["apps/api/src/**/*", "packages/**/*"],
 
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", ".next", ".turbo"]
 }

@@ -1,5 +1,12 @@
 import axios from 'axios';
 import { supabase } from "@tad/services";
+import {
+  getValidSession,
+  getLocalStorageToken,
+  isPublicPath,
+  invalidateSession,
+} from './auth.service';
+import { processApiError } from './error-handler.service';
 
 /**
  * Estrategia de routing del API client:
@@ -41,46 +48,23 @@ export const api = axios.create({
 // ============================================
 // JWT Auth Interceptor
 // ============================================
-let cachedSession: any = null;
-let lastSessionCheck = 0;
-const SESSION_CACHE_TTL = 1000 * 60 * 2; // 2 minutes
 
 api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     try {
       const currentPath = window.location.pathname;
-      const isPublicPath = currentPath.includes('/login') || 
-                          currentPath.includes('/check-in') || 
-                          currentPath.includes('/onboarding') ||
-                          currentPath === '/';
 
-      // 1. Skip Supabase session check for public paths to avoid lock contention
-      if (!isPublicPath) {
-        const now = Date.now();
-        if (!cachedSession || (now - lastSessionCheck > SESSION_CACHE_TTL)) {
-          const { data: { session } } = await supabase.auth.getSession();
-          cachedSession = session;
-          lastSessionCheck = now;
-        }
-
-        if (cachedSession?.access_token) {
-          config.headers.Authorization = `Bearer ${cachedSession.access_token}`;
+      // Skip Supabase session check for public paths
+      if (!isPublicPath(currentPath)) {
+        const session = await getValidSession();
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
           return config;
         }
       }
       
-      // 2. Fallback: LocalStorage (Priorizar según el portal actual)
-      let localToken = null;
-      if (currentPath.includes('/advertiser/')) {
-        localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
-      } else if (currentPath.includes('/driver/')) {
-        localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
-      } else {
-        localToken = localStorage.getItem('tad_admin_token') || 
-                     localStorage.getItem('tad_advertiser_token') || 
-                     localStorage.getItem('tad_driver_token');
-      }
-
+      // Fallback: LocalStorage with error handling
+      const localToken = getLocalStorageToken(currentPath);
       if (localToken) {
         config.headers.Authorization = `Bearer ${localToken}`;
       }
@@ -91,64 +75,13 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Redirect to login on 401
+// ============================================
+// Error Response Interceptor
+// ============================================
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (!error.response && (error.message === 'Network Error' || error.code === 'ECONNABORTED')) {
-      console.error('📡 ERROR DE RED:', {
-        baseURL: api.defaults.baseURL,
-        url: error.config?.url,
-        code: error.code,
-        message: error.message,
-      });
-    }
-
-    if (error.response?.status === 402) {
-      const { usePaymentStore } = require('@tad/store');
-      const message = error.response?.data?.message || 'Suscripción de RD$6,000 pendiente';
-      usePaymentStore.getState().setLock(true, message);
-    }
-
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      const isPublicPath = currentPath.includes('/login') || currentPath.includes('/check-in') || currentPath === '/';
-      
-      if (!isPublicPath) {
-        console.warn('🚨 Unauthorized access detected. Clearing session.');
-        
-        // Limpiar tokens según el contexto actual para ser más precisos
-        if (currentPath.includes('/advertiser/')) {
-          localStorage.removeItem('tad_advertiser_token');
-          localStorage.removeItem('tad_advertiser_user');
-        } else if (currentPath.includes('/driver/')) {
-          localStorage.removeItem('tad_driver_token');
-          localStorage.removeItem('tad_driver_user');
-        } else {
-          localStorage.removeItem('tad_admin_token');
-          localStorage.removeItem('tad_admin_user');
-        }
-        
-        // Siempre intentar el signo out de Supabase
-        supabase.auth.signOut().catch(() => {});
-        
-        // Borrar cookie de middleware
-        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        
-        // Redirigir al portal correspondiente
-        let loginPath = '/login';
-        if (currentPath.includes('/advertiser/')) loginPath = '/advertiser/login';
-        else if (currentPath.includes('/driver/')) loginPath = '/driver/login';
-        else if (currentPath.includes('/admin/')) loginPath = '/admin/login';
-        
-        // Prevenir loops infinitos si ya estamos yendo a login
-        if (window.location.href.indexOf(loginPath) === -1) {
-          setTimeout(() => { window.location.href = loginPath; }, 100);
-        }
-      }
-    }
-    return Promise.reject(error);
-  }
+  (error) => processApiError(error)
 );
 
 // ============================================
@@ -169,7 +102,10 @@ export const login = (email: string, password: string) =>
     return res.data;
   });
 
-export const logout = () => {
+export const logout = async () => {
+  // Invalidate cached session
+  invalidateSession();
+  
   const currentPath = window.location.pathname;
   let target = '/login';
   
@@ -178,18 +114,30 @@ export const logout = () => {
   else if (currentPath.includes('/admin/')) target = '/admin/login';
 
   // Clear ALL portal tokens to avoid state contamination
-  localStorage.removeItem('tad_admin_token');
-  localStorage.removeItem('tad_admin_user');
-  localStorage.removeItem('tad_advertiser_token');
-  localStorage.removeItem('tad_advertiser_user');
-  localStorage.removeItem('tad_driver_token');
-  localStorage.removeItem('tad_driver_user');
+  try {
+    localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_user');
+    localStorage.removeItem('tad_advertiser_token');
+    localStorage.removeItem('tad_advertiser_user');
+    localStorage.removeItem('tad_driver_token');
+    localStorage.removeItem('tad_driver_user');
+  } catch (e) {
+    console.warn('⚠️ localStorage clear failed:', e);
+  }
   
   // Clear middleware cookie
-  document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  try {
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  } catch (e) {
+    console.warn('⚠️ Cookie clear failed:', e);
+  }
   
   // Clear Supabase session if possible
-  supabase.auth.signOut().catch(() => {});
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    console.warn('⚠️ Supabase signOut failed:', e);
+  }
   
   window.location.href = target;
 };

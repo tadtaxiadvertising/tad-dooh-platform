@@ -4,10 +4,19 @@ import { PrismaService } from './modules/prisma/prisma.service';
 import { Logger } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
-// Fix para serialización de BigInt (Crítico para que Prisma no falle en el primer query)
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
+// Safe BigInt serialization for Prisma
+declare global {
+  interface BigInt {
+    toJSON(): string;
+  }
+}
+
+// Only override toJSON if not already defined (prevents duplicate definitions)
+if (!BigInt.prototype.toJSON) {
+  (BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+  };
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

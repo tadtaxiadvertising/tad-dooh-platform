@@ -50,8 +50,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/backend-api/:path*',
-        destination: `${BACKEND_INTERNAL}/api/v1/:path*`,
+        source: '/api/proxy/:path*',
+        destination: `${process.env.BACKEND_URL || BACKEND_INTERNAL}/api/v1/:path*`,
+        // Aseguramos que los headers Host se mantengan para el contenedor
+        basePath: false,
       },
     ];
   },

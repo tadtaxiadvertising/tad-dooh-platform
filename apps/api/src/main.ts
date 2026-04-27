@@ -44,6 +44,7 @@ async function bootstrap() {
       'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',
       'https://proyecto-ia-tad-player.rewvid.easypanel.host',
       'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
+      'https://proyecto-ia-tad-driver.rewvid.easypanel.host',
     ];
     
     const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])];

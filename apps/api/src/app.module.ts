@@ -35,6 +35,8 @@ import { TelemetryModule } from './modules/telemetry/telemetry.module';
 import { ReferralModule } from './modules/referral/referral.module';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+
 @Module({
   imports: [
     // Configuration with Validation (RELAXED for EasyPanel free tier)
@@ -105,6 +107,7 @@ import { SystemSettingsModule } from './modules/system-settings/system-settings.
     ReferralModule,
     SystemSettingsModule,
     SimulationModule,
+    OnboardingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -58,6 +58,7 @@ export const BUSINESS_RULES = {
     CAMPAIGN: {
       DRAFT: 'DRAFT',
       PENDING: 'PENDING_REVIEW',
+      PENDING_PAYMENT: 'PENDING_PAYMENT',
       ACTIVE: 'ACTIVE',
       COMPLETED: 'COMPLETED',
     },

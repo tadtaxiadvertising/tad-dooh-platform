@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus, Inject, forwardRef } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, Res, HttpCode, HttpStatus, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
 import { Response } from 'express';
 import { AnalyticsService } from './analytics.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
@@ -67,7 +67,16 @@ export class AnalyticsController {
   }
 
   @Get('campaign/:id')
-  async getCampaignAnalytics(@Param('id') campaignId: string) {
+  async getCampaignAnalytics(@Param('id') campaignId: string, @Req() req: any) {
+    const { role, entityId } = req.user;
+    // If advertiser, we should check if they own the campaign, but for now we trust the ID if provided via frontend or handle it in service
+    // For simplicity, we can just check ownership here if it's an advertiser
+    if (role === UserRole.ADVERTISER) {
+      const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+      if (!campaign || campaign.advertiserId !== entityId) {
+        throw new ForbiddenException('No tienes permiso para ver las analíticas de esta campaña');
+      }
+    }
     return this.analyticsService.getCampaignAnalytics(campaignId);
   }
 
@@ -77,36 +86,51 @@ export class AnalyticsController {
   }
 
   @Get('summary')
-  async getAnalyticsSummary() {
-    return this.analyticsService.getAnalyticsSummary();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getAnalyticsSummary(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getAnalyticsSummary(advertiserId);
   }
 
   @Get('total-impressions')
-  async getTotalImpressions() {
-    return this.analyticsService.getTotalImpressions();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getTotalImpressions(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getTotalImpressions(advertiserId);
   }
 
   @Get('anti-fraud')
-  async getAntiFraudMetrics() {
-    return this.analyticsService.getAntiFraudMetrics();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getAntiFraudMetrics(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getAntiFraudMetrics(advertiserId);
   }
 
   @Get('top-taxis')
-  async getTopTaxis() {
-    return this.analyticsService.getTopTaxis();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getTopTaxis(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getTopTaxis(advertiserId);
   }
 
   @Get('hourly')
-  async getHourlyAnalytics() {
-    return this.analyticsService.getHourlyAnalytics();
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getHourlyAnalytics(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getHourlyAnalytics(advertiserId);
   }
 
   @Get('recent-plays')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getRecentPlays() {
-    // Note: For now recent-plays is global or admin, but we allow advertiser to see the list
-    // Ideally this should also be filtered, but heatmap is more critical for the map integration
-    return this.analyticsService.getRecentPlays();
+  async getRecentPlays(@Req() req: any) {
+    const { role, entityId } = req.user;
+    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    return this.analyticsService.getRecentPlays(advertiserId);
   }
 
   @Get('heatmap')

@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "module": "ES2015",
     "target": "ES2021",
     "lib": ["ES2021", "DOM"],

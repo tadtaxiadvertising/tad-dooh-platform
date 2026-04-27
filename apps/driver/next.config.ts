@@ -12,6 +12,31 @@ const withPWA = withPWAInit({
   workboxOptions: {
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url, request }: { url: URL; request: any }) =>
+          request.method === 'GET' &&
+          (
+            url.pathname.startsWith('/driver/dashboard') ||
+            url.pathname.startsWith('/_next/static/') ||
+            request.destination === 'script' ||
+            request.destination === 'style' ||
+            request.destination === 'image' ||
+            request.destination === 'font'
+          ),
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'tad-driver-dashboard-assets',
+          expiration: {
+            maxEntries: 160,
+            maxAgeSeconds: 60 * 60 * 24 * 7,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
   },
 });
 
@@ -26,6 +51,12 @@ const withPWA = withPWAInit({
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
   || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
   || 'https://tad-api.rewvid.easypanel.host';    // fallback hardcoded SOLO si todo lo demás falla
+
+const RAW_BACKEND_URL = process.env.BACKEND_URL || BACKEND_INTERNAL;
+const BACKEND_URL = RAW_BACKEND_URL
+  .replace(/\/api\/v1\/?$/, '')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -51,9 +82,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: `${process.env.BACKEND_URL || BACKEND_INTERNAL}/api/v1/:path*`,
-        // Aseguramos que los headers Host se mantengan para el contenedor
-        basePath: false,
+        destination: `${BACKEND_URL}/api/v1/:path*`,
       },
     ];
   },

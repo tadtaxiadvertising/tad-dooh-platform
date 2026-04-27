@@ -1,5 +1,5 @@
 // apps/driver/pages/driver/dashboard.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import Head from 'next/head';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
@@ -118,14 +118,19 @@ function StatusBar({
 function EarningsLedger({
   current,
   max,
+  slotsUsed,
+  totalSlots,
 }: {
   current: number;
   max: number;
+  slotsUsed: number;
+  totalSlots: number;
 }) {
-  const pct = Math.min(100, Math.round((current / max) * 100));
-  const remaining = max - current;
-  const slots = 15;
-  const filledSlots = Math.round((current / max) * slots);
+  const pctIncome = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
+  const pctSlots = totalSlots > 0 ? Math.min(100, Math.round((slotsUsed / totalSlots) * 100)) : 0;
+  const pct = Math.max(pctIncome, pctSlots);
+  const remaining = Math.max(0, max - current);
+  const filledSlots = Math.max(0, Math.min(totalSlots, slotsUsed));
 
   return (
     <section
@@ -148,31 +153,38 @@ function EarningsLedger({
       <div className="flex items-center justify-between mt-1 mb-4">
         <span className="text-neutral-500 text-xs">
           Tope: <strong className="text-neutral-300">RD${max.toLocaleString('es-DO')}</strong>
-          <span className="text-neutral-700 ml-1">(15 slots max)</span>
+          <span className="text-neutral-700 ml-1">({totalSlots} slots max)</span>
         </span>
         <span className="text-neutral-500 text-xs">
-          Faltan: <strong className="text-[#FFD400]">RD${remaining.toLocaleString('es-DO')}</strong>
+          Slots: <strong className="text-[#FFD400]">{slotsUsed}/{totalSlots}</strong>
         </span>
       </div>
 
       {/* Barra de progreso */}
       <div
-        className="w-full h-4 bg-neutral-900 border border-neutral-800 overflow-hidden"
+        className="w-full h-3 bg-neutral-900 border border-neutral-800 overflow-hidden"
         role="progressbar"
-        aria-valuenow={pct}
+        aria-valuenow={pctIncome}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${pct}% del tope mensual alcanzado`}
+        aria-label={`${pctIncome}% de ingresos acumulados`}
       >
         <div
           className="h-full bg-[#FFD400] transition-all duration-700 ease-out"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${pctIncome}%` }}
+        />
+      </div>
+
+      <div className="mt-2 w-full h-2 bg-neutral-900 border border-neutral-800 overflow-hidden" aria-hidden="true">
+        <div
+          className="h-full bg-[#f97316] transition-all duration-700 ease-out"
+          style={{ width: `${pctSlots}%` }}
         />
       </div>
 
       {/* Slots visuales */}
       <div className="flex gap-1 mt-3" aria-hidden="true">
-        {Array.from({ length: slots }).map((_, i) => (
+        {Array.from({ length: totalSlots }).map((_, i) => (
           <div
             key={i}
             className="flex-1 h-1.5"
@@ -186,12 +198,16 @@ function EarningsLedger({
           0 slots
         </span>
         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-          {pct}% · Slot {filledSlots}/{slots}
+          Ingresos {pctIncome}% · Slots {filledSlots}/{totalSlots}
         </span>
         <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-          15 slots
+          {totalSlots} slots
         </span>
       </div>
+
+      <p className="text-[10px] text-neutral-500 font-semibold mt-2">
+        Faltan <span className="text-[#FFD400]">RD${remaining.toLocaleString('es-DO')}</span> para RD${max.toLocaleString('es-DO')}
+      </p>
     </section>
   );
 }
@@ -335,7 +351,7 @@ function LockdownScreen({ message }: { message: string | null }) {
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function DriverDashboard() {
-  const { connectionStatus, batchCount, offlineCount, startTracking, stopTracking, isTracking } =
+  const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
     useTelemetry();
   const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
   const { isLocked, message: lockMessage } = usePaymentStore();
@@ -367,11 +383,9 @@ export default function DriverDashboard() {
 
   const handleSincronizar = async () => {
     setSyncingNow(true);
-    // Fuerza un flush inmediato y refresca el hub
-    stopTracking();
-    startTracking();
+    await syncPending();
     await refreshHub();
-    setTimeout(() => setSyncingNow(false), 1500);
+    setSyncingNow(false);
   };
 
   const handleReferir = () => {
@@ -393,7 +407,7 @@ export default function DriverDashboard() {
   // ─── Banner de estado del servicio ────────────────────────────────────────
   const serviceBannerConfig =
     connectionStatus === 'offline'
-      ? { label: 'MODO OFFLINE: Guardando localmente', color: '#71717a', bg: '#18181b', border: '#3f3f46' }
+      ? { label: 'MODO LOCAL: Guardando y reintentando', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
       : connectionStatus === 'syncing'
       ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
       : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
@@ -438,7 +452,9 @@ export default function DriverDashboard() {
         {/* Ledger Financiero */}
         <EarningsLedger 
           current={hubData?.balance ?? 0} 
-          max={7500} 
+          max={7500}
+          slotsUsed={hubData?.activeSlots ?? 0}
+          totalSlots={hubData?.maxSlots ?? 15}
         />
 
         {/* Herramientas del Chofer */}

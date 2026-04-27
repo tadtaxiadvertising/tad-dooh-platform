@@ -5,6 +5,28 @@
 
 ---
 
+## [v12.1.1] - 2026-04-27
+
+### 🛡️ Driver Critical Patch (Easypanel + Offline-First)
+
+- **Networking/CORS (403 Fix):**
+  - Endurecido `apps/api/src/main.ts` con allow-list estricta de orígenes y `credentials: true`.
+  - Incluido explícitamente `https://proyecto-ia-tad-driver.rewvid.easypanel.host` en validación CORS productiva.
+- **Proxy Contract (Docker/Easypanel):**
+  - Refactor de `apps/driver/next.config.ts` para rewrite estable de `/api/proxy/:path*` hacia `BACKEND_URL` normalizada.
+  - Refuerzo de `apps/driver/pages/api/proxy/[...path].ts` con forwarding de `cookie`, `x-forwarded-host`, `x-forwarded-proto` y respuesta CORS con credenciales.
+  - Eliminadas rutas directas al backend en cliente (`packages/services/api.ts` y hook de telemetría), consolidando `/api/proxy` como única vía.
+- **PWA Resilience (404/Offline):**
+  - `apps/driver/public/manifest.json` migrado a rutas relativas para despliegue consistente en contenedores Docker.
+  - Service Worker del Driver actualizado a estrategia **Stale-While-Revalidate** para assets del Dashboard (`/driver/dashboard`, `/_next/static`, scripts/styles/images/fonts).
+- **Sync Engine (GPS & Pendientes):**
+  - `apps/driver/hooks/useTelemetry.ts` ahora expone `syncPending()` para procesar cola offline por lotes en `fleet/track-batch`.
+  - Persistencia y progreso de sincronización mantenidos en `localStorage` sin bloqueo de interfaz.
+  - Ante fallo de red, estado operativo cambia a **Modo Local** y mantiene reintentos seguros.
+- **Meta RD$7,500 (Slots + Ingresos):**
+  - `apps/driver/hooks/useDriverHub.ts` normaliza tipos numéricos de payload backend (alineación con Prisma).
+  - `apps/driver/pages/driver/dashboard.tsx` calcula progreso real separando ingresos acumulados y slots activos (`activeSlots/maxSlots`) y usa ambos indicadores en el ledger.
+
 ## [v12.1.0] - 2026-04-26
 
 ### 🎨 UI/UX: Professional Map Specification (MAP-SPEC-2026)

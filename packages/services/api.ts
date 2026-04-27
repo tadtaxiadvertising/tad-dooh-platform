@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabase } from "@tad/services";
+import { supabase } from './supabase';
 import {
   getValidSession,
   getLocalStorageToken,
@@ -24,17 +24,13 @@ import { processApiError } from './error-handler.service';
  */
 const getBaseURL = () => {
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host === '0.0.0.0') {
-      return 'http://localhost:3000/api/v1';
-    }
-    // Producción: usar el proxy interno de Next.js (API Route)
+    // Regla de arquitectura: TODO frontend comunica por /api/proxy
     return '/api/proxy';
   }
-  // SSR: usar URL interna si está disponible, pública como fallback
-  return process.env.BACKEND_INTERNAL_URL
-    ? `${process.env.BACKEND_INTERNAL_URL}/api/v1`
-    : (process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api/v1');
+
+  // SSR fallback (mantiene compatibilidad sin romper la regla del cliente)
+  const frontendOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || '';
+  return frontendOrigin ? `${frontendOrigin.replace(/\/$/, '')}/api/proxy` : '/api/proxy';
 };
 
 export const api = axios.create({

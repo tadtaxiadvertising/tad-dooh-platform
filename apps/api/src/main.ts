@@ -54,14 +54,19 @@ async function bootstrap() {
 
     app.enableCors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl) 
-        // Allow specifically whitelisted origins
-        // Allow any subdomain of rewvid.easypanel.host
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.rewvid.easypanel.host')) {
+        // Allow requests with no origin (mobile apps / curl)
+        if (!origin) {
           callback(null, true);
-        } else {
-          callback(null, false);
+          return;
         }
+
+        // Strict allow-list for production origins
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`CORS blocked for origin: ${origin}`), false);
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,

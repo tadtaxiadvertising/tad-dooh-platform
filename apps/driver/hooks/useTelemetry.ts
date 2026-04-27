@@ -32,6 +32,7 @@ export interface UseTelemetryReturn {
   connectionStatus: ConnectionStatus;
   batchCount: number;     // coordenadas actuales en el buffer (0–10)
   offlineCount: number;   // registros guardados offline pendientes de sync
+  syncPending: () => Promise<{ processed: number; remaining: number; success: boolean }>;
   startTracking: () => void;
   stopTracking: () => void;
   isTracking: boolean;
@@ -80,6 +81,14 @@ function clearOfflineQueue(): void {
   localStorage.removeItem(OFFLINE_STORAGE_KEY);
 }
 
+function writeOfflineQueue(coords: TelemetryCoord[]): void {
+  try {
+    localStorage.setItem(OFFLINE_STORAGE_KEY, JSON.stringify(coords.slice(-MAX_OFFLINE_RECORDS)));
+  } catch {
+    // Quota exceeded — mantenemos estado actual sin romper UI
+  }
+}
+
 // ─── Hook Principal ───────────────────────────────────────────────────────────
 export function useTelemetry(): UseTelemetryReturn {
   const { setLock } = usePaymentStore();
@@ -99,6 +108,83 @@ export function useTelemetry(): UseTelemetryReturn {
 
   // ─── Memoria persistente durante la sesión ─────────────────────────────
   const memoryBufferRef = useRef<TelemetryCoord[]>([]);
+
+  const resolveApiBase = useCallback(() => '/api/proxy', []);
+
+  const buildTelemetryPayload = useCallback((driverId: string, deviceId: string, points: TelemetryCoord[]) => {
+    return {
+      driverId,
+      deviceId,
+      points: points.map((coord) => ({
+        lat: coord.lat,
+        lng: coord.lng,
+        speed: 0,
+        timestamp: coord.ts,
+      })),
+    };
+  }, []);
+
+  const postTrackBatch = useCallback(async (
+    apiBase: string,
+    driverId: string,
+    deviceId: string,
+    points: TelemetryCoord[]
+  ) => {
+    return fetch(`${apiBase}/fleet/track-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildTelemetryPayload(driverId, deviceId, points)),
+      signal: AbortSignal.timeout(15_000),
+    });
+  }, [buildTelemetryPayload]);
+
+  const syncOfflineQueue = useCallback(async (
+    apiBase: string,
+    driverId: string,
+    deviceId: string
+  ) => {
+    const DRIP_CHUNK_SIZE = 50;
+    let processed = 0;
+    let remainingQueue = readOfflineQueue();
+
+    while (remainingQueue.length > 0) {
+      const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
+
+      try {
+        const retryRes = await postTrackBatch(apiBase, driverId, deviceId, chunk);
+        if (retryRes.status === 402) {
+          setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
+          setConnectionStatus('offline');
+          break;
+        }
+        if (!retryRes.ok) {
+          break;
+        }
+      } catch {
+        break;
+      }
+
+      processed += chunk.length;
+      remainingQueue = remainingQueue.slice(chunk.length);
+      writeOfflineQueue(remainingQueue);
+      setOfflineCount(remainingQueue.length);
+
+      if (remainingQueue.length > 0) {
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 1500 + 300));
+      }
+    }
+
+    if (remainingQueue.length === 0) {
+      clearOfflineQueue();
+      setOfflineCount(0);
+    }
+
+    return {
+      processed,
+      remaining: remainingQueue.length,
+      success: remainingQueue.length === 0,
+    };
+  }, [postTrackBatch, setLock]);
 
   // ─── Flush: envía el batch al backend ────────────────────────────────────
   const flushBatch = useCallback(async (forceFlush = false) => {
@@ -124,31 +210,14 @@ export function useTelemetry(): UseTelemetryReturn {
     setConnectionStatus('syncing');
 
     try {
-      const apiBase = typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-          ? 'http://localhost:3000/api'
-          : '/api/proxy';
+      const apiBase = resolveApiBase();
       
       const userRaw = localStorage.getItem('tad_driver_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const driverId = user?.entityId || 'unknown';
       const deviceId = localStorage.getItem('TAD_DEVICE_ID') || 'unknown';
 
-      const res = await fetch(`${apiBase}/fleet/track-batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          driverId,
-          deviceId,
-          points: combinedBatch.map(c => ({
-            lat: c.lat,
-            lng: c.lng,
-            speed: 0,
-            timestamp: c.ts
-          }))
-        }),
-        signal: AbortSignal.timeout(15_000),
-      });
+      const res = await postTrackBatch(apiBase, driverId, deviceId, combinedBatch);
 
       if (res.status === 402) {
         stopTracking();
@@ -161,35 +230,11 @@ export function useTelemetry(): UseTelemetryReturn {
 
       setBatchCount(0);
 
-      // SHELTER C-D2: Drip Sync
-      const offlineQueue = readOfflineQueue();
-      if (offlineQueue.length > 0) {
-        const DRIP_CHUNK_SIZE = 50;
-        let allSynced = true;
-
-        for (let i = 0; i < offlineQueue.length; i += DRIP_CHUNK_SIZE) {
-          const chunk = offlineQueue.slice(i, i + DRIP_CHUNK_SIZE);
-          if (i > 0) await new Promise(r => setTimeout(r, Math.random() * 5000));
-
-          try {
-            const retryRes = await fetch(`${apiBase}/fleet/track-batch`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                driverId, deviceId,
-                points: chunk.map(c => ({ lat: c.lat, lng: c.lng, speed: 0, timestamp: c.ts }))
-              }),
-              signal: AbortSignal.timeout(10_000),
-            });
-            if (!retryRes.ok) { allSynced = false; break; }
-          } catch { allSynced = false; break; }
-        }
-
-        if (allSynced) {
-          clearOfflineQueue();
-          setOfflineCount(0);
-        } else {
-          setOfflineCount(readOfflineQueue().length);
+      if (readOfflineQueue().length > 0) {
+        const syncResult = await syncOfflineQueue(apiBase, driverId, deviceId);
+        if (!syncResult.success) {
+          setConnectionStatus('offline');
+          return;
         }
       }
 
@@ -199,9 +244,27 @@ export function useTelemetry(): UseTelemetryReturn {
       appendOfflineQueue(combinedBatch);
       setBatchCount(0);
       setOfflineCount(readOfflineQueue().length);
-      setConnectionStatus(isOnlineRef.current ? 'online' : 'offline');
+      setConnectionStatus('offline');
     }
-  }, [setLock]);
+  }, [postTrackBatch, resolveApiBase, setLock, syncOfflineQueue]);
+
+  const syncPending = useCallback(async () => {
+    const userRaw = localStorage.getItem('tad_driver_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const driverId = user?.entityId || 'unknown';
+    const deviceId = localStorage.getItem('TAD_DEVICE_ID') || 'unknown';
+    const apiBase = resolveApiBase();
+
+    if (!isOnlineRef.current) {
+      setConnectionStatus('offline');
+      return { processed: 0, remaining: readOfflineQueue().length, success: false };
+    }
+
+    setConnectionStatus('syncing');
+    const result = await syncOfflineQueue(apiBase, driverId, deviceId);
+    setConnectionStatus(result.success ? 'online' : 'offline');
+    return result;
+  }, [resolveApiBase, syncOfflineQueue]);
 
   // ─── Inicializar flush periódico ──────────────────────────────────────────
   const resetFlushTimer = useCallback(() => {
@@ -216,6 +279,7 @@ export function useTelemetry(): UseTelemetryReturn {
   const addCoord = useCallback((coord: TelemetryCoord) => {
     memoryBufferRef.current.push(coord);
     setBatchCount(prev => prev + 1);
+    writeBatch(memoryBufferRef.current);
 
     // Persistir a disco solo si el buffer es grande o cada X tiempo 
     // para evitar I/O constante en cada segundo de GPS
@@ -334,6 +398,7 @@ export function useTelemetry(): UseTelemetryReturn {
     connectionStatus,
     batchCount,
     offlineCount,
+    syncPending,
     startTracking,
     stopTracking,
     isTracking,

@@ -1,15 +1,15 @@
 import React from 'react';
 import { Target, Users, MapPin, Eye } from 'lucide-react';
 
-export const MetricsGrid = () => {
-  // Mock data for CMO insights
+export const MetricsGrid = ({ data }: { data?: any }) => {
+  // Use real data if provided, fallback to defaults/mocks for display only
   const metrics = {
-    cpm: 25.50, // Cost Per Mille (Thousand) in DOP
+    cpm: 1500 / 50, // RD$ 1,500 per month / 50k impressions target = ~30 DOP CPM
     avgFrequency: 3.2, 
-    totalImpacts: 1450000,
+    totalImpacts: data?.totalImpressions || 0,
     geoDistribution: [
-      { name: 'Santo Domingo', value: 75, color: '#FFD700' }, // TAD Yellow
-      { name: 'Santiago', value: 25, color: '#3B82F6' } // Blue Accent
+      { name: 'Santo Domingo', value: 75, color: '#FFD700' },
+      { name: 'Santiago', value: 25, color: '#3B82F6' }
     ]
   };
 
@@ -31,7 +31,7 @@ export const MetricsGrid = () => {
               <Eye size={20} />
             </div>
             <span className="text-xs font-medium text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
-              -12% vs last month
+              LIVE_DATA
             </span>
           </div>
           <div className="relative z-10">
@@ -67,37 +67,25 @@ export const MetricsGrid = () => {
           </div>
         </div>
 
-        {/* Geo Distribution Card */}
-        <div className="bg-[#18181B] rounded-2xl p-6 border border-[#F4F4F5]/10 flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <div className="bg-[#09090B] p-2.5 rounded-lg text-rose-400 border border-rose-500/20">
-              <MapPin size={20} />
+        {/* Total Scans Card (Replaced Geo for more relevance to advertiser) */}
+        <div className="bg-[#18181B] rounded-2xl p-6 border border-[#F4F4F5]/10 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-16 bg-[#FFD700]/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-110" />
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="bg-[#09090B] p-2.5 rounded-lg text-[#FFD700] border border-[#FFD700]/20">
+              <Target size={20} />
             </div>
+            <span className="text-xs font-medium text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+              CTR: {(data?.ctr || 0).toFixed(2)}%
+            </span>
           </div>
-          
-          <div>
-            <p className="text-sm font-medium text-[#F4F4F5]/60 mb-3">Distribución Geo</p>
-            <div className="flex h-3 w-full rounded-full overflow-hidden bg-[#09090B]">
-              <div 
-                className="h-full bg-[#FFD700]" 
-                style={{ width: `${metrics.geoDistribution[0].value}%` }} 
-                title={metrics.geoDistribution[0].name}
-              />
-              <div 
-                className="h-full bg-[#3B82F6]" 
-                style={{ width: `${metrics.geoDistribution[1].value}%` }}
-                title={metrics.geoDistribution[1].name}
-              />
+          <div className="relative z-10">
+            <p className="text-sm font-medium text-[#F4F4F5]/60 mb-1">Escaneos QR Totales</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black text-white tracking-tighter">
+                {formatNumber(data?.totalScans || 0)}
+              </span>
             </div>
-            
-            <div className="flex justify-between mt-3">
-              {metrics.geoDistribution.map(geo => (
-                <div key={geo.name} className="flex items-center gap-1.5 text-xs">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: geo.color }} />
-                  <span className="text-[#F4F4F5]/80">{geo.name} ({geo.value}%)</span>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-[#F4F4F5]/40 mt-2">Interacciones directas con tu contenido</p>
           </div>
         </div>
       </div>

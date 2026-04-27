@@ -1,13 +1,18 @@
 import React from 'react';
 import { Download, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
-export const BillingPortal = () => {
-  // Mock data for the finance portal table
-  const invoices = [
-    { id: 'INV-2026-003', issueDate: '2026-04-01', dueDate: '2026-04-15', amount: 45000.00, status: 'PENDING' },
-    { id: 'INV-2026-002', issueDate: '2026-03-01', dueDate: '2026-03-15', amount: 45000.00, status: 'PAID' },
-    { id: 'INV-2026-001', issueDate: '2026-02-01', dueDate: '2026-02-15', amount: 45000.00, status: 'PAID' },
-    { id: 'INV-2025-012', issueDate: '2025-12-01', dueDate: '2025-12-15', amount: 15000.00, status: 'OVERDUE' },
+interface Invoice {
+  id: string;
+  issueDate: string;
+  dueDate: string;
+  amount: number;
+  status: string;
+}
+
+export const BillingPortal = ({ data }: { data?: any }) => {
+  // Use real financials if provided, otherwise fallback to mock
+  const invoices: Invoice[] = data?.invoices || [
+    { id: 'PRO-FORMA-01', issueDate: new Date().toISOString().split('T')[0], dueDate: '---', amount: data?.totalCost || 45000.00, status: 'PENDING' },
   ];
 
   const formatCurrency = (value: number) => {
@@ -57,7 +62,7 @@ export const BillingPortal = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#18181B]">
-            {invoices.map((invoice) => {
+            {invoices.map((invoice: Invoice) => {
               const statusConfig = getStatusConfig(invoice.status);
               const StatusIcon = statusConfig.icon;
 

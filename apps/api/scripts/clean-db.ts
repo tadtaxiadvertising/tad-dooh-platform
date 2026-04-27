@@ -20,6 +20,14 @@ async function main() {
     await prisma.notification.deleteMany({});
     await prisma.financialTransaction.deleteMany({});
     await prisma.payrollPayment.deleteMany({});
+    await prisma.biDashboardSnapshot.deleteMany({});
+    await prisma.reconciliationReport.deleteMany({});
+    await prisma.telemetry.deleteMany({});
+    await prisma.commission.deleteMany({});
+    await prisma.activeAd.deleteMany({});
+    await prisma.portalRequest.deleteMany({});
+    await prisma.contractAcceptance.deleteMany({});
+    await prisma.wallet.deleteMany({});
 
     // 2. Delete media entries
     console.log('Cleaning media vault...');
@@ -33,12 +41,14 @@ async function main() {
     // 4. Delete core business entities
     console.log('Cleaning business entities...');
     await prisma.campaign.deleteMany({});
+    await prisma.advertiserSubscription.deleteMany({});
+    await prisma.invoice.deleteMany({});
     await prisma.advertiser.deleteMany({});
     await prisma.device.deleteMany({});
     await prisma.driver.deleteMany({});
     await prisma.fleet.deleteMany({});
 
-    console.log('✅ Database is now CLEAN (Admins preserved).');
+    console.log('✅ Database is now COMPLETELY CLEAN (Admins preserved).');
   } catch (error) {
     console.error('❌ Error cleaning database:', error);
     process.exit(1);

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { createUmamiClient } from '../../utils/umami';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
@@ -118,71 +119,114 @@ export class AnalyticsService {
     return { deviceId, totalEvents };
   }
 
-  async getAnalyticsSummary() {
+  async getAnalyticsSummary(advertiserId?: string) {
     const now = Date.now();
-    if (this.cache.summary && this.cache.summary.expiry > now) {
-      return this.cache.summary.data;
+    // Use a different cache key if advertiserId is provided
+    const cacheKey = advertiserId ? `summary_${advertiserId}` : 'summary';
+    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+      return (this.cache as any)[cacheKey].data;
     }
 
-    const totalImpressions = await this.prisma.playbackEvent.count({
-      where: { eventType: 'play_confirm' }
-    });
-    
-    const uniqueNodes = await this.prisma.playbackEvent.groupBy({
-      by: ['deviceId'],
-      _count: { deviceId: true }
-    });
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
-    const totalScans = await this.prisma.analyticsEvent.count({
-      where: { eventType: 'QR_SCAN' }
-    });
-
-    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentImpressions = await this.prisma.playbackEvent.count({
-      where: { timestamp: { gte: last24h }, eventType: 'play_confirm' }
-    });
+    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] = await Promise.all([
+      this.prisma.playbackEvent.count({
+        where: { 
+          eventType: 'play_confirm',
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
+        }
+      }),
+      this.prisma.playbackEvent.groupBy({
+        by: ['deviceId'],
+        where: { 
+          eventType: 'play_confirm',
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
+        },
+        _count: { deviceId: true }
+      }),
+      this.prisma.analyticsEvent.count({
+        where: { 
+          eventType: { in: ['QR_SCAN', 'qr_scan', 'scan'] },
+          ...(advertiserId ? { campaign: { advertiserId } } : {})
+        }
+      }),
+      this.prisma.playbackEvent.count({
+        where: { 
+          timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, 
+          eventType: 'play_confirm',
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
+        }
+      })
+    ]);
 
     const data = { 
       totalImpressions, 
-      activeNodes: uniqueNodes.length,
+      activeNodes: uniqueNodesCount.length,
       totalScans,
       ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
       hourlyAverage: Math.round(recentImpressions / 24)
     };
 
-    this.cache.summary = { data, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 
-  async getTotalImpressions() {
+  private async getAdvertiserVideoIds(advertiserId: string): Promise<string[]> {
+    const [videos, assets] = await Promise.all([
+      this.prisma.video.findMany({
+        where: { campaign: { advertiserId } },
+        select: { id: true }
+      }),
+      this.prisma.mediaAsset.findMany({
+        where: { campaign: { advertiserId } },
+        select: { id: true }
+      })
+    ]);
+    return [...videos.map(v => v.id), ...assets.map(a => a.id)];
+  }
+
+  async getTotalImpressions(advertiserId?: string) {
     const now = Date.now();
-    if (this.cache.totalImpressions && this.cache.totalImpressions.expiry > now) {
-      return this.cache.totalImpressions.data;
+    const cacheKey = advertiserId ? `totalImpressions_${advertiserId}` : 'totalImpressions';
+    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+      return (this.cache as any)[cacheKey].data;
     }
 
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+
     const count = await this.prisma.playbackEvent.count({
-      where: { eventType: 'play_confirm' }
+      where: { 
+        eventType: 'play_confirm',
+        ...(videoIds ? { videoId: { in: videoIds } } : {})
+      }
     });
 
-    this.cache.totalImpressions = { data: count, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = { data: count, expiry: now + this.CACHE_TTL };
     return count;
   }
 
-  async getAntiFraudMetrics() {
+  async getAntiFraudMetrics(advertiserId?: string) {
     const now = Date.now();
-    if (this.cache.antiFraud && this.cache.antiFraud.expiry > now) {
-      return this.cache.antiFraud.data;
+    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : 'antiFraud';
+    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+      return (this.cache as any)[cacheKey].data;
     }
+
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
     const [rawImpressions, gpsValidations] = await Promise.all([
       this.prisma.playbackEvent.count({
-        where: { eventType: 'play_confirm' }
+        where: { 
+          eventType: 'play_confirm',
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
+        }
       }),
       this.prisma.playbackEvent.count({
         where: {
           eventType: 'play_confirm',
           lat: { not: null },
-          lng: { not: null }
+          lng: { not: null },
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
         }
       })
     ]);
@@ -198,18 +242,25 @@ export class AnalyticsService {
       status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
     };
 
-    this.cache.antiFraud = { data, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 
-  async getTopTaxis() {
+  async getTopTaxis(advertiserId?: string) {
     const now = Date.now();
-    if (this.cache.topTaxis && this.cache.topTaxis.expiry > now) {
-      return this.cache.topTaxis.data;
+    const cacheKey = advertiserId ? `topTaxis_${advertiserId}` : 'topTaxis';
+    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+      return (this.cache as any)[cacheKey].data;
     }
+
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
     const topDevices = await this.prisma.playbackEvent.groupBy({
       by: ['deviceId'],
+      where: {
+        eventType: 'play_confirm',
+        ...(videoIds ? { videoId: { in: videoIds } } : {})
+      },
       _count: {
         id: true,
       },
@@ -226,23 +277,40 @@ export class AnalyticsService {
       plays: d._count.id,
     }));
 
-    this.cache.topTaxis = { data, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 
-  async getHourlyAnalytics() {
-    // Perform database-level aggregation to count events per hour, bypassing Node.js RAM limits
+  async getHourlyAnalytics(advertiserId?: string) {
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : [];
 
     // Using Raw SQL for grouped aggregation on PostgreSQL
-    const results: Array<{ hour: number; plays: number }> = await this.prisma.$queryRaw`
-      SELECT 
-        EXTRACT(HOUR FROM "timestamp") as "hour",
-        COUNT(id)::int as "plays"
-      FROM "playback_events"
-      WHERE "timestamp" >= ${last24h}
-      GROUP BY 1
-    `;
+    // If videoIds is provided, we filter by it
+    let results: Array<{ hour: number; plays: number }> = [];
+    
+    if (advertiserId && videoIds.length > 0) {
+      results = await this.prisma.$queryRaw`
+        SELECT 
+          EXTRACT(HOUR FROM "timestamp") as "hour",
+          COUNT(id)::int as "plays"
+        FROM "playback_events"
+        WHERE "timestamp" >= ${last24h} AND "video_id" IN (${Prisma.join(videoIds)})
+        GROUP BY 1
+      `;
+    } else if (advertiserId && videoIds.length === 0) {
+      // If advertiser has no videos, they have no plays
+      results = [];
+    } else {
+      results = await this.prisma.$queryRaw`
+        SELECT 
+          EXTRACT(HOUR FROM "timestamp") as "hour",
+          COUNT(id)::int as "plays"
+        FROM "playback_events"
+        WHERE "timestamp" >= ${last24h}
+        GROUP BY 1
+      `;
+    }
 
     // Pre-fill last 24 slots with base 0
     const hourlyMap = new Map<string, number>();
@@ -262,8 +330,13 @@ export class AnalyticsService {
       .sort((a, b) => a.hour.localeCompare(b.hour));
   }
 
-  async getRecentPlays() {
+  async getRecentPlays(advertiserId?: string) {
+    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+
     const events = await this.prisma.playbackEvent.findMany({
+      where: {
+        ...(videoIds ? { videoId: { in: videoIds } } : {})
+      },
       orderBy: { timestamp: 'desc' },
       take: 20,
       include: {

@@ -17,8 +17,8 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 - ✅ **Gestión de Campañas** - Crear, programar y targetear campañas publicitarias
 - ✅ **Upload de Medios** - Videos, imágenes y campañas HTML
 - ✅ **Dashboard de Analytics** - Métricas en tiempo real de impresiones y alcance
+- ✅ **Mapa Profesional (MAP-SPEC-2026)** - Visualización premium con orientación de vehículos y lógica de estado online/offline.
 - ✅ **Gestión de Dispositivos** - Monitoreo de salud y control remoto de tablets
-- ✅ **Mapa en Vivo (Santiago Pilot)** - Monitoreo dedicado de las primeras 10 unidades (STI0001-STI0010)
 - ✅ **Ecosistema Financiero V12** - Billetera digital, compensación automatizada (RD$500/anuncio) y sistema de referidos.
 - ✅ **Telemetría Avanzada** - Tracking GPS con ahorro de batería (5 min debounce) y sincronización por lotes.
 - ✅ **Mobile Gateway** - App de conductor rediseñada con Tailwind 4, modo offline-first y gestión bancaria.
@@ -203,5 +203,6 @@ Propietario - TAD Dominicana, S.R.L.
 
 ---
 
-**Versión:** 12.0.0 (Financial & Telemetry V12)  
-**Última Actualización:** 23 de Abril, 2026  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+

@@ -80,7 +80,7 @@ model Campaign {
   advertiser        String
   advertiserId      String?          @map("advertiser_id")
   description       String?
-  status            String           @default("DRAFT")
+  status            String           @default("PENDING_PAYMENT")
   active            Boolean          @default(true)
   startDate         DateTime         @map("start_date")
   endDate           DateTime         @map("end_date")
@@ -104,6 +104,7 @@ model Campaign {
   websiteUrl        String?          @map("website_url")
   whatsapp          String?
   category          String?          @default("General")
+  hasSeenTutorial   Boolean          @default(false) @map("has_seen_tutorial")
   metrics           CampaignMetric[]
   advertiserRef     Advertiser?      @relation(fields: [advertiserId], references: [id])
   createdBy         User?            @relation(fields: [createdById], references: [id])
@@ -684,3 +685,29 @@ enum SystemStatus {
   PENDIENTE_PAGO
   BLOQUEADO
 }
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      String   @default("STRING") // STRING, NUMBER, BOOLEAN, JSON
+  group     String   @default("GENERAL") // GENERAL, FINANCIAL, FLEET, SYSTEM
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model CampaignIntent {
+  id              String   @id @default(uuid())
+  brandName       String   @map("brand_name")
+  budget          Float
+  expectedScreens Int      @map("expected_screens")
+  status          String   @default("PENDING_PAYMENT")
+  fileMetadata    Json?    @map("file_metadata")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("campaign_intents")
+}
+

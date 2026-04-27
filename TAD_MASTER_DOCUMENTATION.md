@@ -6,7 +6,6 @@
 **Propietario:** TAD Dominicana, S.R.L.  
 **Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
 
-
 ---
 
 ## Tabla de Contenido

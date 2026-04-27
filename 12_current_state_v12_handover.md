@@ -5,7 +5,6 @@
 > **Última actualización**: 26 de Abril de 2026 (12:45 PM)
 > **Objetivo**: Proveer un resumen determinista e hiper-actualizado del código base tras la purga de datos de prueba para iniciar el piloto real.
 
-
 ---
 
 ## 1. 🏗️ Arquitectura V12 — SHIELD & Financial

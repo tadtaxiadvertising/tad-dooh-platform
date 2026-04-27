@@ -116,12 +116,16 @@ export default function AdvertiserDashboard() {
           
           <div className="mt-8 grid grid-cols-2 gap-4">
             <div className="p-4 bg-[#18181B]/40 rounded-xl border border-[#F4F4F5]/5">
-              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Último Pago</span>
-              <span className="text-sm font-bold text-white">Marzo 15, 2026</span>
+              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Último Pago / Factura</span>
+              <span className="text-sm font-bold text-white">
+                {data?.financials?.latestInvoice?.date || 'Sin registros'}
+              </span>
             </div>
             <div className="p-4 bg-[#18181B]/40 rounded-xl border border-[#F4F4F5]/5">
-              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Referencia Fiscal</span>
-              <span className="text-sm font-bold text-white truncate">TAD-RNC-00123</span>
+              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Referencia</span>
+              <span className="text-sm font-bold text-white truncate">
+                {data?.financials?.latestInvoice?.id || 'TAD-RNC-000'}
+              </span>
             </div>
           </div>
         </div>

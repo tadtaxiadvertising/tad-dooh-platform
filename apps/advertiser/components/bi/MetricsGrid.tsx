@@ -5,11 +5,13 @@ export const MetricsGrid = ({ data }: { data?: any }) => {
   // Use real data if provided, fallback to defaults/mocks for display only
   const metrics = {
     cpm: 1500 / 50, // RD$ 1,500 per month / 50k impressions target = ~30 DOP CPM
-    avgFrequency: 3.2, 
+    avgFrequency: data?.avgFrequency || 0, 
     totalImpacts: data?.totalImpressions || 0,
-    geoDistribution: [
-      { name: 'Santo Domingo', value: 75, color: '#FFD700' },
-      { name: 'Santiago', value: 25, color: '#3B82F6' }
+    geoDistribution: data?.geoDistribution?.map((g: any, i: number) => ({
+      ...g,
+      color: i === 0 ? '#FFD700' : (i === 1 ? '#3B82F6' : '#10B981')
+    })) || [
+      { name: 'Santo Domingo', value: 100, color: '#FFD700' }
     ]
   };
 

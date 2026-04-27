@@ -70,6 +70,28 @@ const CampaignStep: React.FC<CampaignStepProps> = ({ formData, setFormData, onNe
             </div>
           </div>
 
+          <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800">
+            <label className="text-white font-bold flex items-center gap-2 mb-4">
+              <Target className="w-5 h-5 text-[#fad400]" />
+              Zona de Cobertura
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {['Santo Domingo', 'Santiago', 'Punta Cana'].map((city) => (
+                <button
+                  key={city}
+                  onClick={() => setFormData({ ...formData, targetCity: city })}
+                  className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                    formData.targetCity === city 
+                      ? 'bg-[#fad400] text-slate-950 border-[#fad400]' 
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-slate-950/50 p-5 rounded-3xl border border-slate-800 flex flex-col gap-1">
               <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Inversión Mensual</span>
@@ -84,7 +106,7 @@ const CampaignStep: React.FC<CampaignStepProps> = ({ formData, setFormData, onNe
           <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl flex gap-3 items-start">
             <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-300 leading-relaxed">
-              Cada slot garantiza una frecuencia premium de 15 segundos en rotación continua durante todo el mes operativo.
+              Cada anuncio garantiza una frecuencia premium de 30 segundos en rotación continua durante todo el mes operativo.
             </p>
           </div>
         </div>

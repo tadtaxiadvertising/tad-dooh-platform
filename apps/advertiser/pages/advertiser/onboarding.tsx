@@ -20,6 +20,7 @@ export default function AdvertiserOnboarding() {
     password: '',
     expectedScreens: 1,
     budget: 1500,
+    targetCity: 'Santo Domingo',
     file: null as File | null
   });
 

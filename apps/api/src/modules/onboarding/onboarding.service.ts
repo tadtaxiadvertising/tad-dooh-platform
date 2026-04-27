@@ -7,6 +7,7 @@ import { BCRYPT_ROUNDS, BUSINESS_RULES } from '../../common/constants/business-r
 import { OnboardAdvertiserDto } from './dto/onboard-advertiser.dto';
 
 @Injectable()
+// TAD DOOH v12.1 - Atomic Onboarding (30s Frequency Policy)
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
 
@@ -50,6 +51,7 @@ export class OnboardingService {
             active: false, // Inactiva hasta que se pague
             hasSeenTutorial: true,
             category: 'General',
+            targetCity: data.targetCity,
           },
         });
 
@@ -60,7 +62,7 @@ export class OnboardingService {
               campaignId: campaign.id,
               title: fileMetadata.name,
               url: 'PENDING_UPLOAD', // Placeholder, the frontend will handle upload to storage
-              duration: 15, // Default duration per slot
+              duration: 30, // Default duration per slot
               fileSize: fileMetadata.size,
               mimeType: fileMetadata.type,
             },

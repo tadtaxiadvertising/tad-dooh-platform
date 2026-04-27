@@ -44,6 +44,7 @@ export const config = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { path } = req.query;
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
 
   // Health check especial para diagnóstico de red
   if (req.method === 'GET' && Array.isArray(path) && path[0] === '_proxy_health') {
@@ -71,15 +72,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Manejar preflight OPTIONS
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (requestOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+      res.setHeader('Vary', 'Origin');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-device-id');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-device-id, x-forwarded-host, x-forwarded-proto');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     return res.status(200).end();
   }
 
   try {
     // 2. Intentar petición al backend
-    const allowedHeaders = ['authorization', 'content-type', 'x-device-id', 'accept', 'user-agent'];
+    const allowedHeaders = ['authorization', 'content-type', 'x-device-id', 'accept', 'user-agent', 'cookie'];
     const forwardHeaders: Record<string, string> = {};
     
     for (const key of allowedHeaders) {
@@ -92,6 +97,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     forwardHeaders['accept-encoding'] = 'identity';
     forwardHeaders['connection'] = 'close';
     forwardHeaders['host'] = new URL(targetUrl).host;
+    if (req.headers.host) {
+      forwardHeaders['x-forwarded-host'] = req.headers.host;
+    }
+    if (req.headers['x-forwarded-proto']) {
+      forwardHeaders['x-forwarded-proto'] = req.headers['x-forwarded-proto'] as string;
+    } else if (req.headers.referer?.startsWith('https://')) {
+      forwardHeaders['x-forwarded-proto'] = 'https';
+    } else {
+      forwardHeaders['x-forwarded-proto'] = 'http';
+    }
 
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
@@ -134,8 +149,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Headers CORS de respuesta
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (requestOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+      res.setHeader('Vary', 'Origin');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     const contentType = backendResponse.headers.get('content-type');
     if (contentType) res.setHeader('Content-Type', contentType);

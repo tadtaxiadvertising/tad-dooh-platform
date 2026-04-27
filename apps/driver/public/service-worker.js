@@ -58,61 +58,69 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // ── Pasar llamadas API y autenticación directamente a la red ──
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/backend-api/')) {
-    return; // Sin cache para el backend
+  if (request.method !== 'GET') {
+    return;
   }
 
-  // ── Estrategia: Network-first, fallback a cache ──
-  event.respondWith(
-    fetch(request)
-      .then((networkResponse) => {
-        // SHELTER C-D1: Solo cachear respuestas GET exitosas Y menores a 500KB
-        if (
-          networkResponse.ok &&
-          request.method === 'GET' &&
-          networkResponse.headers.has('content-length')
-        ) {
-          const size = parseInt(networkResponse.headers.get('content-length') || '0', 10);
-          if (size <= MAX_CACHEABLE_SIZE) {
-            const cloned = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, cloned);
-              // Trim después de cada inserción
-              trimCache(CACHE_NAME, MAX_CACHE_ITEMS);
-            });
+  // ── Pasar llamadas API y autenticación directamente a la red ──
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/backend-api/')) {
+    return;
+  }
+
+  const isDashboardAsset =
+    request.mode === 'navigate' ||
+    url.pathname.startsWith('/driver/dashboard') ||
+    url.pathname.startsWith('/_next/static/') ||
+    ['script', 'style', 'image', 'font'].includes(request.destination);
+
+  // ── Estrategia SWR para assets del dashboard ──
+  if (isDashboardAsset) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+
+      const networkPromise = fetch(request)
+        .then(async (networkResponse) => {
+          if (networkResponse.ok) {
+            const size = parseInt(networkResponse.headers.get('content-length') || '0', 10);
+            const canCacheBySize = !size || size <= MAX_CACHEABLE_SIZE;
+            if (canCacheBySize) {
+              await cache.put(request, networkResponse.clone());
+              await trimCache(CACHE_NAME, MAX_CACHE_ITEMS);
+            }
           }
-        } else if (
-          networkResponse.ok &&
-          request.method === 'GET' &&
-          !networkResponse.headers.has('content-length')
-        ) {
-          // Si no hay content-length, cachear solo si es HTML/CSS/JS (no media)
-          const contentType = networkResponse.headers.get('content-type') || '';
-          if (
-            contentType.includes('text/html') ||
-            contentType.includes('text/css') ||
-            contentType.includes('application/javascript') ||
-            contentType.includes('application/json')
-          ) {
-            const cloned = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, cloned);
-              trimCache(CACHE_NAME, MAX_CACHE_ITEMS);
-            });
-          }
-        }
-        return networkResponse;
-      })
-      .catch(() =>
-        caches.match(request).then((cached) => {
-          if (cached) return cached;
-          // Fallback para navegación
-          if (request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
+          return networkResponse;
         })
-      )
+        .catch(() => null);
+
+      if (cached) {
+        event.waitUntil(networkPromise);
+        return cached;
+      }
+
+      const network = await networkPromise;
+      if (network) return network;
+
+      if (request.mode === 'navigate') {
+        const offlineFallback = await cache.match(OFFLINE_URL);
+        if (offlineFallback) return offlineFallback;
+      }
+
+      return new Response('Offline', { status: 503, statusText: 'Offline' });
+    })());
+    return;
+  }
+
+  // ── Fallback por defecto: network-first ──
+  event.respondWith(
+    fetch(request).catch(async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      if (request.mode === 'navigate') {
+        return caches.match(OFFLINE_URL);
+      }
+      return new Response('Offline', { status: 503, statusText: 'Offline' });
+    })
   );
 });
 

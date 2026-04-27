@@ -96,14 +96,14 @@ export class BiService {
       // INVESTOR LOGIC (v7.5)
       const yieldPerScreen = devicesCount > 0 ? mrr / devicesCount : 0;
       const arpu = yieldPerScreen; 
-      const churnRate = 0.045; // Refined based on retention
+      const churnRate = devicesCount > 0 ? 0.045 : 0; // Refined based on retention
       const projectedRevenue = mrr * 12;
 
       // Delivery Rate calculation
       const totalTargetImpressions = activeCampaignsData.reduce((acc, c) => acc + (c.targetImpressions || 0), 0);
       const deliveryRateAvg = totalTargetImpressions > 0 
         ? Math.min(100, (impressions / totalTargetImpressions) * 100) 
-        : 100;
+        : 0;
 
       // Persist snapshot for subsequent calls
       try {
@@ -257,6 +257,7 @@ export class BiService {
     const drivers = await this.prisma.driver.findMany({
       include: {
         devices: true,
+        campaigns: true,
         subscriptions: { where: { startDate: { lte: periodEnd }, dueDate: { gte: periodStart } } },
         payrollPayments: { where: { month, year } }
       }
@@ -317,7 +318,7 @@ export class BiService {
             subscriptionDueDate: subscription?.dueDate,
             subscriptionAmount: subscription?.amount || 0,
             totalPlaybacks: deliveredImpressions,
-            activeCampaigns: 1, 
+            activeCampaigns: driver.campaigns?.length || 0, 
             revenueContracted, 
             revenueReceived,
             payrollDue: Number(payrollDue.toFixed(2)), 

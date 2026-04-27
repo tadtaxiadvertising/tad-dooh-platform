@@ -1,9 +1,11 @@
 # 📘 TAD DOOH — Documentación Maestra
 
-**Versión:** 12.0.0 (Financial, Telemetry & Referral V12)  
-**Última Actualización:** 24 de Abril, 2026 (02:50 PM)  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+**Estado:** Sistema purgado y listo para ingreso de datos reales.  
 **Propietario:** TAD Dominicana, S.R.L.  
 **Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
+
 
 ---
 
@@ -24,6 +26,7 @@
    - [2.4 Motor de Simulación (TAD Simulator Engine)](#24-motor-de-simulación-tad-simulator-engine)
    - [2.5 Flujos de Trabajo Administrativo](#25-flujos-de-trabajo-administrativo)
    - [2.6 Matrices de Control y Auditoría](#26-matrices-de-control-y-auditoría)
+   - [2.7 Especificación de Mapas y Visualización (MAP-SPEC-2026)](#27-especificación-de-mapas-y-visualización-map-spec-2026)
 3. [Diccionario de Acciones por Servicio (Lógica Interna)](#3-diccionario-de-acciones-por-servicio-lógica-interna)
    - [3.1 Matriz de Acciones — Conductores (Driver)](#31-matriz-de-acciones--conductores-driver)
    - [3.2 Matriz de Acciones — Anunciantes (Advertiser)](#32-matriz-de-acciones--anunciantes-advertiser)
@@ -462,6 +465,37 @@ sequenceDiagram
 | Log de impresiones | `PlaybackEvent` | `deviceId`, `videoId`, `eventType`, `timestamp` |
 | Trail GPS completo | `DriverLocation` | `driverId`, `latitude`, `longitude`, `speed`, `timestamp` |
 | Transacciones financieras | `FinancialTransaction` | `type`, `category`, `amount`, `entityId`, `createdAt` |
+
+---
+
+## 2.7 Especificación de Mapas y Visualización (MAP-SPEC-2026)
+
+Para el año 2026, TAD ha estandarizado la visualización de la flota mediante una especificación de alta fidelidad que garantiza la claridad operativa y una estética premium.
+
+### Estándar Visual del Icono (SVG)
+
+Cada vehículo se representa mediante un icono SVG dinámico que comunica estado, orientación e identidad en un solo vistazo.
+
+| Elemento | Lógica Visual | Especificación Técnica |
+| :--- | :--- | :--- |
+| **Color del Número** | `Online` vs `Offline` | **Amarillo (`#eab308`)** para activos, **Rojo (`#dc2626`)** para desconectados. |
+| **Cuerpo del Vehículo** | Basado en el Tema del Mapa | **Blanco** en mapas oscuros, **Negro/Gris Oscuro** en mapas claros (OSM). |
+| **Orientación** | Faros Delanteros | Luces delanteras fijas en **Amarillo TAD (`#fad400`)** para distinguir el frente. |
+| **Luces Traseras** | Estáticas | Siempre en **Rojo (`#dc2626`)** para simular luces de freno. |
+| **Identidad** | Número de Taxi/ID | Se muestra el número STI (ej: 001) o los últimos 3 dígitos del DeviceId. |
+
+### Comportamiento Dinámico
+
+1. **Pulse Effect**: Los dispositivos online emiten un anillo de pulso sutil para indicar actividad de telemetría en tiempo real.
+2. **Interactive States**: Al seleccionar un vehículo, el icono escala un 15% y aplica un brillo perimetral (`drop-shadow`) basado en su estado de conexión.
+3. **Glassmorphism**: La pantalla central del icono utiliza un efecto de cristal oscuro para integrarse con la interfaz moderna de la plataforma.
+
+### Sincronización Multi-Portal
+
+Esta especificación es **clase-única**, lo que significa que el código de generación del icono (`createIcon` / `createGlassIcon`) es idéntico en:
+- **Admin Dashboard**: Monitoreo total de la flota y SRE.
+- **Advertiser Portal**: Visualización de alcance de campaña y heatmaps.
+- **Driver App**: Visualización de ubicación propia y mapa de calor de demanda.
 
 ---
 

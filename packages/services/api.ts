@@ -453,6 +453,10 @@ export const emailInvoice = (
   data: { email: string; amount?: number }
 ) => api.post(`/finance/invoice/${campaignId}/email`, data).then(res => res.data);
 
+// System Settings
+export const getSystemSettings = () => api.get('/system-settings').then(res => res.data);
+export const updateSystemSettings = (data: Record<string, unknown>) => api.put('/system-settings', data).then(res => res.data);
+
 /** Envía confirmación de pago a conductor por email */
 export const emailDriverPaymentConfirm = (data: {
   email: string;
@@ -462,7 +466,11 @@ export const emailDriverPaymentConfirm = (data: {
   driverId?: string;
 }) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
-
+// ============================================
+// Auth & Profile
+// ============================================
+export const getMyProfile = () => api.get('/auth/profile').then(res => res.data);
+export const updateMyProfile = (data: { name?: string; password?: string; currentPassword?: string }) => api.put('/auth/profile', data).then(res => res.data);
 
 export default api;
 

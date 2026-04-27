@@ -23,6 +23,7 @@ import { SheetsModule } from './modules/sheets/sheets.module';
 import { AuthService } from './modules/auth/auth.service';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { SimulationModule } from './modules/simulation/simulation.module';
 import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
@@ -32,6 +33,9 @@ import { AppController } from './app.controller';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { TelemetryModule } from './modules/telemetry/telemetry.module';
 import { ReferralModule } from './modules/referral/referral.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
@@ -101,6 +105,9 @@ import { ReferralModule } from './modules/referral/referral.module';
     WalletModule,
     TelemetryModule,
     ReferralModule,
+    SystemSettingsModule,
+    SimulationModule,
+    OnboardingModule,
   ],
   controllers: [AppController],
   providers: [
@@ -140,4 +147,3 @@ export class AppModule implements NestModule, OnModuleInit {
     this.logger.log('🚀 TAD Backend Iniciado.');
   }
 }
-

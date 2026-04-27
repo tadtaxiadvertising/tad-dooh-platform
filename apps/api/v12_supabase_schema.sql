@@ -284,6 +284,18 @@ CREATE POLICY "financial_tx_insert_admin" ON public.financial_transactions
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
   );
 
+-- Intenciones de Campaña (Advertiser Onboarding)
+CREATE TABLE IF NOT EXISTS public.campaign_intents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  brand_name TEXT NOT NULL,
+  budget DECIMAL(12,2) NOT NULL,
+  expected_screens INTEGER NOT NULL,
+  status TEXT DEFAULT 'PENDING_PAYMENT',
+  file_metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 5. SEED (ON CONFLICT DO NOTHING)
 INSERT INTO public.profiles (email, role, full_name) 
 VALUES ('admin@tadtaxi.do', 'ADMIN', 'TAD Super Admin')

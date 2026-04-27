@@ -5,6 +5,18 @@
 
 ---
 
+## [v12.1.0] - 2026-04-26
+
+### 🎨 UI/UX: Professional Map Specification (MAP-SPEC-2026)
+
+- **Map Icons**: Implemented a new high-fidelity SVG car icon with binary status logic:
+  - **Online**: Yellow number/accents (#eab308).
+  - **Offline**: Red number/accents (#dc2626).
+- **Orientation Control**: Added fixed TAD Yellow (#fad400) front headlights to distinguish car orientation from the red taillights.
+- **Theme Awareness**: Dynamic car body color (White for Dark Mode maps, Black/Dark for Light Mode/OSM tiles).
+- **Platform Sync**: Synchronized the new specification across **Admin**, **Advertiser**, and **Driver** applications (both MapView and MonitoringMap components).
+- **Aesthetics**: Integrated glassmorphism, pulse animations for active devices, and high-contrast styling for premium visualization.
+
 ## [v12.0.0] - 2026-04-23
 
 ### 💎 ARCHITECTURE: Master Engineering Specification (EMS) V1.0

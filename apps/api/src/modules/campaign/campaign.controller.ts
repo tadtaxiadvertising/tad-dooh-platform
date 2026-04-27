@@ -524,6 +524,12 @@ export class CampaignController {
     return this.campaignService.getCampaignReports(advertiserId);
   }
 
+  @Post('intent')
+  @Public()
+  async createIntent(@Body() createCampaignIntentDto: any) {
+    return this.campaignService.createIntent(createCampaignIntentDto);
+  }
+
   // 6. Generic ID lookup MUST BE LAST to avoid route conflicts
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)

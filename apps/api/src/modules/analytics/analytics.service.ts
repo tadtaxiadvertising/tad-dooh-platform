@@ -242,7 +242,7 @@ export class AnalyticsService {
       status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
     };
 
-    this.cache.antiFraud = { data, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 

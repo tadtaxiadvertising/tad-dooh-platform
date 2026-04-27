@@ -428,10 +428,7 @@ export class AdvertisersService {
       throw new UnauthorizedException('El enlace ha expirado o es inválido.');
     }
   }
-  private async getLiveImpressionsForCampaigns(advertiserId: string): Promise<number> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
+  private async getAdvertiserVideoIds(advertiserId: string): Promise<string[]> {
     const [videos, assets] = await Promise.all([
       this.prisma.video.findMany({
         where: { campaign: { advertiserId } },
@@ -442,7 +439,14 @@ export class AdvertisersService {
         select: { id: true }
       })
     ]);
-    const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
+    return [...videos.map(v => v.id), ...assets.map(a => a.id)];
+  }
+
+  private async getLiveImpressionsForCampaigns(advertiserId: string): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const videoIds = await this.getAdvertiserVideoIds(advertiserId);
 
     if (videoIds.length === 0) return 0;
 

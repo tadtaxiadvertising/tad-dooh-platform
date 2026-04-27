@@ -42,6 +42,10 @@ export class OnboardAdvertiserDto {
   @IsNumber()
   expectedScreens: number;
 
+  @IsString()
+  @IsNotEmpty()
+  targetCity: string;
+
   @IsObject()
   @IsOptional()
   @ValidateNested()

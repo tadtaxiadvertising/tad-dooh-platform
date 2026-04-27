@@ -4,7 +4,7 @@
   "main": "index.ts",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1"
+    "@supabase/supabase-js": "^2.99.1"
   },
   "scripts": {
     "build": "echo 'Next.js handles build via transpilePackages'"

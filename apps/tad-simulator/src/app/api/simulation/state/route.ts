@@ -1,11 +1,12 @@
 
 import { NextResponse } from 'next/server';
+import { getResolvedApiUrl } from '@/utils/network';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const apiUrl = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
+    const apiUrl = getResolvedApiUrl();
     const response = await fetch(`${apiUrl}/simulation/state`);
     
     if (!response.ok) {

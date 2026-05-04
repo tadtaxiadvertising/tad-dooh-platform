@@ -44,7 +44,11 @@ export function createAppPrismaClient(): AppPrismaLike {
     // The Dockerfile ensures prisma generate is run before building.
     return new PrismaClient() as unknown as AppPrismaLike;
   } catch (error: any) {
-    console.warn(`[Engine] Prisma client unavailable, using no-op client: ${error?.message ?? 'unknown error'}`);
+    console.warn(`[Engine] Prisma client unavailable, using no-op client. 
+      Details: ${error?.message ?? 'unknown error'}
+      Check: Is '@prisma/client' generated and available in node_modules?
+      Current Dir: ${process.cwd()}
+    `);
     return createNoopClient();
   }
 }

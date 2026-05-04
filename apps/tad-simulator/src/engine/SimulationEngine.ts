@@ -12,15 +12,17 @@ export class SimulationEngine {
   
   private config = {
     driverCount: 150,
-    apiUrl: process.env.TAD_API_URL || 'http://localhost:3001/api/v1',
+    apiUrl: process.env.TAD_API_URL || 'http://localhost:3000/api/v1',
     jwtSecret: process.env.JWT_SECRET || 'tad-default-secret-2026',
     tickInterval: 60000 
   };
 
   private getResolvedApiUrl() {
-    if (this.config.apiUrl.includes('proyecto_ia.ibusiness.com.do')) {
-        console.warn(`[Engine] Detected unresolvable domain. Falling back to internal networking.`);
-        return 'http://localhost:3001/api/v1';
+    // If we're in Docker, tad-api is the service name.
+    // If the configured URL is unresolvable or we want an internal fallback:
+    if (this.config.apiUrl.includes('proyecto_ia.ibusiness.com.do') || this.config.apiUrl.includes('10.0.1.7')) {
+        console.warn(`[Engine] Detected potentially unresolvable URL (${this.config.apiUrl}). Checking internal fallbacks...`);
+        return 'http://tad-api:3000/api/v1';
     }
     return this.config.apiUrl;
   }

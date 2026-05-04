@@ -30,7 +30,7 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
   }, [router.pathname]);
   
   // Initialize Realtime Sync Hook
-  useAntigravity();
+  useAntigravity(!isPublic);
 
   const content = (
     <div className="font-sans antialiased">

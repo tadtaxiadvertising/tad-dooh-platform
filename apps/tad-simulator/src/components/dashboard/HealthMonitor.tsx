@@ -28,7 +28,7 @@ export default function HealthMonitor() {
     };
 
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 3000); // 3s refresh
+    const interval = setInterval(fetchMetrics, 15000); // 15s refresh (reduced from 3s)
     return () => clearInterval(interval);
   }, []);
 

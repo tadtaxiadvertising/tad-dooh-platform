@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate:app": "if [ -x ../../node_modules/.bin/prisma ]; then ../../node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; elif [ -x ./node_modules/.bin/prisma ]; then ./node_modules/.bin/prisma generate --schema=../api/prisma/schema.prisma; else echo 'Skipping prisma generate: prisma CLI not installed'; fi"
+    "prisma:generate:app": "PRISMA_BIN=$(which prisma || echo '../../node_modules/.bin/prisma'); if [ -f ../api/prisma/schema.prisma ]; then $PRISMA_BIN generate --schema=../api/prisma/schema.prisma; elif [ -f ../../prisma-schema/schema.prisma ]; then $PRISMA_BIN generate --schema=../../prisma-schema/schema.prisma; elif [ -f /app/apps/api/prisma/schema.prisma ]; then $PRISMA_BIN generate --schema=/app/apps/api/prisma/schema.prisma; else echo 'Prisma schema not found, skipping generation'; fi"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",

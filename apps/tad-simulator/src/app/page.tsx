@@ -42,7 +42,7 @@ export default function ControlCenterPage() {
       } catch (e) {
         console.error('Failed to fetch state', e);
       }
-    }, 2000);
+    }, 10000); // Poll every 10 seconds (reduced from 2s to prevent API flooding)
     return () => clearInterval(interval);
   }, []);
 

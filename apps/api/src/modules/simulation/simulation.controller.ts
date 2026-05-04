@@ -1,6 +1,8 @@
 import { Controller, Post, Body, Delete, Get } from '@nestjs/common';
 import { SimulationService, ScenarioConfig } from './simulation.service';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('simulation')
 export class SimulationController {
   constructor(private readonly simService: SimulationService) {}

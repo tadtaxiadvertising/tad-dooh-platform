@@ -34,6 +34,7 @@ export class TelemetryService {
          ON CONFLICT (driver_id, timestamp) DO NOTHING`,
         ...params
       );
+      this.logger.log(`✅ Batch sync completed: ${telemetryData.length} points processed.`);
     } catch (err) {
       this.logger.error('Failed to batch sync telemetry', err);
     }

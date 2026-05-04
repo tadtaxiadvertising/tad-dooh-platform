@@ -80,8 +80,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     }),
 
     // SHELTER C-AD1: Rate limiting reactivado con límites conservadores para Free Tier
-    // 30 req/min global — suficiente para operación normal, bloquea abuso
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+    // 120 req/min global — suficiente para operación normal, bloquea abuso
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,

@@ -360,9 +360,13 @@ export function useTelemetry(): UseTelemetryReturn {
   useEffect(() => {
     const handleOnline = () => {
       isOnlineRef.current = true;
+      if (readOfflineQueue().length > 0) {
+        void syncPending();
+        return;
+      }
+
       setConnectionStatus('online');
-      // Intentar sincronizar data offline acumulada
-      flushBatch(true);
+      void flushBatch(true);
     };
     const handleOffline = () => {
       isOnlineRef.current = false;

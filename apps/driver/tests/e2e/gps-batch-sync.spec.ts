@@ -18,6 +18,47 @@
  */
 import { test, expect, Page, CDPSession } from '@playwright/test';
 
+const OFFLINE_STORAGE_KEY = 'TAD_TELEMETRY_OFFLINE';
+
+async function openGpsHarness(page: Page): Promise<void> {
+  await page.goto('/gps-test', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('gps-test-title')).toHaveText('gps-test-ready');
+}
+
+async function seedOfflineEvents(page: Page, count: number): Promise<void> {
+  await page.evaluate(
+    ({ storageKey, eventCount }) => {
+      const santoDomingoCoords = [
+        { lat: 18.4861, lng: -69.9312 },
+        { lat: 18.4737, lng: -69.9314 },
+        { lat: 18.4784, lng: -69.9116 },
+        { lat: 18.5001, lng: -69.9846 },
+        { lat: 18.4543, lng: -69.9736 },
+      ];
+
+      const payload = Array.from({ length: eventCount }, (_, index) => {
+        const coord = santoDomingoCoords[index % santoDomingoCoords.length];
+        return {
+          lat: coord.lat + (Math.random() * 0.01 - 0.005),
+          lng: coord.lng + (Math.random() * 0.01 - 0.005),
+          ts: Date.now() - (eventCount - index) * 30_000,
+          accuracy: 8,
+        };
+      });
+
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    },
+    { storageKey: OFFLINE_STORAGE_KEY, eventCount: count }
+  );
+}
+
+async function readOfflineEvents(page: Page): Promise<number> {
+  return page.evaluate((storageKey) => {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw).length : 0;
+  }, OFFLINE_STORAGE_KEY);
+}
+
 // ──────────────────────────────────────────────────────────────────
 // HELPERS: CDP Network Throttling
 // ──────────────────────────────────────────────────────────────────
@@ -50,59 +91,6 @@ async function restoreFullNetwork(cdp: CDPSession): Promise<void> {
   console.log('✅ [FULL NETWORK] Red restaurada a velocidad máxima');
 }
 
-/**
- * Inyecta eventos GPS y playback simulados directamente en IndexedDB,
- * como si el player los hubiera capturado mientras estaba offline.
- */
-async function seedOfflineEventsToIndexedDB(page: Page, count: number): Promise<void> {
-  await page.evaluate(async (eventCount) => {
-    const DB_NAME = 'tad-dooh-offline-store';
-    const STORE_NAME = 'pending-events';
-
-    const openDB = (): Promise<IDBDatabase> =>
-      new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (e) => {
-          const db = (e.target as IDBOpenDBRequest).result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { autoIncrement: true });
-          }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
-    const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-
-    const santoDomingoCoords = [
-      { lat: 18.4861, lng: -69.9312 }, // Zona Colonial
-      { lat: 18.4737, lng: -69.9314 }, // Av. George Washington
-      { lat: 18.4784, lng: -69.9116 }, // Av. 27 de Febrero
-      { lat: 18.5001, lng: -69.9846 }, // UASD
-      { lat: 18.4543, lng: -69.9736 }, // Av. Charles de Gaulle
-    ];
-
-    for (let i = 0; i < eventCount; i++) {
-      const coord = santoDomingoCoords[i % santoDomingoCoords.length];
-      store.add({
-        type: i % 2 === 0 ? 'gps_update' : 'playback_confirm',
-        video_id: `vid-${String(i).padStart(3, '0')}`,
-        device_id: 'tablet-test-001',
-        lat: coord.lat + (Math.random() * 0.01 - 0.005),
-        lng: coord.lng + (Math.random() * 0.01 - 0.005),
-        timestamp: new Date(Date.now() - (eventCount - i) * 30_000).toISOString(),
-        synced: false,
-      });
-    }
-
-    await new Promise((resolve) => { tx.oncomplete = resolve; });
-    db.close();
-    console.log(`[IndexedDB] Seeded ${eventCount} offline events successfully`);
-  }, count);
-}
-
 // ──────────────────────────────────────────────────────────────────
 // TESTS
 // ──────────────────────────────────────────────────────────────────
@@ -117,7 +105,7 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
 
     // Interceptamos los requests al backend ANTES de ir offline
     await page.route(
-      (url) => url.pathname.includes('/sync') || url.pathname.includes('/api/sync'),
+      (url) => url.pathname.includes('/api/proxy/fleet/track-batch'),
       async (route) => {
         const body = route.request().postDataJSON();
         syncRequests.push({ url: route.request().url(), body });
@@ -128,21 +116,19 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ accepted: true, processed: body?.events?.length || 0 }),
+          body: JSON.stringify({ count: body?.points?.length || 0 }),
         });
       }
     );
 
-    // Cargamos la app
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await openGpsHarness(page);
 
     // Simulamos que el dispositivo está offline
     await context.setOffline(true);
     console.log('🔴 [OFFLINE] Iniciando acumulación de eventos GPS...');
 
-    // Inyectamos 25 eventos GPS/playback en IndexedDB (simulando 25 minutos de viaje)
-    await seedOfflineEventsToIndexedDB(page, 25);
+    await seedOfflineEvents(page, 25);
+    await expect(page.getByTestId('offline-count')).toHaveText('25');
     await page.waitForTimeout(1000);
 
     // Restauramos la red (simula recuperación de señal)
@@ -169,14 +155,14 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
 
       // Verificar que el payload contiene el array de eventos
       const firstPayload = syncRequests[0]?.body as Record<string, unknown>;
-      if (firstPayload?.events) {
-        const eventsInPayload = (firstPayload.events as unknown[]).length;
+      if (firstPayload?.points) {
+        const eventsInPayload = (firstPayload.points as unknown[]).length;
         console.log(`✅ Batch payload con ${eventsInPayload} eventos. Correcto!`);
         expect(eventsInPayload, 'El batch debe contener múltiples eventos, no solo 1.').toBeGreaterThan(1);
       } else {
         console.warn(
-          '⚠️  El payload no contiene una propiedad "events". ' +
-          'Verificar la estructura del batch en el player: { device_id, events: [...] }'
+          '⚠️  El payload no contiene una propiedad "points". ' +
+          'Verificar la estructura del batch en el driver: { driverId, deviceId, points: [...] }'
         );
       }
     }
@@ -185,42 +171,21 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
   // ────────────────────────────────────────────────────────────────
   // TEST 2.2: Los eventos NO se pierden al recargar la página offline
   // ────────────────────────────────────────────────────────────────
-  test('2.2 — IndexedDB persiste eventos GPS entre recargas (no se pierden datos)', async ({ page, context }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test('2.2 — localStorage persiste eventos GPS entre recargas (no se pierden datos)', async ({ page }) => {
+    await openGpsHarness(page);
 
     // Sembramos 10 eventos offline
-    await seedOfflineEventsToIndexedDB(page, 10);
+    await seedOfflineEvents(page, 10);
 
     // Simulamos recarga de página (como si FullyKiosk reiniciara el browser)
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('gps-test-title')).toHaveText('gps-test-ready');
 
-    // Verificamos que los eventos siguen en IndexedDB tras la recarga
-    const remainingEvents = await page.evaluate(async () => {
-      const DB_NAME = 'tad-dooh-offline-store';
-      const STORE_NAME = 'pending-events';
+    const remainingEvents = await readOfflineEvents(page);
 
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onsuccess = () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            resolve(0);
-            return;
-          }
-          const tx = db.transaction(STORE_NAME, 'readonly');
-          const store = tx.objectStore(STORE_NAME);
-          const countRequest = store.count();
-          countRequest.onsuccess = () => resolve(countRequest.result);
-          countRequest.onerror = () => reject(countRequest.error);
-        };
-        request.onerror = () => reject(request.error);
-      });
-    });
+    console.log(`📦 Eventos en localStorage tras recarga: ${remainingEvents}`);
 
-    console.log(`📦 Eventos en IndexedDB tras recarga: ${remainingEvents}`);
-
-    expect(remainingEvents, '[GPS_002] ALERTA: Los eventos offline se perdieron tras recargar la página. Verificar que se usa IndexedDB (persistente) y NO sessionStorage (volátil).').toBeGreaterThan(0);
+    expect(remainingEvents, '[GPS_002] ALERTA: Los eventos offline se perdieron tras recargar la página. Verificar persistencia local del buffer de GPS.').toBeGreaterThan(0);
   });
 
   // ────────────────────────────────────────────────────────────────
@@ -235,7 +200,7 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
     let syncPayloadSize = 0;
 
     await page.route(
-      (url) => url.pathname.includes('/sync') || url.pathname.includes('/api/sync'),
+      (url) => url.pathname.includes('/api/proxy/fleet/track-batch'),
       async (route) => {
         const body = route.request().postData() || '';
         syncPayloadSize = new Blob([body]).size;
@@ -248,11 +213,10 @@ test.describe('GPS Batch Sync — Offline → 3G Recovery', () => {
       }
     );
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await openGpsHarness(page);
 
     // Inyectamos 50 eventos (simulando 50 minutos de viaje con desconexión)
-    await seedOfflineEventsToIndexedDB(page, 50);
+    await seedOfflineEvents(page, 50);
 
     // ⚡ Activamos throttling 3G LENTO usando CDP
     await simulate3GSlow(cdp);

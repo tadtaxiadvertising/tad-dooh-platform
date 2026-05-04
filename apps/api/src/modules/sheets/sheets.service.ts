@@ -43,7 +43,10 @@ export class SheetsService implements OnModuleInit {
         creds = this.loadCredentialsFromFileSystem();
       }
 
-      if (!creds) throw new Error('No se encontraron credenciales de Google Sheets (Service Account).');
+      if (!creds) {
+        this.isConnected = false;
+        return;
+      }
 
       const serviceAccountAuth = new JWT({
         email: creds.client_email,
@@ -58,7 +61,7 @@ export class SheetsService implements OnModuleInit {
       this.logger.log(`🔗 TAD-SRE: Google Sheet "${this.doc.title}" conectado exitosamente.`);
     } catch (error) {
       this.isConnected = false;
-      this.logger.error(`🚨 TAD-SRE: Fallo al conectar con Google Sheets: ${error.message}`);
+      this.logger.warn(`⚠️ TAD-SRE: Google Sheets no disponible (modo MOCK): ${error.message}`);
     }
   }
 

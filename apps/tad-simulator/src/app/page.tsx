@@ -15,6 +15,7 @@ export default function ControlCenterPage() {
   const [loading, setLoading] = useState(false);
   const [apiLatency, setApiLatency] = useState<number | null>(null);
   const [recentLogs, setRecentLogs] = useState<string[]>([]);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const [simConfig, setSimConfig] = useState({
     driverCount: 150,
     activeCampaigns: 5,
@@ -40,9 +41,13 @@ export default function ControlCenterPage() {
           if (json.data.recentLogs) {
             setRecentLogs(json.data.recentLogs);
           }
+          setBackendError(null);
+        } else {
+          setBackendError(json.error || 'Connection Failed');
         }
       } catch (e) {
         console.error('Failed to fetch state', e);
+        setBackendError('Backend Unreachable');
       }
     }, 10000); // Poll every 10 seconds (reduced from 2s to prevent API flooding)
     return () => clearInterval(interval);
@@ -118,6 +123,16 @@ export default function ControlCenterPage() {
             </div>
           </div>
         </div>
+
+        {backendError && (
+          <div className="glass-panel px-4 py-2 flex items-center gap-3 border-rose-500/30 bg-rose-500/5">
+            <div className="size-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]" />
+            <div className="text-sm">
+              <p className="text-rose-400 text-xs font-bold uppercase tracking-widest">Backend Connection Error</p>
+              <p className="font-medium text-rose-300/60 text-[10px] uppercase">{backendError}</p>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Grid Layout */}

@@ -14,7 +14,7 @@ export class SimulationEngine {
     driverCount: 150,
     apiUrl: process.env.TAD_API_URL || 'http://localhost:3001/api/v1',
     jwtSecret: process.env.JWT_SECRET || 'tad-default-secret-2026',
-    tickInterval: 15000 
+    tickInterval: 60000 
   };
 
   private getResolvedApiUrl() {

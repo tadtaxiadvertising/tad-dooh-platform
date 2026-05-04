@@ -6,12 +6,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    let url = process.env.DATABASE_URL;
+    if (url && !url.includes('connection_limit=')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}connection_limit=20`;
+    }
+    
     super({
       datasources: {
         db: {
           // REGLA SRE: Forzar el uso del Pooler de Supabase (Puerto 6543)
           // DATABASE_URL debe incluir ?connection_limit=5 en EasyPanel
-          url: process.env.DATABASE_URL,
+          url,
         },
       },
       // Solo loguear errores en producción para no saturar el log de EasyPanel
@@ -21,12 +27,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit() {
     this.logger.log('🔌 Inicializando conexión al Pooler de Supabase...');
-    
-    // REGLA PERFORMANCE: Validar configuración de Pool (Optimizado para 8GB RAM)
-    const dbUrl = process.env.DATABASE_URL || '';
-    if (process.env.NODE_ENV === 'production' && !dbUrl.includes('connection_limit=')) {
-      this.logger.warn('⚠️ ADVERTENCIA PERFORMANCE: DATABASE_URL no tiene "connection_limit". Se recomienda configurar connection_limit=20 para aprovechar los 8GB de RAM.');
-    }
 
     const MAX_RETRIES = 5;
     let attempts = 0;

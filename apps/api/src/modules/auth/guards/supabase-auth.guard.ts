@@ -76,7 +76,13 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 1: Validación Local JWT ---
     if (jwtSecret) {
       try {
-        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as jwt.JwtPayload;
+        const decodedToken = jwt.decode(token, { complete: true }) as any;
+        const alg = decodedToken?.header?.alg || 'HS256';
+        
+        const payload = jwt.verify(token, jwtSecret, { 
+          algorithms: [alg, 'HS256', 'HS384', 'HS512'] 
+        }) as jwt.JwtPayload;
+
         if (payload) {
           request.user = {
             id: payload.sub,
@@ -97,11 +103,19 @@ export class SupabaseAuthGuard implements CanActivate {
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errName = err instanceof Error ? err.name : '';
+        
         if (errName === 'TokenExpiredError') {
           this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
           throw new UnauthorizedException('Tu sesión ha expirado.');
         }
-        this.logger.debug(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+
+        // If it's a configuration issue with the secret/algorithm, we log it more clearly
+        const isAlgError = errorMessage.toLowerCase().includes('algorithm');
+        if (isAlgError) {
+          this.logger.debug(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+        } else {
+          this.logger.debug(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+        }
       }
     }
 

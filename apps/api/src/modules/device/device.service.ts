@@ -232,6 +232,7 @@ export class DeviceService {
       },
     });
 
+    this.logger.log(`💓 Heartbeat processed for device ${dto.device_id}. Battery: ${dto.battery_level}%, Player: ${dto.player_status}`);
     return { success: true, blocked, reason };
   }
 
@@ -414,6 +415,7 @@ export class DeviceService {
       { expiresIn: '48h' }
     );
 
+    this.logger.log(`✅ Device ${deviceId}: Sync success. Sent ${payload.media_assets?.length || 0} assets.`);
     return {
       update: true,
       blocked: false,

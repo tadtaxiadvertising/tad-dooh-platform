@@ -7,11 +7,12 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const apiUrl = getResolvedApiUrl();
+    console.log(`[Simulator] Env: ${process.env.NODE_ENV} | Fetching state from: ${apiUrl}/simulation/state`);
     const response = await fetch(`${apiUrl}/simulation/state`);
     
     if (!response.ok) {
        const errorBody = await response.text().catch(() => 'No error body');
-       throw new Error(`Backend responded with ${response.status}: ${errorBody}`);
+       throw new Error(`Backend (${apiUrl}) responded with ${response.status}: ${errorBody}`);
     }
 
     const json = await response.json();

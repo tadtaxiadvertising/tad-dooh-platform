@@ -11,23 +11,26 @@
     "prisma:generate:app": "npx prisma generate --schema=../api/prisma/schema.prisma || npx prisma generate --schema=../../prisma-schema/schema.prisma || echo 'Prisma schema not found, skipping generation'"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.99.1",
+    "@types/leaflet": "^1.9.21",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
     "next": "15.2.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-hot-toast": "^2.6.0",
-    "@prisma/client": "^5.22.0",
-    "clsx": "^2.1.1"
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
-    "prisma": "^5.22.0",
     "@tailwindcss/postcss": "4.1.0",
-
     "@types/node": "^20",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
     "postcss": "^8.5.8",
+    "prisma": "^5.22.0",
     "tailwindcss": "4.1.0",
     "typescript": "^5"
   }

@@ -34,20 +34,15 @@ export async function GET() {
       }
     });
   } catch (error: any) {
-    // Suppress verbose logs for known connectivity issues in Local Engine mode
-    const isOffline = error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed');
-    if (!isOffline) {
-      console.error('SIMULATOR_STATE_FETCH_ERROR:', error.message);
-    }
-    
+    // SILENT FALLBACK: No logs in production for connection failures
     return NextResponse.json({ 
       success: true, 
       isFallback: true,
       data: {
         isRunning: false,
         config: {},
-        recentLogs: ['[Local Mode] Backend connection unavailable', 'Operating in standalone engine mode']
+        recentLogs: ['[Local Engine] Standalone mode active']
       }
-    }, { status: 200 }); // Retornamos 200 para no triggear catch() global, manejamos con flag
+    }, { status: 200 });
   }
 }

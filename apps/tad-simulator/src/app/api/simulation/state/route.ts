@@ -7,7 +7,10 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const apiUrl = getResolvedApiUrl();
-    console.log(`[Simulator] Env: ${process.env.NODE_ENV} | Fetching state from: ${apiUrl}/simulation/state`);
+    // Only log in development to avoid spamming the production logs every few seconds
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Simulator] Fetching state from: ${apiUrl}/simulation/state`);
+    }
     const response = await fetch(`${apiUrl}/simulation/state`);
     
     if (!response.ok) {
@@ -31,11 +34,20 @@ export async function GET() {
       }
     });
   } catch (error: any) {
-    console.error('SIMULATOR_STATE_FETCH_ERROR:', error);
+    // Suppress verbose logs for known connectivity issues in Local Engine mode
+    const isOffline = error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed');
+    if (!isOffline) {
+      console.error('SIMULATOR_STATE_FETCH_ERROR:', error.message);
+    }
+    
     return NextResponse.json({ 
-      success: false, 
-      error: error.message || 'Internal Server Error',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+      success: true, 
+      isFallback: true,
+      data: {
+        isRunning: false,
+        config: {},
+        recentLogs: ['[Local Mode] Backend connection unavailable', 'Operating in standalone engine mode']
+      }
+    }, { status: 200 }); // Retornamos 200 para no triggear catch() global, manejamos con flag
   }
 }

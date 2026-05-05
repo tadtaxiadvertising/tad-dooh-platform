@@ -38,8 +38,12 @@ export default function DigitalTwinContainer() {
     const checkApi = async () => {
       try {
         // En una app real, apuntaría a /api/health real de la plataforma TAD.
-        const res = await fetch('/api/health', { method: 'HEAD' });
+        const res = await fetch('/api/simulation/state');
         if (!res.ok) throw new Error('API down');
+        
+        const data = await res.json();
+        if (data.isFallback) throw new Error('API fallback');
+        
         setIsLocalMode(false);
         setApiPing('Online');
       } catch (err) {

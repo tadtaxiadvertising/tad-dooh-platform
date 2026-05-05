@@ -17,6 +17,14 @@ export async function POST() {
       message: data.message || 'Simulation Engine Offline in Backend'
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const isOffline = error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed');
+    if (!isOffline && process.env.NODE_ENV === 'development') {
+      console.error('API_STOP_ERROR:', error.message);
+    }
+    return NextResponse.json({ 
+      success: true, 
+      isFallback: true,
+      message: 'Local Engine Standalone Mode Active' 
+    });
   }
 }

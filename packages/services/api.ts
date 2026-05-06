@@ -50,7 +50,7 @@ api.interceptors.request.use(async (config) => {
     try {
       const currentPath = window.location.pathname;
 
-      // Skip Supabase session check for public paths
+      // 1. Intento principal: Supabase Session (Solo en rutas no públicas)
       if (!isPublicPath(currentPath)) {
         const session = await getValidSession();
         if (session?.access_token) {
@@ -59,10 +59,21 @@ api.interceptors.request.use(async (config) => {
         }
       }
       
-      // Fallback: LocalStorage with error handling
+      // 2. Fallback: LocalStorage
       const localToken = getLocalStorageToken(currentPath);
       if (localToken) {
         config.headers.Authorization = `Bearer ${localToken}`;
+      }
+
+      // 3. Fallback Final: Cookies (Resiliencia ante condiciones de carrera en login/refresh)
+      if (!config.headers.Authorization && typeof document !== 'undefined') {
+        const cookieToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('sb-access-token='))
+          ?.split('=')[1];
+        if (cookieToken) {
+          config.headers.Authorization = `Bearer ${cookieToken}`;
+        }
       }
     } catch (error) {
       console.error('🔐 AUTH_ERROR:', error);
@@ -469,6 +480,3 @@ export const getMyProfile = () => api.get('/auth/profile').then(res => res.data)
 export const updateMyProfile = (data: { name?: string; password?: string; currentPassword?: string }) => api.put('/auth/profile', data).then(res => res.data);
 
 export default api;
-
-
-

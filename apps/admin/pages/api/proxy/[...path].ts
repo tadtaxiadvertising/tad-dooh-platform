@@ -85,7 +85,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const headers = { ...req.headers } as Record<string, string>;
       
       // 🔑 Reenviar el token al backend (Normalizar a 'Authorization' con 'A' mayúscula)
-      const authHeader = req.headers.authorization || req.headers.Authorization;
+      let authHeader = req.headers.authorization || req.headers.Authorization;
+      
+      // 🛡️ FALLBACK: Si no hay header Authorization, intentar extraerlo de la cookie 'sb-access-token'
+      // Esto resuelve casos donde el interceptor del cliente falla o hay condiciones de carrera tras el login.
+      if (!authHeader) {
+        const cookieToken = req.cookies['sb-access-token'];
+        if (cookieToken) {
+          authHeader = `Bearer ${cookieToken}`;
+        }
+      }
+
       if (authHeader) {
         delete headers['authorization'];
         delete headers['Authorization'];
@@ -142,8 +152,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (backendResponse.status === 401) {
       // 401 Unauthorized log justified for security auditing
-      const authHeader = req.headers.authorization ? 'PRESENTE' : 'AUSENTE';
-      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authHeader}`);
+      const hasOriginalHeader = req.headers.authorization || req.headers.Authorization;
+      const finalAuthHeader = (backendResponse.config.headers as any)?.['Authorization'];
+      const authStatus = finalAuthHeader ? (hasOriginalHeader ? 'PRESENTE' : 'FALLBACK_COOKIE') : 'AUSENTE';
+      
+      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | Auth: ${authStatus}`);
     }
 
     // Headers CORS de respuesta

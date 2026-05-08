@@ -50,7 +50,7 @@ const withPWA = withPWAInit({
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
   || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
-  || 'https://tad-api.rewvid.easypanel.host';    // fallback hardcoded SOLO si todo lo demás falla
+  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback corregido para Easypanel PROD
 
 const RAW_BACKEND_URL = process.env.BACKEND_URL || BACKEND_INTERNAL;
 const BACKEND_URL = RAW_BACKEND_URL

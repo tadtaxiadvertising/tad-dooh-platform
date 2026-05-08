@@ -23,7 +23,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const rawBackendUrl = (
   process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL
-  || 'https://tad-api.rewvid.easypanel.host'
+  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
 );
 
 // Strip any trailing /api, /api/v1, or / to get a clean base
@@ -137,10 +137,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             errorMessage.includes('ECONNREFUSED') ||
                             errorMessage.includes('ETIMEDOUT');
       
-      if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
-        const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
+      if (isNetworkError && (BACKEND_BASE.includes('api:3000') || BACKEND_BASE.includes('localhost'))) {
+        const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
-        console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage}`);
+        console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage} -> ${fallbackUrl}`);
         
         // REGENAR HEADERS: El host cambió a la URL pública
         fetchOptions.headers = getForwardHeaders(fallbackUrl);

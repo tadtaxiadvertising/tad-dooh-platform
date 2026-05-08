@@ -152,11 +152,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (backendResponse.status === 401) {
       // 401 Unauthorized log justified for security auditing
-      const hasOriginalHeader = req.headers.authorization || req.headers.Authorization;
-      const finalAuthHeader = (backendResponse.config.headers as any)?.['Authorization'];
-      const authStatus = finalAuthHeader ? (hasOriginalHeader ? 'PRESENTE' : 'FALLBACK_COOKIE') : 'AUSENTE';
+      const hasOriginalHeader = !!(req.headers.authorization || req.headers.Authorization);
+      const hasCookieToken = !!req.cookies['sb-access-token'];
+      const authStatus = hasOriginalHeader ? 'PRESENTE' : (hasCookieToken ? 'FALLBACK_COOKIE' : 'AUSENTE');
       
-      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | Auth: ${authStatus}`);
+      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authStatus}`);
     }
 
     // Headers CORS de respuesta

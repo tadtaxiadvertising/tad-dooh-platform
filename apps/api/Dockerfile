@@ -19,8 +19,9 @@ FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl libc6-compat curl
 WORKDIR /app
 
-# Obligamos a V8 a hacer recolección de basura agresiva a los 256MB (TAD-OPS-911)
-ENV NODE_OPTIONS="--max_old_space_size=256"
+# SRE v12.1.1: 460MB = 90% del límite de 512MB. Deja ~52MB para Alpine OS + OpenSSL + native bindings.
+# PROHIBIDO subir a >460 — EasyPanel mata el contenedor con OOMKilled si V8 toca el techo.
+ENV NODE_OPTIONS="--max_old_space_size=460"
 
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist

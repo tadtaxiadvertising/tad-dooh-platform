@@ -711,3 +711,24 @@ model CampaignIntent {
   @@map("campaign_intents")
 }
 
+/// SRE: Tabla para persistir errores operacionales (Brevo failures, balance anomalies, sync crashes).
+/// Protocolo: Todo fallo de email DEBE registrarse aquí para auditoría y retry.
+model SystemError {
+  id          String   @id @default(uuid())
+  source      String   // EMAIL, WALLET, TELEMETRY, DEVICE, SYNC
+  severity    String   @default("ERROR") // INFO, WARNING, ERROR, CRITICAL
+  message     String
+  details     String?  // Stack trace or JSON payload
+  entityId    String?  @map("entity_id") // Related device/driver/campaign ID
+  retryCount  Int      @default(0) @map("retry_count")
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime? @map("resolved_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([source])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@map("system_errors")
+}
+

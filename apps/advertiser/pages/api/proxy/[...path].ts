@@ -121,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // --- REGLA DE RESILIENCIA TAD ---
-    let backendResponse;
+    let backendResponse: Response | undefined;
     try {
       backendResponse = await fetch(targetUrl, fetchOptions);
     } catch (fetchError: unknown) {
@@ -129,19 +129,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
       const isNetworkError = errorMessage.includes('fetch failed') || 
                             errorMessage.includes('ENOTFOUND') || 
-                            errorMessage.includes('ECONNREFUSED');
+                            errorMessage.includes('ECONNREFUSED') ||
+                            errorMessage.includes('ETIMEDOUT');
       
       if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
         const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
+        console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage}`);
         
         // REGENAR HEADERS: El host cambió a la URL pública
         fetchOptions.headers = getForwardHeaders(fallbackUrl);
         
-        backendResponse = await fetch(fallbackUrl, fetchOptions);
+        try {
+          backendResponse = await fetch(fallbackUrl, fetchOptions);
+        } catch (fallbackError: unknown) {
+          console.error(`[PROXY] ❌ Fallback también falló: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+          throw fallbackError;
+        }
       } else {
-        throw fetchError;
+        throw fetchError; 
       }
+    }
+
+    // Verificación de seguridad para evitar "Cannot read properties of undefined (reading 'headers')"
+    if (!backendResponse) {
+      throw new Error('Backend response is undefined after all attempts');
     }
 
     if (backendResponse.status === 401) {

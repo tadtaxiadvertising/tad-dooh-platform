@@ -60,7 +60,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3️⃣ PROTECTED ROUTES: Requieren autenticación
+  // 3️⃣ AUTH CALLBACK: Bypass middleware for PKCE callback
+  if (pathname.includes('/auth/callback')) {
+    return NextResponse.next();
+  }
+
+  // 4️⃣ PROTECTED ROUTES: Requieren autenticación
   // Cualquier ruta que empiece con /admin
   if (!session || userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/admin/login', request.url), {

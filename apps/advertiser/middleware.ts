@@ -29,7 +29,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Protected routes
+  // 3. Auth Callback bypass
+  if (pathname.includes('/auth/callback')) {
+    return NextResponse.next();
+  }
+
+  // 4. Protected routes
   const isPublicRoute = pathname === '/advertiser/onboarding';
 
   if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'ADVERTISER')) {

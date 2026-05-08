@@ -22,7 +22,7 @@ export class EmailService {
     this.smtpPass = pass;
 
     if (!pass) {
-      this.logger.warn('⚠️  SMTP_PASSWORD/SMTP_PASS/SENDGRID_API_KEY no configurado. Los emails operarán en modo MOCK (solo logs).');
+      this.logger.log('📧 MODO MOCK: SMTP_PASSWORD/SENDGRID_API_KEY no configurado. Los correos se registrarán en logs pero no se enviarán físicamente.');
     }
 
     this.transporter = nodemailer.createTransport({

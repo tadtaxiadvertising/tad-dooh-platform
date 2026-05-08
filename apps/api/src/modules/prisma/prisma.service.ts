@@ -89,7 +89,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   // REGLA SRE: Cerrar conexiones zombie al re-desplegar en EasyPanel
   async onModuleDestroy() {
-    this.logger.warn('🔌 Cerrando conexiones al Pooler (EasyPanel redeploy)...');
+    this.logger.log('🔌 Cierre de conexiones al Pooler solicitado (Shutdown/Redeploy)...');
     await this.$disconnect();
   }
 

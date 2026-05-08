@@ -1,28 +1,44 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import * as nodemailer from 'nodemailer';
 
+/**
+ * SRE v12.1.1 — EmailService (Brevo Production)
+ *
+ * PROTOCOLO:
+ * 1. SMTP_PASSWORD debe estar configurado en EasyPanel → NO MOCK MODE.
+ * 2. Todo fallo de envío dispara un Retry Pattern (3 intentos, backoff exponencial).
+ * 3. Cada fallo se registra en la tabla `system_errors` para auditoría.
+ * 4. Los envíos NO bloquean el Event Loop — se ejecutan fire-and-forget.
+ */
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter;
-  private smtpPass = '';
+  private isLive = false;
+  private readonly MAX_RETRIES = 3;
+  private readonly BASE_DELAY_MS = 1000; // 1s, 2s, 4s exponential
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  onModuleInit() {
     this.initTransporter();
   }
 
   private initTransporter() {
-    // Supports SendGrid, Gmail, or any SMTP provider via .env
-    // For SendGrid: SMTP_HOST=smtp.sendgrid.net, SMTP_PORT=587, SMTP_USER=apikey, SMTP_PASS=<sendgrid-api-key>
-    // For Gmail: SMTP_HOST=smtp.gmail.com, SMTP_PORT=587, SMTP_USER=<gmail>, SMTP_PASS=<app-password>
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    // Brevo SMTP Configuration — credentials injected via EasyPanel env
+    const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
     const port = parseInt(process.env.SMTP_PORT || '587');
     const user = process.env.SMTP_USER || '';
     const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || '';
-    this.smtpPass = pass;
 
     if (!pass) {
-      this.logger.log('📧 MODO MOCK: SMTP_PASSWORD/SENDGRID_API_KEY no configurado. Los correos se registrarán en logs pero no se enviarán físicamente.');
+      this.logger.warn('⚠️ [SRE] SMTP_PASSWORD/SENDGRID_API_KEY NO CONFIGURADO. Emails se loguearán pero NO se enviarán.');
+      this.logger.warn('⚠️ [SRE] Configura SMTP_PASSWORD en EasyPanel para salir de MODO MOCK.');
+      this.isLive = false;
+    } else {
+      this.logger.log(`✅ [SRE] Brevo SMTP activo → ${host}:${port} (user: ${user})`);
+      this.isLive = true;
     }
 
     this.transporter = nodemailer.createTransport({
@@ -30,11 +46,20 @@ export class EmailService {
       port,
       secure: port === 465,
       auth: { user, pass },
+      // SRE: Timeouts para evitar que un hang de Brevo bloquee el Event Loop
+      connectionTimeout: 10000, // 10s para establecer conexión
+      greetingTimeout: 10000,   // 10s para el handshake SMTP
+      socketTimeout: 30000,     // 30s máximo por operación de envío
     });
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // CORE SEND — Retry Pattern + system_errors logging
+  // ─────────────────────────────────────────────────────────────────────
+
   /**
    * Envía un email genérico con soporte para adjuntos PDF.
+   * Implementa retry con backoff exponencial y logging a system_errors.
    */
   async sendEmail(options: {
     to: string;
@@ -51,31 +76,95 @@ export class EmailService {
     this.logger.log(`📧 EMAIL_OUTGOING → ${options.to} | Asunto: ${options.subject}`);
 
     // MOCK mode: if no SMTP credentials, just log and return success
-    if (!this.smtpPass) {
+    if (!this.isLive) {
       this.logger.log(`📧 [MOCK] Email que se enviaría:\n  Para: ${options.to}\n  Asunto: ${options.subject}\n  Adjuntos: ${options.attachments?.length || 0}`);
       return { success: true, messageId: `mock-${Date.now()}` };
     }
 
-    try {
-      const info = await this.transporter.sendMail({
-        from,
+    // RETRY PATTERN: Exponential backoff (1s → 2s → 4s)
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        const info = await this.transporter.sendMail({
+          from,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          attachments: options.attachments?.map((a) => ({
+            filename: a.filename,
+            content: a.content,
+            contentType: a.contentType,
+          })),
+        });
+
+        this.logger.log(`✅ Email enviado (intento ${attempt}): ${info.messageId}`);
+        return { success: true, messageId: info.messageId };
+      } catch (err) {
+        lastError = err;
+        this.logger.warn(
+          `⚠️ Email fallido (intento ${attempt}/${this.MAX_RETRIES}) → ${options.to}: ${err.message}`
+        );
+
+        if (attempt < this.MAX_RETRIES) {
+          const delay = this.BASE_DELAY_MS * Math.pow(2, attempt - 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // ALL RETRIES EXHAUSTED — Log to system_errors
+    this.logger.error(`❌ Email FALLIDO tras ${this.MAX_RETRIES} intentos → ${options.to}: ${lastError?.message}`);
+    this.logSystemError(
+      'EMAIL',
+      'ERROR',
+      `Email fallido tras ${this.MAX_RETRIES} intentos: ${options.to} — ${options.subject}`,
+      JSON.stringify({
         to: options.to,
         subject: options.subject,
-        html: options.html,
-        attachments: options.attachments?.map((a) => ({
-          filename: a.filename,
-          content: a.content,
-          contentType: a.contentType,
-        })),
-      });
+        error: lastError?.message,
+        stack: lastError?.stack?.substring(0, 500),
+        attachmentCount: options.attachments?.length || 0,
+      }),
+      options.to,
+    );
 
-      this.logger.log(`✅ Email enviado: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
-    } catch (err) {
-      this.logger.error(`❌ Error enviando email a ${options.to}: ${err.message}`);
-      return { success: false };
-    }
+    return { success: false };
   }
+
+  /**
+   * Fire-and-forget wrapper — envía email sin bloquear el Event Loop del caller.
+   * Usa esto para emails no críticos (reportes, confirmaciones).
+   */
+  sendEmailAsync(options: Parameters<typeof this.sendEmail>[0]): void {
+    this.sendEmail(options).catch(err => {
+      this.logger.error(`[ASYNC_EMAIL] Unhandled failure: ${err.message}`);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SYSTEM ERROR LOGGING — Persiste en tabla system_errors
+  // ─────────────────────────────────────────────────────────────────────
+
+  private logSystemError(
+    source: string,
+    severity: string,
+    message: string,
+    details?: string,
+    entityId?: string,
+  ): void {
+    // Fire-and-forget: no bloquea el caller
+    this.prisma.systemError.create({
+      data: { source, severity, message, details, entityId },
+    }).catch(err => {
+      // Si falla el logging (tabla no existe aún), loguea a stdout como fallback
+      this.logger.error(`[SYSTEM_ERROR_LOG_FAIL] ${source}: ${message} | DB Error: ${err.message}`);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // BUSINESS EMAIL METHODS
+  // ─────────────────────────────────────────────────────────────────────
 
   /**
    * Envía un reporte de campaña (PDF) a un anunciante.

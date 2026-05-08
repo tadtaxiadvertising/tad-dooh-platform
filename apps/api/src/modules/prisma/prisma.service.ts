@@ -7,9 +7,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     let url = process.env.DATABASE_URL;
+    // SRE v12.1.1: Default 5 connections para Supabase Free Tier en EasyPanel.
+    // 20 conexiones puede agotar el pool durante CRON bursts + heartbeat storms.
     if (url && !url.includes('connection_limit=')) {
       const separator = url.includes('?') ? '&' : '?';
-      url = `${url}${separator}connection_limit=20`;
+      url = `${url}${separator}connection_limit=5`;
+    } else if (url && url.includes('connection_limit=')) {
+      const match = url.match(/connection_limit=(\d+)/);
+      if (match && parseInt(match[1]) > 10) {
+        console.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
+      }
     }
     
     super({

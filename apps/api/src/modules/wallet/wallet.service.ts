@@ -1,8 +1,19 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * SRE v12.1.1 — WalletService
+ *
+ * INTEGRIDAD FINANCIERA:
+ * - Suscripción Driver: RD$ 6,000
+ * - Pago por Ad: RD$ 500/mes
+ * - Toda inconsistencia dispara alerta al MonitoringController vía system_errors + notification
+ * - Todas las operaciones monetarias usan prisma.$transaction
+ */
 @Injectable()
 export class WalletService {
+  private readonly logger = new Logger(WalletService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getBalance(driverId: string) {
@@ -54,6 +65,12 @@ export class WalletService {
       }
 
       if (driver.walletBalance < amount) {
+        // SRE: Log attempted over-withdrawal as potential anomaly
+        this.logFinancialAnomaly(
+          driverId,
+          `Intento de retiro excede balance: solicitó RD$ ${amount}, balance actual RD$ ${driver.walletBalance}`,
+          'WARNING',
+        );
         throw new BadRequestException('Insufficient balance');
       }
 
@@ -75,6 +92,19 @@ export class WalletService {
         }
       });
 
+      // SRE v12.1.1: Post-transaction integrity check
+      if (updatedDriver.walletBalance < 0) {
+        this.logFinancialAnomaly(
+          driverId,
+          `🚨 BALANCE NEGATIVO detectado post-retiro: RD$ ${updatedDriver.walletBalance} (retiró RD$ ${amount})`,
+          'CRITICAL',
+        );
+      }
+
+      this.logger.log(
+        `💰 Retiro procesado: Driver ${driverId} → RD$ ${amount} | Nuevo balance: RD$ ${updatedDriver.walletBalance}`
+      );
+
       return { success: true, newBalance: updatedDriver.walletBalance, transactionId: transaction.id };
     });
   }
@@ -86,5 +116,36 @@ export class WalletService {
       data: { bankAccount: accountData as any },
     });
     return { success: true, bankAccount: updated.bankAccount };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SRE: Financial Anomaly Alert → system_errors + notification
+  // ─────────────────────────────────────────────────────────────────────
+
+  private logFinancialAnomaly(driverId: string, message: string, severity: string): void {
+    // Fire-and-forget: Write to system_errors table
+    this.prisma.systemError.create({
+      data: {
+        source: 'WALLET',
+        severity,
+        message,
+        entityId: driverId,
+      },
+    }).catch(err => {
+      this.logger.error(`[SYSTEM_ERROR_LOG_FAIL] WALLET: ${message} | DB Error: ${err.message}`);
+    });
+
+    // Fire-and-forget: Create notification for admin dashboard
+    this.prisma.notification.create({
+      data: {
+        title: severity === 'CRITICAL' ? '🚨 Anomalía Financiera' : '⚠️ Alerta Financiera',
+        message,
+        type: severity === 'CRITICAL' ? 'CRITICAL' : 'WARNING',
+        category: 'FINANCE',
+        entityId: driverId,
+      },
+    }).catch(err => {
+      this.logger.error(`[NOTIFICATION_FAIL] WALLET alert: ${err.message}`);
+    });
   }
 }

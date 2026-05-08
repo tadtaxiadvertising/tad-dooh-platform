@@ -16,7 +16,7 @@ RUN npm run build
 
 # --- STAGE 2: Runner ---
 FROM node:20-alpine AS runner
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat curl
 WORKDIR /app
 
 # Obligamos a V8 a hacer recolección de basura agresiva a los 256MB (TAD-OPS-911)
@@ -30,7 +30,15 @@ COPY --from=builder /app/prisma ./prisma
 # Limpieza final para mantener el contenedor ligero
 RUN npm prune --production && npm cache clean --force
 
-RUN printf '#!/bin/sh\necho "=== TAD Backend Entrypoint ==="\nexec node dist/main.js\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
 EXPOSE 3000
-ENTRYPOINT ["./entrypoint.sh"]
+
+# Health check nativo de Docker: evita que EasyPanel envíe SIGTERM prematuro
+# --start-period=60s: espera 60s antes del primer chequeo (tiempo de init de NestJS)
+# --interval=30s: chequea cada 30s
+# --timeout=10s: timeout por chequeo
+# --retries=3: 3 fallos consecutivos = unhealthy
+HEALTHCHECK --start-period=60s --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# CMD directo a node — SIGTERM llega al proceso correcto sin pasar por npm
+CMD ["node", "dist/main.js"]

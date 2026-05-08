@@ -61,7 +61,7 @@ export class SheetsService implements OnModuleInit {
       this.logger.log(`🔗 TAD-SRE: Google Sheet "${this.doc.title}" conectado exitosamente.`);
     } catch (error) {
       this.isConnected = false;
-      this.logger.warn(`⚠️ TAD-SRE: Google Sheets no disponible (modo MOCK): ${error.message}`);
+      this.logger.log(`📊 MODO MOCK: Google Sheets no disponible: ${error.message}`);
     }
   }
 

@@ -84,7 +84,7 @@ export class SupabaseAuthGuard implements CanActivate {
 
         if (isAsymmetricAlg && isSymmetricSecret) {
           // Skip Strategy 1: Cannot verify asymmetric token with a symmetric secret
-          this.logger.debug(`[AUTH] Token usa algoritmo asimétrico (${alg}). Saltando Estrategia 1 (Local) y pasando a Estrategia 2 (Red)...`);
+          // Lo silenciamos para evitar spam en consola ya que es un flujo esperado (ES256 en lugar de HS256)
         } else {
           const payload = jwt.verify(token, jwtSecret, { 
             algorithms: [alg, 'HS256', 'HS384', 'HS512'] 
@@ -104,7 +104,7 @@ export class SupabaseAuthGuard implements CanActivate {
               expiry: Date.now() + this.CACHE_TTL_MS 
             });
 
-            this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
+            this.logger.verbose(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
             return true;
           }
         }
@@ -120,9 +120,9 @@ export class SupabaseAuthGuard implements CanActivate {
         // If it's a configuration issue with the secret/algorithm, we log it more clearly
         const isAlgError = errorMessage.toLowerCase().includes('algorithm');
         if (isAlgError) {
-          this.logger.debug(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+          this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
         } else {
-          this.logger.debug(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+          this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
         }
       }
     }
@@ -159,12 +159,13 @@ export class SupabaseAuthGuard implements CanActivate {
         });
         
         if (roleFromMeta === 'GUEST') {
-          this.logger.debug(
+          this.logger.warn(
             `⚠️ [AUTH_GUARD] Usuario autenticado pero sin rol en metadata: ${data.user.email}. ` +
-            `Configura SUPABASE_JWT_SECRET para optimizar rendimiento y role mapping.`
+            `Verifica si las claims están correctas en Supabase.`
           );
         } else {
-          this.logger.debug(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
+          // Log a nivel verbose para que no inunde la consola en producción por cada request
+          this.logger.verbose(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
         }
         return true;
       }

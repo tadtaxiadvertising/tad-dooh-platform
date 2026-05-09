@@ -39,7 +39,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
-    // Configuration with Validation (RELAXED for EasyPanel free tier)
+    // Configuration with Validation (STRICT MODE para Easypanel)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'production' ? undefined : '.env',
@@ -49,8 +49,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
           DATABASE_URL: zod.string().url().optional(),
           DIRECT_URL: zod.string().url().optional(),
           JWT_SECRET: zod.string().default('tad-secret-2026'),
-          SUPABASE_URL: zod.string().url().optional(),
-          SUPABASE_SERVICE_ROLE_KEY: zod.string().optional(),
+          SUPABASE_URL: zod.string().url(),
+          SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
           SUPABASE_JWT_SECRET: zod.string().optional(),
           PORT: zod.string().regex(/^\d+$/).default('3000'),
           NODE_ENV: zod.string().default('production'),
@@ -61,12 +61,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
         const result = schema.safeParse(config);
         if (!result.success) {
-          console.warn('⚠️ ADVERTENCIA: Variables de entorno incompletas o inválidas:');
-          const errors = result.error.format();
-          Object.keys(errors).forEach(key => {
-            if (key !== '_errors') console.warn(`   - ${key}: ${JSON.stringify(errors[key])}`);
-          });
-          // NO lanzamos error para permitir que el contenedor intente arrancar
+          console.error('🔥 FATAL ERROR: Configuración de entorno inválida en startup', result.error.format());
+          throw new Error('Configuración de entorno inválida. Revisar variables en Easypanel.');
         }
         const data = result.data || config;
         

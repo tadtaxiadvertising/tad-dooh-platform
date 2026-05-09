@@ -7,34 +7,78 @@ import { supabase } from './supabase';
 import type { CachedSessionState, Session } from './types';
 
 const SESSION_CACHE_TTL = 1000 * 60 * 2; // 2 minutes
+/**
+ * Proactive refresh window: if the token expires within this many seconds,
+ * we refresh BEFORE sending the request to prevent a 401.
+ */
+const TOKEN_REFRESH_BUFFER_SECS = 300; // 5 minutes
+
 let cachedSessionState: CachedSessionState = { session: null, timestamp: 0 };
 let sessionFetchPromise: Promise<Session | null> | null = null;
 
 /**
- * Get valid session with race condition prevention
- * Uses promise coalescing for concurrent requests
+ * Returns true if the access token in the session will expire within the buffer window.
+ */
+const isTokenExpiringSoon = (session: Session): boolean => {
+  // Supabase JWT includes `exp` (Unix timestamp in seconds)
+  const expiresAt = (session as any).expires_at; // seconds since epoch
+  if (!expiresAt) return false;
+  const secondsUntilExpiry = expiresAt - Math.floor(Date.now() / 1000);
+  return secondsUntilExpiry < TOKEN_REFRESH_BUFFER_SECS;
+};
+
+/**
+ * Get valid session with race condition prevention and proactive token refresh.
+ * Uses promise coalescing for concurrent requests.
+ *
+ * FIX (2026-05-09): Added proactive refresh when the token is within 5 minutes
+ * of expiry, preventing cascading 401 errors on protected API calls.
  */
 export const getValidSession = async (): Promise<Session | null> => {
   const now = Date.now();
   
-  // Return cached session if valid
-  if (cachedSessionState.session && (now - cachedSessionState.timestamp <= SESSION_CACHE_TTL)) {
+  // Return cached session if fresh AND the token is not about to expire
+  if (
+    cachedSessionState.session &&
+    now - cachedSessionState.timestamp <= SESSION_CACHE_TTL &&
+    !isTokenExpiringSoon(cachedSessionState.session)
+  ) {
     return cachedSessionState.session;
   }
   
-  // Coalesce concurrent fetch requests to single Supabase call
+  // Coalesce concurrent fetch requests to a single Supabase call
   if (!sessionFetchPromise) {
-    sessionFetchPromise = supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        cachedSessionState = { session: session as Session | null, timestamp: Date.now() };
-        sessionFetchPromise = null;
-        return session as Session | null;
-      })
-      .catch((error: Error) => {
-        sessionFetchPromise = null;
+    sessionFetchPromise = (async () => {
+      try {
+        // Step 1: Get the current session from the Supabase client
+        const { data: { session } } = await supabase.auth.getSession();
+
+        // Step 2: If session exists but token is expiring soon, force a refresh
+        if (session && isTokenExpiringSoon(session as Session)) {
+          console.info('🔄 [AUTH] Token expira pronto — refrescando sesión proactivamente...');
+          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.warn('⚠️ [AUTH] Refresco de sesión falló:', refreshError.message);
+            // Return the original (still technically valid) session as fallback
+            const fallback = session as Session | null;
+            cachedSessionState = { session: fallback, timestamp: Date.now() };
+            return fallback;
+          }
+          const refreshedSession = refreshed.session as Session | null;
+          cachedSessionState = { session: refreshedSession, timestamp: Date.now() };
+          return refreshedSession;
+        }
+
+        const typedSession = session as Session | null;
+        cachedSessionState = { session: typedSession, timestamp: Date.now() };
+        return typedSession;
+      } catch (error) {
         console.error('⚠️ Session fetch failed:', error);
-        return cachedSessionState.session; // Fallback to stale session if fetch fails
-      });
+        return cachedSessionState.session; // Fallback to stale session
+      } finally {
+        sessionFetchPromise = null;
+      }
+    })();
   }
   
   return sessionFetchPromise;

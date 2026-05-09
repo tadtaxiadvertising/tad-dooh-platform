@@ -83,12 +83,58 @@ api.interceptors.request.use(async (config) => {
 });
 
 // ============================================
-// Error Response Interceptor
+// 401 Auto-Retry Interceptor (Token Refresh Safety Net)
 // ============================================
-
+//
+// FIX (2026-05-09): If the backend returns 401, we force a Supabase token refresh
+// and retry the original request once. This handles the race condition where the
+// proactive refresh in getValidSession() wasn't triggered (e.g. the token expired
+// between the interceptor check and the network call arriving at the server).
+//
 api.interceptors.response.use(
   (response) => response,
-  (error) => processApiError(error)
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only retry on 401 and only once (prevent infinite loops)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._isRetry &&
+      typeof window !== 'undefined'
+    ) {
+      originalRequest._isRetry = true;
+
+      try {
+        console.info('🔄 [AUTH] 401 recibido. Intentando refrescar token...');
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshed.session) {
+          console.warn('⚠️ [AUTH] Refresco fallido tras 401. Cerrando sesión.', refreshError?.message);
+          // Force logout — the session is truly dead
+          await supabase.auth.signOut();
+          const currentPath = window.location.pathname;
+          const loginPath = currentPath.includes('/advertiser/') ? '/advertiser/login'
+            : currentPath.includes('/driver/') ? '/driver/login'
+            : '/admin/login';
+          window.location.href = loginPath;
+          return processApiError(error);
+        }
+
+        // Update the in-memory cache so subsequent requests get the new token
+        const { invalidateSession } = await import('./auth.service');
+        invalidateSession(); // Forces re-fetch on next getValidSession() call
+
+        // Retry with the fresh token
+        originalRequest.headers['Authorization'] = `Bearer ${refreshed.session.access_token}`;
+        return api(originalRequest);
+      } catch (retryError) {
+        console.error('❌ [AUTH] Error crítico durante reintento post-401:', retryError);
+        return processApiError(error);
+      }
+    }
+
+    return processApiError(error);
+  }
 );
 
 // ============================================

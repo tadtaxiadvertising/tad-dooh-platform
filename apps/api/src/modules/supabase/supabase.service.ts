@@ -1,5 +1,6 @@
 // backend/src/modules/supabase/supabase.service.ts
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
@@ -7,24 +8,31 @@ export class SupabaseService {
   private readonly logger = new Logger(SupabaseService.name);
   private supabase: SupabaseClient;
 
-  constructor() {
-    const url = process.env.SUPABASE_URL || 'https://ltdcdhqixvbpdcitthqf.supabase.co';
-    // For server-side auth validation (getUser), we MUST use the service_role_key.
-    // The anon_key can only validate its own session, not arbitrary user tokens.
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+  constructor(private readonly configService: ConfigService) {
+    // 1. Leemos estrictamente usando ConfigService, que asegura la prioridad de inyección
+    const url = this.configService.get<string>('SUPABASE_URL');
+    const key = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
 
+    // 2. Validación estricta - Crash temprano en lugar de error Unauthorized silencioso
     if (!url || !key) {
-      this.logger.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set! Auth will fail.');
+      this.logger.error('CRITICAL ERROR: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is undefined!');
+      throw new Error('MISSING_SUPABASE_CREDENTIALS: El contenedor no tiene acceso a las credenciales necesarias.');
     }
 
-    this.supabase = createClient(url, key, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      }
-    });
+    try {
+      // 3. Inicialización optimizada
+      this.supabase = createClient(url, key, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false, // Fundamental en backend NestJS (stateless)
+        }
+      });
 
-    this.logger.log(`SupabaseService initialized | URL: ${url ? url.substring(0, 30) + '...' : 'MISSING'} | Key: ${key ? '***' + key.slice(-6) : 'MISSING'}`);
+      this.logger.log(`SupabaseService initialized | URL: ${url.substring(0, 30)}... | Key: ***${key.slice(-6)}`);
+    } catch (error) {
+      this.logger.error(`Error fatal instanciando cliente Supabase: ${error.message}`);
+      throw error;
+    }
   }
 
   // Genera una URL pública para el visualizador del Dashboard

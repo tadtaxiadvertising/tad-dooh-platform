@@ -141,9 +141,18 @@ api.interceptors.response.use(
 // Auth
 // ============================================
 export const login = (email: string, password: string) =>
-  api.post('/auth/login', { email, password }).then(res => {
-    const { access_token, user } = res.data;
+  api.post('/auth/login', { email, password }).then(async res => {
+    const { access_token, refresh_token, user } = res.data;
+    
+    // Synchronize Supabase Client state (Critical for auto-refresh)
+    if (access_token && refresh_token) {
+      await supabase.auth.setSession({ access_token, refresh_token });
+    }
+
     localStorage.setItem('tad_admin_token', access_token);
+    if (refresh_token) {
+      localStorage.setItem('tad_admin_refresh_token', refresh_token);
+    }
     localStorage.setItem('tad_admin_user', JSON.stringify(user));
     
     // Inject cookie for middleware — conditional Secure so it works on http (local) too
@@ -169,6 +178,7 @@ export const logout = async () => {
   // Clear ALL portal tokens to avoid state contamination
   try {
     localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_refresh_token');
     localStorage.removeItem('tad_admin_user');
     localStorage.removeItem('tad_advertiser_token');
     localStorage.removeItem('tad_advertiser_user');

@@ -51,7 +51,26 @@ export const getValidSession = async (): Promise<Session | null> => {
     sessionFetchPromise = (async () => {
       try {
         // Step 1: Get the current session from the Supabase client
-        const { data: { session } } = await supabase.auth.getSession();
+        let { data: { session } } = await supabase.auth.getSession();
+
+        // Step 1.5: Recovery Fallback (If Supabase client is empty but we have tokens in localStorage)
+        if (!session && typeof window !== 'undefined') {
+          const localToken = localStorage.getItem('tad_admin_token') || 
+                            localStorage.getItem('tad_advertiser_token') || 
+                            localStorage.getItem('tad_driver_token');
+          const refreshToken = localStorage.getItem('tad_admin_refresh_token');
+          
+          if (localToken && refreshToken) {
+            console.info('🔄 [AUTH] Recuperando sesión desde localStorage...');
+            const { data: recovered, error: recoveryError } = await supabase.auth.setSession({
+              access_token: localToken,
+              refresh_token: refreshToken
+            });
+            if (!recoveryError && recovered.session) {
+              session = recovered.session;
+            }
+          }
+        }
 
         // Step 2: If session exists but token is expiring soon, force a refresh
         if (session && isTokenExpiringSoon(session as Session)) {

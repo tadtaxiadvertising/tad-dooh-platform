@@ -79,26 +79,34 @@ export class SupabaseAuthGuard implements CanActivate {
         const decodedToken = jwt.decode(token, { complete: true }) as any;
         const alg = decodedToken?.header?.alg || 'HS256';
         
-        const payload = jwt.verify(token, jwtSecret, { 
-          algorithms: [alg, 'HS256', 'HS384', 'HS512'] 
-        }) as jwt.JwtPayload;
+        const isSymmetricSecret = !jwtSecret.includes('BEGIN PUBLIC KEY') && !jwtSecret.includes('BEGIN CERTIFICATE');
+        const isAsymmetricAlg = alg.startsWith('RS') || alg.startsWith('ES') || alg.startsWith('PS');
 
-        if (payload) {
-          request.user = {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.app_metadata?.role || payload.role || 'GUEST',
-            entityId: payload.app_metadata?.entityId || null,
-          };
-          
-          // Cache sucessful validation
-          SupabaseAuthGuard.sessionCache.set(token, { 
-            user: request.user, 
-            expiry: Date.now() + this.CACHE_TTL_MS 
-          });
+        if (isAsymmetricAlg && isSymmetricSecret) {
+          // Skip Strategy 1: Cannot verify asymmetric token with a symmetric secret
+          this.logger.debug(`[AUTH] Token usa algoritmo asimétrico (${alg}). Saltando Estrategia 1 (Local) y pasando a Estrategia 2 (Red)...`);
+        } else {
+          const payload = jwt.verify(token, jwtSecret, { 
+            algorithms: [alg, 'HS256', 'HS384', 'HS512'] 
+          }) as jwt.JwtPayload;
 
-          this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
-          return true;
+          if (payload) {
+            request.user = {
+              id: payload.sub,
+              email: payload.email,
+              role: payload.app_metadata?.role || payload.role || 'GUEST',
+              entityId: payload.app_metadata?.entityId || null,
+            };
+            
+            // Cache sucessful validation
+            SupabaseAuthGuard.sessionCache.set(token, { 
+              user: request.user, 
+              expiry: Date.now() + this.CACHE_TTL_MS 
+            });
+
+            this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
+            return true;
+          }
         }
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);

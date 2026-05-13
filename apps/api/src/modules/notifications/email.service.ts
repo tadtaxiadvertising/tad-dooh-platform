@@ -26,26 +26,27 @@ export class EmailService implements OnModuleInit {
   }
 
   private initTransporter() {
-    // Brevo SMTP Configuration — credentials injected via EasyPanel env
     const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
     const port = parseInt(process.env.SMTP_PORT || '587');
-    const user = process.env.SMTP_USER || '';
-    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || '';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.SENDGRID_API_KEY;
 
-    if (!pass) {
-      this.logger.warn('⚠️ [SRE] SMTP_PASSWORD/SENDGRID_API_KEY NO CONFIGURADO. Emails se loguearán pero NO se enviarán.');
-      this.logger.warn('⚠️ [SRE] Configura SMTP_PASSWORD en EasyPanel para salir de MODO MOCK.');
+    if (!user || !pass) {
+      this.logger.warn('⚠️ [SRE] SMTP_PASSWORD de Brevo NO CONFIGURADO. Emails en MODO MOCK.');
       this.isLive = false;
-    } else {
-      this.logger.log(`✅ [SRE] Brevo SMTP activo → ${host}:${port} (user: ${user})`);
-      this.isLive = true;
+      return;
     }
+
+    this.logger.log('🚀 [SRE] Brevo SMTP configurado correctamente. Modo Producción activo. ✅');
+    this.isLive = true;
 
     this.transporter = nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: { user, pass },
+      pool: true, // Reutiliza conexiones para eficiencia en VPS (Free Tier)
+      maxConnections: 3,
       // SRE: Timeouts para evitar que un hang de Brevo bloquee el Event Loop
       connectionTimeout: 10000, // 10s para establecer conexión
       greetingTimeout: 10000,   // 10s para el handshake SMTP
@@ -75,9 +76,8 @@ export class EmailService implements OnModuleInit {
 
     this.logger.log(`📧 EMAIL_OUTGOING → ${options.to} | Asunto: ${options.subject}`);
 
-    // MOCK mode: if no SMTP credentials, just log and return success
-    if (!this.isLive) {
-      this.logger.log(`📧 [MOCK] Email que se enviaría:\n  Para: ${options.to}\n  Asunto: ${options.subject}\n  Adjuntos: ${options.attachments?.length || 0}`);
+    if (!this.isLive || !this.transporter) {
+      this.logger.debug(`📧 [MOCK EMAIL] Para: ${options.to} | Asunto: ${options.subject}`);
       return { success: true, messageId: `mock-${Date.now()}` };
     }
 

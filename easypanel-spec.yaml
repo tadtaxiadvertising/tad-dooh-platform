@@ -65,18 +65,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
-    env:
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
-      - NODE_OPTIONS="--max-old-space-size=256"
+          memory: 128M   # Pure nginx static — no Node.js runtime
+          cpus: '0.25'
+    # No env vars needed: pure Nginx serving pre-built Vite SPA static files
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 30s  # nginx starts in <1s, no warmup needed
     restart: unless-stopped
 
 volumes:

@@ -36,6 +36,7 @@ import { ReferralModule } from './modules/referral/referral.module';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -105,7 +106,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     SimulationModule,
     OnboardingModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     // Global JWT guard — protects ALL routes by default
     // Use @Public() decorator on tablet-facing routes to bypass

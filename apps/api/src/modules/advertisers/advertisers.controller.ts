@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Req, UnauthorizedException, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AdvertisersService } from './advertisers.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles, UserRole } from '../auth/decorators/roles.decorator';
@@ -24,6 +24,7 @@ export class AdvertisersController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() body: { email: string; password?: string }) {
     if (!body.email || !body.password) {
       throw new BadRequestException('email and password are required');

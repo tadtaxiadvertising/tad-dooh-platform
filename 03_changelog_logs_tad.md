@@ -7,6 +7,12 @@
 
 ## [v12.1.1] - 2026-04-27
 
+### 🚀 FEATURE / 🔧 FIX: Refactor de Login UI y Prevención de 401 en Advertiser Portal
+- **Cambio**: Se aplicó el decorador `@Public()` al endpoint de login en el backend para evitar bloqueos del `JwtAuthGuard`. Se rediseñó la pantalla de login del Portal de Anunciantes con Tailwind 4 (Glassmorphism), incluyendo manejo de errores explícito para status 401 y previniendo el loop de Axios en el cliente.
+- **Archivos tocados**:
+  - `apps/api/src/advertisers/advertisers.controller.ts`
+  - `apps/advertiser/pages/login.tsx`
+
 ### 🛡️ Driver Critical Patch (Easypanel + Offline-First)
 
 - **Networking/CORS (403 Fix):**

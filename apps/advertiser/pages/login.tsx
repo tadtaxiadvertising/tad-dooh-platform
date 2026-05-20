@@ -1,106 +1,121 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { Shield, BarChart3, Car, ChevronRight, LayoutDashboard } from 'lucide-react';
-import clsx from 'clsx';
+import axios from 'axios';
 
-export default function LoginGateway() {
+export default function AdvertiserLogin() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const portalType = process.env.NEXT_PUBLIC_PORTAL_TYPE;
-    if (portalType === 'ADVERTISER') router.replace('/advertiser/login');
-    if (portalType === 'DRIVER') router.replace('/driver/login');
-    if (portalType === 'ADMIN') router.replace('/admin/login');
-  }, [router]);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 🌐 Utilizamos el proxy unificado establecido en la v12.1.1
+      const response = await axios.post(
+        '/api/proxy/advertisers/login',
+        { email, password },
+        { withCredentials: true } // Crítico para las cookies de sesión
+      );
+
+      if (response.data?.token) {
+        // Redirigir al dashboard tras un login exitoso
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Login Error:', err);
+      // Manejo explícito del 401 para feedback en UI en lugar de solo consola
+      if (err.response?.status === 401) {
+        setError('Credenciales incorrectas. Verifica tu correo y contraseña.');
+      } else {
+        setError('Error de conexión con el servidor. Intenta de nuevo.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4">
       <Head>
-        <title>TAD | Selecciona tu Portal</title>
+        <title>TAD DOOH | Advertiser Portal</title>
       </Head>
 
-      {/* Decorative background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-tad-yellow/10 blur-[150px] rounded-full animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-blue-500/5 blur-[150px] rounded-full" />
-      </div>
-
-      <div className="z-10 w-full max-w-4xl">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-black text-white tracking-widest uppercase mb-4">
-            TAD <span className="text-tad-yellow">PLATFORM</span>
-          </h1>
-          <p className="text-gray-500 font-bold uppercase tracking-[0.5em] text-xs">Access Management Gateway</p>
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-8 transform transition-all">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white tracking-tight">TAD DOOH</h1>
+          <p className="text-blue-200 mt-2 text-sm">Portal de Anunciantes</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PortalCard 
-            title="Administrador"
-            subtitle="Central Command & Fleet Controls"
-            icon={<Shield className="w-8 h-8 text-black" />}
-            bgColor="bg-tad-yellow"
-            onClick={() => router.push('/admin/login')}
-            delay="delay-0"
-          />
-          
-          <PortalCard 
-            title="Anunciante"
-            subtitle="Campaign Performance & Insights"
-            icon={<BarChart3 className="w-8 h-8 text-white" />}
-            bgColor="bg-zinc-800"
-            onClick={() => router.push('/advertiser/login')}
-            delay="delay-75"
-          />
+        {error && (
+          <div className="mb-6 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center animate-pulse">
+            {error}
+          </div>
+        )}
 
-          <PortalCard 
-            title="Conductor"
-            subtitle="Earnings & Device Status PWA"
-            icon={<Car className="w-8 h-8 text-white" />}
-            bgColor="bg-zinc-900"
-            onClick={() => router.push('/driver/login')}
-            delay="delay-150"
-          />
-        </div>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-blue-100 mb-2">
+              Correo Electrónico
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="marketing@brand.do"
+            />
+          </div>
 
-        <div className="mt-20 text-center opacity-30 hover:opacity-100 transition-opacity">
-          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.8em]">
-            TAD TECHNOLOGIES © SANTIAGO PILOT v2
+          <div>
+            <label className="block text-sm font-medium text-blue-100 mb-2">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-3 px-4 flex justify-center rounded-lg text-white font-semibold transition-all duration-200 ${
+              isLoading
+                ? 'bg-blue-600/50 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/30'
+            }`}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Autenticando...
+              </span>
+            ) : (
+              'Ingresar al Panel'
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-400">
+            ¿Olvidaste tu contraseña? Contacta al administrador.
           </p>
         </div>
       </div>
     </div>
   );
 }
-
-function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
-  return (
-    <button 
-      onClick={onClick}
-      className={clsx(
-        "group p-1 rounded-[2.5rem] bg-white/5 border border-white/5 transition-all duration-500 hover:scale-[1.02] active:scale-95 text-left h-full",
-        delay
-      )}
-    >
-      <div className="bg-zinc-900/50 backdrop-blur-3xl p-8 rounded-[2.3rem] h-full flex flex-col justify-between border border-transparent group-hover:border-white/10 transition-colors">
-        <div>
-          <div className={clsx("w-16 h-16 rounded-3xl flex items-center justify-center mb-10 shadow-2xl group-hover:rotate-6 transition-transform duration-500", bgColor)}>
-            {icon}
-          </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">{title}</h2>
-          <p className="text-gray-500 text-xs font-bold leading-relaxed">{subtitle}</p>
-        </div>
-        
-        <div className="mt-12 flex items-center gap-3 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Enter Portal</span>
-          <ChevronRight className="w-4 h-4 text-tad-yellow" />
-        </div>
-      </div>
-    </button>
-  );
-}
-
-
-
-
-

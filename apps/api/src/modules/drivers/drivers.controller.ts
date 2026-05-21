@@ -61,12 +61,15 @@ export class DriversController {
     contractAccepted?: boolean;
     agreementVersion?: string;
     referredBy?: string;
-  }) {
+  }, @Req() req?: any) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
     }
 
-    if (!body.contractAccepted) {
+    const isAdmin = req?.user?.role === 'ADMIN' || req?.user?.role === 'admin';
+    const isContractAccepted = isAdmin ? true : body.contractAccepted;
+
+    if (!isAdmin && !isContractAccepted) {
       throw new BadRequestException('Debes aceptar el contrato de servicio para unirte a TAD');
     }
 
@@ -75,6 +78,7 @@ export class DriversController {
 
     return this.driversService.create({
       ...body,
+      contractAccepted: isContractAccepted,
       cedula: sanitize(body.cedula),
       taxiPlate: sanitize(body.taxiPlate),
       licensePlate: sanitize(body.licensePlate),

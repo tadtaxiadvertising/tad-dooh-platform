@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, Logger, ForbiddenException, HttpExce
 import { SupabaseService } from '../supabase/supabase.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -188,5 +190,13 @@ export class AuthService {
 
   async seedAdminUser() {
     this.logger.log('🔐 Seeding users must be done via Supabase Dashboard');
+  }
+
+  async generatePairingToken(driverId: string) {
+    const payload = { sub: driverId, type: 'pairing' };
+    return {
+      token: this.jwtService.sign(payload, { expiresIn: '5m' }),
+      expiresIn: 300,
+    };
   }
 }

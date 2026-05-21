@@ -43,8 +43,27 @@ export default function DriverLoginPage() {
         { withCredentials: true }
       );
 
-      if (response.data?.token || response.status === 200) {
-        // Redirigir al dashboard tras un login exitoso
+      const payload = response.data || {};
+      const accessToken = payload.access_token || payload.token;
+
+      if (accessToken || response.status === 200) {
+        if (!accessToken) {
+          throw new Error('El servidor no devolvió un token de acceso válido.');
+        }
+        const isSecure = window.location.protocol === 'https:';
+        const storedUser = {
+          id: payload.driverId || payload.entityId || payload.user?.id || '',
+          email: payload.email || phone,
+          role: payload.role || 'DRIVER',
+          entityId: payload.entityId || payload.driverId || payload.user?.entityId || payload.user?.id || '',
+          name: payload.name || payload.fullName || phone,
+          deviceId: payload.deviceId || null,
+        };
+
+        document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+        localStorage.setItem('tad_driver_token', accessToken);
+        localStorage.setItem('tad_driver_user', JSON.stringify(storedUser));
+
         router.replace('/driver/dashboard');
       }
     } catch (err: any) {

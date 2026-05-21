@@ -16,7 +16,8 @@ export default function DriverOnboarding() {
   const [step, setStep] = useState<OnboardingStep>(1);
   const [mounted, setMounted] = useState(false);
   const [campaigns, setCampaigns] = useState(5);
-  const projectedEarnings = (campaigns * 500) + 500; // Campaign pay + Availability bonus
+  const cpaSales = 0;
+  const projectedEarnings = (Math.min(campaigns, 15) * 500) + (cpaSales * 500); // Fórmula V12
 
   // Registration fields
   const [fullName, setFullName] = useState('');
@@ -151,7 +152,7 @@ export default function DriverOnboarding() {
               {[
                 { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu tablet (Hasta 15 simultáneos)', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
                 { icon: <Wifi className="w-5 h-5" />, title: 'Internet 5G Ilimitado', desc: 'Conectividad premium para ti y tus pasajeros sin costo adicional', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { icon: <BadgeCheck className="w-5 h-5" />, title: 'Bono de Disponibilidad', desc: 'RD$500 mensuales garantizados con solo mantener tu equipo encendido', color: 'text-tad-yellow', bg: 'bg-tad-yellow/10' },
+                { icon: <BadgeCheck className="w-5 h-5" />, title: 'CPA Sales Validados', desc: 'RD$500 por cada conversión verificada, sumado al pago por campaña activa', color: 'text-tad-yellow', bg: 'bg-tad-yellow/10' },
                 { icon: <Users className="w-5 h-5" />, title: 'Plan de Referidos', desc: 'Gana RD$500 por cada nuevo socio o marca (Anunciante) que traigas a la flota', color: 'text-purple-400', bg: 'bg-purple-500/10' },
               ].map((b, i) => (
                 <div
@@ -231,8 +232,8 @@ export default function DriverOnboarding() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">+ Incentivos</p>
-                    <span className="text-lg font-black text-emerald-400 tracking-tight">VIP</span>
+                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">Base V12</p>
+                    <span className="text-lg font-black text-emerald-400 tracking-tight">CPA</span>
                   </div>
                 </div>
 
@@ -240,7 +241,7 @@ export default function DriverOnboarding() {
                    <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
                       <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Incluye <b>Bono de Disponibilidad</b> (RD$500) por telemetría.
+                        Incluye <b>CPA Sales</b> adicionales de RD$500 por cada conversión validada.
                       </p>
                    </div>
                    <div className="flex items-center gap-2">

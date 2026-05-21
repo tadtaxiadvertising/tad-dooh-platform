@@ -2,7 +2,9 @@ import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AuthProvider } from '@tad/ui';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { Toaster } from 'sonner';
 import { useAntigravity } from '@tad/ui';
 import { useState, useEffect } from 'react';
@@ -44,6 +46,19 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
         {content}
       </AuthProvider>
     );
+
+  const content = (
+    <div className="font-sans antialiased">
+      <Component {...pageProps} />
+    </div>
+  );
+
+  if (isPublic) {
+    return (
+      <AuthProvider>
+        {content}
+      </AuthProvider>
+    );
   }
 
   return (
@@ -58,6 +73,7 @@ export default function App(props: AppProps) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
+        gcTime: 1000 * 60 * 60 * 24, // 24 hours
         staleTime: 1000 * 60 * 5, // 5 minutes cache
         retry: 3,
         refetchOnWindowFocus: true,
@@ -65,18 +81,26 @@ export default function App(props: AppProps) {
     },
   }));
 
+  const persister = typeof window !== 'undefined' ? createSyncStoragePersister({
+    storage: window.localStorage,
+  }) : undefined;
+
+  if (!persister) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AppWrapper {...props} queryClient={queryClient} />
+        <Toaster richColors position="top-right" theme="dark" />
+      </QueryClientProvider>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider 
+      client={queryClient} 
+      persistOptions={{ persister }}
+    >
       <AppWrapper {...props} queryClient={queryClient} />
       <Toaster richColors position="top-right" theme="dark" />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
-
-
-
-
-
-
-
-

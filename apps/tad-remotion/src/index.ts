@@ -536,6 +536,134 @@ app.post('/api/ai-generate', async (req, res) => {
   }
 });
 
+// --- Fallback Ad Recovery Endpoint ---
+// Called by the backend when an asset fails validation.
+// Renders a fallback ad and uploads it directly to Supabase via Signed URL.
+app.post('/api/process-fallback', async (req, res) => {
+  const startTime = Date.now();
+  let outputLocation: string | null = null;
+
+  try {
+    const { campaignId, uploadUrl, uploadToken, props } = req.body;
+
+    if (!campaignId || !uploadUrl) {
+      return res.status(400).json({ error: 'campaignId and uploadUrl are required' });
+    }
+
+    console.log(`🔄 [FALLBACK] Iniciando render de respaldo para campaña: ${campaignId}`);
+
+    // If props are incomplete, use AI to generate them
+    let renderProps = props;
+    if (!renderProps?.primaryText) {
+      console.log(`🤖 [FALLBACK] Props incompletas, generando con IA...`);
+      try {
+        const aiPrompt = `Genera un anuncio genérico profesional para una campaña DOOH con ID ${campaignId}. Debe ser minimalista y elegante.`;
+        const systemPrompt = `Eres un arquitecto creativo de anuncios DOOH (Digital Out Of Home) para TAD. 
+        Responde UNICAMENTE con un objeto JSON válido con esta estructura:
+        {
+          "primaryText": "Texto principal llamativo (máx 35 caracteres)",
+          "secondaryText": "Subtexto o llamado a la acción",
+          "brandColor": "Código Hexadecimal que combine con el tema",
+          "logoUrl": "",
+          "bgUrl": ""
+        }
+        
+        Prompt: ${aiPrompt}`;
+
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const text = response.text().replace(/```json|```/g, '').trim();
+        renderProps = JSON.parse(text);
+        console.log(`✨ [FALLBACK] Props generadas por IA: ${JSON.stringify(renderProps)}`);
+      } catch (aiErr: any) {
+        console.warn(`⚠️ [FALLBACK] IA falló, usando props por defecto: ${aiErr.message}`);
+        renderProps = {
+          primaryText: 'Tu Anuncio Aquí',
+          secondaryText: 'Potenciado por TAD',
+          brandColor: '#e51636',
+          logoUrl: '',
+          bgUrl: '',
+        };
+      }
+    }
+
+    // 1. Resolve the Remotion template entry point
+    let entryPoint = path.resolve(__dirname, 'templates', 'index.js');
+    if (!fs.existsSync(entryPoint)) {
+      entryPoint = path.resolve(__dirname, '..', 'src', 'templates', 'index.tsx');
+    }
+
+    const outputDir = path.join(os.tmpdir(), 'tad-videos');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    outputLocation = path.join(outputDir, `fallback-${campaignId}-${Date.now()}.mp4`);
+
+    // 2. Bundle only once (use cache)
+    if (!cachedBundleUrl) {
+      console.log(`📦 [FALLBACK] Compilando template de Remotion...`);
+      cachedBundleUrl = await bundle(entryPoint);
+    }
+    const bundled = cachedBundleUrl;
+
+    // 3. Select composition
+    const composition = await selectComposition({
+      serveUrl: bundled,
+      id: 'DynamicAd',
+      inputProps: renderProps,
+    });
+
+    // 4. Render the fallback media
+    console.log(`🎬 [FALLBACK] Renderizando video...`);
+    await renderMedia({
+      composition,
+      serveUrl: bundled,
+      codec: 'h264',
+      outputLocation,
+      inputProps: renderProps,
+      videoBitrate: '1500k',
+      pixelFormat: 'yuv420p',
+      concurrency: parseInt(process.env.REMOTION_CONCURRENCY || '1'),
+      imageFormat: 'jpeg',
+      jpegQuality: 80,
+    });
+
+    const renderDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`✅ [FALLBACK] Render completado en ${renderDuration}s. Subiendo a Supabase...`);
+
+    // 5. Upload directly to Supabase via Signed URL (zero backend proxy)
+    const fileBuffer = fs.readFileSync(outputLocation);
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: fileBuffer,
+      headers: {
+        'Content-Type': 'video/mp4',
+        ...(uploadToken ? { 'x-upsert': 'true' } : {}),
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      const errText = await uploadResponse.text();
+      throw new Error(`Supabase upload failed (${uploadResponse.status}): ${errText}`);
+    }
+
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`🚀 [FALLBACK] Video subido exitosamente a Supabase en ${totalDuration}s total.`);
+
+    res.json({ success: true, duration: totalDuration });
+
+  } catch (err: any) {
+    console.error(`❌ [FALLBACK] Error en recuperación automática:`, err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    // Cleanup temp file immediately to save disk
+    if (outputLocation && fs.existsSync(outputLocation)) {
+      fs.unlinkSync(outputLocation);
+      console.log(`🧹 [FALLBACK] Archivo temporal eliminado.`);
+    }
+  }
+});
+
 app.get('/health', (req, res) => {
 
   res.status(200).send('OK');

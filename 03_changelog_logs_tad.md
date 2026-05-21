@@ -1,9 +1,22 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-04-23
+> **Última Actualización**: 2026-05-20
 
 ---
+
+## [v12.1.2] - 2026-05-20
+
+### 🎨 UI/UX & AUTH: Refactorización Premium de Portales (Glassmorphism)
+- **Cambio**: Rediseño completo de las pantallas de login (Admin, Anunciante y Conductor) unificando la identidad visual hacia un Glassmorphism Oscuro con acentos en TAD Yellow (#facc15).
+- **Mejoras UX/UI**: Detección de Bloqueo de Mayúsculas, Toggle de visibilidad de contraseña, protección *double-submit* mediante loaders nativos, y banners de error explícitos.
+- **Lógica de Autenticación**:
+  - `Dashboard Admin` y `Portal Anunciante` centralizados en `PortalAuth` asegurando el flujo nativo JWT/Cookies de Supabase (uso estricto de `email`).
+  - `Portal Conductor` refactorizado en un componente dedicado sin dependencias de `PortalAuth`, garantizando el uso exclusivo de `phone` (tipo `tel`) y enrutando correctamente a `/api/proxy/drivers/login`.
+- **Archivos tocados**:
+  - `packages/ui/components/PortalAuth.tsx`
+  - `apps/driver/pages/driver/login.tsx`
+  - `apps/advertiser/pages/login.tsx`
 
 ## [v12.1.1] - 2026-04-27
 

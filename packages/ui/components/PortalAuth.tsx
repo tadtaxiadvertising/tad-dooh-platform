@@ -30,6 +30,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   const [view, setView] = useState<AuthView>('login');
   
   // Resiliency States
@@ -50,6 +51,14 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
   const resetForm = () => { setError(''); setPassword(''); };
   const switchView = (v: AuthView) => { resetForm(); setView(v); };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.getModifierState('CapsLock')) {
+      setCapsLock(true);
+    } else {
+      setCapsLock(false);
+    }
+  };
 
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -212,10 +221,9 @@ export function PortalAuth({ config }: PortalAuthProps) {
               style={{ backgroundColor: config.accentColor }} 
             />
             <div 
-              className="relative w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-700"
-              style={{ backgroundColor: config.accentColor }} 
+              className="relative w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-700 bg-yellow-400"
             >
-              <ShieldCheck className="w-12 h-12 text-black" />
+              <span className="text-3xl font-black text-black tracking-tighter">TAD</span>
             </div>
           </div>
           <div className="space-y-4">
@@ -237,7 +245,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
             style={{ backgroundImage: `linear-gradient(to bottom right, ${config.accentColor}, transparent)` }} 
           />
 
-          <div className="relative bg-slate-950/60 backdrop-blur-md border border-white/[0.05] rounded-[2.5rem] p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
+          <div className="relative bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-[2.5rem] p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
             <div 
               className="absolute top-0 left-0 w-full h-0.5 opacity-30" 
               style={{ backgroundImage: `linear-gradient(to right, transparent, ${config.accentColor}, transparent)` }} 
@@ -291,17 +299,22 @@ export function PortalAuth({ config }: PortalAuthProps) {
                     </div>
                     <div className="relative">
                       <input id="login-password" type={showPassword ? 'text' : 'password'}
-                        value={password} onChange={(e) => setPassword(e.target.value)}
+                        value={password} onChange={(e) => setPassword(e.target.value)} onKeyUp={handleKeyUp}
                         placeholder={showPassword ? 'MiContraseña' : '••••••••••••'} required minLength={6}
-                        className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 pr-14 text-white text-xs font-bold tracking-[0.3em] placeholder:text-gray-700 focus:outline-none focus:bg-black/80 transition-all shadow-inner"
+                        className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 pr-14 text-white text-xs font-bold tracking-[0.3em] placeholder:text-zinc-600 focus:outline-none focus:bg-black/80 focus:ring-1 focus:ring-yellow-500 transition-all shadow-inner"
                         style={{ borderBottomColor: password ? config.accentColor : '' }}
                       />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
-                        className="absolute inset-y-0 right-4 flex items-center text-gray-600 hover:text-white transition-colors"
+                        className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-yellow-400 transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {capsLock && (
+                      <p className="text-yellow-400 text-xs mt-2 animate-pulse">
+                        ⚠️ Bloqueo de mayúsculas activado
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -437,10 +450,10 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
 function ErrorBanner({ message, onClose }: { message: string; onClose: () => void }) {
   return (
-    <div className="mb-6 p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-4 text-rose-400">
-      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-      <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed flex-1">{message}</p>
-      <button onClick={onClose} type="button" className="text-rose-500/50 hover:text-rose-400 transition-colors">
+    <div className="mb-6 p-3 bg-red-950/50 border border-red-500 rounded-lg flex items-center gap-4 text-red-200 text-sm animate-fade-in">
+      <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
+      <p className="font-medium leading-relaxed flex-1">{message}</p>
+      <button onClick={onClose} type="button" className="text-red-400/50 hover:text-red-400 transition-colors">
         <X className="w-4 h-4" />
       </button>
     </div>

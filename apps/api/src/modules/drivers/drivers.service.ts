@@ -25,19 +25,64 @@ export class DriversService {
 
   /**
    * REGLA DE NEGOCIO 1: Validar acceso a la publicidad
-   * [ACTUALIZADO]: El contenido se transmite siempre sin restricciones.
+   * [ACTUALIZADO]: Morosos reciben kill-switch 402; tablets sin conductor van a setup.
    */
   async checkTabletAccess(tabletId: string) {
     const device = await this.prisma.device.findUnique({
       where: { id: tabletId },
-      include: { driver: true }
+      include: {
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            status: true,
+            subscriptionPaid: true,
+            subscriptionEnd: true,
+            blockedAt: true,
+          },
+        },
+      },
     });
 
     if (!device || !device.driver) {
-      return { access: false, action: 'SHOW_SETUP_SCREEN', message: 'Tablet no asignada a un chofer.' };
+      return {
+        access: false,
+        action: 'SHOW_SETUP_SCREEN',
+        message: 'Tablet no asignada a un chofer.',
+        reason: 'NO_DRIVER_ASSIGNED',
+      };
     }
 
-    return { access: true, action: 'PLAY_ADS' };
+    const driver = device.driver;
+    const now = Date.now();
+    const subscriptionExpired = !!driver.subscriptionEnd && driver.subscriptionEnd.getTime() < now;
+    const delinquent =
+      !driver.subscriptionPaid ||
+      subscriptionExpired ||
+      driver.status === BUSINESS_RULES.STATUS.DRIVER.SUSPENDED ||
+      driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL;
+
+    if (delinquent) {
+      return {
+        access: false,
+        action: 'KILL_SWITCH',
+        httpStatus: 402,
+        message: 'Conductor moroso. La PWA debe congelarse hasta regularizar el pago.',
+        reason: subscriptionExpired ? 'SUBSCRIPTION_EXPIRED' : 'SUBSCRIPTION_PENDING',
+        driverId: driver.id,
+        driverStatus: driver.status,
+        blockedAt: driver.blockedAt,
+        subscriptionEnd: driver.subscriptionEnd,
+      };
+    }
+
+    return {
+      access: true,
+      action: 'PLAY_ADS',
+      driverId: driver.id,
+      driverName: driver.fullName,
+    };
   }
 
   /**

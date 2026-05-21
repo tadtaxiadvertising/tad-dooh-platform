@@ -14,13 +14,14 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export const enqueueOfflineAction = async (endpoint: string, payload: any) => {
+export const enqueueOfflineAction = async (endpoint: string, payload: any, method: string = 'POST') => {
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('offline_queue', 'readwrite');
     const store = transaction.objectStore('offline_queue');
     const request = store.add({
       endpoint,
+      method,
       payload,
       timestamp: Date.now(),
       idempotencyKey: crypto.randomUUID()
@@ -48,7 +49,7 @@ export const syncOfflineQueue = async () => {
     for (const item of items) {
       try {
         const response = await fetch(item.endpoint, {
-          method: 'POST',
+          method: item.method || 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Idempotency-Key': item.idempotencyKey

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { enqueueOfflineAction, syncOfflineQueue } from '../lib/offlineQueue';
 
 interface BankFormData {
-  bank: string;
-  account: string;
-  type: string;
+  banco: string;
+  cuenta: string;
+  tipo: 'SAVINGS' | 'CHECKING';
   ownerName: string;
-  idDocument: string;
+  cedula: string;
 }
 
 interface BankFormProps {
@@ -16,22 +17,33 @@ interface BankFormProps {
 export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<BankFormData>({
-    bank: '',
-    account: '',
-    type: 'SAVINGS',
+    banco: '',
+    cuenta: '',
+    tipo: 'SAVINGS',
     ownerName: '',
-    idDocument: '',
+    cedula: '',
   });
   const [isOffline, setIsOffline] = useState(false);
+  const draftKey = `tad_driver_bank_draft_${driverId}`;
   
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     setIsOffline(!navigator.onLine);
+
+    try {
+      const savedDraft = localStorage.getItem(draftKey);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        setFormData(prev => ({ ...prev, ...parsed }));
+      }
+    } catch (error) {
+      console.warn('No se pudo restaurar el borrador bancario', error);
+    }
+
     const handleOnline = () => {
       setIsOffline(false);
-      const savedData = localStorage.getItem('pendingBankUpdate');
-      if (savedData) {
-        submitData(JSON.parse(savedData));
-      }
+      void syncOfflineQueue();
     };
     const handleOffline = () => setIsOffline(true);
     
@@ -44,7 +56,13 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
   }, [driverId]);
 
   const handleChange = (field: keyof BankFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value } as BankFormData;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(draftKey, JSON.stringify(next));
+      }
+      return next;
+    });
   };
 
   const submitData = async (data: BankFormData) => {
@@ -52,24 +70,65 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api/v1'}/wallet/bank`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driverId, ...data }),
+        body: JSON.stringify({
+          driverId,
+          banco: data.banco,
+          cuenta: data.cuenta,
+          tipo: data.tipo,
+          cedula: data.cedula,
+          ownerName: data.ownerName,
+        }),
       });
       
       if (response.ok) {
-        localStorage.removeItem('pendingBankUpdate');
+        localStorage.removeItem(draftKey);
         onSuccess();
+        return;
       }
+
+      const payload = await response.json().catch(() => null);
+
+      if (!navigator.onLine || response.status >= 500) {
+        await enqueueOfflineAction('/wallet/bank', {
+          driverId,
+          banco: data.banco,
+          cuenta: data.cuenta,
+          tipo: data.tipo,
+          cedula: data.cedula,
+          ownerName: data.ownerName,
+        }, 'PUT');
+        return;
+      }
+
+      throw new Error(payload?.message || 'No se pudo guardar la información bancaria.');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isNetworkFailure = !navigator.onLine || /failed to fetch|network|load failed/i.test(errorMessage.toLowerCase());
+
+      if (isNetworkFailure) {
+        console.error('Error saving bank data offline:', error);
+        await enqueueOfflineAction('/wallet/bank', {
+          driverId,
+          banco: data.banco,
+          cuenta: data.cuenta,
+          tipo: data.tipo,
+          cedula: data.cedula,
+          ownerName: data.ownerName,
+        }, 'PUT');
+        return;
+      }
+
       console.error('Error saving bank data:', error);
+      throw error;
     }
   };
 
-  const handleNext = () => {
-    if (step === 2 && !/^\d{10,20}$/.test(formData.account)) {
+  const handleNext = async () => {
+    if (step === 2 && !/^\d{10,20}$/.test(formData.cuenta)) {
       alert('Número de cuenta inválido (10-20 dígitos numéricos)');
       return;
     }
-    if (step === 5 && !/^\d{11}$/.test(formData.idDocument)) {
+    if (step === 5 && !/^\d{11}$/.test(formData.cedula)) {
       alert('Cédula inválida (11 dígitos, sin guiones)');
       return;
     }
@@ -78,11 +137,24 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
       setStep(step + 1);
     } else {
       if (isOffline || !navigator.onLine) {
-        localStorage.setItem('pendingBankUpdate', JSON.stringify(formData));
+        localStorage.setItem(draftKey, JSON.stringify(formData));
+        void enqueueOfflineAction('/wallet/bank', {
+          driverId,
+          banco: formData.banco,
+          cuenta: formData.cuenta,
+          tipo: formData.tipo,
+          cedula: formData.cedula,
+          ownerName: formData.ownerName,
+        }, 'PUT');
         alert('Sin conexión. Datos guardados localmente, se sincronizarán al recuperar la red.');
         onSuccess();
       } else {
-        submitData(formData);
+        try {
+          await submitData(formData);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'No se pudo guardar la información bancaria.';
+          alert(message);
+        }
       }
     }
   };
@@ -100,8 +172,8 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
             <label className="block text-sm font-medium mb-2 text-zinc-300">Banco</label>
             <select 
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-              value={formData.bank}
-              onChange={(e) => handleChange('bank', e.target.value)}
+              value={formData.banco}
+              onChange={(e) => handleChange('banco', e.target.value)}
             >
               <option value="">Selecciona un banco</option>
               <option value="BPD">Banco Popular Dominicano</option>
@@ -118,8 +190,8 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
               type="text" 
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
               placeholder="Ej: 0123456789"
-              value={formData.account}
-              onChange={(e) => handleChange('account', e.target.value.replace(/\D/g, ''))}
+              value={formData.cuenta}
+              onChange={(e) => handleChange('cuenta', e.target.value.replace(/\D/g, ''))}
             />
           </div>
         )}
@@ -129,8 +201,8 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
             <label className="block text-sm font-medium mb-2 text-zinc-300">Tipo de Cuenta</label>
             <select 
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-              value={formData.type}
-              onChange={(e) => handleChange('type', e.target.value)}
+              value={formData.tipo}
+              onChange={(e) => handleChange('tipo', e.target.value)}
             >
               <option value="SAVINGS">Ahorros</option>
               <option value="CHECKING">Corriente</option>
@@ -158,8 +230,8 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
               type="text" 
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
               placeholder="Cédula (11 dígitos)"
-              value={formData.idDocument}
-              onChange={(e) => handleChange('idDocument', e.target.value.replace(/\D/g, ''))}
+              value={formData.cedula}
+              onChange={(e) => handleChange('cedula', e.target.value.replace(/\D/g, ''))}
               maxLength={11}
             />
           </div>
@@ -179,10 +251,10 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
         <button 
           onClick={handleNext}
           disabled={
-            (step === 1 && !formData.bank) ||
-            (step === 2 && formData.account.length < 10) ||
+            (step === 1 && !formData.banco) ||
+            (step === 2 && formData.cuenta.length < 10) ||
             (step === 4 && formData.ownerName.trim() === '') ||
-            (step === 5 && formData.idDocument.length !== 11)
+            (step === 5 && formData.cedula.length !== 11)
           }
           className="px-6 py-2 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >

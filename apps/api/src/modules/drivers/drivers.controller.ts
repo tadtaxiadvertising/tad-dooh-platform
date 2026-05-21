@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -180,7 +180,13 @@ export class DriversController {
   @Get('tablet/:tabletId/access')
   @Public()
   async checkTabletAccess(@Param('tabletId') tabletId: string) {
-    return this.driversService.checkTabletAccess(tabletId);
+    const result = await this.driversService.checkTabletAccess(tabletId);
+
+    if (!result.access && result.httpStatus === HttpStatus.PAYMENT_REQUIRED) {
+      throw new HttpException(result, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    return result;
   }
 
   /**

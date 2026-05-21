@@ -106,7 +106,7 @@ const CampaignStep: React.FC<CampaignStepProps> = ({ formData, setFormData, onNe
           <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl flex gap-3 items-start">
             <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-300 leading-relaxed">
-              Cada anuncio garantiza una frecuencia premium de 30 segundos en rotación continua durante todo el mes operativo.
+              Cada anuncio garantiza una frecuencia premium de 30 segundos en rotación continua durante todo el mes operativo, dentro del tope de 15 slots por tablet.
             </p>
           </div>
         </div>

@@ -58,11 +58,21 @@ export default function DriverLoginPage() {
           entityId: payload.entityId || payload.driverId || payload.user?.entityId || payload.user?.id || '',
           name: payload.name || payload.fullName || phone,
           deviceId: payload.deviceId || null,
+          contractAccepted: Boolean(payload.contractAccepted),
+          agreementVersion: payload.agreementVersion || null,
+          onboardingStatus: payload.onboardingStatus || 'UNKNOWN',
+          bankAccountConfigured: Boolean(payload.bankAccountConfigured),
         };
 
         document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
         localStorage.setItem('tad_driver_token', accessToken);
         localStorage.setItem('tad_driver_user', JSON.stringify(storedUser));
+
+        if (!storedUser.contractAccepted || !storedUser.bankAccountConfigured) {
+          sessionStorage.setItem('tad_driver_force_onboarding', '1');
+        } else {
+          sessionStorage.removeItem('tad_driver_force_onboarding');
+        }
 
         router.replace('/driver/dashboard');
       }

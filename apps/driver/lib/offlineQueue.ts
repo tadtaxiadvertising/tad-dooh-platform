@@ -1,11 +1,83 @@
+interface OfflineQueueItem {
+  endpoint: string;
+  id?: number;
+  idempotencyKey: string;
+  method: string;
+  payload: Record<string, unknown>;
+  timestamp: number;
+}
+
+const DB_NAME = 'TadDriverDB';
+const STORE_NAME = 'offline_queue';
+
+const normalizeBankAccountType = (value: unknown): string => {
+  if (value === 'SAVINGS') return 'AHORRO';
+  if (value === 'CHECKING') return 'CORRIENTE';
+  return typeof value === 'string' ? value : '';
+};
+
+const normalizeEndpoint = (endpoint: string): string => {
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  if (endpoint.startsWith('/api/proxy')) return endpoint;
+  return `/api/proxy${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+};
+
+const normalizePayload = (endpoint: string, payload: Record<string, unknown>): Record<string, unknown> => {
+  if (!endpoint.includes('/wallet/bank')) {
+    return payload;
+  }
+
+  const { driverId: _driverId, ...rest } = payload;
+  return {
+    ...rest,
+    tipo: normalizeBankAccountType(rest.tipo),
+  };
+};
+
+const getStoredAccessToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const localToken = localStorage.getItem('tad_driver_token');
+  if (localToken) return localToken;
+
+  const cookieToken = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('sb-access-token='))
+    ?.split('=')[1];
+
+  return cookieToken || null;
+};
+
+const getAllQueueItems = (db: IDBDatabase): Promise<OfflineQueueItem[]> => {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve((request.result || []) as OfflineQueueItem[]);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const deleteQueueItem = (db: IDBDatabase, id: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
 export const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('TadDriverDB', 1);
+    const request = indexedDB.open(DB_NAME, 1);
 
     request.onupgradeneeded = (event: any) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains('offline_queue')) {
-        db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
       }
     };
 
@@ -14,17 +86,21 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export const enqueueOfflineAction = async (endpoint: string, payload: any, method: string = 'POST') => {
+export const enqueueOfflineAction = async (
+  endpoint: string,
+  payload: Record<string, unknown>,
+  method: string = 'POST'
+) => {
   const db = await initDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction('offline_queue', 'readwrite');
-    const store = transaction.objectStore('offline_queue');
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
     const request = store.add({
       endpoint,
       method,
       payload,
       timestamp: Date.now(),
-      idempotencyKey: crypto.randomUUID()
+      idempotencyKey: crypto.randomUUID(),
     });
 
     request.onsuccess = () => resolve(true);
@@ -33,46 +109,72 @@ export const enqueueOfflineAction = async (endpoint: string, payload: any, metho
 };
 
 export const syncOfflineQueue = async () => {
-  if (!navigator.onLine) return;
-  
+  if (typeof navigator === 'undefined' || !navigator.onLine) {
+    return { processed: 0, remaining: 0, success: false };
+  }
+
   const db = await initDB();
-  const transaction = db.transaction('offline_queue', 'readwrite');
-  const store = transaction.objectStore('offline_queue');
-  const request = store.getAll();
+  const items = await getAllQueueItems(db);
 
-  request.onsuccess = async () => {
-    const items = request.result;
-    if (!items || items.length === 0) return;
+  if (items.length === 0) {
+    db.close();
+    return { processed: 0, remaining: 0, success: true };
+  }
 
-    console.log(`Syncing ${items.length} offline actions...`);
-    
+  const authToken = getStoredAccessToken();
+  let processed = 0;
+  let remaining = items.length;
+
+  try {
     for (const item of items) {
+      const targetEndpoint = normalizeEndpoint(item.endpoint);
+      const normalizedPayload = normalizePayload(targetEndpoint, item.payload || {});
+
       try {
-        const response = await fetch(item.endpoint, {
+        const response = await fetch(targetEndpoint, {
           method: item.method || 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Idempotency-Key': item.idempotencyKey
+            'Idempotency-Key': item.idempotencyKey,
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
-          body: JSON.stringify(item.payload)
+          body: JSON.stringify(normalizedPayload),
         });
 
-        if (response.ok || response.status >= 400) { // If processed or failed validation, remove it
-          const delTransaction = db.transaction('offline_queue', 'readwrite');
-          delTransaction.objectStore('offline_queue').delete(item.id);
+        const shouldDropItem =
+          response.ok ||
+          response.status === 409 ||
+          (response.status >= 400 && response.status < 500 && response.status !== 401 && response.status !== 402);
+
+        if (shouldDropItem && typeof item.id === 'number') {
+          await deleteQueueItem(db, item.id);
+          processed += 1;
+          remaining -= 1;
+          continue;
+        }
+
+        if (response.status === 401 || response.status === 402) {
+          break;
         }
       } catch (error) {
         console.error('Failed to sync item:', item, error);
-        // Stop syncing on network error
         break;
       }
     }
+  } finally {
+    db.close();
+  }
+
+  return {
+    processed,
+    remaining,
+    success: remaining === 0,
   };
 };
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     console.log('Network connected, syncing offline queue...');
-    syncOfflineQueue();
+    void syncOfflineQueue();
   });
 }

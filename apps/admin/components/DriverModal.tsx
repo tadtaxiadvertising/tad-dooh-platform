@@ -55,7 +55,11 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     }
 
     try {
-      await createDriver(formData);
+      // Strip internal UI-only fields and always pass contractAccepted: true
+      // The POST /api/drivers endpoint is @Public() so req.user is always undefined.
+      // The backend requires contractAccepted=true when it cannot detect the caller as ADMIN.
+      const { deviceFound: _deviceFound, ...driverPayload } = formData;
+      await createDriver({ ...driverPayload, contractAccepted: true });
       notifyChange('TAD_DRIVERS');
       onSuccess();
       onClose();

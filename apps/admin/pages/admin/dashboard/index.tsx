@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@tad/ui';
 
 const TIMEOUT_MS = 15000;
+const getAdminOnboardingKey = (identity: string) => `tad_admin_onboarding_seen_v2_${identity}`;
 
 // Helper function to add a timeout to any promise
 const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
@@ -46,7 +47,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [pilotMode, setPilotMode] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { session } = useAuth();
+  const adminIdentity =
+    session?.user?.email ||
+    session?.user?.id ||
+    session?.user?.app_metadata?.entityId ||
+    'admin';
 
   const loadData = useCallback(async () => {
     if (!session?.access_token) return;
@@ -124,6 +131,22 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [loadData, session]);
 
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined' || !adminIdentity) return;
+
+    const onboardingKey = getAdminOnboardingKey(adminIdentity);
+    if (localStorage.getItem(onboardingKey) !== '1') {
+      setShowOnboarding(true);
+    }
+  }, [adminIdentity, mounted]);
+
+  const closeOnboarding = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(getAdminOnboardingKey(adminIdentity), '1');
+    }
+    setShowOnboarding(false);
+  };
+
   if (!mounted) return null;
 
   return (
@@ -133,6 +156,113 @@ export default function Home() {
          <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-tad-yellow/[0.03] blur-[200px] rounded-full animate-pulse-soft" />
          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/[0.02] blur-[150px] rounded-full" />
       </div>
+
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/85 backdrop-blur-xl p-4">
+          <div className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 shadow-[0_30px_120px_rgba(0,0,0,0.85)]">
+            <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Zero-Flicker Onboarding</p>
+                <h2 className="text-xl font-black tracking-tight text-white">Ruta inicial de operación TAD</h2>
+              </div>
+              <button
+                onClick={closeOnboarding}
+                className="rounded-full bg-white/5 px-3 py-2 text-sm font-black text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                aria-label="Cerrar tour"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="grid gap-0 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-6 p-6 md:p-8">
+                <div className="inline-flex items-center gap-2 rounded-full border border-tad-yellow/20 bg-tad-yellow/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-tad-yellow">
+                  <ShieldCheck className="h-4 w-4" />
+                  Acceso blindado
+                </div>
+                <div>
+                  <h3 className="text-3xl font-black tracking-tight text-white">Tres puntos de control para abrir turno sin castigar el VPS</h3>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    El middleware ya te deja entrar sin flicker. Lo importante ahora es revisar flota en vivo, validar salud de nodos y ejecutar nómina en lotes secuenciales de 5 para proteger memoria y estabilidad.
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <Link href="/admin/tracking" onClick={closeOnboarding} className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 transition hover:border-tad-yellow/30 hover:bg-white/[0.05]">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-tad-yellow/10 text-tad-yellow">
+                        <Activity className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Tracking vivo</p>
+                        <h4 className="mt-1 text-xl font-black text-white">Mapa de flota y wake-up inmediato</h4>
+                        <p className="mt-2 text-sm text-zinc-400">
+                          Confirma taxis online, morosos y alertas críticas. Este es el punto para coordinar sincronizaciones sobre el canal `fleet_sync`.
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/admin/monitoring" onClick={closeOnboarding} className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 transition hover:border-tad-yellow/30 hover:bg-white/[0.05]">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
+                        <Server className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Monitoreo y semáforos</p>
+                        <h4 className="mt-1 text-xl font-black text-white">Conectividad, batería y salud del player</h4>
+                        <p className="mt-2 text-sm text-zinc-400">
+                          Usa este panel para leer heartbeat, estabilidad del player y el estado general de las tablets antes de tocar campañas o media.
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/admin/finance" onClick={closeOnboarding} className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 transition hover:border-tad-yellow/30 hover:bg-white/[0.05]">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-300">
+                        <BarChart3 className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Nómina segura</p>
+                        <h4 className="mt-1 text-xl font-black text-white">Procesa pagos en ráfagas de 5</h4>
+                        <p className="mt-2 text-sm text-zinc-400">
+                          Mantén las corridas pequeñas y secuenciales para cuidar el VPS de 512MB-1024MB y reducir picos de Prisma en memoria.
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="border-t border-white/5 bg-black/30 p-6 md:border-l md:border-t-0 md:p-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Checklist operativo</p>
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">1. Tracking</p>
+                    <p className="mt-2 text-sm text-zinc-300">Confirma unidades activas, morosos y nodos con más de 3 días offline.</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">2. Monitoring</p>
+                    <p className="mt-2 text-sm text-zinc-300">Valida batería, heartbeat y estado del player antes de tocar campañas o media.</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">3. Payroll</p>
+                    <p className="mt-2 text-sm text-zinc-300">Ejecuta lotes cortos de 5 y confirma cierres antes de seguir con el siguiente bloque.</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={closeOnboarding}
+                  className="mt-6 w-full rounded-2xl bg-tad-yellow px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-400"
+                >
+                  Entrar al Command Center
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header Section */}
       <header className="pt-10 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
@@ -159,6 +289,14 @@ export default function Home() {
           >
             <ShieldCheck className={clsx("w-4 h-4", pilotMode ? "text-black" : "text-zinc-500")} />
             {pilotMode ? 'STI PILOT ACTIVE' : 'SANTIAGO PILOT'}
+          </button>
+
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
+          >
+            <Activity className="h-4 w-4 text-tad-yellow" />
+            Tour operativo
           </button>
 
           <div className="flex flex-col items-end bg-black/30 p-3 rounded-2xl border border-white/5 backdrop-blur-md">

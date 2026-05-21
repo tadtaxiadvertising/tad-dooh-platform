@@ -23,6 +23,21 @@ export class DriversService {
     private readonly payrollAudit: PayrollAuditService
   ) {}
 
+  private hasBankAccountConfigured(bankAccount: unknown): boolean {
+    if (!bankAccount || typeof bankAccount !== 'object' || Array.isArray(bankAccount)) {
+      return false;
+    }
+
+    const candidate = bankAccount as {
+      banco?: unknown;
+      cuenta?: unknown;
+      cedula?: unknown;
+      tipo?: unknown;
+    };
+
+    return Boolean(candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo);
+  }
+
   /**
    * REGLA DE NEGOCIO 1: Validar acceso a la publicidad
    * [ACTUALIZADO]: Morosos reciben kill-switch 402; tablets sin conductor van a setup.
@@ -290,6 +305,11 @@ export class DriversService {
       role: 'DRIVER',
       entityId: user.id,
       deviceId: device?.deviceId || null,
+      subscriptionPaid: user.subscriptionPaid,
+      contractAccepted: user.contractAccepted,
+      agreementVersion: user.agreementVersion || null,
+      onboardingStatus: user.onboardingStatus,
+      bankAccountConfigured: this.hasBankAccountConfigured(user.bankAccount),
     };
   }
 
@@ -600,6 +620,10 @@ export class DriversService {
         : null,
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid,
+      contractAccepted: Boolean(driver.contractAccepted),
+      agreementVersion: driver.agreementVersion || null,
+      onboardingStatus: driver.onboardingStatus || 'UNKNOWN',
+      bankAccountConfigured: this.hasBankAccountConfigured(driver.bankAccount),
       deviceId,
     };
   }

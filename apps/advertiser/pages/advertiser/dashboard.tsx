@@ -8,7 +8,7 @@ import { useAuth } from '@tad/ui';
 import { api, getAdvertiserPortalData } from '@tad/services/api';
 import { Toaster, toast } from 'sonner';
 
-const ONBOARDING_KEY = 'tad_advertiser_onboarding_seen_v1';
+const getAdvertiserOnboardingKey = (entityId: string) => `tad_advertiser_onboarding_seen_v2_${entityId}`;
 
 export default function AdvertiserDashboard() {
   const [data, setData] = useState<any>(null);
@@ -44,8 +44,10 @@ export default function AdvertiserDashboard() {
   useEffect(() => {
     if (typeof window === 'undefined' || !entityId) return;
 
-    const hasSeenOnboarding = localStorage.getItem(ONBOARDING_KEY) === '1';
-    if (!hasSeenOnboarding) {
+    const hasSeenOnboarding = localStorage.getItem(getAdvertiserOnboardingKey(entityId)) === '1';
+    const forceOnboarding = sessionStorage.getItem('tad_advertiser_force_onboarding') === '1';
+
+    if (forceOnboarding || !hasSeenOnboarding) {
       setShowOnboarding(true);
     }
   }, [entityId]);
@@ -78,7 +80,10 @@ export default function AdvertiserDashboard() {
   }, [onboardingStep]);
 
   const closeOnboarding = () => {
-    localStorage.setItem(ONBOARDING_KEY, '1');
+    if (entityId) {
+      localStorage.setItem(getAdvertiserOnboardingKey(entityId), '1');
+    }
+    sessionStorage.removeItem('tad_advertiser_force_onboarding');
     setShowOnboarding(false);
   };
 
@@ -171,7 +176,7 @@ export default function AdvertiserDashboard() {
                     <div className="space-y-4">
                       <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Ciudad objetivo</label>
                       <div className="grid grid-cols-3 gap-2">
-                        {['Santo Domingo', 'Santiago', 'Punta Cana'].map((city) => (
+                        {['Santo Domingo', 'Santiago'].map((city) => (
                           <button
                             key={city}
                             onClick={() => setSimCity(city)}

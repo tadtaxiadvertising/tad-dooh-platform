@@ -132,6 +132,7 @@ export default function AdvertiserLoginPage() {
       });
 
       persistSession(data, registerForm.email);
+      sessionStorage.setItem('tad_advertiser_force_onboarding', '1');
       toast.success('Cuenta creada', { description: 'Tu acceso quedó listo para entrar al dashboard.' });
       router.replace(config.dashboardPath);
     } catch (err: any) {

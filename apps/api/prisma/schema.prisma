@@ -304,6 +304,8 @@ model MediaAsset {
   version    Int      @default(1)
   createdAt  DateTime @default(now()) @map("created_at")
   qrUrl      String?  @map("qr_url")
+  processingStatus String   @default("ACTIVE") @map("processing_status")
+  validationError  String?  @map("validation_error")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])

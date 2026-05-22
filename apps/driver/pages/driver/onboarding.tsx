@@ -5,7 +5,7 @@ import api from '@tad/services';
 import {
   Car, Camera, DollarSign, ShieldCheck, CheckCircle2, ArrowRight,
   UploadCloud, Zap, Phone, Shield, Eye, EyeOff, MapPin, ChevronLeft,
-  Sparkles, BadgeCheck, Wifi, Clock, Users
+  Sparkles, BadgeCheck, Wifi, Clock, Users, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -15,8 +15,14 @@ export default function DriverOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [mounted, setMounted] = useState(false);
+  
+  // Simulator states
   const [campaigns, setCampaigns] = useState(5);
-  const projectedEarnings = (campaigns * 500) + 500; // Campaign pay + Availability bonus
+  const [referredAdvertisers, setReferredAdvertisers] = useState(1);
+  const [referredDrivers, setReferredDrivers] = useState(1);
+
+  // Total projected earnings: campaign pay (RD$500 each) + advertiser referral (RD$500 each) + driver referral (RD$500 each)
+  const projectedEarnings = (campaigns * 500) + (referredAdvertisers * 500) + (referredDrivers * 500);
 
   // Registration fields
   const [fullName, setFullName] = useState('');
@@ -141,18 +147,17 @@ export default function DriverOnboarding() {
                 Tu taxi genera<br />
                 <span className="text-tad-yellow">dinero extra</span>
               </h1>
-              <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-[280px] mx-auto">
-                Evoluciona a <b>Hardware-as-a-Service</b>. Gana por cada campaña activa en tu unidad mientras trabajas tu ruta normal.
+              <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-[320px] mx-auto">
+                Coloca una pantalla publicitaria en tu taxi y gana dinero mensual mientras realizas tus rutas de siempre.
               </p>
             </div>
 
             {/* Benefit Cards */}
             <div className="space-y-3 flex-1">
               {[
-                { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu tablet (Hasta 15 simultáneos)', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { icon: <Wifi className="w-5 h-5" />, title: 'Internet 5G Ilimitado', desc: 'Conectividad premium para ti y tus pasajeros sin costo adicional', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { icon: <BadgeCheck className="w-5 h-5" />, title: 'Bono de Disponibilidad', desc: 'RD$500 mensuales garantizados con solo mantener tu equipo encendido', color: 'text-tad-yellow', bg: 'bg-tad-yellow/10' },
-                { icon: <Users className="w-5 h-5" />, title: 'Plan de Referidos', desc: 'Gana RD$500 por cada nuevo socio o marca (Anunciante) que traigas a la flota', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu pantalla (hasta 15 anuncios simultáneos).', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                { icon: <Users className="w-5 h-5" />, title: 'Referidos de Negocios', desc: 'Gana RD$500 adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                { icon: <Car className="w-5 h-5" />, title: 'Invitar Compañeros', desc: 'Gana un bono de RD$500 por cada compañero taxista que refieras cuando instale su pantalla.', color: 'text-blue-400', bg: 'bg-blue-500/10' },
               ].map((b, i) => (
                 <div
                   key={i}
@@ -167,6 +172,8 @@ export default function DriverOnboarding() {
                   </div>
                 </div>
               ))}
+
+
             </div>
 
             {/* CTA */}
@@ -175,7 +182,7 @@ export default function DriverOnboarding() {
                 onClick={nextStep}
                 className="w-full bg-tad-yellow hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,212,0,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
               >
-                <span>CALCULAR MIS GANANCIAS</span>
+                <span>PROBAR SIMULADOR DE GANANCIAS</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -188,89 +195,162 @@ export default function DriverOnboarding() {
             {/* Header */}
             <div className="text-center pt-6 pb-6">
               <div className="inline-flex px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">
-                Lógica Contable Certificada
+                Simulador de Comisiones
               </div>
               <h1 className="text-[26px] font-black text-white uppercase tracking-tight leading-tight mb-2">
-                Simulación de<br />
+                Simula tus<br />
                 <span className="text-emerald-400">Ingresos</span>
               </h1>
-              <p className="text-xs text-gray-500 font-medium">Desliza para proyectar tus bonos mensuales</p>
+              <p className="text-xs text-gray-500 font-medium">Ajusta los valores para calcular tus ganancias estimadas</p>
             </div>
 
             {/* Calculator Card */}
             <div className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 space-y-6">
-              {/* Campaigns Selector */}
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Campañas Activas en tu Unidad</p>
-                <div className="flex gap-2">
-                  {[3, 6, 9, 12, 15].map(c => (
-                    <button
-                      key={c}
-                      onClick={() => setCampaigns(c)}
-                      className={clsx(
-                        "flex-1 py-3 rounded-xl text-xs font-black transition-all duration-300",
-                        campaigns === c
-                          ? "bg-tad-yellow text-black shadow-[0_5px_20px_rgba(255,212,0,0.2)] scale-105"
-                          : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
+              {/* Campaigns Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">1. Anuncios en tu Pantalla (1 - 15)</span>
+                  <span className="text-sm font-black text-tad-yellow">{campaigns} {campaigns === 1 ? 'anuncio' : 'anuncios'}</span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCampaigns(c => Math.max(1, c - 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="range"
+                    min="1"
+                    max="15"
+                    value={campaigns}
+                    onChange={(e) => setCampaigns(parseInt(e.target.value))}
+                    className="flex-1 accent-tad-yellow h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCampaigns(c => Math.min(15, c + 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500">Ganas RD$500 mensuales por cada anuncio en pantalla.</p>
+              </div>
+
+              {/* Advertiser Referral Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">2. Negocios Recomendados (0 - 10)</span>
+                  <span className="text-sm font-black text-purple-400">{referredAdvertisers} {referredAdvertisers === 1 ? 'negocio' : 'negocios'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReferredAdvertisers(c => Math.max(0, c - 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={referredAdvertisers}
+                    onChange={(e) => setReferredAdvertisers(parseInt(e.target.value))}
+                    className="flex-1 accent-purple-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setReferredAdvertisers(c => Math.min(10, c + 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500">Bono de RD$500 al mes por cada comercio que refieras.</p>
+              </div>
+
+              {/* Driver Referral Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">3. Compañeros Taxistas Invitados (0 - 10)</span>
+                  <span className="text-sm font-black text-blue-400">{referredDrivers} {referredDrivers === 1 ? 'compañero' : 'compañeros'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReferredDrivers(c => Math.max(0, c - 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={referredDrivers}
+                    onChange={(e) => setReferredDrivers(parseInt(e.target.value))}
+                    className="flex-1 accent-blue-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setReferredDrivers(c => Math.min(10, c + 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500">Bono de RD$500 al mes por cada colega taxista en la red.</p>
               </div>
 
               {/* Earnings Display */}
               <div className="bg-black/40 rounded-2xl p-6 border border-white/5">
-                <div className="flex justify-between items-end">
+                <div className="flex justify-between items-end mb-4">
                   <div>
-                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Pago Mensual (Estimado)</p>
+                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Total Mensual Estimado</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-[10px] text-gray-500 font-bold">RD$</span>
                       <span className="text-4xl font-black text-white tracking-tighter">{projectedEarnings.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">+ Incentivos</p>
-                    <span className="text-lg font-black text-emerald-400 tracking-tight">VIP</span>
+                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">Rol</p>
+                    <span className="text-lg font-black text-emerald-400 tracking-tight">Socio</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2">
-                   <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
-                      <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Incluye <b>Bono de Disponibilidad</b> (RD$500) por telemetría.
-                      </p>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-purple-400 shrink-0" />
-                      <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Potencial ilimitado por <b>Referidos</b> de Anunciantes.
-                      </p>
-                   </div>
+                <div className="border-t border-white/5 pt-4 flex flex-col gap-2 text-[11px] text-gray-400">
+                  <div className="flex justify-between">
+                    <span>Por anuncios activos ({campaigns}):</span>
+                    <span className="text-white font-bold">RD${(campaigns * 500).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Por negocios recomendados ({referredAdvertisers}):</span>
+                    <span className="text-white font-bold">RD${(referredAdvertisers * 500).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Por compañeros taxistas ({referredDrivers}):</span>
+                    <span className="text-white font-bold">RD${(referredDrivers * 500).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Business Table info */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              {/* Costo de membresía / Activación */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/5 text-xs text-gray-400">
                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                    <span>Concepto</span>
+                    <span>Inversión de Activación</span>
                     <span>Monto</span>
                  </div>
                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
-                       <span>Pago por Campaña</span>
-                       <span>RD$500 /u</span>
+                    <div className="flex justify-between font-bold text-zinc-300">
+                       <span>Membresía Flota y Seguro de Hardware</span>
+                       <span>RD$6,000 / año</span>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
-                       <span>Disponibilidad (100 GPS pts)</span>
-                       <span>RD$500</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
-                       <span>Starter Kit / Membresía Anual</span>
-                       <span>RD$6,000</span>
-                    </div>
+                    <p className="text-[10px] text-gray-500 leading-normal italic">
+                      * El pago de la membresía cubre el Starter Kit (tablet, soporte, cableado) y seguro contra robo o averías.
+                    </p>
                  </div>
               </div>
             </div>
@@ -281,7 +361,7 @@ export default function DriverOnboarding() {
                 onClick={nextStep}
                 className="w-full bg-tad-yellow hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,212,0,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
               >
-                <span>QUIERO MI STARTER KIT</span>
+                <span>QUIERO SOLICITAR MI PANTALLA</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -293,9 +373,9 @@ export default function DriverOnboarding() {
           <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center pt-4 pb-4">
               <h1 className="text-[22px] font-black text-white uppercase tracking-tight leading-tight mb-1">
-                Registro de Socio
+                Completa tu Registro
               </h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Adquiere tu membresía de RD$6,000 / año</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Asegura tu membresía de RD$6,000 / año</p>
             </div>
 
             <form onSubmit={handleRegister} className="flex-1 flex flex-col">
@@ -359,7 +439,7 @@ export default function DriverOnboarding() {
                   </div>
                   <div className="group">
                     <label htmlFor="ob-plate" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-tad-yellow transition-colors">
-                      Placa
+                      Placa del Taxi
                     </label>
                     <input
                       id="ob-plate" type="text" value={taxiPlate}
@@ -401,7 +481,7 @@ export default function DriverOnboarding() {
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
                     <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors text-shadow-sm">
-                      Acepto el <span className="text-tad-yellow font-bold uppercase tracking-tighter">Handshake Operativo</span> y contrato de servicio.
+                      Acepto el contrato de servicio y los términos de uso de la pantalla publicitaria.
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group/check">
@@ -410,7 +490,7 @@ export default function DriverOnboarding() {
                       className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-tad-yellow accent-yellow-400 shrink-0"
                     />
                     <span className="text-[11px] text-gray-500 leading-relaxed group-hover/check:text-gray-400 transition-colors text-shadow-sm">
-                      Acepto la <span className="text-tad-yellow font-bold uppercase tracking-tighter">Responsabilidad de Hardware</span> y acuerdo de mantenimiento (Membresía RD$6,000/año).
+                      Acepto cuidar el equipo y la membresía anual de RD$6,000 por el uso y seguro de la tablet.
                     </span>
                   </label>
                 </div>
@@ -426,12 +506,12 @@ export default function DriverOnboarding() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      <span>CONFIGURANDO NODO...</span>
+                      <span>CREANDO CUENTA...</span>
                     </>
                   ) : (
                     <>
                       <BadgeCheck className="w-5 h-5" />
-                      <span>ADSCRIPCIÓN AL SISTEMA</span>
+                      <span>UNIRME A LA RED Y SOLICITAR PANTALLA</span>
                     </>
                   )}
                 </button>
@@ -461,20 +541,20 @@ export default function DriverOnboarding() {
             </div>
 
             <h1 className="text-[28px] font-black text-white uppercase tracking-tight leading-tight mb-3">
-              ¡Bienvenido<br />a la Red!
+              ¡Tu registro<br />se completó!
             </h1>
-            <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-8">
-              Tu cuenta fue creada exitosamente. Nuestro equipo te contactará para coordinar la instalación del equipo.
+            <p className="text-sm text-gray-400 max-w-[300px] leading-relaxed mb-8">
+              Hemos recibido tus datos con éxito. En breve nos comunicaremos contigo para programar la entrega e instalación de la pantalla en tu vehículo.
             </p>
 
-            {/* Terminal-like Status */}
+            {/* friendly Status */}
             <div className="w-full bg-black/60 rounded-2xl p-5 border border-white/5 text-left font-mono space-y-2 mb-8">
-              <p className="text-[10px] text-emerald-400">✓ Cuenta creada correctamente</p>
-              <p className="text-[10px] text-emerald-400">✓ Perfil de conductor registrado</p>
-              <p className="text-[10px] text-tad-yellow animate-pulse">⟳ Equipo pendiente de despacho...</p>
+              <p className="text-[10px] text-emerald-400">✓ Cuenta de socio conductor activa</p>
+              <p className="text-[10px] text-emerald-400">✓ Datos del taxi registrados</p>
+              <p className="text-[10px] text-tad-yellow animate-pulse">⟳ Coordinando fecha de entrega de pantalla...</p>
               <div className="flex items-center gap-2 pt-2 border-t border-white/5">
                 <Zap className="w-3 h-3 text-tad-yellow" />
-                <span className="text-[9px] font-black text-white uppercase tracking-widest font-sans">Sistema Listo</span>
+                <span className="text-[9px] font-black text-white uppercase tracking-widest font-sans">TAD Flota Dominicana</span>
               </div>
             </div>
 

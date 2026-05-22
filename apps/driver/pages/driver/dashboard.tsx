@@ -4,7 +4,9 @@ import Head from 'next/head';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
-import { Phone } from 'lucide-react';
+import { Phone, Check, ShieldAlert, CreditCard, Lock, User, Loader2, Wifi, AlertCircle, ArrowRight } from 'lucide-react';
+import api from '@tad/services';
+import clsx from 'clsx';
 
 // ─── Sub-componentes inline (sin librerías de UI externas) ────────────────────
 
@@ -357,12 +359,116 @@ export default function DriverDashboard() {
   const { isLocked, message: lockMessage } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
 
-  // Iniciar tracking GPS al montar
+  // Onboarding states
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const [step, setStep] = React.useState(1);
+  
+  // Bank details
+  const [bank, setBank] = React.useState<'Popular' | 'BHD' | 'Banreservas'>('Popular');
+  const [accountName, setAccountName] = React.useState('');
+  const [accountNumber, setAccountNumber] = React.useState('');
+  const [acceptTerms, setAcceptTerms] = React.useState(false);
+  const [acceptInsurance, setAcceptInsurance] = React.useState(false);
+  const [isPendingSync, setIsPendingSync] = React.useState(false);
+
+  // Iniciar tracking GPS al montar y chequear onboarding bancario
   useEffect(() => {
     startTracking();
+
+    const userStr = localStorage.getItem('tad_driver_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setAccountName(user.fullName || '');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const bankSetupDone = localStorage.getItem('tad_drv_bank_setup_done');
+    if (!bankSetupDone) {
+      setShowOnboarding(true);
+    }
+
+    // Check initial pending sync status
+    const pending = localStorage.getItem('tad_pending_bank_sync');
+    if (pending === 'true') {
+      setIsPendingSync(true);
+    }
+
     return () => stopTracking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync bank details effect
+  useEffect(() => {
+    const syncPendingBankDetails = async () => {
+      const pending = localStorage.getItem('tad_pending_bank_sync');
+      const detailsStr = localStorage.getItem('tad_offline_bank_details');
+      if (pending === 'true' && detailsStr && navigator.onLine) {
+        try {
+          const details = JSON.parse(detailsStr);
+          await api.post('/drivers/me/bank-details', details);
+          localStorage.removeItem('tad_pending_bank_sync');
+          setIsPendingSync(false);
+          alert('¡Sincronización Exitosa! Sus datos bancarios se han guardado de forma segura en el servidor de TAD.');
+        } catch (err) {
+          console.error('Error in bank details auto-sync:', err);
+        }
+      }
+    };
+
+    window.addEventListener('online', syncPendingBankDetails);
+    
+    // Run sync immediately if connection is present
+    if (navigator.onLine) {
+      syncPendingBankDetails();
+    }
+
+    return () => window.removeEventListener('online', syncPendingBankDetails);
+  }, []);
+
+  const handleCompleteBankOnboarding = async () => {
+    if (!acceptTerms || !acceptInsurance) {
+      alert('Debes aceptar el contrato de servicio y el seguro de hardware.');
+      return;
+    }
+    if (!accountName || !accountNumber) {
+      alert('Por favor completa todos los datos bancarios.');
+      return;
+    }
+
+    const bankDetails = {
+      bank,
+      accountName,
+      accountNumber,
+      contractAccepted: true,
+      insuranceAccepted: true,
+      agreementVersion: '2.0',
+      timestamp: new Date().toISOString()
+    };
+
+    localStorage.setItem('tad_offline_bank_details', JSON.stringify(bankDetails));
+    localStorage.setItem('tad_drv_bank_setup_done', 'true');
+    setShowOnboarding(false);
+
+    if (navigator.onLine) {
+      try {
+        await api.post('/drivers/me/bank-details', bankDetails);
+        localStorage.removeItem('tad_pending_bank_sync');
+        setIsPendingSync(false);
+        alert('¡Registro Bancario Completado! Sus datos han sido sincronizados.');
+      } catch (err) {
+        console.warn('Sync failed on completion, saving for offline sync:', err);
+        localStorage.setItem('tad_pending_bank_sync', 'true');
+        setIsPendingSync(true);
+      }
+    } else {
+      localStorage.setItem('tad_pending_bank_sync', 'true');
+      setIsPendingSync(true);
+      alert('¡Modo Local Activado! Tus datos se han guardado localmente de forma segura. Se sincronizarán automáticamente al recuperar la señal de internet.');
+    }
+  };
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
@@ -448,6 +554,21 @@ export default function DriverDashboard() {
             {serviceBannerConfig.label}
           </span>
         </div>
+
+        {/* Offline Pending Sync Banner */}
+        {isPendingSync && (
+          <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-center justify-between gap-3 text-orange-400">
+            <div className="flex items-center gap-2">
+              <Wifi className="w-4 h-4 animate-pulse shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-left">
+                Modo Local: Cuenta Bancaria Guardada (Pendiente de Red)
+              </span>
+            </div>
+            <span className="text-[9px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded font-black uppercase tracking-widest">
+              Offline
+            </span>
+          </div>
+        )}
 
         {/* Ledger Financiero */}
         <EarningsLedger 
@@ -553,6 +674,229 @@ export default function DriverDashboard() {
 
       {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción */}
       {isLocked && <LockdownScreen message={lockMessage} />}
+
+      {/* ─── ONBOARDING WIZARD OVERLAY ─── */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl overflow-y-auto">
+          <div className="w-full max-w-md bg-zinc-950 border border-white/10 rounded-[2rem] p-6 lg:p-8 shadow-2xl relative my-auto">
+            {/* Visual Accent */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FFD400] to-transparent" />
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                Socio Conductor · Registro Bancario
+              </span>
+              <span className="text-[10px] font-black text-[#FFD400] uppercase tracking-widest bg-[#FFD400]/10 px-2 py-1 rounded">
+                Paso {step} de 3
+              </span>
+            </div>
+
+            {/* STEP 1: Handshake, Contract and Compensation Formula */}
+            {step === 1 && (
+              <div className="space-y-5 text-left">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    Contrato de Servicio <span className="text-[#FFD400]">v2.0</span>
+                  </h3>
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">
+                    Términos de Operación & Compensación V12
+                  </p>
+                </div>
+
+                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 space-y-4 max-h-[30vh] overflow-y-auto">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-[#FFD400] uppercase">1. Seguro y Starter Kit</h4>
+                    <p className="text-neutral-400 text-[11px] leading-relaxed">
+                      El conductor acepta la responsabilidad civil y el cuidado del Starter Kit (Tablet y soporte especial). El costo de membresía anual de hardware es de <span className="text-white font-bold">RD$6,000</span> (con ITBIS del 18%).
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-[#FFD400] uppercase">2. Fórmula de Compensación V12</h4>
+                    <p className="text-neutral-400 text-[11px] leading-relaxed">
+                      Tus ingresos mensuales se calculan en base a las campañas activas y conversiones de ventas generadas mediante el código QR:
+                    </p>
+                    <div className="bg-black/50 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-center text-white">
+                      <span className="text-zinc-500 block uppercase font-bold text-[8px] mb-1 tracking-widest">Fórmula de Nómina</span>
+                      RD$ Earnings = (Min(Ads, 15) × 500) + (CPA_Sales × 500)
+                    </div>
+                    <p className="text-neutral-500 text-[10px] leading-relaxed italic">
+                      * Ads: Número de anuncios simultáneos en tu tablet (límite operativo absoluto de 15 slots por dispositivo).
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-[#FFD400] uppercase">3. Sincronización y Transparencia</h4>
+                    <p className="text-neutral-400 text-[11px] leading-relaxed">
+                      La tablet recopila datos GPS en tiempo real. La manipulación o desconexión deliberada puede causar penalizaciones o la activación del Kill-Switch operativo (HTTP 402).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Agreements checkboxes */}
+                <div className="space-y-3 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={acceptTerms}
+                      onChange={(e) => setAcceptTerms(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-[#FFD400] focus:ring-[#FFD400] accent-yellow-400"
+                    />
+                    <span className="text-[11px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
+                      Acepto formalmente el <span className="text-white font-bold">Contrato de Servicio HaaS v2.0</span> y las constantes de negocio de la plataforma TAD.
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={acceptInsurance}
+                      onChange={(e) => setAcceptInsurance(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-[#FFD400] focus:ring-[#FFD400] accent-yellow-400"
+                    />
+                    <span className="text-[11px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
+                      Acepto la cobertura y cargo de <span className="text-white font-bold">Seguro de Hardware (RD$6,000/anual)</span> por responsabilidad del Starter Kit.
+                    </span>
+                  </label>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!acceptTerms || !acceptInsurance) {
+                      alert('Debes aceptar ambos términos contractuales antes de continuar.');
+                      return;
+                    }
+                    setStep(2);
+                  }}
+                  className="w-full py-4.5 bg-[#FFD400] hover:bg-yellow-400 text-black font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  Continuar al Paso Bancario
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: Bank Selection */}
+            {step === 2 && (
+              <div className="space-y-6 text-left">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    Selecciona tu <span className="text-[#FFD400]">Banco</span>
+                  </h3>
+                  <p className="text-zinc-500 text-xs">
+                    Elige la entidad bancaria dominicana donde deseas recibir tus depósitos mensuales.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {[
+                    { id: 'Popular', name: 'Banco Popular Dominicano', color: 'border-blue-500/30 text-blue-400 bg-blue-500/5' },
+                    { id: 'BHD', name: 'Banco BHD', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5' },
+                    { id: 'Banreservas', name: 'Banreservas', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5' },
+                  ].map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        setBank(b.id as any);
+                        setStep(3);
+                      }}
+                      className={clsx(
+                        "p-5 rounded-2xl border text-left transition-all hover:scale-[1.02] flex items-center justify-between group",
+                        bank === b.id ? "border-[#FFD400] bg-zinc-900/60" : "border-white/5 bg-zinc-900/20"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={clsx("w-3 h-3 rounded-full", bank === b.id ? "bg-[#FFD400] animate-ping" : "bg-zinc-800")} />
+                        <span className="text-sm font-black text-white uppercase tracking-tight">{b.name}</span>
+                      </div>
+                      <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border", b.color)}>
+                        {b.id}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setStep(1)}
+                  className="w-full py-4 border border-white/5 hover:border-white/10 text-zinc-400 hover:text-white font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
+                >
+                  ← Volver a Contrato
+                </button>
+              </div>
+            )}
+
+            {/* STEP 3: Bank Details Form */}
+            {step === 3 && (
+              <div className="space-y-6 text-left">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    Detalles de <span className="text-[#FFD400]">Cuenta</span>
+                  </h3>
+                  <p className="text-zinc-500 text-xs">
+                    Ingresa el número de cuenta y titular de <span className="text-white font-bold">{bank}</span>.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">
+                      Nombre del Titular
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 w-4 h-4 text-zinc-600" />
+                      <input
+                        type="text"
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder="Juan Pérez"
+                        className="w-full bg-black border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white placeholder:text-zinc-800 focus:outline-none focus:border-[#FFD400]/40 focus:bg-zinc-950 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">
+                      Número de Cuenta
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-4 top-4 w-4 h-4 text-zinc-600" />
+                      <input
+                        type="tel"
+                        pattern="[0-9]*"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+                        placeholder="1234567890"
+                        className="w-full bg-black border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-mono font-bold text-white placeholder:text-zinc-800 focus:outline-none focus:border-[#FFD400]/40 focus:bg-zinc-950 transition-all"
+                        required
+                      />
+                    </div>
+                    <p className="text-[9px] text-zinc-600 ml-1 leading-relaxed">
+                      * Teclado numérico táctil activo. Introduzca solo números sin guiones ni espacios.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="flex-1 py-4 border border-white/5 hover:border-white/10 text-zinc-400 hover:text-white font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    onClick={handleCompleteBankOnboarding}
+                    className="flex-1 py-4 bg-[#FFD400] hover:bg-yellow-400 text-black font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
+                  >
+                    Guardar y Finalizar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

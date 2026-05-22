@@ -135,6 +135,36 @@ export default function AdvertiserLoginPage() {
         <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-tad-yellow/50 to-transparent" />
 
+          {/* Tabs Selector for Login / Register */}
+          {(view === 'login' || view === 'register') && (
+            <div className="flex bg-black/45 border border-white/5 p-1 rounded-2xl mb-8 relative z-10">
+              <button
+                type="button"
+                onClick={() => switchView('login')}
+                className={clsx(
+                  "flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-[0.98]",
+                  view === 'login'
+                    ? "bg-tad-yellow text-black shadow-[0_4px_15px_rgba(255,212,0,0.25)]"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => switchView('register')}
+                className={clsx(
+                  "flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-[0.98]",
+                  view === 'register'
+                    ? "bg-tad-yellow text-black shadow-[0_4px_15px_rgba(255,212,0,0.25)]"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                Registrar Empresa
+              </button>
+            </div>
+          )}
+
           {/* ─── LOGIN VIEW ─── */}
           {view === 'login' && (
             <form onSubmit={handleLogin} className="space-y-6">
@@ -145,7 +175,7 @@ export default function AdvertiserLoginPage() {
                 <InputField
                   id="adv-email" label="Correo Electrónico" type="email"
                   value={email} onChange={setEmail} placeholder="correo@empresa.com"
-                  icon={<Briefcase className="w-4 h-4" />}
+                  icon={<Mail className="w-4 h-4" />}
                 />
                 <PasswordField
                   id="adv-password" label="Contraseña" value={password}
@@ -164,7 +194,7 @@ export default function AdvertiserLoginPage() {
 
               <SubmitButton loading={loading} text="Iniciar Sesión" loadingText="Validando..." />
 
-              {/* Register CTA with urgency */}
+              {/* Direct campaign onboarding link */}
               <div className="pt-6 border-t border-white/5 text-center space-y-3">
                 <p className="text-[11px] text-gray-500">¿Aún no anuncias tu marca en taxis?</p>
                 <button type="button" onClick={() => router.push('/advertiser/onboarding')}

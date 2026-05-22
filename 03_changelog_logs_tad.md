@@ -5,7 +5,43 @@
 
 ---
 
+## [v12.2.0] - 2026-05-22
+
+### 🚀 FEATURE: Autenticación Unificada y Onboarding Radial (UX Sprint)
+
+#### Portal de Anunciantes (Demand Gate)
+- **Login Unificado Glassmorphic**: Refactorizado `apps/advertiser/pages/advertiser/login.tsx` con selector de pestañas deslizante (Iniciar Sesión / Registrar Empresa), inputs optimizados para touch, y toggle visual de contraseña (Eye/EyeOff). Estética Industrial Terminal oscura con resplandores `#FFD400`.
+- **Wizard de Onboarding de 3 Pasos** en `apps/advertiser/pages/advertiser/dashboard.tsx`:
+  - **Paso 1**: Selección táctil de ciudad objetivo (Santo Domingo vs Santiago).
+  - **Paso 2**: Slider de presupuesto (RD$5,000–RD$150,000) con simulación en vivo contra `/api/proxy/campaigns/simulate-budget` y fallback matemático client-side.
+  - **Paso 3**: Proyección de impacto (Alcance único, Impresiones, Pantallas asignadas).
+  - Persistencia con `localStorage` key `tad_adv_onboarded_${advertiserId}`. Sesiones subsecuentes omiten el modal.
+
+#### Portal de Conductores (Mobile Gateway)
+- **Touch-Native Inputs**: Campo de cédula/teléfono migrado a `type="tel"` en `apps/driver/pages/driver/login.tsx` para activar teclados numéricos nativos en tablets Android.
+- **Onboarding Bancario Offline-First** en `apps/driver/pages/driver/dashboard.tsx` (3 pasos):
+  - **Paso 1 – Contrato v2.0**: Aceptación formal del servicio HaaS, membresía RD$6,000 + ITBIS 18%, y Fórmula V12: `RD$ = (min(Ads, 15) × 500) + (CPA_Sales × 500)`.
+  - **Paso 2 – Banco Dominicano**: Botones táctiles grandes para Banco Popular, BHD León y Banreservas.
+  - **Paso 3 – Cuenta Bancaria**: Inputs `type="tel"` para número de cuenta y nombre del titular.
+- **Estrategia Offline-First**: Datos persisten en `localStorage` (`tad_offline_bank_details`, `tad_drv_bank_setup_done`). Si `navigator.onLine === false` activa `tad_pending_bank_sync = true` y banner naranja sticky. Listener `window.addEventListener('online', ...)` auto-sincroniza con `POST /drivers/me/bank-details` al recuperar conexión.
+
+#### Portal Administrativo (Master Console)
+- **Tour de Inducción de 3 Pasos** (primera sesión) en `apps/admin/pages/admin/dashboard/index.tsx`:
+  - **Paso 1**: Bienvenida al Command Center TAD.
+  - **Paso 2**: GPS en vivo → ruta `/admin/tracking` con CTA directo.
+  - **Paso 3**: Semáforos de salud (Verde/Amarillo/Rojo) de conectividad y batería → ruta `/admin/monitoring`.
+  - Detección via `localStorage` key `tad_admin_onboarded`. Botón para re-activar el tour en la sidebar.
+- **Procesador de Nómina por Lotes Secuenciales** (`PayrollBatcher` component):
+  - 15 conductores simulados divididos en **3 lotes secuenciales de 5** con pausa de 800ms entre lotes (RAM Safeguard para VPS de 512MB).
+  - Barra de progreso global con indicadores por lote (Lote 1/2/3).
+  - Grid de 15 mini-cards de conductores con estados `pending → processing → done` animados.
+  - Terminal de logs en tiempo real con timestamps, mensajes de éxito y advertencias de pausa inter-lote.
+  - Resumen final con total desembolsado calculado con Fórmula V12.
+
+---
+
 ## [v12.1.1] - 2026-04-27
+
 
 ### 🛡️ Driver Critical Patch (Easypanel + Offline-First)
 

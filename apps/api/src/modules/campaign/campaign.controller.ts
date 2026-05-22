@@ -11,6 +11,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { VideoGeneratorService } from './video-generator.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Controller('campaigns')
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
 export class CampaignController {
@@ -94,7 +108,8 @@ export class CampaignController {
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async updateCampaign(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
@@ -134,7 +149,8 @@ export class CampaignController {
     @Body() props: { logoUrl: string; brandColor: string; primaryText: string; secondaryText: string },
     @Req() req: any
   ) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
@@ -148,7 +164,8 @@ export class CampaignController {
   @Post(':id/assets')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async addMediaAsset(@Param('id') id: string, @Body() dto: AddMediaAssetDto, @Req() req: any) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
@@ -163,11 +180,12 @@ export class CampaignController {
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getAllCampaigns(@Req() req: any) {
-    const { role, entityId } = req.user;
-    if (role === 'ADVERTISER') {
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
+    if (role === 'ADVERTISER' && entityId) {
        return this.prisma.campaign.findMany({
          where: { advertiserId: entityId },
-         include: { mediaAssets: true, media: true },
+         include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
          orderBy: { createdAt: 'desc' },
        });
     }
@@ -497,7 +515,8 @@ export class CampaignController {
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async deleteCampaign(@Param('id') id: string, @Req() req: any) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
@@ -519,7 +538,8 @@ export class CampaignController {
   @Get('reports/summary')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getReportsSummary(@Req() req: any) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const advertiserId = role === 'ADVERTISER' ? entityId : undefined;
     return this.campaignService.getCampaignReports(advertiserId);
   }
@@ -534,7 +554,8 @@ export class CampaignController {
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignById(@Param('id') id: string, @Req() req: any) {
-    const { role, entityId } = req.user;
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
     
     if (!campaign) throw new NotFoundException('Campaña no encontrada');

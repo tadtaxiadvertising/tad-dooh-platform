@@ -1,7 +1,9 @@
 import { Controller, Post, Body, Delete, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { SimulationService, ScenarioConfig } from './simulation.service';
 import { Public } from '../auth/decorators/public.decorator';
 
+@SkipThrottle()
 @Public()
 @Controller('simulation')
 export class SimulationController {

@@ -78,24 +78,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // 2. Intentar petición al backend
-    // FIX M-4: Whitelist de headers — solo headers seguros se reenvían al backend
-    const allowedHeaders = ['authorization', 'content-type', 'x-device-id', 'accept', 'user-agent'];
-    const forwardHeaders: Record<string, string> = {};
-    for (const key of allowedHeaders) {
-      if (req.headers[key]) {
-        forwardHeaders[key] = req.headers[key] as string;
+    const getForwardHeaders = (target: string) => {
+      const headers = { ...req.headers } as Record<string, string>;
+      
+      // 🔑 Reenviar el token al backend
+      let authHeader = req.headers.authorization || req.headers.Authorization;
+      
+      if (!authHeader) {
+        const cookieToken = req.cookies['sb-access-token'];
+        if (cookieToken) {
+          authHeader = `Bearer ${cookieToken}`;
+        }
       }
-    }
 
-    // 🛡️ SEGURIDAD y OPTIMIZACIÓN
-    forwardHeaders['accept-encoding'] = 'identity';
-    forwardHeaders['connection'] = 'close';
-    forwardHeaders['host'] = new URL(targetUrl).host;
+      if (authHeader) {
+        delete headers['authorization'];
+        delete headers['Authorization'];
+        headers['Authorization'] = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+      }
+      
+      // 🛡️ SEGURIDAD y OPTIMIZACIÓN
+      delete headers['accept-encoding'];
+      headers['accept-encoding'] = 'identity';
+      delete headers['connection'];
+      headers['connection'] = 'close';
+      delete headers['content-length'];
+      
+      headers['host'] = new URL(target).host;
+      
+      return headers;
+    };
 
     const fetchOptions: RequestInit = {
       method: req.method || 'GET',
-      headers: forwardHeaders,
+      headers: getForwardHeaders(targetUrl),
       signal: AbortSignal.timeout(60000),
     };
 
@@ -105,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // --- REGLA DE RESILIENCIA TAD ---
-    let backendResponse;
+    let backendResponse: Response | undefined;
     try {
       backendResponse = await fetch(targetUrl, fetchOptions);
     } catch (fetchError: unknown) {
@@ -113,24 +129,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
       const isNetworkError = errorMessage.includes('fetch failed') || 
                             errorMessage.includes('ENOTFOUND') || 
-                            errorMessage.includes('ECONNREFUSED');
+                            errorMessage.includes('ECONNREFUSED') ||
+                            errorMessage.includes('ETIMEDOUT');
       
       if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
         const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
+        console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage}`);
         
-        // El body de la original (req) ya pudo haber sido consumido si era POST/PUT. 
-        // En Next.js API routes, req es un stream. Si falló el primer fetch, 
-        // el reintento de un POST podría fallar si no clonamos o manejamos el stream.
-        // Pero para la mayoría de GETs de dashboard, esto funcionará perfecto.
-        backendResponse = await fetch(fallbackUrl, fetchOptions);
+        // REGENAR HEADERS: El host cambió a la URL pública
+        fetchOptions.headers = getForwardHeaders(fallbackUrl);
+        
+        try {
+          backendResponse = await fetch(fallbackUrl, fetchOptions);
+        } catch (fallbackError: unknown) {
+          console.error(`[PROXY] ❌ Fallback también falló: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+          throw fallbackError;
+        }
       } else {
-        throw fetchError; // Si no es un error de red o ya estamos en el fallback, lanzamos el error
+        throw fetchError; 
       }
     }
 
+    // Verificación de seguridad para evitar "Cannot read properties of undefined (reading 'headers')"
+    if (!backendResponse) {
+      throw new Error('Backend response is undefined after all attempts');
+    }
+
     if (backendResponse.status === 401) {
-      console.error(`[PROXY 401] Backend rechazó credenciales: ${pathStr}`);
+      const hasOriginalHeader = !!(req.headers.authorization || req.headers.Authorization);
+      const hasCookieToken = !!req.cookies['sb-access-token'];
+      const authStatus = hasOriginalHeader ? 'PRESENTE' : (hasCookieToken ? 'FALLBACK_COOKIE' : 'AUSENTE');
+      
+      console.error(`[PROXY 401] Backend rechazó credenciales: ${pathStr} | Auth: ${authStatus}`);
     }
 
     // Headers CORS de respuesta

@@ -346,10 +346,29 @@ const MapView: React.FC<MapViewProps> = ({
   onSyncCommand,
 }) => {
   const [ready, setReady] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => { 
     setReady(true); 
   }, []);
+
+  // Handle map container resizing
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      mapInstance.invalidateSize();
+    });
+
+    const container = mapInstance.getContainer();
+    if (container) {
+      resizeObserver.observe(container);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [mapInstance]);
 
   // Función Ray-Casting para detectar punto en polígono
   const isPointInPolygon = useCallback((lat: number, lng: number) => {
@@ -412,12 +431,13 @@ const MapView: React.FC<MapViewProps> = ({
   );
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative group/map">
       <MapContainer
         center={center}
         zoom={zoom}
         maxZoom={18}
         minZoom={7}
+        ref={setMapInstance}
         style={{ height: '100%', width: '100%', background: '#0a0a0b' }}
         zoomControl={false}
       >

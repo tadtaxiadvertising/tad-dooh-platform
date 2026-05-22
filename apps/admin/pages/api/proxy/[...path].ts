@@ -23,7 +23,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const rawBackendUrl = (
   process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL
-  || 'https://tad-api.rewvid.easypanel.host'
+  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
 );
 
 // Strip any trailing /api, /api/v1, or / to get a clean base
@@ -85,7 +85,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const headers = { ...req.headers } as Record<string, string>;
       
       // 🔑 Reenviar el token al backend (Normalizar a 'Authorization' con 'A' mayúscula)
-      const authHeader = req.headers.authorization || req.headers.Authorization;
+      let authHeader = req.headers.authorization || req.headers.Authorization;
+      
+      // 🛡️ FALLBACK: Si no hay header Authorization, intentar extraerlo de la cookie 'sb-access-token'
+      // Esto resuelve casos donde el interceptor del cliente falla o hay condiciones de carrera tras el login.
+      if (!authHeader) {
+        const cookieToken = req.cookies['sb-access-token'];
+        if (cookieToken) {
+          authHeader = `Bearer ${cookieToken}`;
+        }
+      }
+
       if (authHeader) {
         delete headers['authorization'];
         delete headers['Authorization'];
@@ -117,7 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // --- REGLA DE RESILIENCIA TAD ---
-    let backendResponse;
+    let backendResponse: Response | undefined;
     try {
       backendResponse = await fetch(targetUrl, fetchOptions);
     } catch (fetchError: unknown) {
@@ -125,25 +135,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
       const isNetworkError = errorMessage.includes('fetch failed') || 
                             errorMessage.includes('ENOTFOUND') || 
-                            errorMessage.includes('ECONNREFUSED');
+                            errorMessage.includes('ECONNREFUSED') ||
+                            errorMessage.includes('ETIMEDOUT');
       
       if (isNetworkError && BACKEND_BASE.includes('api:3000')) {
-        const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
+        const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
+        console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage}`);
         
         // REGENAR HEADERS: El host cambió a la URL pública
         fetchOptions.headers = getForwardHeaders(fallbackUrl);
         
-        backendResponse = await fetch(fallbackUrl, fetchOptions);
+        try {
+          backendResponse = await fetch(fallbackUrl, fetchOptions);
+        } catch (fallbackError: unknown) {
+          console.error(`[PROXY] ❌ Fallback también falló: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+          throw fallbackError;
+        }
       } else {
         throw fetchError; 
       }
     }
 
+    // Verificación de seguridad para evitar "Cannot read properties of undefined (reading 'headers')"
+    if (!backendResponse) {
+      throw new Error('Backend response is undefined after all attempts');
+    }
+
     if (backendResponse.status === 401) {
       // 401 Unauthorized log justified for security auditing
-      const authHeader = req.headers.authorization ? 'PRESENTE' : 'AUSENTE';
-      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authHeader}`);
+      const hasOriginalHeader = !!(req.headers.authorization || req.headers.Authorization);
+      const hasCookieToken = !!req.cookies['sb-access-token'];
+      const authStatus = hasOriginalHeader ? 'PRESENTE' : (hasCookieToken ? 'FALLBACK_COOKIE' : 'AUSENTE');
+      
+      console.error(`[PROXY 401] Backend rechazó credenciales para: ${pathStr} | AuthHeader: ${authStatus}`);
     }
 
     // Headers CORS de respuesta

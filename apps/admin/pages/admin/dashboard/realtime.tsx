@@ -377,21 +377,24 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
         <div
           onClick={e => e.stopPropagation()}
           className={clsx(
-            'h-full w-[380px] flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]',
+            'h-full flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative z-[1001]',
             'bg-[#0e0f14]/90 backdrop-blur-3xl border-l border-white/[0.04] flex flex-col',
-            sidebarOpen ? 'translate-x-0' : 'translate-x-full',
+            sidebarOpen ? 'w-[380px]' : 'w-0 border-none',
           )}
         >
-          {/* Tab: pull handle */}
+          {/* Tab: pull handle (Moved outside or adjusted to be always visible) */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-20 bg-[#0e0f14]/80 backdrop-blur-2xl border-y border-l border-white/5 rounded-l-2xl flex items-center justify-center text-emerald-500/40 hover:text-emerald-400 transition-all group shadow-xl"
+            className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-20 bg-[#0e0f14]/80 backdrop-blur-2xl border-y border-l border-white/5 rounded-l-2xl flex items-center justify-center text-emerald-500/40 hover:text-emerald-400 transition-all group shadow-xl z-[1002]"
           >
             {sidebarOpen
               ? <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               : <ChevronRight className="w-5 h-5 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
             }
           </button>
+
+          {/* Sidebar content with opacity transition */}
+          <div className={clsx("flex flex-col h-full w-[380px] transition-opacity duration-300", sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
 
           {/* Sidebar header */}
           <div className="p-5 border-b border-white/[0.05] flex-shrink-0">
@@ -542,6 +545,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
           </div>
         </div>
       </div>
+    </div>
 
       {/* ── Advertiser coverage table ─────────── */}
       <div className="flex-shrink-0 border-t border-white/5 bg-black/20">

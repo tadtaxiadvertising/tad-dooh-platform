@@ -59,5 +59,6 @@ COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/ap
 USER nestjs
 
 EXPOSE 3000
-CMD ["npm", "run", "start:prod", "-w", "apps/api"]
+WORKDIR /usr/src/app/apps/api
+CMD ["node", "dist/main.js"]
 

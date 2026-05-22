@@ -49,7 +49,12 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Media & Temporary
+# Media & Temporary (Allowing public assets, blocking general media)
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.jpeg
+!**/public/**/*.svg
+!**/public/**/*.ico
 **/*.mp4
 **/*.webm
 **/*.png

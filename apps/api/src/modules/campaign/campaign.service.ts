@@ -7,6 +7,20 @@ import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { AuthUser } from '../auth/auth.types';
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class CampaignService {
   private readonly logger = new Logger(CampaignService.name);
@@ -375,7 +389,7 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
-      include: { mediaAssets: true, media: true },
+      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -383,7 +397,7 @@ export class CampaignService {
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: true, media: true },
+      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
     });
   }
 
@@ -437,7 +451,7 @@ export class CampaignService {
         activeCampaigns = await this.prisma.campaign.findMany({
           where: { id: { in: campaignIds } },
           include: {
-            mediaAssets: true,
+            mediaAssets: { select: mediaAssetSafeSelect },
             media: true,
             videos: true,
             advertiserRef: true,
@@ -461,7 +475,7 @@ export class CampaignService {
           ]
         } as any,
         include: {
-          mediaAssets: true,
+          mediaAssets: { select: mediaAssetSafeSelect },
           media: true,
           videos: true,
           advertiserRef: true,

@@ -140,6 +140,10 @@ const config = {
         "fromEnvVar": null,
         "value": "windows",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "linux-musl-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
@@ -165,8 +169,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./simulator.db\"\n}\n\nmodel LatencyLog {\n  id         Int      @id @default(autoincrement())\n  driverId   String?\n  endpoint   String\n  latencyMs  Int\n  statusCode Int\n  timestamp  DateTime @default(now())\n\n  @@index([timestamp])\n}\n\nmodel SimulationConfig {\n  id          Int      @id @default(1)\n  driverCount Int      @default(150)\n  running     Boolean  @default(false)\n  updatedAt   DateTime @updatedAt\n}\n",
-  "inlineSchemaHash": "ae72b3149576195e7b19a0ed689aa44df93396e1563a8dd8129fb183f8cb93a9",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/client\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./simulator.db\"\n}\n\nmodel LatencyLog {\n  id         Int      @id @default(autoincrement())\n  driverId   String?\n  endpoint   String\n  latencyMs  Int\n  statusCode Int\n  timestamp  DateTime @default(now())\n\n  @@index([timestamp])\n}\n\nmodel SimulationConfig {\n  id          Int      @id @default(1)\n  driverCount Int      @default(150)\n  running     Boolean  @default(false)\n  updatedAt   DateTime @updatedAt\n}\n",
+  "inlineSchemaHash": "cb96ec69b7f3b7f0912887c2e5eb60a788c517729687c3ef9c977ffc3216c6ed",
   "copyEngine": true
 }
 config.dirname = '/'

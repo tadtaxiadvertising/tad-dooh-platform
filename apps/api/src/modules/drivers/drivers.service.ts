@@ -213,11 +213,9 @@ export class DriversService {
     agreementVersion?: string;
     referredBy?: string;
   }) {
-    let hashedPassword: string | null = null;
-    if (data.password) {
-      // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
-      hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    }
+    const plainPassword = data.password?.trim() || `Tad-${data.phone.replace(/\D/g, '')}!`;
+    // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
+    const hashedPassword = await bcrypt.hash(plainPassword, BCRYPT_ROUNDS);
 
     // SANEAMIENTO DE DATOS: Campos opcionales únicos deben ser null si están vacíos
     const sanitizedCedula = data.cedula?.trim() || null;
@@ -259,7 +257,10 @@ export class DriversService {
       }
     }
 
-    return driver;
+    return {
+      ...driver,
+      generatedPassword: data.password ? null : plainPassword,
+    };
   }
 
   async login(phone: string, pass: string) {

@@ -217,6 +217,15 @@ export function useTelemetry(): UseTelemetryReturn {
       const driverId = user?.entityId || 'unknown';
       const deviceId = localStorage.getItem('TAD_DEVICE_ID') || 'unknown';
 
+      // Evita enviar telemetría inválida durante onboarding/login sin identidad aún resuelta.
+      if (driverId === 'unknown' || deviceId === 'unknown') {
+        appendOfflineQueue(combinedBatch);
+        setBatchCount(0);
+        setOfflineCount(readOfflineQueue().length);
+        setConnectionStatus('offline');
+        return;
+      }
+
       const res = await postTrackBatch(apiBase, driverId, deviceId, combinedBatch);
 
       if (res.status === 402) {

@@ -4,6 +4,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class AssetsService {
   private readonly logger = new Logger(AssetsService.name);
@@ -30,7 +44,7 @@ export class AssetsService {
         endDate: { gte: now },
       },
       include: {
-        mediaAssets: true,
+        mediaAssets: { select: mediaAssetSafeSelect },
       },
       orderBy: {
         updatedAt: 'desc',

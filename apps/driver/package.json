@@ -23,7 +23,9 @@
     "@tad/store": "0.1.0",
     "@tad/ui": "0.1.0",
     "@tailwindcss/postcss": "^4.2.1",
+    "@tanstack/query-sync-storage-persister": "^5.100.11",
     "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-query-persist-client": "^5.100.11",
     "@turf/turf": "^7.3.4",
     "@types/leaflet": "^1.9.21",
     "@types/leaflet.heat": "^0.2.5",
@@ -50,6 +52,7 @@
     "swr": "^2.4.1",
     "tailwind-merge": "^3.0.0",
     "tailwindcss": "^4.0.0",
+    "zod": "^3.23.8",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

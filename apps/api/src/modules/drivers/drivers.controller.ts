@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Headers, ForbiddenException, Req, UseGuards, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { DriversService } from './drivers.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -61,12 +61,15 @@ export class DriversController {
     contractAccepted?: boolean;
     agreementVersion?: string;
     referredBy?: string;
-  }) {
+  }, @Req() req?: any) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException('fullName y phone son obligatorios');
     }
 
-    if (!body.contractAccepted) {
+    const isAdmin = req?.user?.role === 'ADMIN' || req?.user?.role === 'admin';
+    const isContractAccepted = isAdmin ? true : body.contractAccepted;
+
+    if (!isAdmin && !isContractAccepted) {
       throw new BadRequestException('Debes aceptar el contrato de servicio para unirte a TAD');
     }
 
@@ -75,6 +78,7 @@ export class DriversController {
 
     return this.driversService.create({
       ...body,
+      contractAccepted: isContractAccepted,
       cedula: sanitize(body.cedula),
       taxiPlate: sanitize(body.taxiPlate),
       licensePlate: sanitize(body.licensePlate),
@@ -176,7 +180,13 @@ export class DriversController {
   @Get('tablet/:tabletId/access')
   @Public()
   async checkTabletAccess(@Param('tabletId') tabletId: string) {
-    return this.driversService.checkTabletAccess(tabletId);
+    const result = await this.driversService.checkTabletAccess(tabletId);
+
+    if (!result.access && result.httpStatus === HttpStatus.PAYMENT_REQUIRED) {
+      throw new HttpException(result, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    return result;
   }
 
   /**

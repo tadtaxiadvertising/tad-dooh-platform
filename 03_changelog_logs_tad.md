@@ -1,7 +1,7 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-04-23
+> **Última Actualización**: 2026-05-21
 
 ---
 
@@ -39,6 +39,41 @@
   - Resumen final con total desembolsado calculado con Fórmula V12.
 
 ---
+
+## [v12.1.3] - 2026-05-21
+
+### 🛡️ SECURITY / 🎨 UI: Driver Onboarding Hardening & BankForm Premium Redesign
+
+- **Fix CRÍTICO — Bypass de Onboarding (CVE-interno TAD-001)**:
+  - El botón X del `DriverOnboardingModal` ahora es **no-operable** cuando el `stage` es `'contract'` o `'bank'`. Los pasos obligatorios muestran un ícono X gris inactivo con tooltip informativo.
+  - `closeOnboarding()` valida el estado actual del stage antes de ejecutar el cierre; retorna sin efecto si el conductor intenta cerrar un paso obligatorio desde el cliente.
+  - El `useEffect` de control del modal ahora incluye `hubData?.contractAccepted` y `hubData?.bankAccountConfigured` en sus dependencias, garantizando que el modal se **re-abra automáticamente** si los pasos mandatorios están incompletos, aunque el conductor haya marcado `hasSeenOnboarding='1'` en `localStorage`.
+- **Fix — Divulgación ITBIS**: El paso `payment` del modal ahora muestra explícitamente `(ITBIS 18% incluido)` junto al monto de RD$6,000.
+- **Fix — Versión**: Footer del Driver Dashboard corregido de `v11.0.0` a `v12.0.0`.
+- **UI PREMIUM — BankForm.tsx** (Rediseño completo):
+  - Nuevo diseño glassmorphic-industrial coherente con el resto del portal de conductores.
+  - Selector de banco con **tarjetas interactivas** (BPD, BHD, BR, Scotiabank, APAP) en lugar de `<select>` genérico. Acentos amarillo TAD al seleccionar.
+  - **Step track indicator** de 5 pasos con colores de estado (amarillo = activo, verde = completado, gris oscuro = pendiente).
+  - Inputs con `inputMode="numeric"` / `type="tel"` para mejor UX en tablets Android.
+  - **Pantalla de confirmación offline** con animación de éxito cuando el formulario se encola sin red.
+  - Spinner de loading en el botón "Guardar" durante el submit.
+  - Banner de alerta `WifiOff` cuando el dispositivo está sin conexión.
+- **Archivos tocados**:
+  - `apps/driver/pages/driver/dashboard.tsx`
+  - `apps/driver/components/BankForm.tsx`
+
+## [v12.1.2] - 2026-05-20
+
+### 🎨 UI/UX & AUTH: Refactorización Premium de Portales (Glassmorphism)
+- **Cambio**: Rediseño completo de las pantallas de login (Admin, Anunciante y Conductor) unificando la identidad visual hacia un Glassmorphism Oscuro con acentos en TAD Yellow (#facc15).
+- **Mejoras UX/UI**: Detección de Bloqueo de Mayúsculas, Toggle de visibilidad de contraseña, protección *double-submit* mediante loaders nativos, y banners de error explícitos.
+- **Lógica de Autenticación**:
+  - `Dashboard Admin` y `Portal Anunciante` centralizados en `PortalAuth` asegurando el flujo nativo JWT/Cookies de Supabase (uso estricto de `email`).
+  - `Portal Conductor` refactorizado en un componente dedicado sin dependencias de `PortalAuth`, garantizando el uso exclusivo de `phone` (tipo `tel`) y enrutando correctamente a `/api/proxy/drivers/login`.
+- **Archivos tocados**:
+  - `packages/ui/components/PortalAuth.tsx`
+  - `apps/driver/pages/driver/login.tsx`
+  - `apps/advertiser/pages/login.tsx`
 
 ## [v12.1.1] - 2026-04-27
 

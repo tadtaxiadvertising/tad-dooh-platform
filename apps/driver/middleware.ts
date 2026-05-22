@@ -18,7 +18,10 @@ export function middleware(request: NextRequest) {
 
   // 1. Root landing redirect
   if (pathname === '/') {
-    return NextResponse.redirect(new URL('/driver/dashboard', request.url));
+    if (session && decodeTokenRole(session) === 'DRIVER') {
+      return NextResponse.redirect(new URL('/driver/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/driver/login', request.url));
   }
 
   // 2. Auth routes
@@ -29,7 +32,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Protected routes
+  // 3. Auth Callback bypass
+  if (pathname.includes('/auth/callback')) {
+    return NextResponse.next();
+  }
+
+  // 4. Protected routes
   const isPublicRoute = pathname === '/driver/onboarding';
 
   if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'DRIVER')) {

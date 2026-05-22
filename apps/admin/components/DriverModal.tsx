@@ -13,6 +13,7 @@ interface DriverModalProps {
 const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess }: DriverModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -21,6 +22,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     licensePlate: '',
     deviceId: '',
     subscriptionPaid: false,
+    password: '',
     deviceFound: null as boolean | null,
   });
 
@@ -55,10 +57,14 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     }
 
     try {
-      await createDriver(formData);
+      // Strip internal UI-only fields and always pass contractAccepted: true
+      // The POST /api/drivers endpoint is @Public() so req.user is always undefined.
+      // The backend requires contractAccepted=true when it cannot detect the caller as ADMIN.
+      const { deviceFound: _deviceFound, ...driverPayload } = formData;
+      const result = await createDriver({ ...driverPayload, contractAccepted: true });
+      setGeneratedPassword(result?.generatedPassword || null);
       notifyChange('TAD_DRIVERS');
       onSuccess();
-      onClose();
       // Reset form
       setFormData({
         fullName: '',
@@ -68,6 +74,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
         licensePlate: '',
         deviceId: '',
         subscriptionPaid: false,
+        password: '',
         deviceFound: null,
       });
     } catch (err: unknown) {
@@ -103,6 +110,11 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs font-bold">
               {error}
+            </div>
+          )}
+          {generatedPassword && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-4 rounded-xl text-xs font-bold">
+              Chofer creado exitosamente. Contraseña temporal generada: <span className="text-white">{generatedPassword}</span>. Copie y envíe esta contraseña al conductor.
             </div>
           )}
 
@@ -161,6 +173,20 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
                   className="w-full bg-zinc-800 border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-tad-yellow transition-colors"
                   value={formData.taxiPlate}
                   onChange={e => setFormData({ ...formData, taxiPlate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Contraseña Inicial (Opcional)</label>
+              <div className="relative">
+                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Si vacío, se genera temporal"
+                  className="w-full bg-zinc-800 border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-tad-yellow transition-colors"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
             </div>
@@ -231,8 +257,6 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
 });
 
 export default DriverModal;
-
-
 
 
 

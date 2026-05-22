@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
@@ -8,6 +9,7 @@ import { SubscriptionGuard } from '../drivers/guards/subscription.guard';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { BulkSyncDto } from './dto/bulk-sync.dto';
 
+@SkipThrottle()
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
 export class DeviceController {

@@ -59,5 +59,22 @@ services:
     volumes:
       - tad-redis-data:/data
 
+  tad-player:
+    build:
+      dockerfile: "Dockerfile.player"
+    deploy:
+      resources:
+        limits:
+          memory: 128M   # Pure nginx static — no Node.js runtime
+          cpus: '0.25'
+    # No env vars needed: pure Nginx serving pre-built Vite SPA static files
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s  # nginx starts in <1s, no warmup needed
+    restart: unless-stopped
+
 volumes:
   tad-redis-data:

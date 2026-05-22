@@ -23,7 +23,7 @@ const EducationCards: React.FC<EducationCardsProps> = ({ onNext }) => {
     },
     {
       title: 'Transparencia Total',
-      description: 'Tarifa única de RD$ 1,500 mensuales por cada pantalla de 15 segundos.',
+      description: 'Tarifa única de RD$ 1,500 mensuales por cada pantalla de 30 segundos.',
       icon: <ShieldCheck className="w-8 h-8 text-[#fad400]" />,
       delay: 0.3
     }

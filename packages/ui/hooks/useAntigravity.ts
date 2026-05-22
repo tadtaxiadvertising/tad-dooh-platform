@@ -2,10 +2,14 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@tad/services";
 
-export const useAntigravity = () => {
+export const useAntigravity = (enabled = true) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     // Escuchar cambios en TODA la base de datos (o tablas críticas)
     const channel = supabase
       .channel('antigravity_global_sync')
@@ -43,7 +47,7 @@ export const useAntigravity = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [enabled, queryClient]);
 };
 
 

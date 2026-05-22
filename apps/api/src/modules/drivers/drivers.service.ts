@@ -23,21 +23,81 @@ export class DriversService {
     private readonly payrollAudit: PayrollAuditService
   ) {}
 
+  private hasBankAccountConfigured(bankAccount: unknown): boolean {
+    if (!bankAccount || typeof bankAccount !== 'object' || Array.isArray(bankAccount)) {
+      return false;
+    }
+
+    const candidate = bankAccount as {
+      banco?: unknown;
+      cuenta?: unknown;
+      cedula?: unknown;
+      tipo?: unknown;
+    };
+
+    return Boolean(candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo);
+  }
+
   /**
    * REGLA DE NEGOCIO 1: Validar acceso a la publicidad
-   * [ACTUALIZADO]: El contenido se transmite siempre sin restricciones.
+   * [ACTUALIZADO]: Morosos reciben kill-switch 402; tablets sin conductor van a setup.
    */
   async checkTabletAccess(tabletId: string) {
     const device = await this.prisma.device.findUnique({
       where: { id: tabletId },
-      include: { driver: true }
+      include: {
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            status: true,
+            subscriptionPaid: true,
+            subscriptionEnd: true,
+            blockedAt: true,
+          },
+        },
+      },
     });
 
     if (!device || !device.driver) {
-      return { access: false, action: 'SHOW_SETUP_SCREEN', message: 'Tablet no asignada a un chofer.' };
+      return {
+        access: false,
+        action: 'SHOW_SETUP_SCREEN',
+        message: 'Tablet no asignada a un chofer.',
+        reason: 'NO_DRIVER_ASSIGNED',
+      };
     }
 
-    return { access: true, action: 'PLAY_ADS' };
+    const driver = device.driver;
+    const now = Date.now();
+    const subscriptionExpired = !!driver.subscriptionEnd && driver.subscriptionEnd.getTime() < now;
+    const delinquent =
+      !driver.subscriptionPaid ||
+      subscriptionExpired ||
+      driver.status === BUSINESS_RULES.STATUS.DRIVER.SUSPENDED ||
+      driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL;
+
+    if (delinquent) {
+      return {
+        access: false,
+        action: 'KILL_SWITCH',
+        httpStatus: 402,
+        message: 'Conductor moroso. La PWA debe congelarse hasta regularizar el pago.',
+        reason: subscriptionExpired ? 'SUBSCRIPTION_EXPIRED' : 'SUBSCRIPTION_PENDING',
+        driverId: driver.id,
+        driverStatus: driver.status,
+        blockedAt: driver.blockedAt,
+        subscriptionEnd: driver.subscriptionEnd,
+      };
+    }
+
+    return {
+      access: true,
+      action: 'PLAY_ADS',
+      driverId: driver.id,
+      driverName: driver.fullName,
+    };
   }
 
   /**
@@ -153,11 +213,9 @@ export class DriversService {
     agreementVersion?: string;
     referredBy?: string;
   }) {
-    let hashedPassword: string | null = null;
-    if (data.password) {
-      // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
-      hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    }
+    const plainPassword = data.password?.trim() || `Tad-${data.phone.replace(/\D/g, '')}!`;
+    // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
+    const hashedPassword = await bcrypt.hash(plainPassword, BCRYPT_ROUNDS);
 
     // SANEAMIENTO DE DATOS: Campos opcionales únicos deben ser null si están vacíos
     const sanitizedCedula = data.cedula?.trim() || null;
@@ -199,7 +257,10 @@ export class DriversService {
       }
     }
 
-    return driver;
+    return {
+      ...driver,
+      generatedPassword: data.password ? null : plainPassword,
+    };
   }
 
   async login(phone: string, pass: string) {
@@ -245,6 +306,11 @@ export class DriversService {
       role: 'DRIVER',
       entityId: user.id,
       deviceId: device?.deviceId || null,
+      subscriptionPaid: user.subscriptionPaid,
+      contractAccepted: user.contractAccepted,
+      agreementVersion: user.agreementVersion || null,
+      onboardingStatus: user.onboardingStatus,
+      bankAccountConfigured: this.hasBankAccountConfigured(user.bankAccount),
     };
   }
 
@@ -555,6 +621,10 @@ export class DriversService {
         : null,
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid,
+      contractAccepted: Boolean(driver.contractAccepted),
+      agreementVersion: driver.agreementVersion || null,
+      onboardingStatus: driver.onboardingStatus || 'UNKNOWN',
+      bankAccountConfigured: this.hasBankAccountConfigured(driver.bankAccount),
       deviceId,
     };
   }

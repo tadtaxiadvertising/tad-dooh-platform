@@ -1,6 +1,7 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Link from 'next/link';
 import axios from 'axios';
 import { Phone, Lock, Eye, EyeOff, AlertCircle, X, CheckCircle, ArrowRight, LogIn } from 'lucide-react';
 import { ErrorBoundary } from '@tad/ui';
@@ -171,6 +172,12 @@ export default function DriverLoginPage() {
               )}
             </button>
           </form>
+          <p className="text-center text-sm text-zinc-400 mt-5">
+            ¿Quieres unirte a la red TAD?{' '}
+            <Link href="/register" className="text-yellow-400 hover:text-yellow-300 font-semibold">
+              Regístrate aquí
+            </Link>
+          </p>
         </div>
       </div>
     </ErrorBoundary>

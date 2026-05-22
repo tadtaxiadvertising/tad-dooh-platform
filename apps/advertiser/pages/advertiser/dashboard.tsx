@@ -24,7 +24,6 @@ import {
 import { useAuth } from '@tad/ui';
 import { api, getAdvertiserPortalData } from '@tad/services/api';
 import { Toaster, toast } from 'sonner';
-import api from "@tad/services";
 import clsx from 'clsx';
 
 const getAdvertiserOnboardingKey = (entityId: string) => `tad_advertiser_onboarding_seen_v2_${entityId}`;

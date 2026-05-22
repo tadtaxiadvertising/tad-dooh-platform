@@ -3,6 +3,9 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS, BUSINESS_RULES, JWT_EXPIRY } from '../../common/constants/business-rules';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -197,6 +200,61 @@ export class AuthService {
     return {
       token: this.jwtService.sign(payload, { expiresIn: '5m' }),
       expiresIn: 300,
+    };
+  }
+
+  async registerDriver(data: {
+    name: string;
+    phone: string;
+    password: string;
+    vehicleModel?: string;
+    licensePlate?: string;
+  }) {
+    const existingDriver = await this.prisma.driver.findUnique({ where: { phone: data.phone } });
+    if (existingDriver) {
+      throw new HttpException('Ya existe un chofer con ese teléfono', HttpStatus.CONFLICT);
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+    const driver = await this.prisma.driver.create({
+      data: {
+        fullName: data.name,
+        phone: data.phone,
+        taxiPlate: data.vehicleModel || null,
+        licensePlate: data.licensePlate || null,
+        password: hashedPassword,
+        status: BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+        subscriptionPaid: false,
+        contractAccepted: false,
+        onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
+      },
+    });
+
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return {
+        success: true,
+        message: 'Registro completado. Inicia sesión para continuar.',
+        driverId: driver.id,
+      };
+    }
+
+    const token = jwt.sign(
+      {
+        sub: driver.id,
+        phone: driver.phone,
+        role: 'DRIVER',
+        app_metadata: { role: 'DRIVER', entityId: driver.id },
+      },
+      jwtSecret,
+      { expiresIn: JWT_EXPIRY },
+    );
+
+    return {
+      success: true,
+      message: 'Registro completado exitosamente.',
+      access_token: token,
+      driverId: driver.id,
     };
   }
 }

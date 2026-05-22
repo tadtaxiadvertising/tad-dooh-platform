@@ -265,8 +265,8 @@ export default function DriverOnboarding() {
                        <span>RD$500 /u</span>
                     </div>
                     <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
-                       <span>Disponibilidad (100 GPS pts)</span>
-                       <span>RD$500</span>
+                       <span>CPA por Venta Validada</span>
+                       <span>RD$500 /u</span>
                     </div>
                     <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
                        <span>Starter Kit / Membresía Anual</span>

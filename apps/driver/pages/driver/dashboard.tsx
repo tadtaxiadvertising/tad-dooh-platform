@@ -166,13 +166,25 @@ function DriverOnboardingModal({
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Driver Readiness</p>
             <h3 className="text-lg font-black text-white">Preparación operativa del conductor</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-full bg-white/5 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
-            aria-label="Cerrar onboarding"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {/* X solo disponible en pasos no obligatorios (payment / ready) */}
+          {stage === 'payment' || stage === 'ready' ? (
+            <button
+              onClick={onClose}
+              className="rounded-full bg-white/5 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+              aria-label="Cerrar onboarding"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <div
+              className="rounded-full bg-white/[0.03] p-2 text-zinc-800 cursor-not-allowed"
+              role="img"
+              title="Debes completar este paso obligatorio antes de continuar"
+              aria-label="Cierre bloqueado — paso obligatorio"
+            >
+              <X className="h-4 w-4" />
+            </div>
+          )}
         </div>
 
         <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
@@ -234,10 +246,15 @@ function DriverOnboardingModal({
                 </div>
                 <div>
                   <h4 className="text-3xl font-black tracking-tight text-white">Solo falta activar la anualidad del Starter Kit</h4>
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago anual de
-                    RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')} para mantener la unidad fuera del bloqueo 402.
-                  </p>
+                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                     Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago
+                     anual de{' '}
+                     <strong className="text-white">
+                       RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}
+                     </strong>{' '}
+                     <span className="text-zinc-500">(ITBIS 18% incluido)</span> para mantener la
+                     unidad fuera del bloqueo 402.
+                   </p>
                 </div>
                 <div className="rounded-3xl border border-[#FFD400]/15 bg-[#FFD400]/5 p-5">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Estado actual</p>
@@ -695,10 +712,17 @@ export default function DriverDashboard() {
 
     setBankPendingSync(pendingSync);
 
-    if (forceOnboarding || !hasSeenOnboarding) {
+    // ── Guard mandatorio ──────────────────────────────────────────────────────
+    // Re-abre el modal aunque el conductor ya lo haya "visto" si los pasos
+    // obligatorios (contrato y banco) siguen incompletos. Evita el bypass
+    // mediante el flag de localStorage.
+    const isMandatoryIncomplete =
+      !hubData.contractAccepted || (!hubData.bankAccountConfigured && !pendingSync);
+
+    if (forceOnboarding || !hasSeenOnboarding || isMandatoryIncomplete) {
       setShowOnboarding(true);
     }
-  }, [hubData?.driverId]);
+  }, [hubData?.driverId, hubData?.contractAccepted, hubData?.bankAccountConfigured]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !hubData?.driverId) return;
@@ -734,6 +758,33 @@ export default function DriverDashboard() {
   };
 
   const closeOnboarding = () => {
+    // ── Bloqueo de pasos obligatorios ─────────────────────────────────────────
+    // 'contract' y 'bank' son mandatorios: no se puede cerrar el modal hasta
+    // completarlos. Protege contra conductores que hagan bypass desde el cliente.
+    if (hubData) {
+      const currentBankPending =
+        typeof window !== 'undefined' && hubData.driverId
+          ? localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === '1'
+          : bankPendingSync;
+
+      const currentStage = getDriverOnboardingStage(
+        {
+          agreementVersion: hubData.agreementVersion,
+          bankAccountConfigured: hubData.bankAccountConfigured,
+          contractAccepted: hubData.contractAccepted,
+          driverId: hubData.driverId,
+          onboardingStatus: hubData.onboardingStatus,
+          subscriptionPaid: hubData.subscriptionPaid,
+        },
+        currentBankPending,
+      );
+
+      if (currentStage === 'contract' || currentStage === 'bank') {
+        // Paso obligatorio — no permitir cierre
+        return;
+      }
+    }
+
     if (typeof window !== 'undefined' && hubData?.driverId) {
       localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
       sessionStorage.removeItem('tad_driver_force_onboarding');
@@ -933,7 +984,7 @@ export default function DriverDashboard() {
         {/* Footer */}
         <footer className="pt-6 text-center space-y-2">
           <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
-            TAD DOOH Platform v11.0.0
+            TAD DOOH Platform v12.0.0
           </p>
           <p className="text-neutral-800 text-[9px] font-mono">
             GPS: {isTracking ? 'ACTIVO' : 'INACTIVO'} · Batch: {batchCount}/10 · Red: {connectionStatus.toUpperCase()}

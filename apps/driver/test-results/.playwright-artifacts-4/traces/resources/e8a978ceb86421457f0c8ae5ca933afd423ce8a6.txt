@@ -1,3 +1,0 @@
-{"sent_at":"2026-04-27T17:03:57.690Z","sdk":{"name":"sentry.javascript.nextjs","version":"10.46.0"}}
-{"type":"session"}
-{"sid":"4196fe5a8c6d42a6893221ba2a20bfb4","init":false,"started":"2026-04-27T17:03:55.662Z","timestamp":"2026-04-27T17:03:57.690Z","status":"exited","errors":0,"attrs":{"release":"801622de2ab9b2cad8e1cb71995bbf4912998dc2","environment":"development","user_agent":"Mozilla/5.0 (Linux; Android 13; Generic Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 FullyKiosk/3.0"}}

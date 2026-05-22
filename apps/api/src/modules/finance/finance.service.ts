@@ -301,14 +301,14 @@ export class FinanceService {
       return { success: true, message: 'No se encontraron montos a liquidar para este periodo.', count: 0 };
     }
 
-    // REGLA PERFORMANCE: Process with higher concurrency (Optimized for 8GB RAM)
+    // REGLA PERFORMANCE: Process with batch size 5 (Optimized for 512MB-1GB RAM)
     let count = 0;
     await throttledMap(recordsToCreate, async (record) => {
       await this.prisma.payrollPayment.create({
         data: record
       });
       count++;
-    }, 10);
+    }, 5);
 
     this.logger.log(`✅ Bulk billing completed: ${count} drivers credited.`);
     return { success: true, count };

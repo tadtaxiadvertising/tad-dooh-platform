@@ -11,6 +11,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { VideoGeneratorService } from './video-generator.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Controller('campaigns')
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
 export class CampaignController {
@@ -171,7 +185,7 @@ export class CampaignController {
     if (role === 'ADVERTISER' && entityId) {
        return this.prisma.campaign.findMany({
          where: { advertiserId: entityId },
-         include: { mediaAssets: true, media: true },
+         include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
          orderBy: { createdAt: 'desc' },
        });
     }

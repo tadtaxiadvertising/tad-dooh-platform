@@ -688,7 +688,7 @@ export default function DriverDashboard() {
   const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
     useTelemetry();
   const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
-  const { isLocked, message: lockMessage } = usePaymentStore();
+  const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
@@ -732,6 +732,21 @@ export default function DriverDashboard() {
       setBankPendingSync(false);
     }
   }, [hubData?.bankAccountConfigured, hubData?.driverId]);
+
+  // ─── Enforcer de Suscripción / Pago Anual 402 ──────────────────────────────
+  useEffect(() => {
+    if (!hubData) return;
+
+    if (hubData.subscriptionPaid === false) {
+      if (!showOnboarding) {
+        setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
+      } else {
+        setLock(false, null);
+      }
+    } else if (hubData.subscriptionPaid === true) {
+      setLock(false, null);
+    }
+  }, [hubData?.subscriptionPaid, showOnboarding, setLock]);
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {

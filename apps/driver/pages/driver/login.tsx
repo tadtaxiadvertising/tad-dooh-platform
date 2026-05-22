@@ -176,7 +176,7 @@ export default function DriverLoginPage() {
                 value={phone} onChange={setPhone} placeholder="829-555-0001"
                 icon={<Phone className="w-5 h-5" />}
               />
-              <MobileInput id="reg-cedula" label="Cédula (opcional)" type="text"
+              <MobileInput id="reg-cedula" label="Cédula (opcional)" type="tel"
                 value={cedula} onChange={setCedula} placeholder="001-0000000-0" required={false}
                 icon={<Shield className="w-5 h-5" />}
               />

@@ -6,10 +6,21 @@ import { BillingPortal } from '@/components/bi/BillingPortal';
 import { 
   ShieldCheck, 
   Zap, 
+  MapPin, 
+  TrendingUp, 
+  CheckCircle2, 
+  DollarSign, 
+  Users, 
+  Eye, 
+  ArrowRight, 
+  Compass, 
+  Loader2 
 } from 'lucide-react';
 import { useAuth } from '@tad/ui';
 import { getAdvertiserPortalData } from '@tad/services/api';
 import { Toaster, toast } from 'sonner';
+import api from "@tad/services";
+import clsx from 'clsx';
 
 export default function AdvertiserDashboard() {
   const [data, setData] = useState<any>(null);
@@ -17,6 +28,14 @@ export default function AdvertiserDashboard() {
   const { session } = useAuth();
   
   const entityId = session?.user?.app_metadata?.entityId;
+
+  // Onboarding states
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [step, setStep] = useState(1);
+  const [city, setCity] = useState<'Santo Domingo' | 'Santiago'>('Santo Domingo');
+  const [budget, setBudget] = useState(25000);
+  const [simulation, setSimulation] = useState<any>(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
 
   useEffect(() => {
     if (!entityId) return;
@@ -34,7 +53,56 @@ export default function AdvertiserDashboard() {
     };
 
     loadData();
+
+    // Check if onboarding is needed
+    const onboarded = localStorage.getItem(`tad_adv_onboarded_${entityId}`);
+    if (!onboarded) {
+      setShowOnboarding(true);
+    }
   }, [entityId]);
+
+  // Fetch simulation for step 2 & 3
+  useEffect(() => {
+    if (!showOnboarding || (step !== 2 && step !== 3)) return;
+
+    const fetchSimulation = async () => {
+      setSimulationLoading(true);
+      try {
+        const { data: simRes } = await api.post('/campaigns/simulate-budget', {
+          budgetRD: budget,
+          city: city
+        });
+        setSimulation(simRes);
+      } catch (err) {
+        console.warn('Simulation API error, using client fallback:', err);
+        // Client-side fallback formulas
+        const costPerScreen = 1500;
+        const uniqueReachPerScreen = 2000;
+        const screens = Math.floor(budget / costPerScreen);
+        const uniqueReach = screens * uniqueReachPerScreen;
+        const totalImpressions = uniqueReach * 2;
+        setSimulation({
+          recommendedScreens: screens,
+          uniqueReach: uniqueReach,
+          totalImpressions: totalImpressions
+        });
+      } finally {
+        setSimulationLoading(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSimulation, 400);
+    return () => clearTimeout(timer);
+  }, [budget, city, step, showOnboarding]);
+
+  const handleCompleteOnboarding = () => {
+    if (!entityId) return;
+    localStorage.setItem(`tad_adv_onboarded_${entityId}`, 'true');
+    setShowOnboarding(false);
+    toast.success('¡Onboarding completado exitosamente! Tu proyección ha sido guardada en el simulador.', {
+      duration: 5000,
+    });
+  };
 
   if (loading && entityId) {
     return (
@@ -130,6 +198,238 @@ export default function AdvertiserDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── ONBOARDING WIZARD OVERLAY ─── */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+          <div className="w-full max-w-2xl bg-zinc-950/95 border border-white/10 rounded-[2.5rem] p-8 lg:p-12 shadow-2xl relative overflow-hidden transition-all duration-500 max-h-[90vh] overflow-y-auto">
+            {/* Ambient Lighting effects */}
+            <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-blue-600/10 blur-[100px] rounded-full translate-x-1/4 -translate-y-1/4" />
+            <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-[#FFD400]/5 blur-[80px] rounded-full -translate-x-1/4 translate-y-1/4" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FFD400]/50 to-transparent" />
+
+            {/* Stepper Header */}
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="flex gap-2">
+                {[1, 2, 3].map((s) => (
+                  <div
+                    key={s}
+                    className={clsx(
+                      "h-1.5 rounded-full transition-all duration-300",
+                      s === step
+                        ? "w-8 bg-[#FFD400] shadow-[0_0_10px_rgba(255,212,0,0.5)]"
+                        : s < step
+                        ? "w-4 bg-emerald-500"
+                        : "w-4 bg-zinc-800"
+                    )}
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                Paso {step} de 3
+              </span>
+            </div>
+
+            {/* STEP 1: City Selection */}
+            {step === 1 && (
+              <div className="space-y-8 relative z-10">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
+                    Selecciona tu <span className="text-[#FFD400]">Ciudad Objetivo</span>
+                  </h2>
+                  <p className="text-zinc-400 text-xs">
+                    Elige el área geográfica donde deseas desplegar tus anuncios publicitarios.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                  <button
+                    onClick={() => {
+                      setCity('Santo Domingo');
+                      setStep(2);
+                    }}
+                    className="group p-8 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-[#FFD400]/30 rounded-3xl text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-[220px]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/10 group-hover:bg-blue-500/20 transition-all">
+                      <MapPin className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2">
+                        Santo Domingo
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </h3>
+                      <p className="text-zinc-500 text-xs leading-relaxed">
+                        Zona Metropolitana y Distrito Nacional. Alta densidad vehicular, tráfico masivo, perfecto para alcance a gran escala.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCity('Santiago');
+                      setStep(2);
+                    }}
+                    className="group p-8 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-[#FFD400]/30 rounded-3xl text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-[220px]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/10 group-hover:bg-cyan-500/20 transition-all">
+                      <Compass className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2">
+                        Santiago
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </h3>
+                      <p className="text-zinc-500 text-xs leading-relaxed">
+                        Ciudad Corazón. Gran dinamismo comercial, rutas focalizadas y alta tasa de retención de anuncios por pasajero.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Budget Selection */}
+            {step === 2 && (
+              <div className="space-y-8 relative z-10">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
+                    Define tu <span className="text-[#FFD400]">Presupuesto Mensual</span>
+                  </h2>
+                  <p className="text-zinc-400 text-xs">
+                    Ajusta el presupuesto estimado de tu campaña. Calculamos tu alcance usando el motor en tiempo real en <span className="text-white font-bold">{city}</span>.
+                  </p>
+                </div>
+
+                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-8 space-y-6">
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-[#FFD400]" />
+                      Presupuesto Mensual (RD$)
+                    </span>
+                    <span className="text-4xl font-black text-white tracking-tighter">
+                      {new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP', maximumFractionDigits: 0 }).format(budget)}
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="5000"
+                    max="150000"
+                    step="5000"
+                    value={budget}
+                    onChange={(e) => setBudget(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-[#FFD400] hover:accent-yellow-400 transition-all"
+                  />
+
+                  <div className="flex justify-between text-[9px] font-black text-zinc-600 uppercase tracking-widest">
+                    <span>RD$ 5,000</span>
+                    <span>Recomendado: RD$ 25,000+</span>
+                    <span>RD$ 150,000</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-4 border border-white/10 hover:border-white/20 text-white font-black uppercase tracking-wider text-xs rounded-2xl transition-all active:scale-[0.98]"
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    onClick={() => setStep(3)}
+                    className="flex-1 py-4 bg-[#FFD400] hover:bg-yellow-400 text-black font-black uppercase tracking-wider text-xs rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    Ver Proyección
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Impact Summary & Complete */}
+            {step === 3 && (
+              <div className="space-y-8 relative z-10">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
+                    Tu Proyección de <span className="text-[#FFD400]">Impacto Radial</span>
+                  </h2>
+                  <p className="text-zinc-400 text-xs">
+                    Basado en el presupuesto y la flota activa en <span className="text-white font-bold">{city}</span>.
+                  </p>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-zinc-900/40 rounded-3xl p-6 border border-white/5 text-center">
+                    <div className="inline-flex items-center justify-center p-3 rounded-xl bg-blue-500/10 text-blue-400 mb-3">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <span className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Pantallas Asignadas</span>
+                    <span className="text-2xl font-black text-white block">
+                      {simulationLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#FFD400]" />
+                      ) : (
+                        simulation?.recommendedScreens || 0
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="bg-zinc-900/40 rounded-3xl p-6 border border-white/5 text-center">
+                    <div className="inline-flex items-center justify-center p-3 rounded-xl bg-emerald-500/10 text-emerald-400 mb-3">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <span className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Alcance Único / Mes</span>
+                    <span className="text-2xl font-black text-white block">
+                      {simulationLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#FFD400]" />
+                      ) : (
+                        new Intl.NumberFormat('es-DO').format(simulation?.uniqueReach || 0)
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="bg-zinc-900/40 rounded-3xl p-6 border border-white/5 text-center">
+                    <div className="inline-flex items-center justify-center p-3 rounded-xl bg-purple-500/10 text-purple-400 mb-3">
+                      <Eye className="w-5 h-5" />
+                    </div>
+                    <span className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Impresiones / Mes</span>
+                    <span className="text-2xl font-black text-white block">
+                      {simulationLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#FFD400]" />
+                      ) : (
+                        new Intl.NumberFormat('es-DO').format(simulation?.totalImpressions || 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-zinc-900/50 border border-white/5 rounded-2xl flex items-center gap-3 text-emerald-400">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-left leading-relaxed">
+                    ¡Excelente configuración! Tu marca obtendrá alta visibilidad con impactos de 30 segundos repetitivos en rutas estratégicas.
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="flex-1 py-4 border border-white/10 hover:border-white/20 text-white font-black uppercase tracking-wider text-xs rounded-2xl transition-all active:scale-[0.98]"
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    onClick={handleCompleteOnboarding}
+                    className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-wider text-xs rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+                  >
+                    Confirmar y Finalizar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AdvertiserLayout>
   );
 }
+

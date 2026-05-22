@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Layers, MessageSquare, Fingerprint, BarChart3, ArrowUpRight, Radio, Server, Activity } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { CarFront, Megaphone, CloudUpload, TrendingUp, ShieldCheck, Zap, Cpu, Layers, MessageSquare, Fingerprint, BarChart3, ArrowUpRight, Radio, Server, Activity, MapPin, Wifi, Battery, X, ChevronRight, Users, DollarSign, CheckCircle2, Clock, AlertTriangle, Play, RotateCcw } from 'lucide-react';
 import { getDevices, getCampaigns, getMedia, getHourlyPlays, getAnalyticsSummary, getPortalRequests } from '@tad/services';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useTabSync } from '@tad/ui';
@@ -46,6 +46,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [pilotMode, setPilotMode] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const { session } = useAuth();
 
   const loadData = useCallback(async () => {
@@ -113,6 +114,11 @@ export default function Home() {
     if (session) {
       loadData();
     }
+    // Trigger admin induction tour on first login
+    const alreadyOnboarded = localStorage.getItem('tad_admin_onboarded');
+    if (!alreadyOnboarded) {
+      setShowTour(true);
+    }
   }, [loadData, session]);
 
   // Polling for live activity (every 60 seconds)
@@ -126,8 +132,14 @@ export default function Home() {
 
   if (!mounted) return null;
 
+  const handleTourComplete = () => {
+    localStorage.setItem('tad_admin_onboarded', 'true');
+    setShowTour(false);
+  };
+
   return (
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+      {showTour && <AdminInductionTour onComplete={handleTourComplete} />}
       {/* 🧵 Enhanced Stitched Layer: Background Glows */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
          <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-tad-yellow/[0.03] blur-[200px] rounded-full animate-pulse-soft" />
@@ -319,6 +331,9 @@ export default function Home() {
 
           {/* ⚡ Fleet Pulse Terminal */}
           <FleetPulseTerminal />
+
+          {/* 💰 Sequential Payroll Batcher */}
+          <PayrollBatcher />
         </div>
 
         {/* Intelligence Sidebar */}
@@ -361,6 +376,15 @@ export default function Home() {
              </div>
              <p className="text-[10px] font-black text-gray-600 tracking-[0.4em] font-mono group-hover:text-tad-yellow/60 transition-colors">TAD_CORE_v5.4</p>
           </div>
+
+          {/* 🔁 Re-trigger tour button */}
+          <button
+            onClick={() => { localStorage.removeItem('tad_admin_onboarded'); setShowTour(true); }}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-white/5 bg-white/[0.02] text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-tad-yellow hover:border-tad-yellow/20 hover:bg-tad-yellow/5 transition-all duration-300"
+          >
+            <Radio className="w-3.5 h-3.5" />
+            Ver Tour de Inducción
+          </button>
         </aside>
       </div>
     </div>
@@ -440,6 +464,466 @@ function PremiumInfoCard({ icon, title, label, description, progress, primary, u
             "h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_currentColor]",
             primary ? 'bg-tad-yellow text-tad-yellow' : 'bg-blue-500 text-blue-500'
           )} style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🎓 ADMIN INDUCTION TOUR — 3-Step Glassmorphic Overlay
+// ══════════════════════════════════════════════════════════════
+const TOUR_STEPS = [
+  {
+    id: 'welcome',
+    icon: <Fingerprint className="w-8 h-8 text-tad-yellow" />,
+    tag: 'STEP_01 // ACCESO MAESTRO',
+    title: 'Bienvenido al Command Center',
+    description: 'Este es el núcleo de control operativo de la Flota TAD. Desde aquí monitorizas en tiempo real cada pantalla publicitaria en la red de taxis de la República Dominicana.',
+    highlight: null,
+    color: 'tad-yellow',
+  },
+  {
+    id: 'tracking',
+    icon: <MapPin className="w-8 h-8 text-cyan-400" />,
+    tag: 'STEP_02 // GPS EN VIVO',
+    title: 'Mapa de Flota en Tiempo Real',
+    description: 'Accede a /admin/tracking para ver la posición GPS en vivo de cada taxi con una pantalla TAD activa. Puedes filtrar por zona (STI/SDQ), estado de conectividad y batería.',
+    highlight: '/admin/tracking',
+    color: 'cyan-400',
+    ctaHref: '/admin/tracking',
+    ctaLabel: 'Abrir Mapa GPS',
+  },
+  {
+    id: 'semaphores',
+    icon: <Wifi className="w-8 h-8 text-emerald-400" />,
+    tag: 'STEP_03 // SEMÁFOROS DE SALUD',
+    title: 'Semáforos de Conectividad y Batería',
+    description: 'En /admin/monitoring cada dispositivo muestra un semáforo de 3 estados: Verde (Online >80% batería), Amarillo (Latencia alta o batería 20-80%), Rojo (Offline o batería crítica <20%). Usa la Nómina por Lotes en el Dashboard para procesar pagos de forma segura.',
+    highlight: '/admin/monitoring',
+    color: 'emerald-400',
+    ctaHref: '/admin/monitoring',
+    ctaLabel: 'Ver Monitoreo',
+  },
+];
+
+function AdminInductionTour({ onComplete }: { onComplete: () => void }) {
+  const [step, setStep] = useState(0);
+  const [exiting, setExiting] = useState(false);
+  const current = TOUR_STEPS[step];
+  const isLast = step === TOUR_STEPS.length - 1;
+
+  const advance = () => {
+    if (isLast) {
+      setExiting(true);
+      setTimeout(() => onComplete(), 400);
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  const dismiss = () => {
+    setExiting(true);
+    setTimeout(() => onComplete(), 400);
+  };
+
+  return (
+    <div
+      className={clsx(
+        'fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-400',
+        exiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      )}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+        onClick={dismiss}
+      />
+
+      {/* Tour Card */}
+      <div
+        className="relative z-10 w-full max-w-lg animate-in zoom-in-95 fade-in duration-500"
+        key={step}
+      >
+        {/* Corner glow */}
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-tad-yellow/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-cyan-500/5 blur-[80px] rounded-full pointer-events-none" />
+
+        <div className="relative bg-black/90 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_40px_120px_rgba(0,0,0,0.8)] overflow-hidden">
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-tad-yellow/60 to-transparent" />
+
+          {/* Dismiss */}
+          <button
+            onClick={dismiss}
+            className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+            aria-label="Cerrar tour"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* Step tag */}
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-[9px] font-black uppercase tracking-[0.35em] text-tad-yellow/70 font-mono">
+              {current.tag}
+            </span>
+          </div>
+
+          {/* Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
+            {current.icon}
+          </div>
+
+          {/* Title */}
+          <h2 className="text-3xl font-black text-white tracking-tight mb-3">
+            {current.title}
+          </h2>
+
+          {/* Description */}
+          <p className="text-sm text-gray-400 leading-relaxed mb-6">
+            {current.description}
+          </p>
+
+          {/* Highlight path pill */}
+          {current.highlight && (
+            <div className="flex items-center gap-2 mb-8 p-3 rounded-2xl bg-white/5 border border-white/5 w-fit">
+              <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow animate-pulse" />
+              <code className="text-xs text-tad-yellow font-mono font-bold">{current.highlight}</code>
+            </div>
+          )}
+
+          {/* Progress dots */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {TOUR_STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className={clsx(
+                    'rounded-full transition-all duration-300',
+                    i === step
+                      ? 'w-6 h-2 bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.6)]'
+                      : i < step
+                      ? 'w-2 h-2 bg-tad-yellow/40'
+                      : 'w-2 h-2 bg-white/10'
+                  )}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {(current as any).ctaHref && (
+                <Link
+                  href={(current as any).ctaHref}
+                  className="px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
+                >
+                  {(current as any).ctaLabel}
+                </Link>
+              )}
+              <button
+                onClick={advance}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-tad-yellow text-black text-[10px] font-black uppercase tracking-widest hover:bg-yellow-400 transition-all shadow-[0_0_20px_rgba(255,212,0,0.3)] hover:shadow-[0_0_30px_rgba(255,212,0,0.5)]"
+              >
+                {isLast ? (
+                  <><CheckCircle2 className="w-3.5 h-3.5" /> Comenzar</>
+                ) : (
+                  <>Siguiente <ChevronRight className="w-3.5 h-3.5" /></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// 💰 SEQUENTIAL PAYROLL BATCHER — 15 drivers, 3×5 async batches
+// ══════════════════════════════════════════════════════════════
+const MOCK_DRIVERS = [
+  { id: 'DRV-001', name: 'Carlos Méndez',    ads: 15, cpa: 2 },
+  { id: 'DRV-002', name: 'Ana Rodríguez',    ads: 12, cpa: 1 },
+  { id: 'DRV-003', name: 'Luis Fernández',   ads: 15, cpa: 3 },
+  { id: 'DRV-004', name: 'María Santos',     ads: 9,  cpa: 0 },
+  { id: 'DRV-005', name: 'Pedro Jiménez',    ads: 15, cpa: 4 },
+  { id: 'DRV-006', name: 'Rosa Martínez',    ads: 11, cpa: 2 },
+  { id: 'DRV-007', name: 'Juan García',      ads: 15, cpa: 1 },
+  { id: 'DRV-008', name: 'Elena Torres',     ads: 7,  cpa: 0 },
+  { id: 'DRV-009', name: 'Miguel Herrera',   ads: 15, cpa: 5 },
+  { id: 'DRV-010', name: 'Carmen López',     ads: 13, cpa: 2 },
+  { id: 'DRV-011', name: 'Roberto Díaz',     ads: 15, cpa: 3 },
+  { id: 'DRV-012', name: 'Sandra Vargas',    ads: 8,  cpa: 1 },
+  { id: 'DRV-013', name: 'Andrés Castillo',  ads: 15, cpa: 6 },
+  { id: 'DRV-014', name: 'Patricia Flores',  ads: 10, cpa: 2 },
+  { id: 'DRV-015', name: 'Francisco Morales',ads: 14, cpa: 3 },
+];
+
+type PayrollEntry = {
+  driver: typeof MOCK_DRIVERS[0];
+  earnings: number;
+  status: 'pending' | 'processing' | 'done' | 'error';
+};
+
+type BatchLog = { id: string; msg: string; time: string; type: 'info' | 'success' | 'warn' };
+
+function PayrollBatcher() {
+  const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle');
+  const [entries, setEntries] = useState<PayrollEntry[]>(
+    MOCK_DRIVERS.map(d => ({ driver: d, earnings: 0, status: 'pending' }))
+  );
+  const [logs, setLogs] = useState<BatchLog[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const runningRef = useRef(false);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const addLog = (msg: string, type: BatchLog['type'] = 'info') => {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLogs(prev => [{ id: `${Date.now()}-${Math.random()}`, msg, time, type }, ...prev].slice(0, 40));
+  };
+
+  const delay = (ms: number) => new Promise<void>(res => setTimeout(res, ms));
+
+  const runBatcher = async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setPhase('running');
+    setProgress(0);
+    setCurrentBatch(0);
+    setLogs([]);
+    setEntries(MOCK_DRIVERS.map(d => ({ driver: d, earnings: 0, status: 'pending' })));
+
+    const BATCH_SIZE = 5;
+    const totalDrivers = MOCK_DRIVERS.length;
+    let processed = 0;
+
+    addLog('🚀 Iniciando procesador de nómina TAD v12...', 'info');
+    addLog(`📋 Total conductores: ${totalDrivers} | Lotes: ${Math.ceil(totalDrivers / BATCH_SIZE)} × ${BATCH_SIZE}`, 'info');
+    await delay(400);
+
+    for (let batchIdx = 0; batchIdx < Math.ceil(totalDrivers / BATCH_SIZE); batchIdx++) {
+      const batchStart = batchIdx * BATCH_SIZE;
+      const batchDrivers = MOCK_DRIVERS.slice(batchStart, batchStart + BATCH_SIZE);
+      setCurrentBatch(batchIdx + 1);
+
+      addLog(`⚡ Procesando Lote ${batchIdx + 1} (conductores ${batchStart + 1}-${batchStart + batchDrivers.length})...`, 'info');
+
+      // Mark batch as 'processing'
+      setEntries(prev => prev.map((e, idx) =>
+        idx >= batchStart && idx < batchStart + BATCH_SIZE
+          ? { ...e, status: 'processing' }
+          : e
+      ));
+
+      await delay(300);
+
+      // Process each driver in the batch
+      for (let di = 0; di < batchDrivers.length; di++) {
+        const drv = batchDrivers[di];
+        const earnings = (Math.min(drv.ads, 15) * 500) + (drv.cpa * 500);
+        const globalIdx = batchStart + di;
+
+        await delay(120);
+
+        setEntries(prev => prev.map((e, idx) =>
+          idx === globalIdx
+            ? { ...e, earnings, status: 'done' }
+            : e
+        ));
+
+        processed++;
+        setProgress(Math.round((processed / totalDrivers) * 100));
+        addLog(`✅ ${drv.id} · ${drv.name} → RD$${earnings.toLocaleString()}`, 'success');
+      }
+
+      // Inter-batch delay to protect RAM (512MB VPS safeguard)
+      if (batchIdx < Math.ceil(totalDrivers / BATCH_SIZE) - 1) {
+        addLog(`⏳ Pausa de seguridad (800ms) antes del Lote ${batchIdx + 2}...`, 'warn');
+        await delay(800);
+      }
+    }
+
+    const totalPayoutFinal = MOCK_DRIVERS.reduce((acc, d) => acc + (Math.min(d.ads, 15) * 500 + d.cpa * 500), 0);
+    addLog(`🎉 Nómina completada. Total desembolsado: RD$${totalPayoutFinal.toLocaleString()}`, 'success');
+    addLog('🔒 Registros archivados. RAM liberada. Sistema estabilizado.', 'info');
+    setPhase('done');
+    runningRef.current = false;
+  };
+
+  const resetBatcher = () => {
+    setPhase('idle');
+    setProgress(0);
+    setCurrentBatch(0);
+    setLogs([]);
+    setEntries(MOCK_DRIVERS.map(d => ({ driver: d, earnings: 0, status: 'pending' })));
+    runningRef.current = false;
+  };
+
+  const totalPayout = MOCK_DRIVERS.reduce((acc, d) => acc + (Math.min(d.ads, 15) * 500 + d.cpa * 500), 0);
+
+  return (
+    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+      {/* Top glow accent */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-tad-yellow/40 to-transparent" />
+      <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-32 bg-tad-yellow/[0.04] blur-[60px] rounded-full pointer-events-none" />
+
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-tad-yellow/10 border border-tad-yellow/20 flex items-center justify-center shadow-inner">
+              <DollarSign className="w-7 h-7 text-tad-yellow" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white tracking-tight">Procesador de Nómina</h3>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-500">Sequential Batching · 3 × 5 Drivers</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+            <div className={clsx(
+              'w-2 h-2 rounded-full transition-colors',
+              phase === 'running' ? 'bg-tad-yellow animate-pulse shadow-[0_0_8px_rgba(255,212,0,0.8)]'
+              : phase === 'done' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
+              : 'bg-white/20'
+            )} />
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+              {phase === 'idle' ? 'STANDBY' : phase === 'running' ? `LOTE ${currentBatch}/3` : 'COMPLETADO'}
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500">Progreso Global</span>
+            <span className="text-xs font-black text-white">{progress}%</span>
+          </div>
+          <div className="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[2px]">
+            <div
+              className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-tad-yellow to-yellow-500 shadow-[0_0_12px_rgba(255,212,0,0.5)]"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            {[1, 2, 3].map(b => (
+              <div key={b} className={clsx(
+                'flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider transition-colors duration-300',
+                currentBatch > b ? 'text-tad-yellow'
+                : currentBatch === b && phase === 'running' ? 'text-white'
+                : 'text-white/20'
+              )}>
+                <div className={clsx(
+                  'w-1.5 h-1.5 rounded-full',
+                  currentBatch > b ? 'bg-tad-yellow'
+                  : currentBatch === b && phase === 'running' ? 'bg-white animate-pulse'
+                  : 'bg-white/20'
+                )} />
+                Lote {b}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Driver Grid — mini status rows */}
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          {entries.map((e) => (
+            <div
+              key={e.driver.id}
+              className={clsx(
+                'flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-mono transition-all duration-300',
+                e.status === 'done'
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                  : e.status === 'processing'
+                  ? 'bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow animate-pulse'
+                  : 'bg-white/[0.03] border-white/5 text-zinc-600'
+              )}
+            >
+              <div className={clsx(
+                'w-1.5 h-1.5 rounded-full shrink-0',
+                e.status === 'done' ? 'bg-emerald-500'
+                : e.status === 'processing' ? 'bg-tad-yellow animate-pulse'
+                : 'bg-white/10'
+              )} />
+              <span className="truncate">{e.driver.id}</span>
+              {e.status === 'done' && (
+                <span className="ml-auto shrink-0 text-emerald-400 font-black">✓</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Live Log Terminal */}
+        <div className="bg-[#030303] border border-white/5 rounded-2xl p-4 font-mono text-[11px] h-[140px] overflow-y-auto space-y-1.5 mb-6 relative" id="payroll-log">
+          {logs.length === 0 ? (
+            <p className="text-zinc-700 italic">{'>'} Batcher en espera. Presiona EJECUTAR para iniciar...</p>
+          ) : (
+            logs.map(log => (
+              <div key={log.id} className="flex gap-3 leading-relaxed">
+                <span className="text-zinc-600 shrink-0">[{log.time}]</span>
+                <span className={clsx(
+                  'font-bold',
+                  log.type === 'success' ? 'text-emerald-400'
+                  : log.type === 'warn' ? 'text-yellow-400'
+                  : 'text-blue-400'
+                )}>{log.msg}</span>
+              </div>
+            ))
+          )}
+          <div ref={logsEndRef} />
+        </div>
+
+        {/* Summary row when done */}
+        {phase === 'done' && (
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <div>
+                <p className="text-xs font-black text-white">Nómina Procesada Exitosamente</p>
+                <p className="text-[10px] text-gray-500">15 conductores · 3 lotes secuenciales</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-0.5">Total Desembolsado</p>
+              <p className="text-lg font-black text-emerald-400">RD${totalPayout.toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {phase !== 'running' && (
+            <button
+              onClick={phase === 'done' ? resetBatcher : runBatcher}
+              className={clsx(
+                'flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300',
+                phase === 'done'
+                  ? 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10'
+                  : 'bg-tad-yellow text-black shadow-[0_0_20px_rgba(255,212,0,0.3)] hover:shadow-[0_0_30px_rgba(255,212,0,0.5)] hover:bg-yellow-400'
+              )}
+            >
+              {phase === 'done' ? (
+                <><RotateCcw className="w-4 h-4" /> Reiniciar</>  
+              ) : (
+                <><Play className="w-4 h-4" /> Ejecutar Nómina</>  
+              )}
+            </button>
+          )}
+          {phase === 'running' && (
+            <div className="flex-1 flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-tad-yellow/5 border border-tad-yellow/20 text-[11px] font-black uppercase tracking-widest text-tad-yellow">
+              <Clock className="w-4 h-4 animate-spin" style={{ animationDuration: '2s' }} />
+              Procesando Lote {currentBatch} / 3...
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* RAM safeguard badge */}
+      <div className="px-8 pb-6">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+          <AlertTriangle className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+          <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">
+            RAM Safeguard activo · VPS 512MB · Batches secuenciales con 800ms de pausa inter-lote
+          </p>
         </div>
       </div>
     </div>

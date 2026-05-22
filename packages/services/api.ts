@@ -50,7 +50,7 @@ api.interceptors.request.use(async (config) => {
     try {
       const currentPath = window.location.pathname;
 
-      // Skip Supabase session check for public paths
+      // 1. Intento principal: Supabase Session (Solo en rutas no públicas)
       if (!isPublicPath(currentPath)) {
         const session = await getValidSession();
         if (session?.access_token) {
@@ -59,10 +59,21 @@ api.interceptors.request.use(async (config) => {
         }
       }
       
-      // Fallback: LocalStorage with error handling
+      // 2. Fallback: LocalStorage
       const localToken = getLocalStorageToken(currentPath);
       if (localToken) {
         config.headers.Authorization = `Bearer ${localToken}`;
+      }
+
+      // 3. Fallback Final: Cookies (Resiliencia ante condiciones de carrera en login/refresh)
+      if (!config.headers.Authorization && typeof document !== 'undefined') {
+        const cookieToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('sb-access-token='))
+          ?.split('=')[1];
+        if (cookieToken) {
+          config.headers.Authorization = `Bearer ${cookieToken}`;
+        }
       }
     } catch (error) {
       console.error('🔐 AUTH_ERROR:', error);
@@ -72,21 +83,76 @@ api.interceptors.request.use(async (config) => {
 });
 
 // ============================================
-// Error Response Interceptor
+// 401 Auto-Retry Interceptor (Token Refresh Safety Net)
 // ============================================
-
+//
+// FIX (2026-05-09): If the backend returns 401, we force a Supabase token refresh
+// and retry the original request once. This handles the race condition where the
+// proactive refresh in getValidSession() wasn't triggered (e.g. the token expired
+// between the interceptor check and the network call arriving at the server).
+//
 api.interceptors.response.use(
   (response) => response,
-  (error) => processApiError(error)
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only retry on 401 and only once (prevent infinite loops)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._isRetry &&
+      typeof window !== 'undefined'
+    ) {
+      originalRequest._isRetry = true;
+
+      try {
+        console.info('🔄 [AUTH] 401 recibido. Intentando refrescar token...');
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshed.session) {
+          console.warn('⚠️ [AUTH] Refresco fallido tras 401. Cerrando sesión.', refreshError?.message);
+          // Force logout — the session is truly dead
+          await supabase.auth.signOut();
+          const currentPath = window.location.pathname;
+          const loginPath = currentPath.includes('/advertiser/') ? '/advertiser/login'
+            : currentPath.includes('/driver/') ? '/driver/login'
+            : '/admin/login';
+          window.location.href = loginPath;
+          return processApiError(error);
+        }
+
+        // Update the in-memory cache so subsequent requests get the new token
+        const { invalidateSession } = await import('./auth.service');
+        invalidateSession(); // Forces re-fetch on next getValidSession() call
+
+        // Retry with the fresh token
+        originalRequest.headers['Authorization'] = `Bearer ${refreshed.session.access_token}`;
+        return api(originalRequest);
+      } catch (retryError) {
+        console.error('❌ [AUTH] Error crítico durante reintento post-401:', retryError);
+        return processApiError(error);
+      }
+    }
+
+    return processApiError(error);
+  }
 );
 
 // ============================================
 // Auth
 // ============================================
 export const login = (email: string, password: string) =>
-  api.post('/auth/login', { email, password }).then(res => {
-    const { access_token, user } = res.data;
+  api.post('/auth/login', { email, password }).then(async res => {
+    const { access_token, refresh_token, user } = res.data;
+    
+    // Synchronize Supabase Client state (Critical for auto-refresh)
+    if (access_token && refresh_token) {
+      await supabase.auth.setSession({ access_token, refresh_token });
+    }
+
     localStorage.setItem('tad_admin_token', access_token);
+    if (refresh_token) {
+      localStorage.setItem('tad_admin_refresh_token', refresh_token);
+    }
     localStorage.setItem('tad_admin_user', JSON.stringify(user));
     
     // Inject cookie for middleware — conditional Secure so it works on http (local) too
@@ -112,6 +178,7 @@ export const logout = async () => {
   // Clear ALL portal tokens to avoid state contamination
   try {
     localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_refresh_token');
     localStorage.removeItem('tad_admin_user');
     localStorage.removeItem('tad_advertiser_token');
     localStorage.removeItem('tad_advertiser_user');
@@ -469,6 +536,3 @@ export const getMyProfile = () => api.get('/auth/profile').then(res => res.data)
 export const updateMyProfile = (data: { name?: string; password?: string; currentPassword?: string }) => api.put('/auth/profile', data).then(res => res.data);
 
 export default api;
-
-
-

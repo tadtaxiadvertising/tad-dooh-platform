@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body } from '@nestjs/common';
 import { AssetsService } from './assets.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -10,5 +10,10 @@ export class AssetsController {
   @Get('manifest')
   async getAssetManifest(@Query('device_id') deviceId: string) {
     return this.assetsService.getAssetManifest(deviceId);
+  }
+
+  @Post('webhook/supabase')
+  async handleWebhook(@Body() payload: any) {
+    return this.assetsService.handleAssetWebhook(payload);
   }
 }

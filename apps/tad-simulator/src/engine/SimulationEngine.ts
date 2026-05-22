@@ -3,6 +3,7 @@ import { Worker } from 'worker_threads';
 import { PrismaClient as SimulatorPrisma } from '../generated/client';
 import { createAppPrismaClient } from './app-prisma';
 import { DriverModule } from './modules/drivers';
+import { getResolvedApiUrl } from '@/utils/network';
 
 export class SimulationEngine {
   private workers: Map<string, Worker> = new Map();
@@ -12,18 +13,11 @@ export class SimulationEngine {
   
   private config = {
     driverCount: 150,
-    apiUrl: process.env.TAD_API_URL || 'http://localhost:3001/api/v1',
+    apiUrl: getResolvedApiUrl(),
     jwtSecret: process.env.JWT_SECRET || 'tad-default-secret-2026',
-    tickInterval: 15000 
+    tickInterval: 60000 
   };
 
-  private getResolvedApiUrl() {
-    if (this.config.apiUrl.includes('proyecto_ia.ibusiness.com.do')) {
-        console.warn(`[Engine] Detected unresolvable domain. Falling back to internal networking.`);
-        return 'http://localhost:3001/api/v1';
-    }
-    return this.config.apiUrl;
-  }
 
   get currentConfig() { return this.config; }
   get isRunning() { return this.activeDrivers.size > 0; }

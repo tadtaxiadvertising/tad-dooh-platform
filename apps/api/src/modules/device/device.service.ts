@@ -177,9 +177,10 @@ export class DeviceService {
   }
 
   async deviceHeartbeat(dto: HeartbeatDto) {
-    // Make sure device exists first
+    // SRE v12.1.1: Single query with driver included — eliminates N+1 (was 2 findUnique calls)
     let device = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
+      include: { driver: true },
     });
 
     if (!device) {
@@ -219,19 +220,37 @@ export class DeviceService {
       });
     }
     
-    // Check if tablet is blocked
-    const { blocked, reason } = await this.checkSubscriptionStatus(dto.device_id);
+    // SRE v12.1.1: Inline subscription check using already-loaded driver (no extra DB call)
+    let blocked = false;
+    let reason: string | undefined;
+    
+    if (device.driver) {
+      const { driver } = device;
+      if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
+        // Paid and valid — OK
+      } else {
+        // Expired or unpaid — log but DON'T block (per TAD policy)
+        this.logger.warn(`⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
+        // SRE: Fire-and-forget morosidad notification — does NOT block tablet response
+        this.financeService.notifyMorosidad(dto.device_id).catch(e => {
+          this.logger.error(`Failed to trigger morosidad notification for ${dto.device_id}: ${e.message}`);
+        });
+      }
+    }
 
-    // Record the heartbeat
-    await this.prisma.deviceHeartbeat.create({
+    // SRE v12.1.1: Fire-and-forget heartbeat record — telemetry is NOT request-critical
+    this.prisma.deviceHeartbeat.create({
       data: {
         deviceId: dto.device_id,
         batteryLevel: dto.battery_level,
         storageFree: dto.storage_free,
         timestamp: new Date(),
       },
+    }).catch(e => {
+      this.logger.error(`Failed to record heartbeat for ${dto.device_id}: ${e.message}`);
     });
 
+    this.logger.log(`💓 Heartbeat processed for device ${dto.device_id}. Battery: ${dto.battery_level}%, Player: ${dto.player_status}`);
     return { success: true, blocked, reason };
   }
 
@@ -414,6 +433,7 @@ export class DeviceService {
       { expiresIn: '48h' }
     );
 
+    this.logger.log(`✅ Device ${deviceId}: Sync success. Sent ${payload.media_assets?.length || 0} assets.`);
     return {
       update: true,
       blocked: false,

@@ -46,6 +46,7 @@ async function bootstrap() {
       'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
       'https://proyecto-ia-tad-driver.rewvid.easypanel.host',
       'https://proyecto-ia-tad-simulator.rewvid.easypanel.host',
+      'https://tad-simulator.rewvid.easypanel.host',
     ];
     
     const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])];

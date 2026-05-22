@@ -1,12 +1,344 @@
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from 'react';
 import Head from 'next/head';
+import api from '@tad/services';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
-import { Phone, Check, ShieldAlert, CreditCard, Lock, User, Loader2, Wifi, AlertCircle, ArrowRight } from 'lucide-react';
-import api from '@tad/services';
-import clsx from 'clsx';
+import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
+import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
+
+const DRIVER_AGREEMENT_VERSION = '2.0 (HaaS)';
+const DRIVER_STARTER_KIT_FEE_RD = 6000;
+
+type DriverOnboardingStage = 'contract' | 'bank' | 'payment' | 'ready';
+
+type DriverReadinessData = {
+  agreementVersion: string | null;
+  bankAccountConfigured: boolean;
+  contractAccepted: boolean;
+  driverId: string;
+  onboardingStatus: string;
+  subscriptionPaid: boolean;
+};
+
+const getDriverOnboardingStorageKey = (driverId: string) => `tad_driver_dashboard_onboarding_seen_v2_${driverId}`;
+
+const getDriverOnboardingStage = (
+  hubData: DriverReadinessData | null,
+  bankPendingSync: boolean,
+): DriverOnboardingStage => {
+  if (!hubData?.contractAccepted) return 'contract';
+  if (!hubData.bankAccountConfigured && !bankPendingSync) return 'bank';
+  if (!hubData.subscriptionPaid) return 'payment';
+  return 'ready';
+};
+
+function ReadinessItem({
+  complete,
+  detail,
+  label,
+}: {
+  complete: boolean;
+  detail: string;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{label}</p>
+        <span
+          className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${
+            complete ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'
+          }`}
+        >
+          {complete ? 'OK' : 'Pendiente'}
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-zinc-300 leading-relaxed">{detail}</p>
+    </div>
+  );
+}
+
+function DriverReadinessCard({
+  bankPendingSync,
+  hubData,
+  onOpen,
+}: {
+  bankPendingSync: boolean;
+  hubData: DriverReadinessData | null;
+  onOpen: () => void;
+}) {
+  if (!hubData) return null;
+
+  const contractReady = hubData.contractAccepted;
+  const bankReady = hubData.bankAccountConfigured || bankPendingSync;
+  const paymentReady = hubData.subscriptionPaid;
+  const completedCount = [contractReady, bankReady, paymentReady].filter(Boolean).length;
+
+  if (completedCount === 3) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-[2rem] border border-[#FFD400]/15 bg-[#14110a] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#FFD400]">Onboarding radial</p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-white">Tu unidad todavía no está 100% lista</h2>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            Completa contrato, cuenta bancaria y activación anual para operar sin fricción. La fórmula vigente sigue protegida:
+            hasta 15 slots y RD$500 por campaña activa.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Avance</p>
+          <p className="mt-1 text-3xl font-black text-white">{completedCount}/3</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3">
+        <ReadinessItem
+          label="Contrato y hardware V2"
+          complete={contractReady}
+          detail={
+            contractReady
+              ? `Aceptado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ''}`
+              : 'Firma digital pendiente antes de pasar a la operación formal.'
+          }
+        />
+        <ReadinessItem
+          label="Cuenta bancaria dominicana"
+          complete={bankReady}
+          detail={
+            hubData.bankAccountConfigured
+              ? 'Cuenta registrada y confirmada por el backend.'
+              : bankPendingSync
+              ? 'Guardada localmente. Se sincronizará automáticamente cuando vuelva la red.'
+              : 'Falta registrar banco, número de cuenta, tipo y cédula del titular.'
+          }
+        />
+        <ReadinessItem
+          label="Starter Kit anual"
+          complete={paymentReady}
+          detail={
+            paymentReady
+              ? 'Membresía anual operativa y sin bloqueo.'
+              : `Pendiente de pago por RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')} para evitar bloqueo 402.`
+          }
+        />
+      </div>
+
+      <button
+        onClick={onOpen}
+        className="mt-5 w-full rounded-2xl bg-[#FFD400] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-[#ffe45c]"
+      >
+        Continuar preparación
+      </button>
+    </section>
+  );
+}
+
+function DriverOnboardingModal({
+  bankPendingSync,
+  busy,
+  hubData,
+  onAcceptAgreement,
+  onBankSuccess,
+  onClose,
+}: {
+  bankPendingSync: boolean;
+  busy: boolean;
+  hubData: DriverReadinessData | null;
+  onAcceptAgreement: () => void;
+  onBankSuccess: () => void;
+  onClose: () => void;
+}) {
+  if (!hubData) return null;
+
+  const stage = getDriverOnboardingStage(hubData, bankPendingSync);
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/85 backdrop-blur-xl p-4">
+      <div className="w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 shadow-[0_30px_120px_rgba(0,0,0,0.85)]">
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Driver Readiness</p>
+            <h3 className="text-lg font-black text-white">Preparación operativa del conductor</h3>
+          </div>
+          {/* X solo disponible en pasos no obligatorios (payment / ready) */}
+          {stage === 'payment' || stage === 'ready' ? (
+            <button
+              onClick={onClose}
+              className="rounded-full bg-white/5 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+              aria-label="Cerrar onboarding"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <div
+              className="rounded-full bg-white/[0.03] p-2 text-zinc-800 cursor-not-allowed"
+              role="img"
+              title="Debes completar este paso obligatorio antes de continuar"
+              aria-label="Cierre bloqueado — paso obligatorio"
+            >
+              <X className="h-4 w-4" />
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="p-6 md:p-8">
+            {stage === 'contract' && (
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#FFD400]/20 bg-[#FFD400]/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#FFD400]">
+                  <ShieldCheck className="h-4 w-4" />
+                  Contrato de servicio
+                </div>
+                <div>
+                  <h4 className="text-3xl font-black tracking-tight text-white">Acepta el acuerdo V2 antes de salir a pista</h4>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Este paso deja formalizado el servicio, el uso del hardware y la continuidad del esquema de pagos.
+                    La operación mantiene el límite de 15 slots y la lógica de RD$500 por campaña activa.
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-white/5 bg-white/[0.03] p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Resumen contractual</p>
+                  <ul className="mt-4 space-y-3 text-sm text-zinc-300">
+                    <li>Pago anual del Starter Kit: RD$6,000 con ITBIS integrado.</li>
+                    <li>El kill-switch 402 se activa automáticamente si la membresía queda morosa.</li>
+                    <li>La PWA sigue operando offline-first y sincroniza al volver la red.</li>
+                  </ul>
+                </div>
+                <button
+                  onClick={onAcceptAgreement}
+                  disabled={busy}
+                  className="inline-flex items-center gap-3 rounded-2xl bg-[#FFD400] px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-[#ffe45c] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span>{busy ? 'Registrando acuerdo...' : 'Aceptar contrato y continuar'}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            {stage === 'bank' && (
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300">
+                  <Landmark className="h-4 w-4" />
+                  Cuenta de pagos
+                </div>
+                <div>
+                  <h4 className="text-3xl font-black tracking-tight text-white">Configura tu banco con modo offline-first</h4>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Si pierdes conectividad en ruta, los datos quedan guardados localmente y se reenvían por proxy seguro
+                    al recuperar la red. Nunca pasan por una ruta pesada ni se pierde el formulario.
+                  </p>
+                </div>
+                <BankForm driverId={hubData.driverId} onSuccess={onBankSuccess} />
+              </div>
+            )}
+
+            {stage === 'payment' && (
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">
+                  <CreditCard className="h-4 w-4" />
+                  Activación final
+                </div>
+                <div>
+                  <h4 className="text-3xl font-black tracking-tight text-white">Solo falta activar la anualidad del Starter Kit</h4>
+                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                     Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago
+                     anual de{' '}
+                     <strong className="text-white">
+                       RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}
+                     </strong>{' '}
+                     <span className="text-zinc-500">(ITBIS 18% incluido)</span> para mantener la
+                     unidad fuera del bloqueo 402.
+                   </p>
+                </div>
+                <div className="rounded-3xl border border-[#FFD400]/15 bg-[#FFD400]/5 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Estado actual</p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Onboarding</p>
+                      <p className="mt-1 text-2xl font-black text-white">{hubData.onboardingStatus}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Slots máximos</p>
+                      <p className="mt-1 text-2xl font-black text-white">15</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="inline-flex items-center gap-3 rounded-2xl bg-[#FFD400] px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-[#ffe45c]"
+                >
+                  Cerrar y seguir operando
+                </button>
+              </div>
+            )}
+
+            {stage === 'ready' && (
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">
+                  <ShieldCheck className="h-4 w-4" />
+                  Unidad lista
+                </div>
+                <div>
+                  <h4 className="text-3xl font-black tracking-tight text-white">Tu operación quedó preparada</h4>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Ya puedes seguir usando el dashboard con contrato, banco y anualidad completos.
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="inline-flex items-center gap-3 rounded-2xl bg-[#FFD400] px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-[#ffe45c]"
+                >
+                  Abrir dashboard
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/5 bg-black/30 p-6 md:border-l md:border-t-0 md:p-8">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Checklist de continuidad</p>
+            <div className="mt-5 space-y-3">
+              <ReadinessItem
+                label="Contrato"
+                complete={hubData.contractAccepted}
+                detail={
+                  hubData.contractAccepted
+                    ? `Firmado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ''}`
+                    : 'Falta firma electrónica'
+                }
+              />
+              <ReadinessItem
+                label="Banco"
+                complete={hubData.bankAccountConfigured || bankPendingSync}
+                detail={
+                  hubData.bankAccountConfigured
+                    ? 'Configurado en backend'
+                    : bankPendingSync
+                    ? 'Pendiente de sincronización'
+                    : 'No configurado'
+                }
+              />
+              <ReadinessItem
+                label="Anualidad"
+                complete={hubData.subscriptionPaid}
+                detail={
+                  hubData.subscriptionPaid
+                    ? 'Operativa'
+                    : `Pendiente RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}`
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Sub-componentes inline (sin librerías de UI externas) ────────────────────
 
@@ -356,119 +688,65 @@ export default function DriverDashboard() {
   const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
     useTelemetry();
   const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
-  const { isLocked, message: lockMessage } = usePaymentStore();
+  const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
-
-  // Onboarding states
   const [showOnboarding, setShowOnboarding] = React.useState(false);
-  const [step, setStep] = React.useState(1);
-  
-  // Bank details
-  const [bank, setBank] = React.useState<'Popular' | 'BHD' | 'Banreservas'>('Popular');
-  const [accountName, setAccountName] = React.useState('');
-  const [accountNumber, setAccountNumber] = React.useState('');
-  const [acceptTerms, setAcceptTerms] = React.useState(false);
-  const [acceptInsurance, setAcceptInsurance] = React.useState(false);
-  const [isPendingSync, setIsPendingSync] = React.useState(false);
+  const [onboardingBusy, setOnboardingBusy] = React.useState(false);
+  const [bankPendingSync, setBankPendingSync] = React.useState(false);
 
-  // Iniciar tracking GPS al montar y chequear onboarding bancario
+  // Iniciar tracking GPS al montar
   useEffect(() => {
     startTracking();
-
-    const userStr = localStorage.getItem('tad_driver_user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setAccountName(user.fullName || '');
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    const bankSetupDone = localStorage.getItem('tad_drv_bank_setup_done');
-    if (!bankSetupDone) {
-      setShowOnboarding(true);
-    }
-
-    // Check initial pending sync status
-    const pending = localStorage.getItem('tad_pending_bank_sync');
-    if (pending === 'true') {
-      setIsPendingSync(true);
-    }
-
     return () => stopTracking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync bank details effect
   useEffect(() => {
-    const syncPendingBankDetails = async () => {
-      const pending = localStorage.getItem('tad_pending_bank_sync');
-      const detailsStr = localStorage.getItem('tad_offline_bank_details');
-      if (pending === 'true' && detailsStr && navigator.onLine) {
-        try {
-          const details = JSON.parse(detailsStr);
-          await api.post('/drivers/me/bank-details', details);
-          localStorage.removeItem('tad_pending_bank_sync');
-          setIsPendingSync(false);
-          alert('¡Sincronización Exitosa! Sus datos bancarios se han guardado de forma segura en el servidor de TAD.');
-        } catch (err) {
-          console.error('Error in bank details auto-sync:', err);
-        }
+    if (typeof window === 'undefined' || !hubData?.driverId) return;
+
+    const pendingKey = getDriverBankPendingKey(hubData.driverId);
+    const onboardingKey = getDriverOnboardingStorageKey(hubData.driverId);
+    const pendingSync = localStorage.getItem(pendingKey) === '1';
+    const forceOnboarding = sessionStorage.getItem('tad_driver_force_onboarding') === '1';
+    const hasSeenOnboarding = localStorage.getItem(onboardingKey) === '1';
+
+    setBankPendingSync(pendingSync);
+
+    // ── Guard mandatorio ──────────────────────────────────────────────────────
+    // Re-abre el modal aunque el conductor ya lo haya "visto" si los pasos
+    // obligatorios (contrato y banco) siguen incompletos. Evita el bypass
+    // mediante el flag de localStorage.
+    const isMandatoryIncomplete =
+      !hubData.contractAccepted || (!hubData.bankAccountConfigured && !pendingSync);
+
+    if (forceOnboarding || !hasSeenOnboarding || isMandatoryIncomplete) {
+      setShowOnboarding(true);
+    }
+  }, [hubData?.driverId, hubData?.contractAccepted, hubData?.bankAccountConfigured]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !hubData?.driverId) return;
+
+    if (hubData.bankAccountConfigured) {
+      localStorage.removeItem(getDriverBankPendingKey(hubData.driverId));
+      setBankPendingSync(false);
+    }
+  }, [hubData?.bankAccountConfigured, hubData?.driverId]);
+
+  // ─── Enforcer de Suscripción / Pago Anual 402 ──────────────────────────────
+  useEffect(() => {
+    if (!hubData) return;
+
+    if (hubData.subscriptionPaid === false) {
+      if (!showOnboarding) {
+        setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
+      } else {
+        setLock(false, null);
       }
-    };
-
-    window.addEventListener('online', syncPendingBankDetails);
-    
-    // Run sync immediately if connection is present
-    if (navigator.onLine) {
-      syncPendingBankDetails();
+    } else if (hubData.subscriptionPaid === true) {
+      setLock(false, null);
     }
-
-    return () => window.removeEventListener('online', syncPendingBankDetails);
-  }, []);
-
-  const handleCompleteBankOnboarding = async () => {
-    if (!acceptTerms || !acceptInsurance) {
-      alert('Debes aceptar el contrato de servicio y el seguro de hardware.');
-      return;
-    }
-    if (!accountName || !accountNumber) {
-      alert('Por favor completa todos los datos bancarios.');
-      return;
-    }
-
-    const bankDetails = {
-      bank,
-      accountName,
-      accountNumber,
-      contractAccepted: true,
-      insuranceAccepted: true,
-      agreementVersion: '2.0',
-      timestamp: new Date().toISOString()
-    };
-
-    localStorage.setItem('tad_offline_bank_details', JSON.stringify(bankDetails));
-    localStorage.setItem('tad_drv_bank_setup_done', 'true');
-    setShowOnboarding(false);
-
-    if (navigator.onLine) {
-      try {
-        await api.post('/drivers/me/bank-details', bankDetails);
-        localStorage.removeItem('tad_pending_bank_sync');
-        setIsPendingSync(false);
-        alert('¡Registro Bancario Completado! Sus datos han sido sincronizados.');
-      } catch (err) {
-        console.warn('Sync failed on completion, saving for offline sync:', err);
-        localStorage.setItem('tad_pending_bank_sync', 'true');
-        setIsPendingSync(true);
-      }
-    } else {
-      localStorage.setItem('tad_pending_bank_sync', 'true');
-      setIsPendingSync(true);
-      alert('¡Modo Local Activado! Tus datos se han guardado localmente de forma segura. Se sincronizarán automáticamente al recuperar la señal de internet.');
-    }
-  };
+  }, [hubData?.subscriptionPaid, showOnboarding, setLock]);
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
@@ -492,6 +770,70 @@ export default function DriverDashboard() {
     await syncPending();
     await refreshHub();
     setSyncingNow(false);
+  };
+
+  const closeOnboarding = () => {
+    // ── Bloqueo de pasos obligatorios ─────────────────────────────────────────
+    // 'contract' y 'bank' son mandatorios: no se puede cerrar el modal hasta
+    // completarlos. Protege contra conductores que hagan bypass desde el cliente.
+    if (hubData) {
+      const currentBankPending =
+        typeof window !== 'undefined' && hubData.driverId
+          ? localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === '1'
+          : bankPendingSync;
+
+      const currentStage = getDriverOnboardingStage(
+        {
+          agreementVersion: hubData.agreementVersion,
+          bankAccountConfigured: hubData.bankAccountConfigured,
+          contractAccepted: hubData.contractAccepted,
+          driverId: hubData.driverId,
+          onboardingStatus: hubData.onboardingStatus,
+          subscriptionPaid: hubData.subscriptionPaid,
+        },
+        currentBankPending,
+      );
+
+      if (currentStage === 'contract' || currentStage === 'bank') {
+        // Paso obligatorio — no permitir cierre
+        return;
+      }
+    }
+
+    if (typeof window !== 'undefined' && hubData?.driverId) {
+      localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
+      sessionStorage.removeItem('tad_driver_force_onboarding');
+    }
+
+    setShowOnboarding(false);
+  };
+
+  const handleAcceptAgreement = async () => {
+    if (!hubData?.driverId) return;
+
+    setOnboardingBusy(true);
+    try {
+      await api.post(`/drivers/${hubData.driverId}/accept-agreement`, {
+        version: DRIVER_AGREEMENT_VERSION,
+      });
+      await refreshHub();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo registrar la aceptación del contrato.';
+      alert(Array.isArray(message) ? message[0] : message);
+    } finally {
+      setOnboardingBusy(false);
+    }
+  };
+
+  const handleBankSaved = async () => {
+    if (typeof window !== 'undefined' && hubData?.driverId) {
+      setBankPendingSync(localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === '1');
+    }
+
+    await refreshHub();
   };
 
   const handleReferir = () => {
@@ -555,19 +897,23 @@ export default function DriverDashboard() {
           </span>
         </div>
 
-        {/* Offline Pending Sync Banner */}
-        {isPendingSync && (
-          <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-center justify-between gap-3 text-orange-400">
-            <div className="flex items-center gap-2">
-              <Wifi className="w-4 h-4 animate-pulse shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-left">
-                Modo Local: Cuenta Bancaria Guardada (Pendiente de Red)
-              </span>
-            </div>
-            <span className="text-[9px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded font-black uppercase tracking-widest">
-              Offline
-            </span>
-          </div>
+        {!hubLoading && (
+          <DriverReadinessCard
+            bankPendingSync={bankPendingSync}
+            hubData={
+              hubData
+                ? {
+                    agreementVersion: hubData.agreementVersion,
+                    bankAccountConfigured: hubData.bankAccountConfigured,
+                    contractAccepted: hubData.contractAccepted,
+                    driverId: hubData.driverId,
+                    onboardingStatus: hubData.onboardingStatus,
+                    subscriptionPaid: hubData.subscriptionPaid,
+                  }
+                : null
+            }
+            onOpen={() => setShowOnboarding(true)}
+          />
         )}
 
         {/* Ledger Financiero */}
@@ -653,7 +999,7 @@ export default function DriverDashboard() {
         {/* Footer */}
         <footer className="pt-6 text-center space-y-2">
           <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
-            TAD DOOH Platform v11.0.0
+            TAD DOOH Platform v12.0.0
           </p>
           <p className="text-neutral-800 text-[9px] font-mono">
             GPS: {isTracking ? 'ACTIVO' : 'INACTIVO'} · Batch: {batchCount}/10 · Red: {connectionStatus.toUpperCase()}
@@ -675,227 +1021,26 @@ export default function DriverDashboard() {
       {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción */}
       {isLocked && <LockdownScreen message={lockMessage} />}
 
-      {/* ─── ONBOARDING WIZARD OVERLAY ─── */}
-      {showOnboarding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl overflow-y-auto">
-          <div className="w-full max-w-md bg-zinc-950 border border-white/10 rounded-[2rem] p-6 lg:p-8 shadow-2xl relative my-auto">
-            {/* Visual Accent */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FFD400] to-transparent" />
-
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                Socio Conductor · Registro Bancario
-              </span>
-              <span className="text-[10px] font-black text-[#FFD400] uppercase tracking-widest bg-[#FFD400]/10 px-2 py-1 rounded">
-                Paso {step} de 3
-              </span>
-            </div>
-
-            {/* STEP 1: Handshake, Contract and Compensation Formula */}
-            {step === 1 && (
-              <div className="space-y-5 text-left">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                    Contrato de Servicio <span className="text-[#FFD400]">v2.0</span>
-                  </h3>
-                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">
-                    Términos de Operación & Compensación V12
-                  </p>
-                </div>
-
-                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 space-y-4 max-h-[30vh] overflow-y-auto">
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-black text-[#FFD400] uppercase">1. Seguro y Starter Kit</h4>
-                    <p className="text-neutral-400 text-[11px] leading-relaxed">
-                      El conductor acepta la responsabilidad civil y el cuidado del Starter Kit (Tablet y soporte especial). El costo de membresía anual de hardware es de <span className="text-white font-bold">RD$6,000</span> (con ITBIS del 18%).
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-black text-[#FFD400] uppercase">2. Fórmula de Compensación V12</h4>
-                    <p className="text-neutral-400 text-[11px] leading-relaxed">
-                      Tus ingresos mensuales se calculan en base a las campañas activas y conversiones de ventas generadas mediante el código QR:
-                    </p>
-                    <div className="bg-black/50 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-center text-white">
-                      <span className="text-zinc-500 block uppercase font-bold text-[8px] mb-1 tracking-widest">Fórmula de Nómina</span>
-                      RD$ Earnings = (Min(Ads, 15) × 500) + (CPA_Sales × 500)
-                    </div>
-                    <p className="text-neutral-500 text-[10px] leading-relaxed italic">
-                      * Ads: Número de anuncios simultáneos en tu tablet (límite operativo absoluto de 15 slots por dispositivo).
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-black text-[#FFD400] uppercase">3. Sincronización y Transparencia</h4>
-                    <p className="text-neutral-400 text-[11px] leading-relaxed">
-                      La tablet recopila datos GPS en tiempo real. La manipulación o desconexión deliberada puede causar penalizaciones o la activación del Kill-Switch operativo (HTTP 402).
-                    </p>
-                  </div>
-                </div>
-
-                {/* Agreements checkboxes */}
-                <div className="space-y-3 pt-2">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={acceptTerms}
-                      onChange={(e) => setAcceptTerms(e.target.checked)}
-                      className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-[#FFD400] focus:ring-[#FFD400] accent-yellow-400"
-                    />
-                    <span className="text-[11px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
-                      Acepto formalmente el <span className="text-white font-bold">Contrato de Servicio HaaS v2.0</span> y las constantes de negocio de la plataforma TAD.
-                    </span>
-                  </label>
-
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={acceptInsurance}
-                      onChange={(e) => setAcceptInsurance(e.target.checked)}
-                      className="mt-0.5 w-5 h-5 rounded border-2 border-white/10 bg-black text-[#FFD400] focus:ring-[#FFD400] accent-yellow-400"
-                    />
-                    <span className="text-[11px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
-                      Acepto la cobertura y cargo de <span className="text-white font-bold">Seguro de Hardware (RD$6,000/anual)</span> por responsabilidad del Starter Kit.
-                    </span>
-                  </label>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (!acceptTerms || !acceptInsurance) {
-                      alert('Debes aceptar ambos términos contractuales antes de continuar.');
-                      return;
-                    }
-                    setStep(2);
-                  }}
-                  className="w-full py-4.5 bg-[#FFD400] hover:bg-yellow-400 text-black font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  Continuar al Paso Bancario
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* STEP 2: Bank Selection */}
-            {step === 2 && (
-              <div className="space-y-6 text-left">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                    Selecciona tu <span className="text-[#FFD400]">Banco</span>
-                  </h3>
-                  <p className="text-zinc-500 text-xs">
-                    Elige la entidad bancaria dominicana donde deseas recibir tus depósitos mensuales.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {[
-                    { id: 'Popular', name: 'Banco Popular Dominicano', color: 'border-blue-500/30 text-blue-400 bg-blue-500/5' },
-                    { id: 'BHD', name: 'Banco BHD', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5' },
-                    { id: 'Banreservas', name: 'Banreservas', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5' },
-                  ].map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={() => {
-                        setBank(b.id as any);
-                        setStep(3);
-                      }}
-                      className={clsx(
-                        "p-5 rounded-2xl border text-left transition-all hover:scale-[1.02] flex items-center justify-between group",
-                        bank === b.id ? "border-[#FFD400] bg-zinc-900/60" : "border-white/5 bg-zinc-900/20"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={clsx("w-3 h-3 rounded-full", bank === b.id ? "bg-[#FFD400] animate-ping" : "bg-zinc-800")} />
-                        <span className="text-sm font-black text-white uppercase tracking-tight">{b.name}</span>
-                      </div>
-                      <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border", b.color)}>
-                        {b.id}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setStep(1)}
-                  className="w-full py-4 border border-white/5 hover:border-white/10 text-zinc-400 hover:text-white font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
-                >
-                  ← Volver a Contrato
-                </button>
-              </div>
-            )}
-
-            {/* STEP 3: Bank Details Form */}
-            {step === 3 && (
-              <div className="space-y-6 text-left">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                    Detalles de <span className="text-[#FFD400]">Cuenta</span>
-                  </h3>
-                  <p className="text-zinc-500 text-xs">
-                    Ingresa el número de cuenta y titular de <span className="text-white font-bold">{bank}</span>.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">
-                      Nombre del Titular
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-4 w-4 h-4 text-zinc-600" />
-                      <input
-                        type="text"
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Juan Pérez"
-                        className="w-full bg-black border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white placeholder:text-zinc-800 focus:outline-none focus:border-[#FFD400]/40 focus:bg-zinc-950 transition-all"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">
-                      Número de Cuenta
-                    </label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-4 top-4 w-4 h-4 text-zinc-600" />
-                      <input
-                        type="tel"
-                        pattern="[0-9]*"
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
-                        placeholder="1234567890"
-                        className="w-full bg-black border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-mono font-bold text-white placeholder:text-zinc-800 focus:outline-none focus:border-[#FFD400]/40 focus:bg-zinc-950 transition-all"
-                        required
-                      />
-                    </div>
-                    <p className="text-[9px] text-zinc-600 ml-1 leading-relaxed">
-                      * Teclado numérico táctil activo. Introduzca solo números sin guiones ni espacios.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setStep(2)}
-                    className="flex-1 py-4 border border-white/5 hover:border-white/10 text-zinc-400 hover:text-white font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
-                  >
-                    Atrás
-                  </button>
-                  <button
-                    onClick={handleCompleteBankOnboarding}
-                    className="flex-1 py-4 bg-[#FFD400] hover:bg-yellow-400 text-black font-black uppercase text-xs tracking-wider rounded-2xl transition-all active:scale-[0.98]"
-                  >
-                    Guardar y Finalizar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      {showOnboarding && !isLocked && (
+        <DriverOnboardingModal
+          bankPendingSync={bankPendingSync}
+          busy={onboardingBusy}
+          hubData={
+            hubData
+              ? {
+                  agreementVersion: hubData.agreementVersion,
+                  bankAccountConfigured: hubData.bankAccountConfigured,
+                  contractAccepted: hubData.contractAccepted,
+                  driverId: hubData.driverId,
+                  onboardingStatus: hubData.onboardingStatus,
+                  subscriptionPaid: hubData.subscriptionPaid,
+                }
+              : null
+          }
+          onAcceptAgreement={() => void handleAcceptAgreement()}
+          onBankSuccess={() => void handleBankSaved()}
+          onClose={closeOnboarding}
+        />
       )}
     </div>
   );

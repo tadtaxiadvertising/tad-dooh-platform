@@ -76,32 +76,54 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 1: Validación Local JWT ---
     if (jwtSecret) {
       try {
-        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as jwt.JwtPayload;
-        if (payload) {
-          request.user = {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.app_metadata?.role || payload.role || 'GUEST',
-            entityId: payload.app_metadata?.entityId || null,
-          };
-          
-          // Cache sucessful validation
-          SupabaseAuthGuard.sessionCache.set(token, { 
-            user: request.user, 
-            expiry: Date.now() + this.CACHE_TTL_MS 
-          });
+        const decodedToken = jwt.decode(token, { complete: true }) as any;
+        const alg = decodedToken?.header?.alg || 'HS256';
+        
+        const isSymmetricSecret = !jwtSecret.includes('BEGIN PUBLIC KEY') && !jwtSecret.includes('BEGIN CERTIFICATE');
+        const isAsymmetricAlg = alg.startsWith('RS') || alg.startsWith('ES') || alg.startsWith('PS');
 
-          this.logger.debug(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
-          return true;
+        if (isAsymmetricAlg && isSymmetricSecret) {
+          // Skip Strategy 1: Cannot verify asymmetric token with a symmetric secret
+          // Lo silenciamos para evitar spam en consola ya que es un flujo esperado (ES256 en lugar de HS256)
+        } else {
+          const payload = jwt.verify(token, jwtSecret, { 
+            algorithms: [alg, 'HS256', 'HS384', 'HS512'] 
+          }) as jwt.JwtPayload;
+
+          if (payload) {
+            request.user = {
+              id: payload.sub,
+              email: payload.email,
+              role: payload.app_metadata?.role || payload.role || 'GUEST',
+              entityId: payload.app_metadata?.entityId || null,
+            };
+            
+            // Cache sucessful validation
+            SupabaseAuthGuard.sessionCache.set(token, { 
+              user: request.user, 
+              expiry: Date.now() + this.CACHE_TTL_MS 
+            });
+
+            this.logger.verbose(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
+            return true;
+          }
         }
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errName = err instanceof Error ? err.name : '';
+        
         if (errName === 'TokenExpiredError') {
           this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
           throw new UnauthorizedException('Tu sesión ha expirado.');
         }
-        this.logger.debug(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+
+        // If it's a configuration issue with the secret/algorithm, we log it more clearly
+        const isAlgError = errorMessage.toLowerCase().includes('algorithm');
+        if (isAlgError) {
+          this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+        } else {
+          this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+        }
       }
     }
 
@@ -137,12 +159,13 @@ export class SupabaseAuthGuard implements CanActivate {
         });
         
         if (roleFromMeta === 'GUEST') {
-          this.logger.debug(
+          this.logger.warn(
             `⚠️ [AUTH_GUARD] Usuario autenticado pero sin rol en metadata: ${data.user.email}. ` +
-            `Configura SUPABASE_JWT_SECRET para optimizar rendimiento y role mapping.`
+            `Verifica si las claims están correctas en Supabase.`
           );
         } else {
-          this.logger.debug(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
+          // Log a nivel verbose para que no inunde la consola en producción por cada request
+          this.logger.verbose(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
         }
         return true;
       }

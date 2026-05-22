@@ -15,6 +15,10 @@ export interface DriverHubData {
   deviceId: string | null;
   gpsPoints: number;
   adsPlayed: number;
+  contractAccepted: boolean;
+  agreementVersion: string | null;
+  onboardingStatus: string;
+  bankAccountConfigured: boolean;
 }
 
 const MAX_DRIVER_SLOTS = 15;
@@ -46,6 +50,10 @@ const normalizeHubData = (raw: any): DriverHubData => {
     deviceId: raw?.deviceId ? String(raw.deviceId) : null,
     gpsPoints: toNumber(raw?.gpsPoints, 0),
     adsPlayed: toNumber(raw?.adsPlayed, 0),
+    contractAccepted: Boolean(raw?.contractAccepted),
+    agreementVersion: raw?.agreementVersion ? String(raw.agreementVersion) : null,
+    onboardingStatus: String(raw?.onboardingStatus || 'UNKNOWN'),
+    bankAccountConfigured: Boolean(raw?.bankAccountConfigured),
   };
 };
 

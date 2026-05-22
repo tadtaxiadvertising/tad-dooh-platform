@@ -8,7 +8,7 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3004';
 
 export default defineConfig({
   // Directorio raíz con todos los spec files
@@ -112,7 +112,7 @@ export default defineConfig({
     command: 'npm run dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
     stdout: 'pipe',
     stderr: 'pipe',
   },

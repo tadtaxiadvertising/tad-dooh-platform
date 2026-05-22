@@ -36,19 +36,19 @@ const createNoopClient = (): AppPrismaLike => ({
   $disconnect: async () => {}
 });
 
+import { PrismaClient } from '@prisma/client';
+
 export function createAppPrismaClient(): AppPrismaLike {
   try {
-    const dynamicRequire = eval('require') as NodeRequire;
-    const prismaModule = dynamicRequire('@prisma/client') as {
-      PrismaClient?: new () => AppPrismaLike;
-    };
-
-    if (typeof prismaModule?.PrismaClient === 'function') {
-      return new prismaModule.PrismaClient();
-    }
+    // We use a static import now to ensure Next.js standalone mode bundles the client.
+    // The Dockerfile ensures prisma generate is run before building.
+    return new PrismaClient() as unknown as AppPrismaLike;
   } catch (error: any) {
-    console.warn(`[Engine] Prisma client unavailable, using no-op client: ${error?.message ?? 'unknown error'}`);
+    console.warn(`[Engine] Prisma client unavailable, using no-op client. 
+      Details: ${error?.message ?? 'unknown error'}
+      Check: Is '@prisma/client' generated and available in node_modules?
+      Current Dir: ${process.cwd()}
+    `);
+    return createNoopClient();
   }
-
-  return createNoopClient();
 }

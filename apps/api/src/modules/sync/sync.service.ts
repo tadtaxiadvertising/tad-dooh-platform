@@ -5,6 +5,20 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
@@ -132,7 +146,7 @@ export class SyncService {
       },
       include: {
         media: true,
-        mediaAssets: true,
+        mediaAssets: { select: mediaAssetSafeSelect },
         videos: true
       }
     });

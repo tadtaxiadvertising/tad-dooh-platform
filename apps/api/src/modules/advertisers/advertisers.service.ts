@@ -21,6 +21,20 @@ interface UpdateAdvertiserDto {
   password?: string;
 }
 
+const mediaAssetSafeSelect = {
+  id: true,
+  campaignId: true,
+  type: true,
+  filename: true,
+  url: true,
+  fileSize: true,
+  checksum: true,
+  duration: true,
+  version: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class AdvertisersService {
   // FIX B-1: Añadir NestJS Logger en lugar de console.*
@@ -109,7 +123,7 @@ export class AdvertisersService {
           where: { active: true },
           include: {
             media: true,
-            mediaAssets: true,
+            mediaAssets: { select: mediaAssetSafeSelect },
             videos: true,
           },
         },

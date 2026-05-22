@@ -8,18 +8,21 @@ import ScenarioUploader from '@/components/dashboard/ScenarioUploader';
 import HealthMonitor from '@/components/dashboard/HealthMonitor';
 import { Activity, Database, Server } from 'lucide-react';
 import toast from 'react-hot-toast';
+import clsx from 'clsx';
 
 export default function ControlCenterPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiLatency, setApiLatency] = useState<number | null>(null);
   const [recentLogs, setRecentLogs] = useState<string[]>([]);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const [simConfig, setSimConfig] = useState({
     driverCount: 150,
     activeCampaigns: 5,
     errorRate: 0.05,
     telemetryFrequency: 30,
   });
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   useEffect(() => {
     // Poll state every 2 seconds
@@ -38,9 +41,13 @@ export default function ControlCenterPage() {
           if (json.data.recentLogs) {
             setRecentLogs(json.data.recentLogs);
           }
+          setBackendError(null);
+        } else {
+          setBackendError(json.error || 'Connection Failed');
         }
       } catch (e) {
         console.error('Failed to fetch state', e);
+        setBackendError('Backend Unreachable');
       }
     }, 10000); // Poll every 10 seconds (reduced from 2s to prevent API flooding)
     return () => clearInterval(interval);
@@ -116,13 +123,23 @@ export default function ControlCenterPage() {
             </div>
           </div>
         </div>
+
+        {backendError && (
+          <div className="glass-panel px-4 py-2 flex items-center gap-3 border-rose-500/30 bg-rose-500/5">
+            <div className="size-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]" />
+            <div className="text-sm">
+              <p className="text-rose-400 text-xs font-bold uppercase tracking-widest">Backend Connection Error</p>
+              <p className="font-medium text-rose-300/60 text-[10px] uppercase">{backendError}</p>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={clsx("grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-700", isMapExpanded && "gap-0")}>
         
         {/* Left Column - Controls */}
-        <div className="space-y-6 lg:col-span-1 border-r border-white/5 pr-0 lg:pr-6">
+        <div className={clsx("space-y-6 lg:col-span-1 border-r border-white/5 pr-0 lg:pr-6 transition-all duration-500", isMapExpanded ? "opacity-0 invisible h-0 overflow-hidden" : "opacity-100 visible")}>
           <ControlPanel 
             isRunning={isRunning} 
             loading={loading}
@@ -160,30 +177,41 @@ export default function ControlCenterPage() {
         </div>
 
         {/* Right Column - Visuals */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className={clsx("space-y-6 transition-all duration-700", isMapExpanded ? "lg:col-span-3 order-first" : "lg:col-span-2")}>
           {/* Map Section */}
-          <div className="glass-panel p-1 border border-white/10 overflow-hidden relative">
+          <div className={clsx("glass-panel p-1 border border-white/10 overflow-hidden relative transition-all duration-700", isMapExpanded && "ring-2 ring-tad-accent/50 shadow-[0_0_50px_rgba(255,212,0,0.1)]")}>
             <div className="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-black/20">
               <h2 className="font-semibold text-lg flex items-center gap-2">
                 <Activity className="w-5 h-5 text-tad-accent" />
                 Fleet Telemetry Live View
               </h2>
-              {isRunning && (
-                <span className="text-xs px-2 py-1 bg-tad-accent/20 text-tad-accent rounded-full border border-tad-accent/30 heartbeat">
-                  Live Socket
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {isRunning && (
+                  <span className="text-[10px] px-2 py-1 bg-tad-accent/20 text-tad-accent rounded-full border border-tad-accent/30 heartbeat uppercase font-bold tracking-widest">
+                    Live Socket
+                  </span>
+                )}
+                <button 
+                  onClick={() => setIsMapExpanded(!isMapExpanded)}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-tad-accent hover:border-tad-accent/30 transition-all active:scale-95"
+                  title={isMapExpanded ? "Restore View" : "Expand Map"}
+                >
+                  <Activity className={clsx("w-4 h-4 transition-transform duration-500", isMapExpanded && "rotate-180")} />
+                </button>
+              </div>
             </div>
-            <div className="h-[400px] w-full bg-[#050505] relative isolation-auto">
+            <div className={clsx("w-full bg-[#050505] relative isolation-auto transition-all duration-700", isMapExpanded ? "h-[650px]" : "h-[400px]")}>
                <LiveMap isRunning={isRunning} driverCount={simConfig.driverCount} />
             </div>
           </div>
 
           {/* Health & SRE Metrics */}
-          <HealthMonitor />
-
+          <div className={clsx("transition-all duration-500", isMapExpanded ? "opacity-0 invisible h-0 overflow-hidden" : "opacity-100 visible")}>
+             <HealthMonitor />
+          </div>
+          
           {/* Performance Chart Section */}
-          <div className="glass-panel p-5 border border-white/10">
+          <div className={clsx("glass-panel p-5 border border-white/10 transition-all duration-500", isMapExpanded ? "opacity-0 invisible h-0 overflow-hidden" : "opacity-100 visible")}>
             <h2 className="font-semibold text-lg mb-4">API Latency & Bottleneck Analysis</h2>
             <div className="h-[250px] w-full">
               <PerformanceChart isRunning={isRunning} externalLatency={apiLatency} />

@@ -39,4 +39,18 @@ export class AuthController {
     // For now we assume the driver generates it from their portal to scan on the tablet.
     return this.authService.generatePairingToken(req.user.id);
   }
+
+  @Public()
+  @Post('driver/register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Self-register a driver account' })
+  async registerDriver(@Body() dto: {
+    name: string;
+    phone: string;
+    password: string;
+    vehicleModel?: string;
+    licensePlate?: string;
+  }) {
+    return this.authService.registerDriver(dto);
+  }
 }

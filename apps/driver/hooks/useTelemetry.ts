@@ -191,7 +191,7 @@ export function useTelemetry(): UseTelemetryReturn {
     // 1. Sincronizar memoria con storage antes de procesar
     const storageBatch = readBatch();
     const combinedBatch = [...storageBatch, ...memoryBufferRef.current];
-    
+
     if (combinedBatch.length === 0) return;
     if (!forceFlush && combinedBatch.length < BATCH_SIZE) return;
 
@@ -211,7 +211,7 @@ export function useTelemetry(): UseTelemetryReturn {
 
     try {
       const apiBase = resolveApiBase();
-      
+
       const userRaw = localStorage.getItem('tad_driver_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const driverId = user?.entityId || 'unknown';

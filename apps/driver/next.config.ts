@@ -12,6 +12,7 @@ const withPWA = withPWAInit({
     skipWaiting: true,
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
+    buildExcludes: [/dynamic-css-manifest\.json$/],
     runtimeCaching: [
       {
         urlPattern: ({ url, request }: { url: URL; request: any }) =>

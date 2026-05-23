@@ -297,6 +297,35 @@ export function useTelemetry(): UseTelemetryReturn {
     }
   }, [flushBatch]);
 
+  const requestWakeLock = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+    if (wakeLockRef.current) return;
+
+    void (navigator as any).wakeLock.request('screen')
+      .then((lock: any) => {
+        wakeLockRef.current = lock;
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[useTelemetry] Screen Wake Lock activo');
+        }
+      })
+      .catch((err: any) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[useTelemetry] Wake Lock no disponible:', err?.message || err);
+        }
+      });
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    if (!wakeLockRef.current) return;
+
+    void wakeLockRef.current.release()
+      .catch(() => undefined)
+      .finally(() => {
+        wakeLockRef.current = null;
+      });
+  }, []);
+
   // ─── startTracking ────────────────────────────────────────────────────────
   const startTracking = useCallback(() => {
     if (watchIdRef.current !== null) return; // ya está activo
@@ -306,20 +335,7 @@ export function useTelemetry(): UseTelemetryReturn {
     resetFlushTimer();
 
     // ─── Activar Screen Wake Lock ──────────────────────────────────────────
-    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
-      void (navigator as any).wakeLock.request('screen')
-        .then((lock: any) => {
-          wakeLockRef.current = lock;
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('[useTelemetry] Screen Wake Lock activo');
-          }
-        })
-        .catch((err: any) => {
-          if (process.env.NODE_ENV !== 'production') {
-            console.warn('[useTelemetry] Wake Lock no disponible:', err?.message || err);
-          }
-        });
-    }
+    requestWakeLock();
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
@@ -342,7 +358,7 @@ export function useTelemetry(): UseTelemetryReturn {
         timeout: 15_000,
       }
     );
-  }, [addCoord, resetFlushTimer]);
+  }, [addCoord, requestWakeLock, resetFlushTimer]);
 
   // ─── stopTracking (Kill-Switch) ───────────────────────────────────────────
   const stopTracking = useCallback(() => {
@@ -356,14 +372,10 @@ export function useTelemetry(): UseTelemetryReturn {
     }
 
     // ─── Liberar Wake Lock ────────────────────────────────────────────────
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release().then(() => {
-        wakeLockRef.current = null;
-      });
-    }
+    releaseWakeLock();
 
     setIsTracking(false);
-  }, []);
+  }, [releaseWakeLock]);
 
   // ─── Listeners de red ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -399,6 +411,23 @@ export function useTelemetry(): UseTelemetryReturn {
       navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
     };
   }, [flushBatch]);
+
+  // ─── Reintentar Wake Lock al volver a ser visible ─────────────────────────
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (!isTracking) return;
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      } else {
+        releaseWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isTracking, releaseWakeLock, requestWakeLock]);
 
   // ─── Cleanup al desmontar ─────────────────────────────────────────────────
   useEffect(() => {

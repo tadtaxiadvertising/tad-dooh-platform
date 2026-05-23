@@ -306,19 +306,19 @@ export function useTelemetry(): UseTelemetryReturn {
     resetFlushTimer();
 
     // ─── Activar Screen Wake Lock ──────────────────────────────────────────
-    if ('wakeLock' in navigator) {
-      try {
-        (navigator as any).wakeLock.request('screen').then((lock: any) => {
+    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+      void (navigator as any).wakeLock.request('screen')
+        .then((lock: any) => {
           wakeLockRef.current = lock;
           if (process.env.NODE_ENV !== 'production') {
             console.log('[useTelemetry] Screen Wake Lock activo');
           }
+        })
+        .catch((err: any) => {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[useTelemetry] Wake Lock no disponible:', err?.message || err);
+          }
         });
-      } catch (err: any) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('[useTelemetry] Wake Lock Error:', err.message);
-        }
-      }
     }
 
     watchIdRef.current = navigator.geolocation.watchPosition(

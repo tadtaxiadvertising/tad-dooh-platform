@@ -363,10 +363,12 @@ function StatusBar({
   connectionStatus,
   batchCount,
   offlineCount,
+  onLogout,
 }: {
   connectionStatus: 'online' | 'offline' | 'syncing';
   batchCount: number;
   offlineCount: number;
+  onLogout: () => void;
 }) {
   const isOffline = connectionStatus === 'offline';
   const isSyncing = connectionStatus === 'syncing';
@@ -428,6 +430,13 @@ function StatusBar({
         </span>
       </div>
 
+      <div className="flex items-center gap-2">
+      <button
+        onClick={onLogout}
+        className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-300 hover:text-white hover:border-white/30 transition"
+      >
+        Salir
+      </button>
       {/* Red Status */}
       <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
         {isOffline ? (
@@ -443,6 +452,7 @@ function StatusBar({
             <circle cx="12" cy="20" r="1" fill="currentColor" />
           </svg>
         )}
+      </div>
       </div>
     </header>
   );
@@ -594,14 +604,14 @@ function ActionButton({
 function LockdownScreen({ message }: { message: string | null }) {
   const handleWhatsApp = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
       '_blank',
       'noopener,noreferrer'
     );
   };
 
   const handleCall = () => {
-    window.location.href = 'tel:+18097000000';
+    window.location.href = 'tel:+18495043872';
   };
 
   return (
@@ -751,7 +761,7 @@ export default function DriverDashboard() {
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -759,7 +769,7 @@ export default function DriverDashboard() {
 
   const handleReportFalla = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -836,6 +846,14 @@ export default function DriverDashboard() {
     await refreshHub();
   };
 
+  const handleLogout = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('token');
+    localStorage.removeItem('sb-access-token');
+    sessionStorage.removeItem('tad_driver_user');
+    window.location.href = '/login';
+  };
+
   const handleReferir = () => {
     if (navigator.share) {
       navigator.share({
@@ -855,7 +873,7 @@ export default function DriverDashboard() {
   // ─── Banner de estado del servicio ────────────────────────────────────────
   const serviceBannerConfig =
     connectionStatus === 'offline'
-      ? { label: 'MODO LOCAL: Guardando y reintentando', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
+      ? { label: 'MODO OFFLINE: Guardando local y reintentando en segundo plano', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
       : connectionStatus === 'syncing'
       ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
       : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
@@ -873,6 +891,7 @@ export default function DriverDashboard() {
         connectionStatus={connectionStatus}
         batchCount={batchCount}
         offlineCount={offlineCount}
+        onLogout={handleLogout}
       />
 
       {/* Contenido principal con padding-top para el header fijo */}

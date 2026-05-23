@@ -42,7 +42,7 @@
   "shortcuts": [
     {
       "name": "Dashboard",
-      "url": "./driver/dashboard",
+      "url": "/driver/dashboard",
       "description": "Ir al panel principal"
     }
   ],

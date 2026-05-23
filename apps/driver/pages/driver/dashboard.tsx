@@ -719,7 +719,7 @@ function LockdownScreen({ message }: { message: string | null }) {
 export default function DriverDashboard() {
   const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
     useTelemetry();
-  const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
+  const { data: hubData, loading: hubLoading, isLocalMode, refresh: refreshHub } = useDriverHub();
   const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
@@ -934,6 +934,13 @@ export default function DriverDashboard() {
 
       {/* Contenido principal con padding-top para el header fijo */}
       <main className="max-w-md mx-auto pt-[72px] px-4 space-y-5" id="dashboard-main">
+
+
+        {isLocalMode && (
+          <div className="rounded-2xl border border-amber-300/40 bg-amber-500/10 backdrop-blur-md px-4 py-3" role="status" aria-live="polite">
+            <p className="text-xs font-black tracking-wide text-amber-200">⚠️ Operando en Modo Local (Red Inestable)</p>
+          </div>
+        )}
 
         {/* Banner de Estado de Servicio */}
         <div

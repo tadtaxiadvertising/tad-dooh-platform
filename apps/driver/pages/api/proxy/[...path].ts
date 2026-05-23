@@ -21,7 +21,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 // - NEXT_PUBLIC_API_URL puede ser https://host/api o https://host/api/v1 → extraemos solo el host
 // - Fallback hardcodeado como última instancia
 const rawBackendUrl = (
-  process.env.BACKEND_INTERNAL_URL
+  process.env.BACKEND_URL
+  || process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL
   || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
 );
@@ -185,6 +186,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (contentLength) res.setHeader('Content-Length', contentLength);
 
     const buffer = Buffer.from(await backendResponse.arrayBuffer());
+
+    if (!backendResponse.ok) {
+      const rawBody = buffer.toString('utf-8');
+      console.error(`[PROXY BACKEND ERROR] ${req.method} ${targetUrl} -> ${backendResponse.status} ${backendResponse.statusText} | body: ${rawBody.slice(0, 500)}`);
+
+      if (contentType?.includes('application/json')) {
+        try {
+          const errorPayload = JSON.parse(rawBody);
+          return res.status(backendResponse.status).json({
+            ...errorPayload,
+            proxy: {
+              targetUrl,
+              upstreamStatus: backendResponse.status,
+              upstreamStatusText: backendResponse.statusText,
+            },
+          });
+        } catch {}
+      }
+
+      return res.status(backendResponse.status).json({
+        error: 'Upstream backend error',
+        message: backendResponse.statusText || 'Error sin detalle del backend',
+        proxy: {
+          targetUrl,
+          upstreamStatus: backendResponse.status,
+        },
+        upstreamBody: rawBody.slice(0, 500),
+      });
+    }
 
     if (contentType?.includes('application/json')) {
       try {

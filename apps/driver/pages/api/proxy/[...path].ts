@@ -21,8 +21,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 // - NEXT_PUBLIC_API_URL puede ser https://host/api o https://host/api/v1 → extraemos solo el host
 // - Fallback hardcodeado como última instancia
 const rawBackendUrl = (
-  process.env.BACKEND_URL
+  process.env.INTERNAL_BACKEND_URL
   || process.env.BACKEND_INTERNAL_URL
+  || process.env.BACKEND_URL
   || process.env.NEXT_PUBLIC_API_URL
   || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
 );
@@ -52,7 +53,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       proxy: 'OK',
       backendTarget: `${BACKEND_BASE}/api/v1/`,
-      envSource: process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
+      envSource: process.env.INTERNAL_BACKEND_URL ? 'INTERNAL_BACKEND_URL' :
+                 process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
+                 process.env.BACKEND_URL ? 'BACKEND_URL' :
                  process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' : 'HARDCODED',
       timestamp: new Date().toISOString(),
     });
@@ -136,7 +139,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const isNetworkError = errorMessage.includes('fetch failed') || 
                             errorMessage.includes('ENOTFOUND') || 
                             errorMessage.includes('ECONNREFUSED') ||
-                            errorMessage.includes('ETIMEDOUT');
+                            errorMessage.includes('ETIMEDOUT') ||
+                            errorMessage.includes('EAI_AGAIN');
       
       if (isNetworkError && (BACKEND_BASE.includes('api:3000') || BACKEND_BASE.includes('localhost'))) {
         const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';

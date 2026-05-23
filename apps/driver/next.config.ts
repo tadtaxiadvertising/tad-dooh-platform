@@ -8,11 +8,11 @@ const withPWA = withPWAInit({
   register: true,
   cacheOnFrontEndNav: false,
   reloadOnOnline: true,
+  buildExcludes: [/middleware-manifest\.json$/, /_next\/dynamic-css-manifest\.json$/, /_next\/.*manifest.*\.json$/],
   workboxOptions: {
     skipWaiting: true,
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
-    buildExcludes: [/dynamic-css-manifest\.json$/],
     runtimeCaching: [
       {
         urlPattern: ({ url, request }: { url: URL; request: any }) =>

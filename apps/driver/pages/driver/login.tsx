@@ -116,11 +116,9 @@ export default function DriverLoginPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-                     <div className="space-y-4">
-          </div>
-=======
+            )}
+
             <div className="space-y-4">
->>>>>>> 8c4ce37afb646c12ffd1940459cf5e58d7cb8c35
               <div>
                 <label htmlFor="login-phone" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Teléfono</label>
                 <input 
@@ -176,8 +174,8 @@ export default function DriverLoginPage() {
           </form>
           <p className="text-center text-sm text-zinc-400 mt-5">
             ¿Quieres unirte a la red TAD?{' '}
-            <Link href="/register" className="text-yellow-400 hover:text-yellow-300 font-semibold">
-              Regístrate aquí
+            <Link href="/driver/onboarding" className="text-yellow-400 hover:text-yellow-300 font-semibold">
+              Ir al onboarding
             </Link>
           </p>
         </div>

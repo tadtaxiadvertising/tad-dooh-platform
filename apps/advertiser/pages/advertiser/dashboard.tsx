@@ -31,12 +31,6 @@ const getAdvertiserOnboardingKey = (entityId: string) => `tad_advertiser_onboard
 export default function AdvertiserDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(1);
-  const [simLoading, setSimLoading] = useState(false);
-  const [simBudget, setSimBudget] = useState(1500);
-  const [simCity, setSimCity] = useState('Santo Domingo');
-  const [simulation, setSimulation] = useState<{ recommendedScreens?: number; uniqueReach?: number; totalImpressions?: number; onlineScreensInZone?: number } | null>(null);
   const { session } = useAuth();
   
   const entityId = session?.user?.app_metadata?.entityId;

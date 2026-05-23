@@ -7,9 +7,31 @@ import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
 import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
 import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
+import { DriverWalletCard, DriverWalletCardSkeleton, calculateWalletTotal, type WalletState } from '../../components/dashboard/DriverWalletCard';
+import { GrowthCenter } from '../../components/dashboard/GrowthCenter';
 
 const DRIVER_AGREEMENT_VERSION = '2.0 (HaaS)';
 const DRIVER_STARTER_KIT_FEE_RD = 6000;
+
+const DRIVER_REFERRAL_STORAGE_KEY = 'tad_driver_referrals_v1';
+
+function getReferralFinancialsFromStorage(): { referredAdvertisers: number; referredDrivers: number } {
+  if (typeof window === 'undefined') return { referredAdvertisers: 0, referredDrivers: 0 };
+
+  const raw = localStorage.getItem(DRIVER_REFERRAL_STORAGE_KEY);
+  if (!raw) return { referredAdvertisers: 0, referredDrivers: 0 };
+
+  try {
+    const parsed = JSON.parse(raw) as { referredAdvertisers?: number; referredDrivers?: number };
+    return {
+      referredAdvertisers: Number.isFinite(parsed.referredAdvertisers) ? Math.max(0, parsed.referredAdvertisers ?? 0) : 0,
+      referredDrivers: Number.isFinite(parsed.referredDrivers) ? Math.max(0, parsed.referredDrivers ?? 0) : 0,
+    };
+  } catch {
+    return { referredAdvertisers: 0, referredDrivers: 0 };
+  }
+}
+
 
 type DriverOnboardingStage = 'contract' | 'bank' | 'payment' | 'ready';
 
@@ -703,6 +725,7 @@ export default function DriverDashboard() {
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
   const [bankPendingSync, setBankPendingSync] = React.useState(false);
+  const [walletState, setWalletState] = React.useState<WalletState | null>(null);
 
   // Iniciar tracking GPS al montar
   useEffect(() => {
@@ -757,6 +780,21 @@ export default function DriverDashboard() {
       setLock(false, null);
     }
   }, [hubData?.subscriptionPaid, showOnboarding, setLock]);
+
+
+  useEffect(() => {
+    const referrals = getReferralFinancialsFromStorage();
+    const ads = hubData?.activeSlots ?? 0;
+    const nextWallet: WalletState = {
+      ads,
+      referredAdvertisers: referrals.referredAdvertisers,
+      referredDrivers: referrals.referredDrivers,
+      total: calculateWalletTotal(ads, referrals.referredAdvertisers, referrals.referredDrivers),
+      isOffline: connectionStatus === 'offline',
+    };
+
+    setWalletState(nextWallet);
+  }, [hubData?.activeSlots, connectionStatus]);
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
@@ -935,9 +973,17 @@ export default function DriverDashboard() {
           />
         )}
 
+        {walletState ? <DriverWalletCard wallet={walletState} /> : <DriverWalletCardSkeleton />}
+
+        <GrowthCenter
+          referralUrl={`/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
+          referralCode={hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500'}
+          onShare={handleReferir}
+        />
+
         {/* Ledger Financiero */}
         <EarningsLedger 
-          current={hubData?.balance ?? 0} 
+          current={walletState?.total ?? 0} 
           max={7500}
           slotsUsed={hubData?.activeSlots ?? 0}
           totalSlots={hubData?.maxSlots ?? 15}

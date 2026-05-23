@@ -49,9 +49,10 @@ const withPWA = withPWAInit({
 // en lugar de /backend-api/* (rewrite, depende de build-time).
 // El rewrite se mantiene solo como fallback para requests SSR.
 
-const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
-  || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
-  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback corregido para Easypanel PROD
+const BACKEND_INTERNAL = process.env.INTERNAL_BACKEND_URL   // ej: http://tad-api:3000 (red interna Docker EasyPanel)
+  || process.env.BACKEND_INTERNAL_URL                          // compat legacy
+  || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')      // fallback env var
+  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';      // fallback corregido para Easypanel PROD
 
 const RAW_BACKEND_URL = process.env.BACKEND_URL || BACKEND_INTERNAL;
 const BACKEND_URL = RAW_BACKEND_URL

@@ -12,8 +12,8 @@ const PRE_CACHE_URLS = [
   '/',
   '/driver/dashboard',
   '/favicon.ico',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
   '/manifest.json',
 ];
 

@@ -8,7 +8,13 @@ const withPWA = withPWAInit({
   register: true,
   cacheOnFrontEndNav: false,
   reloadOnOnline: true,
-  buildExcludes: [/middleware-manifest\.json$/, /_next\/dynamic-css-manifest\.json$/, /_next\/.*manifest.*\.json$/],
+  buildExcludes: [
+    /middleware-manifest\.json$/,
+    /app-build-manifest\.json$/,
+    /dynamic-css-manifest\.json$/,
+    /_next\/data\/.+\/.+\.json$/,
+    /_next\/.*manifest.*\.json$/,
+  ],
   workboxOptions: {
     skipWaiting: true,
     disableDevLogs: true,

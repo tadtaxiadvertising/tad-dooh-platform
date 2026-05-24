@@ -32,12 +32,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Auth Callback bypass
+  // 3. Static assets bypass (PWA icons and other public assets)
+  if (pathname.startsWith('/icons/')) {
+    return NextResponse.next();
+  }
+
+  // 4. Auth Callback bypass
   if (pathname.includes('/auth/callback')) {
     return NextResponse.next();
   }
 
-  // 4. Protected routes
+  // 5. Protected routes
   const isPublicRoute = pathname === '/driver/onboarding' || pathname === '/driver/onboarding/';
 
   if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'DRIVER')) {
@@ -52,7 +57,8 @@ export const config = {
   matcher: [
     '/driver/:path*',
     '/login',
-    '/'
+    '/',
+    '/icons/:path*',
   ],
 };
 

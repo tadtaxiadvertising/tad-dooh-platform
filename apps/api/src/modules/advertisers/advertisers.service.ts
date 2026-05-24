@@ -398,9 +398,9 @@ export class AdvertisersService {
       return { success: true, message: 'If email exists, recovery sent.' };
     }
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
-      this.logger.error('🚨 [RECOVER_PASSWORD] JWT_SECRET no configurado.');
+      this.logger.error(`[ADVERTISER_AUTH][RECOVER_PASSWORD] JWT secret no configurado para email=${email}.`);
       return { success: false, message: 'Error de configuración del servidor.' };
     }
 
@@ -418,8 +418,9 @@ export class AdvertisersService {
 
   // RESET PASSWORD (POST-RECOVERY)
   async resetPassword(token: string, newPass: string) {
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
+      this.logger.error('[ADVERTISER_AUTH][RESET_PASSWORD] JWT secret no configurado.');
       throw new Error('Error de configuración del servidor.');
     }
 
@@ -438,7 +439,7 @@ export class AdvertisersService {
 
       return { success: true, message: 'Contraseña actualizada correctamente.' };
     } catch (err) {
-      this.logger.error(`❌ [RESET_PASSWORD] Error: ${err.message}`);
+      this.logger.error(`[ADVERTISER_AUTH][RESET_PASSWORD] Token inválido o expirado: ${err.message}`);
       throw new UnauthorizedException('El enlace ha expirado o es inválido.');
     }
   }

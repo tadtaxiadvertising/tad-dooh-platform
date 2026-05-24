@@ -55,10 +55,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/driver/:path*',
-    '/login',
-    '/',
-    '/icons/:path*',
+    '/((?!api|_next/static|_next/image|_next/data|favicon.ico|manifest.json|icons/).*)',
   ],
 };
-

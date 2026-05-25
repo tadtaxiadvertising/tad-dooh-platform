@@ -292,7 +292,7 @@ export class DriversService {
     const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       this.logger.error('🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
-      throw new ForbiddenException('Error de configuración del servidor. Contacta al administrador.');
+      throw new ForbiddenException('AUTH_CONFIG_MISSING_JWT_SECRET');
     }
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: JWT_EXPIRY });
@@ -463,7 +463,7 @@ export class DriversService {
    * ESTADÍSTICAS PARA EL PORTAL DEL CHOFER por Driver ID
    */
   async getDriverHubDataById(driverId: string) {
-    this.logger.debug(`[HUB] Generando datos del hub para driverId: ${driverId}`);
+    this.logger.debug(`[DRIVER_HUB][GET_BY_ID] Start driverId=${driverId}`);
     try {
       if (!driverId) {
         throw new ForbiddenException('ID de conductor no proporcionado.');
@@ -482,16 +482,16 @@ export class DriversService {
       });
 
       if (!driver) {
-        this.logger.error(`[HUB_ERROR] Driver ID ${driverId} no encontrado en Base de Datos.`);
+        this.logger.error(`[DRIVER_HUB][GET_BY_ID][NOT_FOUND] driverId=${driverId}`);
         throw new ForbiddenException('Perfil de conductor no encontrado. Por favor, re-inicia sesión.');
       }
 
       const deviceId = (driver as any).devices?.[0]?.deviceId || null;
-      this.logger.debug(`[HUB] Conductor encontrado: ${driver.fullName}, DeviceId: ${deviceId}`);
+      this.logger.debug(`[DRIVER_HUB][GET_BY_ID][FOUND] driverId=${driverId} deviceId=${deviceId}`);
       
       return await this.buildHubData(driver, deviceId);
     } catch (err) {
-      this.logger.error(`🚨 [HUB_CRITICAL] Fallo en getDriverHubDataById para ID ${driverId}: ${err.message}`, err.stack);
+      this.logger.error(`[DRIVER_HUB][GET_BY_ID][ERROR] driverId=${driverId} message=${err.message}`, err.stack);
       // Evitar que el 500 rompa el portal si es posible devolver un error controlado
       if (err instanceof ForbiddenException) throw err;
       throw new Error(`Error al obtener datos del dashboard: ${err.message}`);
@@ -652,11 +652,13 @@ export class DriversService {
    * NOTA: Este método solo debe llamarse desde el controlador con doble validación de seguridad.
    */
   async purgeAll() {
-    if (this.configService.get('NODE_ENV') === 'production') {
-      this.logger.error('🚨 [PURGE_ALL] Intento de purga bloqueado en entorno de producción.');
-      throw new ForbiddenException('No se puede purgar la base de datos en producción.');
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    if (nodeEnv === 'production') {
+      this.logger.error('🚨 [DRIVER_PURGE][BLOCKED] Intento de purgeAll bloqueado en entorno production.');
+      throw new ForbiddenException('PURGE_NOT_ALLOWED_IN_PRODUCTION');
     }
 
+    this.logger.error(`[DRIVER_PURGE][CRITICAL] purgeAll ejecutado en entorno=${nodeEnv || 'undefined'}.`);
     const tables = [
       'driverLocation', 'payrollPayment', 'subscription',
       'analyticsEvent', 'deviceHeartbeat', 'playbackEvent',

@@ -75,7 +75,28 @@ export default function AdvertiserDashboard() {
           budgetRD: budget,
           city: city
         });
-        setSimulation(simRes);
+
+        const fallbackScreens = Math.floor(budget / 1500);
+        const fallbackReach = fallbackScreens * 2000;
+        const fallbackImpressions = fallbackReach * 2;
+
+        const hasUsableServerProjection = Boolean(
+          simRes &&
+            (Number(simRes.recommendedScreens) > 0 ||
+              Number(simRes.uniqueReach) > 0 ||
+              Number(simRes.totalImpressions) > 0)
+        );
+
+        setSimulation(
+          hasUsableServerProjection
+            ? simRes
+            : {
+                recommendedScreens: fallbackScreens,
+                uniqueReach: fallbackReach,
+                totalImpressions: fallbackImpressions,
+                onlineScreensInZone: Number(simRes?.onlineScreensInZone) || 0,
+              },
+        );
       } catch (err) {
         console.warn('Simulation API error, using client fallback:', err);
         const costPerScreen = 1500;

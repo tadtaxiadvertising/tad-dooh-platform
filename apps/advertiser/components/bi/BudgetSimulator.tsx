@@ -19,7 +19,27 @@ export const BudgetSimulator = () => {
     setLoading(true);
     try {
       const { data } = await api.post('/campaigns/simulate-budget', { budgetRD: val, city: 'Global' });
-      setResults(data);
+      const fallbackScreens = Math.floor(val / 1500);
+      const fallbackReach = fallbackScreens * 2000;
+      const fallbackImpressions = fallbackReach * 2;
+
+      const hasUsableServerProjection = Boolean(
+        data &&
+          (Number(data.recommendedScreens) > 0 ||
+            Number(data.uniqueReach) > 0 ||
+            Number(data.totalImpressions) > 0)
+      );
+
+      setResults(
+        hasUsableServerProjection
+          ? data
+          : {
+              recommendedScreens: fallbackScreens,
+              uniqueReach: fallbackReach,
+              totalImpressions: fallbackImpressions,
+              onlineScreensInZone: Number(data?.onlineScreensInZone) || 0,
+            },
+      );
     } catch (e) {
       console.error('Simulación fallida:', e);
     } finally {

@@ -24,7 +24,7 @@ export default function AdvertiserReports() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await api.get('/campaigns/reports/summary');
+        const response = await api.get('/campaigns/reports/summary', { params: { advertiserId: session?.user?.app_metadata?.entityId } });
         setData(response.data);
       } catch (e) {
         console.error('Error fetching reports:', e);
@@ -71,7 +71,7 @@ export default function AdvertiserReports() {
          {[
            { label: 'Impresiones Totales', value: data?.summary?.impressions?.toLocaleString() || '0', icon: Activity, color: '#fad400' },
            { label: 'Completions (100%)', value: data?.summary?.completions?.toLocaleString() || '0', icon: TrendingUp, color: '#10b981' },
-           { label: 'Reproducción Promedio', value: '28.4s', icon: Users, color: '#3b82f6' },
+           { label: 'Completion Rate Promedio', value: `${(((data?.summary?.completions || 0) / Math.max(data?.summary?.impressions || 1, 1)) * 100).toFixed(2)}%`, icon: Users, color: '#3b82f6' },
          ].map((kpi, i) => (
            <div key={i} className="bg-zinc-900/40 border border-white/5 p-8 rounded-[2rem] space-y-2 relative overflow-hidden group">
               <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">

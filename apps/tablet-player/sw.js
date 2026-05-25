@@ -100,6 +100,23 @@ self.addEventListener('fetch', (event) => {
         }
     }
 
+    // STRATEGY 0: Network-First for HTML navigations
+    // Avoid serving stale cached app shell when deviceId query changes or container restarts.
+    if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse.ok) {
+                        const cacheCopy = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', cacheCopy));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => caches.match('/index.html'))
+        );
+        return;
+    }
+
     // STRATEGY 1: Cache-First with Range Support for Media (MP4, MP3, Images)
     const isMediaFile = requestUrl.pathname.match(/\.(mp4|webm|png|jpg|jpeg|svg|webp)$/);
     const isSupabase = requestUrl.hostname.includes(SUPABASE_STORAGE_DOMAIN);

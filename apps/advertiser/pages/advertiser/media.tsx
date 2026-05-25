@@ -1,39 +1,45 @@
-import { useState, useRef } from 'react';
-import { useAuth } from '@tad/ui';
-import { 
-  CloudUpload, FileVideo, CheckCircle2, 
-  AlertCircle, Trash2, Search, Play, 
-  ExternalLink, Loader2
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FileVideo, CheckCircle2, Trash2, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import clsx from 'clsx';
-import { supabase } from "@tad/services";
-import api from "@tad/services";
+import { deleteMedia, getMedia } from "@tad/services";
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { VideoUpload } from '@/components/VideoUpload';
 
 export default function AdvertiserMedia() {
-  const { session } = useAuth();
-  const [files, setFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
 
-  // MOCK MEDIA FOR DEMO
-  const [mediaLibrary, setMediaLibrary] = useState([
-    { id: '1', filename: 'Promo_Primavera_30s.mp4', size: '12.4 MB', date: '2026-03-15', status: 'READY' },
-    { id: '2', filename: 'Logo_Animado_Vert.mp4', size: '4.8 MB', date: '2026-03-12', status: 'READY' },
-  ]);
+  const loadMedia = async () => {
+    try {
+      const data = await getMedia();
+      const normalized = Array.isArray(data) ? data.map((item: any) => ({
+        id: item.id,
+        filename: item.originalFilename || item.filename || 'video.mp4',
+        size: `${((Number(item.size || 0)) / (1024 * 1024)).toFixed(1)} MB`,
+        date: item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : '-',
+        status: item.status || 'READY'
+      })) : [];
+      setMediaLibrary(normalized);
+    } catch (error) {
+      console.error('Error cargando media:', error);
+      setMediaLibrary([]);
+    }
+  };
 
+  useEffect(() => {
+    loadMedia();
+  }, []);
 
-  const onUploadComplete = (newMedia: any) => {
-    setMediaLibrary(prev => [{
-      id: newMedia.id,
-      filename: newMedia.fileName,
-      size: `${(newMedia.fileSize / (1024 * 1024)).toFixed(1)} MB`,
-      date: new Date().toISOString(),
-      status: 'READY'
-    }, ...prev]);
+  const onUploadComplete = () => {
+    loadMedia();
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMedia(id);
+      await loadMedia();
+    } catch (error) {
+      console.error('Error eliminando media:', error);
+    }
   };
 
   return (
@@ -83,7 +89,7 @@ export default function AdvertiserMedia() {
                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Ready for Playback</span>
                     </div>
-                    <button className="p-2 text-zinc-600 hover:text-rose-500 transition-colors">
+                    <button onClick={() => handleDelete(item.id)} className="p-2 text-zinc-600 hover:text-rose-500 transition-colors">
                        <Trash2 className="w-4 h-4" />
                     </button>
                  </div>

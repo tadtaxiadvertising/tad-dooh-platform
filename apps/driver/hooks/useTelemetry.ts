@@ -3,7 +3,7 @@
  * useTelemetry — Hook de Telemetría Offline-First
  *
  * Reglas de negocio:
- *  - Agrupa coordenadas en lotes de BATCH_SIZE (10) o flushea cada FLUSH_INTERVAL_MS (60s)
+ *  - Agrupa coordenadas en lotes de BATCH_SIZE (10) o flushea cada FLUSH_INTERVAL_MS (300s)
  *  - Almacena el buffer en localStorage bajo la clave TAD_TELEMETRY_BATCH
  *  - Al recibir HTTP 402 del backend → destruye el worker GPS y activa el kill-switch
  *  - Sin dependencias de librerías de UI externas
@@ -14,7 +14,7 @@ import { usePaymentStore } from '../store/usePaymentStore';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const BATCH_SIZE = 10;
-const FLUSH_INTERVAL_MS = 60_000; // 60 segundos
+const FLUSH_INTERVAL_MS = 300_000; // 5 minutos (debounce estricto V12)
 const STORAGE_KEY = 'TAD_TELEMETRY_BATCH';
 const OFFLINE_STORAGE_KEY = 'TAD_TELEMETRY_OFFLINE';
 const MAX_OFFLINE_RECORDS = 500;
@@ -133,6 +133,7 @@ export function useTelemetry(): UseTelemetryReturn {
     return fetch(`${apiBase}/fleet/track-batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(buildTelemetryPayload(driverId, deviceId, points)),
       signal: AbortSignal.timeout(15_000),
     });

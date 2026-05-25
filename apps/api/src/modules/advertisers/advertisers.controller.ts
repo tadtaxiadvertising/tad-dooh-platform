@@ -111,4 +111,16 @@ export class AdvertisersController {
     if (!data) throw new BadRequestException('Anunciante no encontrado');
     return data;
   }
+
+  /**
+   * Facturas del anunciante — Endpoint dedicado para la página de Billing.
+   * TENANT ISOLATION: TenantGuard garantiza que solo se devuelven facturas del propietario.
+   * No carga la data completa del portal — query ligero y eficiente.
+   */
+  @Get(':id/invoices')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  @UseGuards(TenantGuard)
+  async getInvoices(@Param('id') id: string) {
+    return this.advertisersService.getInvoices(id);
+  }
 }

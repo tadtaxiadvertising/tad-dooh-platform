@@ -127,6 +127,11 @@ export class AdvertisersService {
             videos: true,
           },
         },
+        // FIX MOCK-1: Incluir facturas reales del anunciante
+        invoices: {
+          orderBy: { issueDate: 'desc' },
+          take: 10, // Últimas 10 facturas para el portal
+        },
       },
     });
 
@@ -303,6 +308,35 @@ export class AdvertisersService {
       completions: 0 // We don't track live completions in this simple count yet
     });
 
+    // FIX MOCK-2: Calcular balanceRD real desde facturas no pagadas
+    const pendingInvoices = advertiser.invoices.filter(
+      (inv) => inv.status !== 'PAID',
+    );
+    const balanceRD = pendingInvoices.reduce(
+      (acc, inv) => acc + inv.totalAmount,
+      0,
+    );
+
+    // FIX MOCK-3: Serializar facturas reales para el portal
+    const invoicesList = advertiser.invoices.map((inv) => ({
+      id: inv.id,
+      issueDate: inv.issueDate.toISOString().split('T')[0],
+      dueDate: inv.dueDate.toISOString().split('T')[0],
+      subtotal: inv.subtotal,
+      taxAmount: inv.taxAmount,
+      amount: inv.totalAmount,
+      totalAmount: inv.totalAmount,
+      status: inv.status,
+      pdfUrl: inv.pdfUrl || null,
+    }));
+
+    // Estadísticas de facturas para el summary de billing
+    const invoiceStatusSummary = {
+      pending: advertiser.invoices.filter((i) => i.status === 'PENDING').length,
+      paid: advertiser.invoices.filter((i) => i.status === 'PAID').length,
+      overdue: advertiser.invoices.filter((i) => i.status === 'OVERDUE').length,
+    };
+
     return {
       brand: {
         id: advertiser.id,
@@ -327,9 +361,9 @@ export class AdvertisersService {
         activeCampaigns: totalAds,
         activeNodes,
         avgFrequency,
-        geoDistribution: geoDistribution.length > 0 ? geoDistribution : [
-          { name: 'Santo Domingo', value: 100 }
-        ]
+        // FIX MOCK-4: Eliminar fallback hardcoded de geoDistribution
+        // Si no hay datos geográficos, devolver array vacío — la UI mostrará Zero State
+        geoDistribution,
       },
       financials: {
         subtotal,
@@ -337,11 +371,16 @@ export class AdvertisersService {
         totalCost,
         costPerAd: BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD,
         taxRate: BUSINESS_RULES.ITBIS_RATE,
+        // FIX MOCK-5: balanceRD calculado desde facturas reales (no campo inexistente)
+        balanceRD,
+        invoices: invoicesList,
+        invoiceStatusSummary,
         latestInvoice: latestInvoice ? {
           id: latestInvoice.id,
           date: latestInvoice.issueDate.toISOString().split('T')[0],
-          status: latestInvoice.status
-        } : null
+          status: latestInvoice.status,
+          amount: latestInvoice.totalAmount,
+        } : null,
       },
       campaigns: campaignsWithMetrics,
       timeSeries,
@@ -443,6 +482,46 @@ export class AdvertisersService {
       throw new UnauthorizedException('El enlace ha expirado o es inválido.');
     }
   }
+  /**
+   * Endpoint dedicado para obtener facturas del anunciante.
+   * Optimizado para la página de Billing — no carga toda la data del portal.
+   * TENANT ISOLATION: Solo devuelve facturas del advertiserId especificado.
+   */
+  async getInvoices(advertiserId: string): Promise<{
+    invoices: any[];
+    balanceRD: number;
+    invoiceStatusSummary: { pending: number; paid: number; overdue: number };
+  }> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { advertiserId },
+      orderBy: { issueDate: 'desc' },
+    });
+
+    const balanceRD = invoices
+      .filter((inv) => inv.status !== 'PAID')
+      .reduce((acc, inv) => acc + inv.totalAmount, 0);
+
+    return {
+      invoices: invoices.map((inv) => ({
+        id: inv.id,
+        issueDate: inv.issueDate.toISOString().split('T')[0],
+        dueDate: inv.dueDate.toISOString().split('T')[0],
+        subtotal: inv.subtotal,
+        taxAmount: inv.taxAmount,
+        amount: inv.totalAmount,
+        totalAmount: inv.totalAmount,
+        status: inv.status,
+        pdfUrl: inv.pdfUrl || null,
+      })),
+      balanceRD,
+      invoiceStatusSummary: {
+        pending: invoices.filter((i) => i.status === 'PENDING').length,
+        paid: invoices.filter((i) => i.status === 'PAID').length,
+        overdue: invoices.filter((i) => i.status === 'OVERDUE').length,
+      },
+    };
+  }
+
   private async getAdvertiserVideoIds(advertiserId: string): Promise<string[]> {
     const [videos, assets] = await Promise.all([
       this.prisma.video.findMany({

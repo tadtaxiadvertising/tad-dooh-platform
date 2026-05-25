@@ -3,8 +3,9 @@ import { useAuth } from '@tad/ui';
 import { 
   Plus, Search, Filter, MoreHorizontal, 
   Edit2, Trash2, Calendar, 
-  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2
+  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2, Upload, Activity
 } from 'lucide-react';
+import { uploadMedia } from '@tad/services';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { format } from 'date-fns';
@@ -26,6 +27,11 @@ export default function AdvertiserCampaigns() {
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  
+  // Media Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // States for Video Generator
   const [showGenerator, setShowGenerator] = useState(false);
@@ -97,6 +103,32 @@ export default function AdvertiserCampaigns() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'video/mp4' && file.type !== 'video/webm' && !file.type.startsWith('image/')) {
+      alert('Solo se permiten archivos MP4, WEBM o Imágenes.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(10);
+    try {
+      // Usar un ID temporal para la campaña nueva (o 'new_campaign') para el bucket
+      const uploadedData = await uploadMedia(file, 'new_campaign_temp');
+      setUploadProgress(100);
+      
+      setFormData(prev => ({ ...prev, mediaUrl: uploadedData.url }));
+      alert('✅ Archivo subido exitosamente a Supabase Storage.');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error al subir el archivo: ' + (err.message || 'Intente nuevamente'));
+    } finally {
+      setUploading(false);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleGenerateVideo = async (e: React.FormEvent) => {
@@ -219,15 +251,39 @@ export default function AdvertiserCampaigns() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">URL del Video / Arte (MP4/JPG)</label>
-                        <input 
-                          required
-                          type="url" 
-                          value={formData.mediaUrl}
-                          onChange={e => setFormData({...formData, mediaUrl: e.target.value})}
-                          placeholder="https://su-servidor.com/anuncio.mp4"
-                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-tad-yellow transition-all"
-                        />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Contenido Multimedia (MP4/JPG)</label>
+                        <div className="flex flex-col gap-3">
+                           <input type="file" ref={fileInputRef} className="hidden" accept="video/mp4, video/webm, image/*" onChange={handleFileSelect} />
+                           <button 
+                             type="button"
+                             onClick={() => fileInputRef.current?.click()}
+                             disabled={uploading}
+                             className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow hover:text-black transition-all disabled:opacity-50"
+                           >
+                             {uploading ? (
+                               <>
+                                 <Activity className="w-4 h-4 animate-spin" />
+                                 Subiendo directo a Supabase... {uploadProgress}%
+                               </>
+                             ) : (
+                               <>
+                                 <Upload className="w-4 h-4" />
+                                 Subir Archivo de Video / Imagen
+                               </>
+                             )}
+                           </button>
+                           {formData.mediaUrl && (
+                             <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between">
+                                <span className="text-[10px] text-emerald-400 font-bold truncate">✓ Archivo adjunto: {formData.mediaUrl}</span>
+                                <button type="button" onClick={() => setFormData({...formData, mediaUrl: ''})} className="text-[9px] text-zinc-400 hover:text-white uppercase tracking-widest font-black">Remover</button>
+                             </div>
+                           )}
+                           <input 
+                             type="hidden" 
+                             value={formData.mediaUrl}
+                             required
+                           />
+                        </div>
                       </div>
 
                       <div className="space-y-2">

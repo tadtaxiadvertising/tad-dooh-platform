@@ -3,7 +3,7 @@ import { useAuth } from '@tad/ui';
 import { 
   Plus, Search, Filter, MoreHorizontal, 
   Edit2, Trash2, Calendar, 
-  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2, Upload, Activity
+  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2, Upload, Activity, Lock
 } from 'lucide-react';
 import { uploadMedia } from '@tad/services';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -472,11 +472,9 @@ export default function AdvertiserCampaigns() {
                 <div className="absolute top-6 right-6">
                    <div className={clsx(
                      "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-2",
-                     campaign.status === 'ACTIVE' 
-                       ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                       : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                     campaign.status === 'ACTIVE' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : campaign.status === 'PENDING_PAYMENT' ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
                    )}>
-                      <div className={clsx("w-1.5 h-1.5 rounded-full", campaign.status === 'ACTIVE' ? "bg-emerald-500 animate-pulse" : "bg-orange-500")} />
+                      {campaign.status === 'PENDING_PAYMENT' ? <Lock className="w-3 h-3" /> : <div className={clsx("w-1.5 h-1.5 rounded-full", campaign.status === 'ACTIVE' ? "bg-emerald-500 animate-pulse" : "bg-orange-500")} />}
                       {campaign.status}
                    </div>
                 </div>
@@ -511,7 +509,7 @@ export default function AdvertiserCampaigns() {
                      </div>
                   </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2">{campaign.status === 'PENDING_PAYMENT' ? <button className="px-4 py-3 bg-amber-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest">Pagar campaña</button> : null}
                          {/* TAD-ADVERTISER: Remotion generator temporarily disabled as per plan */}
                          {/* 
                          <button 
@@ -542,7 +540,7 @@ export default function AdvertiserCampaigns() {
                <AlertCircle className="w-12 h-12 text-zinc-800 mx-auto" />
                <div>
                   <p className="text-lg font-black uppercase tracking-tight">No se encontraron campañas</p>
-                  <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Intenta con otro término de búsqueda</p>
+                  <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Crea tu primera campaña para comenzar</p><button onClick={() => setShowModal(true)} className="mt-4 px-5 py-3 rounded-xl bg-[#fad400] text-black text-[10px] font-black uppercase tracking-widest">Crear tu primera campaña</button>
                </div>
             </div>
           )}

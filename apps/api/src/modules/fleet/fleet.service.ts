@@ -48,11 +48,11 @@ export class FleetService {
 
     const now = new Date();
     // 30 min in ms
-    const thirtyMinMs = 30 * 60 * 1000;
+    const tenMinMs = 10 * 60 * 1000;
 
     return devices.map((d) => {
       let isOnline = false;
-      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs) {
+      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= tenMinMs) {
         isOnline = true;
       }
 
@@ -75,13 +75,13 @@ export class FleetService {
   }
 
   async getFleetStats() {
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
 
     // Executes parallel micro-queries in Supabase, leveraging indices
     const [total, online, withErrors] = await Promise.all([
       this.prisma.device.count(),
       this.prisma.device.count({
-        where: { lastSeen: { gte: thirtyMinAgo } }
+        where: { lastSeen: { gte: tenMinAgo } }
       }),
       this.prisma.device.count({
         // Devices with a playerStatus that is not null and not empty string
@@ -146,10 +146,10 @@ export class FleetService {
       });
 
       const now = new Date();
-      const thirtyMinMs = 30 * 60 * 1000;
+      const tenMinMs = 10 * 60 * 1000;
 
       return devices.map(d => {
-        const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime()) <= thirtyMinMs);
+        const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime()) <= tenMinMs);
 
         // Derive subscription status from the flag + expiry date (simpler, no nested query)
         let subscriptionStatus = 'PENDING';
@@ -186,11 +186,11 @@ export class FleetService {
   }
 
   async getOfflineDevices() {
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
     return this.prisma.device.findMany({
       where: {
         OR: [
-          { lastSeen: { lt: thirtyMinAgo } },
+          { lastSeen: { lt: tenMinAgo } },
           { lastSeen: null }
         ]
       },
@@ -247,10 +247,10 @@ export class FleetService {
       },
     });
 
-    const thirtyMinMs = 30 * 60 * 1000;
+    const tenMinMs = 10 * 60 * 1000;
 
     const fleetFinance = devices.map((d) => {
-      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs;
+      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= tenMinMs;
       const adsPlayed = playsMap.get(d.deviceId) || 0;
       const revenue = parseFloat((adsPlayed * RATE_PER_AD).toFixed(2));
       const subscription = d.driver?.subscriptions?.[0] || null;

@@ -114,7 +114,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       delete headers['content-length'];
       
       headers['host'] = new URL(target).host;
-      
+
+      const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+      const forwardedProto = req.headers['x-forwarded-proto'] || (requestOrigin.startsWith('https://') ? 'https' : 'http');
+      if (forwardedHost) headers['x-forwarded-host'] = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost;
+      if (forwardedProto) headers['x-forwarded-proto'] = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+
+      const rawCookie = req.headers.cookie;
+      if (rawCookie) {
+        headers['cookie'] = Array.isArray(rawCookie) ? rawCookie.join('; ') : rawCookie;
+      }
+
       return headers;
     };
 

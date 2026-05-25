@@ -23,10 +23,20 @@ export const useBackgroundTelemetry = (driverId: string) => {
           timestamp: new Date(position.timestamp).toISOString(),
         }];
 
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api/v1'}/telemetry/sync`, {
+        fetch('/api/proxy/fleet/track-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          credentials: 'include',
+          body: JSON.stringify({
+            driverId,
+            deviceId: localStorage.getItem('TAD_DEVICE_ID') || 'unknown',
+            points: payload.map((point) => ({
+              lat: point.lat,
+              lng: point.lng,
+              speed: point.speed,
+              timestamp: new Date(point.timestamp).getTime(),
+            })),
+          }),
         }).catch(err => console.error('Telemetry error:', err));
       },
       (error) => {

@@ -49,7 +49,8 @@ async function bootstrap() {
       'https://tad-simulator.rewvid.easypanel.host',
     ];
     
-    const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])];
+    const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])]
+      .map((o) => o.replace(/\/$/, ''));
     if (process.env.NODE_ENV !== 'production') {
       allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3000');
     }
@@ -63,15 +64,19 @@ async function bootstrap() {
         }
 
         // Strict allow-list for production origins
-        if (allowedOrigins.includes(origin)) {
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        if (allowedOrigins.includes(normalizedOrigin)) {
           callback(null, true);
           return;
         }
 
         callback(new Error(`CORS blocked for origin: ${origin}`), false);
       },
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id',
       credentials: true,
+      optionsSuccessStatus: 204,
+      preflightContinue: false,
     });
 
     // Register Global Exception Filter for standard error handling

@@ -5,6 +5,16 @@
 
 ---
 
+## [v12.2.2] - 2026-05-25
+
+### 🔧 FIX / 🧱 ARCH: Unificación SaaS Advertiser + Erradicación de Mock Data
+- Se eliminaron fallbacks mock en facturación, reports y métricas del portal advertiser.
+- Se estandarizó el cálculo real de CPM, balanceRD e invoices desde backend (`getPortalData` + endpoint dedicado `GET /advertisers/:id/invoices`).
+- Se agregaron componentes reutilizables `SkeletonCard` y `ZeroState` para cargas y estados vacíos premium.
+- Se incorporó la arquitectura `11_advertiser_data_flow_v12.md` con diagrama Mermaid y mapa de endpoints.
+
+---
+
 ## [v12.2.1] - 2026-05-24
 
 ### 🔧 FIX / 🚀 FEATURE: Unificación y Consolidación del Portal del Anunciante (Advertiser V12)

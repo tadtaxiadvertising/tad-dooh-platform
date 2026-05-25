@@ -398,7 +398,7 @@ export class AdvertisersService {
       return { success: true, message: 'If email exists, recovery sent.' };
     }
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       this.logger.error('🚨 [RECOVER_PASSWORD] JWT_SECRET no configurado.');
       return { success: false, message: 'Error de configuración del servidor.' };
@@ -418,7 +418,7 @@ export class AdvertisersService {
 
   // RESET PASSWORD (POST-RECOVERY)
   async resetPassword(token: string, newPass: string) {
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       throw new Error('Error de configuración del servidor.');
     }

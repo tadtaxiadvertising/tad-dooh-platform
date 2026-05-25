@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { MetricsGrid } from '@/components/bi/MetricsGrid';
 import { BudgetSimulator } from '@/components/bi/BudgetSimulator';
@@ -32,8 +33,10 @@ export default function AdvertiserDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { session } = useAuth();
+  const router = useRouter();
+  const { viewAsAdmin, advId } = router.query;
   
-  const entityId = session?.user?.app_metadata?.entityId;
+  const entityId = (viewAsAdmin === 'true' && advId) ? (advId as string) : session?.user?.app_metadata?.entityId;
 
   // Onboarding states
   const [showOnboarding, setShowOnboarding] = useState(false);

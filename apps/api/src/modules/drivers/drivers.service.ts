@@ -652,6 +652,11 @@ export class DriversService {
    * NOTA: Este método solo debe llamarse desde el controlador con doble validación de seguridad.
    */
   async purgeAll() {
+    if (this.configService.get('NODE_ENV') === 'production') {
+      this.logger.error('🚨 [PURGE_ALL] Intento de purga bloqueado en entorno de producción.');
+      throw new ForbiddenException('No se puede purgar la base de datos en producción.');
+    }
+
     const tables = [
       'driverLocation', 'payrollPayment', 'subscription',
       'analyticsEvent', 'deviceHeartbeat', 'playbackEvent',

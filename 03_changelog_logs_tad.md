@@ -5,6 +5,20 @@
 
 ---
 
+## [v12.2.1] - 2026-05-24
+
+### 🔧 FIX / 🚀 FEATURE: Unificación y Consolidación del Portal del Anunciante (Advertiser V12)
+- **Cambio**: Centralización de la lógica de facturación, gestión de campañas y analíticas desde el dashboard general hacia el portal SaaS independiente `apps/tad-advertiser`. Implementación de UI/UX Premium con Glassmorphism en Tailwind 4 y eliminación de redundancias de código.
+- **Archivos tocados**:
+  - `apps/advertiser/pages/advertiser/dashboard.tsx`
+  - `apps/advertiser/pages/advertiser/campaigns/index.tsx`
+  - `apps/advertiser/pages/advertiser/requests.tsx`
+  - `apps/advertiser/pages/advertiser/billing.tsx`
+  - `apps/admin/pages/p/advertiser/[id].tsx`
+- **Nota Infraestructura**: Configuración de redirecciones seguras y validación del JWT/Supabase con RolesGuard para accesos cruzados de Administradores sin duplicar endpoints.
+
+---
+
 ## [v12.2.0] - 2026-05-22
 
 ### 🚀 FEATURE: Autenticación Unificada y Onboarding Radial (UX Sprint)

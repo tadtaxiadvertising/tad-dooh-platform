@@ -88,7 +88,7 @@ export default function CampaignPlanner() {
                 <div>
                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Impactos Estimados</p>
                    <h3 className="text-5xl font-black tracking-tighter text-white">
-                      {simulation.estimatedImpacts.toLocaleString()}
+                      {simulation.totalImpressions.toLocaleString()}
                    </h3>
                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">Visualizaciones potenciales / mes</p>
                 </div>

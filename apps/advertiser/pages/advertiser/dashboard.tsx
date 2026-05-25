@@ -62,12 +62,6 @@ export default function AdvertiserDashboard() {
     };
 
     loadData();
-
-    // Check if onboarding is needed
-    const onboarded = localStorage.getItem(`tad_adv_onboarded_${entityId}`);
-    if (!onboarded) {
-      setShowOnboarding(true);
-    }
   }, [entityId]);
 
   // Fetch simulation for step 2 & 3
@@ -103,20 +97,24 @@ export default function AdvertiserDashboard() {
     return () => clearTimeout(timer);
   }, [budget, city, step, showOnboarding]);
 
+  const getAdvertiserOnboardingKey2 = (id: string) => `tad_advertiser_onboarding_seen_v2_${id}`;
+
   const handleCompleteOnboarding = () => {
     if (!entityId) return;
     localStorage.setItem(`tad_adv_onboarded_${entityId}`, 'true');
+    localStorage.setItem(getAdvertiserOnboardingKey2(entityId), '1');
+    sessionStorage.removeItem('tad_advertiser_force_onboarding');
     setShowOnboarding(false);
     toast.success('¡Onboarding completado exitosamente! Tu proyección ha sido guardada en el simulador.', {
       duration: 5000,
     });
   };
 
-  const getAdvertiserOnboardingKey2 = (id: string) => `tad_advertiser_onboarding_seen_v2_${id}`;
-
   useEffect(() => {
     if (typeof window === 'undefined' || !entityId) return;
-    const hasSeenOnboarding = localStorage.getItem(getAdvertiserOnboardingKey2(entityId)) === '1';
+    const hasSeenOnboarding = 
+      localStorage.getItem(`tad_adv_onboarded_${entityId}`) === 'true' ||
+      localStorage.getItem(getAdvertiserOnboardingKey2(entityId)) === '1';
     const forceOnboarding = sessionStorage.getItem('tad_advertiser_force_onboarding') === '1';
     if (forceOnboarding || !hasSeenOnboarding) {
       setShowOnboarding(true);
@@ -125,12 +123,13 @@ export default function AdvertiserDashboard() {
 
   const closeOnboarding = () => {
     if (entityId) {
+      localStorage.setItem(`tad_adv_onboarded_${entityId}`, 'true');
       localStorage.setItem(getAdvertiserOnboardingKey2(entityId), '1');
     }
     sessionStorage.removeItem('tad_advertiser_force_onboarding');
     setShowOnboarding(false);
-
   };
+
 
   if (loading && entityId) {
     return (
@@ -158,178 +157,7 @@ export default function AdvertiserDashboard() {
     <AdvertiserLayout title="Advertiser BI v6.0" subtitle="Intelligence Dashboard">
       <Toaster theme="dark" position="top-right" richColors />
 
-      {showOnboarding && (
-        <div className="fixed inset-0 z-[90] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-[2rem] border border-white/10 bg-zinc-950/95 shadow-[0_30px_120px_rgba(0,0,0,0.85)] overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Onboarding inicial</p>
-                <h3 className="text-lg font-black text-white">{onboardingTitle}</h3>
-              </div>
-              <button
-                onClick={closeOnboarding}
-                className="p-2 rounded-full bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Cerrar onboarding"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <div className="grid md:grid-cols-[1.25fr_0.75fr]">
-              <div className="p-6 md:p-8 space-y-6">
-                {onboardingStep === 1 && (
-                  <>
-                    <div className="flex items-center gap-2 text-[#FFD700]">
-                      <Sparkles className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">Primer login</span>
-                    </div>
-                    <h4 className="text-3xl font-black text-white tracking-tight">Tu marca ya está dentro del sistema</h4>
-                    <p className="text-zinc-400 leading-relaxed max-w-xl">
-                      Vamos a dejarte listo en 3 pasos: entenderás el bloque de 30 segundos, el límite operativo de 15 slots y cómo ver una proyección inmediata antes de cargar campañas.
-                    </p>
-                    <div className="grid sm:grid-cols-3 gap-4">
-                      <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                        <Layers3 className="w-5 h-5 text-[#FFD700] mb-3" />
-                        <p className="text-sm font-bold text-white">30 segundos</p>
-                        <p className="text-[11px] text-zinc-500 mt-1">Cada bloque publicitario trabaja sobre esta unidad base.</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                        <ShieldCheck className="w-5 h-5 text-emerald-400 mb-3" />
-                        <p className="text-sm font-bold text-white">15 slots máximo</p>
-                        <p className="text-[11px] text-zinc-500 mt-1">Nunca mostramos más campañas simultáneas que el límite operativo.</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                        <Zap className="w-5 h-5 text-blue-400 mb-3" />
-                        <p className="text-sm font-bold text-white">Simulación viva</p>
-                        <p className="text-[11px] text-zinc-500 mt-1">Ajusta ciudad y presupuesto para ver el impacto al instante.</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {onboardingStep === 2 && (
-                  <>
-                    <div className="flex items-center gap-2 text-[#FFD700]">
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">Simulador</span>
-                    </div>
-                    <h4 className="text-3xl font-black text-white tracking-tight">Define tu alcance inicial</h4>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Usa una proyección corta para empezar rápido. Luego puedes abrir el simulador completo y afinar el plan desde el panel.
-                    </p>
-
-                    <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Ciudad objetivo</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {['Santo Domingo', 'Santiago'].map((city) => (
-                          <button
-                            key={city}
-                            onClick={() => setSimCity(city)}
-                            className={`rounded-xl px-3 py-3 text-[11px] font-black uppercase tracking-wide transition-colors border ${
-                              simCity === city ? 'bg-[#FFD700] border-[#FFD700] text-black' : 'border-white/5 bg-white/5 text-zinc-400 hover:text-white'
-                            }`}
-                          >
-                            {city}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Presupuesto de referencia</label>
-                        <span className="text-2xl font-black text-white">RD$ {simBudget.toLocaleString()}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={1500}
-                        max={60000}
-                        step={1500}
-                        value={simBudget}
-                        onChange={(e) => setSimBudget(Number(e.target.value))}
-                        className="w-full accent-[#FFD700]"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {onboardingStep === 3 && (
-                  <>
-                    <div className="flex items-center gap-2 text-[#FFD700]">
-                      <ChevronRight className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">Resumen</span>
-                    </div>
-                    <h4 className="text-3xl font-black text-white tracking-tight">Así se ve tu arranque</h4>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Cuando continúes, el dashboard ya quedará listo para operar con métricas, facturación y el simulador completo.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Pantallas sugeridas</p>
-                        <p className="text-3xl font-black text-white mt-2">{simLoading ? '...' : (simulation?.recommendedScreens ?? 0)}</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Impresiones estimadas</p>
-                        <p className="text-3xl font-black text-white mt-2">{simLoading ? '...' : (simulation?.totalImpressions ?? 0).toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#FFD700]/15 bg-[#FFD700]/5 p-4 text-sm text-zinc-300">
-                      {simLoading
-                        ? 'Calculando proyección inicial...'
-                        : `Ciudad ${simCity} con presupuesto de RD$ ${simBudget.toLocaleString()}. Puedes ajustar esto luego desde el simulador principal.`}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="p-6 md:p-8 bg-black/30 border-t md:border-t-0 md:border-l border-white/5 flex flex-col justify-between gap-4">
-                <div className="space-y-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Paso {onboardingStep} de 3</p>
-                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div
-                      className="h-full bg-[#FFD700] transition-all duration-300"
-                      style={{ width: `${(onboardingStep / 3) * 100}%` }}
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Atajo rápido</p>
-                    <p className="text-sm text-zinc-300 leading-relaxed">
-                      El simulador de impacto ya está conectado. Al salir de este modal, tu dashboard quedará listo para consultar métricas y finanzas.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setOnboardingStep(s => Math.max(1, s - 1))}
-                    disabled={onboardingStep === 1}
-                    className="flex-1 rounded-2xl border border-white/5 bg-white/5 py-4 text-sm font-black uppercase tracking-widest text-zinc-400 disabled:opacity-40"
-                  >
-                    Atrás
-                  </button>
-                  {onboardingStep < 3 ? (
-                    <button
-                      onClick={() => setOnboardingStep(s => Math.min(3, s + 1))}
-                      className="flex-[1.2] rounded-2xl bg-[#FFD700] py-4 text-sm font-black uppercase tracking-widest text-black"
-                    >
-                      Continuar
-                    </button>
-                  ) : (
-                    <button
-                      onClick={closeOnboarding}
-                      className="flex-[1.2] rounded-2xl bg-[#FFD700] py-4 text-sm font-black uppercase tracking-widest text-black"
-                    >
-                      Abrir dashboard
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -426,9 +254,18 @@ export default function AdvertiserDashboard() {
                   />
                 ))}
               </div>
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                Paso {step} de 3
-              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                  Paso {step} de 3
+                </span>
+                <button
+                  onClick={closeOnboarding}
+                  className="p-1.5 rounded-full bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Cerrar onboarding"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* STEP 1: City Selection */}

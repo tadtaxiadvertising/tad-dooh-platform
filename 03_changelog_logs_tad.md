@@ -1,7 +1,25 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-05-21
+> **Última Actualización**: 2026-05-26
+
+---
+
+## [v12.2.3] - 2026-05-26
+
+### 🚀 FEATURE / 🔧 FIX: Corrección Quirúrgica de Telemetría Realtime y Proof of Play
+- **Cambio**: Unificación del pipeline de telemetría entre baseline REST histórico y Supabase Broadcast efímero. Admin hidrata todas las unidades registradas, escucha `fleet_tracking_live` y degrada a offline después de 90s sin borrar marcadores. El portal del anunciante hidrata exclusivamente sus pantallas contratadas desde `/advertisers/:id/portal`, construye sets inmutables de `driverId/deviceId`, descarta pings externos y mantiene el contador `Pantallas Contratadas: X (N activas ahora mismo)`.
+- **Backend**: `/fleet/map` y `/fleet/tracking/baseline` devuelven `driverId`, `deviceId`, última coordenada histórica y estado online de 90s. `/advertisers/:id/portal` expone `telemetry.contractedScreens`, `driverIds` y `deviceIds` solo para campañas activas vigentes del anunciante.
+- **Infraestructura**: Los pings de 30s siguen siendo efímeros por Broadcast; la persistencia en `DriverLocations` continúa aislada al batch de 5 minutos del dispositivo. CORS ahora registra orígenes bloqueados y permite headers operativos de tablet/admin.
+- **Archivos tocados**:
+  - `apps/admin/pages/admin/tracking/index.tsx`
+  - `apps/admin/components/MapView.tsx`
+  - `apps/advertiser/components/bi/BiHeatmapInner.tsx`
+  - `apps/advertiser/components/MapView.tsx`
+  - `apps/api/src/modules/fleet/fleet.service.ts`
+  - `apps/api/src/modules/fleet/tracking.controller.ts`
+  - `apps/api/src/modules/advertisers/advertisers.service.ts`
+  - `apps/driver/hooks/useBackgroundTelemetry.ts`
 
 ---
 

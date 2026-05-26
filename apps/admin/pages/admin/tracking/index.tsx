@@ -13,6 +13,7 @@ import { getTrackingSummary, getTrackingData, getFleetLocations, getHeatmapData,
 import { useTabSync } from '@tad/ui';
 import dynamic from 'next/dynamic';
 import { FleetSidebar } from '@/components/ui/FleetSidebar';
+import { supabase } from '@tad/services';
 
 const MapView = dynamic(() => import('@/components/MapView'), { 
   ssr: false,
@@ -141,6 +142,39 @@ export default function TrackingPage() {
     const interval = setInterval(loadData, 10_000); // Higher frequency for real-time feel
     return () => clearInterval(interval);
   }, [loadData]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet_tracking_live')
+      .on('broadcast', { event: 'telemetry_ping' }, ({ payload }) => {
+        setFleetLocations((prev) => prev.map((v) => (
+          (v.driverId === payload?.driverId || v.deviceId === payload?.deviceId)
+            ? {
+                ...v,
+                lastLat: payload.lat,
+                lastLng: payload.lng,
+                speed: payload.speed,
+                lastSeen: payload.timestamp,
+                isOnline: true,
+              }
+            : v
+        )));
+      })
+      .subscribe();
+
+    const offlineCheck = setInterval(() => {
+      setFleetLocations((prev) => prev.map((v) => {
+        const lastSeenTs = v.lastSeen ? new Date(v.lastSeen).getTime() : 0;
+        if (!lastSeenTs) return { ...v, isOnline: false };
+        return { ...v, isOnline: (Date.now() - lastSeenTs) <= 90_000 };
+      }));
+    }, 10_000);
+
+    return () => {
+      clearInterval(offlineCheck);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   const timeAgo = (iso: string | null) => {
     if (!iso) return 'NUNCA';
@@ -529,7 +563,6 @@ function ModeButton({ active, onClick, label, color }: any) {
       </button>
    );
 }
-
 
 
 

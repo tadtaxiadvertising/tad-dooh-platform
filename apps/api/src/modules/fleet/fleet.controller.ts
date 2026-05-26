@@ -41,6 +41,14 @@ export class FleetController {
     return this.fleetService.getFleetMap(advertiserId);
   }
 
+  @Get('tracking/baseline')
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getTrackingBaseline(@Req() req: any) {
+    const user = req.user;
+    const advertiserId = user.role === UserRole.ADVERTISER ? user.entityId : undefined;
+    return this.fleetService.getFleetMap(advertiserId);
+  }
+
   @Get('offline')
   async getOfflineDevices() {
     return this.fleetService.getOfflineDevices();

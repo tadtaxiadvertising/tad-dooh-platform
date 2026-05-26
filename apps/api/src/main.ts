@@ -52,6 +52,7 @@ async function bootstrap() {
     
     const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])]
       .map((o) => o.replace(/\/$/, ''));
+    const allowAllOrigins = allowedOrigins.includes('*');
     if (process.env.NODE_ENV !== 'production') {
       allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3000');
     }
@@ -66,15 +67,16 @@ async function bootstrap() {
 
         // Strict allow-list for production origins
         const normalizedOrigin = origin.replace(/\/$/, '');
-        if (allowedOrigins.includes(normalizedOrigin)) {
+        if (allowAllOrigins || allowedOrigins.includes(normalizedOrigin)) {
           callback(null, true);
           return;
         }
 
+        logger.warn(`[CORS] Blocked origin: ${origin}. Configure CORS_ORIGIN to allow it.`);
         callback(new Error(`CORS blocked for origin: ${origin}`), false);
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id',
+      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret',
       credentials: true,
       optionsSuccessStatus: 204,
       preflightContinue: false,

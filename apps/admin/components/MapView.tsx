@@ -24,9 +24,9 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // ============================================
 // TAXI PIN MARKER — Pin shape with white taxi ID label
 // ============================================
-// Status-driven number colors: yellow = on/active, red = off
-const NUMBER_COLOR_ACTIVE  = '#eab308'; // Yellow — encendido
-const NUMBER_COLOR_OFFLINE = '#dc2626'; // Red   — apagado
+const NUMBER_COLOR_ACTIVE = '#10b981';
+const NUMBER_COLOR_OFFLINE = '#71717a';
+const NUMBER_COLOR_UNPAID = '#dc2626';
 
 // Coordenadas aproximadas del Centro de Santiago (Monumento y alrededores)
 const POLIGONO_CENTRAL: [number, number][] = [
@@ -40,9 +40,9 @@ const POLIGONO_CENTRAL: [number, number][] = [
  * createIcon — Taxi/Screen map marker
  *
  * Color rules (per design spec):
- *  • Number color : yellow (#eab308) = encendido/active  |  red (#dc2626) = apagado/offline
+ *  • Number color : green = online, gray = offline, red = billing/geofence alert
  *  • Car body     : white gradient in dark-map mode  |  dark/black gradient in light-map mode
- *  • Headlights   : match number color (yellow/red)
+ *  • Headlights   : match number color
  *  • Taillights   : always red (#dc2626)
  */
 const createIcon = (
@@ -54,13 +54,18 @@ const createIcon = (
   mapTheme: 'dark' | 'light' = 'dark',
 ) => {
   const isActive = status === 'active';
+  const statusColor = status === 'active'
+    ? NUMBER_COLOR_ACTIVE
+    : status === 'unpaid'
+      ? NUMBER_COLOR_UNPAID
+      : NUMBER_COLOR_OFFLINE;
   const W = 52;
   const H = 64;
   const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
   const safeId = (deviceId || label || 'v').replace(/[^a-zA-Z0-9]/g, '');
 
-  // ── Number & headlight color: simple binary rule ─────────────────────────
-  const numberColor = isActive ? NUMBER_COLOR_ACTIVE : NUMBER_COLOR_OFFLINE;
+  // ── Number & headlight color: operational state ─────────────────────────
+  const numberColor = statusColor;
   const textGlow    = isActive
     ? '0 0 10px rgba(234,179,8,0.85)'
     : '0 0 8px rgba(220,38,38,0.7)';
@@ -162,7 +167,7 @@ const createIcon = (
             stroke-width="0.5"
           />
 
-          <!-- Device ID number: yellow=active, red=offline -->
+          <!-- Device ID number: green=online, gray=offline, red=alert -->
           <text
             x="70" y="104"
             font-family="Inter, system-ui, -apple-system, sans-serif"
@@ -179,9 +184,9 @@ const createIcon = (
             fill="url(#gg-${safeId})"
           />
 
-          <!-- Front headlights — match status color (yellow=on, red=off) -->
-          <rect x="42" y="15" width="16" height="5" rx="2" fill="#fad400"/>
-          <rect x="82" y="15" width="16" height="5" rx="2" fill="#fad400"/>
+          <!-- Front headlights — match status color -->
+          <rect x="42" y="15" width="16" height="5" rx="2" fill="${statusColor}"/>
+          <rect x="82" y="15" width="16" height="5" rx="2" fill="${statusColor}"/>
 
           <!-- Rear taillights — always red -->
           <rect x="42" y="160" width="18" height="5" rx="2" fill="#dc2626"/>
@@ -390,7 +395,8 @@ const MapView: React.FC<MapViewProps> = ({
           if (!loc.lastLat || !loc.lastLng) return null;
           const sel = selectedId === loc.deviceId;
           const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
-          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'OPERATIVO' ? 'unpaid' : 'active';
+          const paidStatus = ['ACTIVE', 'OPERATIVO'].includes(String(loc.subscriptionStatus || '').toUpperCase());
+          const status = !loc.isOnline ? 'offline' : !paidStatus ? 'unpaid' : 'active';
           
           // Si está fuera de rango y online, forzamos alerta
           const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;

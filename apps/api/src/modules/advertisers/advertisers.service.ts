@@ -138,6 +138,133 @@ export class AdvertisersService {
     if (!advertiser) return null;
 
     const campaignIds = advertiser.campaigns.map(c => c.id);
+    const now = new Date();
+    const onlineWindowMs = 90 * 1000;
+    const activeCampaignWhere = {
+      advertiserId: id,
+      active: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    };
+    const contractedDeviceSelect = {
+      deviceId: true,
+      taxiNumber: true,
+      city: true,
+      lastSeen: true,
+      lastLat: true,
+      lastLng: true,
+      status: true,
+      driverId: true,
+      driver: {
+        select: {
+          id: true,
+          fullName: true,
+          taxiPlate: true,
+          licensePlate: true,
+          subscriptionPaid: true,
+          subscriptionEnd: true,
+          status: true,
+        },
+      },
+      locations: {
+        orderBy: { timestamp: 'desc' as const },
+        take: 1,
+        select: {
+          latitude: true,
+          longitude: true,
+          speed: true,
+          timestamp: true,
+        },
+      },
+    } as const;
+
+    const [deviceAssignments, targetDriverAssignments] = await Promise.all([
+      this.prisma.deviceCampaign.findMany({
+        where: { campaign: activeCampaignWhere },
+        include: {
+          campaign: { select: { id: true, name: true } },
+          device: { select: contractedDeviceSelect },
+        },
+      }),
+      this.prisma.driver.findMany({
+        where: { campaigns: { some: activeCampaignWhere } },
+        select: {
+          id: true,
+          fullName: true,
+          taxiPlate: true,
+          licensePlate: true,
+          subscriptionPaid: true,
+          subscriptionEnd: true,
+          status: true,
+          devices: { select: contractedDeviceSelect },
+        },
+      }),
+    ]);
+
+    const contractedByDeviceId = new Map<string, any>();
+    const upsertContractedScreen = (device: any, campaignName?: string) => {
+      if (!device?.deviceId) return;
+      const lastLocation = device.locations?.[0] || null;
+      const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
+      const lastLng = device.lastLng ?? lastLocation?.longitude ?? null;
+      const lastSeen = device.lastSeen ?? lastLocation?.timestamp ?? null;
+      const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+      const driver = device.driver || null;
+      const existing = contractedByDeviceId.get(device.deviceId);
+      const campaigns = new Set<string>(existing?.campaigns || []);
+      if (campaignName) campaigns.add(campaignName);
+
+      let subscriptionStatus = 'PENDING';
+      if (driver) {
+        if (driver.subscriptionPaid) {
+          const notExpired = !driver.subscriptionEnd || driver.subscriptionEnd > now;
+          subscriptionStatus = notExpired ? 'ACTIVE' : 'EXPIRED';
+        } else {
+          subscriptionStatus = driver.status || 'PENDING';
+        }
+      }
+
+      contractedByDeviceId.set(device.deviceId, {
+        driverId: driver?.id ?? device.driverId ?? null,
+        deviceId: device.deviceId,
+        taxiNumber: device.taxiNumber ?? null,
+        city: device.city ?? null,
+        lastSeen,
+        lastLat,
+        lastLng,
+        status: device.status,
+        isOnline,
+        driverName: driver?.fullName ?? null,
+        plate: driver?.taxiPlate ?? driver?.licensePlate ?? null,
+        subscriptionStatus,
+        speed: lastLocation?.speed ?? null,
+        campaigns: Array.from(campaigns),
+      });
+    };
+
+    for (const assignment of deviceAssignments) {
+      upsertContractedScreen(assignment.device, assignment.campaign.name);
+    }
+    for (const driver of targetDriverAssignments) {
+      for (const device of driver.devices) {
+        upsertContractedScreen(
+          { ...device, driver: device.driver || driver },
+          undefined,
+        );
+      }
+    }
+
+    const contractedScreens = Array.from(contractedByDeviceId.values());
+    const driverIds = Array.from(new Set(
+      contractedScreens
+        .map((screen) => screen.driverId)
+        .filter((driverId): driverId is string => typeof driverId === 'string' && driverId.length > 0),
+    ));
+    const deviceIds = Array.from(new Set(
+      contractedScreens
+        .map((screen) => screen.deviceId)
+        .filter((deviceId): deviceId is string => typeof deviceId === 'string' && deviceId.length > 0),
+    ));
 
     // FIX N+1 parcial: Obtener agregados globales del anunciante en paralelo
     // GET LIVE DATA: Combinamos histórico (campaignMetric) con tiempo real (playbackEvent de hoy)
@@ -353,7 +480,20 @@ export class AdvertisersService {
         completions: totalCompletions,
         scans: totalScans,
         activeCampaigns: totalAds,
+        contractedScreens: contractedScreens.length,
+        activeContractedScreens: contractedScreens.filter((screen) => screen.isOnline).length,
       },
+      telemetry: {
+        contractedScreens,
+        contractedScreensTotal: contractedScreens.length,
+        activeContractedScreens: contractedScreens.filter((screen) => screen.isOnline).length,
+        driverIds,
+        deviceIds,
+      },
+      contractedScreens,
+      driverIds,
+      deviceIds,
+      activeDriverIds: driverIds,
       stats: { 
         totalImpressions, 
         totalCompletions, 

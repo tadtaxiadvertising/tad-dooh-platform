@@ -9,7 +9,7 @@ import {
   Sun, Moon
 } from 'lucide-react';
 import clsx from 'clsx';
-import { getTrackingSummary, getTrackingData, getFleetLocations, getHeatmapData, getDeviceRecentPath } from '@tad/services';
+import { getTrackingSummary, getTrackingData, getTrackingBaseline, getHeatmapData, getDeviceRecentPath } from '@tad/services';
 import { useTabSync } from '@tad/ui';
 import dynamic from 'next/dynamic';
 import { FleetSidebar } from '@/components/ui/FleetSidebar';
@@ -63,6 +63,84 @@ interface TrackingDriver {
   };
 }
 
+interface TelemetryPing {
+  driverId: string;
+  deviceId: string;
+  lat: number;
+  lng: number;
+  speed: number;
+  bearing: number;
+  timestamp: string;
+}
+
+const OFFLINE_THRESHOLD_MS = 90_000;
+
+const isFreshTelemetry = (timestamp?: string | null) => {
+  if (!timestamp) return false;
+  const ts = new Date(timestamp).getTime();
+  return Number.isFinite(ts) && Date.now() - ts <= OFFLINE_THRESHOLD_MS;
+};
+
+const normalizeTelemetryPing = (payload: any): TelemetryPing | null => {
+  if (!payload) return null;
+  const driverId = typeof payload.driverId === 'string' ? payload.driverId : '';
+  const deviceId = typeof payload.deviceId === 'string' ? payload.deviceId : '';
+  const lat = Number(payload.lat);
+  const lng = Number(payload.lng);
+  const speed = Number(payload.speed ?? 0);
+  const bearing = Number(payload.bearing ?? 0);
+  const timestamp = typeof payload.timestamp === 'string' ? payload.timestamp : '';
+
+  if (!driverId || !deviceId || !Number.isFinite(lat) || !Number.isFinite(lng) || !timestamp) {
+    return null;
+  }
+
+  return { driverId, deviceId, lat, lng, speed, bearing, timestamp };
+};
+
+const applyFleetFreshness = (vehicles: any[]) =>
+  vehicles.map((vehicle) => ({
+    ...vehicle,
+    isOnline: isFreshTelemetry(vehicle.lastSeen),
+  }));
+
+const upsertTelemetryPing = (vehicles: any[], ping: TelemetryPing) => {
+  const idx = vehicles.findIndex((vehicle) =>
+    String(vehicle.driverId || '') === ping.driverId ||
+    String(vehicle.deviceId || '') === ping.deviceId
+  );
+
+  const patch = {
+    driverId: ping.driverId,
+    deviceId: ping.deviceId,
+    lastLat: ping.lat,
+    lastLng: ping.lng,
+    speed: ping.speed,
+    bearing: ping.bearing,
+    lastSeen: ping.timestamp,
+    isOnline: true,
+  };
+
+  if (idx === -1) {
+    return [
+      ...vehicles,
+      {
+        ...patch,
+        taxiNumber: ping.deviceId,
+        driverName: 'Unidad nueva',
+        city: null,
+        plate: null,
+        status: 'OPERATIVO',
+        subscriptionStatus: 'ACTIVE',
+      },
+    ];
+  }
+
+  const next = vehicles.slice();
+  next[idx] = { ...next[idx], ...patch };
+  return next;
+};
+
 export default function TrackingPage() {
   const router = useRouter();
   const [view, setView] = useState<'summary' | 'log' | 'map'>('map');
@@ -114,10 +192,10 @@ export default function TrackingPage() {
         setLocations(data || []);
       } else if (view === 'map') {
         const [fleetData, heatData] = await Promise.all([
-          getFleetLocations(),
+          getTrackingBaseline(),
           getHeatmapData()
         ]);
-        setFleetLocations(fleetData || []);
+        setFleetLocations(applyFleetFreshness(fleetData || []));
         setHeatmap(heatData || []);
       }
       setError(null);
@@ -139,35 +217,36 @@ export default function TrackingPage() {
   }, [view, loadData]);
 
   useEffect(() => {
+    if (view === 'map') return;
     const interval = setInterval(loadData, 10_000); // Higher frequency for real-time feel
     return () => clearInterval(interval);
-  }, [loadData]);
+  }, [loadData, view]);
 
   useEffect(() => {
     const channel = supabase
-      .channel('fleet_tracking_live')
-      .on('broadcast', { event: 'telemetry_ping' }, ({ payload }) => {
-        setFleetLocations((prev) => prev.map((v) => (
-          (v.driverId === payload?.driverId || v.deviceId === payload?.deviceId)
-            ? {
-                ...v,
-                lastLat: payload.lat,
-                lastLng: payload.lng,
-                speed: payload.speed,
-                lastSeen: payload.timestamp,
-                isOnline: true,
-              }
-            : v
-        )));
+      .channel('fleet_tracking_live', {
+        config: { broadcast: { ack: true } },
       })
-      .subscribe();
+      .on('broadcast', { event: 'telemetry_ping' }, ({ payload }) => {
+        const ping = normalizeTelemetryPing(payload);
+        if (!ping) {
+          console.warn('[TAD_REALTIME][ADMIN] telemetry_ping descartado por payload inválido', payload);
+          return;
+        }
+        setFleetLocations((prev) => upsertTelemetryPing(prev, ping));
+      })
+      .subscribe((status, error) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error('[TAD_REALTIME][ADMIN] Suscripción Broadcast rechazada o cerrada', {
+            status,
+            error,
+            channel: 'fleet_tracking_live',
+          });
+        }
+      });
 
     const offlineCheck = setInterval(() => {
-      setFleetLocations((prev) => prev.map((v) => {
-        const lastSeenTs = v.lastSeen ? new Date(v.lastSeen).getTime() : 0;
-        if (!lastSeenTs) return { ...v, isOnline: false };
-        return { ...v, isOnline: (Date.now() - lastSeenTs) <= 90_000 };
-      }));
+      setFleetLocations((prev) => applyFleetFreshness(prev));
     }, 10_000);
 
     return () => {

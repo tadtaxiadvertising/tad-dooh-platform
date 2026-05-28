@@ -1,5 +1,0 @@
-views:
-  - type: table
-    name: Tabla
-  - type: table
-    name: Vista

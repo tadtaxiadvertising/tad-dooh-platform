@@ -1,0 +1,152 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { InvoiceService } from './invoice.service';
+import { WhatsAppService } from '../notifications/whatsapp.service';
+import { EmailService } from '../notifications/email.service';
+export declare class FinanceService {
+    private readonly prisma;
+    private readonly invoiceService;
+    private readonly whatsappService;
+    private readonly emailService;
+    private readonly logger;
+    private readonly PAY_PER_AD;
+    constructor(prisma: PrismaService, invoiceService: InvoiceService, whatsappService: WhatsAppService, emailService: EmailService);
+    onModuleInit(): Promise<void>;
+    notifyMorosidad(deviceId: string): Promise<{
+        success: boolean;
+        notified: boolean;
+    }>;
+    checkHighDelinquency(targetDate?: Date): Promise<void>;
+    calculateMonthlyPayroll(month: number, year: number): Promise<({
+        driverId: any;
+        driverName: any;
+        driverPhone: any;
+        taxiNumber: any;
+        activeAds: number;
+        adIncome: number;
+        baseCommission: number;
+        gpsPoints: number;
+        referralBonus: number;
+        advertiserReferralBonus: number;
+        totalAmount: number;
+        currency: string;
+        status: string;
+        paidAt: Date;
+        reference: string;
+        error?: undefined;
+    } | {
+        driverId: any;
+        driverName: any;
+        driverPhone: any;
+        taxiNumber: string;
+        activeAds: number;
+        adIncome: number;
+        baseCommission: number;
+        gpsPoints: number;
+        referralBonus: number;
+        advertiserReferralBonus: number;
+        totalAmount: number;
+        currency: string;
+        status: string;
+        error: boolean;
+        paidAt?: undefined;
+        reference?: undefined;
+    })[]>;
+    triggerMonthlyBilling(month: number, year: number): Promise<{
+        success: boolean;
+        message: string;
+        count: number;
+    } | {
+        success: boolean;
+        count: number;
+        message?: undefined;
+    }>;
+    processPayment(driverId: string, month: number, year: number, reference: string): Promise<{
+        id: string;
+        status: string;
+        createdAt: Date;
+        driverId: string;
+        activeAds: number;
+        amount: number;
+        paidAt: Date | null;
+        month: number;
+        year: number;
+        referenceNum: string | null;
+        penaltyApplied: boolean;
+        penaltyPercentage: number;
+        transmissionHours: number;
+        gpsPoints: number;
+    }>;
+    getCampaignBillingReport(): Promise<{
+        campaignId: string;
+        campaignName: string;
+        totalImpressions: number;
+        assignedTaxis: number;
+        estimatedRevenue: number;
+        status: string;
+    }[]>;
+    generateInvoiceHtml(campaignId: string): Promise<string>;
+    exportPayrollCsv(month: number, year: number): Promise<string>;
+    exportCampaignCsv(campaignId: string): Promise<string>;
+    exportCampaignsCsv(): Promise<string>;
+    private readonly ITBIS_RATE;
+    private readonly RECURRING_SUB_BASE;
+    private readonly REFERRAL_RETENTION_RATE;
+    recordTransaction(data: {
+        type: string;
+        category: string;
+        amount: number;
+        entityId?: string;
+        reference?: string;
+        note?: string;
+        status?: string;
+    }): Promise<{
+        id: string;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        type: string;
+        category: string;
+        entityId: string | null;
+        amount: number;
+        netAmount: number;
+        taxAmount: number;
+        reference: string | null;
+        note: string | null;
+    }>;
+    getFinancialSummary(): Promise<{
+        mrr: number;
+        campaignRevenue: number;
+        burnRate: number;
+        activeSubscribers: number;
+        netProjection: number;
+        currency: string;
+        timestamp: Date;
+    }>;
+    getInvestorMetrics(): Promise<{
+        cac: string;
+        ltv: string;
+        paybackPeriod: string;
+        ebitda: string;
+        activeTaxis: number;
+        monthlyRevPerTaxi: string;
+        monthlyOpexPerTaxi: string;
+        hardwareCostPerUnit: 6000;
+        currency: string;
+        generatedAt: Date;
+    }>;
+    getLedger(): Promise<{
+        id: string;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        type: string;
+        category: string;
+        entityId: string | null;
+        amount: number;
+        netAmount: number;
+        taxAmount: number;
+        reference: string | null;
+        note: string | null;
+    }[]>;
+    private generateInvoiceTemplate;
+}

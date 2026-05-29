@@ -2,9 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   transpilePackages: ['@tad/services', '@tad/store', '@tad/ui'],
-  experimental: {
-    outputFileTracingRoot: '../../',
-  },
+  outputFileTracingRoot: '../../',
 }
 
 module.exports = nextConfig

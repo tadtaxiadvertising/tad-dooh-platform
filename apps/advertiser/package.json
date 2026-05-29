@@ -9,11 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "^15.0.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
     "@tad/services": "*",
     "@tad/store": "*",
-    "@tad/ui": "*"
+    "@tad/ui": "*",
+    "next": "^15.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
   }
 }

@@ -7,10 +7,23 @@ import L from 'leaflet';
 import { TaxiData } from '@/types/tracking';
 
 interface MapViewProps {
-  taxis: TaxiData[];
+  // Legacy props
+  taxis?: TaxiData[];
   center?: [number, number];
   zoom?: number;
   heatmapMode?: boolean;
+  
+  // New props from realtime.tsx
+  locations?: any[];
+  heatmapData?: any[];
+  mode?: 'normal' | 'heatmap' | 'live';
+  mapTheme?: 'light' | 'dark';
+  heatmapIntensity?: number;
+  heatmapRadius?: number;
+  selectedId?: string | null;
+  recentPath?: any[];
+  onClearSelection?: () => void;
+  onViewHistory?: (v: any) => void;
 }
 
 // Fix for default marker icon in Next.js
@@ -46,9 +59,24 @@ function MapUpdater({ center, zoom }: { center?: [number, number]; zoom?: number
   return null;
 }
 
-export default function MapView({ taxis, center = [-34.6037, -58.3816], zoom = 12, heatmapMode = false }: MapViewProps) {
+export default function MapView({ 
+  taxis, 
+  locations,
+  heatmapData,
+  center = [-34.6037, -58.3816], 
+  zoom = 12, 
+  heatmapMode = false,
+  mode = 'normal',
+  mapTheme = 'dark',
+  heatmapIntensity = 0.5,
+  heatmapRadius = 25,
+  selectedId,
+  recentPath = [],
+  onClearSelection,
+  onViewHistory
+}: MapViewProps) {
   const [isClient, setIsClient] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(mapTheme === 'dark');
 
   useEffect(() => {
     setIsClient(true);
@@ -74,6 +102,10 @@ export default function MapView({ taxis, center = [-34.6037, -58.3816], zoom = 1
     ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+  // Support both old (taxis) and new (locations) data format
+  const dataToRender = locations || taxis || [];
+  const currentMode = mode === 'heatmap' || heatmapMode ? true : false;
+
   return (
     <MapContainer
       center={center}
@@ -84,20 +116,25 @@ export default function MapView({ taxis, center = [-34.6037, -58.3816], zoom = 1
       <TileLayer url={tileUrl} attribution={attribution} />
       <MapUpdater center={center} zoom={zoom} />
       
-      {taxis.map((taxi) => {
-        if (!taxi.latitude || !taxi.longitude) return null;
+      {dataToRender.map((item: any) => {
+        // Support both TaxiData interface and generic location object
+        const latitude = item.latitude || item.lat;
+        const longitude = item.longitude || item.lng || item.lon;
         
-        const position: [number, number] = [taxi.latitude, taxi.longitude];
-        const isOnline = taxi.status === 'online';
+        if (!latitude || !longitude) return null;
         
-        if (heatmapMode) {
+        const position: [number, number] = [latitude, longitude];
+        const isSelected = selectedId === item.id;
+        const isOnline = item.status === 'online' || item.online === true;
+        
+        if (currentMode) {
           // Heatmap mode: show density with circle markers
-          const opacity = isOnline ? 0.6 : 0.3;
-          const radius = isOnline ? 30 : 15;
+          const opacity = (isOnline ? heatmapIntensity : heatmapIntensity * 0.5);
+          const radius = heatmapRadius || (isOnline ? 30 : 15);
           
           return (
             <CircleMarker
-              key={taxi.id}
+              key={item.id}
               center={position}
               radius={radius}
               color={isOnline ? '#22c55e' : '#ef4444'}
@@ -111,28 +148,31 @@ export default function MapView({ taxis, center = [-34.6037, -58.3816], zoom = 1
         // Normal mode: show markers with details
         return (
           <Marker
-            key={taxi.id}
+            key={item.id}
             position={position}
-            icon={createCustomIcon(isOnline)}
+            icon={createCustomIcon(isOnline || isSelected)}
+            eventHandlers={{
+              click: () => onViewHistory?.(item)
+            }}
           >
             <Popup>
               <div className="min-w-[200px]">
-                <h3 className="font-bold text-lg mb-2">{taxi.driver_name || `Taxi ${taxi.license_plate}`}</h3>
+                <h3 className="font-bold text-lg mb-2">{item.driver_name || item.name || `Vehicle ${item.license_plate || item.plate || item.id}`}</h3>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Patente:</strong> {taxi.license_plate || 'N/A'}</p>
-                  <p><strong>Estado:</strong> 
+                  <p><strong>Plate:</strong> {item.license_plate || item.plate || 'N/A'}</p>
+                  <p><strong>Status:</strong> 
                     <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
                       isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {isOnline ? 'En línea' : 'Sin conexión'}
+                      {isOnline ? 'Online' : 'Offline'}
                     </span>
                   </p>
-                  {taxi.speed !== undefined && (
-                    <p><strong>Velocidad:</strong> {taxi.speed} km/h</p>
+                  {(item.speed !== undefined || item.velocity !== undefined) && (
+                    <p><strong>Speed:</strong> {item.speed || item.velocity || 0} km/h</p>
                   )}
-                  {taxi.last_update && (
+                  {(item.last_update || item.updated_at) && (
                     <p className="text-xs text-gray-500 mt-2">
-                      Actualizado: {new Date(taxi.last_update).toLocaleTimeString()}
+                      Updated: {new Date(item.last_update || item.updated_at).toLocaleTimeString()}
                     </p>
                   )}
                 </div>

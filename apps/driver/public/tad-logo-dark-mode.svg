@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 450 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- TAD Logo for Dark Backgrounds -->
+  
+  <defs>
+    <mask id="play-hole">
+      <rect x="0" y="0" width="160" height="150" fill="white" />
+      <polygon points="86,59 86,91 112,75" fill="black" stroke="black" stroke-width="8" stroke-linejoin="round" />
+    </mask>
+  </defs>
+
+  <g transform="translate(10, 25)">
+    <g mask="url(#play-hole)" fill="#FFD400">
+      <!-- Main Solid Body -->
+      <rect x="55" y="41" width="90" height="68" rx="14" />
+      
+      <!-- Speed / Motion Fingers -->
+      <g stroke="#FFD400" stroke-width="10" stroke-linecap="round">
+        <line x1="42" y1="51" x2="65" y2="51" />
+        <line x1="22" y1="67" x2="30" y2="67" />
+        <line x1="45" y1="67" x2="65" y2="67" />
+        <line x1="32" y1="83" x2="65" y2="83" />
+        <line x1="42" y1="99" x2="65" y2="99" />
+      </g>
+    </g>
+
+    <!-- Typography -->
+    <g font-family="Arial, sans-serif">
+      <text x="165" y="99" fill="#FFFFFF" font-size="64" font-weight="900" letter-spacing="4">TAD</text>
+      <text x="170" y="118" fill="#FFFFFF" font-size="14" font-weight="700" letter-spacing="2.5" opacity="0.8">PUBLICIDAD DIGITAL EN TAXIS</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,45 @@
+# Dockerfile.admin (LIMPIO)
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Optimize build process: Cache node_modules
+COPY package*.json ./
+RUN npm install --frozen-lockfile
+
+# Finalize source code
+COPY . .
+
+# Fix for Tailwind/LightningCSS on Alpine (npm optional deps bug)
+RUN rm -rf node_modules package-lock.json && npm install && npm install lightningcss-linux-x64-musl
+
+# INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN (FORCED AT BUILD)
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
+
+# Build standalone Next.js 15
+RUN npm run build
+
+# Stage 2: Production Execution
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# 8GB VPS optimization (High heap for analytics & map clusters)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
+# REGLA ORO: Persistir la variable de entorno en la etapa final de ejecución (Runner)
+ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# INYECCIÓN CRÍTICA DE PUERTO PARA EASYPANEL
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Ejecutar el servidor standalone directamente con Node
+CMD ["node", "server.js"]

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TAD Driver">
+  <rect width="512" height="512" rx="108" fill="#0a0a0a"/>
+  <circle cx="256" cy="256" r="206" fill="none" stroke="#facc15" stroke-width="18" opacity=".28"/>
+  <path d="M104 160h304v72H298v184h-84V232H104z" fill="#facc15"/>
+  <path d="M132 96h248l60 64H72z" fill="#fff7cc" opacity=".92"/>
+  <path d="M152 352h208v32H152z" fill="#fff7cc" opacity=".78"/>
+</svg>

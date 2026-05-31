@@ -64,5 +64,7 @@ COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/ap
 USER nestjs
 
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 WORKDIR /usr/src/app/apps/api
 CMD ["node", "dist/main.js"]

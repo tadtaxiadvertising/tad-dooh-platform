@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 // Safe BigInt serialization for Prisma
@@ -32,7 +32,13 @@ async function bootstrap() {
     app.enableShutdownHooks();
 
     app.setGlobalPrefix('api/v1', {
-      exclude: ['api/health', '/'],
+      exclude: [
+        { path: '/', method: RequestMethod.GET },
+        { path: 'api', method: RequestMethod.GET },
+        { path: 'api/health', method: RequestMethod.GET },
+        { path: 'api/v1', method: RequestMethod.GET },
+        { path: 'health', method: RequestMethod.GET },
+      ],
     });
     
     // SHELTER C-I1: CORS restringido a dominios TAD conocidos

@@ -1,0 +1,33 @@
+{
+  "name": "TAD Driver — Monitor Operativo",
+  "short_name": "TAD Driver",
+  "description": "Panel de control para conductores TAD DOOH en República Dominicana. Telemetría GPS y monitoreo de ganancias.",
+  "start_url": "/driver/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "es-DO",
+  "categories": [
+    "transportation",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/driver/dashboard",
+      "description": "Ir al panel principal"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

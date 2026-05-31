@@ -1,4 +1,4 @@
-# Git metadata is never needed in the image build context.
+# Git metadata is never needed in the API image build context.
 .git
 .gitignore
 

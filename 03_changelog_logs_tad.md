@@ -1,7 +1,20 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-05-26
+> **Última Actualización**: 2026-05-31
+
+---
+
+## [v12.2.4] - 2026-05-31
+
+### 🚀 FEATURE / 🔧 FIX: Corrección de Scripts Raíz y Mitigación TypeScript 6.0
+- **Cambio**: Normalización de los scripts raíz del monorepo para usar `--workspaces` en lugar del shorthand `-ws`, y alineación de `ignoreDeprecations` a `6.0` en las configuraciones TypeScript de Admin y API para neutralizar TS5107/TS5101 durante validaciones con TypeScript 6.x.
+- **Archivos tocados**:
+  - `package.json`
+  - `apps/admin/tsconfig.json`
+  - `apps/api/tsconfig.json`
+  - `03_changelog_logs_tad.md`
+- **Nota Infraestructura**: La validación completa de instalación/build en el contenedor actual queda condicionada por la política de registry que devuelve `403 Forbidden` al resolver `@ducanh2912/next-pwa`; la corrección aplicada es estática y compatible con Easypanel/NPM moderno.
 
 ---
 

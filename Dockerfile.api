@@ -9,7 +9,11 @@ COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
-RUN npm ci
+# Scope npm's workspace install to the API service. The root lockfile also
+# contains frontend workspaces; leaving those enabled pulls Next.js into the
+# API image build even though the API never runs it.
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm ci --workspace=apps/api
 
 # Copy source and build
 COPY . .
@@ -28,7 +32,8 @@ COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 
 # Install ONLY production dependencies
-RUN npm ci --omit=dev
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm ci --omit=dev --workspace=apps/api
 
 # Phase 3: Runtime Stage (Zero-Waste)
 FROM node:20-alpine AS runner
@@ -59,6 +64,7 @@ COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/ap
 USER nestjs
 
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 WORKDIR /usr/src/app/apps/api
 CMD ["node", "dist/main.js"]
-

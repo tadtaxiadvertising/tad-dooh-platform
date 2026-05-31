@@ -1,0 +1,25 @@
+# Git metadata is never needed in the image build context.
+.git
+.gitignore
+
+# Dependency directories are restored inside Docker with npm ci.
+node_modules
+**/node_modules
+
+# Local build/test artifacts.
+dist
+**/dist
+.next
+**/.next
+coverage
+**/coverage
+.tmp
+*.log
+npm-debug.log*
+
+# Local environment and editor state.
+.env.local
+.env.*.local
+.vscode
+.idea
+.DS_Store

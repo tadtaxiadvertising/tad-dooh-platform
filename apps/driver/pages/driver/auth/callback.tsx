@@ -4,8 +4,10 @@ import { useRouter } from 'next/router';
 import { supabase } from '@tad/services';
 
 function safeDriverDestination(next: unknown): string {
-  if (typeof next !== 'string' || !next.startsWith('/')) return '/driver/dashboard';
-  if (next.startsWith('//')) return '/driver/dashboard';
+  if (typeof next !== 'string' || !next.startsWith('/') || next.startsWith('//')) {
+    return '/driver/dashboard';
+  }
+
   return next;
 }
 

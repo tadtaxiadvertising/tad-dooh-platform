@@ -1,10 +1,11 @@
-import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
-import withPWAInit from "@ducanh2912/next-pwa";
+import path from 'path';
+import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
+import withPWAInit from '@ducanh2912/next-pwa';
 
 const withPWA = withPWAInit({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
   register: true,
   cacheOnFrontEndNav: false,
   reloadOnOnline: true,
@@ -21,16 +22,14 @@ const withPWA = withPWAInit({
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        urlPattern: ({ url, request }: { url: URL; request: any }) =>
+        urlPattern: ({ url, request }: { url: URL; request: Request }) =>
           request.method === 'GET' &&
-          (
-            url.pathname.startsWith('/driver/dashboard') ||
+          (url.pathname.startsWith('/driver/dashboard') ||
             url.pathname.startsWith('/_next/static/') ||
             request.destination === 'script' ||
             request.destination === 'style' ||
             request.destination === 'image' ||
-            request.destination === 'font'
-          ),
+            request.destination === 'font'),
         handler: 'StaleWhileRevalidate',
         options: {
           cacheName: 'tad-driver-dashboard-assets',
@@ -49,20 +48,17 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
-  transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
+  output: 'standalone',
+  transpilePackages: ['@tad/services', '@tad/ui', '@tad/store', '@tad/logging'],
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
-  // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
+  outputFileTracingRoot: path.join(process.cwd(), '../../'),
   experimental: {
-    // Reduce el uso de RAM sacando el build de webpack a un proceso separado
     webpackBuildWorker: true,
-    // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
     parallelServerCompiles: false,
   },
   // Importante: NO reescribir /api/proxy/* hacia el backend.
@@ -84,36 +80,19 @@ const nextConfig: NextConfig = {
         source: '/dashboard',
         destination: '/driver/dashboard',
         permanent: false,
-      }
+      },
     ];
   },
 };
 
 export default withSentryConfig(withPWA(nextConfig), {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-  org: "o4511114332143616",
-  project: "admin-dashboard",
-  sentryUrl: "https://sentry.io/",
-  
-  // Provide the auth token for source maps upload
+  org: 'o4511114332143616',
+  project: 'admin-dashboard',
+  sentryUrl: 'https://sentry.io/',
   authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Only print logs for uploading source maps in CI
   silent: true,
-
-  // For all available options, see:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a dedicated Next.js API route.
-  // IMPORTANT: Do NOT use '/monitoring' here — that conflicts with the Auditoría page.
-  // tunnelRoute: "/api/sentry-tunnel",
-
-  // Removes uploaded source maps from the production bundle to reduce bundle size
   sourcemaps: {
-     deleteSourcemapsAfterUpload: true,
+    deleteSourcemapsAfterUpload: true,
   },
 });

@@ -1,15 +1,12 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
-import { AuthProvider } from '@tad/ui';
-
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { Toaster } from 'sonner';
-import { useAntigravity } from '@tad/ui';
-import { useState, useEffect } from 'react';
+import { AuthProvider, useAntigravity } from '@tad/ui';
 import { logger } from '@tad/logging';
-
 
 const PUBLIC_PAGES = [
   '/login',
@@ -23,17 +20,12 @@ const PUBLIC_PAGES = [
 ];
 
 function AppWrapper({ Component, pageProps, router }: AppProps) {
-  const isPublic =
-    PUBLIC_PAGES.includes(router.pathname) || router.pathname.startsWith('/p');
+  const isPublic = PUBLIC_PAGES.includes(router.pathname) || router.pathname.startsWith('/p');
 
-  // Initialize Logger
   useEffect(() => {
-    if (logger) {
-      logger.info('App', `Navigated to ${router.pathname}`);
-    }
+    logger?.info('App', `Navigated to ${router.pathname}`);
   }, [router.pathname]);
 
-  // Initialize Realtime Sync Hook
   useAntigravity(!isPublic);
 
   return (
@@ -46,21 +38,26 @@ function AppWrapper({ Component, pageProps, router }: AppProps) {
 }
 
 export default function App(props: AppProps) {
-  // Ensure QueryClient is only created once on the client
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        gcTime: 1000 * 60 * 60 * 24, // 24 hours
-        staleTime: 1000 * 60 * 5, // 5 minutes cache
-        retry: 3,
-        refetchOnWindowFocus: true,
-      },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            gcTime: 1000 * 60 * 60 * 24,
+            staleTime: 1000 * 60 * 5,
+            retry: 3,
+            refetchOnWindowFocus: true,
+          },
+        },
+      }),
+  );
 
-  const persister = typeof window !== 'undefined' ? createSyncStoragePersister({
-    storage: window.localStorage,
-  }) : undefined;
+  const persister =
+    typeof window !== 'undefined'
+      ? createSyncStoragePersister({
+          storage: window.localStorage,
+        })
+      : undefined;
 
   if (!persister) {
     return (
@@ -72,10 +69,7 @@ export default function App(props: AppProps) {
   }
 
   return (
-    <PersistQueryClientProvider 
-      client={queryClient} 
-      persistOptions={{ persister }}
-    >
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <AppWrapper {...props} />
       <Toaster richColors position="top-right" theme="dark" />
     </PersistQueryClientProvider>

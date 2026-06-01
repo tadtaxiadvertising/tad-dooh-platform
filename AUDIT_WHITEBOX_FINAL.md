@@ -240,6 +240,7 @@ export * from './mobile-gateway';
 ✅ tsconfig.json: Paths correctas, includes válidos  
 ✅ nest-cli.json: Builder cambiado a TypeScript (swc → tsc)  
 ✅ apps/api/tsconfig.json: ignoreDeprecations: 5.0  
+✅ apps/admin/tsconfig.json: ignoreDeprecations: 5.0  
 ✅ package.json: Scripts actualizados con paths correctos  
 
 ---

@@ -8,7 +8,7 @@
 ## [v12.2.4] - 2026-05-31
 
 ### 🚀 FEATURE / 🔧 FIX: Corrección de Scripts Raíz y Mitigación TypeScript 6.0
-- **Cambio**: Normalización de los scripts raíz del monorepo para usar `--workspaces` en lugar del shorthand `-ws`, y alineación de `ignoreDeprecations` a `6.0` en las configuraciones TypeScript de Admin y API para neutralizar TS5107/TS5101 durante validaciones con TypeScript 6.x.
+- **Cambio**: Normalización de los scripts raíz del monorepo para usar `--workspaces` en lugar del shorthand `-ws`, y alineación de `ignoreDeprecations` a `5.0` en las configuraciones TypeScript de Admin y API para usar un valor válido con los compiladores TypeScript 5.x durante los builds Docker.
 - **Archivos tocados**:
   - `package.json`
   - `apps/admin/tsconfig.json`

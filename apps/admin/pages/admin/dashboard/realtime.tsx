@@ -212,11 +212,7 @@ interface GeoTabProps {
 function GeoTab({ devices, campaigns }: GeoTabProps) {
   // Map state
   const [mapMode, setMapMode] = useState<MapMode>('live');
-  const [mapTheme, setMapTheme] = useState<MapTheme>(() =>
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('tad_map_theme') as MapTheme) || 'dark'
-      : 'dark',
-  );
+  const [mapTheme, setMapTheme] = useState<MapTheme>('dark');
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
   const [heatmapRadius, setHeatmapRadius] = useState(28);
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
@@ -231,6 +227,18 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
   const [fleetFilter, setFleetFilter] = useState<FleetFilter>('all');
   const [selectedAdvertiser, setSelectedAdvertiser] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+
+  useEffect(() => {
+    try {
+      const storedTheme = localStorage.getItem('tad_map_theme') as MapTheme | null;
+      if (storedTheme === 'dark' || storedTheme === 'light') {
+        setMapTheme(storedTheme);
+      }
+    } catch {
+      // Keep the deterministic SSR default if browser storage is unavailable.
+    }
+  }, []);
 
   // Load heatmap when mode switches
   useEffect(() => {
@@ -817,7 +825,7 @@ export default function RealtimeDashboard() {
   const [campaigns, setCampaigns]   = useState<Campaign[]>([]);
   const [loading, setLoading]       = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -902,7 +910,7 @@ export default function RealtimeDashboard() {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Radio className="size-2.5 text-rose-500 animate-pulse" />
                 <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase">
-                  Transmisión: {lastUpdate.toLocaleTimeString('es-DO')}
+                  Transmisión: {lastUpdate ? lastUpdate.toLocaleTimeString('es-DO') : 'Sincronizando…'}
                 </p>
               </div>
             </div>

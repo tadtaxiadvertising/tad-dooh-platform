@@ -254,22 +254,25 @@ export class BiService {
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd   = new Date(year, month, 0, 23, 59, 59);
 
-    const drivers = await this.prisma.driver.findMany({
-      include: {
-        devices: true,
-        campaigns: true,
-        subscriptions: { where: { startDate: { lte: periodEnd }, dueDate: { gte: periodStart } } },
-        payrollPayments: { where: { month, year } }
-      }
-    });
-
-    this.logger.log(`🧬 Auditing ${drivers.length} drivers for period ${period}...`);
+    const totalDrivers = await this.prisma.driver.count();
+    this.logger.log(`🧬 Auditing ${totalDrivers} drivers in chunks of 10 for period ${period}...`);
     
     const results = [];
-    // Sequential Batching: 5 drivers at a time to stay under RAM limits
-    for (let i = 0; i < drivers.length; i += 5) {
-      const chunk = drivers.slice(i, i + 5);
-      const chunkResults = await Promise.all(chunk.map(async (driver) => {
+    const chunkSize = 10;
+
+    for (let skip = 0; skip < totalDrivers; skip += chunkSize) {
+      const chunkDrivers = await this.prisma.driver.findMany({
+        skip,
+        take: chunkSize,
+        include: {
+          devices: true,
+          campaigns: true,
+          subscriptions: { where: { startDate: { lte: periodEnd }, dueDate: { gte: periodStart } } },
+          payrollPayments: { where: { month, year } }
+        }
+      });
+
+      const chunkResults = await Promise.all(chunkDrivers.map(async (driver) => {
         const device       = driver.devices[0];
         const subscription = driver.subscriptions[0];
 
@@ -339,7 +342,7 @@ export class BiService {
         });
       }));
       results.push(...chunkResults);
-      if (i % 25 === 0) this.logger.debug(`Reconciliation Progress: ${i}/${drivers.length}`);
+      if (skip % 50 === 0) this.logger.debug(`Reconciliation Progress: ${skip}/${totalDrivers}`);
     }
 
     return { period, total: results.length };
@@ -363,7 +366,18 @@ export class BiService {
 
   async getFleetHealth() {
     const devices = await this.prisma.device.findMany({
-      include: { driver: true }
+      select: {
+        id: true,
+        deviceId: true,
+        taxiNumber: true,
+        isOnline: true,
+        batteryLevel: true,
+        driver: {
+          select: {
+            fullName: true
+          }
+        }
+      }
     });
 
     return devices.map(d => ({

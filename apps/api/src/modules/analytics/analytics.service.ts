@@ -10,13 +10,7 @@ export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
   
   // Minimal in-memory cache for high-frequency dashboard data
-  private cache: {
-    summary?: { data: AnalyticsSummary; expiry: number };
-    topTaxis?: { data: TopTaxi[]; expiry: number };
-    hourly?: { data: HourlyData[]; expiry: number };
-    totalImpressions?: { data: number; expiry: number };
-    antiFraud?: { data: AntiFraudData; expiry: number };
-  } = {};
+  private cache = new Map<string, { data: any; expiry: number }>();
 
   private deviceExistsCache = new Set<string>();
   private readonly CACHE_TTL = 30000; // 30 seconds
@@ -26,12 +20,23 @@ export class AnalyticsService {
     private readonly notifications: NotificationsService
   ) {}
 
+  private async getCachedOrFetch<T>(key: string, ttlMs: number, fetchFn: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const cached = this.cache.get(key);
+    if (cached && cached.expiry > now) {
+      return cached.data as T;
+    }
+    const data = await fetchFn();
+    this.cache.set(key, { data, expiry: now + ttlMs });
+    return data;
+  }
+
   /**
    * Clears all in-memory analytics caches to ensure fresh data
    */
   clearCache() {
     this.logger.log('🧹 Limpiando caché de analíticas...');
-    this.cache = {};
+    this.cache.clear();
     this.deviceExistsCache.clear();
   }
 
@@ -120,165 +125,143 @@ export class AnalyticsService {
   }
 
   async getAnalyticsSummary(advertiserId?: string) {
-    const now = Date.now();
-    // Use a different cache key if advertiserId is provided
     const cacheKey = advertiserId ? `summary_${advertiserId}` : 'summary';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
-      return (this.cache as any)[cacheKey].data;
-    }
+    return this.getCachedOrFetch<any>(cacheKey, this.CACHE_TTL, async () => {
+      const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+      const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] = await Promise.all([
+        this.prisma.playbackEvent.count({
+          where: { 
+            eventType: 'play_confirm',
+            ...(videoIds ? { videoId: { in: videoIds } } : {})
+          }
+        }),
+        this.prisma.playbackEvent.groupBy({
+          by: ['deviceId'],
+          where: { 
+            eventType: 'play_confirm',
+            ...(videoIds ? { videoId: { in: videoIds } } : {})
+          },
+          _count: { deviceId: true }
+        }),
+        this.prisma.analyticsEvent.count({
+          where: { 
+            eventType: { in: ['QR_SCAN', 'qr_scan', 'scan'] },
+            ...(advertiserId ? { campaign: { advertiserId } } : {})
+          }
+        }),
+        this.prisma.playbackEvent.count({
+          where: { 
+            timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, 
+            eventType: 'play_confirm',
+            ...(videoIds ? { videoId: { in: videoIds } } : {})
+          }
+        })
+      ]);
 
-    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] = await Promise.all([
-      this.prisma.playbackEvent.count({
-        where: { 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      }),
-      this.prisma.playbackEvent.groupBy({
-        by: ['deviceId'],
-        where: { 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        },
-        _count: { deviceId: true }
-      }),
-      this.prisma.analyticsEvent.count({
-        where: { 
-          eventType: { in: ['QR_SCAN', 'qr_scan', 'scan'] },
-          ...(advertiserId ? { campaign: { advertiserId } } : {})
-        }
-      }),
-      this.prisma.playbackEvent.count({
-        where: { 
-          timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      })
-    ]);
-
-    const data = { 
-      totalImpressions, 
-      activeNodes: uniqueNodesCount.length,
-      totalScans,
-      ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
-      hourlyAverage: Math.round(recentImpressions / 24)
-    };
-
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
-    return data;
+      return { 
+        totalImpressions, 
+        activeNodes: uniqueNodesCount.length,
+        totalScans,
+        ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
+        hourlyAverage: Math.round(recentImpressions / 24)
+      };
+    });
   }
 
   private async getAdvertiserVideoIds(advertiserId: string): Promise<string[]> {
-    const [videos, assets] = await Promise.all([
-      this.prisma.video.findMany({
-        where: { campaign: { advertiserId } },
-        select: { id: true }
-      }),
-      this.prisma.mediaAsset.findMany({
-        where: { campaign: { advertiserId } },
-        select: { id: true }
-      })
-    ]);
-    return [...videos.map(v => v.id), ...assets.map(a => a.id)];
+    const cacheKey = `videoIds_${advertiserId}`;
+    return this.getCachedOrFetch<string[]>(cacheKey, this.CACHE_TTL, async () => {
+      const [videos, assets] = await Promise.all([
+        this.prisma.video.findMany({
+          where: { campaign: { advertiserId } },
+          select: { id: true }
+        }),
+        this.prisma.mediaAsset.findMany({
+          where: { campaign: { advertiserId } },
+          select: { id: true }
+        })
+      ]);
+      return [...videos.map(v => v.id), ...assets.map(a => a.id)];
+    });
   }
 
   async getTotalImpressions(advertiserId?: string) {
-    const now = Date.now();
     const cacheKey = advertiserId ? `totalImpressions_${advertiserId}` : 'totalImpressions';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
-      return (this.cache as any)[cacheKey].data;
-    }
+    return this.getCachedOrFetch<number>(cacheKey, this.CACHE_TTL, async () => {
+      const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
-
-    const count = await this.prisma.playbackEvent.count({
-      where: { 
-        eventType: 'play_confirm',
-        ...(videoIds ? { videoId: { in: videoIds } } : {})
-      }
-    });
-
-    (this.cache as any)[cacheKey] = { data: count, expiry: now + this.CACHE_TTL };
-    return count;
-  }
-
-  async getAntiFraudMetrics(advertiserId?: string) {
-    const now = Date.now();
-    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : 'antiFraud';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
-      return (this.cache as any)[cacheKey].data;
-    }
-
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
-
-    const [rawImpressions, gpsValidations] = await Promise.all([
-      this.prisma.playbackEvent.count({
+      return this.prisma.playbackEvent.count({
         where: { 
           eventType: 'play_confirm',
           ...(videoIds ? { videoId: { in: videoIds } } : {})
         }
-      }),
-      this.prisma.playbackEvent.count({
-        where: {
-          eventType: 'play_confirm',
-          lat: { not: null },
-          lng: { not: null },
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      })
-    ]);
+      });
+    });
+  }
 
-    const validPercentage = rawImpressions > 0 
-      ? Math.round((gpsValidations / rawImpressions) * 100) 
-      : 0;
+  async getAntiFraudMetrics(advertiserId?: string) {
+    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : 'antiFraud';
+    return this.getCachedOrFetch<any>(cacheKey, this.CACHE_TTL, async () => {
+      const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
-    const data = {
-      rawImpressions,
-      gpsValidations,
-      validPercentage,
-      status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
-    };
+      const [rawImpressions, gpsValidations] = await Promise.all([
+        this.prisma.playbackEvent.count({
+          where: { 
+            eventType: 'play_confirm',
+            ...(videoIds ? { videoId: { in: videoIds } } : {})
+          }
+        }),
+        this.prisma.playbackEvent.count({
+          where: {
+            eventType: 'play_confirm',
+            lat: { not: null },
+            lng: { not: null },
+            ...(videoIds ? { videoId: { in: videoIds } } : {})
+          }
+        })
+      ]);
 
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
-    return data;
+      const validPercentage = rawImpressions > 0 
+        ? Math.round((gpsValidations / rawImpressions) * 100) 
+        : 0;
+
+      return {
+        rawImpressions,
+        gpsValidations,
+        validPercentage,
+        status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
+      };
+    });
   }
 
   async getTopTaxis(advertiserId?: string) {
-    const now = Date.now();
     const cacheKey = advertiserId ? `topTaxis_${advertiserId}` : 'topTaxis';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
-      return (this.cache as any)[cacheKey].data;
-    }
+    return this.getCachedOrFetch<any>(cacheKey, this.CACHE_TTL, async () => {
+      const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
-
-    const topDevices = await this.prisma.playbackEvent.groupBy({
-      by: ['deviceId'],
-      where: {
-        eventType: 'play_confirm',
-        ...(videoIds ? { videoId: { in: videoIds } } : {})
-      },
-      _count: {
-        id: true,
-      },
-      orderBy: {
-        _count: {
-          id: 'desc',
+      const topDevices = await this.prisma.playbackEvent.groupBy({
+        by: ['deviceId'],
+        where: {
+          eventType: 'play_confirm',
+          ...(videoIds ? { videoId: { in: videoIds } } : {})
         },
-      },
-      take: 5,
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+        take: 5,
+      });
+
+      return topDevices.map(d => ({
+        device_id: d.deviceId,
+        plays: d._count.id,
+      }));
     });
-
-    const data = topDevices.map(d => ({
-      device_id: d.deviceId,
-      plays: d._count.id,
-    }));
-
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
-    return data;
   }
 
   async getHourlyAnalytics(advertiserId?: string) {
@@ -393,7 +376,7 @@ export class AnalyticsService {
         lat: true,
         lng: true,
       },
-      take: 10000 // Increased sample size (Optimized for 8GB RAM)
+      take: 2000 // Optimized for 512MB-1GB RAM (O(1) memory safety)
     });
 
     return locations.map(loc => ({

@@ -21,7 +21,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 // - NEXT_PUBLIC_API_URL puede ser https://host/api o https://host/api/v1 → extraemos solo el host
 // - Fallback hardcodeado como última instancia
 const rawBackendUrl = (
-  process.env.BACKEND_INTERNAL_URL
+  process.env.INTERNAL_BACKEND_URL
+  || process.env.BACKEND_INTERNAL_URL
+  || process.env.BACKEND_URL
   || process.env.NEXT_PUBLIC_API_URL
   || 'https://proyecto-ia-tad-api.rewvid.easypanel.host'
 );
@@ -51,7 +53,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       proxy: 'OK',
       backendTarget: `${BACKEND_BASE}/api/v1/`,
-      envSource: process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
+      envSource: process.env.INTERNAL_BACKEND_URL ? 'INTERNAL_BACKEND_URL' :
+                 process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
+                 process.env.BACKEND_URL ? 'BACKEND_URL' :
                  process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' : 'HARDCODED',
       timestamp: new Date().toISOString(),
     });
@@ -110,7 +114,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       delete headers['content-length'];
       
       headers['host'] = new URL(target).host;
-      
+
+      const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+      const forwardedProto = req.headers['x-forwarded-proto'] || (requestOrigin.startsWith('https://') ? 'https' : 'http');
+      if (forwardedHost) headers['x-forwarded-host'] = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost;
+      if (forwardedProto) headers['x-forwarded-proto'] = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+
+      const rawCookie = req.headers.cookie;
+      if (rawCookie) {
+        headers['cookie'] = Array.isArray(rawCookie) ? rawCookie.join('; ') : rawCookie;
+      }
+
       return headers;
     };
 
@@ -135,7 +149,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const isNetworkError = errorMessage.includes('fetch failed') || 
                             errorMessage.includes('ENOTFOUND') || 
                             errorMessage.includes('ECONNREFUSED') ||
-                            errorMessage.includes('ETIMEDOUT');
+                            errorMessage.includes('ETIMEDOUT') ||
+                            errorMessage.includes('EAI_AGAIN');
       
       if (isNetworkError && (BACKEND_BASE.includes('api:3000') || BACKEND_BASE.includes('localhost'))) {
         const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
@@ -185,6 +200,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (contentLength) res.setHeader('Content-Length', contentLength);
 
     const buffer = Buffer.from(await backendResponse.arrayBuffer());
+
+    if (!backendResponse.ok) {
+      const rawBody = buffer.toString('utf-8');
+      console.error(`[PROXY BACKEND ERROR] ${req.method} ${targetUrl} -> ${backendResponse.status} ${backendResponse.statusText} | body: ${rawBody.slice(0, 500)}`);
+
+      if (contentType?.includes('application/json')) {
+        try {
+          const errorPayload = JSON.parse(rawBody);
+          return res.status(backendResponse.status).json({
+            ...errorPayload,
+            proxy: {
+              targetUrl,
+              upstreamStatus: backendResponse.status,
+              upstreamStatusText: backendResponse.statusText,
+            },
+          });
+        } catch {}
+      }
+
+      return res.status(backendResponse.status).json({
+        error: 'Upstream backend error',
+        message: backendResponse.statusText || 'Error sin detalle del backend',
+        proxy: {
+          targetUrl,
+          upstreamStatus: backendResponse.status,
+        },
+        upstreamBody: rawBody.slice(0, 500),
+      });
+    }
 
     if (contentType?.includes('application/json')) {
       try {

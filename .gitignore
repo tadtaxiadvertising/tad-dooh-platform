@@ -1,41 +1,105 @@
-# Environment (Critical Security)
-.env
-.env.*
-!.env.example
+```
+# Dependencies
+node_modules/
 
-# Logs and Debug scripts
+# Build artifacts
+.next/
+
+# Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-error_logs.json
-*_output.txt
-*.mp4
-!tablet-player/test.mp4
 
-# OS Files
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# IDE and editor settings
+.vscode/
+.idea/
+
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Dependencies
-node_modules/
-dist/
-.next/
-.vercel/
-out/
-build/
-ode_modules/
-admin-dashboard/.next/
-admin-dashboard/out/
-tmp/
+# Java installation
+TAD/java-1.8.0-openjdk-1.8.0.482.b08-1.win.jdk.x86_64/
 
-.vercel
+# Mission Control
+missioncontrol/
 
-# Prisma
-apps/api/prisma/client/
-generated/
+# Temporary files
+*.tmp
+*.swp
+*.swo
 
-# Scratch
-scratch/
-apps/*/scratch/
-*.tsbuildinfo
+# Compression files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# MyPy cache
+.mypy_cache/
+
+# PyTest cache
+.pytest_cache/
+
+# Gradle
+.gradle/
+
+# Target directory for builds
+target/
+
+# Julia packages
+julia-*/
+
+# Zig packages
+zig*/
+
+# Docker related
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*~
+\#*\#
+```

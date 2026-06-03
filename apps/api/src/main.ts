@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 // Safe BigInt serialization for Prisma
@@ -32,7 +32,13 @@ async function bootstrap() {
     app.enableShutdownHooks();
 
     app.setGlobalPrefix('api/v1', {
-      exclude: ['api/health', '/'],
+      exclude: [
+        { path: '/', method: RequestMethod.GET },
+        { path: 'api', method: RequestMethod.GET },
+        { path: 'api/health', method: RequestMethod.GET },
+        { path: 'api/v1', method: RequestMethod.GET },
+        { path: 'health', method: RequestMethod.GET },
+      ],
     });
     
     // SHELTER C-I1: CORS restringido a dominios TAD conocidos
@@ -41,6 +47,7 @@ async function bootstrap() {
       'https://tad-admin.rewvid.easypanel.host',
       'https://tad-driver.rewvid.easypanel.host',
       'https://tad-advertiser.rewvid.easypanel.host',
+      'https://tad-api.rewvid.easypanel.host',
       'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',
       'https://proyecto-ia-tad-player.rewvid.easypanel.host',
       'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
@@ -49,7 +56,9 @@ async function bootstrap() {
       'https://tad-simulator.rewvid.easypanel.host',
     ];
     
-    const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])];
+    const allowedOrigins = [...new Set([...baseOrigins, ...envOrigins])]
+      .map((o) => o.replace(/\/$/, ''));
+    const allowAllOrigins = allowedOrigins.includes('*');
     if (process.env.NODE_ENV !== 'production') {
       allowedOrigins.push('http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3000');
     }
@@ -63,15 +72,20 @@ async function bootstrap() {
         }
 
         // Strict allow-list for production origins
-        if (allowedOrigins.includes(origin)) {
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        if (allowAllOrigins || allowedOrigins.includes(normalizedOrigin)) {
           callback(null, true);
           return;
         }
 
+        logger.warn(`[CORS] Blocked origin: ${origin}. Configure CORS_ORIGIN to allow it.`);
         callback(new Error(`CORS blocked for origin: ${origin}`), false);
       },
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret',
       credentials: true,
+      optionsSuccessStatus: 204,
+      preflightContinue: false,
     });
 
     // Register Global Exception Filter for standard error handling

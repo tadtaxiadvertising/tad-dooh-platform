@@ -484,6 +484,7 @@ export const updateDeviceProfile = (deviceId: string, data: Record<string, unkno
 
 // GPS Tracking
 export const getTrackingData = () => api.get('/fleet/tracking').then(res => res.data);
+export const getTrackingBaseline = () => api.get('/tracking/baseline').then(res => res.data);
 export const getTrackingSummary = (advertiserId?: string) => 
   api.get(`/fleet/tracking/summary${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
 export const getDeviceRecentPath = (deviceId: string) => api.get(`/fleet/devices/${deviceId}/recent-path`).then(res => res.data);

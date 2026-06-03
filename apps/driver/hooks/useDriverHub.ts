@@ -1,4 +1,3 @@
-// apps/driver/hooks/useDriverHub.ts
 import { useState, useEffect, useCallback } from 'react';
 import api from '@tad/services';
 
@@ -57,10 +56,33 @@ const normalizeHubData = (raw: any): DriverHubData => {
   };
 };
 
+const HUB_CACHE_KEY = 'TAD_DRIVER_HUB_CACHE';
+
+const readHubCache = (): DriverHubData | null => {
+  if (typeof window === 'undefined') return null;
+
+  const cached = localStorage.getItem(HUB_CACHE_KEY);
+  if (!cached) return null;
+
+  try {
+    return normalizeHubData(JSON.parse(cached));
+  } catch {
+    localStorage.removeItem(HUB_CACHE_KEY);
+    return null;
+  }
+};
+
+const isDnsResolutionError = (error: unknown): boolean => {
+  const payload = error as { message?: string; code?: string; response?: { data?: { message?: string } } };
+  const text = [payload?.message, payload?.code, payload?.response?.data?.message].filter(Boolean).join(' ').toUpperCase();
+  return text.includes('EAI_AGAIN') || text.includes('ENOTFOUND') || text.includes('DNS');
+};
+
 export function useDriverHub() {
   const [data, setData] = useState<DriverHubData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLocalMode, setIsLocalMode] = useState(false);
 
   const fetchHub = useCallback(async () => {
     try {
@@ -68,15 +90,22 @@ export function useDriverHub() {
       const res = await api.get('/drivers/me/hub');
       const normalized = normalizeHubData(res.data);
       setData(normalized);
-      localStorage.setItem('TAD_DRIVER_HUB_CACHE', JSON.stringify(normalized));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(HUB_CACHE_KEY, JSON.stringify(normalized));
+      }
       setError(null);
+      setIsLocalMode(false);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Error al conectar con el servidor');
       
-      // Fallback a caché local si estamos offline
-      const cached = localStorage.getItem('TAD_DRIVER_HUB_CACHE');
+      // Circuit breaker DNS/offline-first: fallback inmediato al cache local
+      const cached = readHubCache();
+      const dnsResolutionError = isDnsResolutionError(err);
       if (cached) {
-        setData(normalizeHubData(JSON.parse(cached)));
+        setData(cached);
+        setIsLocalMode(true);
+      } else {
+        setIsLocalMode(dnsResolutionError);
       }
     } finally {
       setLoading(false);
@@ -85,9 +114,9 @@ export function useDriverHub() {
 
   useEffect(() => {
     // Carga inicial desde caché para evitar flash en blanco
-    const cached = localStorage.getItem('TAD_DRIVER_HUB_CACHE');
+    const cached = readHubCache();
     if (cached) {
-      setData(normalizeHubData(JSON.parse(cached)));
+      setData(cached);
       setLoading(false);
     }
     
@@ -97,5 +126,5 @@ export function useDriverHub() {
     return () => clearInterval(interval);
   }, [fetchHub]);
 
-  return { data, loading, error, refresh: fetchHub };
+  return { data, loading, error, isLocalMode, refresh: fetchHub };
 }

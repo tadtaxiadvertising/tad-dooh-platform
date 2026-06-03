@@ -49,11 +49,11 @@ export class FleetService {
 
     const now = new Date();
     // 30 min in ms
-    const thirtyMinMs = 30 * 60 * 1000;
+    const tenMinMs = 10 * 60 * 1000;
 
     return devices.map((d) => {
       let isOnline = false;
-      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs) {
+      if (d.lastSeen && now.getTime() - d.lastSeen.getTime() <= tenMinMs) {
         isOnline = true;
       }
 
@@ -89,13 +89,13 @@ export class FleetService {
   }
 
   async getFleetStats() {
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
 
     // Executes parallel micro-queries in Supabase, leveraging indices
     const [total, online, withErrors] = await Promise.all([
       this.prisma.device.count(),
       this.prisma.device.count({
-        where: { lastSeen: { gte: thirtyMinAgo } }
+        where: { lastSeen: { gte: tenMinAgo } }
       }),
       this.prisma.device.count({
         // Devices with a playerStatus that is not null and not empty string
@@ -122,13 +122,19 @@ export class FleetService {
 
   async getFleetMap(advertiserId?: string) {
     try {
+      const now = new Date();
+      const onlineWindowMs = 90 * 1000;
+
       // Build filter: if advertiserId is provided, only show devices assigned to their campaigns
       const where: Record<string, unknown> = {};
       if (advertiserId) {
         where.campaigns = {
           some: {
             campaign: {
-              advertiserId: advertiserId
+              advertiserId: advertiserId,
+              active: true,
+              startDate: { lte: now },
+              endDate: { gte: now },
             }
           }
         };
@@ -139,6 +145,7 @@ export class FleetService {
         select: {
           id: true,
           deviceId: true,
+          driverId: true,
           taxiNumber: true,
           city: true,
           lastSeen: true,
@@ -155,15 +162,26 @@ export class FleetService {
               subscriptionPaid: true,
               subscriptionEnd: true,
             }
+          },
+          locations: {
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+            select: {
+              latitude: true,
+              longitude: true,
+              speed: true,
+              timestamp: true,
+            },
           }
         }
       });
 
-      const now = new Date();
-      const thirtyMinMs = 30 * 60 * 1000;
-
       return devices.map(d => {
-        const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime()) <= thirtyMinMs);
+        const lastLocation = d.locations[0] || null;
+        const lastLat = d.lastLat ?? lastLocation?.latitude ?? null;
+        const lastLng = d.lastLng ?? lastLocation?.longitude ?? null;
+        const lastSeen = d.lastSeen ?? lastLocation?.timestamp ?? null;
+        const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
 
         // Derive subscription status from the flag + expiry date (simpler, no nested query)
         let subscriptionStatus = 'PENDING';
@@ -177,17 +195,19 @@ export class FleetService {
         }
 
         return {
+          driverId: d.driver?.id ?? d.driverId ?? null,
           deviceId: d.deviceId,
           taxiNumber: d.taxiNumber ?? null,
           city: d.city ?? null,
-          lastSeen: d.lastSeen ?? null,
-          lastLat: d.lastLat ?? null,
-          lastLng: d.lastLng ?? null,
+          lastSeen,
+          lastLat,
+          lastLng,
           status: d.status,
           isOnline,
           driverName: d.driver?.fullName ?? null,
           plate: d.driver?.taxiPlate ?? d.driver?.licensePlate ?? null,
           subscriptionStatus,
+          speed: lastLocation?.speed ?? null,
         };
       });
     } catch (error: unknown) {
@@ -200,11 +220,11 @@ export class FleetService {
   }
 
   async getOfflineDevices() {
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
     return this.prisma.device.findMany({
       where: {
         OR: [
-          { lastSeen: { lt: thirtyMinAgo } },
+          { lastSeen: { lt: tenMinAgo } },
           { lastSeen: null }
         ]
       },

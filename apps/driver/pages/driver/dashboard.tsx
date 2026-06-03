@@ -7,9 +7,31 @@ import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
 import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
 import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
+import { DriverWalletCard, DriverWalletCardSkeleton, calculateWalletTotal, type WalletState } from '../../components/dashboard/DriverWalletCard';
+import { GrowthCenter } from '../../components/dashboard/GrowthCenter';
 
 const DRIVER_AGREEMENT_VERSION = '2.0 (HaaS)';
 const DRIVER_STARTER_KIT_FEE_RD = 6000;
+
+const DRIVER_REFERRAL_STORAGE_KEY = 'tad_driver_referrals_v1';
+
+function getReferralFinancialsFromStorage(): { referredAdvertisers: number; referredDrivers: number } {
+  if (typeof window === 'undefined') return { referredAdvertisers: 0, referredDrivers: 0 };
+
+  const raw = localStorage.getItem(DRIVER_REFERRAL_STORAGE_KEY);
+  if (!raw) return { referredAdvertisers: 0, referredDrivers: 0 };
+
+  try {
+    const parsed = JSON.parse(raw) as { referredAdvertisers?: number; referredDrivers?: number };
+    return {
+      referredAdvertisers: Number.isFinite(parsed.referredAdvertisers) ? Math.max(0, parsed.referredAdvertisers ?? 0) : 0,
+      referredDrivers: Number.isFinite(parsed.referredDrivers) ? Math.max(0, parsed.referredDrivers ?? 0) : 0,
+    };
+  } catch {
+    return { referredAdvertisers: 0, referredDrivers: 0 };
+  }
+}
+
 
 type DriverOnboardingStage = 'contract' | 'bank' | 'payment' | 'ready';
 
@@ -363,10 +385,12 @@ function StatusBar({
   connectionStatus,
   batchCount,
   offlineCount,
+  onLogout,
 }: {
   connectionStatus: 'online' | 'offline' | 'syncing';
   batchCount: number;
   offlineCount: number;
+  onLogout: () => void;
 }) {
   const isOffline = connectionStatus === 'offline';
   const isSyncing = connectionStatus === 'syncing';
@@ -428,6 +452,13 @@ function StatusBar({
         </span>
       </div>
 
+      <div className="flex items-center gap-2">
+      <button
+        onClick={onLogout}
+        className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-300 hover:text-white hover:border-white/30 transition"
+      >
+        Salir
+      </button>
       {/* Red Status */}
       <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
         {isOffline ? (
@@ -443,6 +474,7 @@ function StatusBar({
             <circle cx="12" cy="20" r="1" fill="currentColor" />
           </svg>
         )}
+      </div>
       </div>
     </header>
   );
@@ -594,14 +626,14 @@ function ActionButton({
 function LockdownScreen({ message }: { message: string | null }) {
   const handleWhatsApp = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
       '_blank',
       'noopener,noreferrer'
     );
   };
 
   const handleCall = () => {
-    window.location.href = 'tel:+18097000000';
+    window.location.href = 'tel:+18495043872';
   };
 
   return (
@@ -687,12 +719,13 @@ function LockdownScreen({ message }: { message: string | null }) {
 export default function DriverDashboard() {
   const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
     useTelemetry();
-  const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
+  const { data: hubData, loading: hubLoading, isLocalMode, refresh: refreshHub } = useDriverHub();
   const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
   const [bankPendingSync, setBankPendingSync] = React.useState(false);
+  const [walletState, setWalletState] = React.useState<WalletState | null>(null);
 
   // Iniciar tracking GPS al montar
   useEffect(() => {
@@ -748,10 +781,25 @@ export default function DriverDashboard() {
     }
   }, [hubData?.subscriptionPaid, showOnboarding, setLock]);
 
+
+  useEffect(() => {
+    const referrals = getReferralFinancialsFromStorage();
+    const ads = hubData?.activeSlots ?? 0;
+    const nextWallet: WalletState = {
+      ads,
+      referredAdvertisers: referrals.referredAdvertisers,
+      referredDrivers: referrals.referredDrivers,
+      total: calculateWalletTotal(ads, referrals.referredAdvertisers, referrals.referredDrivers),
+      isOffline: connectionStatus === 'offline',
+    };
+
+    setWalletState(nextWallet);
+  }, [hubData?.activeSlots, connectionStatus]);
+
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -759,7 +807,7 @@ export default function DriverDashboard() {
 
   const handleReportFalla = () => {
     window.open(
-      `https://wa.me/18097000000?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
+      `https://wa.me/18495043872?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -836,6 +884,14 @@ export default function DriverDashboard() {
     await refreshHub();
   };
 
+  const handleLogout = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('token');
+    localStorage.removeItem('sb-access-token');
+    sessionStorage.removeItem('tad_driver_user');
+    window.location.href = '/login';
+  };
+
   const handleReferir = () => {
     if (navigator.share) {
       navigator.share({
@@ -855,7 +911,7 @@ export default function DriverDashboard() {
   // ─── Banner de estado del servicio ────────────────────────────────────────
   const serviceBannerConfig =
     connectionStatus === 'offline'
-      ? { label: 'MODO LOCAL: Guardando y reintentando', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
+      ? { label: 'MODO OFFLINE: Guardando local y reintentando en segundo plano', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
       : connectionStatus === 'syncing'
       ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
       : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
@@ -873,10 +929,18 @@ export default function DriverDashboard() {
         connectionStatus={connectionStatus}
         batchCount={batchCount}
         offlineCount={offlineCount}
+        onLogout={handleLogout}
       />
 
       {/* Contenido principal con padding-top para el header fijo */}
       <main className="max-w-md mx-auto pt-[72px] px-4 space-y-5" id="dashboard-main">
+
+
+        {isLocalMode && (
+          <div className="rounded-2xl border border-amber-300/40 bg-amber-500/10 backdrop-blur-md px-4 py-3" role="status" aria-live="polite">
+            <p className="text-xs font-black tracking-wide text-amber-200">⚠️ Operando en Modo Local (Red Inestable)</p>
+          </div>
+        )}
 
         {/* Banner de Estado de Servicio */}
         <div
@@ -916,9 +980,17 @@ export default function DriverDashboard() {
           />
         )}
 
+        {walletState ? <DriverWalletCard wallet={walletState} /> : <DriverWalletCardSkeleton />}
+
+        <GrowthCenter
+          referralUrl={`/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
+          referralCode={hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500'}
+          onShare={handleReferir}
+        />
+
         {/* Ledger Financiero */}
         <EarningsLedger 
-          current={hubData?.balance ?? 0} 
+          current={walletState?.total ?? 0} 
           max={7500}
           slotsUsed={hubData?.activeSlots ?? 0}
           totalSlots={hubData?.maxSlots ?? 15}

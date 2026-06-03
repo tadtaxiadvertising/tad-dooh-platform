@@ -18,12 +18,12 @@
     "dev:tablet": "cd apps/tablet-player && python -m http.server 8080",
     "dev:simulator": "npm run dev --workspace tad-simulator",
     "install:all": "npm install",
-    "build": "npm run build -ws --if-present",
+    "build": "npm run build --workspaces --if-present",
     "build:backend": "npm run build --workspace api",
     "build:all": "npm run build -ws",
     "start": "npm run start --workspace api",
-    "lint": "npm run lint -ws",
-    "test": "npm run test -ws --if-present"
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces --if-present"
   },
   "keywords": [
     "dooh",
@@ -57,6 +57,9 @@
     "react-dom": "19.0.0",
     "reflect-metadata": "^0.1.14",
     "rxjs": "^7.8.1",
+    "sonner": "^1.7.2",
+    "swr": "^2.4.1",
+    "tailwind-merge": "^3.6.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

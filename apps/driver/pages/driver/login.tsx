@@ -174,8 +174,8 @@ export default function DriverLoginPage() {
           </form>
           <p className="text-center text-sm text-zinc-400 mt-5">
             ¿Quieres unirte a la red TAD?{' '}
-            <Link href="/register" className="text-yellow-400 hover:text-yellow-300 font-semibold">
-              Regístrate aquí
+            <Link href="/driver/onboarding" className="text-yellow-400 hover:text-yellow-300 font-semibold">
+              Ir al onboarding
             </Link>
           </p>
         </div>

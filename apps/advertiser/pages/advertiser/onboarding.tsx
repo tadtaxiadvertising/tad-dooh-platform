@@ -1,6 +1,7 @@
 // apps/advertiser/pages/advertiser/onboarding.tsx
 import React, { useState } from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import EducationCards from '../../components/advertiser/EducationCards';
@@ -8,6 +9,8 @@ import AccountStep from '../../components/advertiser/AccountStep';
 import CampaignStep from '../../components/advertiser/CampaignStep';
 import UploadStep from '../../components/advertiser/UploadStep';
 import { toast, Toaster } from 'react-hot-toast';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function AdvertiserOnboarding() {
   const [step, setStep] = useState(0);
@@ -67,7 +70,7 @@ export default function AdvertiserOnboarding() {
       <Head>
         <title>Onboarding | TAD Anunciantes</title>
       </Head>
-      
+
       <Toaster position="top-right" />
 
       {/* Decorative background elements */}
@@ -78,7 +81,7 @@ export default function AdvertiserOnboarding() {
 
       <main className="relative z-10 container mx-auto px-4 py-12 md:py-20 flex flex-col items-center min-h-screen">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
@@ -99,16 +102,15 @@ export default function AdvertiserOnboarding() {
         {step > 0 && step < 4 && (
           <div className="w-full max-w-md mb-12 flex justify-between items-center relative">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-900 -z-10" />
-            <div 
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#fad400] transition-all duration-500 -z-10" 
+            <div
+              className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#fad400] transition-all duration-500 -z-10"
               style={{ width: `${((step - 1) / 2) * 100}%` }}
             />
             {[1, 2, 3].map((i) => (
-              <div 
+              <div
                 key={i}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 border-2 ${
-                  step >= i ? 'bg-[#fad400] text-slate-950 border-[#fad400]' : 'bg-slate-950 text-slate-600 border-slate-800'
-                }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 border-2 ${step >= i ? 'bg-[#fad400] text-slate-950 border-[#fad400]' : 'bg-slate-950 text-slate-600 border-slate-800'
+                  }`}
               >
                 {i}
               </div>
@@ -122,29 +124,29 @@ export default function AdvertiserOnboarding() {
               <EducationCards key="edu" onNext={nextStep} />
             )}
             {step === 1 && (
-              <AccountStep 
-                key="acc" 
-                formData={formData} 
-                setFormData={setFormData} 
-                onNext={nextStep} 
-                onPrev={prevStep} 
+              <AccountStep
+                key="acc"
+                formData={formData}
+                setFormData={setFormData}
+                onNext={nextStep}
+                onPrev={prevStep}
               />
             )}
             {step === 2 && (
-              <CampaignStep 
-                key="camp" 
-                formData={formData} 
-                setFormData={setFormData} 
-                onNext={nextStep} 
-                onPrev={prevStep} 
+              <CampaignStep
+                key="camp"
+                formData={formData}
+                setFormData={setFormData}
+                onNext={nextStep}
+                onPrev={prevStep}
               />
             )}
             {step === 3 && (
-              <UploadStep 
-                key="upload" 
-                formData={formData} 
-                setFormData={setFormData} 
-                onSubmit={handleFinalSubmit} 
+              <UploadStep
+                key="upload"
+                formData={formData}
+                setFormData={setFormData}
+                onSubmit={handleFinalSubmit}
                 onPrev={prevStep}
                 isLoading={isLoading}
               />
@@ -163,7 +165,7 @@ export default function AdvertiserOnboarding() {
                   <h2 className="text-4xl font-black text-white">¡ESTÁS DENTRO!</h2>
                   <p className="text-slate-400">Tu intención de campaña ha sido registrada correctamente.</p>
                 </div>
-                
+
                 <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800 text-left">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Resumen de Registro</span>

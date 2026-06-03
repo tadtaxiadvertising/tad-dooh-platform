@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
+  // Suppress OneDrive/Windows casing warnings (date-fns locale paths have C: vs c: casing)
+  webpack(config) {
+    config.infrastructureLogging = {
+      ...config.infrastructureLogging,
+      level: 'error',
+    };
+    return config;
+  },
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado
@@ -63,7 +71,7 @@ export default withSentryConfig(nextConfig, {
   org: "o4511114332143616",
   project: "admin-dashboard",
   sentryUrl: "https://sentry.io/",
-  
+
   // Provide the auth token for source maps upload
   authToken: process.env.SENTRY_AUTH_TOKEN,
 
@@ -82,6 +90,6 @@ export default withSentryConfig(nextConfig, {
 
   // Removes uploaded source maps from the production bundle to reduce bundle size
   sourcemaps: {
-     deleteSourcemapsAfterUpload: true,
+    deleteSourcemapsAfterUpload: true,
   },
 });

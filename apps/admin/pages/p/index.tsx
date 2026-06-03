@@ -1,14 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import type { GetServerSideProps } from 'next';
 import { getAdvertiserHub } from "@tad/services";
-import { 
-  ShoppingBag, 
-  Utensils, 
-  Sparkles, 
-  Briefcase, 
-  ExternalLink, 
-  MessageCircle, 
+import {
+  ShoppingBag,
+  Utensils,
+  Sparkles,
+  Briefcase,
+  ExternalLink,
+  MessageCircle,
   Instagram,
   ChevronRight,
   Search,
@@ -35,6 +36,8 @@ const CATEGORY_ICONS: Record<string, any> = {
   'Entretenimiento': Sparkles,
   'General': Sparkles
 };
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function AdvertiserHub() {
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([]);
@@ -72,7 +75,7 @@ export default function AdvertiserHub() {
       {/* Hero Section */}
       <section className="relative pt-12 pb-20 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-tad-yellow/10 blur-[120px] rounded-full -z-10" />
-        
+
         <div className="max-w-xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
             <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow animate-pulse" />
@@ -93,9 +96,9 @@ export default function AdvertiserHub() {
           {/* Search Bar */}
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Buscar marcas o servicios..." 
+            <input
+              type="text"
+              placeholder="Buscar marcas o servicios..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-zinc-900 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none focus:border-tad-yellow/50 transition-all font-medium"
@@ -104,7 +107,7 @@ export default function AdvertiserHub() {
 
           {/* Categories Horizontal Scroll */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button 
+            <button
               onClick={() => setSelectedCategory(null)}
               className={clsx(
                 "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
@@ -114,7 +117,7 @@ export default function AdvertiserHub() {
               Todos
             </button>
             {categories.map(cat => (
-              <button 
+              <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={clsx(
@@ -138,15 +141,15 @@ export default function AdvertiserHub() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-20 text-center space-y-4">
-             <Search className="w-12 h-12 text-zinc-800 mx-auto" />
-             <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No se encontraron marcas en esta categoría.</p>
+            <Search className="w-12 h-12 text-zinc-800 mx-auto" />
+            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No se encontraron marcas en esta categoría.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map((adv) => {
               const Icon = CATEGORY_ICONS[adv.category || 'General'] || Sparkles;
               return (
-                <div 
+                <div
                   key={adv.id}
                   className="bg-zinc-900/40 border border-white/5 rounded-3xl p-5 group hover:border-tad-yellow/20 transition-all"
                 >
@@ -167,7 +170,7 @@ export default function AdvertiserHub() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {adv.whatsapp && (
-                      <a 
+                      <a
                         href={`https://wa.me/${adv.whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -178,7 +181,7 @@ export default function AdvertiserHub() {
                       </a>
                     )}
                     {adv.pedidosYaUrl && (
-                      <a 
+                      <a
                         href={adv.pedidosYaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -189,7 +192,7 @@ export default function AdvertiserHub() {
                       </a>
                     )}
                     {adv.uberEatsUrl && (
-                      <a 
+                      <a
                         href={adv.uberEatsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -200,8 +203,8 @@ export default function AdvertiserHub() {
                       </a>
                     )}
                     {adv.instagram && (
-                      <a 
-                        href={`https://instagram.com/${adv.instagram.replace('@','')}`}
+                      <a
+                        href={`https://instagram.com/${adv.instagram.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 p-2.5 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10 rounded-xl transition-all"
@@ -222,7 +225,7 @@ export default function AdvertiserHub() {
       <footer className="px-6 py-12 border-t border-white/5 text-center space-y-6">
         <div className="text-tad-yellow opacity-40">•••</div>
         <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
-            TAD Taxi Advertising <br /> Dominicana &copy; 2026
+          TAD Taxi Advertising <br /> Dominicana &copy; 2026
         </p>
       </footer>
     </div>

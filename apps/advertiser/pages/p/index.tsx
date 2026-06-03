@@ -2,13 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { getAdvertiserHub } from "@tad/services";
-import { 
-  ShoppingBag, 
-  Utensils, 
-  Sparkles, 
-  Briefcase, 
-  ExternalLink, 
-  MessageCircle, 
+import {
+  ShoppingBag,
+  Utensils,
+  Sparkles,
+  Briefcase,
+  ExternalLink,
+  MessageCircle,
   Instagram,
   ChevronRight,
   Search,
@@ -20,6 +20,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import type { GetServerSideProps } from 'next';
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 interface Advertiser {
   id: string;
@@ -78,9 +81,9 @@ export default function AdvertiserHub() {
         {/* Animated Background Elements */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-tad-cyan/10 blur-[140px] rounded-full -z-10 animate-pulse" />
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-tad-purple/5 blur-[120px] rounded-full -z-10" />
-        
+
         <div className="max-w-xl mx-auto text-center space-y-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
@@ -88,16 +91,16 @@ export default function AdvertiserHub() {
             <div className="w-2 h-2 rounded-full bg-tad-cyan shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-tad-cyan">Nexus System v4.5 Active</span>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-5xl font-black tracking-tighter uppercase italic leading-[0.9]"
           >
             Brand <br /> <span className="text-white">Universe</span>
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -116,9 +119,9 @@ export default function AdvertiserHub() {
             <div className="absolute -inset-1 bg-gradient-to-r from-tad-cyan/0 via-tad-cyan/20 to-tad-cyan/0 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-md" />
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-tad-cyan transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search premium network..." 
+              <input
+                type="text"
+                placeholder="Search premium network..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-zinc-950/80 border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm outline-none focus:border-tad-cyan/30 focus:shadow-[inset_0_0_20px_rgba(0,229,255,0.03)] transition-all font-bold placeholder:text-slate-700"
@@ -128,25 +131,25 @@ export default function AdvertiserHub() {
 
           {/* Premium Filter Ticker */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button 
+            <button
               onClick={() => setSelectedCategory(null)}
               className={clsx(
                 "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
-                !selectedCategory 
-                  ? "bg-tad-cyan border-tad-cyan text-black shadow-[0_0_20px_rgba(0,229,255,0.3)]" 
+                !selectedCategory
+                  ? "bg-tad-cyan border-tad-cyan text-black shadow-[0_0_20px_rgba(0,229,255,0.3)]"
                   : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200"
               )}
             >
               All Brands
             </button>
             {categories.map(cat => (
-              <button 
+              <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={clsx(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
-                  selectedCategory === cat 
-                    ? "bg-white text-black border-white shadow-xl" 
+                  selectedCategory === cat
+                    ? "bg-white text-black border-white shadow-xl"
                     : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200"
                 )}
               >
@@ -161,7 +164,7 @@ export default function AdvertiserHub() {
       <main className="px-6 py-12 max-w-xl mx-auto">
         <AnimatePresence mode="popLayout">
           {loading ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -174,27 +177,27 @@ export default function AdvertiserHub() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-tad-cyan animate-pulse">Initializing Nexus...</p>
             </motion.div>
           ) : filtered.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="py-24 text-center space-y-6"
             >
-               <div className="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center mx-auto">
-                 <Search className="w-10 h-10 text-slate-800" />
-               </div>
-               <p className="text-slate-500 font-black uppercase tracking-widest text-[10px] leading-relaxed">
-                 Null results detected. <br /> Try adjusting your targeting filters.
-               </p>
+              <div className="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center mx-auto">
+                <Search className="w-10 h-10 text-slate-800" />
+              </div>
+              <p className="text-slate-500 font-black uppercase tracking-widest text-[10px] leading-relaxed">
+                Null results detected. <br /> Try adjusting your targeting filters.
+              </p>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               layout
               className="space-y-6"
             >
               {filtered.map((adv) => {
                 const Icon = CATEGORY_ICONS[adv.category || 'General'] || Zap;
                 return (
-                  <motion.div 
+                  <motion.div
                     layout
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -212,8 +215,8 @@ export default function AdvertiserHub() {
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                             <div className="w-1 h-3 bg-tad-cyan rounded-full" />
-                             <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.2em]">{adv.category || 'Partner'}</p>
+                            <div className="w-1 h-3 bg-tad-cyan rounded-full" />
+                            <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.2em]">{adv.category || 'Partner'}</p>
                           </div>
                           <h3 className="text-xl font-black tracking-tight text-white">{adv.companyName}</h3>
                         </div>
@@ -225,7 +228,7 @@ export default function AdvertiserHub() {
 
                     <div className="grid grid-cols-2 gap-3 relative z-10">
                       {adv.whatsapp && (
-                        <a 
+                        <a
                           href={`https://wa.me/${adv.whatsapp}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -236,8 +239,8 @@ export default function AdvertiserHub() {
                         </a>
                       )}
                       {adv.instagram && (
-                        <a 
-                          href={`https://instagram.com/${adv.instagram.replace('@','')}`}
+                        <a
+                          href={`https://instagram.com/${adv.instagram.replace('@', '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-3 py-3 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10 rounded-2xl transition-all"
@@ -258,13 +261,13 @@ export default function AdvertiserHub() {
       {/* Global Footer */}
       <footer className="px-6 py-16 border-t border-white/5 text-center space-y-8 bg-zinc-950/20">
         <div className="flex items-center justify-center gap-1.5">
-           <LayoutGrid className="w-4 h-4 text-tad-cyan" />
-           <span className="text-[10px] font-black text-white uppercase tracking-[0.5em]">TAD NEXUS</span>
+          <LayoutGrid className="w-4 h-4 text-tad-cyan" />
+          <span className="text-[10px] font-black text-white uppercase tracking-[0.5em]">TAD NEXUS</span>
         </div>
         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest leading-loose">
-            TAD Taxi Advertising Dominicana <br /> 
-            Digital Out-of-Home Network &copy; 2026 <br />
-            <span className="text-slate-800 mt-2 block">Santiago • Santo Domingo</span>
+          TAD Taxi Advertising Dominicana <br />
+          Digital Out-of-Home Network &copy; 2026 <br />
+          <span className="text-slate-800 mt-2 block">Santiago • Santo Domingo</span>
         </p>
       </footer>
     </div>

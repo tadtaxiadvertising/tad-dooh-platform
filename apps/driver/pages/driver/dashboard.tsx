@@ -1,10 +1,14 @@
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
 import { Phone } from 'lucide-react';
+
+// Force dynamic rendering to prevent SSR/SSG "No QueryClient set" errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 // ─── Sub-componentes inline (sin librerías de UI externas) ────────────────────
 
@@ -237,7 +241,7 @@ function ActionButton({
                  transition-all duration-200 p-5 group relative overflow-hidden"
       aria-label={label}
     >
-      <div 
+      <div
         className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
         style={{ background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }}
       />
@@ -341,7 +345,7 @@ function LockdownScreen({ message }: { message: string | null }) {
           </button>
         </div>
       </div>
-      
+
       <p className="mt-8 text-neutral-600 text-[10px] text-center font-bold uppercase tracking-[0.3em]">
         Tus datos se guardan localmente
       </p>
@@ -409,8 +413,8 @@ export default function DriverDashboard() {
     connectionStatus === 'offline'
       ? { label: 'MODO LOCAL: Guardando y reintentando', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
       : connectionStatus === 'syncing'
-      ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
-      : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
+        ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
+        : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-10 font-sans">
@@ -450,8 +454,8 @@ export default function DriverDashboard() {
         </div>
 
         {/* Ledger Financiero */}
-        <EarningsLedger 
-          current={hubData?.balance ?? 0} 
+        <EarningsLedger
+          current={hubData?.balance ?? 0}
           max={7500}
           slotsUsed={hubData?.activeSlots ?? 0}
           totalSlots={hubData?.maxSlots ?? 15}

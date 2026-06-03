@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@tad/ui';
-import { 
-  CloudUpload, FileVideo, CheckCircle2, 
-  AlertCircle, Trash2, Search, Play, 
+import {
+  CloudUpload, FileVideo, CheckCircle2,
+  AlertCircle, Trash2, Search, Play,
   ExternalLink, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,9 @@ import { supabase } from "@tad/services";
 import api from "@tad/services";
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { VideoUpload } from '@/components/VideoUpload';
+import type { GetServerSideProps } from 'next';
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function AdvertiserMedia() {
   const { session } = useAuth();
@@ -41,8 +44,8 @@ export default function AdvertiserMedia() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="space-y-1">
-           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Gestión de Activos</p>
-           <h1 className="text-4xl font-black uppercase tracking-tighter">Mi <span className="text-[#fad400]">Librería</span></h1>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Gestión de Activos</p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Mi <span className="text-[#fad400]">Librería</span></h1>
         </div>
       </div>
 
@@ -64,29 +67,29 @@ export default function AdvertiserMedia() {
               className="bg-zinc-900/30 backdrop-blur-xl border border-white/5 rounded-[2rem] p-6 hover:bg-zinc-800/40 transition-all group"
             >
               <div className="aspect-video bg-black/60 rounded-2xl mb-5 flex items-center justify-center relative overflow-hidden group-hover:border-[#fad400]/20 border border-transparent transition-all">
-                 <FileVideo className="w-10 h-10 text-zinc-800 group-hover:text-[#fad400]/40 transition-colors" />
-                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-black/40">
-                    <button className="w-12 h-12 rounded-full bg-[#fad400] text-black flex items-center justify-center translate-y-4 group-hover:translate-y-0 transition-transform">
-                       <Play className="w-5 h-5 fill-current" />
-                    </button>
-                 </div>
+                <FileVideo className="w-10 h-10 text-zinc-800 group-hover:text-[#fad400]/40 transition-colors" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-black/40">
+                  <button className="w-12 h-12 rounded-full bg-[#fad400] text-black flex items-center justify-center translate-y-4 group-hover:translate-y-0 transition-transform">
+                    <Play className="w-5 h-5 fill-current" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
-                 <div>
-                    <h4 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover:text-[#fad400] transition-colors">{item.filename}</h4>
-                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mt-1">{item.size} • {item.date}</p>
-                 </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover:text-[#fad400] transition-colors">{item.filename}</h4>
+                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mt-1">{item.size} • {item.date}</p>
+                </div>
 
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                       <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                       <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Ready for Playback</span>
-                    </div>
-                    <button className="p-2 text-zinc-600 hover:text-rose-500 transition-colors">
-                       <Trash2 className="w-4 h-4" />
-                    </button>
-                 </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Ready for Playback</span>
+                  </div>
+                  <button className="p-2 text-zinc-600 hover:text-rose-500 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}

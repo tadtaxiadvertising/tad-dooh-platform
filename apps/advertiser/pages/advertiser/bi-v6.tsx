@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { BiMainDashboard } from '@/components/bi/BiMainDashboard';
 import { LayoutDashboard } from 'lucide-react';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function BiV6Page() {
   const [mounted, setMounted] = useState(false);
@@ -20,7 +23,7 @@ export default function BiV6Page() {
           Dashboard <span className="text-[#FFD700]">v6.0</span>
         </h1>
       </div>
-      
+
       <BiMainDashboard />
     </AdvertiserLayout>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import type { GetServerSideProps } from 'next';
 import useSWR from 'swr';
 import api, { sendCommand, getDevices, getOfflineDevices, getPendingDevices, approvePendingDevice, rejectPendingDevice } from '@tad/services';
 import { RefreshCcw, Tablet, Wifi, WifiOff, Battery, HardDrive, MapPin, Gauge, Search, Power, Trash2, Zap, MonitorOff, Server, CheckCircle2, LayoutGrid, Terminal, Activity, Bell, Cpu, Clock, Copy, ExternalLink, Link2, Edit2, AlertTriangle, Check, RefreshCw, ShieldAlert, ShieldCheck, XCircle, Smartphone } from 'lucide-react';
@@ -89,6 +90,8 @@ function CopyButton({ value, label = 'URL' }: { value: string; label?: string })
   );
 }
 
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+
 export default function FleetPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'monitoring' | 'alerts' | 'inventory' | 'pending'>('monitoring');
@@ -96,7 +99,7 @@ export default function FleetPage() {
   const [filter, setFilter] = useState<'all' | 'online' | 'offline' | 'santiago'>('all');
   const [commanding, setCommanding] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
@@ -112,7 +115,7 @@ export default function FleetPage() {
   const { data: fleetData, mutate: mutateFleet, isLoading: isLoadingFleet, error: fleetError } = useSWR('/fleet/summary', fetcher, {
     refreshInterval: 30000,
   });
-  
+
   // 🛰️ Inventory Data
   const [inventoryDevices, setInventoryDevices] = useState<FleetDevice[]>([]);
   const [loadingInventory, setLoadingInventory] = useState(false);
@@ -191,8 +194,8 @@ export default function FleetPage() {
 
   const handleDeleteDevice = async (id: string, confirmed: boolean = false) => {
     if (!confirmed) {
-       // We'll rely on AntigravityButton's confirmation for this call now.
-       return;
+      // We'll rely on AntigravityButton's confirmation for this call now.
+      return;
     }
     try {
       await api.delete(`/devices/${id}`);
@@ -232,7 +235,7 @@ export default function FleetPage() {
 
   return (
     <div className="min-h-screen pb-20 animate-in fade-in duration-1000">
-      
+
       {/* HEADER SECTION */}
       <div className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-8">
         <div className="flex-1">
@@ -247,48 +250,48 @@ export default function FleetPage() {
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4">
-           <button 
-             onClick={() => mutateFleet()}
-             className="flex items-center gap-3 px-8 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
-           >
-             <RefreshCcw className={clsx("w-4 h-4", isLoadingFleet && "animate-spin")} />
-             Sync Integridad
-           </button>
-           <button 
-             onClick={() => { setSelectedDevice(null); setIsModalOpen(true); }}
-             className="flex items-center gap-3 px-8 py-4 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_40px_rgba(255,212,0,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
-           >
-             <LayoutGrid className="w-4 h-4" />
-             Vincular Pantalla
-           </button>
+          <button
+            onClick={() => mutateFleet()}
+            className="flex items-center gap-3 px-8 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
+          >
+            <RefreshCcw className={clsx("w-4 h-4", isLoadingFleet && "animate-spin")} />
+            Sync Integridad
+          </button>
+          <button
+            onClick={() => { setSelectedDevice(null); setIsModalOpen(true); }}
+            className="flex items-center gap-3 px-8 py-4 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_40px_rgba(255,212,0,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Vincular Pantalla
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <StatCard 
-          label="Unidades Vinculadas" 
-          value={Array.isArray(fleetData) ? fleetData.length : (fleetData?.total || 0)} 
-          icon={Tablet} 
-          color="text-white" 
+        <StatCard
+          label="Unidades Vinculadas"
+          value={Array.isArray(fleetData) ? fleetData.length : (fleetData?.total || 0)}
+          icon={Tablet}
+          color="text-white"
         />
-        <StatCard 
-          label="Pantallas en Línea" 
-          value={Array.isArray(fleetData) ? fleetData.filter((d: any) => d.is_online).length : (fleetData?.online || 0)} 
-          icon={Wifi} 
-          color="text-tad-yellow" 
+        <StatCard
+          label="Pantallas en Línea"
+          value={Array.isArray(fleetData) ? fleetData.filter((d: any) => d.is_online).length : (fleetData?.online || 0)}
+          icon={Wifi}
+          color="text-tad-yellow"
           glow
         />
-        <StatCard 
-          label="Vault Global" 
-          value="4.2 TB" 
-          icon={HardDrive} 
-          color="text-emerald-500" 
+        <StatCard
+          label="Vault Global"
+          value="4.2 TB"
+          icon={HardDrive}
+          color="text-emerald-500"
         />
-        <StatCard 
-          label="Estatus Energia" 
-          value="Nominal" 
-          icon={Zap} 
-          color="text-white" 
+        <StatCard
+          label="Estatus Energia"
+          value="Nominal"
+          icon={Zap}
+          color="text-white"
         />
       </div>
 
@@ -299,8 +302,8 @@ export default function FleetPage() {
             onClick={() => setActiveTab(tab.id as any)}
             className={clsx(
               "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 relative",
-              activeTab === tab.id 
-                ? "bg-zinc-800 text-tad-yellow shadow-inner" 
+              activeTab === tab.id
+                ? "bg-zinc-800 text-tad-yellow shadow-inner"
                 : "text-zinc-600 hover:text-zinc-400"
             )}
           >
@@ -327,69 +330,69 @@ export default function FleetPage() {
           <div className="bg-zinc-900/50 backdrop-blur-3xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="relative group flex-1 max-w-xl">
-                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
-                 <input 
-                   type="text" 
-                   value={search}
-                   onChange={e => setSearch(e.target.value)}
-                   placeholder="BUSCAR POR ID O NÚMERO DE UNIDAD..."
-                   className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all placeholder:text-zinc-700"
-                 />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="BUSCAR POR ID O NÚMERO DE UNIDAD..."
+                  className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all placeholder:text-zinc-700"
+                />
               </div>
 
               <div className="flex gap-2">
-                 {(['all', 'santiago', 'online', 'offline'] as const).map(f => (
-                   <button 
-                     key={f}
-                     onClick={() => setFilter(f)}
-                     className={clsx(
-                       "px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                       filter === f 
-                        ? (f === 'santiago' ? "bg-tad-yellow text-black shadow-[0_0_20px_rgba(255,212,0,0.4)]" : "bg-white text-black") 
+                {(['all', 'santiago', 'online', 'offline'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={clsx(
+                      "px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                      filter === f
+                        ? (f === 'santiago' ? "bg-tad-yellow text-black shadow-[0_0_20px_rgba(255,212,0,0.4)]" : "bg-white text-black")
                         : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
-                     )}
-                   >
-                     {f === 'all' ? 'Ver Todos' : f === 'santiago' ? 'Santiago STI' : f === 'online' ? 'Online' : 'Offline'}
-                   </button>
-                 ))}
-                 <button 
-                   onClick={() => mutateFleet()} 
-                   title="Sincronizar Red de Nodos"
-                   className="p-3 bg-tad-yellow/10 text-tad-yellow rounded-xl hover:bg-tad-yellow hover:text-black transition-all"
-                 >
-                   <RefreshCcw className={clsx("w-5 h-5", isLoadingFleet && "animate-spin")} />
-                 </button>
+                    )}
+                  >
+                    {f === 'all' ? 'Ver Todos' : f === 'santiago' ? 'Santiago STI' : f === 'online' ? 'Online' : 'Offline'}
+                  </button>
+                ))}
+                <button
+                  onClick={() => mutateFleet()}
+                  title="Sincronizar Red de Nodos"
+                  className="p-3 bg-tad-yellow/10 text-tad-yellow rounded-xl hover:bg-tad-yellow hover:text-black transition-all"
+                >
+                  <RefreshCcw className={clsx("w-5 h-5", isLoadingFleet && "animate-spin")} />
+                </button>
               </div>
             </div>
 
-             <div className="p-8">
-               {fleetError ? (
-                 <div className="p-20 text-center bg-black/20 rounded-3xl border border-rose-500/10">
-                   <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                   <p className="text-zinc-500 font-bold uppercase text-[10px]">Error cargando telemetría en tiempo real</p>
-                 </div>
-               ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                   {(isLoadingFleet ? [1,2,3,4,5,6,7,8] : (Array.isArray(fleetData) ? fleetData : [])).filter((d: any) => {
-                     if (isLoadingFleet) return true;
-                     const matchSearch = d.device_id.toLowerCase().includes(search.toLowerCase()) || (d.taxi_number || '').toLowerCase().includes(search.toLowerCase()) || (d.city || '').toLowerCase().includes(search.toLowerCase());
-                     if (filter === 'all') return matchSearch;
-                     if (filter === 'santiago') return matchSearch && (d.device_id || '').startsWith('STI');
-                     return matchSearch && (filter === 'online' ? d.is_online : !d.is_online);
-                   }).map((device: any, i: number) => (
-                     <DeviceGridCard 
-                        key={isLoadingFleet ? i : device.id}
-                        device={device}
-                        isLoading={isLoadingFleet}
-                        onCommand={handleCommand}
-                        onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
-                        onDelete={() => handleDeleteDevice(device.id, true)}
-                        isCommanding={commanding === device?.device_id}
-                        playerLink={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
-                     />
-                   ))}
-                 </div>
-               )}
+            <div className="p-8">
+              {fleetError ? (
+                <div className="p-20 text-center bg-black/20 rounded-3xl border border-rose-500/10">
+                  <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                  <p className="text-zinc-500 font-bold uppercase text-[10px]">Error cargando telemetría en tiempo real</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {(isLoadingFleet ? [1, 2, 3, 4, 5, 6, 7, 8] : (Array.isArray(fleetData) ? fleetData : [])).filter((d: any) => {
+                    if (isLoadingFleet) return true;
+                    const matchSearch = d.device_id.toLowerCase().includes(search.toLowerCase()) || (d.taxi_number || '').toLowerCase().includes(search.toLowerCase()) || (d.city || '').toLowerCase().includes(search.toLowerCase());
+                    if (filter === 'all') return matchSearch;
+                    if (filter === 'santiago') return matchSearch && (d.device_id || '').startsWith('STI');
+                    return matchSearch && (filter === 'online' ? d.is_online : !d.is_online);
+                  }).map((device: any, i: number) => (
+                    <DeviceGridCard
+                      key={isLoadingFleet ? i : device.id}
+                      device={device}
+                      isLoading={isLoadingFleet}
+                      onCommand={handleCommand}
+                      onConfigure={() => { setSelectedDevice(device); setIsModalOpen(true); }}
+                      onDelete={() => handleDeleteDevice(device.id, true)}
+                      isCommanding={commanding === device?.device_id}
+                      playerLink={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -408,14 +411,14 @@ export default function FleetPage() {
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Detección de unidades desconectadas y fuera de rango</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={loadAlerts}
                 className="px-6 py-2.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
               >
                 Actualizar Alertas
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/5">
                 <thead className="bg-white/5">
@@ -426,7 +429,7 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(loadingAlerts ? [1,2,3] : offlineDevices).map((device: any, i) => (
+                  {(loadingAlerts ? [1, 2, 3] : offlineDevices).map((device: any, i) => (
                     <tr key={device.device_id || i} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
                         {loadingAlerts ? <div className="h-4 w-24 bg-white/5 animate-pulse rounded" /> : device.device_id}
@@ -463,39 +466,39 @@ export default function FleetPage() {
 
       {activeTab === 'inventory' && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-           <div className="bg-zinc-900/50 backdrop-blur-3xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="bg-zinc-900/50 backdrop-blur-3xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-8 border-b border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
               <div className="relative group flex-1 max-w-xl">
-                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
-                 <input 
-                   type="text" 
-                   value={search}
-                   onChange={e => setSearch(e.target.value)}
-                   placeholder="BUSCAR HARDWARE O PLACA..."
-                   className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all placeholder:text-zinc-700"
-                 />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="BUSCAR HARDWARE O PLACA..."
+                  className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all placeholder:text-zinc-700"
+                />
               </div>
 
               <div className="flex gap-2">
-                 {(['all', 'healthy', 'warning', 'critical'] as const).map(f => (
-                   <button 
-                     key={f}
-                     onClick={() => setInventoryFilter(f)}
-                     className={clsx(
-                       "px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                       inventoryFilter === f ? "bg-tad-yellow text-black" : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
-                     )}
-                   >
-                     {f === 'all' ? 'Ver Todos' : f === 'healthy' ? 'Nominal' : f === 'warning' ? 'Alertas' : 'Fallos'}
-                   </button>
-                 ))}
-                 <button 
-                   onClick={loadInventory} 
-                   title="Actualizar Inventario"
-                   className="p-3 bg-white/5 text-zinc-400 rounded-xl hover:bg-white/10 transition-all"
-                 >
-                   <RefreshCw className={clsx("w-5 h-5", loadingInventory && "animate-spin")} />
-                 </button>
+                {(['all', 'healthy', 'warning', 'critical'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setInventoryFilter(f)}
+                    className={clsx(
+                      "px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                      inventoryFilter === f ? "bg-tad-yellow text-black" : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
+                    )}
+                  >
+                    {f === 'all' ? 'Ver Todos' : f === 'healthy' ? 'Nominal' : f === 'warning' ? 'Alertas' : 'Fallos'}
+                  </button>
+                ))}
+                <button
+                  onClick={loadInventory}
+                  title="Actualizar Inventario"
+                  className="p-3 bg-white/5 text-zinc-400 rounded-xl hover:bg-white/10 transition-all"
+                >
+                  <RefreshCw className={clsx("w-5 h-5", loadingInventory && "animate-spin")} />
+                </button>
               </div>
             </div>
 
@@ -511,7 +514,7 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
-                  {(loadingInventory ? [1,2,3,4,5] : filteredInventory).map((device: any, i: number) => {
+                  {(loadingInventory ? [1, 2, 3, 4, 5] : filteredInventory).map((device: any, i: number) => {
                     if (loadingInventory) {
                       return (
                         <tr key={i}>
@@ -531,49 +534,49 @@ export default function FleetPage() {
                           <p className="text-[9px] text-tad-yellow font-bold uppercase mt-1 tracking-widest">Placa: {device.taxi_number || 'S/N'}</p>
                         </td>
                         <td className="px-8 py-6">
-                           <div className={clsx(
-                             "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest",
-                             health === 'healthy' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : health === 'warning' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                           )}>
-                             {health === 'healthy' ? 'Ok' : health === 'warning' ? 'Alerta' : 'Crítico'}
-                           </div>
+                          <div className={clsx(
+                            "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest",
+                            health === 'healthy' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : health === 'warning' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          )}>
+                            {health === 'healthy' ? 'Ok' : health === 'warning' ? 'Alerta' : 'Crítico'}
+                          </div>
                         </td>
                         <td className="px-8 py-6">
-                           <div className="flex items-center gap-2">
-                             <Terminal className="w-4 h-4 text-zinc-600" />
-                             <span className="text-[10px] font-mono font-bold text-zinc-400 whitespace-nowrap">BUILD_V{device.app_version || '2.0.1'}</span>
-                           </div>
+                          <div className="flex items-center gap-2">
+                            <Terminal className="w-4 h-4 text-zinc-600" />
+                            <span className="text-[10px] font-mono font-bold text-zinc-400 whitespace-nowrap">BUILD_V{device.app_version || '2.0.1'}</span>
+                          </div>
                         </td>
                         <td className="px-8 py-6">
-                           <div className="w-full max-w-[120px]">
-                              <div className="flex justify-between text-[9px] font-black text-zinc-600 mb-1.5 uppercase tracking-widest">
-                                <span>Cache: {storagePct}%</span>
-                              </div>
-                              <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div 
-                                  className={clsx(
-                                    "h-full rounded-full transition-all", 
-                                    storagePct > 90 ? 'bg-rose-500' : 'bg-tad-yellow',
-                                    storagePct >= 95 ? 'w-full' :
+                          <div className="w-full max-w-[120px]">
+                            <div className="flex justify-between text-[9px] font-black text-zinc-600 mb-1.5 uppercase tracking-widest">
+                              <span>Cache: {storagePct}%</span>
+                            </div>
+                            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className={clsx(
+                                  "h-full rounded-full transition-all",
+                                  storagePct > 90 ? 'bg-rose-500' : 'bg-tad-yellow',
+                                  storagePct >= 95 ? 'w-full' :
                                     storagePct >= 90 ? 'w-[90%]' :
-                                    storagePct >= 80 ? 'w-[80%]' :
-                                    storagePct >= 70 ? 'w-[70%]' :
-                                    storagePct >= 60 ? 'w-[60%]' :
-                                    storagePct >= 50 ? 'w-[50%]' :
-                                    storagePct >= 40 ? 'w-[40%]' :
-                                    storagePct >= 30 ? 'w-[30%]' :
-                                    storagePct >= 20 ? 'w-[20%]' :
-                                    storagePct >= 10 ? 'w-[10%]' : 'w-0'
-                                  )} 
-                                />
-                              </div>
-                           </div>
+                                      storagePct >= 80 ? 'w-[80%]' :
+                                        storagePct >= 70 ? 'w-[70%]' :
+                                          storagePct >= 60 ? 'w-[60%]' :
+                                            storagePct >= 50 ? 'w-[50%]' :
+                                              storagePct >= 40 ? 'w-[40%]' :
+                                                storagePct >= 30 ? 'w-[30%]' :
+                                                  storagePct >= 20 ? 'w-[20%]' :
+                                                    storagePct >= 10 ? 'w-[10%]' : 'w-0'
+                                )}
+                              />
+                            </div>
+                          </div>
                         </td>
                         <td className="px-8 py-6">
-                           <div className="flex items-center gap-2 text-zinc-500">
-                             <Clock className="w-4 h-4" />
-                             <span className="text-[10px] font-bold uppercase tracking-widest">{device.last_seen ? formatDistanceToNow(new Date(device.last_seen)).toUpperCase() : 'N/A'}</span>
-                           </div>
+                          <div className="flex items-center gap-2 text-zinc-500">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{device.last_seen ? formatDistanceToNow(new Date(device.last_seen)).toUpperCase() : 'N/A'}</span>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -581,7 +584,7 @@ export default function FleetPage() {
                 </tbody>
               </table>
             </div>
-           </div>
+          </div>
         </div>
       )}
 
@@ -598,7 +601,7 @@ export default function FleetPage() {
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Dispositivos que intentan ingresar a la red auditada</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={loadPending}
                 className="px-6 py-2.5 bg-tad-yellow/10 text-tad-yellow border border-tad-yellow/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow hover:text-black transition-all flex items-center gap-2"
               >
@@ -606,7 +609,7 @@ export default function FleetPage() {
                 Actualizar
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/5">
                 <thead className="bg-white/5">
@@ -618,13 +621,13 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(loadingPending ? [1,2,3] : pendingDevicesList).map((device: any, i) => (
+                  {(loadingPending ? [1, 2, 3] : pendingDevicesList).map((device: any, i) => (
                     <tr key={device.deviceId || i} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
                         {loadingPending ? <div className="h-4 w-24 bg-white/5 animate-pulse rounded" /> : device.deviceId}
                       </td>
                       <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
-                         {loadingPending ? <div className="h-4 w-20 bg-white/5 animate-pulse rounded" /> : device.appVersion || 'Desconocida'}
+                        {loadingPending ? <div className="h-4 w-20 bg-white/5 animate-pulse rounded" /> : device.appVersion || 'Desconocida'}
                       </td>
                       <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
                         {loadingPending ? <div className="h-4 w-40 bg-white/5 animate-pulse rounded" /> : (device.lastSeen ? new Date(device.lastSeen).toLocaleString().toUpperCase() : 'SIN REGISTRO')}
@@ -632,44 +635,44 @@ export default function FleetPage() {
                       <td className="px-8 py-6 whitespace-nowrap">
                         {loadingPending ? <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" /> : (
                           <div className="flex items-center gap-3">
-                             <AntigravityButton
-                               actionName="approve_pending_device"
-                               onAsyncClick={async () => {
-                                 try {
-                                   await approvePendingDevice(device.deviceId);
-                                   setStatusMessage('Dispositivo Aprobado');
-                                   toast.success('ACCESO CONCEDIDO: El dispositivo ya forma parte de la flota activa.');
-                                   loadPending();
-                                   mutateFleet();
-                                 } catch (e) {
-                                   toast.error('FALLA DE AUTORIZACIÓN: No se pudo aprobar el dispositivo.');
-                                 }
-                               }}
-                               variant="primary"
-                               className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
-                             >
-                               <ShieldCheck className="w-3 h-3" />
-                               Aprobar
-                             </AntigravityButton>
-                             <AntigravityButton
-                               actionName="reject_pending_device"
-                               confirmMessage={`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`}
-                               onAsyncClick={async () => {
-                                 try {
-                                   await rejectPendingDevice(device.deviceId);
-                                   setStatusMessage('Dispositivo Rechazado');
-                                   toast.warning('SOLICITUD RECHAZADA: El dispositivo ha sido bloqueado de la red.');
-                                   loadPending();
-                                 } catch (e) {
-                                   toast.error('ERROR: No se pudo procesar el rechazo del dispositivo.');
-                                 }
-                               }}
-                               variant="danger"
-                               className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
-                             >
-                               <XCircle className="w-3 h-3" />
-                               Rechazar
-                             </AntigravityButton>
+                            <AntigravityButton
+                              actionName="approve_pending_device"
+                              onAsyncClick={async () => {
+                                try {
+                                  await approvePendingDevice(device.deviceId);
+                                  setStatusMessage('Dispositivo Aprobado');
+                                  toast.success('ACCESO CONCEDIDO: El dispositivo ya forma parte de la flota activa.');
+                                  loadPending();
+                                  mutateFleet();
+                                } catch (e) {
+                                  toast.error('FALLA DE AUTORIZACIÓN: No se pudo aprobar el dispositivo.');
+                                }
+                              }}
+                              variant="primary"
+                              className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                            >
+                              <ShieldCheck className="w-3 h-3" />
+                              Aprobar
+                            </AntigravityButton>
+                            <AntigravityButton
+                              actionName="reject_pending_device"
+                              confirmMessage={`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`}
+                              onAsyncClick={async () => {
+                                try {
+                                  await rejectPendingDevice(device.deviceId);
+                                  setStatusMessage('Dispositivo Rechazado');
+                                  toast.warning('SOLICITUD RECHAZADA: El dispositivo ha sido bloqueado de la red.');
+                                  loadPending();
+                                } catch (e) {
+                                  toast.error('ERROR: No se pudo procesar el rechazo del dispositivo.');
+                                }
+                              }}
+                              variant="danger"
+                              className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Rechazar
+                            </AntigravityButton>
                           </div>
                         )}
                       </td>
@@ -691,7 +694,7 @@ export default function FleetPage() {
         </div>
       )}
 
-      <DeviceModal 
+      <DeviceModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
@@ -703,7 +706,7 @@ export default function FleetPage() {
         device={selectedDevice}
       />
 
-      <DeviceHubModal 
+      <DeviceHubModal
         isOpen={isHubOpen}
         onClose={() => setIsHubOpen(false)}
         deviceId={selectedHubId || ''}
@@ -711,10 +714,10 @@ export default function FleetPage() {
 
       {statusMessage && (
         <div className="fixed bottom-10 right-10 z-[100] bg-zinc-900 border border-tad-yellow/40 text-tad-yellow px-8 py-4 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-right-20">
-           <div className="flex items-center gap-3">
-              <Zap className="w-5 h-5 text-tad-yellow animate-pulse" />
-              <span className="text-xs font-black uppercase tracking-widest">{statusMessage}</span>
-           </div>
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-tad-yellow animate-pulse" />
+            <span className="text-xs font-black uppercase tracking-widest">{statusMessage}</span>
+          </div>
         </div>
       )}
 
@@ -726,21 +729,21 @@ function StatCard({ label, value, icon: Icon, color, glow }: { label: string; va
   return (
     <div className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300">
       <div className="flex justify-between items-start mb-6">
-        <div className={clsx("p-2.5 rounded-2xl border bg-transparent", 
-           color === 'text-tad-yellow' ? 'border-[#FFD400]/40 text-[#FFD400]' : 
-           color === 'text-emerald-500' ? 'border-emerald-500/40 text-emerald-500' : 'border-white/20 text-zinc-400',
-           glow && "shadow-[0_0_20px_rgba(255,212,0,0.15)]"
+        <div className={clsx("p-2.5 rounded-2xl border bg-transparent",
+          color === 'text-tad-yellow' ? 'border-[#FFD400]/40 text-[#FFD400]' :
+            color === 'text-emerald-500' ? 'border-emerald-500/40 text-emerald-500' : 'border-white/20 text-zinc-400',
+          glow && "shadow-[0_0_20px_rgba(255,212,0,0.15)]"
         )}>
           <Icon className="w-5 h-5" />
         </div>
         <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
       </div>
       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
-      <h3 className={clsx("text-4xl font-black tracking-tighter leading-none", 
-         color === 'text-tad-yellow' ? 'text-[#FFD400]' : color, 
-         glow && "text-shadow-glow"
+      <h3 className={clsx("text-4xl font-black tracking-tighter leading-none",
+        color === 'text-tad-yellow' ? 'text-[#FFD400]' : color,
+        glow && "text-shadow-glow"
       )}>
-         {typeof value === 'number' && value < 10 ? `0${value}` : value}
+        {typeof value === 'number' && value < 10 ? `0${value}` : value}
       </h3>
     </div>
   );
@@ -751,13 +754,13 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
     return (
       <div className="bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 h-[340px] animate-pulse">
         <div className="flex justify-between mb-8">
-           <div className="w-10 h-10 bg-white/5 rounded-2xl" />
-           <div className="w-16 h-4 bg-white/5 rounded-lg" />
+          <div className="w-10 h-10 bg-white/5 rounded-2xl" />
+          <div className="w-16 h-4 bg-white/5 rounded-lg" />
         </div>
         <div className="space-y-4">
-           <div className="h-6 w-3/4 bg-white/5 rounded-lg" />
-           <div className="h-20 w-full bg-white/5 rounded-2xl" />
-           <div className="h-10 w-full bg-white/5 rounded-xl" />
+          <div className="h-6 w-3/4 bg-white/5 rounded-lg" />
+          <div className="h-20 w-full bg-white/5 rounded-2xl" />
+          <div className="h-10 w-full bg-white/5 rounded-xl" />
         </div>
       </div>
     );
@@ -783,7 +786,7 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
   }
 
   return (
-    <div 
+    <div
       onClick={() => onCommand(device.id, 'HUB')}
       className={clsx(
         "bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 hover:border-[#FFD400]/30 transition-all duration-300 group relative overflow-hidden cursor-pointer active:scale-[0.98] animate-in fade-in slide-in-from-bottom-8",
@@ -793,42 +796,42 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
       {/* GLOW BACKGROUND */}
       {device.is_online && <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD400]/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#FFD400]/10 transition-all duration-500" />}
 
-       <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div className={clsx(
           "p-2.5 rounded-2xl border bg-transparent transition-all",
           device.is_online ? "border-[#FFD400]/40 text-[#FFD400]" : "border-white/20 text-zinc-400"
         )}>
           <Tablet className="w-5 h-5" />
         </div>
-        
+
         <div className="flex items-start gap-2">
-           <button 
-             onClick={(e) => { e.stopPropagation(); onConfigure(); }}
-             title="Editar Configuración"
-             aria-label="Editar Configuración"
-             className="p-2 mt-0.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-[#FFD400] hover:border-[#FFD400]/30 transition-all"
-           >
-             <Edit2 className="w-4 h-4" />
-           </button>
-           <AntigravityButton
-             actionName="delete_node"
-             confirmMessage={`¿Eliminar nodo ${device.device_id}? Se perderán sus vínculos.`}
-             onAsyncClick={async () => await onDelete()}
-             variant="danger"
-             className="p-2 mt-0.5 w-[34px] h-[34px] flex items-center justify-center rounded-xl"
-             title="Eliminar Pantalla"
-           >
-             <Trash2 className="w-4 h-4" />
-           </AntigravityButton>
-           <div className="flex flex-col items-end gap-1.5 ml-1">
-             <StatusSemaphore status={healthStatus} size="sm" />
-             <div className={clsx(
-               "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-               device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
-             )}>
-               {device.is_online ? '• Online' : '• Offline'}
-             </div>
-           </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onConfigure(); }}
+            title="Editar Configuración"
+            aria-label="Editar Configuración"
+            className="p-2 mt-0.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-[#FFD400] hover:border-[#FFD400]/30 transition-all"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <AntigravityButton
+            actionName="delete_node"
+            confirmMessage={`¿Eliminar nodo ${device.device_id}? Se perderán sus vínculos.`}
+            onAsyncClick={async () => await onDelete()}
+            variant="danger"
+            className="p-2 mt-0.5 w-[34px] h-[34px] flex items-center justify-center rounded-xl"
+            title="Eliminar Pantalla"
+          >
+            <Trash2 className="w-4 h-4" />
+          </AntigravityButton>
+          <div className="flex flex-col items-end gap-1.5 ml-1">
+            <StatusSemaphore status={healthStatus} size="sm" />
+            <div className={clsx(
+              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+              device.is_online ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "bg-transparent text-slate-500 border-white/10"
+            )}>
+              {device.is_online ? '• Online' : '• Offline'}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -863,39 +866,39 @@ function DeviceGridCard({ device, isLoading, onCommand, onConfigure, onDelete, i
       </div>
 
       <div className="flex gap-2">
-         <button 
-           onClick={(e) => { e.stopPropagation(); onCommand(device.device_id, 'RELOAD'); }} 
-           disabled={isCommanding}
-           className="flex-1 py-3 bg-white/[0.03] border border-white/[0.05] text-[9px] font-black uppercase tracking-widest text-slate-400 rounded-xl hover:bg-white hover:text-black transition-all disabled:opacity-50"
-         >
-           {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
-         </button>
-         <button 
-           onClick={(e) => {
-             e.stopPropagation();
-             const baseUrl = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
-             const apiServer = encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
-             const token = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_token') || '';
-             const driverId = device.driver?.id || (device as any).driver_id || '';
-             const url = `${baseUrl}/tad-driver.html?deviceId=${device.device_id}&driverId=${driverId}&server=${apiServer}&token=${token}`;
-             window.open(url, '_blank', 'noopener,noreferrer');
-           }}
-           className="flex-1 py-3 bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
-           title="Business Hub del Conductor"
-         >
-           <Smartphone className="w-3 h-3" />
-           Hub
-         </button>
-         <a 
-           href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
-           target="_blank"
-           rel="noopener noreferrer"
-           onClick={(e) => e.stopPropagation()}
-           className="flex-1 py-3 bg-[#FFD400]/10 border border-[#FFD400]/20 text-[9px] font-black uppercase tracking-widest text-[#FFD400] rounded-xl hover:bg-[#FFD400] hover:text-black transition-all flex items-center justify-center gap-2"
-         >
-           <ExternalLink className="w-3 h-3" />
-           Live
-         </a>
+        <button
+          onClick={(e) => { e.stopPropagation(); onCommand(device.device_id, 'RELOAD'); }}
+          disabled={isCommanding}
+          className="flex-1 py-3 bg-white/[0.03] border border-white/[0.05] text-[9px] font-black uppercase tracking-widest text-slate-400 rounded-xl hover:bg-white hover:text-black transition-all disabled:opacity-50"
+        >
+          {isCommanding ? <RefreshCcw className="w-3 h-3 animate-spin mx-auto" /> : 'Reboot'}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const baseUrl = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
+            const apiServer = encodeURIComponent(process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
+            const token = localStorage.getItem('tad_admin_token') || localStorage.getItem('tad_token') || '';
+            const driverId = device.driver?.id || (device as any).driver_id || '';
+            const url = `${baseUrl}/tad-driver.html?deviceId=${device.device_id}&driverId=${driverId}&server=${apiServer}&token=${token}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }}
+          className="flex-1 py-3 bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
+          title="Business Hub del Conductor"
+        >
+          <Smartphone className="w-3 h-3" />
+          Hub
+        </button>
+        <a
+          href={`${process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host'}/?deviceId=${device.device_id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 py-3 bg-[#FFD400]/10 border border-[#FFD400]/20 text-[9px] font-black uppercase tracking-widest text-[#FFD400] rounded-xl hover:bg-[#FFD400] hover:text-black transition-all flex items-center justify-center gap-2"
+        >
+          <ExternalLink className="w-3 h-3" />
+          Live
+        </a>
       </div>
     </div>
   );

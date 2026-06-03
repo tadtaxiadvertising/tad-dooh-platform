@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Target, TrendingUp, Activity, DollarSign, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import api from '@tad/services';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function InvestorDashboard() {
   const [metrics, setMetrics] = useState<any>(null);

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
 import { MetricsGrid } from '../../components/bi/MetricsGrid';
 import { BarChart3 } from 'lucide-react';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function InsightsPage() {
   const [mounted, setMounted] = useState(false);
@@ -20,7 +23,7 @@ export default function InsightsPage() {
           Marketing <span className="text-[#FFD700]">Insights</span>
         </h1>
       </div>
-      
+
       <MetricsGrid />
     </AdvertiserLayout>
   );

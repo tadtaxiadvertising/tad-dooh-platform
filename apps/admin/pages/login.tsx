@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { Shield, BarChart3, Car, ChevronRight, LayoutDashboard } from 'lucide-react';
 import clsx from 'clsx';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function LoginGateway() {
   const router = useRouter();
@@ -35,7 +38,7 @@ export default function LoginGateway() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PortalCard 
+          <PortalCard
             title="Administrador"
             subtitle="Central Command & Fleet Controls"
             icon={<Shield className="w-8 h-8 text-black" />}
@@ -43,8 +46,8 @@ export default function LoginGateway() {
             onClick={() => router.push('/admin/login')}
             delay="delay-0"
           />
-          
-          <PortalCard 
+
+          <PortalCard
             title="Anunciante"
             subtitle="Campaign Performance & Insights"
             icon={<BarChart3 className="w-8 h-8 text-white" />}
@@ -53,7 +56,7 @@ export default function LoginGateway() {
             delay="delay-75"
           />
 
-          <PortalCard 
+          <PortalCard
             title="Conductor"
             subtitle="Earnings & Device Status PWA"
             icon={<Car className="w-8 h-8 text-white" />}
@@ -75,7 +78,7 @@ export default function LoginGateway() {
 
 function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={clsx(
         "group p-1 rounded-[2.5rem] bg-white/5 border border-white/5 transition-all duration-500 hover:scale-[1.02] active:scale-95 text-left h-full",
@@ -90,7 +93,7 @@ function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
           <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">{title}</h2>
           <p className="text-gray-500 text-xs font-bold leading-relaxed">{subtitle}</p>
         </div>
-        
+
         <div className="mt-12 flex items-center gap-3 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
           <span className="text-[10px] font-black text-white uppercase tracking-widest">Enter Portal</span>
           <ChevronRight className="w-4 h-4 text-tad-yellow" />

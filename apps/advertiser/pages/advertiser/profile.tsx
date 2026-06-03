@@ -6,6 +6,9 @@ import { getMyProfile, updateMyProfile } from '@tad/services/api';
 import { User, Shield, Key, Mail, Save, Loader2, Info, Building2 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
+import type { GetServerSideProps } from 'next';
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function AdvertiserProfilePage() {
   const router = useRouter();
@@ -13,7 +16,7 @@ export default function AdvertiserProfilePage() {
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  
+
   const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -50,7 +53,7 @@ export default function AdvertiserProfilePage() {
       toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-    
+
     setIsSavingPassword(true);
     try {
       await updateMyProfile({ password: newPassword, currentPassword });
@@ -80,8 +83,8 @@ export default function AdvertiserProfilePage() {
       <AdvertiserLayout title="Perfil" subtitle="Error">
         <div className="p-8 text-center text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
           <p className="font-bold">Error al cargar la información del perfil</p>
-          <button 
-            onClick={() => mutate()} 
+          <button
+            onClick={() => mutate()}
             className="mt-4 text-xs uppercase tracking-widest font-black text-white hover:text-[#FFD700] transition-colors"
           >
             Reintentar
@@ -94,7 +97,7 @@ export default function AdvertiserProfilePage() {
   return (
     <AdvertiserLayout title="Mi Perfil" subtitle="Configuración de Cuenta">
       <Toaster theme="dark" richColors />
-      
+
       <div className="space-y-8 max-w-5xl">
         {/* HEADER */}
         <section>
@@ -111,7 +114,7 @@ export default function AdvertiserProfilePage() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* PROFILE SUMMARY SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
             <div className="rounded-2xl border border-[#F4F4F5]/5 bg-[#18181B] p-8 flex flex-col items-center text-center">
@@ -124,7 +127,7 @@ export default function AdvertiserProfilePage() {
                 {profile?.name || profile?.fullName || profile?.contactName || 'Usuario'}
               </h2>
               <p className="text-[#F4F4F5]/40 text-xs font-bold mt-1 tracking-wider">{profile?.email}</p>
-              
+
               <div className="mt-6 px-4 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-[#FFD700]" />
                 <span className="text-[10px] font-black text-[#F4F4F5]/70 uppercase tracking-[0.2em]">
@@ -132,7 +135,7 @@ export default function AdvertiserProfilePage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 flex gap-4">
               <Info className="w-5 h-5 text-blue-400 flex-shrink-0" />
               <div>
@@ -146,14 +149,14 @@ export default function AdvertiserProfilePage() {
 
           {/* MAIN FORMS */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* PERSONAL INFO FORM */}
             <form onSubmit={handleUpdateProfile} className="rounded-2xl border border-[#F4F4F5]/5 bg-[#18181B] p-8">
               <h3 className="text-lg font-black text-white mb-8 flex items-center gap-3 uppercase tracking-wider italic">
                 <Building2 className="w-5 h-5 text-[#FFD700]" />
                 Datos de Contacto
               </h3>
-              
+
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-[#F4F4F5]/40 uppercase tracking-widest ml-1">Nombre Completo</label>
@@ -165,7 +168,7 @@ export default function AdvertiserProfilePage() {
                     className="w-full bg-[#09090B] border border-[#F4F4F5]/10 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-[#FFD700]/50 outline-none transition-all placeholder:text-zinc-800"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-[#F4F4F5]/40 uppercase tracking-widest ml-1">Email de Acceso (Solo Lectura)</label>
                   <div className="relative">
@@ -198,7 +201,7 @@ export default function AdvertiserProfilePage() {
                 <Key className="w-5 h-5 text-[#FFD700]" />
                 Seguridad de Acceso
               </h3>
-              
+
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-[#F4F4F5]/40 uppercase tracking-widest ml-1">Contraseña Actual</label>
@@ -211,7 +214,7 @@ export default function AdvertiserProfilePage() {
                     className="w-full bg-[#09090B] border border-[#F4F4F5]/10 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-[#FFD700]/50 outline-none transition-all"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-[#F4F4F5]/40 uppercase tracking-widest ml-1">Nueva Contraseña</label>

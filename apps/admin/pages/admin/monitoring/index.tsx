@@ -1,11 +1,12 @@
 import React from 'react';
 import Head from 'next/head';
-import { 
-  ShieldCheck, 
-  Activity, 
-  Zap, 
-  Cloud, 
-  Database, 
+import type { GetServerSideProps } from 'next';
+import {
+  ShieldCheck,
+  Activity,
+  Zap,
+  Cloud,
+  Database,
   ExternalLink,
   AlertTriangle,
   CheckCircle2,
@@ -16,39 +17,41 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+
 export default function MonitoringPage() {
   const UMAMI_ID = process.env.NEXT_PUBLIC_UMAMI_ID || "2a7c0085-87e5-473c-b959-8854ba785e87";
   const SENTRY_URL = "https://sentry.io/";
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const services = [
-    { 
-      name: 'Sentry Error Tracking', 
-      status: 'OPERATIONAL', 
+    {
+      name: 'Sentry Error Tracking',
+      status: 'OPERATIONAL',
       icon: Activity,
       desc: 'Monitoreo de bugs y excepciones en tiempo real.',
       link: SENTRY_URL,
       color: 'text-purple-400'
     },
-    { 
-      name: 'Umami Analytics', 
-      status: 'ACTIVE', 
+    {
+      name: 'Umami Analytics',
+      status: 'ACTIVE',
       icon: BarChart3,
       desc: 'Analítica web privada y sin cookies.',
       link: `https://cloud.umami.is/`,
       color: 'text-blue-400'
     },
-    { 
-      name: 'Supabase DB & Auth', 
-      status: 'OPERATIONAL', 
+    {
+      name: 'Supabase DB & Auth',
+      status: 'OPERATIONAL',
       icon: Database,
       desc: 'Motor de datos PostgreSQL y gestión de sesiones.',
       link: `${SUPABASE_URL}`,
       color: 'text-emerald-400'
     },
-    { 
-      name: 'EasyPanel / VPS', 
-      status: 'HEALTHY', 
+    {
+      name: 'EasyPanel / VPS',
+      status: 'HEALTHY',
       icon: Cloud,
       desc: 'Infraestructura de hosting y despliegue automático.',
       link: '#',
@@ -71,7 +74,7 @@ export default function MonitoringPage() {
           </h1>
           <p className="text-zinc-500 mt-2 font-medium">Control unificado de herramientas externas y estabilidad del sistema.</p>
         </div>
-        
+
         <div className="flex items-center gap-4 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-2xl">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
@@ -98,9 +101,9 @@ export default function MonitoringPage() {
                 <p className="text-zinc-500 text-sm leading-relaxed">{svc.desc}</p>
               </div>
             </div>
-            <a 
-              href={svc.link} 
-              target="_blank" 
+            <a
+              href={svc.link}
+              target="_blank"
               rel="noopener noreferrer"
               className="mt-6 flex items-center justify-between text-xs font-bold text-zinc-400 group-hover:text-tad-yellow transition-colors"
             >
@@ -157,34 +160,34 @@ export default function MonitoringPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
         <div className="card-premium p-10 space-y-6">
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-tad-yellow/10 rounded-2xl flex items-center justify-center border border-tad-yellow/20">
-               <Zap className="w-6 h-6 text-tad-yellow" />
-             </div>
-             <div>
-               <h3 className="text-xl font-bold">Rendimiento Técnico</h3>
-               <p className="text-zinc-500 text-sm">Latencia promedio: <span className="text-white font-bold">42ms</span></p>
-             </div>
+            <div className="w-12 h-12 bg-tad-yellow/10 rounded-2xl flex items-center justify-center border border-tad-yellow/20">
+              <Zap className="w-6 h-6 text-tad-yellow" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Rendimiento Técnico</h3>
+              <p className="text-zinc-500 text-sm">Latencia promedio: <span className="text-white font-bold">42ms</span></p>
+            </div>
           </div>
           <div className="space-y-3">
-             <div className="flex justify-between text-sm">
-               <span className="text-zinc-500">Disponibilidad (Uptime)</span>
-               <span className="text-emerald-400 font-bold">99.98%</span>
-             </div>
-             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-[99.98%]" />
-             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500">Disponibilidad (Uptime)</span>
+              <span className="text-emerald-400 font-bold">99.98%</span>
+            </div>
+            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 w-[99.98%]" />
+            </div>
           </div>
         </div>
 
         <div className="card-premium p-10 space-y-6">
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
-               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-             </div>
-             <div>
-               <h3 className="text-xl font-bold">Estado General</h3>
-               <p className="text-zinc-500 text-sm">Todos los pods operativos.</p>
-             </div>
+            <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Estado General</h3>
+              <p className="text-zinc-500 text-sm">Todos los pods operativos.</p>
+            </div>
           </div>
           <p className="text-sm text-zinc-400">
             Última verificación de integridad automática: <span className="text-white font-bold text-xs bg-zinc-800 px-2 py-0.5 rounded">1 minuto atrás</span>.

@@ -7,10 +7,7 @@ import { GpsBatchDto } from './monitoring.dto';
 import { throttledMap } from '../../utils/throttler.util';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
-/**
- * @deprecated PILOT_DEVICE_IDS is hardcoded. Use dynamic query instead.
- * This constant will be removed when pilot phase ends.
- */
+// Los 10 dispositivos del Piloto de Santiago (Fase 1)
 const PILOT_DEVICE_IDS = [
   'STI0001', 'STI0002', 'STI0003', 'STI0004', 'STI0005',
   'STI0006', 'STI0007', 'STI0008', 'STI0009', 'STI0010',
@@ -18,9 +15,8 @@ const PILOT_DEVICE_IDS = [
 
 // Teléfono del administrador del piloto (para alertas críticas)
 const ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || '18098001234';
-const OFFLINE_THRESHOLD_MINUTES = BUSINESS_RULES.OFFLINE_THRESHOLD_MINUTES;
+const OFFLINE_THRESHOLD_MINUTES = 15;
 const PUSH_NOTIFICATION_HOURS = 12;
-const CRITICAL_OFFLINE_THRESHOLD_MS = BUSINESS_RULES.CRITICAL_OFFLINE_HOURS * 60 * 60 * 1000;
 
 @Injectable()
 export class MonitoringService {
@@ -30,7 +26,7 @@ export class MonitoringService {
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsAppService,
     private readonly notifications: NotificationsService,
-  ) { }
+  ) {}
 
   /**
    * RECOVERY: Check for offline devices on startup to ensure telemetry integrity
@@ -38,61 +34,23 @@ export class MonitoringService {
    */
   async onModuleInit() {
     this.logger.log('🔄 [RECOVERY] Running startup connectivity scan in background...');
-    this.checkOfflineDevices().catch(err =>
+    this.checkOfflineDevices().catch(err => 
       this.logger.error(`❌ Startup connectivity scan failed: ${err.message}`)
     );
   }
 
   /**
-   * @deprecated GPS ingestion is now handled by FleetService.ingestTelemetryBatch().
-   * This method redirects to FleetService to avoid duplicate data.
-   * Remove after all clients migrate to the canonical endpoint.
+   * Procesa un lote de coordenadas GPS enviadas por el conductor cada 5 minutos.
+   * Agrupa los registros en DriverLocation y actualiza el estado del dispositivo.
    */
   async processGpsBatch(batch: GpsBatchDto) {
-    this.logger.warn(
-      '⚠️ [DEPRECATED] processGpsBatch() called. GPS ingestion has moved to FleetService.ingestTelemetryBatch(). ' +
-      'Duplicate data may result. Migrate client to /api/v1/fleet/telemetry/batch.'
-    );
-
     const { deviceId, driverId } = batch;
     const points = batch.points || batch.locations || [];
 
-    if (!driverId) {
-      this.logger.warn(`⚠️ Batch received for ${deviceId} without driverId. Cannot redirect to FleetService.`);
-      return { status: 'ignored', reason: 'no_driver_id_provided', deprecated: true };
-    }
-
-    // Redirect to FleetService canonical pipeline
-    // We construct the TrackBatchDto shape that FleetService expects
-    const fleetPayload = {
-      driverId,
-      deviceId,
-      points: points.map(p => ({
-        lat: p.latitude ?? p.lat,
-        lng: p.longitude ?? p.lng,
-        speed: p.speed || 0,
-        timestamp: new Date(p.timestamp).toISOString(),
-      })),
-    };
+    this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
 
     try {
-      // Import FleetService dynamically to avoid circular dependency
-      const { FleetService } = await import('../fleet/fleet.service');
-      // Note: This requires FleetService to be injectable at module level.
-      // For now, we fall through to the legacy implementation with a warning.
-      // In a future PR, this should call fleetService.ingestTelemetryBatch(fleetPayload).
-      this.logger.warn(
-        '⚠️ processGpsBatch still running legacy path. ' +
-        'Wire FleetService into MonitoringModule constructor to complete migration.'
-      );
-    } catch (err) {
-      this.logger.error(`Failed to redirect to FleetService: ${err.message}`);
-    }
-
-    // Legacy fallback — keep functional but log deprecation
-    this.logger.warn('⚠️ Running LEGACY processGpsBatch path — deprecated, will be removed.');
-
-    try {
+      // 1. Resolver el Driver ID ligado al dispositivo si el recibido es dudoso
       const device = await this.prisma.device.findUnique({
         where: { deviceId },
         include: { driver: true }
@@ -101,7 +59,7 @@ export class MonitoringService {
       const resolvedDriverId = driverId || device?.driverId;
 
       if (!resolvedDriverId) {
-        this.logger.warn(`⚠️ Batch received for ${deviceId} without driver linked. Discarding.`);
+        this.logger.warn(`⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`);
         return { status: 'ignored', reason: 'no_driver_linked' };
       }
 
@@ -137,13 +95,12 @@ export class MonitoringService {
       }
 
       return {
-        status: 'success_deprecated',
+        status: 'success',
         processedPoints: points.length,
         timestamp: new Date().toISOString(),
-        warning: 'This endpoint is deprecated. Use FleetService.ingestTelemetryBatch() instead.',
       };
     } catch (error) {
-      this.logger.error(`❌ Error processing GPS batch for ${deviceId}: ${error.message}`);
+      this.logger.error(`❌ Error procesando lote GPS para ${deviceId}: ${error.message}`);
       throw error;
     }
   }
@@ -168,13 +125,11 @@ export class MonitoringService {
   }
 
   /**
-   * Retorna SOLO los dispositivos del Piloto Santiago con estadísticas completas.
-   * Uses dynamic query instead of hardcoded PILOT_DEVICE_IDS.
+   * Retorna SOLO los 10 dispositivos del Piloto Santiago con estadísticas completas.
    */
   async getPilotFleetStatus() {
-    // Dynamic: fetch all STI-prefixed devices instead of hardcoded list
     const devices = await this.prisma.device.findMany({
-      where: { deviceId: { contains: 'STI' } },
+      where: { deviceId: { in: PILOT_DEVICE_IDS } },
       select: {
         deviceId: true,
         taxiNumber: true,
@@ -195,14 +150,13 @@ export class MonitoringService {
     });
 
     const onlineCount = devices.filter(d => d.isOnline).length;
-    const total = devices.length || PILOT_DEVICE_IDS.length; // fallback to hardcoded size if empty
 
     return {
       summary: {
-        total,
+        total: PILOT_DEVICE_IDS.length,
         online: onlineCount,
-        offline: total - onlineCount,
-        healthPercentage: total > 0 ? Math.round((onlineCount / total) * 100) : 0,
+        offline: PILOT_DEVICE_IDS.length - onlineCount,
+        healthPercentage: Math.round((onlineCount / PILOT_DEVICE_IDS.length) * 100),
       },
       devices,
     };
@@ -288,10 +242,10 @@ export class MonitoringService {
         }
       }, 5);
 
-      // 4. Alerta por WhatsApp solo para el PILOTO (STI) — dynamic query
+      // 4. Alerta por WhatsApp solo para el PILOTO (STI)
       const offlinePilotDevices = await this.prisma.device.findMany({
         where: {
-          deviceId: { contains: 'STI' },
+          deviceId: { in: PILOT_DEVICE_IDS },
           lastSeen: { lt: offlineThreshold },
           status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED
         },
@@ -303,7 +257,7 @@ export class MonitoringService {
           .map(d => `• ${d.deviceId} (${d.taxiNumber || 'S/N'}) — última: ${d.lastSeen ? d.lastSeen.toLocaleTimeString() : 'nunca'}`)
           .join('\n');
 
-        const alertMessage =
+        const alertMessage = 
           `🚨 *ALERTA TAD PILOTO SANTIAGO*\n\n` +
           `${offlinePilotDevices.length} pantalla(s) sin señal:\n\n${deviceList}\n\n` +
           `⏰ Umbral: ${OFFLINE_THRESHOLD_MINUTES} min.`;

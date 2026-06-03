@@ -25,8 +25,6 @@ class Logger {
   private logLevel: LogLevel = LogLevel.INFO;
   private logs: LogEntry[] = [];
   private maxLogs = 500;
-  private writeIndex = 0;
-  private isFull = false;
   private persistToLocalStorage = false;
 
   constructor(defaultLevel?: LogLevel) {
@@ -35,9 +33,9 @@ class Logger {
         ? (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel || LogLevel.WARN)
         : (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug' ? LogLevel.DEBUG : LogLevel.INFO)
     );
-
-    this.persistToLocalStorage =
-      typeof window !== 'undefined' &&
+    
+    this.persistToLocalStorage = 
+      typeof window !== 'undefined' && 
       process.env.NEXT_PUBLIC_LOG_PERSISTENCE === 'true';
   }
 
@@ -53,31 +51,18 @@ class Logger {
   }
 
   private storeLog(entry: LogEntry): void {
-    if (this.logs.length < this.maxLogs && !this.isFull) {
-      this.logs.push(entry);
-    } else {
-      this.isFull = true;
-      this.logs[this.writeIndex] = entry;
-      this.writeIndex = (this.writeIndex + 1) % this.maxLogs;
+    this.logs.push(entry);
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
     }
 
     if (this.persistToLocalStorage) {
       try {
-        localStorage.setItem('tad_logs', JSON.stringify(this.getChronologicalLogs()));
+        localStorage.setItem('tad_logs', JSON.stringify(this.logs));
       } catch (e) {
         // Quota exceeded, not critical
       }
     }
-  }
-
-  private getChronologicalLogs(): LogEntry[] {
-    if (!this.isFull) {
-      return this.logs;
-    }
-    return [
-      ...this.logs.slice(this.writeIndex),
-      ...this.logs.slice(0, this.writeIndex),
-    ];
   }
 
   private log(
@@ -108,21 +93,10 @@ class Logger {
     };
 
     const formatted = this.formatLog(entry);
-
-    if (typeof window !== 'undefined') {
-      // Browser: colored console output
+    
+    if (typeof window !== 'undefined' && typeof console !== 'undefined') {
       console.log(`%c${formatted}`, colors[level]);
       if (data) console.log('  Data:', data);
-    } else {
-      // Server: standard console methods (no %c CSS styling)
-      const consoleMethod = {
-        [LogLevel.DEBUG]: console.debug,
-        [LogLevel.INFO]: console.info,
-        [LogLevel.WARN]: console.warn,
-        [LogLevel.ERROR]: console.error,
-      }[level] || console.log;
-      consoleMethod(formatted);
-      if (data) consoleMethod('  Data:', data);
     }
   }
 
@@ -174,29 +148,29 @@ class Logger {
   }
 
   exportLogs(): string {
-    return JSON.stringify(this.getChronologicalLogs(), null, 2);
+    return JSON.stringify(this.logs, null, 2);
   }
 
   clearLogs(): void {
     this.logs = [];
-    this.writeIndex = 0;
-    this.isFull = false;
     if (this.persistToLocalStorage) {
       localStorage.removeItem('tad_logs');
     }
   }
 
   getLogs(module?: string, level?: LogLevel): LogEntry[] {
-    return this.getChronologicalLogs().filter(
+    return this.logs.filter(
       (log) =>
         (!module || log.module === module) && (!level || log.level === level)
     );
   }
 
   getAllLogs(): LogEntry[] {
-    return this.getChronologicalLogs();
+    return this.logs;
   }
 }
 
-export const logger = new Logger();
+export const logger =
+  typeof window !== 'undefined' ? new Logger() : null;
+
 export default Logger;

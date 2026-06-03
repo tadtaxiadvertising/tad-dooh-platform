@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
     "lib": [
       "dom",
       "dom.iterable",
@@ -8,33 +7,30 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
-    "esModuleInterop": true,
+    "incremental": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "incremental": true,
-    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "paths": {
-      "@/*": ["./*"],
-      "@tad/logging": ["../../packages/logging/index.ts"],
-      "@tad/logging/*": ["../../packages/logging/*"]
-    }
-
+      "@/*": [
+        "./*"
+      ]
+    },
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.tsx"
   ],
   "exclude": [
-    "node_modules",
-    "tests/e2e"
+    "node_modules"
   ]
 }

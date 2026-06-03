@@ -13,7 +13,8 @@
     "test:e2e:auth": "playwright test tests/e2e/auth-kiosk-flow.spec.ts",
     "test:e2e:gps": "playwright test tests/e2e/gps-batch-sync.spec.ts",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:ci": "playwright test --reporter=github"
+    "test:e2e:ci": "playwright test --reporter=github",
+    "test": "playwright test"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

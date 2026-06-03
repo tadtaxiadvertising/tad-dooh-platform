@@ -86,6 +86,8 @@ export const config = {
     '/admin/:path*',      // Cualquier ruta bajo /admin
     '/login',             // Login page
     '/',                  // Root path (redirige inmediatamente)
+    '/check-in',          // Public check-in page
+    '/p/:path*',          // Public playlist preview pages
   ],
 };
 

@@ -1,7 +1,7 @@
-const CACHE_NAME = 'tad-dooh-campaign-v1';
+const CACHE_NAME = 'tad-player-media-v6'; // SRE v13: Unified with sw.js MEDIA_CACHE_NAME
 
 export class VideoCache {
-  
+
   /**
    * Checks if any video from the list is missing in the cache.
    */
@@ -50,14 +50,14 @@ export class VideoCache {
           console.log(`⬇️ Downloading & Caching: ${url}`);
           let success = false;
           let retries = 3;
-          
+
           while (retries > 0 && !success) {
             try {
-              const response = await fetch(url + '?v=' + Date.now(), { 
+              const response = await fetch(url + '?v=' + Date.now(), {
                 mode: 'cors',
                 credentials: 'omit' // Reduce header overhead for static assets
               });
-              
+
               if (response.ok) {
                 await cache.put(url, response);
                 console.log(`✅ Cached: ${url}`);
@@ -67,7 +67,7 @@ export class VideoCache {
               }
             } catch (err: any) {
               retries--;
-              console.warn(`⚠️ Retry ${3-retries}/3 for ${url}:`, err.message);
+              console.warn(`⚠️ Retry ${3 - retries}/3 for ${url}:`, err.message);
               if (retries > 0) await new Promise(r => setTimeout(r, 2000));
             }
           }
@@ -95,16 +95,16 @@ export class VideoCache {
   static async getVideoSource(url: string): Promise<string> {
     try {
       if (!('caches' in window)) return url;
-      
+
       const cache = await caches.open(CACHE_NAME);
       const cachedResponse = await cache.match(url);
-      
+
       if (cachedResponse) {
         console.log(`🔋 Serving from Cache Storage: ${url}`);
         const blob = await cachedResponse.blob();
         return URL.createObjectURL(blob);
       }
-      
+
       console.warn(`📡 Cache miss. Streaming from network: ${url}`);
       return url;
     } catch (err) {

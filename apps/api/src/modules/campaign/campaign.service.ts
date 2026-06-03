@@ -6,6 +6,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { AuthUser } from '../auth/auth.types';
+import { ReferralService } from '../referral/referral.service';
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -28,7 +29,8 @@ export class CampaignService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
-  ) {}
+    private readonly referralService: ReferralService,
+  ) { }
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
@@ -57,44 +59,18 @@ export class CampaignService {
       data,
     });
 
+    // REFERRAL LOOP: Trigger payout when campaign transitions to ACTIVE via update
+    // processReferralPayout() has built-in duplicate prevention (checks 90-day window)
+    if (dto.active === true && campaign.advertiserId && campaign.active) {
+      this.referralService.processReferralPayout(campaign.advertiserId).catch(err => {
+        this.logger.warn(`Referral payout trigger (update) failed for advertiser ${campaign.advertiserId}: ${err.message}`);
+      });
+    }
+
     if (dto.target_devices) {
       await this.assignCampaignToDevices(id, dto.target_devices);
     } else {
-      let devicesToSync = [];
-      if (campaign.targetAll || campaign.isGlobal) {
-        devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } }));
-      } else {
-        // Broadcast to both v1 and v2 assignments
-        const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
-        const assignmentsV1 = await this.prisma.playlistItem.findMany({ where: { campaignId: id }, include: { device: { select: { id: true } } } });
-        
-        const uniqueDeviceIds = new Set([
-          ...assignmentsV2.map(a => a.device_id),
-          ...assignmentsV1.map(a => a.device.id)
-        ]);
-        
-        devicesToSync = Array.from(uniqueDeviceIds).map(id => ({ id }));
-      }
-
-      if (devicesToSync.length > 0) {
-        await this.prisma.deviceCommand.createMany({
-          data: devicesToSync.map(d => ({
-            deviceId: d.id, // Device Command needs UUID usually
-            commandType: 'FORCE_SYNC',
-            commandParams: JSON.stringify({ reason: 'campaign_updated' }),
-            status: 'PENDING',
-            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-          }))
-        });
-      }
-    }
-
-    if (campaign.status === 'ACTIVE') {
-      await this.prisma.refreshActiveCampaignsView();
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'campaign_updated',
-        campaignId: id
-      }).catch(() => {});
+      await this.broadcastCampaignSync(id, 'campaign_updated');
     }
 
     return campaign;
@@ -108,11 +84,11 @@ export class CampaignService {
     let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
 
     if (isAdvertiser && user?.entityId) {
-       assignedAdvertiserId = user.entityId;
-       // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
-       const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
-       assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
-       initialStatus = 'PENDING_REVIEW';
+      assignedAdvertiserId = user.entityId;
+      // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
+      const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
+      assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
+      initialStatus = 'PENDING_REVIEW';
     } else if (!isAdmin && user?.email && !assignedAdvertiserId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (advertiser) {
@@ -148,7 +124,7 @@ export class CampaignService {
     // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];
-    
+
     if (devicesToAssign.length === 0 && !dto.target_all && dto.target_city) {
       this.logger.log(`🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`);
       const limit = Math.floor((dto.budget || 3000) / 3000) || 10; // Estimado de pantallas según presupuesto
@@ -165,7 +141,14 @@ export class CampaignService {
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
         reason: 'campaign_created',
         campaignId: campaign.id
-      }).catch(() => {});
+      }).catch(() => { });
+
+      // REFERRAL LOOP: Trigger payout when advertiser's campaign becomes ACTIVE
+      if (campaign.advertiserId) {
+        this.referralService.processReferralPayout(campaign.advertiserId).catch(err => {
+          this.logger.warn(`Referral payout trigger failed for advertiser ${campaign.advertiserId}: ${err.message}`);
+        });
+      }
     }
 
     return campaign;
@@ -174,13 +157,13 @@ export class CampaignService {
   async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {
     // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
-       where: { 
-         OR: [
-           { id: { in: idOrHwIds } },
-           { deviceId: { in: idOrHwIds } }
-         ]
-       },
-       select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
+      where: {
+        OR: [
+          { id: { in: idOrHwIds } },
+          { deviceId: { in: idOrHwIds } }
+        ]
+      },
+      select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
     });
 
     if (devices.length === 0 && idOrHwIds.length > 0) {
@@ -190,7 +173,7 @@ export class CampaignService {
     // 2. Identify available devices (respecting the limit)
     const availableDevices = devices.filter(d => d._count.campaigns < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
     const skippedCount = devices.length - availableDevices.length;
-    
+
     // 3. TRANSACTIONAL UPDATE: Clean old and insert new
     return await this.prisma.$transaction(async (tx) => {
       // Clear all existing assignments for this campaign
@@ -257,7 +240,7 @@ export class CampaignService {
    */
   async registerDirectMedia(dto: { brandId: string; fileName: string; url: string; fileSize?: number; storagePath: string }, user?: AuthUser) {
     this.logger.debug(`[MEDIA_REG] Intentando registro de ${dto.fileName} (${dto.fileSize} bytes)`);
-    
+
     // 🛡️ REGLA DE SEGURIDAD 10.2: Validación de Propiedad
     if (user?.role !== 'ADMIN') {
       // 1. Intentamos validar por entityId (Token) - Más rápido y seguro
@@ -266,7 +249,7 @@ export class CampaignService {
           this.logger.warn(`[MEDIA_REG] Rechazado: Entidad no coincide. Token=${user.entityId}, DTO=${dto.brandId}`);
           throw new BadRequestException('ID de marca no coincide con tu perfíl de anunciante');
         }
-      } 
+      }
       // 2. Fallback a búsqueda por Email (Base de Datos)
       else if (user?.email && dto.brandId) {
         const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
@@ -332,55 +315,9 @@ export class CampaignService {
     });
 
     // Create FORCE_SYNC commands for assigned devices
-    let devicesToSync = [];
-    if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
-    } else {
-      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
-      devicesToSync = assignments.map(a => ({ id: a.device_id }));
-    }
-
-    if (devicesToSync.length > 0) {
-      await this.prisma.deviceCommand.createMany({
-        data: devicesToSync.map(d => ({
-          deviceId: d.id,
-          commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_asset_added', campaignId, assetId: asset.id }),
-          status: 'PENDING',
-          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-        }))
-      });
-    } else {
-      // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
-      // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
-      const allActiveDevices = await this.prisma.device.findMany({
-        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
-        select: { id: true }
-      });
-      if (allActiveDevices.length > 0) {
-        await this.prisma.deviceCommand.createMany({
-          data: allActiveDevices.map(d => ({
-            deviceId: d.id,
-            commandType: 'FORCE_SYNC',
-            commandParams: JSON.stringify({ reason: 'global_media_asset_added', campaignId, assetId: asset.id }),
-            status: 'PENDING',
-            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-          }))
-        });
-      }
-    }
-
-    // BROADCAST WAKE_UP_CALL only if not rendering
     const isRendering = dto.status === 'RENDERING';
-    
-    if (!isRendering) {
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'media_asset_added',
-        campaignId,
-        assetId: asset.id,
-        count: devicesToSync.length
-      }).catch(() => {});
-    } else {
+    await this.broadcastCampaignSync(campaignId, 'media_asset_added', { assetId: asset.id }, isRendering);
+    if (isRendering) {
       Logger.log(`[CONTENT_DIST] MediaAsset ${asset.id} is rendering. WAKE_UP_CALL deferred.`);
     }
 
@@ -407,7 +344,7 @@ export class CampaignService {
   async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
     this.logger.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
-    
+
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
@@ -426,7 +363,7 @@ export class CampaignService {
     this.logger.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
 
     let activeCampaigns: any[] = [];
-    
+
     try {
       // 2. MASTER SYNC (Materialized View)
       // Pre-calculated targeting avoids complex joins in heartbeats.
@@ -589,36 +526,7 @@ export class CampaignService {
       data: { updatedAt: new Date() }
     });
 
-    let devicesToSync = [];
-    if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } });
-    } else {
-      const assignments = await this.prisma.deviceCampaign.findMany({ 
-        where: { campaign_id: campaignId },
-        include: { device: { select: { deviceId: true } } }
-      });
-      devicesToSync = assignments.map(a => ({ id: a.device_id, deviceId: a.device.deviceId }));
-    }
-
-    if (devicesToSync.length > 0) {
-      await this.prisma.deviceCommand.createMany({
-        data: devicesToSync.map(d => ({
-          deviceId: d.id,
-          commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_linked', campaignId, mediaId }),
-          status: 'PENDING',
-          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-        }))
-      });
-
-      // REALTIME BROADCAST
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'media_linked',
-        campaignId,
-        mediaId,
-        targets: devicesToSync.map(d => d.deviceId)
-      }).catch(() => {});
-    }
+    await this.broadcastCampaignSync(campaignId, 'media_linked', { mediaId });
 
     return updated;
   }
@@ -720,6 +628,71 @@ export class CampaignService {
     } catch (error: any) {
       this.logger.error('Error creating campaign intent:', error);
       throw new BadRequestException(`No se pudo registrar la intención de campaña: ${error.message}`);
+    }
+  }
+
+  private async broadcastCampaignSync(campaignId: string, reason: string, extraData?: Record<string, any>, skipBroadcast = false): Promise<void> {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { targetAll: true, isGlobal: true, status: true }
+    });
+    if (!campaign) return;
+
+    let devicesToSync: Array<{ id: string; deviceId?: string }> = [];
+    if (campaign.targetAll || campaign.isGlobal) {
+      devicesToSync = await this.prisma.device.findMany({
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        select: { id: true, deviceId: true }
+      });
+    } else {
+      const assignmentsV2 = await this.prisma.deviceCampaign.findMany({
+        where: { campaign_id: campaignId },
+        include: { device: { select: { deviceId: true } } }
+      });
+      const assignmentsV1 = await this.prisma.playlistItem.findMany({
+        where: { campaignId },
+        include: { device: { select: { id: true, deviceId: true } } }
+      });
+
+      const deviceMap = new Map<string, string>();
+      assignmentsV2.forEach(a => {
+        if (a.device) deviceMap.set(a.device_id, a.device.deviceId);
+        else deviceMap.set(a.device_id, '');
+      });
+      assignmentsV1.forEach(a => {
+        if (a.device) deviceMap.set(a.device.id, a.device.deviceId);
+      });
+
+      devicesToSync = Array.from(deviceMap.entries()).map(([id, deviceId]) => ({
+        id,
+        deviceId: deviceId || undefined
+      }));
+    }
+
+    if (devicesToSync.length > 0) {
+      await this.prisma.deviceCommand.createMany({
+        data: devicesToSync.map(d => ({
+          deviceId: d.id,
+          commandType: 'FORCE_SYNC',
+          commandParams: JSON.stringify({ reason, campaignId, ...extraData }),
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+        }))
+      });
+    }
+
+    if (campaign.status === 'ACTIVE') {
+      await this.prisma.refreshActiveCampaignsView().catch(() => { });
+
+      if (!skipBroadcast) {
+        const targets = devicesToSync.map(d => d.deviceId).filter((id): id is string => !!id);
+        this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
+          reason,
+          campaignId,
+          ...(targets.length > 0 ? { targets } : {}),
+          ...extraData
+        }).catch(() => { });
+      }
     }
   }
 }

@@ -15,9 +15,22 @@ const CHUNK_SIZE = 100; // Points per INSERT statement
 @Injectable()
 export class TelemetryService {
   private readonly logger = new Logger(TelemetryService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
+  /**
+   * @deprecated GPS telemetry ingestion is now handled by FleetService.ingestTelemetryBatch().
+   * This method uses $executeRawUnsafe with raw SQL and duplicates data already
+   * being inserted by the canonical pipeline.
+   *
+   * Kept for backward compatibility — logs a warning on every call.
+   * Remove after all clients migrate to /api/v1/fleet/telemetry/batch.
+   */
   async sync(data: any[]) {
+    this.logger.warn(
+      '⚠️ [DEPRECATED] TelemetryService.sync() called. GPS ingestion has moved to FleetService.ingestTelemetryBatch(). ' +
+      'This method uses raw SQL and may create duplicate records. Migrate client to the canonical endpoint.'
+    );
+
     if (!data || data.length === 0) return;
 
     // SRE: Cap input to prevent OOM on giant payloads (512MB limit)
@@ -67,9 +80,12 @@ export class TelemetryService {
         totalProcessed += chunk.length;
       }
 
-      this.logger.log(`✅ Batch sync completed: ${totalProcessed} points processed in ${Math.ceil(safeData.length / CHUNK_SIZE)} chunks.`);
+      this.logger.warn(
+        `⚠️ [DEPRECATED] Batch sync completed via legacy raw SQL: ${totalProcessed} points. ` +
+        `Migrate to FleetService.ingestTelemetryBatch().`
+      );
     } catch (err) {
-      this.logger.error(`Failed to batch sync telemetry: ${err.message}`);
+      this.logger.error(`Failed to batch sync telemetry (deprecated path): ${err.message}`);
     }
   }
 

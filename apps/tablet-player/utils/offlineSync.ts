@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tad-media-v5';
+const CACHE_NAME = 'tad-player-media-v6'; // SRE v13: Unified with sw.js MEDIA_CACHE_NAME
 
 export interface PlaylistItem {
   campaignId: string;
@@ -12,14 +12,14 @@ export class OfflineSyncManager {
   static async synchronize(deviceId: string): Promise<boolean> {
     try {
       console.log(`[TAD Sync] Iniciando sincronización para dispositivo: ${deviceId}`);
-      
+
       // 1. Obtener manifiesto del servidor
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.tad.com.do'}/api/sync/${deviceId}`);
       if (!response.ok) {
         if (response.status === 402) console.error('[TAD Sync] Suscripción no pagada.');
         return false;
       }
-      
+
       const manifest = await response.json();
       const serverPlaylist: PlaylistItem[] = manifest.playlist;
       const serverUrls = serverPlaylist.map(item => item.url);

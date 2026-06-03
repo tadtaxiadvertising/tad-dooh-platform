@@ -21,7 +21,6 @@
     "build": "npm run build -ws --if-present",
     "build:backend": "npm run build --workspace api",
     "build:all": "npm run build -ws",
-    "deploy:vercel": "node devops/deploy-vercel.js",
     "start": "npm run start --workspace api",
     "lint": "npm run lint -ws",
     "test": "npm run test -ws --if-present"

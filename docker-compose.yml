@@ -1,15 +1,93 @@
 services:
+  # ── API (NestJS Backend) ──
   tad-api:
-    image: nestjs-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=512
     deploy:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M # Optimización para VPS modesto
-  tad-driver-pwa:
-    image: nextjs-frontend:latest
-    ports:
-      - "3000:3000"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Admin Console (Next.js) ──
+  tad-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  # ── Driver PWA (Next.js) ──
+  tad-driver:
+    build:
+      context: .
+      dockerfile: Dockerfile.driver
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  # ── Advertiser Hub (Next.js) ──
+  tad-advertiser:
+    build:
+      context: .
+      dockerfile: Dockerfile.advertiser
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  # ── Tablet Player (Static HTML + SW) ──
+  tad-tablet-player:
+    build:
+      context: .
+      dockerfile: Dockerfile.tablet-player
+    environment:
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  # ── React Player (Vite SPA) ──
+  tad-player:
+    build:
+      context: .
+      dockerfile: Dockerfile.player
+    environment:
+      - VITE_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M

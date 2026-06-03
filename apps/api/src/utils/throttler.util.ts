@@ -55,6 +55,7 @@ export async function throttledMap<T, R>(
   
   return results.map(r => {
     if (r.status === 'fulfilled') return r.value;
-    throw r.reason;
+    console.error('❌ ThrottledMap task failed:', r.reason);
+    return null as unknown as R;
   });
 }

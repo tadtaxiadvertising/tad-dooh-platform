@@ -121,7 +121,6 @@ api.interceptors.response.use(
         }
 
         // Update the in-memory cache so subsequent requests get the new token
-        const { invalidateSession } = await import('./auth.service');
         invalidateSession(); // Forces re-fetch on next getValidSession() call
 
         // Retry with the fresh token
@@ -233,12 +232,10 @@ export const getFleetLocations = (advertiserId?: string) =>
 // BI & Reconciliation
 export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
 export const getFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
-export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
 export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
 export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
 export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
 export const getHotspots = () => api.get('/bi/hotspots').then(res => res.data);
-export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
 
 // Referrals
 export const getReferralStats = () => api.get('/referral/stats').then(res => res.data);

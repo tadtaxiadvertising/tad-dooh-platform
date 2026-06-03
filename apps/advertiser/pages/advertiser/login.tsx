@@ -20,8 +20,18 @@ export default function AdvertiserLoginPage() {
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [view, setView] = useState<AuthView>('login');
+  const [referralCode, setReferralCode] = useState('');
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    // REFERRAL LOOP: Capture referral code from URL query param
+    const ref = router.query.ref as string;
+    if (ref) {
+      setReferralCode(ref);
+      // Auto-switch to register view if a referral code is present
+      if (view === 'login') setView('register');
+    }
+  }, [router.query.ref]);
 
   const resetForm = () => {
     setError('');
@@ -65,7 +75,7 @@ export default function AdvertiserLoginPage() {
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
     setLoading(true);
     try {
-      const res = await api.post('/advertisers', { companyName, contactName, email, phone, password });
+      const res = await api.post('/advertisers', { companyName, contactName, email, phone, password, referredBy: referralCode });
       setSuccess('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
       setTimeout(() => switchView('login'), 2000);
     } catch (err: any) {
@@ -125,7 +135,7 @@ export default function AdvertiserLoginPage() {
           {/* Social Proof */}
           <div className="mt-5 inline-flex items-center gap-2 px-5 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-full">
             <div className="flex -space-x-2">
-              {[1,2,3].map(i => <div key={i} className="w-5 h-5 rounded-full bg-zinc-700 border-2 border-[#050505]" />)}
+              {[1, 2, 3].map(i => <div key={i} className="w-5 h-5 rounded-full bg-zinc-700 border-2 border-[#050505]" />)}
             </div>
             <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">342+ empresas activas</span>
           </div>

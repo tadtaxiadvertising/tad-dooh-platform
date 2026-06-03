@@ -33,9 +33,9 @@ class Logger {
         ? (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel || LogLevel.WARN)
         : (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug' ? LogLevel.DEBUG : LogLevel.INFO)
     );
-    
-    this.persistToLocalStorage = 
-      typeof window !== 'undefined' && 
+
+    this.persistToLocalStorage =
+      typeof window !== 'undefined' &&
       process.env.NEXT_PUBLIC_LOG_PERSISTENCE === 'true';
   }
 
@@ -93,10 +93,21 @@ class Logger {
     };
 
     const formatted = this.formatLog(entry);
-    
-    if (typeof window !== 'undefined' && typeof console !== 'undefined') {
+
+    if (typeof window !== 'undefined') {
+      // Browser: colored console output
       console.log(`%c${formatted}`, colors[level]);
       if (data) console.log('  Data:', data);
+    } else {
+      // Server: standard console methods (no %c CSS styling)
+      const consoleMethod = {
+        [LogLevel.DEBUG]: console.debug,
+        [LogLevel.INFO]: console.info,
+        [LogLevel.WARN]: console.warn,
+        [LogLevel.ERROR]: console.error,
+      }[level] || console.log;
+      consoleMethod(formatted);
+      if (data) consoleMethod('  Data:', data);
     }
   }
 
@@ -170,7 +181,5 @@ class Logger {
   }
 }
 
-export const logger =
-  typeof window !== 'undefined' ? new Logger() : null;
-
+export const logger = new Logger();
 export default Logger;

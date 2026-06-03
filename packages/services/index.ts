@@ -1,5 +1,11 @@
 import api from './api';
 export * from './api';
+export * from './auth.service';
+export * from './error-handler.service';
+export * from './types';
 export * from './supabase';
 export * from './mobile-gateway';
+export * from './auth-schemas';
+export * from './circuit-breaker';
+export * from './rate-limiter';
 export default api;

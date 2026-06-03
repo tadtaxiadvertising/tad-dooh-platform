@@ -88,7 +88,7 @@ export class FinanceService {
 
     const delinquentDrivers = await this.prisma.driver.findMany({
       where: {
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE,
         subscriptionPaid: false,
         subscriptionEnd: { lt: targetDate } // Past due
       },
@@ -102,7 +102,7 @@ export class FinanceService {
 
     this.logger.warn(`🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`);
 
-    await throttledMap(delinquentDrivers, async (driver) => {
+    await throttledMap(delinquentDrivers as any[], async (driver) => {
       for (const device of driver.devices) {
         await this.notifyMorosidad(device.deviceId).catch(err => 
           this.logger.error(`Error notifying morosidad for ${device.deviceId}: ${err.message}`)
@@ -134,6 +134,7 @@ export class FinanceService {
         subscriptionEnd: true,
         devices: {
           select: {
+            deviceId: true,
             city: true,
             taxiNumber: true,
             campaigns: {
@@ -222,19 +223,27 @@ export class FinanceService {
         // Enhanced: Get the actual taxi number from the assigned devices or driver record
         const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
 
+        // Check if already paid
+        const paymentRecord = await this.prisma.payrollPayment.findUnique({
+          where: { driverId_month_year: { driverId: driver.id, month, year } }
+        });
+
         return {
           driverId: driver.id,
           driverName: driver.fullName || 'TAD DRIVER',
           driverPhone: driver.phone || '',
           taxiNumber: actualTaxiNumber,
-          activeAds: activeAdsCount,
+          activeAds: paymentRecord?.status === 'PAID' ? paymentRecord.activeAds : activeAdsCount,
           adIncome: adTransmissionIncome,
           baseCommission,
-          gpsPoints: gpsPointsCount,
+          gpsPoints: paymentRecord?.status === 'PAID' ? paymentRecord.gpsPoints : gpsPointsCount,
           referralBonus: driverReferralBonus,
           advertiserReferralBonus,
-          totalAmount: totalAmount,
-          currency: 'DOP'
+          totalAmount: paymentRecord?.status === 'PAID' ? paymentRecord.amount : totalAmount,
+          currency: 'DOP',
+          status: paymentRecord?.status || 'PENDING',
+          paidAt: paymentRecord?.paidAt,
+          reference: paymentRecord?.referenceNum
         };
       } catch (err) {
         this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`);
@@ -251,6 +260,7 @@ export class FinanceService {
           advertiserReferralBonus: 0,
           totalAmount: 0,
           currency: 'DOP',
+          status: 'ERROR',
           error: true
         };
       }
@@ -310,7 +320,7 @@ export class FinanceService {
   async processPayment(driverId: string, month: number, year: number, reference: string) {
     this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
 
-    // Re-calculate to get current amount due
+    // Re-calculate to get current amount due and metrics
     const payrollData = await this.calculateMonthlyPayroll(month, year);
     const driverEntry = payrollData.find(p => p.driverId === driverId);
 
@@ -318,17 +328,44 @@ export class FinanceService {
       throw new Error('Driver not found for payroll calculation');
     }
 
-    return this.prisma.payrollPayment.create({
-      data: {
+    // 1. Record the payroll payment (Detailed record)
+    const payrollRecord = await this.prisma.payrollPayment.upsert({
+      where: {
+        driverId_month_year: { driverId, month, year }
+      },
+      update: {
+        amount: driverEntry.totalAmount,
+        referenceNum: reference,
+        status: 'PAID',
+        paidAt: new Date(),
+        activeAds: driverEntry.activeAds,
+        gpsPoints: driverEntry.gpsPoints
+      },
+      create: {
         driverId,
         month,
         year,
         amount: driverEntry.totalAmount,
         referenceNum: reference,
         status: 'PAID',
-        paidAt: new Date()
+        paidAt: new Date(),
+        activeAds: driverEntry.activeAds,
+        gpsPoints: driverEntry.gpsPoints
       }
     });
+
+    // 2. Record in the Financial Ledger (Unified truth)
+    await this.recordTransaction({
+      type: 'OUTGOING',
+      category: 'OPEX_DRIVER_PAYOUT',
+      amount: driverEntry.totalAmount,
+      entityId: driverId,
+      reference: reference || `PAY-${driverId.substring(0,4)}-${month}-${year}`,
+      note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
+      status: 'COMPLETED'
+    });
+
+    return payrollRecord;
   }
 
   /**
@@ -376,7 +413,8 @@ export class FinanceService {
       });
 
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
-      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffMonths = Math.max(1, Math.round(diffDays / 30.44)); // Usando promedio orbital para mayor precisión financiera
       const totalRevenue = monthlyRevenue * diffMonths;
 
       return {
@@ -510,7 +548,7 @@ export class FinanceService {
 
   private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
   private readonly RECURRING_SUB_BASE = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-  private readonly REFERRAL_RETENTION_RATE = 0.10; // 10% referred retention baseline
+  private readonly REFERRAL_RETENTION_RATE = BUSINESS_RULES.REFERRAL_RETENTION_RATE;
 
   /**
    * FINANCIAL INTELLIGENCE: Registers a new transaction with automatic tax & referral logic.
@@ -572,14 +610,34 @@ export class FinanceService {
   async getFinancialSummary() {
     this.logger.log('Generating financial summary and projections');
 
-    // MRR Calculation: Number of active drivers * Subscription Base
+    // 1. MRR Calculation: Number of active drivers * Subscription Base
     const activeSubscribedDrivers = await this.prisma.driver.count({
-      where: { status: 'ACTIVE', subscriptionPaid: true }
+      where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true }
     });
 
     const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
 
-    // Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
+    // 2. Campaign Revenue Calculation (Projected)
+    const activeCampaigns = await this.prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      include: { media: true }
+    });
+
+    let campaignRevenue = 0;
+    activeCampaigns.forEach(campaign => {
+      let monthlyBase = 0;
+      campaign.media.forEach(m => {
+        const dur = m.durationSeconds || 30;
+        const blocks = Math.ceil(dur / 30);
+        monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+      });
+      
+      const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
+      campaignRevenue += monthlyBase * diffMonths;
+    });
+
+    // 3. Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
     const monthStart = new Date();
     monthStart.setDate(1);
     
@@ -595,9 +653,10 @@ export class FinanceService {
 
     return {
       mrr,
+      campaignRevenue,
       burnRate,
       activeSubscribers: activeSubscribedDrivers,
-      netProjection: mrr - burnRate,
+      netProjection: mrr + campaignRevenue - burnRate,
       currency: 'DOP',
       timestamp: new Date()
     };
@@ -633,7 +692,7 @@ export class FinanceService {
     const ebitda = totalRev - totalOpex;
 
     // 3. Promedio Mensual por Taxi (Para LTV y Payback)
-    const activeTaxis = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    const activeTaxis = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
     
     // Ingresos promedio mensual (simplificado)
     const monthsActive = 12; // Suponemos 12 meses o calculamos base en oldest transaction

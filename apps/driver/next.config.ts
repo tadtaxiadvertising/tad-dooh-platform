@@ -1,5 +1,44 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  cacheOnFrontEndNav: false,
+  reloadOnOnline: true,
+  workboxOptions: {
+    skipWaiting: true,
+    disableDevLogs: true,
+    cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url, request }: { url: URL; request: any }) =>
+          request.method === 'GET' &&
+          (
+            url.pathname.startsWith('/driver/dashboard') ||
+            url.pathname.startsWith('/_next/static/') ||
+            request.destination === 'script' ||
+            request.destination === 'style' ||
+            request.destination === 'image' ||
+            request.destination === 'font'
+          ),
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'tad-driver-dashboard-assets',
+          expiration: {
+            maxEntries: 160,
+            maxAgeSeconds: 60 * 60 * 24 * 7,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
+  },
+});
 
 // IMPORTANTE: En EasyPanel Free, las variables NEXT_PUBLIC_* deben estar
 // configuradas como Build Args, NO solo como Environment Variables.
@@ -11,12 +50,18 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
   || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
-  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback hardcoded SOLO si todo lo demás falla
+  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback corregido para Easypanel PROD
+
+const RAW_BACKEND_URL = process.env.BACKEND_URL || BACKEND_INTERNAL;
+const BACKEND_URL = RAW_BACKEND_URL
+  .replace(/\/api\/v1\/?$/, '')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  transpilePackages: ["@tad/services", "@tad/ui", "@tad/store"],
+  transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -36,8 +81,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/backend-api/:path*',
-        destination: `${BACKEND_INTERNAL}/api/v1/:path*`,
+        source: '/api/proxy/:path*',
+        destination: `${BACKEND_URL}/api/v1/:path*`,
       },
     ];
   },
@@ -57,7 +102,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withPWA(nextConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
   org: "o4511114332143616",

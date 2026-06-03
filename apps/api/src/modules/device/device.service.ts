@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
@@ -77,7 +78,7 @@ export class DeviceService {
       data: {
         deviceId: dto.device_id,
         appVersion: dto.app_version,
-        status: 'PENDING',          // 🔒 Requires admin approval before joining fleet
+        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,          // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
         driverId: dto.driver_id,
       },
@@ -87,7 +88,7 @@ export class DeviceService {
   /** Returns all devices that have PENDING approval — for the admin dashboard. */
   async getPendingDevices() {
     return this.prisma.device.findMany({
-      where: { status: 'PENDING' },
+      where: { status: BUSINESS_RULES.STATUS.DEVICE.INITIAL },
       orderBy: { lastSeen: 'desc' },
       select: { id: true, deviceId: true, appVersion: true, lastSeen: true },
     });
@@ -98,7 +99,7 @@ export class DeviceService {
     this.logger.log(`✅ Admin approved device: ${deviceId}`);
     return this.prisma.device.update({
       where: { deviceId },
-      data: { status: 'ACTIVE' },
+      data: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
     });
   }
 
@@ -117,7 +118,7 @@ export class DeviceService {
     const [devices, campaignAssignments] = await Promise.all([
       // 1. Fetch all non-pending devices with minimal fields
       this.prisma.device.findMany({
-        where: { status: { not: 'PENDING' } },
+        where: { status: { not: BUSINESS_RULES.STATUS.DEVICE.INITIAL } },
         select: {
           id: true,
           deviceId: true,
@@ -154,7 +155,7 @@ export class DeviceService {
         device_id: d.deviceId,
         deviceId: d.deviceId,
         taxi_number: d.taxiNumber,
-        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
+        status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
         is_online: isOnline,
         battery_level: d.batteryLevel,
         occupied_slots: assignedSlots,
@@ -163,6 +164,11 @@ export class DeviceService {
         player_status: d.playerStatus,
         last_seen: d.lastSeen,
         city: d.city || 'Santiago',
+        driver: d.driver ? {
+          id: d.driver.id,
+          fullName: d.driver.fullName,
+          subscriptionPaid: d.driver.subscriptionPaid
+        } : null,
         driver_id: d.driver?.id || null,
         driver_name: d.driver?.fullName || 'No asignado',
         subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
@@ -171,9 +177,10 @@ export class DeviceService {
   }
 
   async deviceHeartbeat(dto: HeartbeatDto) {
-    // Make sure device exists first
+    // SRE v12.1.1: Single query with driver included — eliminates N+1 (was 2 findUnique calls)
     let device = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
+      include: { driver: true },
     });
 
     if (!device) {
@@ -182,7 +189,7 @@ export class DeviceService {
       await this.prisma.device.create({
         data: {
           deviceId: dto.device_id,
-          status: 'PENDING',
+          status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
           lastSeen: new Date(),
           batteryLevel: dto.battery_level,
           storageFree: dto.storage_free,
@@ -191,7 +198,7 @@ export class DeviceService {
       });
       // Return blocked so the tablet does not receive content
       return { success: true, blocked: true, reason: 'awaiting_approval' };
-    } else if (device.status === 'PENDING') {
+    } else if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       // Device exists but is still awaiting admin approval
       this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
       await this.prisma.device.update({
@@ -213,19 +220,37 @@ export class DeviceService {
       });
     }
     
-    // Check if tablet is blocked
-    const { blocked, reason } = await this.checkSubscriptionStatus(dto.device_id);
+    // SRE v12.1.1: Inline subscription check using already-loaded driver (no extra DB call)
+    let blocked = false;
+    let reason: string | undefined;
+    
+    if (device.driver) {
+      const { driver } = device;
+      if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
+        // Paid and valid — OK
+      } else {
+        // Expired or unpaid — log but DON'T block (per TAD policy)
+        this.logger.warn(`⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
+        // SRE: Fire-and-forget morosidad notification — does NOT block tablet response
+        this.financeService.notifyMorosidad(dto.device_id).catch(e => {
+          this.logger.error(`Failed to trigger morosidad notification for ${dto.device_id}: ${e.message}`);
+        });
+      }
+    }
 
-    // Record the heartbeat
-    await this.prisma.deviceHeartbeat.create({
+    // SRE v12.1.1: Fire-and-forget heartbeat record — telemetry is NOT request-critical
+    this.prisma.deviceHeartbeat.create({
       data: {
         deviceId: dto.device_id,
         batteryLevel: dto.battery_level,
         storageFree: dto.storage_free,
         timestamp: new Date(),
       },
+    }).catch(e => {
+      this.logger.error(`Failed to record heartbeat for ${dto.device_id}: ${e.message}`);
     });
 
+    this.logger.log(`💓 Heartbeat processed for device ${dto.device_id}. Battery: ${dto.battery_level}%, Player: ${dto.player_status}`);
     return { success: true, blocked, reason };
   }
 
@@ -294,7 +319,7 @@ export class DeviceService {
     if (!deviceCheck) {
       return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
     }
-    if (deviceCheck.status === 'PENDING') {
+    if (deviceCheck.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       this.logger.log(`⏳ Sync blocked for PENDING device: ${deviceId}`);
       return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
     }
@@ -408,6 +433,7 @@ export class DeviceService {
       { expiresIn: '48h' }
     );
 
+    this.logger.log(`✅ Device ${deviceId}: Sync success. Sent ${payload.media_assets?.length || 0} assets.`);
     return {
       update: true,
       blocked: false,
@@ -416,6 +442,7 @@ export class DeviceService {
       sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
+      videos: payload.media_assets, // Alias for legacy/TS player compatibility
       commands: pendingCommands.map(c => ({
         id: c.id,
         type: c.commandType,
@@ -449,7 +476,7 @@ export class DeviceService {
       return { success: false, reason: 'unknown_device' };
     }
 
-    if (device.status === 'PENDING') {
+    if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       return { success: false, reason: 'awaiting_approval' };
     }
 

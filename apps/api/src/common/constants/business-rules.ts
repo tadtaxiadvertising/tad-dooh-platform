@@ -42,9 +42,9 @@ export const BUSINESS_RULES = {
   // ==========================================
   STATUS: {
     DRIVER: {
-      INITIAL: 'PENDING_PAYMENT',
-      ACTIVE: 'ACTIVE',
-      SUSPENDED: 'SUSPENDED',
+      INITIAL: 'PENDIENTE_PAGO',
+      ACTIVE: 'OPERATIVO',
+      SUSPENDED: 'BLOQUEADO',
       ONBOARDING: {
         TOS_PENDING: 'TOS_PENDING',
         READY: 'READY',
@@ -58,8 +58,14 @@ export const BUSINESS_RULES = {
     CAMPAIGN: {
       DRAFT: 'DRAFT',
       PENDING: 'PENDING_REVIEW',
+      PENDING_PAYMENT: 'PENDING_PAYMENT',
       ACTIVE: 'ACTIVE',
       COMPLETED: 'COMPLETED',
+    },
+    DEVICE: {
+      ACTIVE: 'OPERATIVO',
+      SUSPENDED: 'BLOQUEADO',
+      INITIAL: 'PENDIENTE_PAGO',
     }
   },
 
@@ -72,6 +78,9 @@ export const BUSINESS_RULES = {
 
   /** TTL de comandos de dispositivo en días */
   COMMAND_TTL_DAYS: 7,
+
+  /** Tasa de retención por referidos (10%) */
+  REFERRAL_RETENTION_RATE: 0.10,
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

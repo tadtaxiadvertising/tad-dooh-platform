@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from '../device/device.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { TrackBatchDto } from './dto/track-batch.dto';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class FleetService {
@@ -59,7 +60,7 @@ export class FleetService {
         ...d,
         id: d.id,
         device_id: d.deviceId,
-        status: isOnline ? 'online' : (d.status === 'INACTIVE' ? 'inactive' : 'offline'),
+        status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
         last_seen: d.lastSeen,
         battery_level: d.batteryLevel,
         player_status: d.playerStatus,
@@ -332,14 +333,14 @@ export class FleetService {
         where: { deviceId },
         data: {
           taxiNumber: placa,
-          status: 'ACTIVE',
+          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
           driver: existingDevice.driver 
             ? {
                 update: {
                   fullName: nombreChofer,
                   licensePlate: placa,
                   taxiNumber: placa,
-                  status: 'ACTIVE'
+                  status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                 }
               }
             : {
@@ -351,7 +352,7 @@ export class FleetService {
                     phone: phone,
                     licensePlate: placa,
                     taxiNumber: placa,
-                    status: 'ACTIVE'
+                    status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                   }
                 }
               }
@@ -365,7 +366,7 @@ export class FleetService {
       const device = await this.prisma.device.create({
         data: {
           deviceId,
-          status: 'ACTIVE',
+          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
           taxiNumber: placa,
           driver: {
             connect: { id: existingDriver.id }
@@ -375,7 +376,7 @@ export class FleetService {
       // Actualizar datos del driver vinculado
       await this.prisma.driver.update({
         where: { id: existingDriver.id },
-        data: { fullName: nombreChofer, status: 'ACTIVE' }
+        data: { fullName: nombreChofer, status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE }
       });
       return { success: true, device_id: device.deviceId, driver_name: nombreChofer, linked_driver: true };
     }
@@ -384,7 +385,7 @@ export class FleetService {
     const device = await this.prisma.device.create({
       data: {
         deviceId,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         taxiNumber: placa,
         appVersion: '3.0.0',
         lastSeen: new Date(),
@@ -394,7 +395,7 @@ export class FleetService {
             phone: phone,
             licensePlate: placa,
             taxiNumber: placa,
-            status: 'ACTIVE'
+            status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
           }
         }
       }
@@ -608,92 +609,9 @@ export class FleetService {
     }
   }
 
-  async trackBatch(data: { driverId?: string; deviceId: string; locations?: Array<{ latitude?: number; latitude_deg?: number; p_lat?: number; lat?: number; longitude?: number; longitude_deg?: number; p_lng?: number; lng?: number; speed?: number; timestamp?: string | number; ts?: string | number }>; points?: Array<{ latitude?: number; longitude?: number; speed?: number; timestamp?: string | number }> }) {
-    const device = await this.prisma.device.findUnique({
-      where: { deviceId: data.deviceId },
-      include: { driver: true }
-    });
+  // REMOVED legacy trackBatch in favor of ingestTelemetryBatch below
 
-    if (!device?.driver) {
-      throw new HttpException({
-        status: HttpStatus.NOT_FOUND,
-        error: 'Dispositivo no registrado o sin chofer asignado.',
-        code: 'NOT_FOUND'
-      }, HttpStatus.NOT_FOUND);
-    }
 
-    const resolvedDriverId = data.driverId || device.driver.id;
-
-    // 1. VALIDACIÓN DE REGLA DE NEGOCIO: Suscripción Activa
-    // Verificamos tanto el flag manual del chofer como la entidad Subscription
-    const isPaidManual = device.driver.subscriptionPaid;
-    
-    const sub = await this.prisma.subscription.findFirst({
-      where: { deviceId: data.deviceId },
-    });
-
-    const isSubActive = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
-
-    if (!isPaidManual && !isSubActive) {
-      throw new HttpException({
-        status: HttpStatus.PAYMENT_REQUIRED,
-        error: 'Acceso denegado: Suscripción de RD$6,000 pendiente o vencida.',
-        code: 'PAYMENT_REQUIRED'
-      }, HttpStatus.PAYMENT_REQUIRED);
-    }
-
-    // 2. GUARDADO MASIVO (Soporta formato 'locations' con lat/lng y 'points' con latitude/longitude)
-    interface BatchPoint {
-      latitude?: number;
-      longitude?: number;
-      lat?: number;
-      lng?: number;
-      speed?: number;
-      timestamp?: string | number;
-      ts?: string | number;
-    }
-
-    const rawPoints = (data.points || data.locations || []) as BatchPoint[];
-    const records = rawPoints.map(p => ({
-      driverId: resolvedDriverId,
-      deviceId: data.deviceId,
-      latitude: p.latitude ?? p.lat ?? 0,
-      longitude: p.longitude ?? p.lng ?? 0,
-      speed: p.speed || 0,
-      timestamp: new Date(p.timestamp || p.ts || Date.now())
-    }));
-
-    if (records.length > 0) {
-      const latestPoint = rawPoints.reduce((prev, curr) => {
-        const currTime = new Date(curr.timestamp || curr.ts || 0).getTime();
-        const prevTime = new Date(prev.timestamp || prev.ts || 0).getTime();
-        return currTime > prevTime ? curr : prev;
-      });
-
-      await this.prisma.driverLocation.createMany({
-        data: records
-      });
-      await this.prisma.device.update({
-        where: { deviceId: data.deviceId },
-        data: {
-          lastLat: latestPoint.latitude ?? latestPoint.lat,
-          lastLng: latestPoint.longitude ?? latestPoint.lng,
-          isOnline: true,
-          lastSeen: new Date(),
-          lastSyncAt: new Date(),
-          lastSyncSuccess: true,
-          status: 'ACTIVE',
-          connectivityStatus: 'ONLINE' // Restaurar si estaba en issue
-        }
-      });
-    }
-
-    return {
-      success: true,
-      count: records.length,
-      driverId: resolvedDriverId
-    };
-  }
 
   /**
    * Envía un comando a toda la flota activa (Realtime + Persistencia)
@@ -711,7 +629,7 @@ export class FleetService {
 
     // 2. Registrar en DeviceCommand para dispositivos offline/desconectados
     const activeDevices = await this.prisma.device.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true }
     });
 
@@ -766,20 +684,27 @@ export class FleetService {
    * R3: Kill-Switch si la suscripción no está al día.
    * R2: Inserción masiva para optimizar latencia en producción.
    */
-  async processBatch(data: TrackBatchDto) {
-    // 1. Validar estado del conductor y suscripción (Regla de Negocio #3)
+  async ingestTelemetryBatch(data: TrackBatchDto) {
+    const logger = new Logger('FleetService');
+    
+    // 1. Validar existencia del conductor
     const driver = await this.prisma.driver.findUnique({
       where: { id: data.driverId },
-      select: { subscriptionPaid: true, status: true }
+      select: { id: true, subscriptionPaid: true, status: true, fullName: true }
     });
 
-    if (!driver || driver.status !== 'ACTIVE' || !driver.subscriptionPaid) {
-      // Directiva Kill-Switch: El Mobile Gateway debe recibir 402 para bloquearse
+    if (!driver) {
+      logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
+      throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
+    if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
+      logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
       throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);
     }
 
-    // 2. Inserción Masiva (Batching) para optimizar I/O (Regla de Negocio #2)
-    // Adaptado al modelo 'DriverLocation' y campo 'timestamp' del esquema actual
+    // 3. Inserción Masiva (Batching) para optimizar I/O (Regla de Negocio #2)
     const telemetryData = data.points.map(p => ({
       driverId: data.driverId,
       deviceId: data.deviceId,
@@ -789,9 +714,26 @@ export class FleetService {
       timestamp: new Date(p.timestamp),
     }));
 
-    return await this.prisma.driverLocation.createMany({
+    const result = await this.prisma.driverLocation.createMany({
       data: telemetryData,
-      skipDuplicates: true, // Evita duplicados por re-intentos de red
+      skipDuplicates: true,
     });
+
+    logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}]`);
+    
+    // 4. Update Device 'lastSeen' and current position
+    if (data.points.length > 0) {
+      const lastPoint = data.points[data.points.length - 1];
+      await this.prisma.device.update({
+        where: { deviceId: data.deviceId },
+        data: {
+          lastSeen: new Date(),
+          lastLat: lastPoint.lat,
+          lastLng: lastPoint.lng,
+        }
+      }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
+    }
+
+    return result;
   }
 }

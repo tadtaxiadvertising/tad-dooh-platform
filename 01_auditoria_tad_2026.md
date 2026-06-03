@@ -1,21 +1,21 @@
 # 📝 01 — AUDITORÍA TAD DOOH PLATFORM 2026
 
-> **Propósito**: Estado completo del ecosistema para continuidad de desarrollo. v10.0.0 Microservices & Premium Portals.
-> **Última Actualización**: 2026-04-11T22:45:00-04:00
-> **Estado Operativo Actual**: v10.0.0 (Microservices & Premium Portals). Santiago Pilot LIVE.
+> **Propósito**: Estado completo del ecosistema para continuidad de desarrollo. v12.0.0 Financial, Telemetry & Referral.
+> **Última Actualización**: 2026-04-23T19:00:00-04:00
+> **Estado Operativo Actual**: v12.0.0 (Financial & Telemetry V12). Santiago Pilot LIVE.
 
 ---
 
-## 🏗️ 1. ARQUITECTURA GENERAL (MONOREPO v10.0.0)
+## 🏗️ 1. ARQUITECTURA GENERAL (MONOREPO v12.0.0)
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│             TAD DOOH PLATFORM — ARQUITECTURA v10.0.0             │
+│             TAD DOOH PLATFORM — ARQUITECTURA v12.0.0             │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  [Portals: Admin/Adv/Driver]   [API Backend]    [TAD Remotion]   │
-│   Next.js 15 / React 19          NestJS 10       Video Engine    │
-│   Tailwind 4 / Docker            Docker          Microservice    │
+│   Next.js 15 / Tailw4            NestJS 10       Video Engine    │
+│   React 19 / Docker              Docker          Microservice    │
 │         │                          │                   │         │
 │         └──────────┬───────────────┴───────────────────┘         │
 │                    ▼                                             │
@@ -27,82 +27,56 @@
 
 | Componente | Tecnología | URL Producción (EasyPanel) | Estado |
 | --- | --- | --- | --- |
-| **Dashboard Admin** | Next.js 15 / React 19 | <https://tad-dashboard.rewvid.easypanel.host> | ✅ Operativo |
-| **API Backend** | NestJS 10 / Prisma 5.22 | <https://tad-api.rewvid.easypanel.host/api/v1> | ✅ Operativo |
-| **Portal Anunciante** | Next.js 15 (BI v6.0) | <https://tad-advertiser.rewvid.easypanel.host> | ✅ v6.0 Live |
-| **Portal Conductor** | Next.js 15 (Wallet) | <https://tad-driver.rewvid.easypanel.host> | ✅ Live |
+| **Dashboard Admin** | Next.js 15 / Tailw4 | <https://tad-dashboard.rewvid.easypanel.host> | ✅ v12.0 Operativo |
+| **API Backend** | NestJS 10 / Prisma 5 | <https://tad-api.rewvid.easypanel.host/api/v1> | ✅ v12.0 Operativo |
+| **Portal Anunciante** | Next.js 15 / Tailw4 | <https://tad-advertiser.rewvid.easypanel.host> | ✅ v12.0 Live |
+| **Portal Conductor** | Next.js 15 (V12) | <https://tad-driver.rewvid.easypanel.host> | ✅ v12.0 Live |
 | **Video Engine** | Remotion / Chromium | <https://tad-remotion.rewvid.easypanel.host> | ✅ ON-LINE |
 | **Tablet Player** | PWA (Offline-first) | Carga local vía FullyKiosk | ✅ Funcional |
 
 ---
 
-## 🖥️ 2. ESTADO DE VISTAS Y PORTALES
+## 🖥️ 2. ESTADO DE VISTAS Y PORTALES (V12)
 
-- **Admin Dashboard**: Consola central de mando. Incluye mapa de rastreo GPS en tiempo real (`/tracking`) con Spotlight y Motion Trails.
-- **Advertiser BI v6.0**: Dashboard premium para clientes. Incluye mapas de calor (Heatmaps) de impactos por campaña y gestión directa de archivos `.mp4`.
-- **Driver Portal**: Herramientas de soporte y referidos. Incluye "Mobile Gateway" para envío de GPS por lotes (Batching 10:1), reduciendo el tráfico en un 98%.
-- **Sync Protocol v1.1**: Sincronización diaria optimizada con ventana de tiempo (Sync Window) e integridad de archivos vía Hash validation.
-
----
-
-## 🎯 3. REGLAS DE NEGOCIO CRÍTICAS (Core Rules)
-
-1. **Regla de los 15 Slots**: Límite estricto de 15 anuncios de 30s por dispositivo para garantizar la rotación y el revenue.
-2. **Kill-Switch Suscripción**: Si el pago de RD$6,000 (Anual) no está activo, el dispositivo es bloqueado remotamente (`402 Payment Required`).
-3. **Bono de Disponibilidad**: RD$500/mes para choferes que registren >100 puntos GPS válidos en el mes.
-4. **Referidos**: Comisión automática de RD$500 por cada nuevo anunciante o conductor referido.
-5. **Formatos**: Restricción técnica a `video/mp4` para compatibilidad nativa con tablets STI.
+- **Admin Dashboard**: Consola central de mando con monitoreo de flota v12. Incluye auditoría de billetera y gestión de referidos.
+- **Advertiser Portal**: Sistema de registro público y gestión de campañas con estimación de presupuesto RD$.
+- **Driver Portal V12**: Rediseño radical con Tailwind 4. Incluye Billetera Digital, Telemetría de bajo consumo y Sistema de Referidos mediante códigos QR.
+- **Sync Protocol v12**: Sincronización atómica con soporte para bloqueos financieros (Kill-Switch) y actualización de contenido vía Wake-up Call.
 
 ---
 
-## ⚠️ 4. RIESGOS Y MITIGACIONES (SRE)
+## 🎯 3. REGLAS DE NEGOCIO CRÍTICAS (V12 Core Rules)
+
+1. **Compensación V12**: $Earnings = (\min(Ads, 15) \times 500) + (CPA_{Sales} \times 500)$. RD$500 por anuncio activo y RD$500 por referido.
+2. **Telemetría Inteligente**: Debounce de 5 min en tracking GPS para ahorro de batería. Inserción masiva vía PostgREST para bypass de Vercel limits.
+3. **Kill-Switch Suscripción**: Bloqueo automático (402 Payment Required) si la suscripción está vencida o el pago anual de RD$6,000 está pendiente.
+4. **Offline-First Banking**: Gestión bancaria persistente en `localStorage` con sincronización automática ante reconexión.
+5. **Inventario Fijo**: Límite estricto de 15 slots por tablet para maximizar el ROI del anunciante.
+
+---
+
+## ⚠️ 4. RIESGOS Y MITIGACIONES (SRE V12)
 
 | Riesgo | Severidad | Mitigación Implementada |
 | --- | --- | --- |
-| **OOM en Remotion** | ALTA | Aislamiento en microservicio con límite de 1024MB RAM en EasyPanel. |
-| **Ancho de banda Supabase** | ALTA | Implementación de Cloudflare CDN (`media.tad.do`) planeada para Q2. |
-| **Saturación API GPS** | MEDIA | Batching 10:1 y retención en `localStorage` ante fallos de red. |
-| **Leak de Conexiones DB** | ALTA | Orquestación de `$disconnect()` en NestJS Hooks. |
+| **Saturación API GPS** | MEDIA | Batching 10:1 y debounce de 300s. Bypass de API Gateway vía Supabase Direct Insert. |
+| **Fuga de Batería en Tablets** | ALTA | Hook `useBackgroundTelemetry` optimizado y Worker inactivo si no hay movimiento. |
+| **Integridad Financiera** | ALTA | Transacciones atómicas en PostgreSQL y auditoría cruzada de impresiones/pago. |
+| **OOM en Remotion** | MEDIA | Aislamiento en microservicio con límite de 1GB RAM. |
 
 ---
 
-## 📂 5. ESTRUCTURA DEL MONOREPO
+## 🚀 5. PRÓXIMOS PASOS (Roadmap Q2 2026 - Sprint 4)
 
-```text
-tad-dooh-platform/
-├── apps/
-│   ├── admin/           # Dashboard Maestro (Next.js 15)
-│   ├── advertiser/      # Portal Anunciante (BI v6.0)
-│   ├── driver/          # Portal Conductor (Mobile Gateway)
-│   ├── api/             # NestJS Backend Gateway
-│   ├── tad-remotion/    # Microservicio de Renderizado de Video
-│   └── tablet-player/   # PWA Pauta Offline (HTML/JS)
-├── packages/
-│   ├── database/        # Lógica compartida de Prisma y DB
-│   └── ui/              # Componentes compartidos (AntigravityUI)
-└── docker/              # Definiciones de contenedores para EasyPanel
-```
+- [ ] **Referral Loop**: Automatización de pagos instantáneos tras cierre de venta de referido.
+- [ ] **Cloudflare CDN**: Conexión final para cacheo de videos multimedia pesados.
+- [ ] **Advanced Telemetry**: Detección de "Safe Driving" para bonos adicionales por baja velocidad en áreas escolares.
+- [ ] **Dynamic Ads**: Integración de anuncios HTML interactivos basados en la ubicación.
 
 ---
 
-## 🚀 6. PRÓXIMOS PASOS (Roadmap Q2 2026)
-
-- [ ] **Escalabilidad**: Scale Test de Remotion con 10 renders paralelos.
-- [ ] **CDN**: Configuración final de Cloudflare para cacheo de videos.
-- [ ] **KYC**: Automatización de validación de documentos para conductores.
-- [ ] **Auditoría**: Exportación de reportes PDF certificados para marcas.
-
----
-
-*Nota: Este documento reemplaza cualquier versión anterior de auditoría y debe ser el punto de partida para cualquier cambio arquitectónico.*
- INFRAESTRUCTURA (12-MAR-2026)
-
-### Modificación de Riesgos Técnicos Críticos
-
-| # | Riesgo | Severidad | Área | Estado / Mitigación |
-| --- | --- | --- | --- | --- |
-| 🔴 7 | **Límite Invocaciones Vercel (100k/mes)** | CRÍTICA | Escalabilidad | ✅ **MITIGADO**: Implementada arquitectura "Vercel Bypass" vía Supabase Direct Insert (PostgREST) para telemetría. |
-| 🔴 13 | **Límite Bandwidth Supabase (5GB/mes)** | CRÍTICA | Infraestructura | 🔄 **EN PROGRESO**: Implementación de Cloudflare CDN (`media.tad.do`) para cachear videos y evitar agotar cuota. |
+*Nota: Este documento refleja el estado actual de la plataforma en su versión 12.0.0.*
+ndwidth Supabase (5GB/mes)** | CRÍTICA | Infraestructura | 🔄 **EN PROGRESO**: Implementación de Cloudflare CDN (`media.tad.do`) para cachear videos y evitar agotar cuota. |
 | 🟠 14 | **Límite Almacenamiento DB (500MB)** | MEDIA | Data | 🔄 **PENDIENTE**: Crear CRON job para agregar logs antiguos de `analytics_events` a `campaign_metrics` y purgar raw data mensual. |
 
 ### Roadmap 2026 - Actualización Sprint 3 (Escalabilidad de Costos)

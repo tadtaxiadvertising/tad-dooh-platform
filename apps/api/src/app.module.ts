@@ -2,6 +2,7 @@ import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@n
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import * as zod from 'zod';
 import { DeviceModule } from './modules/device/device.module';
@@ -22,17 +23,24 @@ import { SheetsModule } from './modules/sheets/sheets.module';
 import { AuthService } from './modules/auth/auth.service';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { SimulationModule } from './modules/simulation/simulation.module';
 import { AntigravityModule } from './antigravity/antigravity.module';
 import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
 import { BiModule } from './modules/bi/bi.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
-import { SimulationModule } from './modules/simulation/simulation.module';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AppController } from './app.controller';
+import { WalletModule } from './modules/wallet/wallet.module';
+import { TelemetryModule } from './modules/telemetry/telemetry.module';
+import { ReferralModule } from './modules/referral/referral.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
-    // Configuration with Validation (RELAXED for EasyPanel free tier)
+    // Configuration with Validation (STRICT MODE para Easypanel)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'production' ? undefined : '.env',
@@ -41,9 +49,9 @@ import { AppController } from './app.controller';
         const schema = zod.object({
           DATABASE_URL: zod.string().url().optional(),
           DIRECT_URL: zod.string().url().optional(),
-          JWT_SECRET: zod.string().optional(),
-          SUPABASE_URL: zod.string().url().optional(),
-          SUPABASE_SERVICE_ROLE_KEY: zod.string().optional(),
+          JWT_SECRET: zod.string().default('tad-secret-2026'),
+          SUPABASE_URL: zod.string().url(),
+          SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
           SUPABASE_JWT_SECRET: zod.string().optional(),
           PORT: zod.string().regex(/^\d+$/).default('3000'),
           NODE_ENV: zod.string().default('production'),
@@ -54,19 +62,23 @@ import { AppController } from './app.controller';
 
         const result = schema.safeParse(config);
         if (!result.success) {
-          console.warn('⚠️ ADVERTENCIA: Variables de entorno incompletas o inválidas:');
-          const errors = result.error.format();
-          Object.keys(errors).forEach(key => {
-            if (key !== '_errors') console.warn(`   - ${key}: ${JSON.stringify(errors[key])}`);
-          });
-          // NO lanzamos error para permitir que el contenedor intente arrancar
+          console.error('🔥 FATAL ERROR: Configuración de entorno inválida en startup', result.error.format());
+          throw new Error('Configuración de entorno inválida. Revisar variables en Easypanel.');
         }
-        return result.data || config;
+        const data = result.data || config;
+        
+        // REGLA SRE: Sincronización de secretos para evitar 401 en EasyPanel
+        if (!data.SUPABASE_JWT_SECRET && data.JWT_SECRET) {
+          data.SUPABASE_JWT_SECRET = data.JWT_SECRET;
+        }
+        
+        return data;
       },
     }),
 
-    // Rate limiting - DESACTIVADO (causa memory leaks en Free Tier)
-    // ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // SHELTER C-AD1: Rate limiting reactivado con límites conservadores para Free Tier
+    // 120 req/min global — suficiente para operación normal, bloquea abuso
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -87,9 +99,14 @@ import { AppController } from './app.controller';
     PortalRequestsModule,
     BiModule,
     MonitoringModule,
+    WalletModule,
+    TelemetryModule,
+    ReferralModule,
+    SystemSettingsModule,
     SimulationModule,
+    OnboardingModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     // Global JWT guard — protects ALL routes by default
     // Use @Public() decorator on tablet-facing routes to bypass
@@ -101,6 +118,11 @@ import { AppController } from './app.controller';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    // SHELTER C-AD1: ThrottlerGuard global — aplica rate limiting en todas las rutas
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,
@@ -122,4 +144,3 @@ export class AppModule implements NestModule, OnModuleInit {
     this.logger.log('🚀 TAD Backend Iniciado.');
   }
 }
-

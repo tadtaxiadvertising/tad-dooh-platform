@@ -1,181 +1,86 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useState } from 'react';
 
-// Fix for default marker icons in Leaflet with Next.js
-const DefaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Aliasing components to any to satisfy strict React 19 JSX types
-const Map_: any = MapContainer;
-const Tile_: any = TileLayer;
-const Marker_: any = Marker;
-const Popup_: any = Popup;
-
-// Definir centro fuera del componente para que la referencia sea estática
-const SANTIAGO_CENTER: [number, number] = [19.4517, -70.6970];
-
-// Cyber-Taxi Minimal Icon for Simulator
-const createSimIcon = (isRunning: boolean, hasError: boolean = false) => {
-  const mainColor = hasError ? '#ef4444' : (isRunning ? '#FFD400' : '#52525b');
-  const glow = isRunning ? `drop-shadow(0 0 8px ${mainColor}cc)` : 'none';
-  
-  return L.divIcon({
-    className: 'sim-marker',
-    html: `
-      <div style="
-        width: 12px;
-        height: 12px;
-        background: ${mainColor};
-        border-radius: 50%;
-        border: 2px solid rgba(0,0,0,0.5);
-        filter: ${glow};
-        transition: all 0.5s ease;
-      ">
-        ${isRunning && !hasError ? '<div class="sim-pulse"></div>' : ''}
-      </div>
-      <style>
-        .sim-pulse {
-          position: absolute;
-          inset: -4px;
-          border-radius: 50%;
-          border: 1px solid ${mainColor};
-          animation: sim-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        @keyframes sim-ping {
-          75%, 100% { transform: scale(3); opacity: 0; }
-        }
-      </style>
-    `,
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-  });
+// Generates chaotic random movement inside a grid for the mock
+const generateMockDrivers = (count: number) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 90 + 5, // Keep away from strict edges
+    y: Math.random() * 90 + 5,
+    pulseOffset: Math.random() * 2 
+  }));
 };
 
-function LiveMarkers({ locations, isRunning }: { locations: any[], isRunning: boolean }) {
-  return (
-    <>
-      {locations.map((loc, i) => {
-        const battery = loc.batteryLevel ?? 100;
-        const hasError = loc.status === 'ERROR' || battery < 15;
-        
-        return (
-          <Marker_ 
-            key={loc.deviceId || i} 
-            position={[loc.lastLat || loc.lat, loc.lastLng || loc.lng]} 
-            icon={createSimIcon(isRunning, hasError)}
-          >
-            <Popup_ className="sim-popup">
-              <div className="bg-zinc-900 p-2 text-[10px] border border-white/10 rounded min-w-[120px]">
-                <p className="text-tad-accent font-bold uppercase tracking-tighter border-b border-white/5 pb-1 mb-1">
-                  Node: {loc.taxiNumber || loc.deviceId || `SIM-${i}`}
-                </p>
-                <p className={`${hasError ? 'text-red-400 font-bold' : 'text-gray-400'} mt-1`}>
-                  Status: {hasError ? '⚠ TECHNICAL ALERT' : (isRunning ? '● TRANSMITTING' : '○ IDLE')}
-                </p>
-                <div className="mt-1 flex items-center justify-between">
-                   <span className="text-gray-500">Power:</span>
-                   <span className={`${battery < 20 ? 'text-red-500' : 'text-green-500'}`}>{Math.round(battery)}%</span>
-                </div>
-              </div>
-            </Popup_>
-          </Marker_>
-        );
-      })}
-    </>
-  );
-}
-
-const MemoizedMarkers = memo(LiveMarkers);
-
 export default function LiveMap({ isRunning, driverCount }: { isRunning: boolean, driverCount: number }) {
-  const [locations, setLocations] = useState<any[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [drivers, setDrivers] = useState<{id: number, x: number, y: number, pulseOffset: number}[]>([]);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    // Basic setup for visuals
+    if (!isRunning) {
+       setDrivers(generateMockDrivers(driverCount > 100 ? 100 : driverCount));
+       return;
+    }
 
-  useEffect(() => {
-    if (!isRunning || !mounted) return;
+    setDrivers(generateMockDrivers(driverCount > 100 ? 100 : driverCount));
 
-    const fetchLocations = async () => {
-      try {
-        const res = await fetch('/api/v1/monitoring/fleet-status').catch(() => null);
-        if (res && res.ok) {
-           const data = await res.json();
-           setLocations(data.filter((d: any) => d.isSimulated || d.deviceId.includes('SIM')));
-        } else {
-           const mockNodes = Array.from({ length: driverCount > 100 ? 100 : driverCount }, (_, i) => ({
-              id: i,
-              lat: SANTIAGO_CENTER[0] + (Math.random() - 0.5) * 0.08,
-              lng: SANTIAGO_CENTER[1] + (Math.random() - 0.5) * 0.08,
-              batteryLevel: Math.random() < 0.1 ? 12 : 88,
-              status: Math.random() < 0.05 ? 'ERROR' : 'OK'
-           }));
-           setLocations(mockNodes);
-        }
-      } catch (e) {
-        console.error('Fetch error', e);
-      }
-    };
+    const interval = setInterval(() => {
+      setDrivers(prev => prev.map(d => ({
+        ...d,
+        x: Math.max(2, Math.min(98, d.x + (Math.random() - 0.5) * 1.2)),
+        y: Math.max(2, Math.min(98, d.y + (Math.random() - 0.5) * 1.2))
+      })));
+    }, 1000);
 
-    fetchLocations();
-    const interval = setInterval(fetchLocations, 3000);
     return () => clearInterval(interval);
-  }, [isRunning, driverCount, mounted]);
-
-  if (!mounted) return <div className="w-full h-full bg-[#0a0a0a]" />;
+  }, [isRunning, driverCount]);
 
   return (
-    <div className="w-full h-full relative group">
-      <Map_
-        center={SANTIAGO_CENTER}
-        zoom={13}
-        zoomControl={false}
-        scrollWheelZoom={true}
-        dragging={true}
-        style={{ height: '100%', width: '100%', background: '#050505' }}
-      >
-        <Tile_
-          attribution='&copy; CARTO'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
-        
-        <MemoizedMarkers locations={locations} isRunning={isRunning} />
-      </Map_>
+    <div className="w-full h-full relative overflow-hidden bg-[#0a0a0a]">
+       {/* Radar Sweep Effect */}
+       {isRunning && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+             <div className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 origin-center animate-spin-slow opacity-20">
+                <div className="w-full h-full bg-gradient-to-tr from-tad-accent/40 via-transparent to-transparent"></div>
+             </div>
+          </div>
+       )}
 
-      {/* Overlay Effects */}
-      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] z-[1000]" />
-      
-      <div className="absolute top-4 right-4 z-[1001] bg-black/60 backdrop-blur-md p-2 rounded border border-white/10 text-[10px] text-tad-accent font-mono">
-         MAP ENGINE: LEAFLET V1.9.4
-      </div>
-      
-      <div className="absolute bottom-4 left-4 z-[1001] bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 text-[10px] text-white/70 font-mono flex items-center gap-3">
-         <span className="flex items-center gap-1.5">
-           <span className="w-2 h-2 rounded-full bg-tad-accent animate-pulse" />
-           Santiago, DO 
-         </span>
-         <span className="text-white/20">|</span>
-         <span>Live: {locations.length} nodes</span>
-      </div>
+      {/* Grid Overlay */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#ffffff11_1px,transparent_1px)] [background-size:20px_20px]"></div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        .leaflet-container { background: #050505 !important; font-family: 'Inter', sans-serif; cursor: grab !important; }
-        .leaflet-container:active { cursor: grabbing !important; }
-        .sim-popup .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
-        .sim-popup .leaflet-popup-tip-container { display: none !important; }
-        .sim-marker { border: none !important; background: transparent !important; }
-      `}} />
+      {drivers.map((driver, i) => (
+         <div 
+           key={driver.id} 
+           className="absolute w-1.5 h-1.5 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ease-linear"
+           style={{
+             left: `${driver.x}%`,
+             top: `${driver.y}%`,
+             backgroundColor: isRunning ? '#FFD400' : '#333',
+             boxShadow: isRunning ? `0 0 12px 2px rgba(255, 212, 0, 0.6)` : 'none',
+             opacity: isRunning ? 1 : 0.4
+           }}
+         >
+           {isRunning && i < 20 && ( // Only animate ping for a few top drivers to save CPU
+             <span 
+               className="absolute inset-0 rounded-full animate-ping opacity-75"
+               style={{ 
+                 backgroundColor: '#FFD400',
+                 animationDelay: `${driver.pulseOffset}s`
+               }}
+             />
+           )}
+         </div>
+      ))}
+
+      {/* Dynamic Scan Line */}
+      {isRunning && (
+         <div className="absolute w-full h-[2px] bg-tad-accent/10 top-0 left-0 animate-scan pointer-events-none"></div>
+      )}
+
+      <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 text-[10px] text-tad-accent font-mono tracking-widest uppercase">
+         Active Nodes: {isRunning ? driverCount : 0} / Vis: {drivers.length}
+      </div>
     </div>
   );
 }

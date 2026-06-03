@@ -8,7 +8,6 @@ WORKDIR /app
 # Archivos core del monorepo
 COPY package.json ./
 
-
 # Copiar configuración de workspaces
 COPY packages ./packages
 COPY apps/advertiser ./apps/advertiser
@@ -36,7 +35,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NODE_OPTIONS="--max-old-space-size=256"
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADVERTISER
 
 RUN addgroup --system --gid 1001 nodejs
@@ -46,6 +45,8 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/static ./apps/advertiser/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/public ./apps/advertiser/public
+# FIX: Copiar public a la raíz para compatibilidad con el servidor standalone
+COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/public ./public
 
 USER nextjs
 

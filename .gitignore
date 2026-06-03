@@ -30,3 +30,12 @@ admin-dashboard/out/
 tmp/
 
 .vercel
+
+# Prisma
+apps/api/prisma/client/
+generated/
+
+# Scratch
+scratch/
+apps/*/scratch/
+*.tsbuildinfo

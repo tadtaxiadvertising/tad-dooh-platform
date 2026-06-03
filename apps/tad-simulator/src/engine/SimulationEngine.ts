@@ -1,42 +1,23 @@
 
 import { Worker } from 'worker_threads';
-import path from 'path';
-import fs from 'fs';
 import { PrismaClient as SimulatorPrisma } from '../generated/client';
-import { PrismaClient as AppPrisma } from '@prisma/client';
+import { createAppPrismaClient } from './app-prisma';
 import { DriverModule } from './modules/drivers';
-import { FinanceModule } from './modules/finance';
+import { getResolvedApiUrl } from '@/utils/network';
 
 export class SimulationEngine {
   private workers: Map<string, Worker> = new Map();
-  private localPrisma: any;
-  private appPrisma: any;
+  private localPrisma = new SimulatorPrisma();
+  private appPrisma = createAppPrismaClient();
   private activeDrivers: Set<NodeJS.Timeout> = new Set();
-  
-  constructor() {
-    try {
-      this.localPrisma = new SimulatorPrisma();
-      this.appPrisma = new AppPrisma();
-      console.log('[Engine] Prisma clients initialized successfully.');
-    } catch (e) {
-      console.error('[Engine] Critical: Failed to initialize Prisma clients. Check DATABASE_URL.', e);
-    }
-  }
   
   private config = {
     driverCount: 150,
-    apiUrl: process.env.TAD_API_URL || 'http://localhost:3000/api/v1',
+    apiUrl: getResolvedApiUrl(),
     jwtSecret: process.env.JWT_SECRET || 'tad-default-secret-2026',
-    tickInterval: 15000 
+    tickInterval: 60000 
   };
 
-  private getResolvedApiUrl() {
-    if (this.config.apiUrl.includes('proyecto_ia.ibusiness.com.do')) {
-        console.warn(`[Engine] Detected unresolvable domain. Falling back to internal networking.`);
-        return 'http://localhost:3000/api/v1';
-    }
-    return this.config.apiUrl;
-  }
 
   get currentConfig() { return this.config; }
   get isRunning() { return this.activeDrivers.size > 0; }
@@ -45,16 +26,7 @@ export class SimulationEngine {
     console.log(`[Engine] Starting TAD Simulator Engine (${this.config.driverCount} drivers, SRE-Grade Isolation)...`);
     try {
         await this.stop();
-        
-        // SRE: Run provisioning with a timeout to avoid 502 startup hangs
-        const provisionPromise = this.provisionBasics();
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Provisioning timeout')), 5000)
-        );
-
-        await Promise.race([provisionPromise, timeoutPromise]).catch(err => {
-            console.warn(`[Engine] Provisioning warning: ${err.message}. Starting engine anyway.`);
-        });
+        await this.provisionBasics();
 
         for (let i = 1; i <= this.config.driverCount; i++) {
             const paddedId = String(i).padStart(4, '0');
@@ -179,12 +151,12 @@ export class SimulationEngine {
                     // Create Sim Driver
                     await this.appPrisma.driver.upsert({
                         where: { id: driverId },
-                        update: { status: 'ACTIVE', isSimulated: true },
+                        update: { status: 'OPERATIVO', isSimulated: true },
                         create: {
                             id: driverId,
                             fullName: `Virtual Pilot ${paddedId}`,
                             phone: `1999${paddedId}`,
-                            status: 'ACTIVE',
+                            status: 'OPERATIVO',
                             subscriptionPaid: true,
                             subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                             onboardingStatus: 'COMPLETED',
@@ -195,15 +167,14 @@ export class SimulationEngine {
                     // Create Sim Device
                     await this.appPrisma.device.upsert({
                         where: { deviceId: deviceId },
-                        update: { status: 'ACTIVE', isSimulated: true, taxiNumber: `TX-${paddedId}` },
+                        update: { status: 'OPERATIVO', isSimulated: true },
                         create: {
                             deviceId: deviceId,
                             name: `TAD-SIM-${paddedId}`,
-                            status: 'ACTIVE',
+                            status: 'OPERATIVO',
                             isOnline: true,
                             isSimulated: true,
                             driverId: driverId,
-                            taxiNumber: `TX-${paddedId}`,
                             city: paddedId.startsWith('00') ? 'Santiago' : 'Santo Domingo'
                         }
                     });
@@ -253,11 +224,7 @@ export class SimulationEngine {
         await this.appPrisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fleet_health');
         return true;
     } catch (e: any) { 
-        if (e.message.includes('does not exist')) {
-            console.warn('[Engine] ⚠️ Materialized view "mv_fleet_health" is missing. Skipping refresh for now. Please ensure UI backend migrations are up to date.');
-        } else {
-            console.error('[Engine] Failed to refresh MV:', e.message);
-        }
+        console.error('[Engine] Failed to refresh MV:', e.message);
         return false; 
     }
   }

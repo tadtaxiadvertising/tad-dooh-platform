@@ -7,6 +7,7 @@ RUN apk add --no-cache openssl
 # Install ALL dependencies (for build)
 COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 RUN npm ci
 
@@ -23,6 +24,7 @@ RUN apk add --no-cache openssl
 
 COPY package*.json ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 
 # Install ONLY production dependencies
@@ -34,20 +36,29 @@ FROM node:20-alpine AS runner
 WORKDIR /usr/src/app
 RUN apk add --no-cache openssl
 
+# SHELTER C-I2: Crear usuario no-root para ejecución
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+
 ENV NODE_ENV=production
-# Memory optimization for 1GB VPS
-ENV NODE_OPTIONS="--max-old-space-size=850"
+# SHELTER A-I2: Memory optimizada para VPS Free Tier (512MB en vez de 850MB)
+ENV NODE_OPTIONS="--max-old-space-size=512"
 ENV PORT=3000
 
-# Copy minimal files from Phase 2 (prod node_modules)
-COPY --from=deps /usr/src/app/package*.json ./
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=deps /usr/src/app/apps/api/package.json ./apps/api/
-COPY --from=deps /usr/src/app/apps/api/node_modules ./apps/api/node_modules
+# Copy minimal files from Phase 2 (prod node_modules) — con ownership correcto
+COPY --from=deps --chown=nestjs:nodejs /usr/src/app/package*.json ./
+COPY --from=deps --chown=nestjs:nodejs /usr/src/app/node_modules ./node_modules
+COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/package.json ./apps/api/
+COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 
 # Copy build output from Phase 1
-COPY --from=builder /usr/src/app/apps/api/dist ./apps/api/dist
-COPY --from=builder /usr/src/app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/dist ./apps/api/dist
+COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/api/prisma
+
+# SHELTER: Ejecutar como usuario no-root
+USER nestjs
 
 EXPOSE 3000
-CMD ["npm", "run", "start:prod", "-w", "apps/api"]
+WORKDIR /usr/src/app/apps/api
+CMD ["node", "dist/main.js"]
+

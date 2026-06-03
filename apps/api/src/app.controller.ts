@@ -15,7 +15,7 @@ export class AppController {
       status: 'UP',
       timestamp: new Date().toISOString(),
       service: 'TAD API Gateway',
-      environment: process.env.NODE_ENV
+      version: 'v12-shelter'
     };
   }
 

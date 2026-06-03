@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import type { GetServerSideProps } from 'next';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '@tad/services';
@@ -31,22 +32,25 @@ const getTelemetryUrl = (deviceId: string) => {
   return `${base}/tad-driver.html?deviceId=${deviceId}&server=${encodeURIComponent(api)}`;
 };
 
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+
 export default function DriversPage() {
-  const [drivers, setDrivers] = useState<{ 
-    id: string; 
-    fullName: string; 
-    phone?: string; 
-    taxiPlate?: string; 
-    taxiNumber?: string; 
-    deviceId?: string; 
-    status: string; 
-    subscriptionPaid: boolean; 
+  const [drivers, setDrivers] = useState<{
+    id: string;
+    fullName: string;
+    phone?: string;
+    taxiPlate?: string;
+    taxiNumber?: string;
+    deviceId?: string;
+    status: string;
+    subscriptionPaid: boolean;
     devices?: { deviceId: string }[];
     activeAds?: number;
     projectedEarnings?: number;
     cedula?: string;
     licensePlate?: string;
     referralBonus?: number;
+    subscriptionEnd?: string;
   }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,7 +95,7 @@ export default function DriversPage() {
       await loadDrivers();
       notifyChange('TAD_DRIVERS');
     } catch (e: any) {
-       toast.error("FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message));
+      toast.error("FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message));
     } finally {
       setSavingDevice(false);
       setAssigningDeviceId('');
@@ -106,7 +110,7 @@ export default function DriversPage() {
       await loadDrivers();
       notifyChange('TAD_DRIVERS');
     } catch (e: any) {
-       toast.error("ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message));
+      toast.error("ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message));
     } finally {
       setSavingDevice(false);
     }
@@ -137,7 +141,7 @@ export default function DriversPage() {
       await updateDriverSubscription(driverId, { paid: newStatus });
       setDrivers(prev => prev.map(d => {
         if (d.id === driverId) {
-          return { ...d, subscriptionPaid: newStatus, status: newStatus ? 'ACTIVE' : 'BLOCKED' };
+          return { ...d, subscriptionPaid: newStatus, status: newStatus ? 'OPERATIVO' : 'BLOQUEADO' };
         }
         return d;
       }));
@@ -152,11 +156,11 @@ export default function DriversPage() {
   const downloadCSV = () => {
     const headers = ['ID Flota', 'Nombre', 'Teléfono', 'Placa', 'Estado', 'Suscripción'];
     const rows = filtered.map(d => [
-      d.taxiNumber, 
-      `"${d.fullName}"`, 
-      d.phone, 
-      d.taxiPlate, 
-      d.status, 
+      d.taxiNumber,
+      `"${d.fullName}"`,
+      d.phone,
+      d.taxiPlate,
+      d.status,
       d.subscriptionPaid ? 'Pagado' : 'Pendiente'
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
@@ -173,25 +177,25 @@ export default function DriversPage() {
     const name = d.fullName || '';
     const plate = d.taxiPlate || '';
     const matchSearch = name.toLowerCase().includes(search.toLowerCase()) || plate.toLowerCase().includes(search.toLowerCase());
-    if (filter === 'active') return matchSearch && d.status === 'ACTIVE';
-    if (filter === 'blocked') return matchSearch && (d.status === 'BLOCKED' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
+    if (filter === 'active') return matchSearch && d.status === 'OPERATIVO';
+    if (filter === 'blocked') return matchSearch && (d.status === 'BLOQUEADO' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
     if (filter === 'unpaid') return matchSearch && !d.subscriptionPaid;
     return matchSearch;
   });
 
   const stats = {
     total: drivers.length,
-    active: drivers.filter(d => d.status === 'ACTIVE').length,
-    blocked: drivers.filter(d => d.status !== 'ACTIVE').length,
-    revenue: drivers.filter(d => d.status === 'ACTIVE').length * 6000,
+    active: drivers.filter(d => d.status === 'OPERATIVO').length,
+    blocked: drivers.filter(d => d.status !== 'OPERATIVO').length,
+    revenue: drivers.filter(d => d.status === 'OPERATIVO').length * 6000,
   };
 
   return (
     <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
+        <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
       {/* Page Context Transition */}
@@ -202,89 +206,89 @@ export default function DriversPage() {
 
       <div className="flex justify-end mb-10">
         <div className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-3xl p-1.5 rounded-2xl border border-white-[0.03] shadow-inner">
-           <button 
-             onClick={downloadCSV}
-             className="px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
-           >
-             <Download className="h-4 w-4" />
-             Exportar
-           </button>
-           <button 
-             onClick={() => setIsModalOpen(true)}
-             className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md"
-           >
-             <Plus className="h-4 w-4" />
-             Nuevo Socio
-           </button>
+          <button
+            onClick={downloadCSV}
+            className="px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-tad-yellow text-black px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo Socio
+          </button>
         </div>
       </div>
 
       {/* Stats Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-         {[
-           { label: 'Red Global', value: stats.total, icon: User, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-           { label: 'Online / Activos', value: stats.active, icon: UserCheck, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-           { label: 'Escrutinio / Bloqueo', value: stats.blocked, icon: UserX, color: 'text-rose-400', bgColor: 'bg-rose-500/10', border: 'border-rose-500/20' },
-           { label: 'Proyección Anual', value: `RD$ ${stats.revenue.toLocaleString()}`, icon: CreditCard, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
-         ].map((stat, i) => (
-            <div key={i} className={clsx("bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both driver-stat-card")}>
-               <style jsx>{`
+        {[
+          { label: 'Red Global', value: stats.total, icon: User, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
+          { label: 'Online / Activos', value: stats.active, icon: UserCheck, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+          { label: 'Escrutinio / Bloqueo', value: stats.blocked, icon: UserX, color: 'text-rose-400', bgColor: 'bg-rose-500/10', border: 'border-rose-500/20' },
+          { label: 'Proyección Anual', value: `RD$ ${stats.revenue.toLocaleString()}`, icon: CreditCard, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+        ].map((stat, i) => (
+          <div key={i} className={clsx("bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both driver-stat-card")}>
+            <style jsx>{`
                  .driver-stat-card { animation-delay: ${i * 50}ms; }
                `}</style>
-               <div className="flex justify-between items-start mb-6">
-                  <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", stat.bgColor, stat.border, stat.color)}>
-                     <stat.icon className="w-5 h-5" />
-                  </div>
-                  <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
-               </div>
-               <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <h3 className={clsx("text-3xl font-bold tracking-tight leading-none mt-1", stat.color)}>{stat.value}</h3>
-               </div>
+            <div className="flex justify-between items-start mb-6">
+              <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", stat.bgColor, stat.border, stat.color)}>
+                <stat.icon className="w-5 h-5" />
+              </div>
+              <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
             </div>
-          ))}
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
+              <h3 className={clsx("text-3xl font-bold tracking-tight leading-none mt-1", stat.color)}>{stat.value}</h3>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Search & Filtration Terminal */}
       <div className="relative mb-10 animate-in slide-in-from-top-10 duration-700 fill-mode-both">
-          <div className="relative flex flex-col lg:flex-row gap-4 p-2 bg-gray-800/40 border border-gray-700/50 backdrop-blur-xl rounded-2xl shadow-md">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
-              <input 
-                type="text" 
-                placeholder="BUSCAR SOCIOS, PLACAS O PANTALLAS..."
-                className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </div>
-            <div className="flex p-1 bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner overflow-x-auto">
-              {(['all', 'active', 'blocked', 'unpaid'] as const).map((f) => (
-                <button
-                  key={f}
-                onClick={() => handleFilterChange(f)}
-                  className={clsx(
-                    "px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
-                    filter === f 
-                      ? "bg-gray-700 text-white shadow-sm" 
-                      : "text-gray-500 hover:text-white hover:bg-gray-800"
-                  )}
-                >
-                  {f === 'all' ? 'All' : f === 'active' ? 'Active' : f === 'blocked' ? 'Blocked' : 'Unpaid'}
-                </button>
-              ))}
-            </div>
+        <div className="relative flex flex-col lg:flex-row gap-4 p-2 bg-gray-800/40 border border-gray-700/50 backdrop-blur-xl rounded-2xl shadow-md">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-tad-yellow transition-colors" />
+            <input
+              type="text"
+              placeholder="BUSCAR SOCIOS, PLACAS O PANTALLAS..."
+              className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-tad-yellow/50 transition-all placeholder:text-gray-600 shadow-inner"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
           </div>
+          <div className="flex p-1 bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner overflow-x-auto">
+            {(['all', 'active', 'blocked', 'unpaid'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => handleFilterChange(f)}
+                className={clsx(
+                  "px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                  filter === f
+                    ? "bg-gray-700 text-white shadow-sm"
+                    : "text-gray-500 hover:text-white hover:bg-gray-800"
+                )}
+              >
+                {f === 'all' ? 'All' : f === 'active' ? 'Active' : f === 'blocked' ? 'Blocked' : 'Unpaid'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {loading && !drivers.length ? (
         <div className="py-32 flex flex-col items-center justify-center animate-in fade-in duration-1000">
-           <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 relative group border border-gray-700/50 shadow-md">
-              <Radio className="w-8 h-8 text-tad-yellow animate-pulse" />
-              <div className="absolute inset-0 bg-tad-yellow/10 blur-xl animate-pulse -z-10" />
-           </div>
-           <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Sincronizando Pantallas</h3>
-           <p className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Descargando Base de Datos...</p>
+          <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 relative group border border-gray-700/50 shadow-md">
+            <Radio className="w-8 h-8 text-tad-yellow animate-pulse" />
+            <div className="absolute inset-0 bg-tad-yellow/10 blur-xl animate-pulse -z-10" />
+          </div>
+          <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Sincronizando Pantallas</h3>
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Descargando Base de Datos...</p>
         </div>
       ) : (
         <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg">
@@ -315,8 +319,8 @@ export default function DriversPage() {
                           <div>
                             <p className="text-base font-bold text-white uppercase tracking-tight group-hover:text-tad-yellow transition-colors leading-none mb-1">{driver.fullName}</p>
                             <div className="flex items-center gap-2">
-                               <p className="text-xs text-gray-500 font-bold tracking-widest">{driver.phone}</p>
-                               <WhatsAppButton phone={driver.phone} name={driver.fullName} className="scale-75 origin-left ml-[-4px]" />
+                              <p className="text-xs text-gray-500 font-bold tracking-widest">{driver.phone}</p>
+                              <WhatsAppButton phone={driver.phone} name={driver.fullName} className="scale-75 origin-left ml-[-4px]" />
                             </div>
                           </div>
                         </div>
@@ -330,53 +334,67 @@ export default function DriversPage() {
                       <td className="px-8 py-6 text-center">
                         {driver.devices && driver.devices.length > 0 ? (
                           <div className={"inline-flex flex-col items-center animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <Link 
-                                href={`/fleet?search=${driver.devices[0].deviceId}`}
-                                className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all group/link"
-                                title={`Ver Pantallas (${driver.devices.length}) en Monitoreo`}
-                             >
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] group-hover/link:bg-black" />
-                                <span className="text-[9px] font-bold uppercase">{driver.devices.length > 1 ? `${driver.devices.length} PANTALLAS` : 'ENLAZADO'}</span>
-                                <ExternalLink className="w-2.5 h-2.5 ml-1" />
-                             </Link>
-                             <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.devices[0].deviceId.slice(0, 10)}...</span>
+                            <Link
+                              href={`/fleet?search=${driver.devices[0].deviceId}`}
+                              className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all group/link"
+                              title={`Ver Pantallas (${driver.devices.length}) en Monitoreo`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] group-hover/link:bg-black" />
+                              <span className="text-[9px] font-bold uppercase">{driver.devices.length > 1 ? `${driver.devices.length} PANTALLAS` : 'ENLAZADO'}</span>
+                              <ExternalLink className="w-2.5 h-2.5 ml-1" />
+                            </Link>
+                            <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.devices[0].deviceId.slice(0, 10)}...</span>
                           </div>
                         ) : (
                           <div className={"flex flex-col items-center opacity-50 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <Tablet className="w-4 h-4 text-gray-600 mb-1" />
-                             <span className="text-[10px] font-bold text-gray-600 uppercase">SIN_HARDWARE</span>
+                            <Tablet className="w-4 h-4 text-gray-600 mb-1" />
+                            <span className="text-[10px] font-bold text-gray-600 uppercase">SIN_HARDWARE</span>
                           </div>
                         )}
                       </td>
                       <td className="px-8 py-6">
-                        {driver.subscriptionPaid ? (
-                          <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <div className="flex items-center gap-2 group/tip">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Suscripción Activa</span>
-                             </div>
-                             <p className="text-[10px] text-emerald-500/80 font-bold uppercase ml-6">Pagado (RD$6K)</p>
-                          </div>
-                        ) : (
-                          <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                             <div className="flex items-center gap-2">
+                        {(() => {
+                          const isExpired = driver.subscriptionPaid && driver.subscriptionEnd && new Date(driver.subscriptionEnd) < new Date();
+                          const isNearExpiry = driver.subscriptionPaid && driver.subscriptionEnd &&
+                            (new Date(driver.subscriptionEnd).getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000); // 7 days
+
+                          if (driver.subscriptionPaid && !isExpired) {
+                            return (
+                              <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className={clsx("w-4 h-4", isNearExpiry ? "text-amber-500 animate-pulse" : "text-emerald-500")} />
+                                  <span className={clsx("text-[10px] font-bold uppercase tracking-widest", isNearExpiry ? "text-amber-500" : "text-white")}>
+                                    {isNearExpiry ? 'Próximo a Vencer' : 'Suscripción Activa'}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">
+                                  Vence: {driver.subscriptionEnd ? new Date(driver.subscriptionEnd).toLocaleDateString('es-DO') : 'N/A'}
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                              <div className="flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
                                 <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Suscripción Vencida</span>
-                             </div>
-                             <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">Acción Requerida</p>
-                          </div>
-                        )}
+                              </div>
+                              <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">Acción Requerida</p>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className={"flex flex-col items-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
                           <div className={clsx(
                             "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all",
-                            driver.status === 'ACTIVE' 
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                            driver.status === 'OPERATIVO'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                               : 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
                           )}>
-                            <span className={clsx("w-1.5 h-1.5 rounded-full", driver.status === 'ACTIVE' ? "bg-emerald-500" : "bg-rose-500")} />
-                            {driver.status === 'ACTIVE' ? 'Operativo' : 'Inhibido'}
+                            <span className={clsx("w-1.5 h-1.5 rounded-full", driver.status === 'OPERATIVO' ? "bg-emerald-500" : "bg-rose-500")} />
+                            {driver.status === 'OPERATIVO' ? 'Operativo' : 'Inhibido'}
                           </div>
                         </div>
                       </td>
@@ -384,39 +402,47 @@ export default function DriversPage() {
                         <div className={"flex items-center gap-3 justify-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
                           {driver.devices && driver.devices.length > 0 && (
                             <>
-                              <a 
-                                href={getTelemetryUrl(driver.devices[0].deviceId)} 
-                                target="_blank" 
-                                rel="noreferrer" 
+                              <a
+                                href={getTelemetryUrl(driver.devices[0].deviceId)}
+                                target="_blank"
+                                rel="noreferrer"
                                 title="Ver Hub del Conductor (TAD DRIVE)"
                                 className="p-2.5 rounded-xl transition-all border border-blue-400/20 bg-blue-400/5 text-blue-400 hover:bg-blue-400 hover:text-white flex items-center justify-center shadow-sm"
                               >
                                 <Smartphone className="w-4 h-4" />
                               </a>
-                              <Link 
+                              <Link
                                 href={`/tracking?search=${driver.devices[0].deviceId}`}
                                 title="Rastrear GPS en Tiempo Real"
                                 className="p-2.5 rounded-xl transition-all border border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black flex items-center justify-center shadow-sm"
                               >
                                 <Navigation className="w-4 h-4" />
                               </Link>
+                              {driver.phone && (
+                                <WhatsAppButton
+                                  phone={driver.phone}
+                                  message={`Hola ${driver.fullName}, te contactamos de TAD Advertising para dar seguimiento a tu suscripción.`}
+                                  className="p-2.5 rounded-xl transition-all border border-emerald-400/20 bg-emerald-400/5 text-emerald-400 hover:bg-emerald-400 hover:text-white flex items-center justify-center shadow-sm"
+                                  title="Enviar WhatsApp"
+                                />
+                              )}
                             </>
                           )}
-                           <AntigravityButton 
-                             actionName={driver.status === 'ACTIVE' ? 'lock_driver' : 'unlock_driver'}
-                             onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
-                             confirmMessage={driver.status === 'ACTIVE' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
-                             className={clsx(
-                               "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
-                               driver.status === 'ACTIVE' 
-                                 ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white" 
-                                 : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
-                             )}
-                             title={driver.status === 'ACTIVE' ? 'Bloquear Socio' : 'Habilitar Socio'}
-                           >
-                             {driver.status === 'ACTIVE' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                           </AntigravityButton>
-                          <button 
+                          <AntigravityButton
+                            actionName={driver.status === 'OPERATIVO' ? 'lock_driver' : 'unlock_driver'}
+                            onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
+                            confirmMessage={driver.status === 'OPERATIVO' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
+                            className={clsx(
+                              "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
+                              driver.status === 'OPERATIVO'
+                                ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white"
+                                : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
+                            )}
+                            title={driver.status === 'OPERATIVO' ? 'Bloquear Socio' : 'Habilitar Socio'}
+                          >
+                            {driver.status === 'OPERATIVO' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                          </AntigravityButton>
+                          <button
                             onClick={() => setExpandedId(expandedId === driver.id ? null : driver.id)}
                             title={expandedId === driver.id ? "Contraer" : "Expandir"}
                             className={clsx(
@@ -433,129 +459,129 @@ export default function DriversPage() {
                     {/* Expanded Detail Terminal */}
                     {expandedId === driver.id && (
                       <tr className="bg-black/20 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-500 shadow-inner">
-                      <td colSpan={6} className="p-0 border-b border-t border-gray-700/50 border-t-tad-yellow/10">
-                        <div className="p-8 border-l-4 border-tad-yellow grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden">
-                           <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/5 blur-[100px] -z-10" />
-                          
-                          {/* Hardware Panel */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3 mb-4">
-                               <div className="p-2 bg-tad-yellow/10 rounded-lg">
+                        <td colSpan={6} className="p-0 border-b border-t border-gray-700/50 border-t-tad-yellow/10">
+                          <div className="p-8 border-l-4 border-tad-yellow grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/5 blur-[100px] -z-10" />
+
+                            {/* Hardware Panel */}
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-tad-yellow/10 rounded-lg">
                                   <Tablet className="w-4 h-4 text-tad-yellow" />
                                 </div>
                                 <h4 className="text-white font-bold uppercase tracking-widest text-xs">Integración de Hardware</h4>
-                            </div>
-                            <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
-                              <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
-                                {driver.devices && driver.devices.length > 0 ? (
-                                   <div className="flex gap-2">
-                                     <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices[0].deviceId}</p>
-                                     <AntigravityButton 
-                                       actionName="unlink_device"
-                                       confirmMessage="¿SEGURO QUE DESEAS DESVINCULAR ESTE NODO? El socio dejará de transmitir inmediatamente."
-                                       onAsyncClick={() => handleUnlinkDevice(driver.id)}
-                                       title="Desvincular Pantalla"
-                                       className="!p-0 w-10 h-10 border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
-                                     >
-                                        <RefreshCw className="w-4 h-4" />
-                                     </AntigravityButton>
-                                  </div>
-                                ) : (
-                                   <div className="flex gap-2">
-                                     <input 
-                                       type="text"
-                                       value={assigningDeviceId}
-                                       onChange={(e) => setAssigningDeviceId(e.target.value.toUpperCase())}
-                                       placeholder="TAD-XXXXX"
-                                       className="flex-1 bg-gray-900 border border-gray-700/50 text-white font-mono text-xs p-2.5 rounded-lg focus:border-tad-yellow outline-none uppercase"
-                                     />
-                                     <AntigravityButton 
-                                       actionName="link_device"
-                                       onAsyncClick={() => handleAssignDevice(driver.id)}
-                                       disabled={!assigningDeviceId}
-                                       className="px-4 text-[9px] h-10 rounded-lg"
-                                     >
-                                        Vincular
-                                     </AntigravityButton>
-                                  </div>
-                                )}
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Estado</p>
-                                  <p className="text-emerald-500 font-bold text-xs uppercase flex items-center gap-2">
-                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> ONLINE
-                                  </p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
+                                  {driver.devices && driver.devices.length > 0 ? (
+                                    <div className="flex gap-2">
+                                      <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices[0].deviceId}</p>
+                                      <AntigravityButton
+                                        actionName="unlink_device"
+                                        confirmMessage="¿SEGURO QUE DESEAS DESVINCULAR ESTE NODO? El socio dejará de transmitir inmediatamente."
+                                        onAsyncClick={() => handleUnlinkDevice(driver.id)}
+                                        title="Desvincular Pantalla"
+                                        className="!p-0 w-10 h-10 border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
+                                      >
+                                        <RefreshCw className="w-4 h-4" />
+                                      </AntigravityButton>
+                                    </div>
+                                  ) : (
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={assigningDeviceId}
+                                        onChange={(e) => setAssigningDeviceId(e.target.value.toUpperCase())}
+                                        placeholder="TAD-XXXXX"
+                                        className="flex-1 bg-gray-900 border border-gray-700/50 text-white font-mono text-xs p-2.5 rounded-lg focus:border-tad-yellow outline-none uppercase"
+                                      />
+                                      <AntigravityButton
+                                        actionName="link_device"
+                                        onAsyncClick={() => handleAssignDevice(driver.id)}
+                                        disabled={!assigningDeviceId}
+                                        className="px-4 text-[9px] h-10 rounded-lg"
+                                      >
+                                        Vincular
+                                      </AntigravityButton>
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Pérdida Pkt.</p>
-                                  <p className="text-white font-mono text-xs font-bold">0.00%</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Estado</p>
+                                    <p className="text-emerald-500 font-bold text-xs uppercase flex items-center gap-2">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> ONLINE
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Pérdida Pkt.</p>
+                                    <p className="text-white font-mono text-xs font-bold">0.00%</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Business Analytics */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3 mb-4">
-                               <div className="p-2 bg-gray-800 rounded-lg">
+                            {/* Business Analytics */}
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-gray-800 rounded-lg">
                                   <Zap className="w-4 h-4 text-white" />
                                 </div>
                                 <h4 className="text-white font-bold uppercase tracking-widest text-xs">Rendimiento Operativo</h4>
-                            </div>
-                            <div className="grid grid-cols-1 gap-4">
-                               <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 flex justify-between items-center group/item hover:border-gray-500 transition-colors">
+                              </div>
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 flex justify-between items-center group/item hover:border-gray-500 transition-colors">
                                   <div>
                                     <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5 group-hover/item:text-gray-300 transition-colors">Anuncios Transmitidos</p>
                                     <h5 className="text-xl font-bold text-white tracking-widest">--</h5>
                                   </div>
                                   <ShieldCheck className="w-8 h-8 text-gray-700" />
-                               </div>
-                               <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
+                                </div>
+                                <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
                                   <div>
                                     <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado / Ingresos por Transmisión</p>
                                     <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ {driver.projectedEarnings ? driver.projectedEarnings.toLocaleString() : '0'}</h5>
                                   </div>
                                   <CreditCard className="w-8 h-8 text-tad-yellow/20" />
-                               </div>
-                               <div className="bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 flex justify-between items-center group/item hover:border-emerald-500/30 transition-colors">
+                                </div>
+                                <div className="bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 flex justify-between items-center group/item hover:border-emerald-500/30 transition-colors">
                                   <div>
                                     <p className="text-[10px] text-emerald-500/60 uppercase font-bold tracking-widest mb-0.5">Comisiones por Referir Anunciantes</p>
                                     <h5 className="text-xl font-bold text-emerald-500 tracking-widest">RD$ {driver.referralBonus ? driver.referralBonus.toLocaleString() : '0'}</h5>
                                   </div>
                                   <Users className="w-8 h-8 text-emerald-500/20" />
-                               </div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Compliance Panel */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3 mb-4">
-                               <div className="p-2 bg-emerald-500/10 rounded-lg">
+                            {/* Compliance Panel */}
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-emerald-500/10 rounded-lg">
                                   <IdCard className="w-4 h-4 text-emerald-500" />
                                 </div>
                                 <h4 className="text-white font-bold uppercase tracking-widest text-xs">Cumplimiento / Legal</h4>
-                            </div>
-                            <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
-                               <div>
+                              </div>
+                              <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
+                                <div>
                                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Expediente Digital</p>
                                   <div className="flex gap-2">
-                                     <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Contrato</button>
-                                     <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Seguro</button>
+                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Contrato</button>
+                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Seguro</button>
                                   </div>
-                               </div>
-                               <button 
+                                </div>
+                                <button
                                   onClick={() => setSelectedAuditDriver(driver)}
                                   className="w-full bg-tad-yellow text-black font-black text-[9px] uppercase tracking-[0.2em] py-3 rounded-xl hover:scale-[1.02] transition-transform shadow-md"
                                 >
                                   Auditar Expediente Completo
                                 </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
                     )}
                   </React.Fragment>
                 ))}
@@ -565,7 +591,7 @@ export default function DriversPage() {
         </div>
       )}
 
-      <DriverModal 
+      <DriverModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
@@ -577,85 +603,85 @@ export default function DriversPage() {
       {/* Modern Audit Overlay */}
       {selectedAuditDriver && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="bg-zinc-950 border border-white/10 rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl relative">
-              
-              {/* Animated Header */}
-              <div className="p-10 border-b border-white/5 bg-gradient-to-br from-tad-yellow/20 via-transparent to-transparent">
-                 <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-6">
-                       <div className="w-20 h-20 rounded-full bg-tad-yellow flex items-center justify-center text-black shadow-[0_0_50px_rgba(255,212,0,0.3)]">
-                          <IdCard className="w-10 h-10" />
-                       </div>
-                       <div>
-                          <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
-                             Auditoría <span className="text-tad-yellow">TAD</span>
-                          </h2>
-                          <p className="text-[12px] text-zinc-500 font-bold uppercase tracking-[0.4em] mt-2">Certificado de Cumplimiento Oficial</p>
-                       </div>
-                    </div>
-                    <button 
-                      onClick={() => setSelectedAuditDriver(null)}
-                      title="Cerrar Auditoría"
-                      aria-label="Cerrar Auditoría"
-                      className="p-4 bg-white/5 hover:bg-white/10 rounded-3xl text-zinc-500 hover:text-white transition-all"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                 </div>
+          <div className="bg-zinc-950 border border-white/10 rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl relative">
+
+            {/* Animated Header */}
+            <div className="p-10 border-b border-white/5 bg-gradient-to-br from-tad-yellow/20 via-transparent to-transparent">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 rounded-full bg-tad-yellow flex items-center justify-center text-black shadow-[0_0_50px_rgba(255,212,0,0.3)]">
+                    <IdCard className="w-10 h-10" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
+                      Auditoría <span className="text-tad-yellow">TAD</span>
+                    </h2>
+                    <p className="text-[12px] text-zinc-500 font-bold uppercase tracking-[0.4em] mt-2">Certificado de Cumplimiento Oficial</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedAuditDriver(null)}
+                  title="Cerrar Auditoría"
+                  aria-label="Cerrar Auditoría"
+                  className="p-4 bg-white/5 hover:bg-white/10 rounded-3xl text-zinc-500 hover:text-white transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Data Grid */}
+            <div className="p-10 space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">TAD DRIVER</p>
+                  <p className="text-xl font-black text-white uppercase italic">{selectedAuditDriver.fullName}</p>
+                </div>
+                <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">Estado de Transmisión</p>
+                  <p className="text-xl font-black text-emerald-500 uppercase italic">Activo y Operativo</p>
+                </div>
               </div>
 
-              {/* Data Grid */}
-              <div className="p-10 space-y-8">
-                 <div className="grid grid-cols-2 gap-6">
-                    <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
-                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">TAD DRIVER</p>
-                       <p className="text-xl font-black text-white uppercase italic">{selectedAuditDriver.fullName}</p>
-                    </div>
-                    <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
-                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">Estado de Transmisión</p>
-                       <p className="text-xl font-black text-emerald-500 uppercase italic">Activo y Operativo</p>
-                    </div>
-                 </div>
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">Desglose Mensual de Ingresos</h3>
+                <div className="space-y-3">
+                  <AuditLine label="Bono por Transmisión (Ads)" value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`} info={`${selectedAuditDriver.activeAds || 0} campañas activas`} />
+                  <AuditLine label="Comisión por Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos activos`} />
+                  <AuditLine
+                    label="Comisión por Referir Anunciantes"
+                    value={`RD$ ${((selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}.00`}
+                    info={`${selectedAuditDriver.advertiserReferralsCount || 0} anunciantes referidos`}
+                    highlight
+                  />
+                </div>
 
-                 <div className="space-y-4">
-                    <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">Desglose Mensual de Ingresos</h3>
-                    <div className="space-y-3">
-                       <AuditLine label="Bono por Transmisión (Ads)" value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`} info={`${selectedAuditDriver.activeAds || 0} campañas activas`} />
-                       <AuditLine label="Comisión por Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos activos`} />
-                       <AuditLine 
-                          label="Comisión por Referir Anunciantes" 
-                          value={`RD$ ${((selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}.00`} 
-                          info={`${selectedAuditDriver.advertiserReferralsCount || 0} anunciantes referidos`} 
-                          highlight
-                       />
-                    </div>
-                    
-                    <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-end">
-                       <div>
-                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-loose">
-                             Estimado Mensual proyectado en base a la<br/>integración de hardware actual.
-                          </p>
-                       </div>
-                       <div className="text-right">
-                          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Total Proyectado</p>
-                          <p className="text-5xl font-black text-white italic">
-                             RD$ { ((selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString() }
-                          </p>
-                       </div>
-                    </div>
-                 </div>
+                <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-loose">
+                      Estimado Mensual proyectado en base a la<br />integración de hardware actual.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Total Proyectado</p>
+                    <p className="text-5xl font-black text-white italic">
+                      RD$ {((selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              {/* Security Footer */}
-              <div className="p-10 bg-zinc-900/80 border-t border-white/5 flex items-center gap-4">
-                 <ShieldCheck className="w-6 h-6 text-emerald-500" />
-                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-loose max-w-sm">
-                   Este reporte ha sido generado por el motor de inteligencia financiera de TAD PLATFORM. 
-                   El pago se liquida automáticamente el primer día de cada mes.
-                 </p>
-              </div>
+            {/* Security Footer */}
+            <div className="p-10 bg-zinc-900/80 border-t border-white/5 flex items-center gap-4">
+              <ShieldCheck className="w-6 h-6 text-emerald-500" />
+              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-loose max-w-sm">
+                Este reporte ha sido generado por el motor de inteligencia financiera de TAD PLATFORM.
+                El pago se liquida automáticamente el primer día de cada mes.
+              </p>
+            </div>
 
-           </div>
+          </div>
         </div>
       )}
 

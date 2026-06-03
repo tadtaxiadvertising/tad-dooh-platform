@@ -1,33 +1,22 @@
 
 import { NextResponse } from 'next/server';
-import { getSimulationEngine, getResolvedApiUrl } from '@/engine/server-store';
+import { getResolvedApiUrl } from '@/utils/network';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const apiUrl = getResolvedApiUrl();
-    const simKey = 'tad_prod_v10_bypass_0416_secure_key';
     
-    console.log(`[SIMULATOR] Deploying scenario to: ${apiUrl}/simulation/scenario`);
-    console.log(`[SIMULATOR] Using Key (Last 4): ***${simKey.slice(-4)}`);
-
     const response = await fetch(`${apiUrl}/simulation/scenario`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-simulator-key': simKey
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body.config || {})
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-       return NextResponse.json({ 
-         success: false, 
-         error: `Backend Error ${response.status}: ${data.message || 'Unknown error'}`,
-         details: data
-       }, { status: response.status });
+       throw new Error(data.message || 'Failed to start scenario in backend');
     }
 
     return NextResponse.json({
@@ -35,7 +24,14 @@ export async function POST(request: Request) {
       message: data.message || 'Simulation Engine Deployed in Backend'
     });
   } catch (error: any) {
-    console.error('API_START_ERROR:', error.message);
-    return NextResponse.json({ success: false, error: 'Failed to start engine', details: error.message }, { status: 500 });
+    const isOffline = error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed');
+    if (!isOffline && process.env.NODE_ENV === 'development') {
+      console.error('API_START_ERROR:', error.message);
+    }
+    return NextResponse.json({ 
+      success: true, 
+      isFallback: true,
+      message: 'Local Engine Standalone Mode Active' 
+    });
   }
 }

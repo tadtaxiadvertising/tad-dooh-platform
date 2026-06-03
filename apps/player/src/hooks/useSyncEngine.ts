@@ -11,7 +11,7 @@ export const useSyncEngine = (deviceId: string) => {
     try {
       // 1. Intentar validar con el Backend (Gateway 4G)
       // Using import.meta.env for Vite instead of process.env
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tad-api.rewvid.easypanel.host/api';
       const res = await fetch(`${apiUrl}/sync/${deviceId}`);
       
       if (!res.ok) throw new Error('API Sync Failed');

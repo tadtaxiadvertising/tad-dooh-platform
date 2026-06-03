@@ -1,7 +1,8 @@
 # 📘 TAD DOOH — Documentación Maestra
 
-**Versión:** 10.5.1 (SRE & BI Depth Enhanced)  
-**Última Actualización:** 20 de Abril, 2026 (11:42 PM)  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+**Estado:** Sistema purgado y listo para ingreso de datos reales.  
 **Propietario:** TAD Dominicana, S.R.L.  
 **Stack:** NestJS · Prisma · Supabase · EasyPanel VPS · Next.js 15 · Remotion · OSRM Routing
 
@@ -24,17 +25,23 @@
    - [2.4 Motor de Simulación (TAD Simulator Engine)](#24-motor-de-simulación-tad-simulator-engine)
    - [2.5 Flujos de Trabajo Administrativo](#25-flujos-de-trabajo-administrativo)
    - [2.6 Matrices de Control y Auditoría](#26-matrices-de-control-y-auditoría)
+   - [2.7 Especificación de Mapas y Visualización (MAP-SPEC-2026)](#27-especificación-de-mapas-y-visualización-map-spec-2026)
 3. [Diccionario de Acciones por Servicio (Lógica Interna)](#3-diccionario-de-acciones-por-servicio-lógica-interna)
    - [3.1 Matriz de Acciones — Conductores (Driver)](#31-matriz-de-acciones--conductores-driver)
    - [3.2 Matriz de Acciones — Anunciantes (Advertiser)](#32-matriz-de-acciones--anunciantes-advertiser)
    - [3.3 Matriz de Acciones — Campañas y Contenido](#33-matriz-de-acciones--campañas-y-contenido)
    - [3.4 Matriz de Acciones — Flota y Monitoreo](#34-matriz-de-acciones--flota-y-monitoreo)
    - [3.5 Matriz de Acciones — Sincronización (Sync Engine)](#35-matriz-de-acciones--sincronización-sync-engine)
+   - [3.6 Módulo de Finanzas, Telemetría y Referidos (V12)](#36-módulo-de-finanzas-telemetría-y-referidos-v12)
 4. [Guía Maestra de Usuario (Knowledge Base / FAQ)](#4-guía-maestra-de-usuario-knowledge-base--faq)
    - [4.1 Preguntas Frecuentes — Conductores (Drivers)](#41-preguntas-frecuentes--conductores-drivers)
    - [4.2 Preguntas Frecuentes — Anunciantes (Advertisers)](#42-preguntas-frecuentes--anunciantes-advertisers)
    - [4.3 Preguntas Frecuentes — Operaciones (Ops / Admin)](#43-preguntas-frecuentes--operaciones-ops--admin)
 5. [Apéndice: Constantes de Negocio](#5-apéndice-constantes-de-negocio)
+6. [Guía de Onboarding para Nuevos Agentes/Desarrolladores](#6-guía-de-onboarding-para-nuevos-agentesdesarrolladores)
+   - [6.1 Asignación de Puertos (Local Dev)](#61-asignación-de-puertos-local-dev)
+   - [6.2 Diferencias en Autenticación (Supabase vs Local)](#62-diferencias-en-autenticación-supabase-vs-local)
+   - [6.3 Credenciales por Defecto y Scripts de Ayuda](#63-credenciales-por-defecto-y-scripts-de-ayuda)
 
 ---
 
@@ -250,7 +257,12 @@ El panel administrativo utiliza una estética **"High-Security Industrial Termin
 - Capas de desenfoque profundo (`backdrop-blur-xl`).
 - Animaciones de pulso para estados críticos.
 - Acceso restringido estrictamente a roles `ADMIN`.
-- Soporte de recuperación de cuenta orientado a soporte interno.
+
+### Optimizaciones de Carga (SRE Performance)
+
+- **Bypass de Splash Screen**: Se eliminó el "Loading Splash" mediante redirecciones en el lado del servidor (`middleware.ts`). El acceso al dashboard es instantáneo.
+- **Logging Centralizado**: Implementado en `libs/logging/logger.ts`. Permite debugging en producción mediante `logger.getLogs()` desde la consola del navegador.
+- **Zero-Flicker Routing**: El uso de `router.replace` con shallow routing en el cliente minimiza las re-renderizaciones innecesarias.
 
 ## 2.1 Gestión de Inventario de Hardware
 
@@ -455,6 +467,37 @@ sequenceDiagram
 
 ---
 
+## 2.7 Especificación de Mapas y Visualización (MAP-SPEC-2026)
+
+Para el año 2026, TAD ha estandarizado la visualización de la flota mediante una especificación de alta fidelidad que garantiza la claridad operativa y una estética premium.
+
+### Estándar Visual del Icono (SVG)
+
+Cada vehículo se representa mediante un icono SVG dinámico que comunica estado, orientación e identidad en un solo vistazo.
+
+| Elemento | Lógica Visual | Especificación Técnica |
+| :--- | :--- | :--- |
+| **Color del Número** | `Online` vs `Offline` | **Amarillo (`#eab308`)** para activos, **Rojo (`#dc2626`)** para desconectados. |
+| **Cuerpo del Vehículo** | Basado en el Tema del Mapa | **Blanco** en mapas oscuros, **Negro/Gris Oscuro** en mapas claros (OSM). |
+| **Orientación** | Faros Delanteros | Luces delanteras fijas en **Amarillo TAD (`#fad400`)** para distinguir el frente. |
+| **Luces Traseras** | Estáticas | Siempre en **Rojo (`#dc2626`)** para simular luces de freno. |
+| **Identidad** | Número de Taxi/ID | Se muestra el número STI (ej: 001) o los últimos 3 dígitos del DeviceId. |
+
+### Comportamiento Dinámico
+
+1. **Pulse Effect**: Los dispositivos online emiten un anillo de pulso sutil para indicar actividad de telemetría en tiempo real.
+2. **Interactive States**: Al seleccionar un vehículo, el icono escala un 15% y aplica un brillo perimetral (`drop-shadow`) basado en su estado de conexión.
+3. **Glassmorphism**: La pantalla central del icono utiliza un efecto de cristal oscuro para integrarse con la interfaz moderna de la plataforma.
+
+### Sincronización Multi-Portal
+
+Esta especificación es **clase-única**, lo que significa que el código de generación del icono (`createIcon` / `createGlassIcon`) es idéntico en:
+- **Admin Dashboard**: Monitoreo total de la flota y SRE.
+- **Advertiser Portal**: Visualización de alcance de campaña y heatmaps.
+- **Driver App**: Visualización de ubicación propia y mapa de calor de demanda.
+
+---
+
 ## 3. Diccionario de Acciones por Servicio (Lógica Interna)
 
 ## 3.1 Matriz de Acciones — Conductores (Driver)
@@ -469,7 +512,11 @@ sequenceDiagram
 | Driver envía GPS batch | `MonitoringService.processGpsBatch()` | `INSERT DriverLocation (N registros)` + `UPDATE Device (lastLat, lastLng, isOnline=true, status=ACTIVE)` |
 | Driver envía GPS batch (vía Fleet) | `FleetService.trackBatch()` | Valida suscripción, `INSERT DriverLocation` + actualiza `Device`. Si no pagó: `HTTP 402` |
 | Driver consulta su hub | `DriversService.getDriverHubDataById()` | 5 queries paralelas (ads, GPS, pagos), retorna payload de dashboard |
-| Admin calcula nómina | `FinanceService.calculateMonthlyPayroll()` | `groupBy DriverLocation` + campañas activas x RD$500 + bonos |
+| Driver solicita balance | `WalletService.getBalance()` | Calcula ganancias basadas en la fórmula V12 (Ads cap 15 + CPA) |
+| Driver solicita retiro | `WalletService.withdraw()` | Transacción atómica, valida balance y cuenta bancaria |
+| Driver actualiza banco | `WalletService.updateBank()` | Actualiza el campo JSON de cuenta bancaria |
+| Driver envía telemetría | `TelemetryService.sync()` | Inserción masiva optimizada de coordenadas GPS |
+| Driver genera referido | `ReferralService.generate()` | Crea enlace único y payload para código QR |
 | CRON detecta morosidad (3AM) | `FinanceService.checkHighDelinquency()` | Busca `subscriptionPaid=false AND subscriptionEnd < NOW()`, WhatsApp + ledger |
 | CRON detecta offline (30min) | `MonitoringService.checkOfflineDevices()` | `UPDATE Device SET isOnline=false, status=OFFLINE` + WhatsApp al admin si es piloto STI |
 
@@ -516,6 +563,34 @@ sequenceDiagram
 | Tablet descarga assets | Supabase CDN / Storage | Contenido servido desde el Edge para latencia mínima. |
 | Cambio en campaña | `refreshManifestView()` | Refresca **Materialized View** en Postgres para acceso O(1) a campañas activas. |
 | Tablet offline | Offline License Token | Token JWT firmado por 24h que permite reproducción sin internet. |
+
+---
+
+## 3.6 Módulo de Finanzas, Telemetría y Referidos (V12)
+
+### Lógica de Compensación (Fórmula Matemática)
+
+La compensación total del conductor se rige por la siguiente fórmula:
+$$Earnings_{Total} = (\min(Ads_{Active}, 15) \times 500) + (CPA_{Sales} \times 500)$$
+
+- **Regla de Anuncios**: Exactamente RD$500 por anuncio activo. Tope de 15 anuncios (Máximo RD$7,500).
+- **Regla CPA**: Exactamente RD$500 por referido de anunciante cerrado. Sin tope.
+
+### Sincronización de Telemetría (Background Tracking)
+
+- **useBackgroundTelemetry**: Hook de React que utiliza `watchPosition` con un debounce de 5 minutos (300,000ms) para minimizar el consumo de batería.
+- **Batch Sync**: El backend procesa coordenadas en bloques masivos para optimizar la carga del API Gateway.
+
+### Registro de Referidos
+
+- Cada conductor posee un `referralCode` único generado automáticamente.
+- El sistema genera un payload para código QR de alta resolución que redirige al registro de anunciantes con el parámetro de referido.
+
+### Gestión Bancaria Offline-First
+
+- El formulario de registro bancario detecta el estado de conexión.
+- Si el dispositivo está offline, los datos se persisten en `localStorage` y se sincronizan automáticamente cuando `navigator.onLine` es true.
+- Validación de formato para cuentas bancarias dominicanas (BPD, BHD, Banreservas).
 
 ---
 
@@ -743,5 +818,52 @@ El sistema aplica **lógica de upsert inteligente:**
 
 ---
 
-> **TAD Dominicana, S.R.L.** — *Plataforma v10.5.0 (BI & Simulation Engine Enhanced)*  
-> *Documento generado el 20 de Abril, 2026*
+## 6. Guía de Onboarding para Nuevos Agentes/Desarrolladores
+
+Esta sección está diseñada para acelerar el proceso de entendimiento (ramp-up) de nuevos desarrolladores o agentes de IA que ingresen al proyecto TAD DOOH.
+
+### 6.1 Asignación de Puertos (Local Dev)
+
+El entorno local se orquesta principalmente mediante el script `run_all_local.ps1`, el cual levanta los diferentes microservicios en puertos específicos:
+
+- **API Backend (NestJS):** `http://localhost:3000`
+- **Admin Portal (Next.js):** `http://localhost:3001`
+- **Advertiser Portal (Next.js):** `http://localhost:3002`
+- **Driver Portal / PWA (Next.js):** `http://localhost:3003`
+- **Simulator UI:** `http://localhost:3004`
+
+> [!TIP]
+> Si experimentas problemas de puertos ocupados, revisa las variables de entorno inyectadas en `run_all_local.ps1` y asegúrate de que no haya instancias zombie de Node corriendo.
+
+### 6.2 Diferencias en Autenticación (Supabase vs Local)
+
+El sistema utiliza **dos métodos de autenticación completamente separados** dependiendo del rol del usuario. Es crítico entender esta diferencia para depurar problemas de acceso:
+
+1. **Administradores y Anunciantes (Supabase + App Metadata):**
+- Utilizan `Supabase Auth` para el inicio de sesión (`AuthService.login()`).
+- El flujo es: Cliente -> Supabase -> Si es válido, Backend intercepta -> Busca en BD local (`user` o `advertiser`) -> Si existe, inyecta `role: ADMIN` o `role: ADVERTISER` en `app_metadata` de Supabase.
+- *Problema común:* Si creas un admin manualmente en Prisma pero no en Supabase, el usuario no podrá iniciar sesión.
+
+1. **Conductores / Drivers (Local DB + bcrypt):**
+- Utilizan un flujo 100% independiente de Supabase (`DriversService.login()`).
+- El flujo es: Cliente -> Backend -> Busca en tabla `driver` por `phone` -> Compara hash de `password` usando `bcrypt` -> Firma y devuelve un JWT local.
+- *Problema común:* Durante el seedeo de prueba (`seed-dev.js`), a veces los conductores se crean sin contraseña. Si `HasPass` es `false`, el conductor nunca podrá iniciar sesión.
+
+### 6.3 Credenciales por Defecto y Scripts de Ayuda
+
+Para facilitar el desarrollo local, se han creado scripts en la raíz del proyecto para consultar y resetear accesos si las contraseñas se pierden.
+
+**Credenciales Estándar de Pruebas:**
+- **Admin:** `admin@tadtaxi.do` | Pass: `TadAdmin2026!`
+- **Advertiser:** `marketing1@brand.do` | Pass: `Tad2026!`
+- **Driver:** Teléfono `8295550000` | Pass: `TadDriver2026!`
+
+**Scripts Utilitarios (Ejecutar con `npx tsx <script>`):**
+- `list-users.ts`: Escanea la base de datos y lista los emails/teléfonos de todos los usuarios registrados y si tienen password configurada.
+- `set-all-pass.ts`: Fuerza el reseteo de la contraseña del Admin principal y un Advertiser a las credenciales estándar de arriba.
+- `set-driver-pass.ts`: Asigna explícitamente la contraseña `TadDriver2026!` al conductor con el teléfono `8295550000`.
+
+---
+
+> **TAD Dominicana, S.R.L.** — *Plataforma v12.0.0 (Financial, Telemetry & Referral V12)*  
+> *Documento actualizado el 23 de Abril, 2026*

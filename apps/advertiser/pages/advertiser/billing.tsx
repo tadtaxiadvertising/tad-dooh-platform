@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { CreditCard, Receipt, TrendingUp, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BillingPortal } from '@/components/bi/BillingPortal';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function BillingPage() {
   const [mounted, setMounted] = useState(false);

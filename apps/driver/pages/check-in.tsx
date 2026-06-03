@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import type { GetServerSideProps } from 'next';
 import { MapPin, CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff, Navigation, Ban, Activity, Radio, Database, ShieldCheck, Zap, RefreshCw } from 'lucide-react';
 import {
   startTadTracking,
@@ -14,6 +15,8 @@ import {
   type GatewayStatus,
 } from '@tad/services/mobile-gateway';
 import clsx from 'clsx';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 const STATUS_CONFIG: Record<GatewayStatus, {
   icon: React.ReactNode;
@@ -131,11 +134,11 @@ export default function CheckIn() {
   });
 
   const [isRetrying, setIsRetrying] = useState(false);
-  const [toastMsg, setToastMsg] = useState<{title: string, msg: string, type: 'error' | 'info' | 'success'} | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ title: string, msg: string, type: 'error' | 'info' | 'success' } | null>(null);
 
   const handleRetry = async () => {
     setIsRetrying(true);
-    
+
     // Simulate slight delay for UX (loading state visibility)
     await new Promise(r => setTimeout(r, 600));
 
@@ -200,7 +203,7 @@ export default function CheckIn() {
         <div className="fixed inset-0 bg-rose-500/5 blur-[120px] rounded-full animate-pulse" />
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-rose-500/20 rounded-3xl p-10 text-center relative z-10 shadow-lg">
           <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
-             <AlertCircle className="w-10 h-10 text-rose-500" />
+            <AlertCircle className="w-10 h-10 text-rose-500" />
           </div>
           <h1 className="text-2xl font-bold text-white uppercase tracking-tight mb-3">QR INVÁLIDO</h1>
           <p className="text-gray-400 text-xs font-bold leading-relaxed mb-8 uppercase tracking-widest">
@@ -224,30 +227,30 @@ export default function CheckIn() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-tad-yellow selection:text-black">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-15%] left-[-10%] w-[65%] h-[65%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[5%] right-[-10%] w-[55%] h-[55%] bg-white/[0.01] blur-[160px] rounded-full" />
+        <div className="absolute top-[-15%] left-[-10%] w-[65%] h-[65%] bg-tad-yellow/[0.04] blur-[180px] rounded-full animate-pulse-soft" />
+        <div className="absolute bottom-[5%] right-[-10%] w-[55%] h-[55%] bg-white/[0.01] blur-[160px] rounded-full" />
       </div>
 
       <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 shadow-xl relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
-        
+
         <div className="relative z-10">
           {gatewayState.status === 'SUSPENDED' && (
             <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500/30 rounded-2xl flex items-center gap-4 animate-pulse">
-               <AlertCircle className="w-6 h-6 text-rose-500 shrink-0" />
-               <div>
-                  <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Servicio Suspendido</p>
-                  <p className="text-[11px] font-bold text-gray-300 leading-tight">Tu cuenta tiene una restricción activa. Contacta a soporte.</p>
-               </div>
+              <AlertCircle className="w-6 h-6 text-rose-500 shrink-0" />
+              <div>
+                <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Servicio Suspendido</p>
+                <p className="text-[11px] font-bold text-gray-300 leading-tight">Tu cuenta tiene una restricción activa. Contacta a soporte.</p>
+              </div>
             </div>
           )}
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-4 p-1.5 bg-gray-800/50 backdrop-blur-xl rounded-full border border-gray-700 mb-4 pl-6 pr-1.5 shadow-sm">
-               <h1 className="text-xl font-bold tracking-tight text-white uppercase leading-none">
+              <h1 className="text-xl font-bold tracking-tight text-white uppercase leading-none">
                 TAD<span className="text-tad-yellow">DRIVER</span>
               </h1>
               <div className="w-10 h-10 bg-tad-yellow rounded-full flex items-center justify-center">
-                 <Radio className="w-5 h-5 text-black" />
+                <Radio className="w-5 h-5 text-black" />
               </div>
             </div>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Gateway Terminal v4.5</p>
@@ -266,36 +269,36 @@ export default function CheckIn() {
               {statusConfig.icon}
             </div>
             <div className="space-y-2 text-center">
-               <p className={clsx("font-bold text-lg leading-none uppercase tracking-wide", statusConfig.color)}>
-                 {statusConfig.label}
-               </p>
-               {gatewayState.error ? (
-                 <p className="text-xs text-rose-500 font-bold uppercase tracking-widest">{gatewayState.error}</p>
-               ) : (
-                 <div className="flex items-center justify-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">LINK_OK</span>
-                 </div>
-               )}
+              <p className={clsx("font-bold text-lg leading-none uppercase tracking-wide", statusConfig.color)}>
+                {statusConfig.label}
+              </p>
+              {gatewayState.error ? (
+                <p className="text-xs text-rose-500 font-bold uppercase tracking-widest">{gatewayState.error}</p>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">LINK_OK</span>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mt-8">
-            <MetricBox 
-              label="Buffer" 
-              value={`${gatewayState.batchSize}/10`} 
+            <MetricBox
+              label="Buffer"
+              value={`${gatewayState.batchSize}/10`}
               icon={<Database className="w-3.5 h-3.5" />}
               progress={Math.min(10, gatewayState.batchSize) * 10}
             />
-            <MetricBox 
-              label="Sync" 
-              value={gatewayState.totalSynced} 
+            <MetricBox
+              label="Sync"
+              value={gatewayState.totalSynced}
               icon={<Activity className="w-3.5 h-3.5" />}
               color="text-emerald-500"
             />
-            <MetricBox 
-              label="Time" 
-              value={formatTime(gatewayState.lastSyncAt)} 
+            <MetricBox
+              label="Time"
+              value={formatTime(gatewayState.lastSyncAt)}
               icon={<ShieldCheck className="w-3.5 h-3.5" />}
               size="text-[12px]"
             />
@@ -304,15 +307,15 @@ export default function CheckIn() {
           {deviceId && (
             <div className="mt-8 bg-gray-900/50 rounded-2xl p-6 border border-gray-700/50 text-center group transition-all duration-500">
               <div className="flex items-center justify-center gap-3 mb-3">
-                 <div className="h-px w-6 bg-gray-700" />
-                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Dispositivo Enlazado</p>
-                 <div className="h-px w-6 bg-gray-700" />
+                <div className="h-px w-6 bg-gray-700" />
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Dispositivo Enlazado</p>
+                <div className="h-px w-6 bg-gray-700" />
               </div>
               <div className="flex items-center justify-center gap-3">
-                 <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700/50">
-                    <Zap className="w-5 h-5 text-tad-yellow" />
-                 </div>
-                 <p className="font-bold text-white text-xl tracking-tight uppercase">{deviceId}</p>
+                <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700/50">
+                  <Zap className="w-5 h-5 text-tad-yellow" />
+                </div>
+                <p className="font-bold text-white text-xl tracking-tight uppercase">{deviceId}</p>
               </div>
             </div>
           )}
@@ -369,13 +372,13 @@ function MetricBox({ label, value, icon, progress, color, size = "text-xl" }: Me
   return (
     <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl p-4 border border-gray-700/50 text-center relative overflow-hidden">
       <div className="flex flex-col items-center justify-center gap-1.5 mb-2 text-gray-400">
-         {icon}
-         <p className="text-[10px] uppercase font-bold tracking-widest">{label}</p>
+        {icon}
+        <p className="text-[10px] uppercase font-bold tracking-widest">{label}</p>
       </div>
       <p className={clsx("font-bold tracking-tight leading-none mb-1", size, color || "text-white")}>
         {value}
       </p>
-      
+
       {progress !== undefined && (
         <div className="w-full h-1 bg-gray-900 rounded-full mt-2 overflow-hidden border border-gray-700/50">
           <div className="h-full bg-tad-yellow transition-all duration-500 progress-bar-fill" />

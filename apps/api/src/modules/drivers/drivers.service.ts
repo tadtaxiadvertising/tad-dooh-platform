@@ -1,5 +1,6 @@
 import { Injectable, Logger, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
@@ -18,6 +19,7 @@ export class DriversService {
 
   constructor(
     private prisma: PrismaService,
+    private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService
   ) {}
 
@@ -103,14 +105,14 @@ export class DriversService {
     return drivers.map(d => {
       const driver = d as any;
       const validReferrals = driver.referrals
-        ? driver.referrals.filter((r: any) => r.status === 'ACTIVE' && r.subscriptionPaid).length
+        ? driver.referrals.filter((r: any) => r.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE && r.subscriptionPaid).length
         : 0;
 
       return {
         ...driver,
         activeAds: activeAdsCount,
         // FIX M-2: Usar constantes en lugar de magic numbers
-        projectedEarnings: driver.status === 'ACTIVE'
+        projectedEarnings: driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
           ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
           : 0,
         referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
@@ -149,7 +151,7 @@ export class DriversService {
     password?: string;
     contractAccepted?: boolean;
     agreementVersion?: string;
-    // insuranceAccepted is deprecated — TAD does not offer insurance
+    referredBy?: string;
   }) {
     let hashedPassword: string | null = null;
     if (data.password) {
@@ -176,6 +178,7 @@ export class DriversService {
         contractAccepted: data.contractAccepted ?? false,
         contractAcceptedAt: data.contractAccepted ? new Date() : null,
         agreementVersion: data.agreementVersion ?? '2.0',
+        referredBy: data.referredBy || null,
         status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
         onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
       },
@@ -225,7 +228,7 @@ export class DriversService {
     };
 
     // FIX C-1: NO usar fallback hardcodeado. Si no hay secreto, el token no se puede firmar.
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
       this.logger.error('🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
       throw new ForbiddenException('Error de configuración del servidor. Contacta al administrador.');
@@ -254,7 +257,7 @@ export class DriversService {
       data: {
         subscriptionPaid: paid,
         subscriptionEnd: endDate,
-        status: paid ? 'ACTIVE' : 'SUSPENDED',
+        status: paid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.SUSPENDED,
         blockedAt: paid ? null : new Date(),
       },
     });
@@ -332,8 +335,8 @@ export class DriversService {
   async getStats() {
     const [total, active, suspended, unpaid] = await Promise.all([
       this.prisma.driver.count(),
-      this.prisma.driver.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.driver.count({ where: { status: 'SUSPENDED' } }),
+      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE } }),
+      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.SUSPENDED } }),
       this.prisma.driver.count({ where: { subscriptionPaid: false } }),
     ]);
 
@@ -354,12 +357,40 @@ export class DriversService {
       } as any,
     });
 
-    if (!device || !device.driver) {
+    if (!device) {
+      throw new ForbiddenException('Dispositivo no encontrado.');
+    }
+
+    if (!device.driver) {
       this.logger.warn(`[HUB] Hub solicitado para deviceId ${deviceId} pero no tiene conductor vinculado.`);
-      throw new ForbiddenException('Dispositivo no vinculado a un chofer o perfil inexistente.');
+      // Retornar un hub vacío/default en lugar de throw para que el Admin Dashboard no se rompa
+      return {
+        driverName: 'Sín Conductor',
+        deviceId: device.deviceId,
+        taxiNumber: device.taxiNumber || '---',
+        phone: '---',
+        cedula: '---',
+        subscriptionPaid: false,
+        adsPlayed: 0,
+        activeAds: 0,
+        projectedEarnings: 0,
+        referralsCount: 0,
+        referralEarnings: 0,
+        lastPayment: null,
+        totalPaid: 0,
+        gpsPoints: 0,
+        notices: []
+      };
     }
 
     return this.buildHubData(device.driver, device.deviceId);
+  }
+
+  /**
+   * Alias de getDriverHubData usado por Admins
+   */
+  async getDriverHubDataByDeviceId(deviceId: string) {
+    return this.getDriverHubData(deviceId);
   }
 
   /**
@@ -460,13 +491,13 @@ export class DriversService {
 
     // El bono GPS ha sido eliminado en v10.1.0
 
-    const projectedEarnings = driver.status === 'ACTIVE'
+    const projectedEarnings = driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
       ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
       : 0;
 
     // Referidos (Conteo defensivo con catch)
     const referralsCount = await this.prisma.driver.count({
-      where: { referredBy: driver.id, status: 'ACTIVE', subscriptionPaid: true },
+      where: { referredBy: driver.id, status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true },
     }).catch(() => 0);
 
     const referralEarnings = referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
@@ -585,5 +616,25 @@ export class DriversService {
       deletedDrivers: deletedDrivers.count,
       deletedDevices: deletedDevices.count,
     };
+  }
+
+  /**
+   * Link an active ad to a driver (V12 Financial Logic)
+   */
+  async linkActiveAd(driverId: string, campaignId: string) {
+    return this.prisma.activeAd.upsert({
+      where: {
+        driverId_campaignId: {
+          driverId,
+          campaignId,
+        },
+      },
+      update: { status: 'ACTIVE' },
+      create: {
+        driverId,
+        campaignId,
+        status: 'ACTIVE',
+      },
+    });
   }
 }

@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
+import type { GetServerSideProps } from 'next';
 import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
 import { simulateImpact } from '../../utils/simulations';
 import { BarChart3, Users, Monitor, MapPin, TrendingUp, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function CampaignPlanner() {
   const [budget, setBudget] = useState(15000);
@@ -30,7 +33,7 @@ export default function CampaignPlanner() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Presupuesto Mensual</label>
                   <span className="text-xl font-black text-white">RD$ {budget.toLocaleString()}</span>
                 </div>
-                <input 
+                <input
                   type="range"
                   min={1500}
                   max={500000}
@@ -54,8 +57,8 @@ export default function CampaignPlanner() {
                       onClick={() => setCity(c)}
                       className={clsx(
                         "py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                        city === c 
-                          ? "bg-[#fad400] text-black border-[#fad400]" 
+                        city === c
+                          ? "bg-[#fad400] text-black border-[#fad400]"
                           : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/10"
                       )}
                     >
@@ -78,48 +81,48 @@ export default function CampaignPlanner() {
         {/* Results Panel */}
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[200px]">
-                <div className="flex justify-between items-start">
-                   <div className="w-12 h-12 bg-[#fad400] rounded-2xl flex items-center justify-center text-black">
-                      <Users className="w-6 h-6" />
-                   </div>
-                   <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[200px]">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 bg-[#fad400] rounded-2xl flex items-center justify-center text-black">
+                  <Users className="w-6 h-6" />
                 </div>
-                <div>
-                   <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Impactos Estimados</p>
-                   <h3 className="text-5xl font-black tracking-tighter text-white">
-                      {simulation.estimatedImpacts.toLocaleString()}
-                   </h3>
-                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">Visualizaciones potenciales / mes</p>
-                </div>
-             </div>
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Impactos Estimados</p>
+                <h3 className="text-5xl font-black tracking-tighter text-white">
+                  {simulation.estimatedImpacts.toLocaleString()}
+                </h3>
+                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">Visualizaciones potenciales / mes</p>
+              </div>
+            </div>
 
-             <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[200px]">
-                <div className="flex justify-between items-start">
-                   <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-white">
-                      <Monitor className="w-6 h-6" />
-                   </div>
-                   <MapPin className="w-4 h-4 text-zinc-600" />
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[200px]">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-white">
+                  <Monitor className="w-6 h-6" />
                 </div>
-                <div>
-                   <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Cobertura de Flota</p>
-                   <h3 className="text-5xl font-black tracking-tighter text-white">
-                      {simulation.recommendedScreens}
-                   </h3>
-                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">{city} — Unidades TAD </p>
-                </div>
-             </div>
+                <MapPin className="w-4 h-4 text-zinc-600" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Cobertura de Flota</p>
+                <h3 className="text-5xl font-black tracking-tighter text-white">
+                  {simulation.recommendedScreens}
+                </h3>
+                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">{city} — Unidades TAD </p>
+              </div>
+            </div>
           </div>
 
           <div className="bg-[#fad400] text-black rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_20px_50px_rgba(250,212,0,0.15)] overflow-hidden relative">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-black/[0.03] rounded-full -translate-y-12 translate-x-12" />
-             <div className="space-y-4 relative z-10">
-                <h3 className="text-3xl font-black uppercase italic tracking-tighter leading-none">¿Listo para <br/>Dominar la Calle?</h3>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-60">Configura tu pauta real en el hub de campañas</p>
-             </div>
-             <button className="bg-black text-[#fad400] px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform shadow-2xl relative z-10">
-                Comenzar Campaña Ahora
-             </button>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-black/[0.03] rounded-full -translate-y-12 translate-x-12" />
+            <div className="space-y-4 relative z-10">
+              <h3 className="text-3xl font-black uppercase italic tracking-tighter leading-none">¿Listo para <br />Dominar la Calle?</h3>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-60">Configura tu pauta real en el hub de campañas</p>
+            </div>
+            <button className="bg-black text-[#fad400] px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform shadow-2xl relative z-10">
+              Comenzar Campaña Ahora
+            </button>
           </div>
         </div>
       </div>

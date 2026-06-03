@@ -17,17 +17,18 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 - ✅ **Gestión de Campañas** - Crear, programar y targetear campañas publicitarias
 - ✅ **Upload de Medios** - Videos, imágenes y campañas HTML
 - ✅ **Dashboard de Analytics** - Métricas en tiempo real de impresiones y alcance
+- ✅ **Mapa Profesional (MAP-SPEC-2026)** - Visualización premium con orientación de vehículos y lógica de estado online/offline.
 - ✅ **Gestión de Dispositivos** - Monitoreo de salud y control remoto de tablets
-- ✅ **Mapa en Vivo (Santiago Pilot)** - Monitoreo dedicado de las primeras 10 unidades (STI0001-STI0010)
-- ✅ **Ecosistema Financiero** - Doble entrada contable, nómina de choferes y comisiones automatizadas
+- ✅ **Ecosistema Financiero V12** - Billetera digital, compensación automatizada (RD$500/anuncio) y sistema de referidos.
+- ✅ **Telemetría Avanzada** - Tracking GPS con ahorro de batería (5 min debounce) y sincronización por lotes.
+- ✅ **Mobile Gateway** - App de conductor rediseñada con Tailwind 4, modo offline-first y gestión bancaria.
 
 ### Para Tablets (Taxis)
 
-- ✅ **Playback Offline** - Reproduce contenido sin internet todo el día
-- ✅ **Sync Diario** - Se conecta 5-10 min al inicio del turno
-- ✅ **Analytics Local** - Registra eventos y los sube en el próximo sync
-- ✅ **Auto-Recovery** - Se recupera automáticamente si falla el player
-- ✅ **Watchdog** - Monitoreo constante de salud del sistema
+- ✅ **Playback Offline** - Reproduce contenido sin internet todo el día.
+- ✅ **Sync Diario** - Se conecta al inicio del turno para descargar nuevas campañas.
+- ✅ **Kill-Switch de Suscripción** - Bloqueo automático de pantallas para conductores morosos.
+- ✅ **Watchdog v2** - Monitoreo constante de salud con auto-reinicio de servicios.
 
 ---
 
@@ -39,7 +40,7 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 │                                         │
 │  ┌───────────┐      ┌───────────┐       │
 │  │  Next.js  │ ────▶│  NestJS   │       │
-│  │ Portals   │ (Proxy)│  API v1   │       │
+│  │ Portals   │ (Proxy)│  API v12  │       │
 │  └───────────┘      └───────────┘       │
 │        │               │                │
 │        │        ┌──────▼──────────┐     │
@@ -57,7 +58,7 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 │         └──────────────────────┘        │
 └─────────────────────────────────────────┘
               │
-              │ HTTPS (1x día)
+              │ HTTPS (Offline-First Sync)
               ▼
 ┌─────────────────────────────────────────┐
 │      TABLET EN TAXI (Android)           │
@@ -81,18 +82,17 @@ Plataforma para gestionar miles de tablets Android instaladas en taxis que repro
 ```text
 TAD DOOH Platform/
 ├── apps/
-│   ├── admin/                 # Dashboard Admin (Next.js)
-│   ├── advertiser/            # Portal de Anunciantes (Next.js)
-│   ├── driver/                # Portal de Conductores (Next.js)
-│   ├── api/                   # Backend API (NestJS)
+│   ├── admin/                 # Dashboard Admin (Next.js 15)
+│   ├── advertiser/            # Portal de Anunciantes (Next.js 15)
+│   ├── driver/                # Portal de Conductores (Next.js 15)
+│   ├── api/                   # Backend API (NestJS 10)
 │   ├── tad-remotion/          # Microservicio de Video (Remotion)
-│   ├── tad-simulator/         # Simulation Engine & Control Center (Next.js)
+│   ├── tad-simulator/         # Simulation Engine & Control Center
 │   └── tablet-player/         # PWA para Tablets (HTML/JS)
 ├── packages/
-│   ├── ui/                    # Componentes compartidos
+│   ├── ui/                    # Componentes compartidos (Tailwind 4)
 │   ├── database/              # Prisma Client & Schema
-│   └── config/                # Shared config (TS, ESLint)
-├── docker/                    # Docker configs & stacks
+│   └── config/                # Shared config
 └── docs/                      # Documentación Técnica
 ```
 
@@ -107,26 +107,28 @@ TAD DOOH Platform/
 git clone https://github.com/tadtaxiadvertising/tad-dooh-platform.git
 cd tad-dooh-platform
 
-# 2. Instalar dependencias backend
-cd backend
+# 2. Instalar dependencias
 npm install
 
-# 3. Instalar dependencias frontend
-cd ../frontend
-npm install
+# 3. Configurar entorno
+cp .env.example .env.local
 
-# 4. Iniciar servicios con Docker
-cd ..
-docker-compose up -d
+# 4. Iniciar servicios
+npm run dev
 
 # 5. Acceder
-# Frontend: http://localhost:3001
-# Backend API: http://localhost:3000
+# Admin: http://localhost:3001
+# API: http://localhost:3000
 ```
 
 ### Production
 
-Ver `docs/DEPLOY.md` para instrucciones completas.
+🚀 **Guía completa de deployment:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+
+**⚠️ Problema Común en EasyPanel:** 
+Si ves `ERROR: failed to read dockerfile`, revisa [DOCKERFILE_ERROR_SOLUTION.md](DOCKERFILE_ERROR_SOLUTION.md).
+
+**Documentación Maestra:** [TAD_MASTER_DOCUMENTATION.md](TAD_MASTER_DOCUMENTATION.md)
 
 ---
 
@@ -138,8 +140,7 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 | ---------- | ------- | --------- |
 | **Node.js** | 20.x | Runtime |
 | **NestJS** | 10.x | Framework API |
-| **PostgreSQL** | 15.x | Database |
-| **Redis** | 7.x | Cache + Queue |
+| **PostgreSQL** | 15.x | Database (Supabase) |
 | **Prisma** | 5.x | ORM |
 
 ### Frontend
@@ -148,125 +149,33 @@ Ver `docs/DEPLOY.md` para instrucciones completas.
 | ---------- | ------- | --------- |
 | **Next.js** | 15.x | React framework |
 | **React** | 19.x | UI library |
-| **TailwindCSS** | 4.x | Styling |
-| **Recharts** | 2.x | Charts |
-
-### Tablet Player
-
-| Tecnología | Versión | Propósito |
-| ---------- | ------- | --------- |
-| **PWA** | - | Progressive Web App |
-| **IndexedDB** | - | Storage local |
-| **Workbox** | 7.x | Service Worker |
-| **HLS.js** | 1.x | Video streaming |
-
-### Motor de Video
-
-| Tecnología | Versión | Propósito |
-| ---------- | ------- | --------- |
-| **Remotion** | 4.x | Renderizado de videos programáticos |
-| **Chromium** | stable | Navegador para generación de frames |
-| **FFMPEG** | latest | Encoder de video final |
-
-### Infraestructura
-
-| Servicio | Proveedor | Costo |
-| -------- | --------- | ----- |
-| **Cloud** | VPS (Easypanel Free) | $0/mes |
-| **Database** | Supabase (Free Tier) | $0/mes |
-| **Storage** | Supabase Storage | $0/mes |
-| **CDN** | Cloudflare | $0/mes |
+| **TailwindCSS** | 4.x | Styling (Utility-First) |
 
 ---
 
-## 📊 Métricas del Sistema
+## 🔐 Seguridad V12
 
-### Capacidad
-
-| Métrica | Valor |
-| ------- | ----- |
-| **Dispositivos** | 10,000+ |
-| **Eventos/día** | 10M+ |
-| **Uptime** | 99.9% |
-| **Latencia API** | <100ms |
-
-### Eficiencia
-
-| Métrica | Valor |
-| ------- | ----- |
-| **Datos/tablet/día** | ~50 MB |
-| **Sync time** | 5-10 min |
-| **Offline operation** | 99% del tiempo |
-| **Compresión videos** | 50-70% |
+1. **Kill-Switch de Suscripción:** Bloqueo inmediato de tablets para conductores con facturas vencidas (HTTP 402).
+2. **Telemetría Eficiente:** Debounce de 5 min en el tracking GPS para preservar la vida útil de la batería.
+3. **Validación Atómica de Wallet:** Transacciones financieras protegidas con locks de base de datos.
+4. **Isolación de Roles:** RBAC estricto para Admin, Advertiser y Driver.
 
 ---
 
-## 🔐 Seguridad
+## 📈 Roadmap 2026
 
-### 🛡️ Postura de Seguridad (CISO Rules)
+### Q1 2026 - Completado 🚀
 
-1. **Kill-Switch Offline (Anti-Fraud):** Los dispositivos solo pueden reproducir contenido offline durante 48 horas sin conexión. Pasado este tiempo, el token JWT expira y la pantalla se bloquea exigiendo reconexión para validación financiera.
-2. **Signed Uploads (Anti-OOM):** El contenido multimedia NUNCA se procesa en el VPS. El Dashboard solicita una URL firmada de Supabase y sube directamente, evitando picos de RAM y caídas del API.
-3. **Hardware Approval:** Todo dispositivo nuevo entra en estado `PENDING`. Requiere aprobación manual en el panel administrativo para recibir campañas.
-4. **Isolación de Secretos:** `SUPABASE_SERVICE_ROLE_KEY` solo reside en el Backend. El Frontend usa exclusivamente `ANON_KEY` + RLS.
+- [x] Arquitectura Monorepo.
+- [x] Backend API v10.
+- [x] Admin Dashboard v5.
 
-#### 🛡️ Seguridad & DevOps (SRE)
+### Q2 2026 - Actual (V12) 🎯
 
-- [x] **Kill-Switch JWT (v5.5):** Implementación de tokens de licencia offline de 48h para evitar "Ghosting" de conductores.
-- [x] **Hardening Memoria (v5.5):** Ajuste de Node.js Memory Limits (512MB) para prevenir OOM en VPS bajo costo (Easypanel).
-- [x] **Signed Upload URLs (v5.5):** Refactor de ingesta multimedia para bypass de RAM en VPS (S3 direct upload).
-- [x] **API Versioning (v5.5):** Implementación de prefijos `/api/v1` para robustez de despliegues paralelos.
-- [ ] **Rate-Limiting (Q2 2026):** Implementación de NestJS Throttler en analíticas.
-- [ ] **Docker Swarm/K8s Light (Q3 2026):** Evaluación para alta disponibilidad.
-
-- ✅ **HTTPS/TLS 1.3** en todas las comunicaciones
-- ✅ **Token-based auth** con rotación cada 30 días
-- ✅ **Hash verification** para integridad de archivos
-- ✅ **Rate limiting** por dispositivo
-- ✅ **Input validation** en todos los endpoints
-- ✅ **CORS** configurado estrictamente
-
----
-
-### 🛡️ Portales de Acceso (Auth)
-
-- ✅ **Portal de Anunciantes (Next.js & HTML):** Auto-registro seguro, acceso dinámico, descarga de reportes y subida de archivos (MP4/JPG).
-- ✅ **Portal de Choferes:** Registro vía celular, monitoreo de métricas, cobros vía Stitch, y tracking GPS con envío de velocidad e historial de rutas.
-- ✅ **Seguridad Bcrypt & JWT:** Rotación de tokens con verificación de identidad desde la API (Node.js/Supabase).
-
----
-
-## 📈 Roadmap
-
-### Q1 2026 (Ene-Mar) - Completado & Desplegado 🚀
-
-- [x] Arquitectura del sistema (Database + NestJS API)
-- [x] Backend API MVP
-- [x] Tablet player offline (Fully Kiosk PWA)
-- [x] Master Admin Dashboard (Next.js)
-- [x] Portales para Autenticación de Anunciantes y Conductores
-- [x] Mapa en Vivo con Reporte de estado Online e historial GPS.
-
-### Q2 2026 (Abr-Jun) - En Progreso
-
-- [x] Analytics engine completo (Impresiones, Vistas y QR Scans)
-- [x] Comandos remotos (Apagar/Reiniciar tablets, borrar contenido)
-- [ ] CDN integration optimizada para grandes pesos de video
-- [ ] Piloto en las primeras 50-100 unidades (Taxis)
-
-### Q3 2026 (Jul-Sep)
-
-- [ ] Delta sync optimizado y actualizaciones sin red dependiente
-- [ ] Video transcoding automatizado en la Nube
-- [ ] Multi-city support
-- [ ] 500+ dispositivos
-
-### Q4 2026 (Oct-Dic)
-
-- [ ] Advanced analytics
-- [ ] Machine learning (optimización inteligente de playlists y rotaciones)
-- [ ] API integrada para Agencias Terceras de Publicidad
-- [ ] Escalamiento a 2000+ dispositivos
+- [x] **Financial Ecosystem:** Billetera digital y Payouts.
+- [x] **Telemetry V12:** Tracking GPS optimizado.
+- [x] **Referral System:** Captación de anunciantes vía QR.
+- [ ] CDN Optimizada para videos pesados.
 
 ---
 
@@ -289,12 +198,11 @@ Propietario - TAD Dominicana, S.R.L.
 ### Propiedad y Autores
 
 - PROPIETARIO: TAD Dominicana, S.R.L.
-- Email: <tad.taxiadvertising@gmail.com>
 - WhatsApp: +1 (849) 504-3872
 - Website: <https://tad.ibusiness.com.do>
 
 ---
 
-**Creado:** 6 de Marzo, 2026  
-**Versión:** 10.0.0 (Microservices Architecture)  
-**Última Actualización:** 11 de Abril, 2026  
+**Versión:** 12.1.1 (Ready for Real Tests - Clean State)  
+**Última Actualización:** 26 de Abril, 2026 (12:45 PM)  
+

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import type { GetServerSideProps } from 'next';
 import { Building2, ArrowRight } from 'lucide-react';
 import api from "@tad/services";
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function AdvertiserLogin() {
   const router = useRouter();
@@ -25,11 +28,11 @@ export default function AdvertiserLogin() {
     setError(null);
     try {
       const { data } = await api.post('/advertisers/login', { email, password });
-      
+
       // Store advertiser auth (separate from admin)
       localStorage.setItem('tad_advertiser_token', data.access_token);
       localStorage.setItem('tad_advertiser_id', data.advertiserId);
-      
+
       router.push(`/p/advertiser/${data.advertiserId}`);
     } catch (err: any) {
       console.error(err);
@@ -45,13 +48,13 @@ export default function AdvertiserLogin() {
     setError(null);
     try {
       await api.post('/advertisers', { companyName, contactName, email, password });
-      
+
       // Auto-login after successful registration
       const { data } = await api.post('/advertisers/login', { email, password });
-      
+
       localStorage.setItem('tad_advertiser_token', data.access_token);
       localStorage.setItem('tad_advertiser_id', data.advertiserId);
-      
+
       router.push(`/p/advertiser/${data.advertiserId}`);
     } catch (err: any) {
       console.error(err);
@@ -89,10 +92,10 @@ export default function AdvertiserLogin() {
 
       <div className="max-w-md w-full space-y-8 bg-zinc-900/40 p-10 rounded-[2.5rem] border border-white/5 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-tad-yellow/5 blur-[50px] -m-10" />
-        
+
         <div className="text-center space-y-2 relative z-10">
           <div className="w-16 h-16 bg-tad-yellow/10 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-sm border border-tad-yellow/20">
-             <Building2 className="w-8 h-8 text-tad-yellow" />
+            <Building2 className="w-8 h-8 text-tad-yellow" />
           </div>
           <h1 className="text-3xl font-black uppercase italic tracking-tighter">
             {isForgotPassword ? 'Recuperar Acceso' : isRegistering ? 'Nueva Cuenta' : 'Portal de Marcas'}
@@ -105,14 +108,14 @@ export default function AdvertiserLogin() {
         {/* Custom Tabs */}
         {!isForgotPassword && !recoverySent && (
           <div className="flex bg-black/40 border border-white/5 rounded-2xl p-1 relative z-10 mb-6">
-            <button 
+            <button
               type="button"
               onClick={() => { setIsRegistering(false); setError(null); }}
               className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isRegistering ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               Iniciar Sesión
             </button>
-            <button 
+            <button
               type="button"
               onClick={() => { setIsRegistering(true); setError(null); }}
               className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isRegistering ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -124,15 +127,15 @@ export default function AdvertiserLogin() {
 
         {recoverySent ? (
           <div className="space-y-6 relative z-10 mt-8 text-center animate-in fade-in zoom-in duration-500">
-             <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-3xl text-sm font-bold leading-relaxed shadow-inner">
-               Hemos enviado un enlace de recuperación segura a <span className="text-white">{email}</span>. Revisa tu bandeja de entrada o spam.
-             </div>
-             <button 
-               onClick={() => { setIsForgotPassword(false); setRecoverySent(false); }}
-               className="mt-6 text-[10px] text-zinc-500 font-black uppercase tracking-widest hover:text-tad-yellow transition-colors"
-             >
-               Volver al Login
-             </button>
+            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-3xl text-sm font-bold leading-relaxed shadow-inner">
+              Hemos enviado un enlace de recuperación segura a <span className="text-white">{email}</span>. Revisa tu bandeja de entrada o spam.
+            </div>
+            <button
+              onClick={() => { setIsForgotPassword(false); setRecoverySent(false); }}
+              className="mt-6 text-[10px] text-zinc-500 font-black uppercase tracking-widest hover:text-tad-yellow transition-colors"
+            >
+              Volver al Login
+            </button>
           </div>
         ) : (
           <form onSubmit={isForgotPassword ? handleRecovery : isRegistering ? handleRegister : handleLogin} className="space-y-6 relative z-10 mt-8">
@@ -141,15 +144,15 @@ export default function AdvertiserLogin() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4">
               {isRegistering && !isForgotPassword && (
                 <>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Nombre de la Marca / Empresa</label>
-                    <input 
-                      type="text" 
-                      required 
+                    <input
+                      type="text"
+                      required
                       value={companyName}
                       onChange={e => setCompanyName(e.target.value)}
                       placeholder="Ej: TAD Studio"
@@ -158,9 +161,9 @@ export default function AdvertiserLogin() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Persona de Contacto</label>
-                    <input 
-                      type="text" 
-                      required 
+                    <input
+                      type="text"
+                      required
                       value={contactName}
                       onChange={e => setContactName(e.target.value)}
                       placeholder="Ej: Juan Pérez"
@@ -172,31 +175,31 @@ export default function AdvertiserLogin() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Correo Corporativo</label>
-                <input 
-                  type="email" 
-                  required 
+                <input
+                  type="email"
+                  required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="email@empresa.com"
                   className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-zinc-700 outline-none focus:border-tad-yellow/50 transition-all"
                 />
               </div>
-              
+
               {!isForgotPassword && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center pr-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Acceso Seguro</label>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => { setIsForgotPassword(true); setError(null); }}
                       className="text-[9px] text-zinc-600 font-black uppercase tracking-widest hover:text-tad-yellow transition-colors"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
                   </div>
-                  <input 
-                    type="password" 
-                    required 
+                  <input
+                    type="password"
+                    required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••••"
@@ -206,8 +209,8 @@ export default function AdvertiserLogin() {
               )}
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-tad-yellow hover:bg-yellow-400 text-black px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group disabled:opacity-50 mt-4"
             >
@@ -223,19 +226,19 @@ export default function AdvertiserLogin() {
             </button>
 
             {isForgotPassword && (
-               <div className="text-center mt-6">
-                 <button 
-                   type="button" 
-                   onClick={() => { setIsForgotPassword(false); setError(null); }}
-                   className="text-[9px] text-zinc-500 font-black uppercase tracking-widest hover:text-white transition-colors"
-                 >
-                   Cancelar y volver al Login
-                 </button>
-               </div>
+              <div className="text-center mt-6">
+                <button
+                  type="button"
+                  onClick={() => { setIsForgotPassword(false); setError(null); }}
+                  className="text-[9px] text-zinc-500 font-black uppercase tracking-widest hover:text-white transition-colors"
+                >
+                  Cancelar y volver al Login
+                </button>
+              </div>
             )}
           </form>
         )}
-        
+
         <div className="text-center pt-8 border-t border-white/5 relative z-10">
           <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-[0.2em]">TAD DOOH NETWORK &copy; {new Date().getFullYear()}</p>
         </div>

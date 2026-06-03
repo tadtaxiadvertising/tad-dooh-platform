@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  return NextResponse.json({ 
-    status: 'healthy',
+  return NextResponse.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'tad-simulator',
-    version: '1.1.0'
+    version: '1.0.0'
   });
 }

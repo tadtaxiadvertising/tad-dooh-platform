@@ -26,7 +26,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
 
   const getStatusColor = (v: any) => {
     if (!v.isOnline) return 'bg-zinc-800';
-    if (v.subscriptionStatus !== 'ACTIVE') return 'bg-rose-500';
+    if (v.subscriptionStatus !== 'OPERATIVO') return 'bg-rose-500';
     return 'bg-tad-yellow';
   };
 
@@ -66,7 +66,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
            <FilterBtn active={filter === 'all'} onClick={() => onFilterChange('all')} icon={<Smartphone className="w-3.5 h-3.5" />} label="LISTA" count={vehicles.length} />
            <FilterBtn active={filter === 'active'} onClick={() => onFilterChange('active')} icon={<CheckCircle2 className="w-3.5 h-3.5" />} label="ONLINE" count={vehicles.filter(v => v.isOnline).length} color="text-emerald-500" />
            <FilterBtn active={filter === 'offline'} onClick={() => onFilterChange('offline')} icon={<WifiOff className="w-3.5 h-3.5" />} label="OFFLINE" count={vehicles.filter(v => !v.isOnline).length} color="text-zinc-700" />
-           <FilterBtn active={filter === 'unpaid'} onClick={() => onFilterChange('unpaid')} icon={<AlertTriangle className="w-3.5 h-3.5" />} label="MORA" count={vehicles.filter(v => v.subscriptionStatus !== 'ACTIVE').length} color="text-rose-500" />
+           <FilterBtn active={filter === 'unpaid'} onClick={() => onFilterChange('unpaid')} icon={<AlertTriangle className="w-3.5 h-3.5" />} label="MORA" count={vehicles.filter(v => v.subscriptionStatus !== 'OPERATIVO').length} color="text-rose-500" />
         </div>
       </div>
 

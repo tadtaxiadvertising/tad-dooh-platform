@@ -1,31 +1,18 @@
 import { NextResponse } from 'next/server';
+import { getResolvedApiUrl } from '@/utils/network';
 
-const SIMULATOR_KEY = process.env.TAD_API_KEY || 'tad_prod_v10_bypass_0416_secure_key';
-const API_URL = process.env.TAD_API_URL || 'http://localhost:3000/api/v1';
+export async function POST() {
+    try {
+        const apiUrl = getResolvedApiUrl();
+        const response = await fetch(`${apiUrl}/simulation/purge`, { method: 'DELETE' });
+        const data = await response.json();
 
-export async function DELETE(request: Request) {
-  const key = request.headers.get('x-simulator-key');
-  if (key !== SIMULATOR_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/simulation/purge`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-simulator-key': SIMULATOR_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      return NextResponse.json({ error: text }, { status: response.status });
+        if (response.ok && data.success) {
+            return NextResponse.json({ success: true, message: data.message || 'Simulated data purged from system.' });
+        } else {
+            return NextResponse.json({ success: false, error: data.message || 'Failed to purge' }, { status: 500 });
+        }
+    } catch (e: any) {
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
     }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 }

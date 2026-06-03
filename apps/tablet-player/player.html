@@ -185,22 +185,49 @@ window.OfflineSyncManager = OfflineSyncManager;
         playNext();
     }
 
+    async function recordImpact(media, eventType = 'END') {
+        try {
+            const payload = {
+                deviceId: deviceId,
+                videoId: media.id || media.filename,
+                eventType: eventType,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Intentar obtener ubicación guardada por el Driver App (si están en la misma tablet/dominio)
+            // O simplemente enviar sin lat/lng y el backend lo cruzará
+            
+            fetch(`${SERVER}/api/telemetry/playback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {}); // Silent failure to avoid breaking playback
+        } catch (e) {}
+    }
+
     function playNext() {
         if (playlist.length === 0) return;
         var media = playlist[currentIndex];
         video.src = media.url;
         video.load();
-        video.play().catch(() => setTimeout(nextIndex, 3000));
+        video.play()
+            .then(() => recordImpact(media, 'START'))
+            .catch(() => setTimeout(nextIndex, 3000));
     }
 
     function nextIndex() {
         if (playlist.length === 0) return;
+        var media = playlist[currentIndex];
+        recordImpact(media, 'END'); // Reportar fin antes de pasar al siguiente
         currentIndex = (currentIndex + 1) % playlist.length;
         playNext();
     }
 
-    video.addEventListener('ended', nextIndex);
-    video.addEventListener('error', () => setTimeout(nextIndex, 2000));
+    video.addEventListener('error', () => {
+        var media = playlist[currentIndex];
+        if (media) recordImpact(media, 'ERROR');
+        setTimeout(nextIndex, 2000);
+    });
 
     function showWaiting() { waitingScreen.classList.remove('hidden'); }
     function updateStatus(text) {

@@ -48,7 +48,7 @@ export class CampaignService {
     } else {
       let devicesToSync = [];
       if (campaign.targetAll || campaign.isGlobal) {
-        devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } }));
+        devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } }));
       } else {
         // Broadcast to both v1 and v2 assignments
         const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
@@ -216,6 +216,9 @@ export class CampaignService {
         targets: availableDevices.map(d => d.deviceId)
       }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
 
+      // SRE Optimization: Refresh view so heartbeats get the new state immediately
+      this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
+
       return { count: availableDevices.length, skipped: skippedCount };
     });
   }
@@ -317,7 +320,7 @@ export class CampaignService {
     // Create FORCE_SYNC commands for assigned devices
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = (await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true } }));
+      devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
       devicesToSync = assignments.map(a => ({ id: a.device_id }));
@@ -337,7 +340,7 @@ export class CampaignService {
       // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
       // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
       const allActiveDevices = await this.prisma.device.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true }
       });
       if (allActiveDevices.length > 0) {
@@ -411,20 +414,49 @@ export class CampaignService {
     let activeCampaigns: any[] = [];
     
     try {
-      // 2. Hybrid Query: Universal Campaigns + Geofencing + Manual (v1/v2) Assignments
+      // 2. MASTER SYNC (Materialized View)
+      // Pre-calculated targeting avoids complex joins in heartbeats.
+      const results: any[] = await this.prisma.$queryRaw`
+        SELECT campaign_id FROM mv_active_campaigns
+        WHERE active = true 
+          AND start_date <= NOW() 
+          AND end_date >= NOW()
+          AND (
+            target_all = true OR 
+            target_city = ${city} OR
+            target_cities::text LIKE ${`%${city}%`} OR
+            assigned_device_uuids::jsonb @> ${JSON.stringify([uuid])}::jsonb OR
+            assigned_hw_ids::jsonb @> ${JSON.stringify([hwId])}::jsonb OR
+            (assigned_driver_ids::jsonb @> ${JSON.stringify([driverId])}::jsonb AND ${!!driverId})
+          )
+      `;
+
+      const campaignIds = results.map(r => r.campaign_id);
+
+      if (campaignIds.length > 0) {
+        activeCampaigns = await this.prisma.campaign.findMany({
+          where: { id: { in: campaignIds } },
+          include: {
+            mediaAssets: true,
+            media: true,
+            videos: true,
+            advertiserRef: true,
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+      }
+    } catch (primaryError: any) {
+      this.logger.error(`❌ getActiveSyncVideos optimized query failed: ${primaryError?.message}. Falling back to legacy query.`);
+      // Fallback to legacy query if view fails
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
           active: true,
           startDate: { lte: now },
           endDate: { gte: now },
           OR: [
-            // Canal Global
             { targetAll: true, OR: [{ targetCity: 'Global' }, { targetCity: city }] },
-            // Canal Directo (v2 UUID)
             { devices: { some: { device_id: uuid } } },
-            // Canal Legacy (v1 Hardware ID)
             { targets: { some: { deviceId: hwId } } },
-            // Canal Segmentado (v2 Segmentación por Conductor)
             ...(driverId ? [{ targetDrivers: { some: { id: driverId } } }] : [])
           ]
         } as any,
@@ -434,14 +466,6 @@ export class CampaignService {
           videos: true,
           advertiserRef: true,
         },
-        orderBy: { updatedAt: 'desc' }
-      });
-    } catch (primaryError: any) {
-      this.logger.error(`❌ getActiveSyncVideos primary query failed: ${primaryError?.message}`);
-      // Fallback
-      activeCampaigns = await this.prisma.campaign.findMany({
-        where: { active: true, targetAll: true },
-        include: { mediaAssets: true, media: true, videos: true },
         orderBy: { updatedAt: 'desc' }
       });
     }
@@ -553,7 +577,7 @@ export class CampaignService {
 
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = await this.prisma.device.findMany({ where: { status: 'ACTIVE' }, select: { id: true, deviceId: true } });
+      devicesToSync = await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } });
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({ 
         where: { campaign_id: campaignId },
@@ -593,7 +617,7 @@ export class CampaignService {
     const devices = await this.prisma.device.findMany({
       where: {
         city: campaignCity === 'Global' ? undefined : campaignCity,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         connectivityStatus: 'ONLINE',
       },
       include: {
@@ -618,7 +642,7 @@ export class CampaignService {
       [BUSINESS_RULES.LEVELS.BASE.label]: BUSINESS_RULES.LEVELS.BASE.priority,
     };
 
-    availableDevices.sort((a, b) => {
+    availableDevices.sort((a: any, b: any) => {
       const priorityA = priorityMap[a.driver?.level || 'BASE'] || 0;
       const priorityB = priorityMap[b.driver?.level || 'BASE'] || 0;
       return priorityB - priorityA; // Descendente
@@ -644,7 +668,7 @@ export class CampaignService {
     const onlineScreensCount = await this.prisma.device.count({
       where: {
         city: city === 'Global' ? undefined : city,
-        status: 'ACTIVE',
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
         connectivityStatus: 'ONLINE',
       },
     });
@@ -665,6 +689,24 @@ export class CampaignService {
       totalImpressions,
       onlineScreensInZone: onlineScreensCount,
     };
+  }
+
+  async createIntent(dto: any) {
+    try {
+      const intent = await this.prisma.campaignIntent.create({
+        data: {
+          brandName: dto.brandName,
+          budget: dto.budget,
+          expectedScreens: dto.expectedScreens,
+          fileMetadata: dto.fileMetadata || {},
+          status: 'PENDING_PAYMENT',
+        },
+      });
+      return { success: true, data: intent };
+    } catch (error: any) {
+      this.logger.error('Error creating campaign intent:', error);
+      throw new BadRequestException(`No se pudo registrar la intención de campaña: ${error.message}`);
+    }
   }
 }
 

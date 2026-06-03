@@ -1,31 +1,21 @@
 
 import { NextResponse } from 'next/server';
-import { getSimulationEngine, getResolvedApiUrl } from '@/engine/server-store';
+import { getSimulationEngine } from '@/engine/server-store';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const apiUrl = getResolvedApiUrl();
-    const simKey = 'tad_prod_v10_bypass_0416_secure_key';
+    const engine = getSimulationEngine();
     
-    const response = await fetch(`${apiUrl}/simulation/update`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-simulator-key': simKey
-      },
-      body: JSON.stringify(body.config || {})
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to update config in backend');
+    if (body.config) {
+      engine.updateConfig(body.config);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Config Updated in Backend'
+      message: 'Config Updated'
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Failed to update config', details: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Failed to update config' }, { status: 500 });
   }
 }

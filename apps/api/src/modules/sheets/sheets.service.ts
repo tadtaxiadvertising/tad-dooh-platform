@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -42,7 +43,10 @@ export class SheetsService implements OnModuleInit {
         creds = this.loadCredentialsFromFileSystem();
       }
 
-      if (!creds) throw new Error('No se encontraron credenciales de Google Sheets (Service Account).');
+      if (!creds) {
+        this.isConnected = false;
+        return;
+      }
 
       const serviceAccountAuth = new JWT({
         email: creds.client_email,
@@ -57,7 +61,7 @@ export class SheetsService implements OnModuleInit {
       this.logger.log(`🔗 TAD-SRE: Google Sheet "${this.doc.title}" conectado exitosamente.`);
     } catch (error) {
       this.isConnected = false;
-      this.logger.error(`🚨 TAD-SRE: Fallo al conectar con Google Sheets: ${error.message}`);
+      this.logger.log(`📊 MODO MOCK: Google Sheets no disponible: ${error.message}`);
     }
   }
 
@@ -329,7 +333,7 @@ export class SheetsService implements OnModuleInit {
       _sum: { amount: true }
     });
 
-    const devicesActivos = await this.prisma.device.count({ where: { status: 'ACTIVE' } });
+    const devicesActivos = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
     const COSTO_HARDWARE_UNITARIO = 1500; // Depreciacion Fija por Tablet
     const costoHardware = devicesActivos * COSTO_HARDWARE_UNITARIO;
 

@@ -41,12 +41,12 @@ export class FinanceController {
     if (!campaign) return res.status(404).send('Campaña no encontrada');
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+      where: { videoId: { in: (campaign as any).media.map(m => m.id) }, eventType: 'play_confirm' }
     });
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: campaign.media.length * 5 // Mock/Simulated for PDF model
+      assignedTaxis: (campaign as any).media.length // Using actual media length or we could fetch devices length, keeping it realistic without mock multiplier
     });
 
     res.set({
@@ -271,12 +271,12 @@ export class FinanceController {
     if (!campaign) return { success: false, message: 'Campaña no encontrada' };
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm' },
+      where: { videoId: { in: (campaign as any).media.map((m) => m.id) }, eventType: 'play_confirm' },
     });
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: campaign.media.length * 5,
+      assignedTaxis: (campaign as any).media.length,
     });
 
     const result = await this.emailService.sendCampaignReport(
@@ -300,7 +300,7 @@ export class FinanceController {
     @Param('campaignId') campaignId: string,
     @Body() body: { email: string; amount?: number },
   ) {
-    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { media: true } });
     if (!campaign) return { success: false, message: 'Campaña no encontrada' };
 
     const invoiceId = `INV-${campaignId.slice(0, 8).toUpperCase()}`;
@@ -312,7 +312,7 @@ export class FinanceController {
     });
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,
-      assignedTaxis: 5,
+      assignedTaxis: (campaign as any).media.length || 1,
     });
 
     const result = await this.emailService.sendInvoice(
@@ -347,7 +347,7 @@ export class FinanceController {
             chofer: driver.fullName,
             placa: driver.licensePlate || 'N/A',
             ingreso: body.amount.toString(),
-            anuncios: '15',
+            anuncios: 'Revisar Detalle',
           });
         }
       } catch (e) {

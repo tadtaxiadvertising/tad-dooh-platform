@@ -9,3 +9,7 @@ export * from './StatusSemaphore';
 export * from './WhatsAppButton';
 export * from './ConfirmPromptModal';
 export * from './PortalRequestCenter';
+export * from './PortalAuth';
+export * from './ErrorBoundary';
+export * from './AuthCallback';
+export * from './UpdatePassword';

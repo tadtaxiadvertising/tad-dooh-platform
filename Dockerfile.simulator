@@ -16,7 +16,7 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages ./packages
 COPY apps/tad-simulator ./apps/tad-simulator
-COPY apps/api/prisma ./prisma-schema
+COPY apps/api/prisma ./apps/api/prisma
 
 # Inyectamos variables de build
 ARG NEXT_PUBLIC_SUPABASE_URL
@@ -34,7 +34,7 @@ RUN npm install --legacy-peer-deps
 
 # 1️⃣ Generar el cliente Prisma del API (PostgreSQL / AppPrisma)
 #    Esto resuelve: import { PrismaClient as AppPrisma } from '@prisma/client'
-RUN npx prisma generate --schema=./prisma-schema/schema.prisma
+RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 
 # 2️⃣ Generar el cliente Prisma local del Simulator (SQLite)
 #    Esto resuelve: import { PrismaClient as SimulatorPrisma } from '../generated/client'
@@ -42,8 +42,9 @@ RUN npx prisma generate --schema=./prisma-schema/schema.prisma
 WORKDIR /app/apps/tad-simulator
 RUN npx prisma generate
 
-# Build de Next.js
-RUN npm run build
+# Build de Next.js — call next build directly to skip the prebuild hook
+# (Prisma generation is already handled above by explicit RUN steps)
+RUN npx next build
 
 
 # ---- Runner (Production) ----
@@ -62,6 +63,7 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copiamos el output standalone
 COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/.next/static ./apps/tad-simulator/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/tad-simulator/public ./apps/tad-simulator/public
 

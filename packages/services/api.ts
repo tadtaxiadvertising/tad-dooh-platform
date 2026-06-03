@@ -1,5 +1,12 @@
 import axios from 'axios';
-import { supabase } from "@tad/services";
+import { supabase } from './supabase';
+import {
+  getValidSession,
+  getLocalStorageToken,
+  isPublicPath,
+  invalidateSession,
+} from './auth.service';
+import { processApiError } from './error-handler.service';
 
 /**
  * Estrategia de routing del API client:
@@ -17,17 +24,13 @@ import { supabase } from "@tad/services";
  */
 const getBaseURL = () => {
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host === '0.0.0.0') {
-      return 'http://localhost:3000/api';
-    }
-    // Producción: usar el proxy interno de Next.js (API Route)
+    // Regla de arquitectura: TODO frontend comunica por /api/proxy
     return '/api/proxy';
   }
-  // SSR: usar URL interna si está disponible, pública como fallback
-  return process.env.BACKEND_INTERNAL_URL
-    ? `${process.env.BACKEND_INTERNAL_URL}/api`
-    : (process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api');
+
+  // SSR fallback (mantiene compatibilidad sin romper la regla del cliente)
+  const frontendOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || '';
+  return frontendOrigin ? `${frontendOrigin.replace(/\/$/, '')}/api/proxy` : '/api/proxy';
 };
 
 export const api = axios.create({
@@ -41,32 +44,35 @@ export const api = axios.create({
 // ============================================
 // JWT Auth Interceptor
 // ============================================
+
 api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     try {
       const currentPath = window.location.pathname;
-      
-      // 1. Prioridad: Sesión activa de Supabase (Refresco automático)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
-      } else {
-        // 2. Fallback: LocalStorage (Priorizar según el portal actual para evitar colisiones)
-        let localToken = null;
-        
-        if (currentPath.includes('/advertiser/')) {
-          localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
-        } else if (currentPath.includes('/driver/')) {
-          localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
-        } else {
-          localToken = localStorage.getItem('tad_admin_token') || 
-                       localStorage.getItem('tad_advertiser_token') || 
-                       localStorage.getItem('tad_driver_token');
-        }
 
-        if (localToken) {
-          config.headers.Authorization = `Bearer ${localToken}`;
+      // 1. Intento principal: Supabase Session (Solo en rutas no públicas)
+      if (!isPublicPath(currentPath)) {
+        const session = await getValidSession();
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+          return config;
+        }
+      }
+      
+      // 2. Fallback: LocalStorage
+      const localToken = getLocalStorageToken(currentPath);
+      if (localToken) {
+        config.headers.Authorization = `Bearer ${localToken}`;
+      }
+
+      // 3. Fallback Final: Cookies (Resiliencia ante condiciones de carrera en login/refresh)
+      if (!config.headers.Authorization && typeof document !== 'undefined') {
+        const cookieToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('sb-access-token='))
+          ?.split('=')[1];
+        if (cookieToken) {
+          config.headers.Authorization = `Bearer ${cookieToken}`;
         }
       }
     } catch (error) {
@@ -76,63 +82,58 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Redirect to login on 401
+// ============================================
+// 401 Auto-Retry Interceptor (Token Refresh Safety Net)
+// ============================================
+//
+// FIX (2026-05-09): If the backend returns 401, we force a Supabase token refresh
+// and retry the original request once. This handles the race condition where the
+// proactive refresh in getValidSession() wasn't triggered (e.g. the token expired
+// between the interceptor check and the network call arriving at the server).
+//
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (!error.response && (error.message === 'Network Error' || error.code === 'ECONNABORTED')) {
-      console.error('📡 ERROR DE RED:', {
-        baseURL: api.defaults.baseURL,
-        url: error.config?.url,
-        code: error.code,
-        message: error.message,
-      });
-    }
+  async (error) => {
+    const originalRequest = error.config;
 
-    if (error.response?.status === 402) {
-      const { usePaymentStore } = require('@tad/store');
-      const message = error.response?.data?.message || 'Suscripción de RD$6,000 pendiente';
-      usePaymentStore.getState().setLock(true, message);
-    }
+    // Only retry on 401 and only once (prevent infinite loops)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._isRetry &&
+      typeof window !== 'undefined'
+    ) {
+      originalRequest._isRetry = true;
 
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      const isPublicPath = currentPath.includes('/login') || currentPath.includes('/check-in') || currentPath === '/';
-      
-      if (!isPublicPath) {
-        console.warn('🚨 Unauthorized access detected. Clearing session.');
-        
-        // Limpiar tokens según el contexto actual para ser más precisos
-        if (currentPath.includes('/advertiser/')) {
-          localStorage.removeItem('tad_advertiser_token');
-          localStorage.removeItem('tad_advertiser_user');
-        } else if (currentPath.includes('/driver/')) {
-          localStorage.removeItem('tad_driver_token');
-          localStorage.removeItem('tad_driver_user');
-        } else {
-          localStorage.removeItem('tad_admin_token');
-          localStorage.removeItem('tad_admin_user');
+      try {
+        console.info('🔄 [AUTH] 401 recibido. Intentando refrescar token...');
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshed.session) {
+          console.warn('⚠️ [AUTH] Refresco fallido tras 401. Cerrando sesión.', refreshError?.message);
+          // Force logout — the session is truly dead
+          await supabase.auth.signOut();
+          const currentPath = window.location.pathname;
+          const loginPath = currentPath.includes('/advertiser/') ? '/advertiser/login'
+            : currentPath.includes('/driver/') ? '/driver/login'
+            : '/admin/login';
+          window.location.href = loginPath;
+          return processApiError(error);
         }
-        
-        // Siempre intentar el signo out de Supabase
-        supabase.auth.signOut().catch(() => {});
-        
-        // Borrar cookie de middleware
-        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        
-        // Redirigir al portal correspondiente
-        let loginPath = '/login';
-        if (currentPath.includes('/advertiser/')) loginPath = '/advertiser/login';
-        else if (currentPath.includes('/driver/')) loginPath = '/driver/login';
-        else if (currentPath.includes('/admin/')) loginPath = '/admin/login';
-        
-        // Prevenir loops infinitos si ya estamos yendo a login
-        if (window.location.href.indexOf(loginPath) === -1) {
-          setTimeout(() => { window.location.href = loginPath; }, 100);
-        }
+
+        // Update the in-memory cache so subsequent requests get the new token
+        const { invalidateSession } = await import('./auth.service');
+        invalidateSession(); // Forces re-fetch on next getValidSession() call
+
+        // Retry with the fresh token
+        originalRequest.headers['Authorization'] = `Bearer ${refreshed.session.access_token}`;
+        return api(originalRequest);
+      } catch (retryError) {
+        console.error('❌ [AUTH] Error crítico durante reintento post-401:', retryError);
+        return processApiError(error);
       }
     }
-    return Promise.reject(error);
+
+    return processApiError(error);
   }
 );
 
@@ -140,9 +141,18 @@ api.interceptors.response.use(
 // Auth
 // ============================================
 export const login = (email: string, password: string) =>
-  api.post('/auth/login', { email, password }).then(res => {
-    const { access_token, user } = res.data;
+  api.post('/auth/login', { email, password }).then(async res => {
+    const { access_token, refresh_token, user } = res.data;
+    
+    // Synchronize Supabase Client state (Critical for auto-refresh)
+    if (access_token && refresh_token) {
+      await supabase.auth.setSession({ access_token, refresh_token });
+    }
+
     localStorage.setItem('tad_admin_token', access_token);
+    if (refresh_token) {
+      localStorage.setItem('tad_admin_refresh_token', refresh_token);
+    }
     localStorage.setItem('tad_admin_user', JSON.stringify(user));
     
     // Inject cookie for middleware — conditional Secure so it works on http (local) too
@@ -154,7 +164,10 @@ export const login = (email: string, password: string) =>
     return res.data;
   });
 
-export const logout = () => {
+export const logout = async () => {
+  // Invalidate cached session
+  invalidateSession();
+  
   const currentPath = window.location.pathname;
   let target = '/login';
   
@@ -163,18 +176,31 @@ export const logout = () => {
   else if (currentPath.includes('/admin/')) target = '/admin/login';
 
   // Clear ALL portal tokens to avoid state contamination
-  localStorage.removeItem('tad_admin_token');
-  localStorage.removeItem('tad_admin_user');
-  localStorage.removeItem('tad_advertiser_token');
-  localStorage.removeItem('tad_advertiser_user');
-  localStorage.removeItem('tad_driver_token');
-  localStorage.removeItem('tad_driver_user');
+  try {
+    localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_refresh_token');
+    localStorage.removeItem('tad_admin_user');
+    localStorage.removeItem('tad_advertiser_token');
+    localStorage.removeItem('tad_advertiser_user');
+    localStorage.removeItem('tad_driver_token');
+    localStorage.removeItem('tad_driver_user');
+  } catch (e) {
+    console.warn('⚠️ localStorage clear failed:', e);
+  }
   
   // Clear middleware cookie
-  document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  try {
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  } catch (e) {
+    console.warn('⚠️ Cookie clear failed:', e);
+  }
   
   // Clear Supabase session if possible
-  supabase.auth.signOut().catch(() => {});
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    console.warn('⚠️ Supabase signOut failed:', e);
+  }
   
   window.location.href = target;
 };
@@ -203,6 +229,20 @@ export const sendCommand = (deviceId: string, type: string, params: Record<strin
 export const getFleetStatusSummary = () => api.get('/fleet/status-summary').then(res => res.data);
 export const getFleetLocations = (advertiserId?: string) => 
   api.get(`/fleet/map${advertiserId ? `?advertiserId=${advertiserId}` : ''}`).then(res => res.data);
+
+// BI & Reconciliation
+export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
+export const getFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
+export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
+export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
+export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
+export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
+export const getHotspots = () => api.get('/bi/hotspots').then(res => res.data);
+export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
+
+// Referrals
+export const getReferralStats = () => api.get('/referral/stats').then(res => res.data);
+export const getReferralNetwork = () => api.get('/referral/network').then(res => res.data);
 
 // Device Inventory
 export const getDeviceCampaigns = (deviceId: string) => api.get(`/devices/${deviceId}/campaigns`).then(res => res.data);
@@ -336,7 +376,6 @@ export const unlinkDeviceFromDriver = (driverId: string) => api.post(`/drivers/$
 // Finance
 export const getCampaignBilling = () => api.get('/finance/report/campaigns').then(res => res.data);
 export const getDriverPayroll = (month?: string) => api.get(`/finance/report/payroll${month ? `?month=${month}` : ''}`).then(res => res.data);
-export const simulatePayment = (month?: string) => api.get(`/finance/simulate-payment${month ? `?month=${month}` : ''}`).then(res => res.data);
 // URLs de export (Legacy, deprecating soon for authenticated methods below)
 const getProxyBase = () => typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api/proxy' : 'http://localhost:3000/api';
 export const getPayrollExportUrl = (month?: string) => `${getProxyBase()}/finance/export/payroll.csv${month ? `?month=${month}` : ''}`;
@@ -477,6 +516,10 @@ export const emailInvoice = (
   data: { email: string; amount?: number }
 ) => api.post(`/finance/invoice/${campaignId}/email`, data).then(res => res.data);
 
+// System Settings
+export const getSystemSettings = () => api.get('/system-settings').then(res => res.data);
+export const updateSystemSettings = (data: Record<string, unknown>) => api.put('/system-settings', data).then(res => res.data);
+
 /** Envía confirmación de pago a conductor por email */
 export const emailDriverPaymentConfirm = (data: {
   email: string;
@@ -486,15 +529,10 @@ export const emailDriverPaymentConfirm = (data: {
   driverId?: string;
 }) => api.post('/finance/payroll/email-confirm', data).then(res => res.data);
 
-// Business Intelligence (BI)
-export const getBiKpis = () => api.get('/bi/kpis').then(res => res.data);
-export const getBiFleetHealth = () => api.get('/bi/fleet-health').then(res => res.data);
-export const getTaxiDrillDown = (deviceId: string) => api.get(`/bi/fleet-health/${deviceId}/drill-down`).then(res => res.data);
-export const generateReconciliation = (period: string) => api.post('/bi/reconciliation/generate', { period }).then(res => res.data);
-export const getReconciliationReport = (period: string) => api.get(`/bi/reconciliation/${period}`).then(res => res.data);
-export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isArray(res.data) ? res.data : []);
+// ============================================
+// Auth & Profile
+// ============================================
+export const getMyProfile = () => api.get('/auth/profile').then(res => res.data);
+export const updateMyProfile = (data: { name?: string; password?: string; currentPassword?: string }) => api.put('/auth/profile', data).then(res => res.data);
 
 export default api;
-
-
-

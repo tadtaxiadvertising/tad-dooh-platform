@@ -5,6 +5,7 @@ Este módulo implementa un motor de simulación de alta fidelidad basado en esce
 ## Arquitectura
 
 El motor utiliza una estrategia de estado híbrida:
+
 1. **Memoria (RAM)**: El estado dinámico de cada vehículo (latitud, longitud, dirección, velocidad) se mantiene en un `Map` dentro del `SimulationService` (clase `VirtualVehicle`). Esto evita lecturas constantes a la base de datos.
 2. **Persistencia (Batch)**: Cada 30 segundos, el servicio proyecta el estado de todos los vehículos activos y realiza una inserción masiva (`createMany`) en la tabla `DriverLocation`.
 
@@ -13,6 +14,7 @@ El motor utiliza una estrategia de estado híbrida:
 ### `VirtualVehicle`
 
 Clase interna que simula la física del movimiento:
+
 * **Movimiento Haversine**: Calcula el desplazamiento basado en velocidad y tiempo.
 * **Lógica de Contención**: Si un vehículo se sale del radio definido para el escenario, ajusta automáticamente su dirección hacia el centro del área (por defecto Santiago).
 * **Simulación de Anomalías**: Basado en el `anomalyRate`, los vehículos pueden reportar errores o detenerse aleatoriamente.

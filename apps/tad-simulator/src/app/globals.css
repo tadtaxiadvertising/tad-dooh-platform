@@ -1,28 +1,26 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
+:root {
   --color-tad-bg: #0a0a0a;
   --color-tad-surface: rgba(255, 255, 255, 0.05);
   --color-tad-accent: #FFD400;
   --color-tad-accent-hover: #e6be00;
   --color-tad-text: #f0f0f0;
   --color-tad-text-muted: #a0a0a0;
-  
   --font-sans: "Inter", system-ui, sans-serif;
-  
-  @keyframes spin-slow {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-  }
+}
 
-  @keyframes scan {
-    0% { top: 0; opacity: 0; }
-    50% { opacity: 0.5; }
-    100% { top: 100%; opacity: 0; }
-  }
+@keyframes spin-slow {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 
-  --animate-spin-slow: spin-slow 10s linear infinite;
-  --animate-scan: scan 3s ease-in-out infinite;
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { top: 100%; opacity: 0; }
 }
 
 body {
@@ -35,7 +33,7 @@ body {
 }
 
 /* Glassmorphic Utilities */
-@utility glass-panel {
+.glass-panel {
   background: var(--color-tad-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -44,7 +42,7 @@ body {
   border-radius: 16px;
 }
 
-@utility tad-input {
+.tad-input {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
@@ -52,14 +50,14 @@ body {
   border-radius: 8px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  
-  &:focus {
-    border-color: var(--color-tad-accent);
-    box-shadow: 0 0 0 2px rgba(255, 212, 0, 0.2);
-  }
 }
 
-@utility tad-button {
+.tad-input:focus {
+  border-color: var(--color-tad-accent);
+  box-shadow: 0 0 0 2px rgba(255, 212, 0, 0.2);
+}
+
+.tad-button {
   background-color: var(--color-tad-accent);
   color: #000;
   font-weight: 600;
@@ -68,19 +66,20 @@ body {
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  
-  &:hover {
-    background-color: var(--color-tad-accent-hover);
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: var(--color-tad-text-muted);
-  }
 }
+
+.tad-button:hover {
+  background-color: var(--color-tad-accent-hover);
+  transform: translateY(-1px);
+}
+
+.tad-button:active {
+  transform: translateY(0);
+}
+
+.tad-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-tad-text-muted);
+}
+

@@ -1,567 +1,562 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth, PortalRequestCenter } from '@tad/ui';
-import { 
-  Car, Wallet, ShieldAlert, Wifi, Battery, MapPin, 
-  RefreshCw, Smartphone, TrendingUp, CreditCard, 
-  Award, LogOut, LayoutDashboard, Zap, Activity, Users, AlertTriangle, MessageSquare
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
-import clsx from 'clsx';
-import api, { logout } from "@tad/services";
-import Link from 'next/link';
+// apps/driver/pages/driver/dashboard.tsx
+import React, { useEffect } from 'react';
+import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
+import { useTelemetry } from '../../hooks/useTelemetry';
+import { usePaymentStore } from '../../store/usePaymentStore';
+import { useDriverHub } from '../../hooks/useDriverHub';
+import { Phone } from 'lucide-react';
 
-export default function DriverDashboard() {
-  const { session } = useAuth();
-  const [driverData, setDriverData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+// Force dynamic rendering to prevent SSR/SSG "No QueryClient set" errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
-  // Tool Modal States
-  const [showSupportModal, setShowSupportModal] = useState(false);
-  const [supportMessage, setSupportMessage] = useState('');
-  const [submittingSupport, setSubmittingSupport] = useState(false);
+// ─── Sub-componentes inline (sin librerías de UI externas) ────────────────────
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
+/** Indicador de punto pulsante */
+function PulseDot({ color }: { color: string }) {
+  return (
+    <span className="relative inline-flex h-2 w-2">
+      <span
+        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+        style={{ backgroundColor: color }}
+      />
+      <span
+        className="relative inline-flex rounded-full h-2 w-2 shadow-[0_0_8px_rgba(255,212,0,0.5)]"
+        style={{ backgroundColor: color }}
+      />
+    </span>
+  );
+}
 
-  // Live session feedback state
-  const [liveStats, setLiveStats] = useState({
-    gpsPoints: 0,
-    adsPlayed: 0,
-    syncStatus: 'IDLE' as 'IDLE' | 'SYNCING' | 'SUCCESS' | 'ERROR'
-  });
+/** Barra de estado superior fija */
+function StatusBar({
+  connectionStatus,
+  batchCount,
+  offlineCount,
+}: {
+  connectionStatus: 'online' | 'offline' | 'syncing';
+  batchCount: number;
+  offlineCount: number;
+}) {
+  const isOffline = connectionStatus === 'offline';
+  const isSyncing = connectionStatus === 'syncing';
 
-  // Stats derivation
-  const performance = driverData?.performance;
-  const goal = performance?.goal || 120;
-  const currentHours = performance?.hours || 0;
-  const progressPercent = Math.min(100, Math.max(0, (currentHours / goal) * 100));
-  
-  // SVG Ring calculation
-  const ringRadius = 24;
-  const ringCircumference = 2 * Math.PI * ringRadius;
-  const ringOffset = ringCircumference - (progressPercent / 100) * ringCircumference;
+  let batchLabel: string;
+  let batchColor: string;
 
-  const loadData = async () => {
-    setRefreshing(true);
-    try {
-      const response = await api.get('/drivers/me/hub');
-      setDriverData(response.data);
-    } catch (error) {
-      console.error('Failed to load driver data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleSupportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!supportMessage.trim()) return;
-    setSubmittingSupport(true);
-    try {
-      await api.post('/portal-requests', {
-        driverId: session?.user?.id,
-        type: 'SUPPORT_ISSUE',
-        title: 'Soporte Técnico / Taller',
-        data: JSON.stringify({ issue: supportMessage }),
-      });
-      toast.success('Solicitud enviada. TAD te contactará.');
-      setShowSupportModal(false);
-      setSupportMessage('');
-    } catch (e) {
-      toast.error('Error al enviar la solicitud.');
-    } finally {
-      setSubmittingSupport(false);
-    }
-  };
-
-  const copyReferral = () => {
-    const link = `https://tad.do/driver/onboarding?ref=${session?.user?.id}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Enlace de referido copiado al portapapeles');
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Telemetry Engine (Batching local & Burst sending)
-  useEffect(() => {
-    let watchId: number;
-    let locationQueue: any[] = [];
-    
-    // Si no estamos en el navegador o no hay PWA/Navegador con geolocalización, cancelamos
-    if (typeof window === 'undefined' || !('geolocation' in navigator) || !session?.user?.id) return;
-
-    // HIBERNATION LOGIC for 402 errors
-    let backoffDelay = 60000; // 1 min initial
-    let isHibernating = false;
-
-    const flushQueue = async () => {
-      if (locationQueue.length === 0 || !navigator.onLine || isHibernating) return;
-      
-      const batch = [...locationQueue];
-      locationQueue = [];
-      setLiveStats(prev => ({ ...prev, syncStatus: 'SYNCING' }));
-
-      try {
-        await api.post('/monitoring/gps-batch', {
-          driverId: session.user.id,
-          deviceId: driverData?.device?.deviceId || 'PWA',
-          points: batch
-        });
-        console.debug(`[Telemetry] Flushed ${batch.length} points.`);
-        setLiveStats(prev => ({ ...prev, syncStatus: 'SUCCESS' }));
-        setTimeout(() => setLiveStats(prev => ({ ...prev, syncStatus: 'IDLE' })), 2000);
-        backoffDelay = 60000; // Reset on success
-      } catch (error: any) {
-        setLiveStats(prev => ({ ...prev, syncStatus: 'ERROR' }));
-        // En caso de fallo, reencolar
-        locationQueue = [...batch, ...locationQueue];
-        
-        // REGLA 402: Hibernación por Morosidad
-        if (error.response?.status === 402) {
-          isHibernating = true;
-          console.warn(`[KILL-SWITCH] 402 detected. Hibernating for ${backoffDelay/1000}s.`);
-          
-          setTimeout(() => {
-            isHibernating = false;
-            backoffDelay = Math.min(backoffDelay * 2, 3600000); // Max 1 hour
-          }, backoffDelay);
-        }
-      }
-    };
-
-    // Auto-flush cada 60 segundos
-    const flushInterval = setInterval(flushQueue, 60000);
-
-    watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        locationQueue.push({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          speed: position.coords.speed || 0,
-          timestamp: new Date(position.timestamp).toISOString()
-        });
-
-        // Live UI update
-        setLiveStats(prev => ({
-          ...prev,
-          gpsPoints: prev.gpsPoints + 1
-        }));
-
-        // Forzar flush si la cola crece mucho
-        if (locationQueue.length >= 20) {
-          flushQueue();
-        }
-      },
-      (error) => {
-        console.warn('Telemetry error:', error);
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-    );
-
-    const handleOnline = () => flushQueue();
-    window.addEventListener('online', handleOnline);
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      clearInterval(flushInterval);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, [session?.user?.id, driverData]);
-
-  if (loading) {
-     return (
-       <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-          <div className="relative border-t-2 border-tad-cyan w-10 h-10 rounded-full animate-spin"></div>
-          <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.4em]">Iniciando Hub...</p>
-       </div>
-     );
+  if (isOffline) {
+    batchLabel = `MODO LOCAL · ${offlineCount} pts`;
+    batchColor = '#ef4444'; // red-500 for attention
+  } else if (isSyncing) {
+    batchLabel = `SINCRONIZANDO...`;
+    batchColor = '#FFD400';
+  } else {
+    batchLabel = `BATCH GPS: ${batchCount}/10`;
+    batchColor = '#FFD400';
   }
 
-  const stats = {
-    balance: `RD$${(driverData?.balance || 0).toLocaleString()}`,
-    bonus: `RD$${(driverData?.bonus || 0).toLocaleString()}`,
-    referralEarned: `RD$${(driverData?.referralEarned || 0).toLocaleString()}`,
-    subscriptionStatus: driverData?.subscriptionStatus || 'ACTIVE',
-    tabletHealth: {
-      battery: driverData?.device?.batteryLevel || 100,
-      sync: driverData?.device?.syncStatus || '100%',
-      lastSeen: driverData?.device?.lastSeen || 'Visto ahora',
-      hwId: driverData?.device?.deviceId || 'UNIT-01',
-    }
+  return (
+    <header
+      className="fixed top-0 left-0 right-0 z-40 h-16 bg-black/60 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-6"
+      role="banner"
+    >
+      {/* GPS Status */}
+      <div className="flex items-center gap-2.5" aria-label="Estado GPS">
+        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isOffline ? '#ef4444' : '#FFD400'}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+        </div>
+        <span
+          className="text-[10px] font-black uppercase tracking-[0.2em]"
+          style={{ color: isOffline ? '#ef4444' : '#FFD400' }}
+        >
+          {isOffline ? 'Offline' : 'Tracking'}
+        </span>
+      </div>
+
+      {/* Batch Monitor (centro) */}
+      <div
+        className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md"
+        aria-live="polite"
+        aria-label="Estado del lote de telemetría"
+      >
+        {isSyncing && <PulseDot color="#FFD400" />}
+        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: batchColor }}>
+          {batchLabel}
+        </span>
+      </div>
+
+      {/* Red Status */}
+      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
+        {isOffline ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="1" y1="1" x2="23" y2="23" />
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+            <circle cx="12" cy="20" r="1" fill="currentColor" />
+          </svg>
+        )}
+      </div>
+    </header>
+  );
+}
+
+/** Tarjeta de Ganancias con Ledger Financiero */
+function EarningsLedger({
+  current,
+  max,
+  slotsUsed,
+  totalSlots,
+}: {
+  current: number;
+  max: number;
+  slotsUsed: number;
+  totalSlots: number;
+}) {
+  const pctIncome = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
+  const pctSlots = totalSlots > 0 ? Math.min(100, Math.round((slotsUsed / totalSlots) * 100)) : 0;
+  const pct = Math.max(pctIncome, pctSlots);
+  const remaining = Math.max(0, max - current);
+  const filledSlots = Math.max(0, Math.min(totalSlots, slotsUsed));
+
+  return (
+    <section
+      className="bg-[#0a0a0a] border-2 border-neutral-900 p-5"
+      aria-label="Ledger de Ganancias"
+    >
+      <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-1">
+        Ganancias del Mes
+      </p>
+
+      <p
+        className="text-white font-black tracking-tighter font-mono leading-none"
+        style={{ fontSize: 'clamp(2.5rem, 10vw, 3.5rem)' }}
+        aria-label={`RD$ ${current.toLocaleString('es-DO')}`}
+      >
+        RD${current.toLocaleString('es-DO')}
+      </p>
+
+      {/* Tope y Slots */}
+      <div className="flex items-center justify-between mt-1 mb-4">
+        <span className="text-neutral-500 text-xs">
+          Tope: <strong className="text-neutral-300">RD${max.toLocaleString('es-DO')}</strong>
+          <span className="text-neutral-700 ml-1">({totalSlots} slots max)</span>
+        </span>
+        <span className="text-neutral-500 text-xs">
+          Slots: <strong className="text-[#FFD400]">{slotsUsed}/{totalSlots}</strong>
+        </span>
+      </div>
+
+      {/* Barra de progreso */}
+      <div
+        className="w-full h-3 bg-neutral-900 border border-neutral-800 overflow-hidden"
+        role="progressbar"
+        aria-valuenow={pctIncome}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${pctIncome}% de ingresos acumulados`}
+      >
+        <div
+          className="h-full bg-[#FFD400] transition-all duration-700 ease-out"
+          style={{ width: `${pctIncome}%` }}
+        />
+      </div>
+
+      <div className="mt-2 w-full h-2 bg-neutral-900 border border-neutral-800 overflow-hidden" aria-hidden="true">
+        <div
+          className="h-full bg-[#f97316] transition-all duration-700 ease-out"
+          style={{ width: `${pctSlots}%` }}
+        />
+      </div>
+
+      {/* Slots visuales */}
+      <div className="flex gap-1 mt-3" aria-hidden="true">
+        {Array.from({ length: totalSlots }).map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 h-1.5"
+            style={{ backgroundColor: i < filledSlots ? '#FFD400' : '#262626' }}
+          />
+        ))}
+      </div>
+
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+          0 slots
+        </span>
+        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+          Ingresos {pctIncome}% · Slots {filledSlots}/{totalSlots}
+        </span>
+        <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+          {totalSlots} slots
+        </span>
+      </div>
+
+      <p className="text-[10px] text-neutral-500 font-semibold mt-2">
+        Faltan <span className="text-[#FFD400]">RD${remaining.toLocaleString('es-DO')}</span> para RD${max.toLocaleString('es-DO')}
+      </p>
+    </section>
+  );
+}
+
+/** Botones de acciones con hit-targets masivos */
+function ActionButton({
+  id,
+  label,
+  sublabel,
+  color,
+  onClick,
+  icon,
+}: {
+  id: string;
+  label: string;
+  sublabel?: string;
+  color: string;
+  onClick: () => void;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      id={id}
+      onClick={onClick}
+      className="flex flex-col items-center justify-center min-h-[120px] bg-white/[0.03] border border-white/5 rounded-3xl
+                 hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.96] active:bg-white/[0.1]
+                 transition-all duration-200 p-5 group relative overflow-hidden"
+      aria-label={label}
+    >
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }}
+      />
+      <span className="relative z-10 transition-transform duration-300 group-hover:-translate-y-1" style={{ color }} aria-hidden="true">
+        {icon}
+      </span>
+      <span className="text-white text-[11px] font-black uppercase tracking-tight mt-3 relative z-10">
+        {label}
+      </span>
+      {sublabel && (
+        <span className="text-neutral-500 text-[9px] uppercase tracking-[0.1em] mt-1 relative z-10 font-bold">
+          {sublabel}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** LockdownScreen — Paradoja 402 */
+function LockdownScreen({ message }: { message: string | null }) {
+  const handleWhatsApp = () => {
+    window.open(
+      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const handleCall = () => {
+    window.location.href = 'tel:+18097000000';
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F1A] text-white font-sans selection:bg-tad-cyan selection:text-black overflow-x-hidden pt-20">
-      {/* Premium HUD Header */}
-      <header className="fixed top-0 left-0 right-0 p-5 px-6 border-b border-white/5 flex justify-between items-center bg-[#0B0F1A]/80 backdrop-blur-3xl z-[100]">
-        <div className="space-y-1">
-           <div className="flex items-center gap-2">
-             <div className="w-2 h-2 rounded-full bg-tad-cyan shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
-             <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.25em]">Telemetry Online</p>
-           </div>
-           <h1 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
-             TAD <span className="text-tad-yellow">DRIVER</span>
-           </h1>
-           <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">¡Hola, {driverData?.driverName?.split(' ')[0] || 'Socio'}! 👋</p>
+    <div
+      className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col p-8 overflow-y-auto animate-in fade-in duration-700"
+      role="alertdialog"
+      aria-modal="true"
+    >
+      <div className="flex-1 flex flex-col items-center justify-center max-w-sm mx-auto text-center">
+        {/* Animated Shield */}
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-red-500/20 blur-[50px] rounded-full animate-pulse" />
+          <div className="relative w-24 h-24 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-center justify-center shadow-2xl">
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={loadData}
-            disabled={refreshing}
-            className={clsx(
-              "w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center transition-all active:scale-95",
-              refreshing && "opacity-50"
-            )}
-          >
-             <RefreshCw className={clsx("w-4 h-4 text-zinc-400", refreshing && "animate-spin")} />
-          </button>
-          <button 
-            onClick={logout}
-            className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500/20 transition-colors"
-          >
-             <LogOut className="w-4 h-4 text-rose-500" />
-          </button>
+
+        <h1
+          className="text-white font-black tracking-tighter uppercase leading-tight mb-4"
+          style={{ fontSize: 'clamp(2rem, 10vw, 2.75rem)' }}
+        >
+          Servicio<br />
+          <span className="text-red-500">Bloqueado</span>
+        </h1>
+
+        <p className="text-neutral-400 font-bold text-lg leading-snug mb-2">
+          Tu cuenta tiene un pago pendiente de
+        </p>
+        <div className="inline-block px-6 py-3 bg-white/5 border border-white/10 rounded-2xl mb-8">
+          <span className="text-white text-3xl font-black tabular-nums">RD$6,000</span>
+          <span className="text-neutral-500 text-xs font-bold block mt-1 uppercase tracking-widest">Cuota Anual (Hardware)</span>
         </div>
-      </header>
 
-      <main className="p-6 space-y-6 pb-32 max-w-lg mx-auto">
-        
-        {/* Soft Kill-Switch & Alerts UX (Discreet) */}
-        <AnimatePresence>
-          {stats.subscriptionStatus !== 'ACTIVE' && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="px-5 py-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-between shadow-lg backdrop-blur-md"
-            >
-               <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-                  <div>
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-500">Servicio Limitado</h3>
-                    <p className="text-[9px] text-rose-200 mt-0.5">Regulariza tu anualidad (RD$6k) para pagos.</p>
-                  </div>
-               </div>
-               <button className="text-[9px] bg-rose-500 text-black px-4 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-rose-400">Regularizar</button>
-            </motion.div>
-          )}
-
-          {driverData?.penaltyStatus?.isAtRisk && (
-            <motion.div 
-               initial={{ opacity: 0, y: -10 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="px-5 py-3 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-3 backdrop-blur-md animate-pulse"
-            >
-              <ShieldAlert className="w-5 h-5 text-orange-500 shrink-0" />
-              <p className="text-[10px] font-bold text-orange-200 uppercase leading-relaxed">
-                Faltan {goal - Math.floor(currentHours)}h para evitar penalidad del 10% en nómina.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Dynamic Financial HUD & Progress Ring */}
-        <section className="space-y-4">
-          <div className="flex justify-between items-end px-2">
-             <div className="space-y-1">
-                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Yield Analytics</h4>
-                <div className="h-1 w-12 bg-tad-cyan rounded-full" />
-             </div>
-             <TrendingUp className="w-4 h-4 text-tad-cyan animate-pulse" />
-          </div>
-          
-          <div className="relative group">
-            <div className="absolute top-0 -left-6 w-40 h-40 bg-tad-cyan/10 blur-[80px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 -right-6 w-40 h-40 bg-tad-purple/10 blur-[80px] rounded-full pointer-events-none" />
-            
-            <div className="relative glass border-white/5 p-7 rounded-[2.5rem] space-y-7 overflow-hidden shadow-2xl">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Award className={clsx("w-4 h-4", 
-                      driverData?.level === 'ORO' ? 'text-[#FFD700]' : 
-                      driverData?.level === 'PLATA' ? 'text-zinc-300' : 'text-orange-400'
-                    )} />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                      Nivel {driverData?.level || 'BASE'}
-                    </span>
-                  </div>
-                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Balance Base (Ads & Referidos)</p>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="text-4xl font-black tracking-tighter text-white">{stats.balance}</h2>
-                  </div>
-                  <p className="text-[10px] font-bold text-tad-cyan mt-2 uppercase tracking-wide">
-                    Est. Proyectado: RD${((driverData?.activeAds || 0) * 500).toLocaleString()} <span className="text-[8px] text-zinc-600">(Basado en {driverData?.activeAds || 0} pautas)</span>
-                  </p>
-                </div>
-
-                {/* Circular Progress Ring for 120 Hours Goal */}
-                {performance && (
-                   <div className="text-right flex flex-col items-center">
-                      <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Meta ({goal}h)</p>
-                      
-                      <div className="relative w-[60px] h-[60px]">
-                        <svg className="w-full h-full transform -rotate-90">
-                          <circle cx="30" cy="30" r={ringRadius} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="none" />
-                          <circle 
-                            cx="30" cy="30" r={ringRadius} 
-                            stroke={currentHours >= goal ? '#10b981' : '#00e5ff'} 
-                            strokeWidth="4" 
-                            fill="none" 
-                            strokeLinecap="round"
-                            strokeDasharray={ringCircumference} 
-                            strokeDashoffset={ringOffset} 
-                            className="transition-all duration-1000 ease-out" 
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className={clsx("text-[10px] font-black", currentHours >= goal ? "text-emerald-400" : "text-white")}>
-                            {Math.floor(currentHours)}h
-                          </span>
-                          <span className="text-[7px] text-zinc-500 font-bold uppercase">PROGRESO</span>
-                        </div>
-                      </div>
-                   </div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                 <div className="bg-white/[0.02] p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Bono Diario</p>
-                    <p className="text-base font-black text-tad-cyan">{stats.bonus}</p>
-                 </div>
-                 <div className="bg-white/[0.02] p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Referidos</p>
-                    <p className="text-base font-black text-tad-yellow">{stats.referralEarned}</p>
-                 </div>
-              </div>
-
-              <button 
-                onClick={async () => {
-                  try {
-                    await api.post('/portal-requests', {
-                      driverId: session?.user?.id,
-                      type: 'PAYOUT',
-                      title: 'Payout Request',
-                      data: JSON.stringify({ amount: stats.balance }),
-                    });
-                    toast.success('Solicitud enviada a finanzas');
-                  } catch (e) {
-                    toast.error('Error enviando solicitud');
-                  }
-                }}
-                className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors shadow-lg active:scale-95"
-              >
-                 <CreditCard className="w-4 h-4" />
-                 Solicitar Cierre de Nómina
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Real-time Session Activity (NEW) */}
-        <section className="space-y-4">
-          <div className="flex justify-between items-center px-2">
-            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Actividad de Sesión</h4>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">En Vivo</span>
-            </div>
-          </div>
-          <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-5 flex justify-around items-center backdrop-blur-md">
-            <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">GPS Puntos</p>
-              <p className="text-xl font-black text-white">{((driverData as any)?.gpsPoints || 0) + liveStats.gpsPoints}</p>
-            </div>
-            <div className="w-px h-8 bg-white/5" />
-            <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Impactos Hoy</p>
-              <p className="text-xl font-black text-white">{((driverData as any)?.adsPlayed || 0) + liveStats.adsPlayed}</p>
-            </div>
-            <div className="w-px h-8 bg-white/5" />
-            <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Estado Sync</p>
-              <p className={clsx(
-                "text-[10px] font-black uppercase tracking-widest",
-                liveStats.syncStatus === 'IDLE' ? 'text-zinc-500' :
-                liveStats.syncStatus === 'SYNCING' ? 'text-tad-cyan animate-pulse' :
-                liveStats.syncStatus === 'SUCCESS' ? 'text-emerald-500' : 'text-rose-500'
-              )}>
-                {liveStats.syncStatus === 'IDLE' ? 'Listo' :
-                 liveStats.syncStatus === 'SYNCING' ? 'Sincronizando...' :
-                 liveStats.syncStatus === 'SUCCESS' ? '¡Enviado!' : 'Error'}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Hardware Telemetry HUD */}
-        <section className="space-y-4">
-          <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Fleet Link Status</h4>
-          <div className="relative">
-             <div className="relative bg-zinc-950 border border-white/5 p-6 rounded-[2rem]">
-                <div className="flex justify-between items-center mb-6">
-                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-tad-cyan/5 border border-tad-cyan/10 flex items-center justify-center relative">
-                         <Smartphone className="w-5 h-5 text-tad-cyan" />
-                      </div>
-                      <div>
-                         <p className="text-xs font-black uppercase tracking-tight text-white">{stats.tabletHealth.hwId}</p>
-                         <p className="text-[8px] font-black text-tad-cyan uppercase tracking-widest mt-1">Conectado</p>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                   {[
-                     { icon: Battery, val: `${stats.tabletHealth.battery}%`, label: 'Batería', color: 'text-emerald-400' },
-                     { icon: RefreshCw, val: stats.tabletHealth.sync, label: 'Sync', color: 'text-tad-yellow', anim: 'animate-spin-slow' },
-                     { icon: MapPin, val: 'Online', label: 'Monitor', color: 'text-tad-cyan' },
-                   ].map((item, i) => (
-                     <div key={i} className="bg-white/[0.02] py-4 rounded-2xl flex flex-col items-center justify-center border border-white/5">
-                        <item.icon className={clsx("w-4 h-4 mb-2", item.color, item.anim)} />
-                        <p className="text-[10px] font-black text-white">{item.val}</p>
-                        <p className="text-[7px] font-black text-zinc-500 uppercase tracking-widest">{item.label}</p>
-                     </div>
-                   ))}
-                </div>
-             </div>
-          </div>
-        </section>
-
-        <PortalRequestCenter 
-          portalType="DRIVER" 
-          userId={session?.user?.id || ''} 
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-           <button 
-             onClick={() => setShowInviteModal(true)}
-             className="p-5 bg-white/[0.02] border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 active:bg-white/[0.05] transition-all hover:border-white/10"
-           >
-              <Users className="w-6 h-6 text-tad-cyan" />
-              <div className="text-center">
-                <span className="block text-[9px] font-black uppercase text-white mb-0.5">Invitar Chofer</span>
-                <span className="block text-[8px] font-black text-zinc-500">+RD$300</span>
-              </div>
-           </button>
-            <a 
-              href="https://wa.me/18295550000" // Placeholder for TAD Support
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-5 bg-[#25D366]/10 border border-[#25D366]/20 rounded-[2rem] flex flex-col items-center gap-2 active:scale-95 transition-all hover:bg-[#25D366]/20"
-            >
-               <MessageSquare className="w-6 h-6 text-[#25D366]" />
-               <div className="text-center">
-                 <span className="block text-[9px] font-black uppercase text-white mb-0.5">WhatsApp</span>
-                 <span className="block text-[8px] font-black text-[#25D366]">Chat Soporte</span>
-               </div>
-            </a>
-        </div>
-      </main>
-
-      {/* Tool Modals */}
-      <AnimatePresence>
-        {showSupportModal && (
-          <div className="fixed inset-0 z-[200] flex flex-col justify-end p-4 bg-black/80 backdrop-blur-md sm:justify-center items-center">
-            <motion.div 
-               initial={{ opacity: 0, y: 50 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: 50 }}
-               className="bg-[#0B0F1A] border border-white/10 rounded-[2rem] w-full max-w-sm p-8 shadow-2xl relative"
-            >
-               <h3 className="text-xl font-black uppercase tracking-tighter text-white mb-1">Soporte <span className="text-[#FFD400]">Técnico</span></h3>
-               <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-6">¿Problemas con el equipo? Reporta y te contactaremos.</p>
-               
-               <form onSubmit={handleSupportSubmit} className="space-y-4">
-                 <textarea 
-                   required
-                   value={supportMessage}
-                   onChange={e => setSupportMessage(e.target.value)}
-                   className="w-full bg-black border border-white/10 rounded-2xl p-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-tad-cyan/50 min-h-[100px] resize-none"
-                   placeholder="Mi tablet no enciende..."
-                 />
-                 <div className="flex gap-2">
-                   <button 
-                     type="button" 
-                     onClick={() => setShowSupportModal(false)}
-                     className="flex-1 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-white/5 text-zinc-400"
-                   >Cancelar</button>
-                   <button 
-                     type="submit" 
-                     disabled={submittingSupport}
-                     className="flex-1 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-tad-yellow text-black disabled:opacity-50"
-                   >{submittingSupport ? 'Enviando...' : 'Enviar'}</button>
-                 </div>
-               </form>
-            </motion.div>
+        {message && (
+          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-xl mb-10 w-full">
+            <p className="text-red-400 text-[10px] font-mono uppercase tracking-wider leading-relaxed">
+              {message}
+            </p>
           </div>
         )}
 
-        {showInviteModal && (
-           <div className="fixed inset-0 z-[200] flex flex-col justify-end p-4 bg-black/80 backdrop-blur-md sm:justify-center items-center">
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               exit={{ opacity: 0, scale: 0.95 }}
-               className="bg-[#0B0F1A] border border-white/10 rounded-[2rem] w-full max-w-sm p-8 shadow-2xl relative text-center"
-            >
-               <div className="w-14 h-14 rounded-full bg-tad-cyan/10 mx-auto mb-5 flex items-center justify-center border border-tad-cyan/20">
-                  <Users className="w-6 h-6 text-tad-cyan" />
-               </div>
-               <h3 className="text-xl font-black uppercase text-white mb-2">Referidos</h3>
-               <p className="text-[9px] text-zinc-400 uppercase tracking-widest mb-6 leading-relaxed">
-                 Gana RD$300 por cada chofer activo que invites.
-               </p>
-               
-               <div className="bg-black/50 border border-white/10 rounded-2xl p-4 mb-6">
-                  <p className="text-[10px] text-tad-cyan font-mono break-all line-clamp-2">
-                     https://tad.do/driver/onboarding?ref={session?.user?.id?.substring(0, 8) || 'tad_usr'}
-                  </p>
-               </div>
+        <div className="w-full space-y-4">
+          <button
+            onClick={handleWhatsApp}
+            className="w-full h-20 bg-tad-yellow hover:bg-white text-black font-black text-lg uppercase tracking-tighter rounded-3xl transition-all shadow-2xl shadow-tad-yellow/10 flex items-center justify-center gap-3 active:scale-95"
+          >
+            <span>Pagar vía WhatsApp</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+          </button>
 
-               <div className="flex gap-2">
-                 <button onClick={() => setShowInviteModal(false)} className="flex-1 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-white/5 text-white">Cerrar</button>
-                 <button onClick={copyReferral} className="flex-1 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest bg-tad-cyan text-black">Copiar Enlace</button>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          <button
+            onClick={handleCall}
+            className="w-full h-16 bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest rounded-2xl transition-all border border-white/10 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Phone className="w-5 h-5" />
+            <span>Llamar a Soporte</span>
+          </button>
+        </div>
+      </div>
 
-      {/* Floating Navigator */}
-      <nav className="fixed bottom-6 left-6 right-6 h-[72px] bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl flex items-center justify-between px-8 z-[100]">
-         <button className="text-tad-cyan group relative flex flex-col items-center justify-center w-12 h-12">
-            <LayoutDashboard className="w-5 h-5" />
-            <div className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-tad-cyan shadow-[0_0_10px_rgba(0,229,255,1)]" />
-         </button>
-         <Link href="/check-in" className="w-14 h-14 bg-tad-cyan rounded-full flex items-center justify-center -mt-8 shadow-[0_0_30px_rgba(0,229,255,0.3)] border-[6px] border-[#0B0F1A] active:scale-95 transition-transform">
-            <Activity className="w-6 h-6 text-black" />
-         </Link>
-         <Link href="/driver/wallet" className="text-zinc-500 hover:text-white transition-colors w-12 h-12 flex items-center justify-center">
-            <Wallet className="w-5 h-5" />
-         </Link>
-      </nav>
-
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 12s linear infinite;
-        }
-      `}</style>
+      <p className="mt-8 text-neutral-600 text-[10px] text-center font-bold uppercase tracking-[0.3em]">
+        Tus datos se guardan localmente
+      </p>
     </div>
   );
 }
 
+// ─── Componente Principal ─────────────────────────────────────────────────────
+export default function DriverDashboard() {
+  const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
+    useTelemetry();
+  const { data: hubData, loading: hubLoading, refresh: refreshHub } = useDriverHub();
+  const { isLocked, message: lockMessage } = usePaymentStore();
+  const [syncingNow, setSyncingNow] = React.useState(false);
 
+  // Iniciar tracking GPS al montar
+  useEffect(() => {
+    startTracking();
+    return () => stopTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // ─── Acciones ─────────────────────────────────────────────────────────────
+  const handleSupport = () => {
+    window.open(
+      `https://wa.me/18097000000?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
 
+  const handleReportFalla = () => {
+    window.open(
+      `https://wa.me/18097000000?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
 
+  const handleSincronizar = async () => {
+    setSyncingNow(true);
+    await syncPending();
+    await refreshHub();
+    setSyncingNow(false);
+  };
 
+  const handleReferir = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Únete a TAD Driver',
+        text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
+        url: window.location.origin + '/driver/onboarding',
+      }).catch(() => undefined);
+    } else {
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + window.location.origin + '/driver/onboarding')}`,
+        '_blank',
+        'noopener,noreferrer'
+      );
+    }
+  };
+
+  // ─── Banner de estado del servicio ────────────────────────────────────────
+  const serviceBannerConfig =
+    connectionStatus === 'offline'
+      ? { label: 'MODO LOCAL: Guardando y reintentando', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
+      : connectionStatus === 'syncing'
+        ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
+        : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white pb-10 font-sans">
+      <Head>
+        <title>TAD Driver | Monitor Operativo</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
+      </Head>
+
+      {/* Header fijo con telemetría */}
+      <StatusBar
+        connectionStatus={connectionStatus}
+        batchCount={batchCount}
+        offlineCount={offlineCount}
+      />
+
+      {/* Contenido principal con padding-top para el header fijo */}
+      <main className="max-w-md mx-auto pt-[72px] px-4 space-y-5" id="dashboard-main">
+
+        {/* Banner de Estado de Servicio */}
+        <div
+          className="flex items-center justify-center gap-2 py-2.5 px-3 border"
+          style={{
+            backgroundColor: serviceBannerConfig.bg,
+            borderColor: serviceBannerConfig.border,
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <PulseDot color={serviceBannerConfig.color} />
+          <span
+            className="text-[10px] font-black uppercase tracking-widest"
+            style={{ color: serviceBannerConfig.color }}
+          >
+            {serviceBannerConfig.label}
+          </span>
+        </div>
+
+        {/* Ledger Financiero */}
+        <EarningsLedger
+          current={hubData?.balance ?? 0}
+          max={7500}
+          slotsUsed={hubData?.activeSlots ?? 0}
+          totalSlots={hubData?.maxSlots ?? 15}
+        />
+
+        {/* Herramientas del Chofer */}
+        <section aria-labelledby="quick-actions-title">
+          <h2
+            id="quick-actions-title"
+            className="text-neutral-600 font-black text-[10px] uppercase tracking-[0.2em] mb-3 ml-0.5"
+          >
+            Operaciones Tácticas
+          </h2>
+
+          <div className="grid grid-cols-2 gap-2">
+            <ActionButton
+              id="btn-soporte"
+              label="Soporte"
+              sublabel="WhatsApp"
+              color="#FFD400"
+              onClick={handleSupport}
+              icon={
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                </svg>
+              }
+            />
+
+            <ActionButton
+              id="btn-reportar"
+              label="Reportar Falla"
+              sublabel="Dispositivo"
+              color="#ef4444"
+              onClick={handleReportFalla}
+              icon={
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              }
+            />
+
+            <ActionButton
+              id="btn-sincronizar"
+              label="Sincronizar"
+              sublabel={syncingNow ? 'Sincronizando...' : (offlineCount > 0 ? `${offlineCount} pendientes` : 'Al día')}
+              color={syncingNow ? '#FFD400' : '#22c55e'}
+              onClick={handleSincronizar}
+              icon={
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <polyline points="23 20 23 14 17 14" />
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+                </svg>
+              }
+            />
+
+            <ActionButton
+              id="btn-referir"
+              label="Referir Conductor"
+              sublabel="Compartir enlace"
+              color="#3b82f6"
+              onClick={handleReferir}
+              icon={
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="pt-6 text-center space-y-2">
+          <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
+            TAD DOOH Platform v11.0.0
+          </p>
+          <p className="text-neutral-800 text-[9px] font-mono">
+            GPS: {isTracking ? 'ACTIVO' : 'INACTIVO'} · Batch: {batchCount}/10 · Red: {connectionStatus.toUpperCase()}
+          </p>
+
+          {/* Dev-only: Debug trigger */}
+          {process.env.NODE_ENV !== 'production' && (
+            <button
+              id="debug-trigger-402"
+              onClick={() => usePaymentStore.getState().setLock(true, 'DEBUG: Suscripción vencida (402)')}
+              className="mt-2 text-neutral-800 text-[9px] uppercase font-bold border border-neutral-900 px-3 py-1 hover:text-red-900 transition-colors"
+            >
+              Debug: Forzar Bloqueo 402
+            </button>
+          )}
+        </footer>
+      </main>
+
+      {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción */}
+      {isLocked && <LockdownScreen message={lockMessage} />}
+    </div>
+  );
+}

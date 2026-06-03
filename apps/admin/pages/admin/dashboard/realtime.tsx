@@ -15,7 +15,8 @@ import {
   Flame, Tv2, ChevronRight, X, Filter,
   CheckCircle2, Gauge as SpeedIcon,
 } from 'lucide-react';
-import api, { getDeviceRecentPath, getHeatmapData } from '@tad/services';
+import api, { getDeviceRecentPath, getHeatmapData, getTrackingBaseline } from '@tad/services';
+import { supabase } from '@tad/services';
 
 // ─────────────────────────────────────────────────────────────────────
 // DYNAMIC IMPORTS  (everything that touches window/Leaflet)
@@ -75,6 +76,88 @@ interface Campaign {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// REAL-TIME HELPERS (from /admin/tracking)
+// ─────────────────────────────────────────────────────────────────────
+const OFFLINE_THRESHOLD_MS = 90_000;
+
+const isFreshTelemetry = (timestamp?: string | null) => {
+  if (!timestamp) return false;
+  const ts = new Date(timestamp).getTime();
+  return Number.isFinite(ts) && Date.now() - ts <= OFFLINE_THRESHOLD_MS;
+};
+
+const applyFleetFreshness = (vehicles: any[]) =>
+  vehicles.map((vehicle) => ({
+    ...vehicle,
+    isOnline: isFreshTelemetry(vehicle.lastSeen),
+  }));
+
+interface TelemetryPing {
+  driverId: string;
+  deviceId: string;
+  lat: number;
+  lng: number;
+  speed: number;
+  bearing: number;
+  timestamp: string;
+}
+
+const normalizeTelemetryPing = (payload: any): TelemetryPing | null => {
+  if (!payload) return null;
+  const driverId = typeof payload.driverId === 'string' ? payload.driverId : '';
+  const deviceId = typeof payload.deviceId === 'string' ? payload.deviceId : '';
+  const lat = Number(payload.lat);
+  const lng = Number(payload.lng);
+  const speed = Number(payload.speed ?? 0);
+  const bearing = Number(payload.bearing ?? 0);
+  const timestamp = typeof payload.timestamp === 'string' ? payload.timestamp : '';
+
+  if (!driverId || !deviceId || !Number.isFinite(lat) || !Number.isFinite(lng) || !timestamp) {
+    return null;
+  }
+
+  return { driverId, deviceId, lat, lng, speed, bearing, timestamp };
+};
+
+const upsertTelemetryPing = (vehicles: Device[], ping: TelemetryPing) => {
+  const idx = vehicles.findIndex((vehicle) =>
+    String(vehicle.deviceId || '') === ping.deviceId
+  );
+
+  const patch = {
+    ...ping,
+    lastLat: ping.lat,
+    lastLng: ping.lng,
+    lastSeen: ping.timestamp,
+    isOnline: true,
+  };
+
+  if (idx === -1) {
+    return [
+      ...vehicles,
+      {
+        deviceId: ping.deviceId,
+        taxiNumber: ping.deviceId,
+        isOnline: true,
+        lastSeen: ping.timestamp,
+        lastLat: ping.lat,
+        lastLng: ping.lng,
+        driverName: 'Unidad nueva',
+        plate: undefined,
+        city: undefined,
+        batteryLevel: undefined,
+        subscriptionStatus: 'ACTIVE',
+        speed: ping.speed,
+      } as Device,
+    ];
+  }
+
+  const next = vehicles.slice();
+  next[idx] = { ...next[idx], ...patch } as Device;
+  return next;
+};
+
+// ─────────────────────────────────────────────────────────────────────
 // SMALL REUSABLE ATOMS
 // ─────────────────────────────────────────────────────────────────────
 function TabBtn({
@@ -129,11 +212,7 @@ interface GeoTabProps {
 function GeoTab({ devices, campaigns }: GeoTabProps) {
   // Map state
   const [mapMode, setMapMode] = useState<MapMode>('live');
-  const [mapTheme, setMapTheme] = useState<MapTheme>(() =>
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('tad_map_theme') as MapTheme) || 'dark'
-      : 'dark',
-  );
+  const [mapTheme, setMapTheme] = useState<MapTheme>('dark');
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
   const [heatmapRadius, setHeatmapRadius] = useState(28);
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
@@ -148,6 +227,18 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
   const [fleetFilter, setFleetFilter] = useState<FleetFilter>('all');
   const [selectedAdvertiser, setSelectedAdvertiser] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+
+  useEffect(() => {
+    try {
+      const storedTheme = localStorage.getItem('tad_map_theme') as MapTheme | null;
+      if (storedTheme === 'dark' || storedTheme === 'light') {
+        setMapTheme(storedTheme);
+      }
+    } catch {
+      // Keep the deterministic SSR default if browser storage is unavailable.
+    }
+  }, []);
 
   // Load heatmap when mode switches
   useEffect(() => {
@@ -734,17 +825,18 @@ export default function RealtimeDashboard() {
   const [campaigns, setCampaigns]   = useState<Campaign[]>([]);
   const [loading, setLoading]       = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      const [devRes, campRes] = await Promise.all([
-        api.get('/monitoring/fleet-status'),
+      // Fetch baseline tracking data (last known positions) + campaigns
+      const [fleetData, campRes] = await Promise.all([
+        getTrackingBaseline(),
         api.get('/monitoring/campaigns-status'),
       ]);
-      // Actualizar dispositivos y campañas desde el backend
-      setDevices(devRes.data || []);
+      // Apply freshness logic to determine online/offline status
+      setDevices(applyFleetFreshness(fleetData || []));
       setCampaigns(campRes.data || []);
       setLastUpdate(new Date());
     } catch (err) {
@@ -760,6 +852,41 @@ export default function RealtimeDashboard() {
     const id = setInterval(fetchData, 30_000);
     return () => clearInterval(id);
   }, [fetchData]);
+
+  // Real-time subscription to Supabase channel for telemetry pings
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet_tracking_live', {
+        config: { broadcast: { ack: true } },
+      })
+      .on('broadcast', { event: 'telemetry_ping' }, ({ payload }) => {
+        const ping = normalizeTelemetryPing(payload);
+        if (!ping) {
+          console.warn('[TAD_REALTIME][ADMIN] telemetry_ping descartado por payload inválido', payload);
+          return;
+        }
+        setDevices((prev) => upsertTelemetryPing(prev, ping));
+      })
+      .subscribe((status, error) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error('[TAD_REALTIME][ADMIN] Suscripción Broadcast rechazada o cerrada', {
+            status,
+            error,
+            channel: 'fleet_tracking_live',
+          });
+        }
+      });
+
+    // Interval to update online/offline states every 10 seconds
+    const freshnessInterval = setInterval(() => {
+      setDevices((prev) => applyFleetFreshness(prev));
+    }, 10_000);
+
+    return () => {
+      clearInterval(freshnessInterval);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   const online  = devices.filter(d => d.isOnline).length;
   const offline = devices.length - online;
@@ -783,7 +910,7 @@ export default function RealtimeDashboard() {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Radio className="size-2.5 text-rose-500 animate-pulse" />
                 <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase">
-                  Transmisión: {lastUpdate.toLocaleTimeString('es-DO')}
+                  Transmisión: {lastUpdate ? lastUpdate.toLocaleTimeString('es-DO') : 'Sincronizando…'}
                 </p>
               </div>
             </div>

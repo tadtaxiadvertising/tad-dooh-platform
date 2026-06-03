@@ -33,7 +33,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Auth Callback bypass
+  // 3. Static assets bypass (PWA icons and other public assets)
+  if (pathname.startsWith('/icons/')) {
+    return NextResponse.next();
+  }
+
+  // 4. Auth Callback bypass
   if (pathname.includes('/auth/callback')) {
     return NextResponse.next();
   }
@@ -60,9 +65,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/driver/:path*',
-    '/login',
-    '/'
+    '/((?!api|_next/static|_next/image|_next/data|favicon.svg|manifest.json|icons/).*)',
   ],
 };
-

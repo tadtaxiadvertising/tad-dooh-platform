@@ -1,0 +1,57 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
+export declare class NotificationsService {
+    private readonly prisma;
+    private readonly supabaseService;
+    private readonly logger;
+    constructor(prisma: PrismaService, supabaseService: SupabaseService);
+    createAlert(data: {
+        title: string;
+        message: string;
+        type: 'INFO' | 'WARNING' | 'CRITICAL' | 'SUCCESS';
+        category: 'SYSTEM' | 'DEVICE' | 'CAMPAIGN' | 'FINANCE';
+        entityId?: string;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        message: string;
+        type: string;
+        category: string;
+        entityId: string | null;
+        title: string;
+        read: boolean;
+    }>;
+    findAll(): Promise<{
+        id: string;
+        createdAt: Date;
+        message: string;
+        type: string;
+        category: string;
+        entityId: string | null;
+        title: string;
+        read: boolean;
+    }[]>;
+    getUnreadCount(): Promise<number>;
+    markAsRead(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        message: string;
+        type: string;
+        category: string;
+        entityId: string | null;
+        title: string;
+        read: boolean;
+    }>;
+    markAllAsRead(): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    sendPush(driverId: string, message: string): Promise<void>;
+    executePushDelivery(driverId: string, message: string): Promise<{
+        id: string;
+        createdAt: Date;
+        message: string;
+        type: string;
+        category: string;
+        entityId: string | null;
+        title: string;
+        read: boolean;
+    }>;
+}

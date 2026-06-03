@@ -14,7 +14,7 @@ COPY packages ./packages
 COPY apps/admin ./apps/admin
 
 # Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
-RUN rm -rf package-lock.json node_modules && npm install
+RUN rm -rf package-lock.json node_modules && npm install --legacy-peer-deps
 
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
 ARG NEXT_PUBLIC_SUPABASE_URL

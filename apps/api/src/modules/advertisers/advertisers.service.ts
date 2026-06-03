@@ -127,12 +127,144 @@ export class AdvertisersService {
             videos: true,
           },
         },
+        // FIX MOCK-1: Incluir facturas reales del anunciante
+        invoices: {
+          orderBy: { issueDate: 'desc' },
+          take: 10, // Últimas 10 facturas para el portal
+        },
       },
     });
 
     if (!advertiser) return null;
 
     const campaignIds = advertiser.campaigns.map(c => c.id);
+    const now = new Date();
+    const onlineWindowMs = 90 * 1000;
+    const activeCampaignWhere = {
+      advertiserId: id,
+      active: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    };
+    const contractedDeviceSelect = {
+      deviceId: true,
+      taxiNumber: true,
+      city: true,
+      lastSeen: true,
+      lastLat: true,
+      lastLng: true,
+      status: true,
+      driverId: true,
+      driver: {
+        select: {
+          id: true,
+          fullName: true,
+          taxiPlate: true,
+          licensePlate: true,
+          subscriptionPaid: true,
+          subscriptionEnd: true,
+          status: true,
+        },
+      },
+      locations: {
+        orderBy: { timestamp: 'desc' as const },
+        take: 1,
+        select: {
+          latitude: true,
+          longitude: true,
+          speed: true,
+          timestamp: true,
+        },
+      },
+    } as const;
+
+    const [deviceAssignments, targetDriverAssignments] = await Promise.all([
+      this.prisma.deviceCampaign.findMany({
+        where: { campaign: activeCampaignWhere },
+        include: {
+          campaign: { select: { id: true, name: true } },
+          device: { select: contractedDeviceSelect },
+        },
+      }),
+      this.prisma.driver.findMany({
+        where: { campaigns: { some: activeCampaignWhere } },
+        select: {
+          id: true,
+          fullName: true,
+          taxiPlate: true,
+          licensePlate: true,
+          subscriptionPaid: true,
+          subscriptionEnd: true,
+          status: true,
+          devices: { select: contractedDeviceSelect },
+        },
+      }),
+    ]);
+
+    const contractedByDeviceId = new Map<string, any>();
+    const upsertContractedScreen = (device: any, campaignName?: string) => {
+      if (!device?.deviceId) return;
+      const lastLocation = device.locations?.[0] || null;
+      const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
+      const lastLng = device.lastLng ?? lastLocation?.longitude ?? null;
+      const lastSeen = device.lastSeen ?? lastLocation?.timestamp ?? null;
+      const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+      const driver = device.driver || null;
+      const existing = contractedByDeviceId.get(device.deviceId);
+      const campaigns = new Set<string>(existing?.campaigns || []);
+      if (campaignName) campaigns.add(campaignName);
+
+      let subscriptionStatus = 'PENDING';
+      if (driver) {
+        if (driver.subscriptionPaid) {
+          const notExpired = !driver.subscriptionEnd || driver.subscriptionEnd > now;
+          subscriptionStatus = notExpired ? 'ACTIVE' : 'EXPIRED';
+        } else {
+          subscriptionStatus = driver.status || 'PENDING';
+        }
+      }
+
+      contractedByDeviceId.set(device.deviceId, {
+        driverId: driver?.id ?? device.driverId ?? null,
+        deviceId: device.deviceId,
+        taxiNumber: device.taxiNumber ?? null,
+        city: device.city ?? null,
+        lastSeen,
+        lastLat,
+        lastLng,
+        status: device.status,
+        isOnline,
+        driverName: driver?.fullName ?? null,
+        plate: driver?.taxiPlate ?? driver?.licensePlate ?? null,
+        subscriptionStatus,
+        speed: lastLocation?.speed ?? null,
+        campaigns: Array.from(campaigns),
+      });
+    };
+
+    for (const assignment of deviceAssignments) {
+      upsertContractedScreen(assignment.device, assignment.campaign.name);
+    }
+    for (const driver of targetDriverAssignments) {
+      for (const device of driver.devices) {
+        upsertContractedScreen(
+          { ...device, driver: device.driver || driver },
+          undefined,
+        );
+      }
+    }
+
+    const contractedScreens = Array.from(contractedByDeviceId.values());
+    const driverIds = Array.from(new Set(
+      contractedScreens
+        .map((screen) => screen.driverId)
+        .filter((driverId): driverId is string => typeof driverId === 'string' && driverId.length > 0),
+    ));
+    const deviceIds = Array.from(new Set(
+      contractedScreens
+        .map((screen) => screen.deviceId)
+        .filter((deviceId): deviceId is string => typeof deviceId === 'string' && deviceId.length > 0),
+    ));
 
     // FIX N+1 parcial: Obtener agregados globales del anunciante en paralelo
     // GET LIVE DATA: Combinamos histórico (campaignMetric) con tiempo real (playbackEvent de hoy)
@@ -303,6 +435,35 @@ export class AdvertisersService {
       completions: 0 // We don't track live completions in this simple count yet
     });
 
+    // FIX MOCK-2: Calcular balanceRD real desde facturas no pagadas
+    const pendingInvoices = advertiser.invoices.filter(
+      (inv) => inv.status !== 'PAID',
+    );
+    const balanceRD = pendingInvoices.reduce(
+      (acc, inv) => acc + inv.totalAmount,
+      0,
+    );
+
+    // FIX MOCK-3: Serializar facturas reales para el portal
+    const invoicesList = advertiser.invoices.map((inv) => ({
+      id: inv.id,
+      issueDate: inv.issueDate.toISOString().split('T')[0],
+      dueDate: inv.dueDate.toISOString().split('T')[0],
+      subtotal: inv.subtotal,
+      taxAmount: inv.taxAmount,
+      amount: inv.totalAmount,
+      totalAmount: inv.totalAmount,
+      status: inv.status,
+      pdfUrl: inv.pdfUrl || null,
+    }));
+
+    // Estadísticas de facturas para el summary de billing
+    const invoiceStatusSummary = {
+      pending: advertiser.invoices.filter((i) => i.status === 'PENDING').length,
+      paid: advertiser.invoices.filter((i) => i.status === 'PAID').length,
+      overdue: advertiser.invoices.filter((i) => i.status === 'OVERDUE').length,
+    };
+
     return {
       brand: {
         id: advertiser.id,
@@ -319,7 +480,20 @@ export class AdvertisersService {
         completions: totalCompletions,
         scans: totalScans,
         activeCampaigns: totalAds,
+        contractedScreens: contractedScreens.length,
+        activeContractedScreens: contractedScreens.filter((screen) => screen.isOnline).length,
       },
+      telemetry: {
+        contractedScreens,
+        contractedScreensTotal: contractedScreens.length,
+        activeContractedScreens: contractedScreens.filter((screen) => screen.isOnline).length,
+        driverIds,
+        deviceIds,
+      },
+      contractedScreens,
+      driverIds,
+      deviceIds,
+      activeDriverIds: driverIds,
       stats: { 
         totalImpressions, 
         totalCompletions, 
@@ -327,9 +501,9 @@ export class AdvertisersService {
         activeCampaigns: totalAds,
         activeNodes,
         avgFrequency,
-        geoDistribution: geoDistribution.length > 0 ? geoDistribution : [
-          { name: 'Santo Domingo', value: 100 }
-        ]
+        // FIX MOCK-4: Eliminar fallback hardcoded de geoDistribution
+        // Si no hay datos geográficos, devolver array vacío — la UI mostrará Zero State
+        geoDistribution,
       },
       financials: {
         subtotal,
@@ -337,11 +511,16 @@ export class AdvertisersService {
         totalCost,
         costPerAd: BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD,
         taxRate: BUSINESS_RULES.ITBIS_RATE,
+        // FIX MOCK-5: balanceRD calculado desde facturas reales (no campo inexistente)
+        balanceRD,
+        invoices: invoicesList,
+        invoiceStatusSummary,
         latestInvoice: latestInvoice ? {
           id: latestInvoice.id,
           date: latestInvoice.issueDate.toISOString().split('T')[0],
-          status: latestInvoice.status
-        } : null
+          status: latestInvoice.status,
+          amount: latestInvoice.totalAmount,
+        } : null,
       },
       campaigns: campaignsWithMetrics,
       timeSeries,
@@ -398,9 +577,9 @@ export class AdvertisersService {
       return { success: true, message: 'If email exists, recovery sent.' };
     }
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
-      this.logger.error('🚨 [RECOVER_PASSWORD] JWT_SECRET no configurado.');
+      this.logger.error(`[ADVERTISER_AUTH][RECOVER_PASSWORD] JWT secret no configurado para email=${email}.`);
       return { success: false, message: 'Error de configuración del servidor.' };
     }
 
@@ -418,8 +597,9 @@ export class AdvertisersService {
 
   // RESET PASSWORD (POST-RECOVERY)
   async resetPassword(token: string, newPass: string) {
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
+      this.logger.error('[ADVERTISER_AUTH][RESET_PASSWORD] JWT secret no configurado.');
       throw new Error('Error de configuración del servidor.');
     }
 
@@ -438,10 +618,50 @@ export class AdvertisersService {
 
       return { success: true, message: 'Contraseña actualizada correctamente.' };
     } catch (err) {
-      this.logger.error(`❌ [RESET_PASSWORD] Error: ${err.message}`);
+      this.logger.error(`[ADVERTISER_AUTH][RESET_PASSWORD] Token inválido o expirado: ${err.message}`);
       throw new UnauthorizedException('El enlace ha expirado o es inválido.');
     }
   }
+  /**
+   * Endpoint dedicado para obtener facturas del anunciante.
+   * Optimizado para la página de Billing — no carga toda la data del portal.
+   * TENANT ISOLATION: Solo devuelve facturas del advertiserId especificado.
+   */
+  async getInvoices(advertiserId: string): Promise<{
+    invoices: any[];
+    balanceRD: number;
+    invoiceStatusSummary: { pending: number; paid: number; overdue: number };
+  }> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { advertiserId },
+      orderBy: { issueDate: 'desc' },
+    });
+
+    const balanceRD = invoices
+      .filter((inv) => inv.status !== 'PAID')
+      .reduce((acc, inv) => acc + inv.totalAmount, 0);
+
+    return {
+      invoices: invoices.map((inv) => ({
+        id: inv.id,
+        issueDate: inv.issueDate.toISOString().split('T')[0],
+        dueDate: inv.dueDate.toISOString().split('T')[0],
+        subtotal: inv.subtotal,
+        taxAmount: inv.taxAmount,
+        amount: inv.totalAmount,
+        totalAmount: inv.totalAmount,
+        status: inv.status,
+        pdfUrl: inv.pdfUrl || null,
+      })),
+      balanceRD,
+      invoiceStatusSummary: {
+        pending: invoices.filter((i) => i.status === 'PENDING').length,
+        paid: invoices.filter((i) => i.status === 'PAID').length,
+        overdue: invoices.filter((i) => i.status === 'OVERDUE').length,
+      },
+    };
+  }
+
   private async getAdvertiserVideoIds(advertiserId: string): Promise<string[]> {
     const [videos, assets] = await Promise.all([
       this.prisma.video.findMany({

@@ -8,6 +8,13 @@ const withPWA = withPWAInit({
   register: true,
   cacheOnFrontEndNav: false,
   reloadOnOnline: true,
+  buildExcludes: [
+    /middleware-manifest\.json$/,
+    /app-build-manifest\.json$/,
+    /dynamic-css-manifest\.json$/,
+    /_next\/data\/.+\/.+\.json$/,
+    /_next\/.*manifest.*\.json$/,
+  ],
   workboxOptions: {
     skipWaiting: true,
     disableDevLogs: true,
@@ -40,24 +47,6 @@ const withPWA = withPWAInit({
   },
 });
 
-// IMPORTANTE: En EasyPanel Free, las variables NEXT_PUBLIC_* deben estar
-// configuradas como Build Args, NO solo como Environment Variables.
-// Si no están en Build Args, el rewrite queda vacío y retorna 502.
-//
-// SOLUCIÓN: El frontend usa /api/proxy/* (API Route, corre en runtime)
-// en lugar de /backend-api/* (rewrite, depende de build-time).
-// El rewrite se mantiene solo como fallback para requests SSR.
-
-const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL   // ej: http://api:3000  (red interna EasyPanel)
-  || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')    // fallback env var
-  || 'https://proyecto-ia-tad-api.rewvid.easypanel.host';    // fallback corregido para Easypanel PROD
-
-const RAW_BACKEND_URL = process.env.BACKEND_URL || BACKEND_INTERNAL;
-const BACKEND_URL = RAW_BACKEND_URL
-  .replace(/\/api\/v1\/?$/, '')
-  .replace(/\/api\/?$/, '')
-  .replace(/\/$/, '');
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
@@ -76,16 +65,9 @@ const nextConfig: NextConfig = {
     // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
     parallelServerCompiles: false,
   },
-  // El rewrite usa BACKEND_INTERNAL que se evalúa en runtime del servidor Next.js
-  // (no en build-time), por lo que funciona con EasyPanel env vars normales.
-  async rewrites() {
-    return [
-      {
-        source: '/api/proxy/:path*',
-        destination: `${BACKEND_URL}/api/v1/:path*`,
-      },
-    ];
-  },
+  // Importante: NO reescribir /api/proxy/* hacia el backend.
+  // Esa ruta la atiende pages/api/proxy/[...path].ts para preservar
+  // fallback, auth forwarding y diagnóstico (_proxy_health).
   async redirects() {
     return [
       {

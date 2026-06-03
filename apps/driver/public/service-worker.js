@@ -11,9 +11,8 @@ const MAX_CACHEABLE_SIZE = 512000;   // 500KB — no cachear archivos mayores
 const PRE_CACHE_URLS = [
   '/',
   '/driver/dashboard',
-  '/favicon.ico',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/favicon.svg',
+  '/icons/icon.svg',
   '/manifest.json',
 ];
 

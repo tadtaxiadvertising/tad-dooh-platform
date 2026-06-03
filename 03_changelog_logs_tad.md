@@ -1,7 +1,62 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
 > **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-05-21
+> **Última Actualización**: 2026-05-31
+
+---
+
+## [v12.2.4] - 2026-05-31
+
+### 🚀 FEATURE / 🔧 FIX: Corrección de Scripts Raíz y Mitigación TypeScript 6.0
+- **Cambio**: Normalización de los scripts raíz del monorepo para usar `--workspaces` en lugar del shorthand `-ws`, y alineación de `ignoreDeprecations` a `5.0` en las configuraciones TypeScript de Admin y API para usar un valor válido con los compiladores TypeScript 5.x durante los builds Docker.
+- **Archivos tocados**:
+  - `package.json`
+  - `apps/admin/tsconfig.json`
+  - `apps/api/tsconfig.json`
+  - `03_changelog_logs_tad.md`
+- **Nota Infraestructura**: La validación completa de instalación/build en el contenedor actual queda condicionada por la política de registry que devuelve `403 Forbidden` al resolver `@ducanh2912/next-pwa`; la corrección aplicada es estática y compatible con Easypanel/NPM moderno.
+
+---
+
+## [v12.2.3] - 2026-05-26
+
+### 🚀 FEATURE / 🔧 FIX: Corrección Quirúrgica de Telemetría Realtime y Proof of Play
+- **Cambio**: Unificación del pipeline de telemetría entre baseline REST histórico y Supabase Broadcast efímero. Admin hidrata todas las unidades registradas, escucha `fleet_tracking_live` y degrada a offline después de 90s sin borrar marcadores. El portal del anunciante hidrata exclusivamente sus pantallas contratadas desde `/advertisers/:id/portal`, construye sets inmutables de `driverId/deviceId`, descarta pings externos y mantiene el contador `Pantallas Contratadas: X (N activas ahora mismo)`.
+- **Backend**: `/fleet/map` y `/fleet/tracking/baseline` devuelven `driverId`, `deviceId`, última coordenada histórica y estado online de 90s. `/advertisers/:id/portal` expone `telemetry.contractedScreens`, `driverIds` y `deviceIds` solo para campañas activas vigentes del anunciante.
+- **Infraestructura**: Los pings de 30s siguen siendo efímeros por Broadcast; la persistencia en `DriverLocations` continúa aislada al batch de 5 minutos del dispositivo. CORS ahora registra orígenes bloqueados y permite headers operativos de tablet/admin.
+- **Archivos tocados**:
+  - `apps/admin/pages/admin/tracking/index.tsx`
+  - `apps/admin/components/MapView.tsx`
+  - `apps/advertiser/components/bi/BiHeatmapInner.tsx`
+  - `apps/advertiser/components/MapView.tsx`
+  - `apps/api/src/modules/fleet/fleet.service.ts`
+  - `apps/api/src/modules/fleet/tracking.controller.ts`
+  - `apps/api/src/modules/advertisers/advertisers.service.ts`
+  - `apps/driver/hooks/useBackgroundTelemetry.ts`
+
+---
+
+## [v12.2.2] - 2026-05-25
+
+### 🔧 FIX / 🧱 ARCH: Unificación SaaS Advertiser + Erradicación de Mock Data
+- Se eliminaron fallbacks mock en facturación, reports y métricas del portal advertiser.
+- Se estandarizó el cálculo real de CPM, balanceRD e invoices desde backend (`getPortalData` + endpoint dedicado `GET /advertisers/:id/invoices`).
+- Se agregaron componentes reutilizables `SkeletonCard` y `ZeroState` para cargas y estados vacíos premium.
+- Se incorporó la arquitectura `11_advertiser_data_flow_v12.md` con diagrama Mermaid y mapa de endpoints.
+
+---
+
+## [v12.2.1] - 2026-05-24
+
+### 🔧 FIX / 🚀 FEATURE: Unificación y Consolidación del Portal del Anunciante (Advertiser V12)
+- **Cambio**: Centralización de la lógica de facturación, gestión de campañas y analíticas desde el dashboard general hacia el portal SaaS independiente `apps/tad-advertiser`. Implementación de UI/UX Premium con Glassmorphism en Tailwind 4 y eliminación de redundancias de código.
+- **Archivos tocados**:
+  - `apps/advertiser/pages/advertiser/dashboard.tsx`
+  - `apps/advertiser/pages/advertiser/campaigns/index.tsx`
+  - `apps/advertiser/pages/advertiser/requests.tsx`
+  - `apps/advertiser/pages/advertiser/billing.tsx`
+  - `apps/admin/pages/p/advertiser/[id].tsx`
+- **Nota Infraestructura**: Configuración de redirecciones seguras y validación del JWT/Supabase con RolesGuard para accesos cruzados de Administradores sin duplicar endpoints.
 
 ---
 

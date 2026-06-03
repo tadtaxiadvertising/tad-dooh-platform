@@ -15,11 +15,10 @@ function decodeTokenRole(token: string): string {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = request.cookies.get('sb-access-token')?.value;
-  const userRole = session ? decodeTokenRole(session) : 'GUEST';
 
   // 1. Root landing redirect
   if (pathname === '/') {
-    if (session && userRole === 'DRIVER') {
+    if (session && decodeTokenRole(session) === 'DRIVER') {
       return NextResponse.redirect(new URL('/driver/dashboard', request.url));
     }
     return NextResponse.redirect(new URL('/driver/login', request.url));
@@ -27,7 +26,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Auth routes
   if (pathname === '/driver/login' || pathname === '/login') {
-    if (session && userRole === 'DRIVER') {
+    if (session && decodeTokenRole(session) === 'DRIVER') {
       return NextResponse.redirect(new URL('/driver/dashboard', request.url));
     }
     return NextResponse.next();
@@ -43,20 +42,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 4. Public routes (bypass authentication)
-  const publicRoutes = ['/driver/onboarding', '/driver/register', '/check-in', '/p'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  // 5. Protected routes
+  const isPublicRoute = pathname === '/driver/onboarding' || pathname === '/driver/onboarding/';
 
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-
-  // 5. Protected routes — require DRIVER role
-  if (!session || userRole !== 'DRIVER') {
-    // Allow ADMIN access for cross-portal inspection
-    if (session && userRole === 'ADMIN') {
-      return NextResponse.next();
-    }
+  if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'DRIVER')) {
+    if (session && decodeTokenRole(session) === 'ADMIN') return NextResponse.next(); // Admin can access
     return NextResponse.redirect(new URL('/driver/login', request.url));
   }
 

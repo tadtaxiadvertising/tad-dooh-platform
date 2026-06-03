@@ -4,7 +4,6 @@ import { DeviceService } from '../device/device.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { TrackBatchDto } from './dto/track-batch.dto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class FleetService {
@@ -12,7 +11,7 @@ export class FleetService {
     private readonly prisma: PrismaService,
     private readonly deviceService: DeviceService,
     private readonly supabaseService: SupabaseService,
-  ) { }
+  ) {}
 
   /**
    * Return all devices in the fleet, determining online/offline status logically.
@@ -58,22 +57,9 @@ export class FleetService {
       }
 
       return {
+        ...d,
         id: d.id,
-        deviceId: d.deviceId,
         device_id: d.deviceId,
-        taxiNumber: d.taxiNumber,
-        lastSeen: d.lastSeen,
-        batteryLevel: d.batteryLevel,
-        playerStatus: d.playerStatus,
-        storageFree: d.storageFree,
-        storageUsed: d.storageUsed,
-        storageTotal: d.storageTotal,
-        appVersion: d.appVersion,
-        city: d.city,
-        fleet: d.fleet,
-        lastHeartbeat: d.lastHeartbeat,
-        lastPlayback: d.lastPlayback,
-        driver: d.driver,
         status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
         last_seen: d.lastSeen,
         battery_level: d.batteryLevel,
@@ -266,53 +252,28 @@ export class FleetService {
       playsMap.set(row.deviceId, row._count.id);
     }
 
-    // Get all devices with driver info using select to optimize memory
+    // Get all devices with driver + subscription info
     const devices = await this.prisma.device.findMany({
-      select: {
-        deviceId: true,
-        taxiNumber: true,
-        name: true,
-        city: true,
-        lastSeen: true,
+      include: {
         driver: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            status: true,
+          include: {
+            subscriptions: {
+              where: { status: 'ACTIVE' },
+              orderBy: { dueDate: 'desc' },
+              take: 1,
+            },
           },
         },
       },
     });
 
-    const driverIds = devices
-      .map((d) => d.driver?.id)
-      .filter((id): id is string => !!id);
-
-    const subscriptions = driverIds.length > 0
-      ? await this.prisma.subscription.findMany({
-        where: {
-          driverId: { in: driverIds },
-          status: 'ACTIVE',
-        },
-        orderBy: { dueDate: 'desc' },
-      })
-      : [];
-
-    const subMap = new Map<string, typeof subscriptions[0]>();
-    for (const sub of subscriptions) {
-      if (!subMap.has(sub.driverId)) {
-        subMap.set(sub.driverId, sub);
-      }
-    }
-
-    const thirtyMinMs = 30 * 60 * 1000;
+    const tenMinMs = 10 * 60 * 1000;
 
     const fleetFinance = devices.map((d) => {
-      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= thirtyMinMs;
+      const isOnline = d.lastSeen && now.getTime() - d.lastSeen.getTime() <= tenMinMs;
       const adsPlayed = playsMap.get(d.deviceId) || 0;
       const revenue = parseFloat((adsPlayed * RATE_PER_AD).toFixed(2));
-      const subscription = d.driver ? subMap.get(d.driver.id) || null : null;
+      const subscription = d.driver?.subscriptions?.[0] || null;
 
       return {
         device_id: d.deviceId,
@@ -361,21 +322,22 @@ export class FleetService {
   }
 
   async registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string) {
+    const crypto = require('crypto');
     let deviceId = providedDeviceId?.trim();
     if (!deviceId) {
       deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
     }
-
+    
     // 1. Verificar simultáneamente Dispositivo y Driver (por ID o por Teléfono generado)
     const phone = 'PH-' + deviceId;
-
+    
     const [existingDevice, existingDriver] = await Promise.all([
       this.prisma.device.findUnique({
         where: { deviceId },
         include: { driver: true }
       }),
       this.prisma.driver.findFirst({
-        where: {
+        where: { 
           OR: [
             { devices: { some: { deviceId } } },
             { phone }
@@ -392,28 +354,28 @@ export class FleetService {
         data: {
           taxiNumber: placa,
           status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-          driver: existingDevice.driver
+          driver: existingDevice.driver 
             ? {
-              update: {
-                fullName: nombreChofer,
-                licensePlate: placa,
-                taxiNumber: placa,
-                status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-              }
-            }
-            : {
-              // Si el dispositivo no tiene driver pero encontramos uno huérfano con este ID/Phone
-              connectOrCreate: {
-                where: { phone },
-                create: {
+                update: {
                   fullName: nombreChofer,
-                  phone: phone,
                   licensePlate: placa,
                   taxiNumber: placa,
                   status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                 }
               }
-            }
+            : {
+                // Si el dispositivo no tiene driver pero encontramos uno huérfano con este ID/Phone
+                connectOrCreate: {
+                  where: { phone },
+                  create: {
+                    fullName: nombreChofer,
+                    phone: phone,
+                    licensePlate: placa,
+                    taxiNumber: placa,
+                    status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+                  }
+                }
+              }
         }
       });
       return { success: true, device_id: updated.deviceId, driver_name: nombreChofer, linked: true };
@@ -459,8 +421,8 @@ export class FleetService {
       }
     });
 
-    return {
-      success: true,
+    return { 
+      success: true, 
       device_id: device.deviceId,
       driver_name: nombreChofer,
       new_registration: true
@@ -552,8 +514,8 @@ export class FleetService {
         where,
         include: {
           devices: {
-            // We also want to filter the devices shown per driver if needed, 
-            // but usually a driver has 1 device and if that device is assigned to the advertiser, we show the driver.
+             // We also want to filter the devices shown per driver if needed, 
+             // but usually a driver has 1 device and if that device is assigned to the advertiser, we show the driver.
             select: {
               deviceId: true,
               taxiNumber: true,
@@ -562,33 +524,20 @@ export class FleetService {
               lastSeen: true,
             },
           },
+          locations: {
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+          },
         },
       });
 
       if (drivers.length === 0) return [];
 
-      const driverIds = drivers.map(d => d.id);
-
-      // Query latest locations in a single batch query (distinct on driverId)
-      const lastLocations = await this.prisma.driverLocation.findMany({
-        where: {
-          driverId: { in: driverIds },
-        },
-        distinct: ['driverId'],
-        orderBy: [
-          { driverId: 'asc' },
-          { timestamp: 'desc' },
-        ],
-      });
-
-      const locMap = new Map<string, typeof lastLocations[0]>();
-      for (const loc of lastLocations) {
-        locMap.set(loc.driverId, loc);
-      }
-
       // 2. Contar puntos GPS de HOY (batch optimization)
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
+
+      const driverIds = drivers.map(d => d.id);
 
       // Defensive parallel queries — if either groupBy fails, degrade gracefully
       let countMap = new Map<string, { count: number; avgSpeed: number }>();
@@ -613,10 +562,10 @@ export class FleetService {
         ]);
 
         countMap = new Map(counts.map((c) => [
-          c.driverId,
-          {
-            count: (c._count as { id: number }).id,
-            avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0
+          c.driverId, 
+          { 
+            count: (c._count as { id: number }).id, 
+            avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0 
           }
         ]));
 
@@ -632,10 +581,10 @@ export class FleetService {
       const fiveMinMs = 5 * 60 * 1000;
 
       return drivers.map((d) => {
-        const lastLocation = locMap.get(d.id) || null;
+        const lastLocation = d.locations[0] || null;
         const todayStats = countMap.get(d.id) || { count: 0, avgSpeed: 0 };
         const totalPoints = totalMap.get(d.id) || 0;
-
+        
         // Determinar si está activo (señal en los últimos 5 minutos)
         const isActive = lastLocation
           ? (now.getTime() - new Date(lastLocation.timestamp).getTime()) < fiveMinMs
@@ -693,33 +642,33 @@ export class FleetService {
 
     // 1. Emitir vía Realtime para efectos inmediatos en dispositivos conectados
     await this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-      command: type,
-      params,
-      timestamp: new Date().toISOString()
+        command: type,
+        params,
+        timestamp: new Date().toISOString()
     }).catch(e => Logger.error(`[FLEET_C2] Realtime broadcast failed: ${e.message}`));
 
     // 2. Registrar en DeviceCommand para dispositivos offline/desconectados
     const activeDevices = await this.prisma.device.findMany({
-      where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
-      select: { id: true }
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        select: { id: true }
     });
 
     if (activeDevices.length > 0) {
-      await this.prisma.deviceCommand.createMany({
-        data: activeDevices.map(d => ({
-          deviceId: d.id,
-          commandType: type,
-          commandParams: JSON.stringify(params),
-          status: 'PENDING',
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days life
-        }))
-      });
+        await this.prisma.deviceCommand.createMany({
+            data: activeDevices.map(d => ({
+                deviceId: d.id,
+                commandType: type,
+                commandParams: JSON.stringify(params),
+                status: 'PENDING',
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days life
+            }))
+        });
     }
 
-    return {
-      success: true,
-      broadcastType: type,
-      deviceCount: activeDevices.length
+    return { 
+        success: true, 
+        broadcastType: type,
+        deviceCount: activeDevices.length 
     };
   }
 
@@ -757,7 +706,7 @@ export class FleetService {
    */
   async ingestTelemetryBatch(data: TrackBatchDto) {
     const logger = new Logger('FleetService');
-
+    
     // 1. Validar existencia del conductor
     const driver = await this.prisma.driver.findUnique({
       where: { id: data.driverId },
@@ -791,8 +740,8 @@ export class FleetService {
     });
 
     logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}]`);
-
-    // 4. Update Device 'lastSeen', position, and connectivity status
+    
+    // 4. Update Device 'lastSeen' and current position
     if (data.points.length > 0) {
       const lastPoint = data.points[data.points.length - 1];
       await this.prisma.device.update({
@@ -801,8 +750,6 @@ export class FleetService {
           lastSeen: new Date(),
           lastLat: lastPoint.lat,
           lastLng: lastPoint.lng,
-          isOnline: true,
-          connectivityStatus: 'ONLINE',
         }
       }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
     }

@@ -643,7 +643,6 @@ model ActiveAd {
   driver          Driver         @relation(fields: [driverId], references: [id])
   
   @@unique([driverId, campaignId])
-  @@index([driverId])
   @@map("active_ads")
 }
 
@@ -656,8 +655,6 @@ model Commission {
   createdAt       DateTime       @default(now()) @map("created_at")
   driver          Driver         @relation(fields: [driverId], references: [id])
 
-  @@index([driverId])
-  @@index([sourceType, status])
   @@map("commissions")
 }
 

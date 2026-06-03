@@ -279,7 +279,7 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
   }
 
   // 2. SEGUNDO PASO: Enviar el batch acumulado
-  const payload = gpsBatch;
+  const payload = [...gpsBatch];
   gpsBatch = [];
   localStorage.removeItem(STORAGE_KEY);
 
@@ -324,7 +324,7 @@ async function checkAndUpload(deviceId: string, force = false): Promise<void> {
     console.warn(`☁️ Error de sincronización API: `, errorMessage);
 
     // Rollback: Restaurar datos al inicio del array para reintentar después
-    gpsBatch = payload.concat(gpsBatch);
+    gpsBatch = [...payload, ...gpsBatch];
     persistBatch();
     emitState('OFFLINE', 'Modo Buffer: Red inestable.');
   }

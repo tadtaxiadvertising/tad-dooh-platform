@@ -82,7 +82,7 @@ export default function DriverLoginPage() {
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError('Teléfono o contraseña incorrectos.');
       } else if (err.response?.status === 402) {
-        setError('Suscripción Pendiente — Tu membresía necesita ser renovada. Contacta a soporte: 809-800-1234 o soporte@tad.do');
+        setError('Suscripción Pendiente. Contacta a soporte.');
       } else {
         setError('Error de conexión con el servidor. Intenta de nuevo.');
       }
@@ -121,12 +121,12 @@ export default function DriverLoginPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="login-phone" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Teléfono</label>
-                <input
-                  id="login-phone"
-                  type="tel"
+                <input 
+                  id="login-phone" 
+                  type="tel" 
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="809-555-5555"
+                  onChange={(e) => setPhone(e.target.value)} 
+                  placeholder="809-555-5555" 
                   required
                   className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/10 transition-all text-sm"
                 />
@@ -135,14 +135,14 @@ export default function DriverLoginPage() {
               <div>
                 <label htmlFor="login-password" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Contraseña</label>
                 <div className="relative">
-                  <input
-                    id="login-password"
+                  <input 
+                    id="login-password" 
                     type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
                     onKeyUp={handleKeyUp}
-                    placeholder="••••••••••••"
-                    required
+                    placeholder="••••••••••••" 
+                    required 
                     minLength={6}
                     className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/10 transition-all text-sm pr-12"
                   />
@@ -154,8 +154,8 @@ export default function DriverLoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
+            <button 
+              type="submit" 
               disabled={loading}
               className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-yellow-400/10 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm flex items-center justify-center gap-2 mt-2"
             >

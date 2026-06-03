@@ -317,121 +317,12 @@ export class FinanceService {
   /**
    * Processes a payment for a driver and records it in the database.
    */
-  /**
-   * Calculates the monthly payroll for a single driver.
-   */
-  async calculateSingleDriverPayroll(driverId: string, month: number, year: number) {
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        licensePlate: true,
-        taxiNumber: true,
-        subscriptionPaid: true,
-        subscriptionEnd: true,
-        devices: {
-          select: {
-            deviceId: true,
-            city: true,
-            taxiNumber: true,
-          }
-        },
-        referrals: { select: { id: true } },
-        referredAdvertisers: { select: { id: true } }
-      }
-    });
-
-    if (!driver) {
-      return null;
-    }
-
-    const periodStart = new Date(year, month - 1, 1);
-    const periodEnd = new Date(year, month, 0, 23, 59, 59);
-
-    const gpsPointsCount = await this.prisma.driverLocation.count({
-      where: {
-        driverId,
-        timestamp: { gte: periodStart, lte: periodEnd }
-      }
-    });
-
-    const deviceIds = driver.devices.map(dev => dev.deviceId);
-
-    const playbackEvents = deviceIds.length > 0
-      ? await this.prisma.playbackEvent.findMany({
-          where: {
-            deviceId: { in: deviceIds },
-            timestamp: { gte: periodStart, lte: periodEnd },
-            eventType: 'play_confirm'
-          },
-          select: { videoId: true }
-        })
-      : [];
-
-    const playedCampaigns = new Set<string>();
-    if (playbackEvents.length > 0) {
-      const videoIds = Array.from(new Set(playbackEvents.map(p => p.videoId)));
-      const mediaToCampaignRaw = await this.prisma.media.findMany({
-        where: { id: { in: videoIds }, campaign_id: { not: null } },
-        select: { id: true, campaign_id: true }
-      });
-      const mediaToCampaignMap = new Map(mediaToCampaignRaw.map(m => [m.id, m.campaign_id]));
-      playbackEvents.forEach(evt => {
-        const campaignId = mediaToCampaignMap.get(evt.videoId);
-        if (campaignId) {
-          playedCampaigns.add(campaignId);
-        }
-      });
-    }
-
-    const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
-    const activeAdsCount = isSubPaid ? playedCampaigns.size : 0;
-    const baseCommission = 0;
-
-    const referrals = driver.referrals ? driver.referrals.length : 0;
-    const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
-
-    const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
-    const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
-
-    const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-    const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
-
-    const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
-
-    const paymentRecord = await this.prisma.payrollPayment.findUnique({
-      where: { driverId_month_year: { driverId, month, year } }
-    });
-
-    return {
-      driverId: driver.id,
-      driverName: driver.fullName || 'TAD DRIVER',
-      driverPhone: driver.phone || '',
-      taxiNumber: actualTaxiNumber,
-      activeAds: paymentRecord?.status === 'PAID' ? paymentRecord.activeAds : activeAdsCount,
-      adIncome: adTransmissionIncome,
-      baseCommission,
-      gpsPoints: paymentRecord?.status === 'PAID' ? paymentRecord.gpsPoints : gpsPointsCount,
-      referralBonus: driverReferralBonus,
-      advertiserReferralBonus,
-      totalAmount: paymentRecord?.status === 'PAID' ? paymentRecord.amount : totalAmount,
-      currency: 'DOP',
-      status: paymentRecord?.status || 'PENDING',
-      paidAt: paymentRecord?.paidAt,
-      reference: paymentRecord?.referenceNum
-    };
-  }
-
-  /**
-   * Processes a payment for a driver and records it in the database.
-   */
   async processPayment(driverId: string, month: number, year: number, reference: string) {
     this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
 
-    // Re-calculate to get current amount due and metrics (ONLY for this driver)
-    const driverEntry = await this.calculateSingleDriverPayroll(driverId, month, year);
+    // Re-calculate to get current amount due and metrics
+    const payrollData = await this.calculateMonthlyPayroll(month, year);
+    const driverEntry = payrollData.find(p => p.driverId === driverId);
 
     if (!driverEntry) {
       throw new Error('Driver not found for payroll calculation');
@@ -514,7 +405,12 @@ export class FinanceService {
       });
 
       // 2. Pricing model: RD$1,500 per 30-second block per media asset
-      const monthlyRevenue = this.calculateMonthlyBaseRevenue(campaign.media);
+      let monthlyRevenue = 0;
+      campaign.media.forEach(media => {
+        const duration = (media as any).durationSeconds || 30;
+        const blocks = Math.ceil(duration / 30);
+        monthlyRevenue += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+      });
 
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -553,7 +449,12 @@ export class FinanceService {
     });
 
     // RD$1,500 per 30-second block per media asset
-    const monthlyBase = this.calculateMonthlyBaseRevenue(campaign.media);
+    let monthlyBase = 0;
+    campaign.media.forEach(m => {
+      const dur = m.durationSeconds || 30;
+      const blocks = Math.ceil(dur / 30);
+      monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+    });
 
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
@@ -607,7 +508,12 @@ export class FinanceService {
       where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
     });
 
-    const monthlyBase = this.calculateMonthlyBaseRevenue(campaign.media);
+    let monthlyBase = 0;
+    campaign.media.forEach(m => {
+      const dur = m.durationSeconds || 30;
+      const blocks = Math.ceil(dur / 30);
+      monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+    });
 
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
@@ -625,8 +531,7 @@ export class FinanceService {
     campaign.media.forEach(m => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
-      const cost = this.calculateSingleMediaMonthlyCost(m.durationSeconds);
-      csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${cost}\n`;
+      csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}\n`;
     });
 
     return csv;
@@ -641,15 +546,9 @@ export class FinanceService {
     return csv;
   }
 
-  private calculateSingleMediaMonthlyCost(durationSeconds?: number | null): number {
-    const dur = durationSeconds || 30;
-    const blocks = Math.ceil(dur / 30);
-    return blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
-  }
-
-  private calculateMonthlyBaseRevenue(media: Array<{ durationSeconds?: number | null }>): number {
-    return media.reduce((sum, m) => sum + this.calculateSingleMediaMonthlyCost(m.durationSeconds), 0);
-  }
+  private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
+  private readonly RECURRING_SUB_BASE = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+  private readonly REFERRAL_RETENTION_RATE = BUSINESS_RULES.REFERRAL_RETENTION_RATE;
 
   /**
    * FINANCIAL INTELLIGENCE: Registers a new transaction with automatic tax & referral logic.
@@ -670,7 +569,7 @@ export class FinanceService {
 
     // Apply ITBIS 18% automatically for relevant categories
     if (data.category === 'SUSCRIPCION' || data.category === 'PUBLICIDAD') {
-      taxAmount = (data.amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
+      taxAmount = (data.amount / (1 + this.ITBIS_RATE)) * this.ITBIS_RATE;
       netAmount = data.amount - taxAmount;
     }
 
@@ -683,7 +582,7 @@ export class FinanceService {
 
       if (driver?.referredBy) {
         this.logger.log(`Referral detected for driver ${data.entityId}. Applying retention logic.`);
-        const referralBonus = netAmount * BUSINESS_RULES.REFERRAL_RETENTION_RATE;
+        const referralBonus = netAmount * this.REFERRAL_RETENTION_RATE;
         netAmount -= referralBonus; // Retain bonus for the referrer
         
         // Bonus transaction for the referrer could be recorded here as OUTGOING or a PENDING balance
@@ -716,7 +615,7 @@ export class FinanceService {
       where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true }
     });
 
-    const mrr = activeSubscribedDrivers * BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+    const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
 
     // 2. Campaign Revenue Calculation (Projected)
     const activeCampaigns = await this.prisma.campaign.findMany({
@@ -726,7 +625,12 @@ export class FinanceService {
 
     let campaignRevenue = 0;
     activeCampaigns.forEach(campaign => {
-      const monthlyBase = this.calculateMonthlyBaseRevenue(campaign.media);
+      let monthlyBase = 0;
+      campaign.media.forEach(m => {
+        const dur = m.durationSeconds || 30;
+        const blocks = Math.ceil(dur / 30);
+        monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+      });
       
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
       const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;

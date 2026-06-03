@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
-import { 
-  Scale, 
-  Search, 
-  AlertTriangle, 
-  CheckCircle2, 
-  DollarSign, 
-  BarChart3, 
-  ArrowUpRight, 
-  ArrowDownRight, 
+import type { GetServerSideProps } from 'next';
+import {
+  Scale,
+  Search,
+  AlertTriangle,
+  CheckCircle2,
+  DollarSign,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
   Calendar,
   Filter,
   Download,
@@ -61,6 +62,8 @@ function ReconStat({ label, value, icon: Icon, trend, trendType, loading }: any)
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+
 export default function ReconciliationPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -108,7 +111,7 @@ export default function ReconciliationPage() {
     }
   };
 
-  const filteredReports = reports.filter(r => 
+  const filteredReports = reports.filter(r =>
     r.driver?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
     r.deviceId?.toLowerCase().includes(search.toLowerCase()) ||
     r.discrepancyType?.toLowerCase().includes(search.toLowerCase())
@@ -138,7 +141,7 @@ export default function ReconciliationPage() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-col gap-2">
             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Periodo Fiscal</span>
-            <select 
+            <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
               className="px-6 py-3.5 bg-zinc-900/60 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white outline-none focus:border-tad-yellow/40 transition-all hover:bg-zinc-800/60 cursor-pointer"
@@ -151,7 +154,7 @@ export default function ReconciliationPage() {
 
           <div className="flex flex-col gap-2">
             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Acción del Sistema</span>
-            <button 
+            <button
               onClick={handleGenerate}
               disabled={generating}
               className="flex items-center gap-3 px-8 py-3.5 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_30px_rgba(250,204,21,0.2)] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
@@ -165,28 +168,28 @@ export default function ReconciliationPage() {
 
       {/* ── KPI GRID ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <ReconStat 
-          label="Ingreso Proyectado" 
-          value={`RD$ ${(kpis?.projectedRevenue || 0).toLocaleString()}`} 
-          icon={DollarSign} 
-          trend="+12.5%" 
-          trendType="up" 
+        <ReconStat
+          label="Ingreso Proyectado"
+          value={`RD$ ${(kpis?.projectedRevenue || 0).toLocaleString()}`}
+          icon={DollarSign}
+          trend="+12.5%"
+          trendType="up"
           loading={loading}
         />
-        <ReconStat 
-          label="Anomalías Detectadas" 
-          value={kpis?.discrepancyCount || 0} 
-          icon={AlertTriangle} 
-          trend={kpis?.discrepancyCount > 0 ? "REQUIERE ACCIÓN" : "SISTEMA SANO"} 
-          trendType={kpis?.discrepancyCount > 0 ? "down" : "up"} 
+        <ReconStat
+          label="Anomalías Detectadas"
+          value={kpis?.discrepancyCount || 0}
+          icon={AlertTriangle}
+          trend={kpis?.discrepancyCount > 0 ? "REQUIERE ACCIÓN" : "SISTEMA SANO"}
+          trendType={kpis?.discrepancyCount > 0 ? "down" : "up"}
           loading={loading}
         />
-        <ReconStat 
-          label="Índice de Certificación" 
-          value={`${(kpis?.deliveryRateAvg || 0).toFixed(1)}%`} 
-          icon={ShieldCheck} 
-          trend="+0.5%" 
-          trendType="up" 
+        <ReconStat
+          label="Índice de Certificación"
+          value={`${(kpis?.deliveryRateAvg || 0).toFixed(1)}%`}
+          icon={ShieldCheck}
+          trend="+0.5%"
+          trendType="up"
           loading={loading}
         />
       </div>
@@ -196,8 +199,8 @@ export default function ReconciliationPage() {
         <div className="p-10 border-b border-white/[0.05] flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-zinc-900/20">
           <div className="relative group flex-1 max-w-2xl">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="BUSCAR POR SOCIO, UNIDAD O TIPO DE ERROR..."
@@ -274,8 +277,8 @@ export default function ReconciliationPage() {
                       <div className="flex flex-col gap-1.5">
                         <div className={clsx(
                           "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
-                          r.hasDiscrepancy 
-                            ? "bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.1)]" 
+                          r.hasDiscrepancy
+                            ? "bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.1)]"
                             : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                         )}>
                           {r.hasDiscrepancy ? 'Anomalía de Red' : 'Sincronizado'}
@@ -286,7 +289,7 @@ export default function ReconciliationPage() {
                       </div>
                     </td>
                     <td className="px-10 py-8 text-right">
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedDevice({ id: r.deviceId, name: r.driver?.fullName || 'Socio Desconocido' });
                           setDrillDownOpen(true);
@@ -320,12 +323,12 @@ export default function ReconciliationPage() {
       {/* ── FOOTER PROTOCOL ────────────────────────────────────────────────── */}
       <div className="mt-16 p-12 bg-zinc-900/60 border border-t-4 border-t-tad-yellow rounded-[48px] shadow-2xl relative overflow-hidden group">
         <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-tad-yellow/5 blur-[100px] rounded-full group-hover:bg-tad-yellow/10 transition-all duration-700" />
-        
+
         <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
           <div className="w-24 h-24 shrink-0 bg-tad-yellow/10 rounded-[32px] flex items-center justify-center border border-tad-yellow/20 shadow-inner">
             <Scale className="w-10 h-10 text-tad-yellow" />
           </div>
-          
+
           <div className="flex-1 space-y-4 text-center lg:text-left">
             <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Protocolo de Cierre e Integridad</h3>
             <p className="text-zinc-500 text-[11px] font-bold uppercase tracking-[0.15em] leading-relaxed max-w-3xl">
@@ -342,7 +345,7 @@ export default function ReconciliationPage() {
         </div>
       </div>
 
-      <AuditDrillDownModal 
+      <AuditDrillDownModal
         isOpen={drillDownOpen}
         onClose={() => setDrillDownOpen(false)}
         deviceId={selectedDevice.id}

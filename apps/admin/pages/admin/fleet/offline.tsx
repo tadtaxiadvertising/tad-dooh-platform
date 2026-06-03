@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { getOfflineDevices } from '@tad/services';
 import { MonitorOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import type { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function OfflineFleetPage() {
   const [devices, setDevices] = useState<{ device_id: string; last_seen?: string }[]>([]);
@@ -44,7 +47,7 @@ export default function OfflineFleetPage() {
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Detección de fallo de pulso (heartbeat) de enlace</p>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-white/5">
             <thead>

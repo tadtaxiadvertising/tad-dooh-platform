@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { 
-  Users, 
-  Award, 
-  DollarSign, 
-  TrendingUp, 
+import type { GetServerSideProps } from 'next';
+import {
+  Users,
+  Award,
+  DollarSign,
+  TrendingUp,
   Search,
   CheckCircle2,
   AlertTriangle,
@@ -16,6 +17,8 @@ import { getReferralStats, getReferralNetwork } from '@tad/services';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { AntigravityButton } from '@tad/ui';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function ReferralsDashboard() {
   const [loading, setLoading] = useState(true);
@@ -44,7 +47,7 @@ export default function ReferralsDashboard() {
     fetchData();
   }, []);
 
-  const filteredNetwork = network.filter(n => 
+  const filteredNetwork = network.filter(n =>
     n.fullName?.toLowerCase().includes(search.toLowerCase()) ||
     n.referredByDriver?.fullName?.toLowerCase().includes(search.toLowerCase())
   );
@@ -71,7 +74,7 @@ export default function ReferralsDashboard() {
         </div>
 
         <div className="flex gap-3">
-          <AntigravityButton 
+          <AntigravityButton
             onAsyncClick={fetchData}
             variant="secondary"
             actionName="refresh_referrals"
@@ -83,22 +86,22 @@ export default function ReferralsDashboard() {
 
       {/* KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <StatCard 
-          label="Total Referidos" 
-          value={stats?.totalReferrals || 0} 
-          icon={Users} 
-          highlight={true} 
+        <StatCard
+          label="Total Referidos"
+          value={stats?.totalReferrals || 0}
+          icon={Users}
+          highlight={true}
         />
-        <StatCard 
-          label="Comisiones Pendientes" 
-          value={`RD$ ${(stats?.pendingCommissions || 0).toLocaleString()}`} 
-          icon={DollarSign} 
+        <StatCard
+          label="Comisiones Pendientes"
+          value={`RD$ ${(stats?.pendingCommissions || 0).toLocaleString()}`}
+          icon={DollarSign}
           alert={(stats?.pendingCommissions || 0) > 10000}
         />
-        <StatCard 
-          label="Reclutadores Activos" 
-          value={stats?.topRecruiters?.length || 0} 
-          icon={TrendingUp} 
+        <StatCard
+          label="Reclutadores Activos"
+          value={stats?.topRecruiters?.length || 0}
+          icon={TrendingUp}
         />
       </div>
 
@@ -110,7 +113,7 @@ export default function ReferralsDashboard() {
               <Award className="w-4 h-4 text-tad-yellow" />
               Top Reclutadores
             </h3>
-            
+
             <div className="space-y-4">
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
@@ -125,7 +128,7 @@ export default function ReferralsDashboard() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-white tracking-tight">{recruiter.fullName}</p>
-                        <p className="text-[9px] text-zinc-500 uppercase font-mono">{recruiter.referralCode?.substring(0,8)}</p>
+                        <p className="text-[9px] text-zinc-500 uppercase font-mono">{recruiter.referralCode?.substring(0, 8)}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -149,8 +152,8 @@ export default function ReferralsDashboard() {
             <div className="p-8 border-b border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="relative group flex-1 max-w-xl">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-tad-yellow transition-all" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="BUSCAR SOCIO O RECLUTADOR..."
@@ -182,7 +185,7 @@ export default function ReferralsDashboard() {
                       <tr key={node.id} className="hover:bg-white/[0.01] group transition-all">
                         <td className="px-8 py-6">
                           <p className="text-xs font-black text-white uppercase tracking-tight italic">{node.fullName || 'Desconocido'}</p>
-                          <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">ID: {node.id.substring(0,8)}</p>
+                          <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">ID: {node.id.substring(0, 8)}</p>
                         </td>
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-2">
@@ -199,8 +202,8 @@ export default function ReferralsDashboard() {
                         <td className="px-8 py-6">
                           <span className={clsx(
                             "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit inline-flex items-center gap-1",
-                            node.status === 'OPERATIVO' || node.status === 'ACTIVE' 
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            node.status === 'OPERATIVO' || node.status === 'ACTIVE'
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-rose-500/10 text-rose-500 border-rose-500/20"
                           )}>
                             {node.status === 'OPERATIVO' || node.status === 'ACTIVE' ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
@@ -241,9 +244,9 @@ function StatCard({ label, value, icon: Icon, highlight, alert }: any) {
       <div className="flex items-center gap-3 mb-6">
         <div className={clsx(
           "p-3 rounded-xl border transition-colors",
-          highlight ? "bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow" : 
-          alert ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
-          "bg-white/5 border-white/5 text-zinc-500 group-hover:text-white"
+          highlight ? "bg-tad-yellow/10 border-tad-yellow/20 text-tad-yellow" :
+            alert ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
+              "bg-white/5 border-white/5 text-zinc-500 group-hover:text-white"
         )}>
           <Icon className="w-5 h-5" />
         </div>

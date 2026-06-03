@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
 import { getMyProfile, updateMyProfile } from '@tad/services/api';
+
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 import { User, Shield, Key, Mail, Save, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -12,7 +16,7 @@ export default function ProfilePage() {
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  
+
   const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -49,7 +53,7 @@ export default function ProfilePage() {
       toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-    
+
     setIsSavingPassword(true);
     try {
       await updateMyProfile({ password: newPassword, currentPassword });
@@ -94,7 +98,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
+
           {/* PROFILE SUMMARY SIDEBAR */}
           <div className="col-span-1">
             <div className="rounded-xl border border-white/10 bg-[#0F0F13]/80 p-6 backdrop-blur-xl shadow-2xl flex flex-col items-center">
@@ -107,7 +111,7 @@ export default function ProfilePage() {
                 {profile?.name || profile?.fullName || profile?.contactName || 'Usuario'}
               </h2>
               <p className="text-zinc-400 text-sm mb-4">{profile?.email}</p>
-              
+
               <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-tad-brand" />
                 <span className="text-xs font-medium text-zinc-300 uppercase tracking-wider">
@@ -115,7 +119,7 @@ export default function ProfilePage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3">
               <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-blue-200/70 leading-relaxed">
@@ -126,14 +130,14 @@ export default function ProfilePage() {
 
           {/* MAIN FORMS */}
           <div className="col-span-1 md:col-span-2 space-y-6">
-            
+
             {/* PERSONAL INFO FORM */}
             <form onSubmit={handleUpdateProfile} className="rounded-xl border border-white/10 bg-[#0F0F13]/80 p-6 backdrop-blur-xl">
               <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2 border-b border-white/5 pb-4">
                 <User className="w-5 h-5 text-tad-brand" />
                 Información Personal
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-1.5">Nombre Completo</label>
@@ -145,7 +149,7 @@ export default function ProfilePage() {
                     className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-tad-brand focus:outline-none focus:ring-1 focus:ring-tad-brand/50 transition-colors"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-1.5 flex items-center gap-2">
                     <Mail className="w-4 h-4" /> Correo Electrónico
@@ -179,7 +183,7 @@ export default function ProfilePage() {
                 <Key className="w-5 h-5 text-tad-brand" />
                 Cambiar Contraseña
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-1.5">Contraseña Actual</label>
@@ -192,7 +196,7 @@ export default function ProfilePage() {
                     className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-tad-brand focus:outline-none focus:ring-1 focus:ring-tad-brand/50 transition-colors"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1.5">Nueva Contraseña</label>

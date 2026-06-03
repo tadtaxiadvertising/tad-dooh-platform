@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import type { GetServerSideProps } from 'next';
 import {
   DollarSign,
   Car,
@@ -90,8 +91,8 @@ function KpiCard({
     status === 'optimum'
       ? 'bg-emerald-500'
       : status === 'warning'
-      ? 'bg-yellow-400'
-      : 'bg-rose-500';
+        ? 'bg-yellow-400'
+        : 'bg-rose-500';
 
   return (
     <div
@@ -232,6 +233,8 @@ function StatBar({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+
 export default function BIDashboard() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KpiData | null>(null);
@@ -277,8 +280,8 @@ export default function BIDashboard() {
       : kpis?.onlineDevices !== undefined &&
         kpis?.totalDevices !== undefined &&
         kpis.onlineDevices < kpis.totalDevices * 0.8
-      ? 'warning'
-      : 'optimum';
+        ? 'warning'
+        : 'optimum';
 
   const churnPct = ((kpis?.churnRate ?? 0) * 100).toFixed(1);
 
@@ -540,8 +543,8 @@ export default function BIDashboard() {
                   (kpis?.deliveryRateAvg ?? 0) >= 90
                     ? 'linear-gradient(90deg, #10b981, #22c55e)'
                     : (kpis?.deliveryRateAvg ?? 0) >= 70
-                    ? 'linear-gradient(90deg, #facc15, #fbbf24)'
-                    : 'linear-gradient(90deg, #ef4444, #f43f5e)',
+                      ? 'linear-gradient(90deg, #facc15, #fbbf24)'
+                      : 'linear-gradient(90deg, #ef4444, #f43f5e)',
               }}
             />
           </div>

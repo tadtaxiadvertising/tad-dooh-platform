@@ -1,7 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react';
+import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import api from '@tad/services';
+
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 import {
   Car, Camera, DollarSign, ShieldCheck, CheckCircle2, ArrowRight,
   UploadCloud, Zap, Phone, Shield, Eye, EyeOff, MapPin, ChevronLeft,
@@ -37,7 +41,7 @@ export default function DriverOnboarding() {
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!fullName || !phone || !cedula || !taxiPlate || !password) {
       setError('Todos los campos son obligatorios');
       return;
@@ -47,7 +51,7 @@ export default function DriverOnboarding() {
       setError('Debes aceptar ambos acuerdos para continuar');
       return;
     }
-    
+
     if (password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
@@ -237,41 +241,41 @@ export default function DriverOnboarding() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2">
-                   <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
-                      <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Incluye <b>Bono de Disponibilidad</b> (RD$500) por telemetría.
-                      </p>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-purple-400 shrink-0" />
-                      <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Potencial ilimitado por <b>Referidos</b> de Anunciantes.
-                      </p>
-                   </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-tad-yellow shrink-0" />
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      Incluye <b>Bono de Disponibilidad</b> (RD$500) por telemetría.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      Potencial ilimitado por <b>Referidos</b> de Anunciantes.
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Business Table info */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                    <span>Concepto</span>
-                    <span>Monto</span>
-                 </div>
-                 <div className="space-y-1.5">
-                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
-                       <span>Pago por Campaña</span>
-                       <span>RD$500 /u</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
-                       <span>Disponibilidad (100 GPS pts)</span>
-                       <span>RD$500</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
-                       <span>Starter Kit / Membresía Anual</span>
-                       <span>RD$6,000</span>
-                    </div>
-                 </div>
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
+                  <span>Concepto</span>
+                  <span>Monto</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
+                    <span>Pago por Campaña</span>
+                    <span>RD$500 /u</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-bold text-zinc-300 uppercase">
+                    <span>Disponibilidad (100 GPS pts)</span>
+                    <span>RD$500</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase">
+                    <span>Starter Kit / Membresía Anual</span>
+                    <span>RD$6,000</span>
+                  </div>
+                </div>
               </div>
             </div>
 

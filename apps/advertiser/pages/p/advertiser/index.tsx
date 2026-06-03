@@ -6,10 +6,13 @@ import { DirectUpload } from '../../../components/DirectUpload';
 import { AntigravityButton } from '@tad/ui';
 import { PlayCircle, Eye, BarChart3, Clock, AlertCircle } from 'lucide-react';
 import API from "@tad/services";
+import type { GetServerSideProps } from 'next';
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 // Leaflet requires window, we must dynamically import
 const MapWithHeatmap = dynamic(
-  () => import('../../../components/map/AdvertiserMap'), 
+  () => import('../../../components/map/AdvertiserMap'),
   { ssr: false, loading: () => <div className="h-96 w-full animate-pulse bg-zinc-900 rounded-2xl border border-white/10" /> }
 );
 
@@ -19,7 +22,7 @@ export default function AdvertiserDashboard() {
   const [heatmapPoints, setHeatmapPoints] = useState<[number, number, number][]>([]);
 
   // Using a mock or logged in advertiser ID. For now test id:
-  const ADVERTISER_ID = "test-advertiser-id"; 
+  const ADVERTISER_ID = "test-advertiser-id";
 
   useEffect(() => {
     // Attempt to load portal data dynamically
@@ -28,14 +31,14 @@ export default function AdvertiserDashboard() {
         // Fallback to fetch from new endpoint or mock
         // Since we didn't implement the full auth context yet, let's use API if possible, otherwise mock it.
         const res = await API.get(`/advertisers/${ADVERTISER_ID}/portal`).catch(() => null);
-        
+
         if (res && res.data) {
           setData(res.data);
         } else {
           // MOCK DATA PARA FINES ESCTRUCTURALES (si no existe BD conectada actual)
           setData({
             brand: { name: 'Empresa Demo S.R.L', category: 'Retail' },
-            stats: { 
+            stats: {
               promocionesContratadas: 150000,
               totalImpressions: 124500,
               totalCompletions: 118000,
@@ -63,7 +66,7 @@ export default function AdvertiserDashboard() {
           [18.4633, -69.9388, 0.9],
           [18.4678, -69.9248, 0.5],
         ]);
-        
+
       } catch (err) {
         toast.error("Error cargando el dashboard");
       } finally {
@@ -144,9 +147,9 @@ export default function AdvertiserDashboard() {
             <p className="text-sm text-zinc-400 font-medium tracking-wide uppercase">Visitas Estimadas Cumplidas</p>
             <h3 className="text-4xl font-bold text-white mt-2">{stats.totalImpressions.toLocaleString()}</h3>
             <div className="w-full bg-white/10 h-1 mt-4 rounded-full overflow-hidden">
-              <div 
-                className="bg-emerald-500 h-full rounded-full" 
-                style={{ width: `${Math.min((stats.totalImpressions / Math.max(1, stats.promocionesContratadas)) * 100, 100)}%` }} 
+              <div
+                className="bg-emerald-500 h-full rounded-full"
+                style={{ width: `${Math.min((stats.totalImpressions / Math.max(1, stats.promocionesContratadas)) * 100, 100)}%` }}
               />
             </div>
           </div>
@@ -171,7 +174,7 @@ export default function AdvertiserDashboard() {
 
         {/* MAP & DIRECT UPLOAD */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           <div className="col-span-1 lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-medium text-white">Densidad Geográfica de Emisión</h3>
@@ -211,7 +214,7 @@ export default function AdvertiserDashboard() {
                     <td className="px-6 py-4">
                       <p className="text-white font-medium">{camp.name}</p>
                       <p className="text-xs flex items-center mt-1">
-                        <Clock size={12} className="mr-1 inline text-[#FFD400]" /> 
+                        <Clock size={12} className="mr-1 inline text-[#FFD400]" />
                         {new Date(camp.start).toLocaleDateString()} - {new Date(camp.end).toLocaleDateString()}
                       </p>
                     </td>
@@ -222,11 +225,11 @@ export default function AdvertiserDashboard() {
                       {camp.impressions.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {camp.promocionesContratadas > 0 ? 
+                      {camp.promocionesContratadas > 0 ?
                         <span className="text-emerald-400 font-medium">
                           {((camp.impressions / camp.promocionesContratadas) * 100).toFixed(1)}%
-                        </span> 
-                      : '-'}
+                        </span>
+                        : '-'}
                     </td>
                   </tr>
                 ))}

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import type { GetServerSideProps } from 'next';
 import { createCampaign } from '@tad/services';
 import { ArrowLeft, Save, Megaphone, Activity, Info, Zap, Calendar, Target, ShieldCheck, RefreshCcw, Globe, Radio, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -72,27 +75,27 @@ export default function NewCampaignPage() {
     <div className="min-h-screen pb-12 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 pt-6">
       {/* Background Decor */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
-         <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-tad-yellow/[0.04] blur-[150px] rounded-full animate-pulse-soft" />
+        <div className="absolute bottom-[0%] right-[-5%] w-[40%] h-[40%] bg-white/[0.01] blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Navigation Nexus */}
         <div className="flex items-center justify-between">
           <Link href="/campaigns" className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all flex items-center gap-2 shadow-sm">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">Cerrar Terminal</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">Cerrar Terminal</span>
           </Link>
           <div className="flex items-center gap-3 bg-gray-800/40 backdrop-blur-xl p-1.5 rounded-xl border border-gray-700/50 pl-4 pr-1.5 shadow-sm">
-               <div className="w-2 h-2 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pr-3">Injection Protocol 4.2</p>
+            <div className="w-2 h-2 rounded-full bg-tad-yellow shadow-[0_0_8px_rgba(255,212,0,0.8)] animate-pulse" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pr-3">Injection Protocol 4.2</p>
           </div>
         </div>
 
         {/* Form Core Terminal */}
         <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg relative animate-in slide-in-from-bottom-10 duration-1000 fill-mode-both">
           <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/[0.03] blur-[80px] -z-10" />
-          
+
           <div className="p-8 border-b border-gray-700/50 bg-gray-900/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-tad-yellow rounded-2xl flex items-center justify-center shadow-md shrink-0">
@@ -106,11 +109,11 @@ export default function NewCampaignPage() {
               </div>
             </div>
             <div className="flex flex-col items-center md:items-end gap-1 text-right">
-               <ShieldCheck className="w-6 h-6 text-gray-500" />
-               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SECURED_API</p>
+              <ShieldCheck className="w-6 h-6 text-gray-500" />
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SECURED_API</p>
             </div>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-8">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
               <div className="space-y-6">
@@ -118,11 +121,11 @@ export default function NewCampaignPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Nombre del Proyecto</label>
                   <div className="relative">
                     <Radio className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <input 
+                    <input
                       required
-                      type="text" 
+                      type="text"
                       value={form.name}
-                      onChange={e => setForm({...form, name: e.target.value.toUpperCase()})}
+                      onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 uppercase shadow-sm"
                       placeholder="EJ. CAMPAÑA_VERANO_V4"
                     />
@@ -133,15 +136,15 @@ export default function NewCampaignPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Marca / Anunciante Principal</label>
                   <div className="relative">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <select 
+                    <select
                       required
                       value={form.advertiser_id}
                       onChange={e => {
                         const selected = advertisers.find(a => a.id === e.target.value);
                         setForm({
-                           ...form, 
-                           advertiser_id: e.target.value,
-                           advertiser: selected?.companyName || '' 
+                          ...form,
+                          advertiser_id: e.target.value,
+                          advertiser: selected?.companyName || ''
                         });
                       }}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all appearance-none shadow-sm"
@@ -158,11 +161,11 @@ export default function NewCampaignPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Meta de Impactos</label>
                   <div className="relative">
                     <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <input 
+                    <input
                       required
-                      type="number" 
+                      type="number"
                       value={form.target_impressions}
-                      onChange={e => setForm({...form, target_impressions: parseInt(e.target.value)})}
+                      onChange={e => setForm({ ...form, target_impressions: parseInt(e.target.value) })}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-600 shadow-sm"
                       placeholder="EJ. 500000"
                     />
@@ -173,10 +176,10 @@ export default function NewCampaignPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Categoría de Segmentación</label>
                   <div className="relative">
                     <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <select 
+                    <select
                       title="Categoría de Segmentación"
                       value={form.category}
-                      onChange={e => setForm({...form, category: e.target.value})}
+                      onChange={e => setForm({ ...form, category: e.target.value })}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all shadow-sm appearance-none"
                     >
                       <option value="General">GENERAL</option>
@@ -193,10 +196,10 @@ export default function NewCampaignPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2">Ciudad de Destino</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all" />
-                    <select 
+                    <select
                       title="Ciudad de Destino"
                       value={form.target_city}
-                      onChange={e => setForm({...form, target_city: e.target.value})}
+                      onChange={e => setForm({ ...form, target_city: e.target.value })}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all shadow-sm appearance-none"
                     >
                       <option value="Global">GLOBAL_NET (Toda la red)</option>
@@ -212,7 +215,7 @@ export default function NewCampaignPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="group/field relative">
-                    <label 
+                    <label
                       htmlFor="start_date"
                       className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2"
                     >
@@ -220,19 +223,19 @@ export default function NewCampaignPage() {
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
-                      <input 
+                      <input
                         id="start_date"
                         required
-                        type="date" 
+                        type="date"
                         value={form.start_date}
-                        onChange={e => setForm({...form, start_date: e.target.value})}
-                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
+                        onChange={e => setForm({ ...form, start_date: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm"
                         placeholder="AAAA-MM-DD"
                       />
                     </div>
                   </div>
                   <div className="group/field relative">
-                    <label 
+                    <label
                       htmlFor="end_date"
                       className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-2"
                     >
@@ -240,13 +243,13 @@ export default function NewCampaignPage() {
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within/field:text-tad-yellow transition-all z-10" />
-                      <input 
+                      <input
                         id="end_date"
                         required
-                        type="date" 
+                        type="date"
                         value={form.end_date}
-                        onChange={e => setForm({...form, end_date: e.target.value})}
-                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm" 
+                        onChange={e => setForm({ ...form, end_date: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all [color-scheme:dark] shadow-sm"
                         placeholder="AAAA-MM-DD"
                       />
                     </div>
@@ -267,12 +270,12 @@ export default function NewCampaignPage() {
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
+                    <input
                       id="active_toggle"
-                      type="checkbox" 
+                      type="checkbox"
                       checked={form.active}
-                      onChange={e => setForm({...form, active: e.target.checked})}
-                      className="sr-only peer" 
+                      onChange={e => setForm({ ...form, active: e.target.checked })}
+                      className="sr-only peer"
                       title="Autorizar Inyección"
                     />
                     <div className="w-14 h-7 bg-gray-800 border border-gray-700 rounded-full peer peer-checked:after:translate-x-7 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-gray-400 peer-checked:after:bg-black after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tad-yellow shadow-sm" />
@@ -280,10 +283,10 @@ export default function NewCampaignPage() {
                 </div>
 
                 <div className="p-4 bg-gray-900/30 rounded-xl border border-gray-700 flex gap-3 items-start">
-                   <Info className="w-5 h-5 text-tad-yellow shrink-0 mt-0.5" />
-                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider leading-relaxed">
-                      Tras la autorización, este contenedor será verificado por el clúster central y estará disponible para recibir activos en el Vault Digital.
-                   </p>
+                  <Info className="w-5 h-5 text-tad-yellow shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider leading-relaxed">
+                    Tras la autorización, este contenedor será verificado por el clúster central y estará disponible para recibir activos en el Vault Digital.
+                  </p>
                 </div>
               </div>
             </div>
@@ -293,92 +296,92 @@ export default function NewCampaignPage() {
 
             {/* Ecosistema de Conversión (QR Hub) */}
             <div className="space-y-6 pt-6 border-t border-white/5">
-               <div className="flex items-center gap-3 ml-2">
-                 <Zap className="w-4 h-4 text-tad-yellow" />
-                 <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Protocolo de Conversión (QR Hub)</h3>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/[0.02] p-8 rounded-3xl border border-white/5">
-                  <div className="space-y-6">
-                    <div className="group/field relative">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">WhatsApp de Ventas</label>
-                      <input 
-                        type="text" 
-                        value={form.whatsapp}
-                        onChange={e => setForm({...form, whatsapp: e.target.value})}
-                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
-                        placeholder="8091112222"
-                      />
-                    </div>
-                    <div className="group/field relative">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Instagram (@usuario)</label>
-                      <input 
-                        type="text" 
-                        value={form.instagram}
-                        onChange={e => setForm({...form, instagram: e.target.value})}
-                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
-                        placeholder="@marca"
-                      />
-                    </div>
-                    <div className="group/field relative">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Sitio Web</label>
-                      <input 
-                        type="text" 
-                        value={form.websiteUrl}
-                        onChange={e => setForm({...form, websiteUrl: e.target.value})}
-                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
-                        placeholder="https://..."
-                      />
-                    </div>
-                  </div>
+              <div className="flex items-center gap-3 ml-2">
+                <Zap className="w-4 h-4 text-tad-yellow" />
+                <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Protocolo de Conversión (QR Hub)</h3>
+              </div>
 
-                  <div className="space-y-6">
-                    <div className="group/field relative">
-                      <label className="text-[10px] font-black text-red-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Pedidos Ya (Link)</label>
-                      <input 
-                        type="text" 
-                        value={form.pedidosYaUrl}
-                        onChange={e => setForm({...form, pedidosYaUrl: e.target.value})}
-                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
-                        placeholder="https://pedidosya.com/..."
-                      />
-                    </div>
-                    <div className="group/field relative">
-                      <label className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Uber Eats (Link)</label>
-                      <input 
-                        type="text" 
-                        value={form.uberEatsUrl}
-                        onChange={e => setForm({...form, uberEatsUrl: e.target.value})}
-                        className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
-                        placeholder="https://ubereats.com/..."
-                      />
-                    </div>
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/5 mt-2">
-                       <p className="text-[10px] font-bold text-zinc-500 uppercase leading-relaxed">
-                         Estos enlaces aparecerán en el hub interactivo cuando el pasajero escanee el código QR de esta campaña.
-                       </p>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/[0.02] p-8 rounded-3xl border border-white/5">
+                <div className="space-y-6">
+                  <div className="group/field relative">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">WhatsApp de Ventas</label>
+                    <input
+                      type="text"
+                      value={form.whatsapp}
+                      onChange={e => setForm({ ...form, whatsapp: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                      placeholder="8091112222"
+                    />
                   </div>
-               </div>
+                  <div className="group/field relative">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Instagram (@usuario)</label>
+                    <input
+                      type="text"
+                      value={form.instagram}
+                      onChange={e => setForm({ ...form, instagram: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                      placeholder="@marca"
+                    />
+                  </div>
+                  <div className="group/field relative">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Sitio Web</label>
+                    <input
+                      type="text"
+                      value={form.websiteUrl}
+                      onChange={e => setForm({ ...form, websiteUrl: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="group/field relative">
+                    <label className="text-[10px] font-black text-red-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Pedidos Ya (Link)</label>
+                    <input
+                      type="text"
+                      value={form.pedidosYaUrl}
+                      onChange={e => setForm({ ...form, pedidosYaUrl: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                      placeholder="https://pedidosya.com/..."
+                    />
+                  </div>
+                  <div className="group/field relative">
+                    <label className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2 block group-focus-within/field:text-tad-yellow transition-colors ml-1">Uber Eats (Link)</label>
+                    <input
+                      type="text"
+                      value={form.uberEatsUrl}
+                      onChange={e => setForm({ ...form, uberEatsUrl: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-tad-yellow outline-none transition-all placeholder:text-gray-800 shadow-sm"
+                      placeholder="https://ubereats.com/..."
+                    />
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-xl border border-white/5 mt-2">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase leading-relaxed">
+                      Estos enlaces aparecerán en el hub interactivo cuando el pasajero escanee el código QR de esta campaña.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="pt-10 flex flex-col items-center border-t border-gray-700/50">
-               <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="group relative w-full md:w-auto md:min-w-[350px] bg-tad-yellow hover:bg-yellow-400 text-black py-4 px-8 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 overflow-hidden"
               >
                 {loading ? (
-                   <RefreshCcw className="w-5 h-5 animate-spin" />
+                  <RefreshCcw className="w-5 h-5 animate-spin" />
                 ) : (
-                   <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 )}
-                
+
                 <span className="text-sm font-black uppercase tracking-widest">{loading ? 'Estableciendo Enlace...' : 'Confirmar e Iniciar'}</span>
               </button>
-              
+
               <p className="mt-6 text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em] flex items-center gap-2">
-                 <Zap className="w-3 h-3 text-tad-yellow" /> TAD_PROTOCOL_ACTIVE
+                <Zap className="w-3 h-3 text-tad-yellow" /> TAD_PROTOCOL_ACTIVE
               </p>
             </div>
           </form>

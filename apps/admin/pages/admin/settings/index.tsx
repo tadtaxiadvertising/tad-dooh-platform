@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { 
-  Settings, 
-  ShieldCheck, 
-  Database, 
-  Globe, 
-  Cpu, 
-  Wallet, 
-  Activity, 
-  Lock, 
-  Save, 
+import type { GetServerSideProps } from 'next';
+import {
+  Settings,
+  ShieldCheck,
+  Database,
+  Globe,
+  Cpu,
+  Wallet,
+  Activity,
+  Lock,
+  Save,
   RefreshCw,
   HardDrive,
   Network,
@@ -25,6 +26,8 @@ import { AntigravityButton } from '@tad/ui';
 import { getSystemSettings, updateSystemSettings } from '@tad/services';
 
 type TabType = 'general' | 'financial' | 'fleet' | 'system';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('general');
@@ -133,8 +136,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id as TabType)}
                 className={clsx(
                   "w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 border",
-                  activeTab === tab.id 
-                    ? "bg-tad-yellow border-tad-yellow text-black shadow-lg" 
+                  activeTab === tab.id
+                    ? "bg-tad-yellow border-tad-yellow text-black shadow-lg"
                     : "bg-white/5 border-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
                 )}
               >
@@ -176,29 +179,29 @@ export default function SettingsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nombre de la Plataforma</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             value={config.platformName}
-                            onChange={(e) => setConfig({...config, platformName: e.target.value})}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none focus:border-tad-yellow/50 transition-all" 
+                            onChange={(e) => setConfig({ ...config, platformName: e.target.value })}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none focus:border-tad-yellow/50 transition-all"
                           />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Versión del Sistema</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             disabled
                             value={config.version}
-                            className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed" 
+                            className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed"
                           />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Build ID</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             disabled
                             value={config.buildId}
-                            className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed" 
+                            className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed"
                           />
                         </div>
                         <div className="space-y-2">
@@ -222,8 +225,8 @@ export default function SettingsPage() {
                               <p className="text-[10px] text-zinc-500 font-medium">Bloquea el acceso a todos los usuarios excepto administradores.</p>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => setConfig({...config, maintenanceMode: !config.maintenanceMode})}
+                          <button
+                            onClick={() => setConfig({ ...config, maintenanceMode: !config.maintenanceMode })}
                             className={clsx(
                               "w-12 h-6 rounded-full p-1 transition-all duration-300",
                               config.maintenanceMode ? "bg-rose-500" : "bg-zinc-800"
@@ -257,11 +260,11 @@ export default function SettingsPage() {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-zinc-500 font-bold">RD$</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={config.slotPrice}
-                                onChange={(e) => setConfig({...config, slotPrice: Number(e.target.value)})}
-                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-tad-yellow outline-none" 
+                                onChange={(e) => setConfig({ ...config, slotPrice: Number(e.target.value) })}
+                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-tad-yellow outline-none"
                               />
                             </div>
                             <p className="text-[10px] text-zinc-600 font-medium italic">Pago mensual por cada slot publicitario activo en la tablet.</p>
@@ -274,11 +277,11 @@ export default function SettingsPage() {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-zinc-500 font-bold">RD$</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={config.referralFee}
-                                onChange={(e) => setConfig({...config, referralFee: Number(e.target.value)})}
-                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-emerald-500 outline-none" 
+                                onChange={(e) => setConfig({ ...config, referralFee: Number(e.target.value) })}
+                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-emerald-500 outline-none"
                               />
                             </div>
                             <p className="text-[10px] text-zinc-600 font-medium italic">Comisión única por cada anunciante referido que inicie campaña.</p>
@@ -293,11 +296,11 @@ export default function SettingsPage() {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-zinc-500 font-bold">RD$</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={config.subscriptionPrice}
-                                onChange={(e) => setConfig({...config, subscriptionPrice: Number(e.target.value)})}
-                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-blue-500 outline-none" 
+                                onChange={(e) => setConfig({ ...config, subscriptionPrice: Number(e.target.value) })}
+                                className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-lg font-black text-blue-500 outline-none"
                               />
                             </div>
                             <p className="text-[10px] text-zinc-600 font-medium italic">Costo operativo mensual cobrado a los conductores por hardware y conectividad.</p>
@@ -333,30 +336,30 @@ export default function SettingsPage() {
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Máximo de Slots por Tablet</label>
                             <div className="flex items-center gap-4">
-                               <input 
-                                type="range" 
-                                min="1" 
+                              <input
+                                type="range"
+                                min="1"
                                 max="30"
                                 value={config.maxSlots}
-                                onChange={(e) => setConfig({...config, maxSlots: Number(e.target.value)})}
+                                onChange={(e) => setConfig({ ...config, maxSlots: Number(e.target.value) })}
                                 className="flex-1 accent-tad-yellow"
-                               />
-                               <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.maxSlots}</span>
+                              />
+                              <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.maxSlots}</span>
                             </div>
                           </div>
 
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Intervalo de Sincronización (min)</label>
                             <div className="flex items-center gap-4">
-                               <input 
-                                type="range" 
-                                min="1" 
+                              <input
+                                type="range"
+                                min="1"
                                 max="60"
                                 value={config.syncInterval}
-                                onChange={(e) => setConfig({...config, syncInterval: Number(e.target.value)})}
+                                onChange={(e) => setConfig({ ...config, syncInterval: Number(e.target.value) })}
                                 className="flex-1 accent-tad-yellow"
-                               />
-                               <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.syncInterval}</span>
+                              />
+                              <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.syncInterval}</span>
                             </div>
                           </div>
                         </div>
@@ -365,30 +368,30 @@ export default function SettingsPage() {
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Límite Offline (horas)</label>
                             <div className="flex items-center gap-4">
-                               <input 
-                                type="range" 
-                                min="1" 
+                              <input
+                                type="range"
+                                min="1"
                                 max="168"
                                 value={config.offlineLimit}
-                                onChange={(e) => setConfig({...config, offlineLimit: Number(e.target.value)})}
+                                onChange={(e) => setConfig({ ...config, offlineLimit: Number(e.target.value) })}
                                 className="flex-1 accent-tad-yellow"
-                               />
-                               <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.offlineLimit}</span>
+                              />
+                              <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.offlineLimit}</span>
                             </div>
                           </div>
 
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Batch de Telemetría (objetos)</label>
                             <div className="flex items-center gap-4">
-                               <input 
-                                type="range" 
-                                min="10" 
+                              <input
+                                type="range"
+                                min="10"
                                 max="200"
                                 value={config.telemetryBatch}
-                                onChange={(e) => setConfig({...config, telemetryBatch: Number(e.target.value)})}
+                                onChange={(e) => setConfig({ ...config, telemetryBatch: Number(e.target.value) })}
                                 className="flex-1 accent-tad-yellow"
-                               />
-                               <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.telemetryBatch}</span>
+                              />
+                              <span className="w-12 text-center text-lg font-black text-white bg-white/5 rounded-xl p-2 border border-white/10">{config.telemetryBatch}</span>
                             </div>
                           </div>
                         </div>
@@ -427,35 +430,35 @@ export default function SettingsPage() {
                             <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Online / Connected</span>
                           </div>
                           <div className="flex gap-2">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={config.apiEndpoint}
-                              onChange={(e) => setConfig({...config, apiEndpoint: e.target.value})}
-                              className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all" 
+                              onChange={(e) => setConfig({ ...config, apiEndpoint: e.target.value })}
+                              className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all"
                             />
                             <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center shrink-0">
-                               <RefreshCw className="w-4 h-4 text-zinc-700" />
+                              <RefreshCw className="w-4 h-4 text-zinc-700" />
                             </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <div className="space-y-2">
+                          <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Remotion Rendering Engine</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={config.remotionUrl}
-                              onChange={(e) => setConfig({...config, remotionUrl: e.target.value})}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all" 
+                              onChange={(e) => setConfig({ ...config, remotionUrl: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all"
                             />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">WhatsApp API Gateway</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={config.whatsappGateway}
-                              onChange={(e) => setConfig({...config, whatsappGateway: e.target.value})}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all" 
+                              onChange={(e) => setConfig({ ...config, whatsappGateway: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-mono text-zinc-400 outline-none focus:border-blue-500/50 transition-all"
                             />
                           </div>
                         </div>
@@ -463,21 +466,21 @@ export default function SettingsPage() {
                         <div className="h-px bg-white/5 my-8" />
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                           <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
-                              <Database className="w-6 h-6 text-zinc-600 mb-3" />
-                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Database Cluster</p>
-                              <p className="text-xs font-bold text-white uppercase tracking-tighter">PostgreSQL 15</p>
-                           </div>
-                           <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
-                              <HardDrive className="w-6 h-6 text-zinc-600 mb-3" />
-                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Asset Storage</p>
-                              <p className="text-xs font-bold text-white uppercase tracking-tighter">Supabase S3 Bucket</p>
-                           </div>
-                           <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
-                              <Layers className="w-6 h-6 text-zinc-600 mb-3" />
-                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Realtime Core</p>
-                              <p className="text-xs font-bold text-white uppercase tracking-tighter">Supabase Broadcast</p>
-                           </div>
+                          <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
+                            <Database className="w-6 h-6 text-zinc-600 mb-3" />
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Database Cluster</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-tighter">PostgreSQL 15</p>
+                          </div>
+                          <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
+                            <HardDrive className="w-6 h-6 text-zinc-600 mb-3" />
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Asset Storage</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-tighter">Supabase S3 Bucket</p>
+                          </div>
+                          <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center text-center">
+                            <Layers className="w-6 h-6 text-zinc-600 mb-3" />
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Realtime Core</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-tighter">Supabase Broadcast</p>
+                          </div>
                         </div>
                       </div>
                     </div>

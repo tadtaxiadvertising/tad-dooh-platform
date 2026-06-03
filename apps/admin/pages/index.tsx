@@ -1,3 +1,5 @@
+import type { GetServerSideProps } from 'next';
+
 /**
  * Root Index Page (/index.tsx)
  * 
@@ -9,6 +11,8 @@
  * GET / → Middleware redirige a /admin/dashboard o /admin/login
  * Este archivo NUNCA se debería renderizar
  */
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function RootIndex() {
   // Esta página no debería ser visible nunca (manejada por middleware)

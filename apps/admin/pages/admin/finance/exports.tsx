@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { 
-  FileText, Download, Car, Briefcase, History, Search, 
+import {
+  FileText, Download, Car, Briefcase, History, Search,
   ArrowLeft, FileDown, ShieldCheck, Printer, CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { 
+import type { GetServerSideProps } from 'next';
+import {
   getCampaigns, getDevices, getFinancialLedger,
   downloadCampaignPdf, downloadFleetPdf, downloadTransactionPdf,
   downloadWeeklyCampaignPdf
 } from '@tad/services';
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function ExportsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -31,15 +34,15 @@ export default function ExportsPage() {
     load();
   }, []);
 
-  const filteredCampaigns = campaigns.filter(c => 
-    c.name.toLowerCase().includes(query.toLowerCase()) || 
+  const filteredCampaigns = campaigns.filter(c =>
+    c.name.toLowerCase().includes(query.toLowerCase()) ||
     c.advertiser.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white font-sans p-4 md:p-8 animate-in fade-in duration-500">
       <div className="max-w-6xl mx-auto">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
@@ -52,8 +55,8 @@ export default function ExportsPage() {
             </h1>
             <p className="text-gray-500 mt-2 text-sm font-medium">Generación de documentación legal y técnica de base de datos.</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => downloadFleetPdf()}
             className="bg-tad-yellow text-black px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,212,0,0.2)]"
           >
@@ -63,7 +66,7 @@ export default function ExportsPage() {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+
           {/* Campaigns Column */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -73,8 +76,8 @@ export default function ExportsPage() {
               </h2>
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Buscar campaña..."
                   className="bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs focus:border-tad-yellow outline-none transition-all w-48"
                   value={query}
@@ -96,14 +99,14 @@ export default function ExportsPage() {
                       <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">{c.advertiser}</p>
                     </div>
                     <div className="flex gap-2">
-                       <button 
+                      <button
                         onClick={() => downloadWeeklyCampaignPdf(c.id, c.name)}
                         className="p-3 bg-zinc-800 text-emerald-400 rounded-xl hover:bg-emerald-500 hover:text-white transition-all group-hover:scale-110"
                         title="Reporte Semanal (PDF)"
                       >
                         <History className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => downloadCampaignPdf(c.id, c.name)}
                         className="p-3 bg-zinc-800 text-tad-yellow rounded-xl hover:bg-tad-yellow hover:text-black transition-all group-hover:scale-110"
                         title="Certificado POP Total"
@@ -141,7 +144,7 @@ export default function ExportsPage() {
                         <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">{l.category} • {new Date(l.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => downloadTransactionPdf(l.id)}
                       className="p-3 bg-zinc-800 text-white rounded-xl hover:bg-white hover:text-black transition-all group-hover:scale-110"
                       title="Descargar Recibo de Pago"
@@ -155,8 +158,8 @@ export default function ExportsPage() {
 
             <div className="bg-tad-yellow/5 border border-tad-yellow/10 p-6 rounded-3xl">
               <div className="flex items-center gap-3 mb-4">
-                 <ShieldCheck className="w-5 h-5 text-tad-yellow" />
-                 <h4 className="font-bold text-sm">Auditoría SRE Digital</h4>
+                <ShieldCheck className="w-5 h-5 text-tad-yellow" />
+                <h4 className="font-bold text-sm">Auditoría SRE Digital</h4>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
                 Todos los documentos generados están firmados digitalmente por el núcleo TAD y son trazables mediante la cadena de bloques de telemetría de las tablets.
@@ -168,15 +171,15 @@ export default function ExportsPage() {
 
         {/* Footer info */}
         <div className="mt-12 pt-8 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">TAD Advertising Platform © 2026 / NEXUS_EXPORT_v2</p>
-            <div className="flex items-center gap-6">
-                <span className="flex items-center gap-2 text-[10px] font-bold text-emerald-500">
-                   <CheckCircle className="w-3 h-3" /> PDF_ENGINE_ONLINE
-                </span>
-                <span className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-                   STORAGE: ENCRYPTED
-                </span>
-            </div>
+          <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">TAD Advertising Platform © 2026 / NEXUS_EXPORT_v2</p>
+          <div className="flex items-center gap-6">
+            <span className="flex items-center gap-2 text-[10px] font-bold text-emerald-500">
+              <CheckCircle className="w-3 h-3" /> PDF_ENGINE_ONLINE
+            </span>
+            <span className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
+              STORAGE: ENCRYPTED
+            </span>
+          </div>
         </div>
 
       </div>

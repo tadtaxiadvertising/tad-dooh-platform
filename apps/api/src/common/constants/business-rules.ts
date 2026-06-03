@@ -81,18 +81,6 @@ export const BUSINESS_RULES = {
 
   /** Tasa de retención por referidos (10%) */
   REFERRAL_RETENTION_RATE: 0.10,
-
-  /** Monto mínimo de retiro para conductores (RD$) */
-  MIN_WITHDRAWAL_AMOUNT_RD: 500,
-
-  /** Segundos de debounce para ingesta de telemetría GPS (5 min) */
-  TELEMETRY_DEBOUNCE_SECONDS: 300,
-
-  /** Minutos de offline para marcar dispositivo como OFFLINE */
-  OFFLINE_THRESHOLD_MINUTES: 15,
-
-  /** Horas sin señal para marcar connectivity_issue (crítico) */
-  CRITICAL_OFFLINE_HOURS: 48,
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

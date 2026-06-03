@@ -5,8 +5,11 @@ const nextConfig = {
   outputFileTracingRoot: '../../',
   async redirects() {
     return [
-      // NOTE: / root redirect is handled by middleware (auth-aware)
-      // Only keep dashboard-level shortcuts for authenticated users
+      {
+        source: '/',
+        destination: '/admin/dashboard/realtime',
+        permanent: false,
+      },
       {
         source: '/admin',
         destination: '/admin/dashboard/realtime',

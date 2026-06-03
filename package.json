@@ -20,7 +20,8 @@
     "install:all": "npm install",
     "build": "npm run build --workspaces --if-present",
     "build:backend": "npm run build --workspace api",
-    "build:all": "npm run build -ws",
+    "build:all": "npm run build --workspaces",
+    "deploy:vercel": "node devops/deploy-vercel.js",
     "start": "npm run start --workspace api",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces --if-present"

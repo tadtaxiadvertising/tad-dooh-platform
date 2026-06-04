@@ -36,7 +36,7 @@ const isTokenExpiringSoon = (session: Session): boolean => {
  */
 export const getValidSession = async (): Promise<Session | null> => {
   const now = Date.now();
-  
+
   // Return cached session if fresh AND the token is not about to expire
   if (
     cachedSessionState.session &&
@@ -45,7 +45,7 @@ export const getValidSession = async (): Promise<Session | null> => {
   ) {
     return cachedSessionState.session;
   }
-  
+
   // Coalesce concurrent fetch requests to a single Supabase call
   if (!sessionFetchPromise) {
     sessionFetchPromise = (async () => {
@@ -55,11 +55,11 @@ export const getValidSession = async (): Promise<Session | null> => {
 
         // Step 1.5: Recovery Fallback (If Supabase client is empty but we have tokens in localStorage)
         if (!session && typeof window !== 'undefined') {
-          const localToken = localStorage.getItem('tad_admin_token') || 
-                            localStorage.getItem('tad_advertiser_token') || 
-                            localStorage.getItem('tad_driver_token');
+          const localToken = localStorage.getItem('tad_admin_token') ||
+            localStorage.getItem('tad_advertiser_token') ||
+            localStorage.getItem('tad_driver_token');
           const refreshToken = localStorage.getItem('tad_admin_refresh_token');
-          
+
           if (localToken && refreshToken) {
             console.info('🔄 [AUTH] Recuperando sesión desde localStorage...');
             const { data: recovered, error: recoveryError } = await supabase.auth.setSession({
@@ -99,7 +99,7 @@ export const getValidSession = async (): Promise<Session | null> => {
       }
     })();
   }
-  
+
   return sessionFetchPromise;
 };
 
@@ -116,15 +116,15 @@ export const invalidateSession = (): void => {
  */
 export const getLocalStorageToken = (currentPath: string): string | null => {
   try {
-    let localToken = null;
+    let localToken: string | null = null;
     if (currentPath.includes('/advertiser/')) {
       localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
     } else if (currentPath.includes('/driver/')) {
       localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
     } else {
-      localToken = localStorage.getItem('tad_admin_token') || 
-                   localStorage.getItem('tad_advertiser_token') || 
-                   localStorage.getItem('tad_driver_token');
+      localToken = localStorage.getItem('tad_admin_token') ||
+        localStorage.getItem('tad_advertiser_token') ||
+        localStorage.getItem('tad_driver_token');
     }
     return localToken;
   } catch (e) {
@@ -158,20 +158,20 @@ export const clearLocalStorageTokens = (currentPath: string): void => {
  */
 export const performLogout = async (currentPath: string): Promise<void> => {
   console.warn('🚨 Unauthorized access detected. Clearing session.');
-  
+
   // Clear cache
   invalidateSession();
-  
+
   // Clear tokens
   clearLocalStorageTokens(currentPath);
-  
+
   // Sign out from Supabase
   try {
     await supabase.auth.signOut();
   } catch (e) {
     console.warn('⚠️ Supabase signOut failed:', e);
   }
-  
+
   // Clear access token cookie (middleware)
   try {
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
@@ -194,8 +194,8 @@ export const getLoginPath = (currentPath: string): string => {
  * Check if current path is public (no auth required)
  */
 export const isPublicPath = (currentPath: string): boolean => {
-  return currentPath.includes('/login') || 
-         currentPath.includes('/check-in') || 
-         currentPath.includes('/onboarding') ||
-         currentPath === '/';
+  return currentPath.includes('/login') ||
+    currentPath.includes('/check-in') ||
+    currentPath.includes('/onboarding') ||
+    currentPath === '/';
 };

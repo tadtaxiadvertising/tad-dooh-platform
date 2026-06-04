@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-tad-bg: #0a0a0a;
+  --color-tad-surface: rgba(255, 255, 255, 0.05);
+  --color-tad-accent: #FFD400;
+  --color-tad-accent-hover: #e6be00;
+  --color-tad-text: #f0f0f0;
+  --color-tad-text-muted: #a0a0a0;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+@keyframes spin-slow {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { top: 100%; opacity: 0; }
+}
+
+body {
+  background-color: var(--color-tad-bg);
+  color: var(--color-tad-text);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphic Utilities */
+.glass-panel {
+  background: var(--color-tad-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 16px;
+}
+
+.tad-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tad-input:focus {
+  border-color: var(--color-tad-accent);
+  box-shadow: 0 0 0 2px rgba(255, 212, 0, 0.2);
+}
+
+.tad-button {
+  background-color: var(--color-tad-accent);
+  color: #000;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tad-button:hover {
+  background-color: var(--color-tad-accent-hover);
+  transform: translateY(-1px);
+}
+
+.tad-button:active {
+  transform: translateY(0);
+}
+
+.tad-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-tad-text-muted);
+}
+

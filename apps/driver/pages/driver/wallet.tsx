@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import { useAuth } from '@tad/ui';
+
+// Force dynamic rendering — prevents "No QueryClient set" SSR errors
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 import {
   Wallet, ArrowDownLeft, ArrowUpRight, Clock,
   LayoutDashboard, Activity, ChevronLeft, Flame, Target, TrendingUp

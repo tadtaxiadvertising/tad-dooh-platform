@@ -13,8 +13,22 @@ COPY package.json ./
 COPY packages ./packages
 COPY apps/admin ./apps/admin
 
-# Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
-RUN rm -rf package-lock.json node_modules && npm install --legacy-peer-deps
+# Instalar TODO (para resolver las dependencias cruzadas como @tad/services).
+# EasyPanel only copies apps/admin plus shared packages into this image, so
+# install the admin-only runtime imports that are currently provided by other
+# workspaces/root installs in development. Keep this in the Dockerfile instead
+# of changing package-lock.json because this image intentionally deletes the
+# lockfile before installing.
+RUN rm -rf package-lock.json node_modules \
+    && npm install --legacy-peer-deps --no-audit --no-fund \
+    && npm install --legacy-peer-deps --no-save --no-audit --no-fund \
+        @sentry/nextjs@^10.46.0 \
+        @tanstack/react-query@^5.91.3 \
+        date-fns@^4.1.0 \
+        framer-motion@^12.38.0 \
+        leaflet.heat@^0.2.0 \
+        qrcode.react@^4.2.0 \
+        recharts@^2.15.0
 
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
 ARG NEXT_PUBLIC_SUPABASE_URL

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.46.0",
     "@tad/services": "*",
     "@tad/store": "*",
     "@tad/ui": "*",

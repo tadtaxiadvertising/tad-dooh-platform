@@ -423,7 +423,6 @@ export default function DriversPage() {
                                   phone={driver.phone}
                                   message={`Hola ${driver.fullName}, te contactamos de TAD Advertising para dar seguimiento a tu suscripción.`}
                                   className="p-2.5 rounded-xl transition-all border border-emerald-400/20 bg-emerald-400/5 text-emerald-400 hover:bg-emerald-400 hover:text-white flex items-center justify-center shadow-sm"
-                                  title="Enviar WhatsApp"
                                 />
                               )}
                             </>

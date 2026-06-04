@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Hub } from 'lucide-react';
+import { X, Network } from 'lucide-react';
 
 interface DeviceHubModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
       <div className="bg-zinc-900 border border-white/5 rounded-[2rem] w-full max-w-xl p-8 space-y-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Hub className="w-5 h-5 text-[#fad400]" />
+            <Network className="w-5 h-5 text-[#fad400]" />
             <h2 className="text-xl font-black uppercase tracking-tight text-white">
               Hub de Dispositivo
             </h2>

@@ -64,9 +64,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@next/swc-win32-x64-msvc": "^16.2.7",
     "@tailwindcss/postcss": "^4.0.0",
     "postcss": "^8.4.31"
-  },
-  "optionalDependencies": {}
+  }
 }

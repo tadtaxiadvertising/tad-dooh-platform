@@ -1,0 +1,477 @@
+# 🚀 16 — CI/CD PIPELINE & DEPLOYMENT RUNBOOK
+
+> **Versión**: 16.0.0 (v12.1.2 Microservices on EasyPanel)
+> **Última Actualización**: 2026-06-05
+> **Audiencia**: DevOps, SRE, CTO
+> **Infraestructura**: EasyPanel VPS + Docker + Nixpacks
+
+---
+
+## 1. TOPOLOGÍA DE DESPLIEGUE
+
+### 1.1 Servicios en Producción
+
+| Servicio | Tecnología | URL EasyPanel | RAM Limit | Port |
+| --- | --- | --- | --- | --- |
+| **tad-api** | NestJS 10 + Prisma | `tad-api.rewvid.easypanel.host` | 512 MB | 3000 |
+| **tad-dashboard** | Next.js 15 (Admin) | `tad-dashboard.rewvid.easypanel.host` | 512 MB | 3002 |
+| **tad-advertiser** | Next.js 15 (Adv Portal) | `tad-advertiser.rewvid.easypanel.host` | 512 MB | 3001 |
+| **tad-driver** | Next.js 15 (Driver PWA) | `tad-driver.rewvid.easypanel.host` | 512 MB | 3003 |
+| **tad-remotion** | Remotion + Chromium | `tad-remotion.rewvid.easypanel.host` | 1024 MB | 8000 |
+
+### 1.2 Flujo de Despliegue
+
+```
+Git Push → EasyPanel Auto-Build → Docker Image → Health Check → Live
+```
+
+EasyPanel detecta cambios en el repositorio Git y ejecuta automáticamente:
+1. Build del Dockerfile (o Nixpacks si no hay Dockerfile)
+2. Deploy del contenedor con los secrets configurados
+3. Health check antes de marcar como "Live"
+
+---
+
+## 2. EASYPANEL CONFIGURATION
+
+### 2.1 Secrets (Variables de Entorno)
+
+Todas las credenciales están centralizadas en EasyPanel bajo **Secrets**. **NUNCA** almacenar en `.env` trackeado por Git.
+
+| Secret | Service | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | tad-api | Connection Pool (puerto 6543) + `?pgbouncer=true&connection_limit=5` |
+| `DIRECT_URL` | tad-api | Direct Connection (puerto 5432) para migraciones |
+| `SUPABASE_SERVICE_ROLE_KEY` | tad-api | JWT bypass RLS — **SOLO Backend** |
+| `SUPABASE_ANON_KEY` | Frontend services | Public anon key para client-side |
+| `NEXT_PUBLIC_API_URL` | Frontend services | URL del API Gateway |
+| `SMTP_PASSWORD` | tad-api | Password para correos transaccionales |
+| `ADMIN_SECRET` | tad-api | Header `x-admin-secret` para purge operations |
+| `TABLET_HUB_KEY` | tad-api | Header `x-tablet-key` para hub data |
+| `NEXT_TELEMETRY_DISABLED` | tad-dashboard | `1` — Desactivar telemetría Vercel |
+| `NODE_OPTIONS` | ALL | `--max_old_space_size=256` (Frontend) / `--max_old_space_size=512` (API) |
+
+### 2.2 Configuración por Servicio en EasyPanel
+
+#### tad-api (NestJS)
+
+```yaml
+# EasyPanel Advanced Settings
+Memory Limit: 512MB
+Memory Swap: 1GB
+CPU Limit: 0.5 cores
+Health Check Path: /api/v1/health
+Health Check Interval: 30s
+Restart Policy: unless-stopped
+
+# Build Command (Nixpacks)
+Build: nixpacks build
+Start: node dist/main
+
+# O con Dockerfile personalizado:
+Build: docker build -t tad-api .
+Start: npx prisma migrate deploy && node dist/main
+```
+
+#### tad-dashboard (Next.js Admin)
+
+```yaml
+Memory Limit: 512MB
+Memory Swap: 1GB
+CPU Limit: 0.5 cores
+Health Check Path: /
+Health Check Interval: 60s
+Restart Policy: unless-stopped
+
+# Build Command
+Build: nixpacks build
+Start: next start
+```
+
+#### tad-remotion (Video Engine)
+
+```yaml
+Memory Limit: 1024MB
+Memory Swap: 2GB
+CPU Limit: 1.0 core
+Health Check Path: /health
+Health Check Interval: 30s
+Restart Policy: unless-stopped
+
+# Dockerfile requiere node:18-bullseye para compatibilidad con Chromium
+```
+
+---
+
+## 3. DEPLOYMENT PROCEDURES
+
+### 3.1 Deploy Routine (Standard)
+
+```bash
+# 1. Asegurar que el código está limpio
+cd /path/to/tad-dooh-platform
+git status
+git pull origin main
+
+# 2. Build local para verificar (opcional pero recomendado)
+npm run build
+
+# 3. Push a main — EasyPanel detecta y auto-deploy
+git add .
+git commit -m "descriptive message"
+git push origin main
+```
+
+**EasyPanel Auto-Deploy:**
+- EasyPanel watches the Git repository
+- On push to `main`, triggers automatic build
+- Build time: ~3-5 min per service
+- Zero manual intervention required
+
+### 3.2 Deploy con Migración de Base de Datos
+
+Cuando el `schema.prisma` cambia, la migración debe ejecutarse **ANTES** que el nuevo código esté live.
+
+```bash
+# Opción A: En el Dockerfile CMD (actual)
+CMD npx prisma migrate deploy && node dist/main
+
+# Opción B: Manual (si la migración es crítica)
+# 1. Generar migración
+cd apps/api
+npx prisma migrate dev --name descriptive_name
+
+# 2. Aplicar en producción (CONNECTION DIRECT_URL)
+npx prisma migrate deploy
+
+# 3. Generar cliente
+npx prisma generate
+
+# 4. Deploy normal
+git push origin main
+```
+
+**⚠️ ADVERTENCIA:** Migraciones destructivas (DROP COLUMN, RENAME) pueden causar pérdida de datos. Siempre crear una migración aditiva primero y hacer la destructiva en un segundo deploy.
+
+### 3.3 Deploy de Emergency Hotfix
+
+```bash
+# 1. Crear branch de hotfix
+git checkout -b hotfix/critical-issue
+
+# 2. Fix rápido
+# ... editar archivos ...
+
+# 3. Test mínimo
+npm run test:e2e -- critical-flow
+
+# 4. Push directo a main (bypass review si es crítico)
+git add .
+git commit -m "HOTFIX: critical issue description"
+git push origin hotfix/critical-issue
+git checkout main
+git merge hotfix/critical-issue
+git push origin main
+```
+
+---
+
+## 4. ROLLBACK PROCEDURES
+
+### 4.1 Rollback via EasyPanel
+
+EasyPanel mantiene la imagen anterior del contenedor. Para rollback:
+
+1. **EasyPanel UI**: Navigate to service → Deployments → Select previous deployment → "Redeploy"
+2. **Tiempo estimado**: ~30 seconds para que el contenedor anterior esté live
+
+### 4.2 Rollback de Migración de BD
+
+```bash
+# Las migraciones de Prisma NO se auto-reverten.
+# Para rollback manual:
+
+# 1. Crear una migración de revert
+npx prisma migrate dev --name revert_changes
+
+# 2. Aplicar en producción
+npx prisma migrate deploy
+
+# ⚠️ NEVER use prisma migrate reset in production — borra TODOS los datos
+```
+
+### 4.3 Rollback de Contenedor Específico
+
+```bash
+# Si solo un servicio tiene problemas:
+docker stop tad-api
+docker rm tad-api
+
+# EasyPanel re-deployará la última imagen exitosa
+```
+
+---
+
+## 5. HEALTH CHECKS & MONITORING
+
+### 5.1 Health Check Endpoints
+
+| Service | Endpoint | Expected Response |
+| --- | --- | --- |
+| tad-api | `/api/v1/health` | `{ status: "ok", uptime: X, db: "connected" }` |
+| tad-dashboard | `/` | HTTP 200 (Next.js SSR) |
+| tad-advertiser | `/` | HTTP 200 |
+| tad-driver | `/` | HTTP 200 |
+| tad-remotion | `/health` | `{ status: "ok" }` |
+
+### 5.2 Failure Detection
+
+| Signal | Action |
+| --- | --- |
+| Health check fails 3x consecutively | EasyPanel auto-restarts container |
+| Memory > 90% of limit | Monitor closely, prepare manual restart |
+| OOM Kill detected | Auto-restart + investigate leak |
+| DB connection pool exhausted | Scale `connection_limit` or restart API |
+
+### 5.3 Monitoring Checklist
+
+```bash
+# Ver estado de contenedores
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Ver uso de memoria
+docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}"
+
+# Ver logs de un servicio
+docker logs tad-api --tail 100
+
+# Ver conexiones de Prisma activas
+# Consultar en Supabase Dashboard → Database → Connections
+```
+
+---
+
+## 6. PRISMA CONNECTION MANAGEMENT
+
+### 6.1 Lifecycle Hooks (MANDATORY)
+
+```typescript
+// apps/api/src/main.ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // MANDATORY: Prevent orphan connections on redeploy
+  app.enableShutdownHooks();
+
+  await app.listen(3000);
+}
+```
+
+### 6.2 Connection Pool Configuration
+
+```
+# DATABASE_URL format:
+postgresql://user:pass@db.supabase.co:6543/postgres?pgbouncer=true&connection_limit=5
+
+# DIRECT_URL format (migrations only):
+postgresql://user:pass@db.supabase.co:5432/postgres
+```
+
+**Rules:**
+- `DATABASE_URL` = Runtime queries (always use pooler)
+- `DIRECT_URL` = Migrations only (direct connection, no pgbouncer)
+- `connection_limit=5` = Maximum 5 Prisma connections per API instance
+
+### 6.3 Thundering Herd Prevention
+
+Cuando 50+ tablets wake up at 8:00 AM simultaneously:
+
+1. **Batch endpoints** (`/fleet/track-batch`, `/analytics/batch`) — NOT individual inserts
+2. **Throttle guards** — 500 req/min on sync endpoints
+3. **PostgREST bypass** — Mobile gateway can INSERT directly to Supabase via REST API (RLS-protected anonymous INSERT)
+
+---
+
+## 7. DISASTER RECOVERY
+
+### 7.1 VPS Total Failure
+
+```bash
+# 1. EasyPanel restores from Docker images automatically on VPS reboot
+# 2. Verify all services are up:
+curl -s https://tad-api.rewvid.easypanel.host/api/v1/health
+curl -s https://tad-dashboard.rewvid.easypanel.host/
+
+# 3. If DB is unreachable:
+# - Check Supabase Dashboard for connection status
+# - Verify DATABASE_URL and DIRECT_URL secrets are correct
+# - Restart tad-api container
+```
+
+### 7.2 Database Failure
+
+```bash
+# Supabase handles automatic failover
+# If prolonged outage:
+# 1. Google Sheets backup: GET /api/v1/sheets/report
+# 2. Tablets continue offline playback (48-hour JWT TTL)
+# 3. Mobile gateway buffers GPS in localStorage
+# 4. On DB recovery: Auto-sync from buffers
+```
+
+### 7.3 Single Service Failure
+
+| Scenario | Recovery |
+| --- | --- |
+| tad-api down | EasyPanel auto-restart. Tablets play offline. GPS buffered. |
+| tad-dashboard down | Admin portal unavailable. API + tablets unaffected. |
+| tad-remotion down | Video generation fails. Existing campaigns unaffected. |
+| Supabase down | All portals read-only. Tablets play cached content. GPS buffered locally. |
+
+---
+
+## 8. DEPLOY CHECKLIST
+
+### 8.1 Pre-Deploy (Before pushing to main)
+
+- [ ] All tests pass (`npm run test`)
+- [ ] E2E critical flow passes (`npx playwright test critical-flow`)
+- [ ] No TypeScript errors (`npx tsc --noEmit`)
+- [ ] No ESLint errors (`npm run lint`)
+- [ ] Prisma schema validated (`npx prisma validate`)
+- [ ] Migration tested locally (`npx prisma migrate dev`)
+- [ ] Secrets updated in EasyPanel if new env vars added
+- [ ] RAM limits verified in EasyPanel per service
+
+### 8.2 Post-Deploy (After EasyPanel auto-deploy)
+
+- [ ] Health check responds 200 on all services
+- [ ] Admin login works (`admin@tad.do`)
+- [ ] API responds: `curl https://tad-api.rewvid.easypanel.host/api/v1/health`
+- [ ] No 5xx errors in first 5 minutes
+- [ ] Memory usage < 80% of limit per container
+- [ ] Prisma connections < 5 per instance
+- [ ] Tablet test device syncs successfully
+
+### 8.3 Financial Deploy (Additional checks for payroll/subscription changes)
+
+- [ ] Wallet balance unchanged for existing drivers
+- [ ] Kill-Switch logic verified with test device
+- [ ] Payroll calculation produces same results as before
+- [ ] Idempotency keys table accessible
+- [ ] Financial transaction ledger intact
+
+---
+
+## 9. ENVIRONMENT MATRIX
+
+### 9.1 Development (Local)
+
+| Setting | Value |
+| --- | --- |
+| `NODE_ENV` | `development` |
+| `DATABASE_URL` | Local PostgreSQL or Supabase test project |
+| `NEXT_TELEMETRY_DISABLED` | `1` |
+| `NODE_OPTIONS` | Not restricted (full heap) |
+
+### 9.2 Staging (EasyPanel Internal)
+
+| Setting | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase staging project pooler |
+| `NEXT_TELEMETRY_DISABLED` | `1` |
+| `NODE_OPTIONS` | `--max_old_space_size=256` |
+
+### 9.3 Production (EasyPanel Live)
+
+| Setting | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase production pooler (6543) |
+| `DIRECT_URL` | Supabase direct (5432) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Production service role key |
+| `NEXT_TELEMETRY_DISABLED` | `1` |
+| `NODE_OPTIONS` | `--max_old_space_size=512` (API) / `256` (Frontend) |
+
+---
+
+## 10. LOGGING & OBSERVABILITY
+
+### 10.1 Structured Logs
+
+```typescript
+// LoggerMiddleware applies to ALL routes
+// Format: { timestamp, method, path, statusCode, durationMs, userAgent }
+```
+
+### 10.2 SystemError Table (SRE Audit)
+
+All operational failures MUST be logged to `SystemError`:
+
+| Source | Severity Examples |
+| --- | --- |
+| `EMAIL` | SMTP failure, template missing |
+| `WALLET` | Balance inconsistency, withdrawal failure |
+| `TELEMETRY` | GPS batch parse error, PostGIS failure |
+| `DEVICE` | Heartbeat parse error, sync manifest crash |
+| `SYNC` | Playlist generation failure, hash mismatch |
+
+### 10.3 Log Aggregation
+
+- **EasyPanel**: Built-in container logs (per service)
+- **Sentry**: Error tracking via `SentryInterceptor` (NestJS)
+- **Supabase Dashboard**: Database query performance monitoring
+
+---
+
+## 11. SCALE OPERATIONS
+
+### 11.1 Adding a New Service
+
+```bash
+# 1. Create app in EasyPanel
+# 2. Configure Git repository + branch
+# 3. Set secrets
+# 4. Configure memory/CPU limits
+# 5. Set health check path
+# 6. Deploy and verify
+```
+
+### 11.2 Vertical Scaling (VPS Upgrade)
+
+When the VPS can no longer handle the load:
+
+1. Upgrade VPS plan (more RAM/CPU)
+2. Increase container limits proportionally
+3. Keep `connection_limit=5` per Prisma instance (Supabase free tier constraint)
+4. Consider Redis for BI snapshots if Postgres latency increases
+
+### 11.3 Horizontal Scaling (Multiple API Instances)
+
+> **Current limitation**: EasyPanel on single VPS doesn't support horizontal scaling natively.
+
+For horizontal scaling:
+1. Move to Kubernetes or multi-VPS setup
+2. Ensure `IdempotencyKey` table handles concurrent requests
+3. Use Redis for session/cache sharing between instances
+4. Load balancer between multiple `tad-api` instances
+
+---
+
+## 12. TROUBLESHOOTING QUICK REFERENCE
+
+| Problem | Symptoms | Fix |
+| --- | --- | --- | --- |
+| **OOM Kill** | Container restarts unexpectedly, `docker logs` shows `OOMKilled` | Reduce `max_old_space_size`, check for memory leaks, add more RAM limit |
+| **MODULE_NOT_FOUND** | Build fails, container exits immediately | Check Dockerfile COPY paths, verify `npm install` ran, clear node_modules cache |
+| **Prisma Connection Exhaustion** | API returns 500, Supabase shows max connections | Verify `connection_limit=5`, add `pgbouncer=true`, check `enableShutdownHooks()` |
+| **Build Timeout** | EasyPanel build exceeds 10 min | Optimize Dockerfile (multi-stage), reduce dependencies, use `.dockerignore` |
+| **CORS Error** | Frontend can't reach API | Verify `NEXT_PUBLIC_API_URL`, check NestJS CORS configuration |
+| **402 Kill-Switch** | Tablet shows blank screen | Check `subscriptionPaid` status, verify `SubscriptionGuard` logic |
+| **SWC Binary Error** | Build fails with `.next/server/chunks` error | Clear `.next` cache, rebuild with `NODE_ENV=production` |
+| **Nixpacks Build Failure** | EasyPanel can't detect framework | Add custom `Dockerfile` to app directory |
+
+---
+
+*This document must be updated after each infrastructure change or new service deployment.*

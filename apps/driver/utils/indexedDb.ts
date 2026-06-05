@@ -12,9 +12,9 @@ export async function openDB(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open('TADTelemetryDB', 1);
 
-    request.onupgradneeded = (event) => {
+    request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result as IDBDatabase;
-      db.createObjectStore('telemetry', { keyPath: 'timestamp' });
+      db.createObjectStore('telemetry', { keyPath: 'ts' });
       resolve(db);
     };
 
@@ -24,9 +24,9 @@ export async function openDB(): Promise<IDBDatabase> {
         const version = db.version + 1;
         db.close();
         const upgradeRequest = indexedDB.open('TADTelemetryDB', version);
-        upgradeRequest.onupgradneeded = (upgradeEvent) => {
+        upgradeRequest.onupgradeneeded = (upgradeEvent) => {
           const upgradeDb = (upgradeEvent.target as IDBOpenDBRequest).result as IDBDatabase;
-          upgradeDb.createObjectStore('telemetry', { keyPath: 'timestamp' });
+          upgradeDb.createObjectStore('telemetry', { keyPath: 'ts' });
           resolve(upgradeDb);
         };
         upgradeRequest.onsuccess = (upgradeEvent) => resolve((upgradeEvent.target as IDBOpenDBRequest).result as IDBDatabase);

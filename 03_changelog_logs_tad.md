@@ -4,6 +4,19 @@
 
 ---
 
+## [DOC-13-16] - 2026-06-05
+
+### 📚 DOC: Expansión de Documentación Técnica — 4 Nuevos Documentos de Referencia
+- **Cambio**: Creados 4 documentos de referencia técnicos faltantes en la secuencia de documentación del proyecto (13-16), llenando brechas críticas entre los docs existentes (01-12) y el estado actual del código.
+- **Archivos tocados**:
+  - `13_prisma_schema_database_architecture.md` — Referencia completa del schema Prisma (32 modelos), índices, relaciones, patrones de query, connection pooling, y glosario.
+  - `14_testing_strategy_qa_protocol.md` — Pirámide de testing, E2E (Playwright), Unit (Jest), Integration (Supabase Local), Load Testing, QA checklist, bug template.
+  - `15_api_endpoints_reference.md` — ~135 endpoints documentados con método, ruta, auth level, parámetros, guards, interceptors, y respuesta structure.
+  - `16_cicd_pipeline_deployment_runbook.md` — EasyPanel config, secrets, deploy procedures, rollback, health checks, disaster recovery, troubleshooting.
+- **Nota Infraestructura**: Los documentos 13 y 16 contienen referencia directa a la configuración de Supabase (connection pooling), Docker (RAM limits), y Prisma (migraciones) — son complementarios a los docs 05, 07, y 12 existentes.
+
+---
+
 ## [v12.2.5] - 2026-06-05
 
 ### 🚀 FEATURE / 🔧 FIX: Implementación Completa del Plan de Auditoría, Consolidación y Optimización de Telemetría

@@ -1,9 +1,10 @@
 # 🗄️ 13 — PRISMA SCHEMA REFERENCE & DATABASE ARCHITECTURE
 
-> **Versión**: 13.0.0 (v12.1.2 Idempotency & Financial Core)
+> **Versión**: 13.1.0 (v12.2.5 — Comprehensive Audit Edition)
 > **Última Actualización**: 2026-06-05
 > **Audiencia**: Backend Developers, DBA, Arquitectos
 > **Fuente de Verdad**: `apps/api/prisma/schema.prisma`
+> **Complementos**: `apps/api/prisma/views.sql`, `apps/api/prisma/migrations/`
 
 ---
 
@@ -31,7 +32,58 @@ datasource db {
 
 ---
 
-## 2. MODELOS DEL SCHEMA (32 Modelos)
+## 2. MODELOS DEL SCHEMA (36 Modelos + 1 Enum = 37 Declaraciones)
+
+### 2.0 Enum: SystemStatus — Estado Operativo del Sistema
+
+| Valor | Significado | Usado En |
+| --- | --- | --- |
+| `OPERATIVO` | Entidad activa y funcional | `Device`, `Driver` |
+| `PENDIENTE_PAGO` | Esperando pago de suscripción RD$6,000 | `Driver` (onboarding) |
+| `BLOQUEADO` | Bloqueado por mora — Kill-Switch activo | `Driver` (suscripción vencida) |
+
+> **⚠️ Migración Histórica:** Los valores originales eran strings en inglés (`ACTIVE`, `PENDING`, `SUSPENDED`). La migración `20260424_v12_schema_sync` los convirtió al enum español. El campo `status` en `Campaign` y `Advertiser` sigue siendo `String` (no enum) porque sus estados son más variados (`PENDING_PAYMENT`, `ACTIVE`, `PAUSED`, `COMPLETED`, etc.).
+
+### Registro Completo de Modelos
+
+| # | Modelo | Tabla PostgreSQL | Sección Doc |
+| --- | --- | --- | --- |
+| 1 | `User` | `users` | 2.1 |
+| 2 | `Driver` | `drivers` | 2.1 |
+| 3 | `Device` | `devices` | 2.1 |
+| 4 | `Campaign` | `campaigns` | 2.1 |
+| 5 | `Playlist` | `playlists` | 2.5 |
+| 6 | `PlaylistItem` | `playlist_items` | 2.5 |
+| 7 | `DeviceCampaign` | `device_campaigns` | 2.5 |
+| 8 | `Fleet` | `fleets` | 2.5 |
+| 9 | `Advertiser` | `advertisers` | 2.7 |
+| 10 | `AdvertiserSubscription` | `advertiser_subscriptions` | 2.3 |
+| 11 | `PortalRequest` | `portal_requests` | 2.7 |
+| 12 | `ContractAcceptance` | `contract_acceptances` | 2.7 |
+| 13 | `AnalyticsEvent` | `analytics_events` | 2.2 |
+| 14 | `CampaignMetric` | `campaign_metrics` | 2.2 |
+| 15 | `PlaybackEvent` | `playback_events` | 2.2 |
+| 16 | `Telemetry` | `telemetry` | 2.2 |
+| 17 | `DriverLocation` | `driver_locations` | 2.5 |
+| 18 | `DeviceHeartbeat` | `device_heartbeats` | 2.5 |
+| 19 | `DeviceCommand` | `device_commands` | 2.5 |
+| 20 | `Wallet` | `wallets` | 2.3 |
+| 21 | `FinancialTransaction` | `financial_transactions` | 2.3 |
+| 22 | `PayrollPayment` | `payroll_payments` | 2.3 |
+| 23 | `Subscription` | `subscriptions` | 2.3 |
+| 24 | `Commission` | `commissions` | 2.3 |
+| 25 | `Invoice` | `invoices` | 2.3 |
+| 26 | `ActiveAd` | `active_ads` | 2.3 |
+| 27 | `Media` | `media` | 2.4 |
+| 28 | `MediaAsset` | `media_assets` | 2.4 |
+| 29 | `Video` | `videos` | 2.4 |
+| 30 | `BiDashboardSnapshot` | `bi_dashboard_snapshots` | 2.6 |
+| 31 | `ReconciliationReport` | `reconciliation_reports` | 2.6 |
+| 32 | `Notification` | `notifications` | 2.8 |
+| 33 | `SystemSetting` | `system_settings` | 2.8 |
+| 34 | `SystemError` | `system_errors` | 2.8 |
+| 35 | `CampaignIntent` | `campaign_intents` | 2.8 |
+| 36 | `IdempotencyKey` | `idempotency_keys` | 2.8 |
 
 ### 2.1 Core Entities
 
@@ -57,28 +109,72 @@ datasource db {
 | `phone` | `String @unique` | Teléfono (login credential) |
 | `taxiPlate` | `String @unique` | Placa del vehículo |
 | `taxiNumber` | `String?` | Número de taxi (STI-XXX) |
+| `licensePlate` | `String?` | Licencia de conducir |
+| `password` | `String?` | Hash bcrypt (login portal conductor) |
 | `subscriptionPaid` | `Boolean` | Estado de pago RD$6,000/año |
 | `subscriptionEnd` | `DateTime?` | Fecha de vencimiento |
 | `status` | `SystemStatus` | `OPERATIVO` | `PENDIENTE_PAGO` | `BLOQUEADO` |
 | `onboardingStatus` | `String` | Default: `"PENDING_AGREEMENT"` |
-| `walletBalance` | `Float` | Balance en RD$ |
+| `onboardedAt` | `DateTime` | Timestamp de registro |
+| `blockedAt` | `DateTime?` | Timestamp de bloqueo |
+| `level` | `String` | Default: `"BASE"` — Sistema de niveles/tier |
+| `consecutiveMonthsUnderGoal` | `Int` | Default: `0` — Penalización escalada |
+| `walletBalance` | `Float` | Balance en RD$ (columna directa en drivers) |
 | `referralCode` | `String @uuid @unique` | Código QR para referidos |
-| `bankAccount` | `Json?` | Datos bancarios (offline-first) |
-| `wallet` | `Wallet?` | Relación 1:1 |
-| `devices` | `Device[]` | Tablets vinculadas |
-| `commissions` | `Commission[]` | Bonos por referidos/ventas |
-| `activeAds` | `ActiveAd[]` | Anuncios activos en su tablet |
-| `reconciliationReports` | `ReconciliationReport[]` | Reportes mensuales |
+| `bankAccount` | `Json?` | `{ banco, cuenta, tipo, cedula, ownerName? }` (offline-first) |
+| `identidadVehicular` | `Json?` | Datos del vehículo (marca, modelo, año) |
+| `hardwareConfig` | `Json?` | Config de hardware/tablet (modelo, RAM, storage) |
+| `referredBy` | `String?` | FK → `Driver` (self-ref `DriverReferrals`) |
+| **Legal Compliance** | | |
+| `insuranceAccepted` | `Boolean` | Default: `false` — Seguro aceptado |
+| `insuranceAcceptedAt` | `DateTime?` | Timestamp de aceptación |
+| `contractAccepted` | `Boolean` | Default: `false` — Contrato aceptado |
+| `contractAcceptedAt` | `DateTime?` | Timestamp de firma |
+| `agreementVersion` | `String?` | Versión del contrato aceptado |
 
 **Relaciones clave:**
-- `referredBy` → self-reference `Driver` (árbol de referidos)
-- `referredAdvertisers` → `Advertiser[]` (anunciantes captados)
-- `subscriptions` → `Subscription[]` (historial de pagos)
+- `wallet` → `Wallet?` (1:1, **onDelete: RESTRICT** — no se puede borrar driver con wallet)
+- `devices` → `Device[]` (1:N)
+- `commissions` → `Commission[]` (1:N, **onDelete: RESTRICT**)
+- `activeAds` → `ActiveAd[]` (1:N, **onDelete: RESTRICT**)
+- `reconciliationReports` → `ReconciliationReport[]` (1:N, onDelete: Cascade)
+- `payrollPayments` → `PayrollPayment[]` (1:N, onDelete: Cascade)
+- `subscriptions` → `Subscription[]` (1:N, onDelete: Cascade)
+- `contractAcceptances` → `ContractAcceptance[]` (1:N, onDelete: Cascade)
+- `portalRequests` → `PortalRequest[]` (1:N, onDelete: Cascade)
+- `campaigns` → `Campaign[]` (via `CampaignToDriver` relation)
+- `telemetryLogs` → `Telemetry[]` (via `DriverTelemetry` named relation, **onDelete: RESTRICT**)
+- `referredByDriver` → `Driver?` (self-ref, `DriverReferrals`)
+- `referrals` → `Driver[]` (self-ref, `DriverReferrals`)
+- `referredAdvertisers` → `Advertiser[]` (`AdvertiserReferrals`)
+- `locations` → `DriverLocation[]` (1:N)
+
+**Índices:**
+```prisma
+@@index([status])
+@@index([phone])
+@@map("drivers")
+```
+
+**⚠️ Legal Compliance Gate (CRITICAL Business Rule):**
+```
+Driver can ONLY transition to status = OPERATIVO if:
+  insuranceAccepted = true AND contractAccepted = true AND subscriptionPaid = true
+Otherwise: status remains PENDIENTE_PAGO or BLOQUEADO
+```
+
+**⚠️ onDelete Contradiction (CRITICAL SRE Risk):**
+The schema.prisma declares `onDelete: Cascade` on many Driver relations (PayrollPayment, Subscription, ContractAcceptance, ReconciliationReport, ActiveAd), but the `20260424_v12_schema_sync` migration SQL uses `ON DELETE RESTRICT` for ActiveAd, Commission, Wallet, and Telemetry. This means:
+- **Prisma will attempt CASCADE** but the **DB will reject** due to RESTRICT constraints.
+- Deleting a Driver with a Wallet, Commission, ActiveAd, or Telemetry will **FAIL**.
+- This is an intentional safety mechanism — financial data cannot be accidentally destroyed.
 
 **Reglas de Negocio:**
 - `subscriptionPaid = false` → Kill-Switch 402
 - `status = BLOQUEADO` → Rechazo en `/drivers/:id/check-in`
 - Compensación: `min(Active_Ads, 15) × RD$500 + Commissions × RD$500`
+- `level = "BASE"` → Nivel base. Futuros tiers: `SILVER`, `GOLD` (bonos adicionales)
+- `consecutiveMonthsUnderGoal` → Si > threshold, `penaltyPercentage` aumenta en payroll
 
 ---
 
@@ -87,17 +183,32 @@ datasource db {
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
 | `deviceId` | `String @unique` | Hardware identifier |
+| `name` | `String?` | Nombre descriptivo |
 | `taxiNumber` | `String?` | Vinculación STI-XXX |
 | `city` | `String?` | Santiago, Santo Domingo, etc. |
+| `fleet` | `String?` | Flota asignada |
 | `status` | `SystemStatus` | Estado operativo |
 | `isOnline` | `Boolean` | Última conexión < 5 min |
+| `connectivityStatus` | `String` | `"ONLINE" | "STALE" | "WARNING" | "CRITICAL"` |
 | `batteryLevel` | `Int` | 0-100% |
 | `lastLat` / `lastLng` | `Float?` | Última coordenada GPS |
-| `driverId` | `String?` | FK → `Driver` |
-| `connectivityStatus` | `String` | `"ONLINE" | "STALE" | "WARNING" | "CRITICAL"` |
-| `playerStatus` | `String?` | `"PLAYING" | "IDLE" | "ERROR" | "OFFLINE"` |
+| `lastSync` | `DateTime?` | Última sincronización completa |
+| `lastSyncAt` | `DateTime?` | Timestamp del último sync request |
+| `lastSyncSuccess` | `Boolean?` | Flag de sync exitoso (monitoring) |
 | `lastSyncHash` | `String?` | ETag del último manifiesto |
+| `lastHeartbeat` | `DateTime?` | Último heartbeat recibido |
+| `lastSeen` | `DateTime?` | Última actividad detectada |
+| `lastOnline` | `DateTime?` | Último momento online confirmado |
+| `lastPlayback` | `DateTime?` | Última reproducción de anuncio |
+| `playerStatus` | `String?` | `"PLAYING" | "IDLE" | "ERROR" | "OFFLINE"` |
+| `appVersion` | `String?` | Versión de la PWA (OTA updates) |
+| `authToken` | `String?` | Token de autenticación de tablet |
+| `storageUsed` | `BigInt?` | Bytes usados en tablet |
+| `storageTotal` | `BigInt?` | Bytes total en tablet |
+| `storageFree` | `String?` | Espacio disponible (formato legible) |
+| `driverId` | `String?` | FK → `Driver` |
 | `isSimulated` | `Boolean` | Flag para load testing |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps de auditoría |
 
 **Relaciones clave:**
 - `events` → `AnalyticsEvent[]` (telemetría cruda)
@@ -125,14 +236,35 @@ datasource db {
 | `name` | `String` | Nombre de campaña |
 | `advertiser` | `String` | Nombre de marca |
 | `advertiserId` | `String?` | FK → `Advertiser` |
+| `description` | `String?` | Descripción detallada |
+| **Dual-Status System** | | |
 | `status` | `String` | `"PENDING_PAYMENT" | "ACTIVE" | "PAUSED" | "COMPLETED"` |
-| `startDate` / `endDate` | `DateTime` | Vigencia |
-| `isGlobal` | `Boolean` | Todas las tablets |
-| `targetCities` | `String` | JSON array: `["Santiago","SDQ"]` |
+| `active` | `Boolean` | Default: `true` — Flag independiente de `status` |
+| **Targeting Modes (5 canales)** | | |
+| `isGlobal` | `Boolean` | Todas las tablets (legacy) |
+| `targetAll` | `Boolean` | Todas las tablets con suscripción activa |
+| `targetCity` | `String` | Ciudad única: `"Santiago"` |
+| `targetCities` | `String` | JSON array: `["Santiago","SDQ"]` (requiere índice GIN) |
 | `targetFleets` | `String` | JSON array de fleet IDs |
+| **Finanzas** | | |
+| `priority` | `Int` | Orden en playlist (mayor = primero) |
 | `targetImpressions` | `Int` | Meta de impresiones |
 | `budget` | `Float` | Presupuesto en RD$ |
-| `priority` | `Int` | Orden en playlist (mayor = primero) |
+| `targetUrl` | `String?` | URL de destino (QR scan) |
+| **Social/Delivery Links** | | |
+| `whatsapp` | `String?` | WhatsApp de la marca |
+| `facebook` | `String?` | Facebook de la marca |
+| `instagram` | `String?` | Instagram de la marca |
+| `websiteUrl` | `String?` | Sitio web |
+| `pedidosYaUrl` | `String?` | PedidosYa link |
+| `uberEatsUrl` | `String?` | UberEats link |
+| **Metadata** | | |
+| `category` | `String?` | `"General" | "Restaurante" | "Servicios"` |
+| `version` | `Int` | Default: `1` — Versioning incremental |
+| `hasSeenTutorial` | `Boolean` | Default: `false` — UX tracking |
+| `createdById` | `String?` | FK → `User` (admin que creó) |
+| `startDate` / `endDate` | `DateTime` | Vigencia |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps |
 
 **Relaciones clave:**
 - `media` → `Media[]` (archivos multimedia)
@@ -267,11 +399,15 @@ const result = await prisma.$queryRaw`
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
 | `driverId` | `String @unique` | FK → `Driver` (1:1) |
-| `availableBalance` | `Float` | RD$ disponibles para retiro |
-| `pendingWithdrawal` | `Float` | RD$ en proceso de retiro |
+| `availableBalance` | `Float` | RD$ disponibles para retiro (default: `0.0`) |
+| `pendingWithdrawal` | `Float` | RD$ en proceso de retiro (default: `0.0`) |
 | `bankInfo` | `Json?` | `{ bank, account, type }` |
+| `createdAt` | `DateTime` | Timestamp |
 
-**Relación:** `driver` → `Driver` (1:1, `onDelete: Cascade`)
+**⚠️ CRITICAL: `onDelete: RESTRICT` (NOT Cascade!)**
+> El doc anterior erroneamente indicaba `onDelete: Cascade`. La migración SQL `20260424_v12_schema_sync` usa `ON DELETE RESTRICT`. **No se puede borrar un Driver si tiene Wallet asociada** — esto es una protección de datos financieros. El schema.prisma no declara `onDelete` explícito, pero la DB migration establece RESTRICT.
+
+**⚠️ VULN #7 Divergencia:** El `walletBalance` se almacena directamente en `Driver.wallet_balance` (columna real), NO en `Wallet.availableBalance`. El modelo `Wallet` existe en Prisma pero **está desactualizado** — el servicio `wallet.service.ts` opera sobre `drivers.wallet_balance` usando `$queryRaw SELECT FOR UPDATE`. Ver sección 6.4.
 
 ---
 
@@ -279,10 +415,11 @@ const result = await prisma.$queryRaw`
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
-| `driverId` | `String` | FK → `Driver` |
-| `amount` | `Float` | Default: `500.0` |
+| `driverId` | `String` | FK → `Driver` (**onDelete: RESTRICT**) |
+| `amount` | `Float` | Default: `500.0` (RD$500 por referido) |
 | `sourceType` | `String` | `"ADVERTISER_SALE" | "DRIVER_REFERRAL"` |
 | `status` | `String` | `"PENDING" | "APPROVED" | "PAID"` |
+| `createdAt` | `DateTime` | Timestamp |
 
 **Regla de Negocio:**
 - `DRIVER_REFERRAL`: Se crea cuando un referido (vía `referralCode`) cierra su primera campaña pagada.
@@ -294,7 +431,7 @@ const result = await prisma.$queryRaw`
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
-| `driverId` | `String` | FK → `Driver` |
+| `driverId` | `String` | FK → `Driver` (onDelete: Cascade) |
 | `amount` | `Float` | RD$ calculados |
 | `month` / `year` | `Int` | Período de pago |
 | `status` | `String` | `"PENDING" | "PAID"` |
@@ -302,13 +439,25 @@ const result = await prisma.$queryRaw`
 | `gpsPoints` | `Int` | Puntos de GPS válidos |
 | `transmissionHours` | `Float` | Horas de transmisión |
 | `penaltyApplied` | `Boolean` | Penalización por bajo rendimiento |
+| `penaltyPercentage` | `Float` | Default: `0` — % de penalización escalada |
+| `referenceNum` | `String?` | Número de referencia bancaria |
+| `paidAt` | `DateTime?` | Timestamp de pago ejecutado |
+| `createdAt` | `DateTime` | Timestamp |
 
-**Única:** `@@unique([driverId, month, year])`
+**Índices:**
+```prisma
+@@unique([driverId, month, year])
+@@index([driverId])
+@@index([status])
+@@map("payroll_payments")
+```
 
 **Fórmula de Cálculo:**
 ```
-amount = (min(activeAds, 15) × 500) + (commissions × 500)
-if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercentage)
+base = (min(activeAds, 15) × 500) + (commissions × 500)
+if gpsPoints < threshold → penaltyApplied = true
+penaltyPercentage = consecutiveMonthsUnderGoal × penaltyStep  (from Driver model)
+amount = base × (1 - penaltyPercentage)
 ```
 
 ---
@@ -324,7 +473,9 @@ if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercen
 | `taxAmount` | `Float` | ITBIS 18% |
 | `status` | `String` | `"PENDING" | "COMPLETED" | "FAILED"` |
 | `entityId` | `String?` | ID de entidad relacionada |
-| `reference` | `String @unique` | Referencia única de transacción |
+| `reference` | `String? @unique` | Referencia idempotente (**nullable** — no todas las transacciones tienen ref) |
+| `note` | `String?` | Nota manual |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps |
 
 **Índices:**
 ```prisma
@@ -339,19 +490,23 @@ if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercen
 
 ---
 
-#### `Subscription` — Suscripción Anual del Conductor (RD$6,000)
+#### `Subscription` — Suscripción Anual del Conductor
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
-| `driverId` | `String` | FK → `Driver` |
-| `deviceId` | `String?` | FK → `Device` (opcional) |
-| `amount` | `Float` | Default: `6000.0` |
+| `driverId` | `String` | FK → `Driver` (onDelete: Cascade) |
+| `deviceId` | `String?` | FK → `Device` (onDelete: Cascade) |
+| `plan` | `String` | **REQUIRED** — Nombre del plan (`"ANUAL_6000"`, futuro: `"MENSUAL_500"`, `"PREMIUM"`) |
+| `amount` | `Float` | Default: `6000.0` — RD$6,000/año (ITBIS incluido) |
+| `paymentMethod` | `String?` | `"BANK_TRANSFER" | "CASH" | "CARD"` |
 | `status` | `String` | `"PENDING" | "ACTIVE" | "EXPIRED"` |
 | `startDate` | `DateTime` | Inicio de cobertura |
 | `dueDate` | `DateTime` | Fecha límite de pago |
 | `validUntil` | `DateTime` | Fin de cobertura |
 | `paidAt` | `DateTime?` | Fecha de pago real |
+| `notes` | `String?` | Notas administrativas |
 | `isSimulated` | `Boolean` | Load testing |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps |
 
 **Índices:**
 ```prisma
@@ -575,11 +730,22 @@ if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercen
 | `id` | `String @uuid` | PK |
 | `companyName` / `contactName` | `String` | Datos de empresa |
 | `email` | `String @unique` | Login credential |
-| `referredBy` | `String?` | FK → `Driver` (árbol de referidos) |
+| `phone` | `String?` | Teléfono de contacto |
 | `password` | `String?` | Hash bcrypt |
+| `status` | `String` | Default: `"ACTIVE"` — `"ACTIVE" | "SUSPENDED" | "PENDING"` |
+| `referredBy` | `String?` | FK → `Driver` (`AdvertiserReferrals`) |
 | `category` | `String` | `"General" | "Restaurante" | "Servicios"` |
 | `websiteUrl` / `whatsapp` / `facebook` / `instagram` | `String?` | Redes sociales |
-| `productsData` | `String` | JSON array de productos |
+| `pedidosYaUrl` / `uberEatsUrl` | `String?` | Links de delivery |
+| `productsData` | `String` | JSON array de productos (requiere índice GIN) |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps |
+
+**Relaciones clave:**
+- `campaigns` → `Campaign[]` (1:N, named `advertiserRef`)
+- `portalRequests` → `PortalRequest[]` (1:N, onDelete: Cascade)
+- `subscriptions` → `AdvertiserSubscription[]` (1:N, onDelete: Cascade)
+- `invoices` → `Invoice[]` (1:N, onDelete: Cascade)
+- `referrer` → `Driver?` (FK, `AdvertiserReferrals`) — conductor que refirió al anunciante
 
 **Índices:**
 ```prisma
@@ -593,12 +759,24 @@ if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercen
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
-| `advertiserId` / `driverId` / `campaignId` | `String?` | FKs opcionales |
-| `type` | `String` | Tipo de solicitud |
+| `advertiserId` | `String?` | FK → `Advertiser` (onDelete: Cascade) |
+| `driverId` | `String?` | FK → `Driver` (onDelete: Cascade) |
+| `campaignId` | `String?` | FK opcional |
+| `type` | `String` | `"CAMPAIGN_CHANGE" | "BILLING_ISSUE"` etc. |
 | `status` | `String` | `"PENDING" | "APPROVED" | "REJECTED"` |
 | `title` / `description` | `String` | Contenido |
 | `data` | `String` | JSON payload |
 | `adminNotes` | `String?` | Notas del admin |
+| `createdAt` / `updatedAt` | `DateTime` | Timestamps |
+
+**Índices:**
+```prisma
+@@index([advertiserId])
+@@index([driverId])
+@@index([status])
+@@index([type])
+@@map("portal_requests")
+```
 
 ---
 
@@ -606,12 +784,18 @@ if gpsPoints < threshold → penaltyApplied = true, amount *= (1 - penaltyPercen
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | `id` | `String @uuid` | PK |
-| `driverId` | `String` | FK → `Driver` |
-| `version` | `String` | Versión del contrato |
+| `driverId` | `String` | FK → `Driver` (onDelete: Cascade) |
+| `version` | `String` | Versión del contrato (`"v12.1"`) |
 | `ipAddress` / `userAgent` | `String?` | Auditoría |
 | `timestamp` | `DateTime` | Fecha de aceptación |
 
-**Uso:** Compliance legal. Cada conductor debe aceptar contrato y seguro antes de `status = OPERATIVO`.
+**Índice:**
+```prisma
+@@index([driverId])
+@@map("contract_acceptances")
+```
+
+**⚠️ Legal Compliance Gate:** Este modelo complementa los flags booleanos en `Driver` (`contractAccepted`, `insuranceAccepted`). Ambos deben ser `true` para que `Driver.status` pueda ser `OPERATIVO`. Ver sección 8.1.
 
 ---
 
@@ -989,7 +1173,390 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
 ---
 
-## 8. GLOSARIO DE TÉRMINOS
+## 7. MATERIALIZED VIEW: mv_active_campaigns — El Query Más Crítico del Sistema
+
+> **Fuente:** `apps/api/prisma/views.sql` + `apps/api/src/modules/sync/sync.service.ts`
+> **Frecuencia:** Cada heartbeat de tablet (~60s por device) consulta esta vista.
+
+### 7.1 Definición de la Vista
+
+```sql
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_active_campaigns AS
+SELECT
+    c.id as campaign_id, c.name, c.status, c.active,
+    c.start_date, c.end_date, c.target_all, c.target_city,
+    c.target_cities, c.target_fleets, c.priority, c.updated_at,
+    a.id as advertiser_id, a.company_name,
+    COALESCE(
+      (SELECT jsonb_agg(dc.device_id) FROM device_campaigns dc WHERE dc.campaign_id = c.id),
+      '[]'::jsonb
+    ) as assigned_device_uuids,
+    COALESCE(
+      (SELECT jsonb_agg(pi.device_id) FROM playlist_items pi WHERE pi.campaign_id = c.id),
+      '[]'::jsonb
+    ) as assigned_hw_ids,
+    COALESCE(
+      (SELECT jsonb_agg(ctd."B") FROM "_CampaignToDriver" ctd WHERE ctd."A" = c.id),
+      '[]'::jsonb
+    ) as assigned_driver_ids
+FROM campaigns c LEFT JOIN advertisers a ON c.advertiser_id = a.id
+WHERE c.active = true AND c.status = 'ACTIVE' AND c.end_date >= NOW();
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_campaign_id ON mv_active_campaigns (campaign_id);
+```
+
+**Nota:** El unique index es **obligatorio** para `REFRESH MATERIALIZED VIEW CONCURRENTLY` (no bloquea lecturas durante refresh).
+
+### 7.2 Sync Manifest Query (5-Channel Targeting)
+
+```sql
+SELECT campaign_id FROM mv_active_campaigns
+WHERE active = true
+  AND start_date <= NOW()
+  AND end_date >= NOW()
+  AND (
+    target_all = true                                      -- Canal 1: Global
+    OR target_city = ${city}                               -- Canal 2: Ciudad exacta
+    OR target_cities::text LIKE ${`%${city}%`}             -- Canal 3: Array de ciudades
+    OR assigned_device_uuids::jsonb @> ${[device.id]}::jsonb  -- Canal 4: Device UUID
+    OR assigned_hw_ids::jsonb @> ${[deviceId]}::jsonb       -- Canal 5: HW ID
+    OR (assigned_driver_ids::jsonb @> ${[driver?.id]}::jsonb
+        AND ${!!isDriverActive})                            -- Canal 6: Driver (condicional)
+  )
+```
+
+**Canal de targeting detallado:**
+
+| Canal | Campo | Fuente de Datos | Descripción |
+| --- | --- | --- | --- |
+| Global | `target_all` | `Campaign.targetAll` | Todas las tablets con suscripción activa |
+| City Exact | `target_city` | `Campaign.targetCity` | Match exacto de ciudad (`"Santiago"` → Santiago) |
+| City Array | `target_cities` | `Campaign.targetCities` (JSON) | JSONB contains check (`LIKE %city%`) |
+| Device UUID | `assigned_device_uuids` | `DeviceCampaign` junction | Tabletas explícitamente asignadas |
+| HW ID | `assigned_hw_ids` | `PlaylistItem` junction | Hardware ID de FullyKiosk |
+| Driver | `assigned_driver_ids` | `_CampaignToDriver` (Prisma implicit) | Conductores específicos (solo si suscripción activa) |
+
+### 7.3 Refresh de la Vista
+
+```typescript
+// prisma.service.ts — ejecutado en startup y después de cambios de campaign
+async refreshActiveCampaignsView() {
+  try {
+    await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_active_campaigns;');
+  } catch {
+    // Fallback: primera vez requiere refresh non-concurrent
+    await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW mv_active_campaigns;');
+  }
+}
+```
+
+**⚠️ SRE:** La vista se refresh automáticamente al inicio del server (`prisma.service.ts` lee `views.sql`). Después de crear/editar/eliminar campañas, el admin dashboard debe invocar `refreshManifestView()` para que los tablets vean la campaña en el próximo heartbeat.
+
+---
+
+## 8. ROW LEVEL SECURITY (RLS) — 8 Tablas, 17 Políticas
+
+> **Fuente:** `apps/api/v12_supabase_schema.sql` + `apps/api/src/modules/supabase/migrations/`
+
+### 8.1 Catálogo Completo de RLS
+
+| # | Policy | Tabla | Op | Condición |
+| --- | --- | --- | --- | --- |
+| 1 | `profiles_select_own` | `profiles` | SELECT | `auth.uid() = id OR role = ADMIN` |
+| 2 | `profiles_update_own` | `profiles` | UPDATE | `auth.uid() = id OR role = ADMIN` |
+| 3 | `drivers_select_own` | `drivers` | SELECT | `auth.uid() = id OR role = ADMIN` |
+| 4 | `drivers_update_own` | `drivers` | UPDATE | `auth.uid() = id OR role = ADMIN` |
+| 5 | `drivers_insert_public` | `drivers` | INSERT | `WITH CHECK (true)` — signup público |
+| 6 | `devices_select_own` | `devices` | SELECT | `driver_id = auth.uid() OR role = ADMIN` |
+| 7 | `devices_update_own` | `devices` | UPDATE | `driver_id = auth.uid() OR role = ADMIN` |
+| 8 | `campaigns_select_own` | `campaigns` | SELECT | `advertiser_id = auth.uid() OR role = ADMIN` |
+| 9 | `campaigns_insert_own` | `campaigns` | INSERT | `advertiser_id = auth.uid() OR role = ADMIN` |
+| 10 | `campaigns_update_own` | `campaigns` | UPDATE | `advertiser_id = auth.uid() OR role = ADMIN` |
+| 11 | `campaigns_delete_own` | `campaigns` | DELETE | `advertiser_id = auth.uid() OR role = ADMIN` |
+| 12 | `financial_tx_select_own` | `financial_transactions` | SELECT | `entity_id = auth.uid() OR role = ADMIN` |
+| 13 | `financial_tx_insert_admin` | `financial_transactions` | INSERT | `WITH CHECK role = ADMIN` (service_role) |
+| 14 | `allow_anon_insert_analytics` | `analytics_events` | INSERT | `WITH CHECK (true)` — tablets sin auth |
+| 15 | `allow_authenticated_read_analytics` | `analytics_events` | SELECT | `USING (true)` |
+| 16 | `driverlocations_admin_select` | `"DriverLocations"` | SELECT | `role in ('ADMIN', 'SUPER_ADMIN')` |
+| 17 | `driverlocations_advertiser_select` | `"DriverLocations"` | SELECT | `EXISTS (SELECT 1 FROM mv_active_campaigns WHERE driver_id = "DriverLocations"."driverId" AND advertiser_id = auth.jwt().entityId AND is_active = true)` |
+
+**Role check universal:** `(auth.jwt() -> 'app_metadata' ->> 'role')::text = 'ADMIN'::text`
+
+### 8.2 Tablas con RLS Enabled
+
+| Tabla | RLS Source | Notas |
+| --- | --- | --- |
+| `profiles` | `v12_supabase_schema.sql` | Supabase Auth integration |
+| `drivers` | `v12_supabase_schema.sql` | + signup público |
+| `devices` | `v12_supabase_schema.sql` | Driver-owned devices |
+| `campaigns` | `v12_supabase_schema.sql` | Advertiser-owned |
+| `financial_transactions` | `v12_supabase_schema.sql` | Admin-only insert |
+| `analytics_events` | `fix_analytics_events_rls.sql` | Anon insert (tablets) |
+| `"DriverLocations"` | `20260526_driverlocations_realtime_rls.sql` | Realtime + advertiser visibility |
+| `spatial_ref_sys` | `enable-rls.sql` | PostGIS metadata lockdown |
+
+### 8.3 ⚠️ Advertiser Geofence Policy (#17)
+
+Policy #17 (`driverlocations_advertiser_select`) es la más compleja — permite a anunciantes ver ubicaciones de conductores **solo si** tienen una campaña activa asignada a ese conductor. Usa `mv_active_campaigns` como subquery, creando un dependency cycle: RLS → MV → Campaign.
+
+**SRE Risk:** Si `mv_active_campaigns` no está refreshada, los anunciantes no pueden ver ubicaciones en el mapa del portal.
+
+---
+
+## 9. SHADOW INDEXES & PRODUCTION-ONLY SQL
+
+> **Fuente:** `apps/api/prisma/migrations/v12_2_5_indexes_and_cleanup.sql` + `add_is_simulated_columns.sql`
+
+### 9.1 Production Performance Indexes (Phase 4.2)
+
+Estos indexes existen en la DB pero **NO están en schema.prisma**:
+
+| Index | Tabla | Columnas | Propósito |
+| --- | --- | --- | --- |
+| `idx_telemetry_driver_time` | `telemetry` | `(driver_id, "timestamp" DESC)` | Timeline del conductor (fleet dashboard) |
+| `idx_playback_device_video_time` | `playback_events` | `(device_id, video_id, date_trunc('minute', "timestamp"))` | Deduplicación de playback (ON CONFLICT) |
+
+Ambos se crearon con `CREATE INDEX CONCURRENTLY IF NOT EXISTS` — zero-lock deployment.
+
+### 9.2 Simulation Filter Indexes (Phase 4.1)
+
+| Index | Tabla | Columna | Propósito |
+| --- | --- | --- | --- |
+| `idx_drivers_is_simulated` | `drivers` | `is_simulated` | Separar datos de load testing |
+| `idx_devices_is_simulated` | `devices` | `is_simulated` | Filtrar devices simulados |
+| `idx_analytics_events_is_simulated` | `analytics_events` | `is_simulated` | Filtrar analytics simulados |
+| `idx_playback_events_is_simulated` | `playback_events` | `is_simulated` | Filtrar playback simulados |
+| `idx_subscriptions_is_simulated` | `subscriptions` | `is_simulated` | Filtrar suscripciones simuladas |
+| `idx_driver_locations_is_simulated` | `driver_locations` | `is_simulated` | Filtrar ubicaciones simuladas |
+
+### 9.3 Simulation Cleanup Procedure
+
+```sql
+-- v12_2_5_indexes_and_cleanup.sql — ejecutar después de load testing
+DELETE FROM playback_events WHERE is_simulated = true;
+DELETE FROM telemetry WHERE driver_id LIKE 'SIM-%';
+DELETE FROM "DriverLocations" WHERE "isSimulated" = true OR "driverId" LIKE 'SIM-%';
+DELETE FROM devices WHERE "isSimulated" = true OR device_id LIKE 'SIM-TAB-%';
+DELETE FROM drivers WHERE is_simulated = true;
+UPDATE devices SET status = 'OPERATIVO'
+  WHERE status = 'BLOQUEADO' AND "isSimulated" = true;
+```
+
+**⚠️ CERO COSTOS:** Ejecutar solo en ventanas de mantenimiento. Las simulaciones se borran permanentemente.
+
+---
+
+## 10. RAW SQL QUERY PATTERNS — Wallet, Analytics, Health
+
+### 10.1 Wallet: SELECT FOR UPDATE (Double-Spend Protection)
+
+```typescript
+// wallet.service.ts — VULN #5 patch
+await tx.$queryRaw`
+  SELECT id, wallet_balance, bank_account
+  FROM drivers WHERE id = ${driverId}
+  FOR UPDATE  -- Row-level exclusive lock previene double-spend
+`;
+
+// Atomic deduction:
+await tx.$executeRaw`
+  UPDATE drivers SET wallet_balance = wallet_balance - ${amount}
+  WHERE id = ${driverId}
+`;
+
+// Safety net verification:
+const result = await tx.$queryRaw`
+  SELECT wallet_balance FROM drivers WHERE id = ${driverId}
+`;
+// If balance < 0 → emergency rollback:
+await tx.$executeRaw`
+  UPDATE drivers SET wallet_balance = wallet_balance + ${amount}
+  WHERE id = ${driverId}
+`;
+```
+
+**Isolation:** `ReadCommitted` + `SELECT FOR UPDATE` (row-level exclusivity). Timeout: 10s.
+
+### 10.2 Analytics: Hourly Aggregation
+
+```sql
+SELECT
+  EXTRACT(HOUR FROM "timestamp") as "hour",
+  COUNT(id)::int as "plays"
+FROM "playback_events"
+WHERE "timestamp" >= ${last24h}
+  AND "video_id" IN (${Prisma.join(videoIds)})
+GROUP BY 1
+```
+
+**Heatmap:** Uses Prisma ORM `findMany` (NOT raw SQL) — `take: 10000`, 30s cache.
+
+### 10.3 Health Check: Connection Pool Monitor
+
+```sql
+SELECT count(*) as active_connections
+FROM pg_stat_activity
+WHERE datname = current_database()
+```
+
+**PrismaService SRE Config:**
+- Auto-injects `connection_limit=5` if missing in DATABASE_URL
+- Auto-injects `pool_timeout=10` if missing
+- Logs warning if `connection_limit > 10`
+
+---
+
+## 11. MIGRATION HISTORY & ROLLBACK PROCEDURES
+
+### 11.1 Historial de Migraciones
+
+| Migration | Fecha | Descripción | Tipo |
+| --- | --- | --- | --- |
+| `20260309_add_drivers_and_subscriptions` | 2026-03-09 | Creación de Driver/Subscription | Schema |
+| `20260424_v12_schema_sync` | 2026-04-24 | SystemStatus enum, Wallet, ActiveAd, Commission, PostGIS, missing columns | Major sync |
+| `add_is_simulated_columns.sql` | 2026-04-14 | `is_simulated` flags + 6 filter indexes | Feature |
+| `20260521_add_media_asset_processing_fields` | 2026-05-21 | MediaAsset processing/validation fields | Feature |
+| `20260522_enable_rls_on_spatial_ref_sys` | 2026-05-22 | RLS on `spatial_ref_sys` (PostGIS security) | Security |
+| `20260526_driverlocations_realtime_rls` | 2026-05-26 | RLS + Realtime CDC on DriverLocations | Security |
+| `v12_2_5_indexes_and_cleanup.sql` | 2026-06-05 | Production indexes + simulation cleanup | Performance |
+
+### 11.2 Zero-Downtime Migration Strategy
+
+```bash
+# Standard deploy (no schema changes):
+prisma migrate deploy  # Applies pending migrations at startup
+
+# Migration with schema changes (requires care):
+# 1. Create reversible migration:
+prisma migrate dev --name my_feature --create-only
+# 2. Review the generated SQL — add DOWN migration manually
+# 3. For GIN indexes on JSON columns (table-locking):
+#    Use CREATE INDEX CONCURRENTLY instead of Prisma's default
+# 4. Test on staging first
+prisma migrate deploy  # Production deploy
+```
+
+### 11.3 Production Rollback Procedure
+
+```bash
+# Option A: Mark migration as rolled-back (preserve history):
+prisma migrate resolve --rolled-back "migration_name"
+
+# Option B: Restore from Supabase backup (PITR):
+# 1. Go to Supabase Dashboard → Database → Backups
+# 2. Select timestamp before migration
+# 3. Restore to new branch (no data loss)
+# 4. Verify schema, then promote branch
+
+# Option C: Manual SQL rollback (risky):
+# 1. Write inverse SQL (DROP INDEX, ALTER TABLE DROP COLUMN, etc.)
+# 2. Execute via Supabase SQL Editor
+# 3. Run prisma migrate resolve --rolled-back
+```
+
+**⚠️ NEVER use `prisma migrate reset` in production** — deletes all data.
+
+### 11.4 PostGIS Extension Lifecycle
+
+```sql
+-- New environment setup:
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- Security requirement (Supabase linting):
+ALTER TABLE public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+
+-- Insert PostGIS data:
+-- Via $executeRaw in Prisma:
+await prisma.$executeRaw`
+  UPDATE driver_locations
+  SET location = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+  WHERE id = ${id}
+`;
+```
+
+---
+
+## 12. ONDELETE BEHAVIOR MAP — Complete Reference
+
+> **⚠️ CRITICAL:** Prisma schema declarations and DB migration constraints **disagree** on some relations. The DB constraints are the actual enforcement.
+
+### 12.1 Cascade Deletions (Parent deletion removes children)
+
+| Parent → Child | Schema Declaration | DB Constraint | Effective |
+| --- | --- | --- | --- |
+| Campaign → Playlist | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Campaign → PlaylistItem | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Campaign → DeviceCampaign | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Campaign → CampaignMetric | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Campaign → MediaAsset | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Campaign → Video | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → PlaylistItem | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → DeviceCampaign | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → DeviceCommand | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → DeviceHeartbeat | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → PlaybackEvent | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → DriverLocation | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Device → Subscription | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Driver → PayrollPayment | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Driver → Subscription | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Driver → ContractAcceptance | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Driver → ReconciliationReport | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Advertiser → AdvertiserSubscription | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Advertiser → Invoice | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+| Advertiser → PortalRequest | `onDelete: Cascade` | `ON DELETE CASCADE` | ✅ Cascade |
+
+### 12.2 Restrict Deletions (Cannot delete parent if children exist)
+
+| Parent → Child | Schema Declaration | DB Constraint | Effective | SRE Risk |
+| --- | --- | --- | --- | --- |
+| Driver → Wallet | *No explicit onDelete* | `ON DELETE RESTRICT` | ❌ Restrict | **HIGH** — Cannot delete driver with wallet |
+| Driver → Commission | *No explicit onDelete* | `ON DELETE RESTRICT` | ❌ Restrict | **HIGH** — Cannot delete driver with commissions |
+| Driver → ActiveAd | `onDelete: Cascade` | `ON DELETE RESTRICT` | ❌ Restrict overrides | **CRITICAL** — Prisma will attempt cascade, DB rejects |
+| Driver → Telemetry | `onDelete: Cascade` | `ON DELETE RESTRICT` | ❌ Restrict overrides | **CRITICAL** — Prisma will attempt cascade, DB rejects |
+
+> **SRE Implication:** Deleting a Driver with financial data (Wallet, Commission, ActiveAd, Telemetry) will **FAIL at DB level**. This is intentional — financial data is immutable. To delete a driver, first manually archive/nullify their financial records.
+
+---
+
+## 13. GENERATED CLIENT STALENESS RISK
+
+> **⚠️ SRE:** The embedded Prisma client (`apps/api/prisma/client/index.js`) contains an `inlineSchema` that differs from the actual `schema.prisma` in multiple ways:
+
+| Field | In schema.prisma | In embedded client | Impact |
+| --- | --- | --- | --- |
+| `Campaign.status` default | `"DRAFT"` | `"PENDING_PAYMENT"` | New campaigns get wrong status |
+| `PlaybackEvent.verified` | Present | **Missing** | No verification tracking |
+| `PlaybackEvent @@unique` | Present | **Missing** | No dedup constraint |
+| `MediaAsset.processingStatus` | Present | **Missing** | No processing workflow |
+| `MediaAsset.validationError` | Present | **Missing** | No error tracking |
+
+**Fix:** Run `npx prisma generate` before every deploy. The embedded client is a snapshot from an earlier schema version and will cause runtime errors if not regenerated.
+
+---
+
+## 14. @@MAP CONVENTION — Prisma ↔ PostgreSQL Naming
+
+Every Prisma model uses `@@map("snake_case")` to map to PostgreSQL table names. When writing raw SQL (`$queryRaw`, `$executeRaw`), **always use the mapped table name**, not the Prisma model name:
+
+| Prisma Model | SQL Table Name | Note |
+| --- | --- | --- |
+| `AnalyticsEvent` | `analytics_events` | Use in raw SQL |
+| `PlaybackEvent` | `playback_events` | Use in raw SQL |
+| `DriverLocation` | `"DriverLocations"` | **Quoted!** Case-sensitive in migration |
+| `DeviceCampaign` | `device_campaigns` | Use in raw SQL |
+| `PlaylistItem` | `playlist_items` | Use in raw SQL |
+| `FinancialTransaction` | `financial_transactions` | Use in raw SQL |
+| `PayrollPayment` | `payroll_payments` | Use in raw SQL |
+| `ContractAcceptance` | `contract_acceptances` | Use in raw SQL |
+| `PortalRequest` | `portal_requests` | Use in raw SQL |
+| `BiDashboardSnapshot` | `bi_dashboard_snapshots` | Use in raw SQL |
+| `ReconciliationReport` | `reconciliation_reports` | Use in raw SQL |
+| `AdvertiserSubscription` | `advertiser_subscriptions` | Use in raw SQL |
+| `_CampaignToDriver` | `_CampaignToDriver` | Prisma implicit junction (quoted) |
+
+---
+
+## 15. GLOSARIO DE TÉRMINOS
 
 | Término | Definición |
 | --- | --- |

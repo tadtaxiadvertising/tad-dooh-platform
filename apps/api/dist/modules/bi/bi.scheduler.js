@@ -14,31 +14,53 @@ exports.BiScheduler = void 0;
 const common_1 = require("@nestjs/common");
 const schedule_1 = require("@nestjs/schedule");
 const bi_service_1 = require("./bi.service");
+const prisma_service_1 = require("../prisma/prisma.service");
 let BiScheduler = BiScheduler_1 = class BiScheduler {
-    constructor(biService) {
+    constructor(biService, prisma) {
         this.biService = biService;
+        this.prisma = prisma;
         this.logger = new common_1.Logger(BiScheduler_1.name);
     }
     async handleDailySnapshot() {
-        this.logger.log('🚀 Iniciando generación de snapshot diario de BI...');
+        this.logger.log('\ud83d\ude80 Iniciando generaci\u00f3n de snapshot diario de BI...');
         try {
             await this.biService.getMasterKpis();
-            this.logger.log('✅ Snapshot diario generado con éxito.');
+            this.logger.log('\u2705 Snapshot diario generado con \u00e9xito.');
         }
         catch (error) {
-            this.logger.error('❌ Error al generar snapshot de BI:', error.message);
+            this.logger.error('\u274c Error al generar snapshot de BI:', error.message);
         }
     }
     async handleReconciliation() {
         const now = new Date();
         const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        this.logger.log(`🌙 Iniciando conciliación automática para el periodo ${period}...`);
+        this.logger.log(`\ud83c\udf19 Iniciando conciliaci\u00f3n autom\u00e1tica para el periodo ${period}...`);
         try {
             const result = await this.biService.generateReconciliationReport(period);
-            this.logger.log(`✅ Conciliación completada: ${result.total} registros procesados.`);
+            this.logger.log(`\u2705 Conciliaci\u00f3n completada: ${result.total} registros procesados.`);
         }
         catch (error) {
-            this.logger.error('❌ Falla en conciliación automática:', error.message);
+            this.logger.error('\u274c Falla en conciliaci\u00f3n autom\u00e1tica:', error.message);
+        }
+    }
+    async handleIdempotencyCleanup() {
+        this.logger.log('\ud83e\uddf9 [IDEMPOTENCY_TTL] Purging expired idempotency keys...');
+        try {
+            const staleLocks = await this.prisma.idempotencyKey.updateMany({
+                where: {
+                    isLocked: true,
+                    createdAt: { lt: new Date(Date.now() - 3600000) }
+                },
+                data: { isLocked: false }
+            });
+            this.logger.log(`\u26a0 Released ${staleLocks.count} stale idempotency locks (orphaned from crashed requests).`);
+            const deleted = await this.prisma.idempotencyKey.deleteMany({
+                where: { expiresAt: { lt: new Date() } }
+            });
+            this.logger.log(`\u2705 Purged ${deleted.count} expired idempotency keys.`);
+        }
+        catch (error) {
+            this.logger.error('\u274c Error in idempotency cleanup:', error.message);
         }
     }
 };
@@ -55,8 +77,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], BiScheduler.prototype, "handleReconciliation", null);
+__decorate([
+    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_4AM),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], BiScheduler.prototype, "handleIdempotencyCleanup", null);
 exports.BiScheduler = BiScheduler = BiScheduler_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [bi_service_1.BiService])
+    __metadata("design:paramtypes", [bi_service_1.BiService,
+        prisma_service_1.PrismaService])
 ], BiScheduler);
 //# sourceMappingURL=bi.scheduler.js.map

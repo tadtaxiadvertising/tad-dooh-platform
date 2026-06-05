@@ -1,4 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 export declare class WalletService {
     private readonly prisma;
     private readonly logger;
@@ -15,10 +16,11 @@ export declare class WalletService {
         success: boolean;
         newBalance: number;
         transactionId: string;
+        reference: string;
     }>;
     updateBank(driverId: string, bankData: any): Promise<{
         success: boolean;
-        bankAccount: import("@prisma/client/runtime/library").JsonValue;
+        bankAccount: Prisma.JsonValue;
     }>;
     private logFinancialAnomaly;
 }

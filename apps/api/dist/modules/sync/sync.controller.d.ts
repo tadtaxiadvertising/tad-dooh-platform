@@ -6,6 +6,8 @@ export declare class SyncController {
         timestamp: string;
         expiresAt: string;
         etag: string;
+        killSwitch: boolean;
+        killSwitchReason: string;
         licenseToken: string;
         device: {
             id: string;
@@ -14,5 +16,19 @@ export declare class SyncController {
         };
         count: number;
         playlist: any[];
+    } | {
+        timestamp: string;
+        expiresAt: string;
+        etag: string;
+        licenseToken: string;
+        device: {
+            id: string;
+            deviceId: string;
+            taxi: string;
+        };
+        count: number;
+        playlist: any[];
+        killSwitch?: undefined;
+        killSwitchReason?: undefined;
     }>;
 }

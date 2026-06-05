@@ -133,7 +133,8 @@ let FinanceService = FinanceService_1 = class FinanceService {
             this.prisma.playbackEvent.findMany({
                 where: {
                     timestamp: { gte: periodStart, lte: periodEnd },
-                    eventType: 'play_confirm'
+                    eventType: 'play_confirm',
+                    verified: true,
                 },
                 select: { deviceId: true, videoId: true }
             })

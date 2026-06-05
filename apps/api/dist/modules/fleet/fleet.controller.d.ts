@@ -158,8 +158,8 @@ export declare class FleetController {
         createdAt: Date;
         commandType: string;
         commandParams: string | null;
-        expiresAt: Date | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
         type: string;

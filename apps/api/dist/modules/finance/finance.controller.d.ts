@@ -65,9 +65,9 @@ export declare class FinanceController {
         driverId: string;
         activeAds: number;
         amount: number;
-        paidAt: Date | null;
         month: number;
         year: number;
+        paidAt: Date | null;
         referenceNum: string | null;
         penaltyApplied: boolean;
         penaltyPercentage: number;
@@ -123,10 +123,10 @@ export declare class FinanceController {
         type: string;
         category: string;
         entityId: string | null;
+        reference: string | null;
         amount: number;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
         note: string | null;
     }>;
     getSummary(): Promise<{
@@ -158,10 +158,10 @@ export declare class FinanceController {
         type: string;
         category: string;
         entityId: string | null;
+        reference: string | null;
         amount: number;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
         note: string | null;
     }[]>;
     emailCampaignReport(id: string, body: {

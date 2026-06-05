@@ -13,6 +13,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrismaService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
+const fs = require("fs");
+const path = require("path");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
         let url = process.env.DATABASE_URL;
@@ -25,6 +27,10 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             if (match && parseInt(match[1]) > 10) {
                 console.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
             }
+        }
+        if (url && !url.includes('pool_timeout=')) {
+            const separator = url.includes('?') ? '&' : '?';
+            url = `${url}${separator}pool_timeout=10`;
         }
         super({
             datasources: {
@@ -64,8 +70,6 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
     async initializeSreViews() {
         try {
             this.logger.log('🏗️ Sincronizando Vistas Materializadas (Master Sync)...');
-            const fs = require('fs');
-            const path = require('path');
             const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
             if (!fs.existsSync(viewsFile)) {
                 this.logger.warn('⚠️ No se encontró prisma/views.sql. Saltando.');
@@ -103,6 +107,20 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             else {
                 this.logger.error(`❌ Error al refrescar vista: ${e.message}`);
             }
+        }
+    }
+    async getHealthMetrics() {
+        try {
+            const result = await this.$queryRaw `
+        SELECT count(*) as active_connections FROM pg_stat_activity WHERE datname = current_database()
+      `;
+            return {
+                connected: true,
+                activeConnections: Number(result[0]?.active_connections ?? 0),
+            };
+        }
+        catch {
+            return { connected: false };
         }
     }
 };

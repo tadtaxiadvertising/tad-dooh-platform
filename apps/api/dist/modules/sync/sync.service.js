@@ -72,6 +72,33 @@ let SyncService = SyncService_1 = class SyncService {
             });
             hasValidSubscription = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
         }
+        const shouldKillSwitch = driver && !hasValidSubscription;
+        if (shouldKillSwitch) {
+            this.logger.warn(`🚨 [KILLSWITCH] Device ${deviceId} → Driver ${driver.id} subscription UNPAID. Emitting kill directive.`);
+            const graceToken = jwt.sign({
+                deviceId,
+                taxi: device.taxiNumber,
+                type: 'KILLSWITCH_GRACE',
+                killSwitch: true,
+                reason: 'SUBSCRIPTION_UNPAID',
+                iat: Math.floor(Date.now() / 1000)
+            }, this.JWT_SECRET, { expiresIn: '1h' });
+            return {
+                timestamp: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+                etag: 'KILLSWITCH-402',
+                killSwitch: true,
+                killSwitchReason: 'SUBSCRIPTION_UNPAID',
+                licenseToken: graceToken,
+                device: {
+                    id: device.id,
+                    deviceId: device.deviceId,
+                    taxi: device.taxiNumber
+                },
+                count: 0,
+                playlist: []
+            };
+        }
         const now = new Date();
         this.logger.log(`🕒 Sync [V5] Clock: ${now.toISOString()} | Device: ${deviceId}`);
         let campaignFilter = { isGlobal: true };

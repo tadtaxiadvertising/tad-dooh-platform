@@ -17,7 +17,7 @@ export class FinanceService {
     private readonly invoiceService: InvoiceService,
     private readonly whatsappService: WhatsAppService,
     private readonly emailService: EmailService
-  ) {}
+  ) { }
 
   /**
    * RECOVERY: On module init, check if the system missed any critical delinquency scans
@@ -70,7 +70,7 @@ export class FinanceService {
         taxAmount,
         netAmount,
         entityId: device.driver?.id,
-        reference: `REGLA-402-${deviceId.substring(0,8)}`,
+        reference: `REGLA-402-${deviceId.substring(0, 8)}`,
         note: `Factura de morosidad generada automáticamente por Kill-Switch.`
       }
     });
@@ -104,7 +104,7 @@ export class FinanceService {
 
     await throttledMap(delinquentDrivers as any[], async (driver) => {
       for (const device of driver.devices) {
-        await this.notifyMorosidad(device.deviceId).catch(err => 
+        await this.notifyMorosidad(device.deviceId).catch(err =>
           this.logger.error(`Error notifying morosidad for ${device.deviceId}: ${err.message}`)
         );
       }
@@ -161,7 +161,8 @@ export class FinanceService {
       this.prisma.playbackEvent.findMany({
         where: {
           timestamp: { gte: periodStart, lte: periodEnd },
-          eventType: 'play_confirm'
+          eventType: 'play_confirm',
+          verified: true, // REVENUE SHIELD: Only count validated playback events
         },
         select: { deviceId: true, videoId: true }
       })
@@ -169,11 +170,11 @@ export class FinanceService {
 
     // MAPAS para búsqueda rápida O(1)
     const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
-    
+
     // Mapear Playbacks a Driver (PoP - Proof of Play)
     // driverId -> Set of campaignIds played
     const driverPoPMap = new Map<string, Set<string>>();
-    
+
     // Necesitamos saber qué mediaId (videoId) pertenece a qué campaignId
     const mediaToCampaignRaw = await this.prisma.media.findMany({
       where: { campaign_id: { not: null } },
@@ -205,10 +206,10 @@ export class FinanceService {
         // 2. PARADIGMA PoP: Solo se paga por anuncios TRANSMITIDOS (confirmados por playback)
         // El driver debe tener suscripción paga para recibir el abono
         const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
-        
+
         const activeAdsCount = isSubPaid ? playedCampaigns.size : 0;
-        const baseCommission = 0; 
-        
+        const baseCommission = 0;
+
         // Calculate referral commissions
         const referrals = driver.referrals ? driver.referrals.length : 0;
         const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
@@ -360,7 +361,7 @@ export class FinanceService {
       category: 'OPEX_DRIVER_PAYOUT',
       amount: driverEntry.totalAmount,
       entityId: driverId,
-      reference: reference || `PAY-${driverId.substring(0,4)}-${month}-${year}`,
+      reference: reference || `PAY-${driverId.substring(0, 4)}-${month}-${year}`,
       note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
       status: 'COMPLETED'
     });
@@ -458,7 +459,7 @@ export class FinanceService {
 
     const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
-    
+
     const subtotal = monthlyBase * diffMonths;
     const taxes = subtotal * BUSINESS_RULES.ITBIS_RATE;
     const total = subtotal + taxes;
@@ -526,7 +527,7 @@ export class FinanceService {
     csv += `Meses,${diffMonths}\n`;
     csv += `Impactos Totales,${impressions}\n`;
     csv += `Monto Total,RD$ ${total}\n\n`;
-    
+
     csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
     campaign.media.forEach(m => {
       const dur = m.durationSeconds || 30;
@@ -584,7 +585,7 @@ export class FinanceService {
         this.logger.log(`Referral detected for driver ${data.entityId}. Applying retention logic.`);
         const referralBonus = netAmount * this.REFERRAL_RETENTION_RATE;
         netAmount -= referralBonus; // Retain bonus for the referrer
-        
+
         // Bonus transaction for the referrer could be recorded here as OUTGOING or a PENDING balance
       }
     }
@@ -631,7 +632,7 @@ export class FinanceService {
         const blocks = Math.ceil(dur / 30);
         monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
       });
-      
+
       const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
       const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
       campaignRevenue += monthlyBase * diffMonths;
@@ -640,7 +641,7 @@ export class FinanceService {
     // 3. Burn Rate Calculation: Fixed costs from transactions (VPS, Maps, etc.)
     const monthStart = new Date();
     monthStart.setDate(1);
-    
+
     const monthlyExpenses = await this.prisma.financialTransaction.aggregate({
       where: {
         type: 'OUTGOING',
@@ -693,19 +694,19 @@ export class FinanceService {
 
     // 3. Promedio Mensual por Taxi (Para LTV y Payback)
     const activeTaxis = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
-    
+
     // Ingresos promedio mensual (simplificado)
     const monthsActive = 12; // Suponemos 12 meses o calculamos base en oldest transaction
     const monthlyRevPerTaxi = activeTaxis > 0 ? (totalRev / monthsActive) / activeTaxis : 0;
     const monthlyOpexPerTaxi = activeTaxis > 0 ? (totalOpex / monthsActive) / activeTaxis : 0;
-    
+
     // LTV: Ingreso proyectado por taxi a 24 meses
     const ltv = monthlyRevPerTaxi * 24;
 
     // Payback Period (Meses para recuperar inversión inicial)
     const netMonthlyPerTaxi = monthlyRevPerTaxi - monthlyOpexPerTaxi;
     const paybackPeriod = netMonthlyPerTaxi > 0 ? BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD / netMonthlyPerTaxi : 999; // 999 if never
-    
+
     return {
       cac: cac.toFixed(2),
       ltv: ltv.toFixed(2),

@@ -60,8 +60,9 @@ apps/driver/tests/
 | `UI respeta Branding (TAD Yellow)` | Color `#fad400` en botones | 🟡 MEDIO |
 
 **Credenciales de test:**
-- Email: `admin@tad.do`
-- Password: `TadAdmin2026!`
+- Email: `admin@tadtaxi.do` (seed script)
+- Password: `tad12345` (seed script)
+- **Production admin:** `admin@tad.do` / `TadAdmin2026!` (manually created, NOT from seed)
 
 ---
 
@@ -111,35 +112,62 @@ npx playwright test --headed
 npx playwright test --reporter=html
 ```
 
-### 2.4 Configuración de Playwright
+### 2.4 Configuración de Playwright (Actual)
 
 ```typescript
-// playwright.config.ts
+// apps/driver/playwright.config.ts — CONFIGURACIÓN REAL
 export default defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
+  testDir: './tests/e2e',              // NOT './tests' — 2 specs fuera de testDir
+  fullyParallel: false,                 // NOT true — tests run sequentially
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: 2,                           // NOT conditional — always 2 retries
+  workers: 1,                           // NOT conditional — always 1 worker
+  timeout: 120_000,                     // 2min timeout (tablet ops are slow)
+  expect: { timeout: 30_000 },          // 30s assertion timeout
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3002',
+    baseURL: 'http://localhost:3004',    // NOT 3002 — driver app runs on 3004
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    locale: 'es-DO',
+    timezoneId: 'America/Santo_Domingo',
+    geolocation: { latitude: 19.45, longitude: -70.69 },
+  },
+  webServer: {
+    command: 'npm run dev',
+    port: 3004,
+    reuseExistingServer: !process.env.CI,
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'android-kiosk',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        userAgent: 'Mozilla/5.0 (Linux; Android 12; Kiosk) FullyKiosk/1.0',
+      },
     },
     {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      name: 'admin-desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'offline-resilience',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        offline: true,
+      },
     },
   ],
 });
 ```
+
+**⚠️ Specs Outside testDir:** `antigravity.spec.ts` and `critical-flow.spec.ts` are in `./tests/` (root), NOT in `./tests/e2e/`. They will NOT be discovered by `npx playwright test`. Run them explicitly: `npx playwright test tests/antigravity.spec.ts`.
 
 ---
 
@@ -403,17 +431,22 @@ npm run test:integration -- --seed
 El módulo `apps/api/src/modules/simulation` permite simular flotas de tablets para testing de carga.
 
 ```bash
-# Simular 50 tablets enviando GPS cada 5 min
-curl -X POST http://localhost:3001/api/v1/simulation/start \
+# Iniciar escenario de simulación (default Santiago, 50 nodes)
+curl -X POST http://localhost:3000/api/v1/simulation/scenario \
   -H "Content-Type: application/json" \
-  -d '{"devices": 50, "interval": 300}'
+  -d '{"name": "Santiago Default", "activeNodes": 50, "centerLat": 19.4517, "centerLng": -70.6970, "radiusKm": 8}'
 
-# Detener simulación
-curl -X POST http://localhost:3001/api/v1/simulation/stop
+# Detener simulación (NO purga datos)
+curl -X POST http://localhost:3000/api/v1/simulation/stop
 
-# Ver estado de simulación
-curl http://localhost:3001/api/v1/simulation/status
+# Ver estado actual de simulación
+curl http://localhost:3000/api/v1/simulation/state
+
+# Purgar todos los datos de simulación (isSimulated=true)
+curl -X DELETE http://localhost:3000/api/v1/simulation/purge
 ```
+
+**⚠️ Port Correct:** API runs on port `3000`, NOT `3001`. All simulation endpoints are `@Public` + `@SkipThrottle` — no auth required.
 
 ### 5.2 Métricas a Monitorear Durante Load Test
 
@@ -585,15 +618,27 @@ Cuando se encuentra un bug, registrar en `SystemError` y documentar:
 
 ## 9. CONTINUOUS TESTING EN CI/CD
 
-### 9.1 Pipeline de Tests
+### 9.1 Estado Actual — SIN Pipeline CI
+
+> **⚠️ REALITY:** No CI/CD pipeline exists. The `.github/workflows/` directory is empty. All tests are run **manually** before deploy. EasyPanel auto-builds on push to `main` with **zero test gates**.
+
+**Current deploy flow:**
+```
+Developer → git push main → EasyPanel auto-build → Production
+            (NO lint, NO test, NO coverage gate)
+```
+
+**Risk:** Code with failing tests, lint errors, or type mismatches can reach production without any automated validation.
+
+### 9.2 Recommended GitHub Actions Pipeline (TODO)
 
 ```yaml
-# .github/workflows/test.yml (ejemplo)
-name: TAD Tests
+# .github/workflows/test.yml — TO BE IMPLEMENTED
+name: TAD Quality Gate
 on: [push, pull_request]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -602,36 +647,37 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npx prisma generate
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run test:e2e
-      - run: npm run test:cov
+      - run: npm run lint            # Gate 1: 0 ESLint errors
+      - run: npm run build           # Gate 2: TypeScript compiles
+      - run: npm run test            # Gate 3: Unit tests pass (when they exist)
+      - run: npm run test:e2e        # Gate 4: E2E critical path
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.TEST_DIRECT_URL }}
 ```
 
-### 9.2 Gates de Deploy
+### 9.3 Gates de Deploy (Recommended)
 
-| Gate | Requisito | Bloquea Deploy Si |
-| --- | --- | --- |
-| **Lint** | 0 errores ESLint | Hay errores de sintaxis |
-| **Unit Tests** | 100% pass rate | Alguna prueba falla |
-| **E2E Tests** | Critical path pass | Login o Kill-Switch falla |
-| **Coverage** | > 60% financial modules | Lógica de pagos sin tests |
-| **Build** | Next.js + NestJS compilados | Errores de compilación |
+| Gate | Requisito | Bloquea Deploy Si | Status |
+| --- | --- | --- | --- |
+| **Lint** | 0 errores ESLint | Hay errores de sintaxis | ❌ Not enforced |
+| **Build** | Next.js + NestJS compilados | Errores de compilación | ❌ Not enforced |
+| **Unit Tests** | 100% pass rate | Alguna prueba falla | ❌ No tests exist |
+| **E2E Tests** | Critical path pass | Login o Kill-Switch falla | ❌ Not enforced |
+| **Coverage** | > 60% financial modules | Lógica de pagos sin tests | ❌ No coverage |
 
 ---
 
-## 10. MÉRITRICAS DE CALIDAD
+## 10. MÉTRICAS DE CALIDAD
 
 ### 10.1 KPIs de QA
 
 | Métrica | Meta Actual | Estado |
 | --- | --- | --- |
-| **E2E Tests Passing** | 100% | ✅ 6/6 |
-| **Unit Test Coverage (Financial)** | > 80% | 🔄 PENDIENTE |
-| **Unit Test Coverage (Telemetry)** | > 70% | 🔄 PENDIENTE |
+| **E2E Tests Passing** | 100% | ⚠️ 4/6 (2 specs outside testDir) |
+| **Unit Test Coverage (Financial)** | > 80% | ❌ 0% — No unit tests exist |
+| **Unit Test Coverage (Telemetry)** | > 70% | ❌ 0% — No unit tests exist |
+| **CI Pipeline** | Auto-enforced | ❌ Not configured |
 | **Bug Resolution Time** | < 24h CRÍTICO | 📊 Sin tracking |
 | **Deploy Failure Rate** | < 5% | 📊 Sin tracking |
 
@@ -640,11 +686,13 @@ jobs:
 | Área | Estado | Prioridad |
 | --- | --- | --- |
 | Wallet Service tests | ⚠️ Sin unit tests | 🔴 ALTA |
-| TelemetryService tests | ⚠️ Sin unit tests | 🔴 ALTA |
+| Telemetry Anti-Fraud tests | ⚠️ Sin tests | 🔴 ALTA (REVENUE SHIELD) |
+| SubscriptionGuard tests | ⚠️ Driver stub vs Device enforced | 🔴 ALTA (security gap) |
 | ReferralService tests | ⚠️ Sin unit tests | 🟡 MEDIA |
 | SyncService tests | ⚠️ Sin unit tests | 🟡 MEDIA |
 | Advertiser Portal E2E | ⚠️ Sin tests | 🟡 MEDIA |
 | Admin Dashboard E2E | ⚠️ Parcial | 🟢 BAJA |
+| Playwright testDir coverage | ⚠️ 2 specs outside scope | 🟢 BAJA |
 
 ---
 

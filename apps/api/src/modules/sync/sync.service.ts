@@ -27,7 +27,7 @@ export class SyncService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService
-  ) {}
+  ) { }
 
   async getDeviceManifest(deviceId: string) {
     // 1. Validar hardware primero (Device)
@@ -60,12 +60,12 @@ export class SyncService {
 
     // 2. Validar suscripción vía Driver o via Subscription entity
     const driver = device.driver;
-    
+
     // Si no hay driver, permitimos solo campañas GLOBALES (no segmentadas)
     // Esto es vital para el primer encendido (Out-of-the-box experience)
     const isDriverActive = driver && driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE;
     const isDriverPaid = (driver && driver.subscriptionPaid);
-    
+
     let hasValidSubscription = isDriverPaid;
 
     if (!hasValidSubscription) {
@@ -76,10 +76,48 @@ export class SyncService {
       hasValidSubscription = sub && sub.status === 'ACTIVE' && (!sub.validUntil || new Date() <= sub.validUntil);
     }
 
+    // ── VULN #1 PATCH (v12.1.2): Kill-Switch Directive ──
+    // If driver is linked to this device and subscription is unpaid,
+    // emit an explicit killSwitch directive that the PWA tablet MUST enforce.
+    // This closes the offline-first paradox where the tablet never received the 402 kill signal.
+    const shouldKillSwitch = driver && !hasValidSubscription;
+
+    if (shouldKillSwitch) {
+      this.logger.warn(`🚨 [KILLSWITCH] Device ${deviceId} → Driver ${driver.id} subscription UNPAID. Emitting kill directive.`);
+
+      // Grace token with reduced TTL (1h, not 24h) to limit offline evasion window
+      const graceToken = jwt.sign(
+        {
+          deviceId,
+          taxi: device.taxiNumber,
+          type: 'KILLSWITCH_GRACE',
+          killSwitch: true,
+          reason: 'SUBSCRIPTION_UNPAID',
+          iat: Math.floor(Date.now() / 1000)
+        },
+        this.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      // Manifest with killSwitch directive — empty playlist, no playable content
+      return {
+        timestamp: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(), // 1h TTL (reduced from 24h)
+        etag: 'KILLSWITCH-402',
+        killSwitch: true,
+        killSwitchReason: 'SUBSCRIPTION_UNPAID',
+        licenseToken: graceToken,
+        device: {
+          id: device.id,
+          deviceId: device.deviceId,
+          taxi: device.taxiNumber
+        },
+        count: 0,
+        playlist: []
+      };
+    }
+
     // 3. Obtener campañas activas
-    // Filtro inteligente (Ghost Kill Switch):
-    // - Si hay suscripción + driver: recibe TODO (Global + Segmentado + Directo)
-    // - Si NO hay driver o pago: recibe solo campañas GLOBALES (demo/promociones internas)
     const now = new Date();
     this.logger.log(`🕒 Sync [V5] Clock: ${now.toISOString()} | Device: ${deviceId}`);
 
@@ -91,13 +129,13 @@ export class SyncService {
           // 1. Canal Global (nacional — llega a TODOS los dispositivos con suscripción activa)
           // BUG FIX: antes requería targetCity:'Global', lo que exluía campañas con ciudad específica.
           { targetAll: true },
-          
+
           // 2. Canal Geofencing Ciudad (v1 y v2)
           ...(device.city ? [{ targetCity: device.city }] : []),
-          
+
           // 3. Canal Selectivo (Cities Array - v2): JSON array contains city
-          ...(device.city ? [{ 
-            targetCities: { contains: `"${device.city}"` } 
+          ...(device.city ? [{
+            targetCities: { contains: `"${device.city}"` }
           }] : []),
 
           // 4. Canal de Flota (v2)
@@ -122,7 +160,7 @@ export class SyncService {
     // 3. Obtener campañas activas via MASTER SYNC (Materialized View)
     // SRE Optimization: Pre-calculated targeting avoids complex joins in heartbeats.
     const city = device.city || 'Santiago';
-    
+
     const results: any[] = await this.prisma.$queryRaw`
       SELECT campaign_id FROM mv_active_campaigns
       WHERE active = true 
@@ -164,11 +202,11 @@ export class SyncService {
     activeCampaigns.forEach(c => {
       // Unificar Media, MediaAssets y Videos (v1, v2 y Hub)
       const mediaList = [
-        ...(c.media || []), 
+        ...(c.media || []),
         ...(c.mediaAssets || []),
         ...((c as any).videos || [])
       ];
-      
+
       mediaList.forEach((m: any) => {
         const key = m.hashMd5 || m.hash || m.checksum || m.url;
         if (!playlistMap.has(key)) {
@@ -197,13 +235,13 @@ export class SyncService {
     // 4. Generar License Token (Kill-Switch)
     // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.
     const licenseToken = jwt.sign(
-      { 
-        deviceId, 
+      {
+        deviceId,
         taxi: device.taxiNumber,
         type: 'OFFLINE_LICENSE',
         iat: Math.floor(Date.now() / 1000)
-      }, 
-      this.JWT_SECRET, 
+      },
+      this.JWT_SECRET,
       { expiresIn: '24h' }
     );
 

@@ -1,7 +1,7 @@
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from 'react';
 import Head from 'next/head';
-import api from '@tad/services';
+import api, { supabase } from '@tad/services';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
@@ -70,9 +70,8 @@ function ReadinessItem({
       <div className="flex items-center justify-between gap-3">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{label}</p>
         <span
-          className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${
-            complete ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'
-          }`}
+          className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${complete ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'
+            }`}
         >
           {complete ? 'OK' : 'Pendiente'}
         </span>
@@ -136,8 +135,8 @@ function DriverReadinessCard({
             hubData.bankAccountConfigured
               ? 'Cuenta registrada y confirmada por el backend.'
               : bankPendingSync
-              ? 'Guardada localmente. Se sincronizará automáticamente cuando vuelva la red.'
-              : 'Falta registrar banco, número de cuenta, tipo y cédula del titular.'
+                ? 'Guardada localmente. Se sincronizará automáticamente cuando vuelva la red.'
+                : 'Falta registrar banco, número de cuenta, tipo y cédula del titular.'
           }
         />
         <ReadinessItem
@@ -268,15 +267,15 @@ function DriverOnboardingModal({
                 </div>
                 <div>
                   <h4 className="text-3xl font-black tracking-tight text-white">Solo falta activar la anualidad del Starter Kit</h4>
-                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                     Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago
-                     anual de{' '}
-                     <strong className="text-white">
-                       RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}
-                     </strong>{' '}
-                     <span className="text-zinc-500">(ITBIS 18% incluido)</span> para mantener la
-                     unidad fuera del bloqueo 402.
-                   </p>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago
+                    anual de{' '}
+                    <strong className="text-white">
+                      RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}
+                    </strong>{' '}
+                    <span className="text-zinc-500">(ITBIS 18% incluido)</span> para mantener la
+                    unidad fuera del bloqueo 402.
+                  </p>
                 </div>
                 <div className="rounded-3xl border border-[#FFD400]/15 bg-[#FFD400]/5 p-5">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Estado actual</p>
@@ -341,8 +340,8 @@ function DriverOnboardingModal({
                   hubData.bankAccountConfigured
                     ? 'Configurado en backend'
                     : bankPendingSync
-                    ? 'Pendiente de sincronización'
-                    : 'No configurado'
+                      ? 'Pendiente de sincronización'
+                      : 'No configurado'
                 }
               />
               <ReadinessItem
@@ -453,28 +452,28 @@ function StatusBar({
       </div>
 
       <div className="flex items-center gap-2">
-      <button
-        onClick={onLogout}
-        className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-300 hover:text-white hover:border-white/30 transition"
-      >
-        Salir
-      </button>
-      {/* Red Status */}
-      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
-        {isOffline ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <line x1="1" y1="1" x2="23" y2="23" />
-            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
-            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
-          </svg>
-        ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-            <circle cx="12" cy="20" r="1" fill="currentColor" />
-          </svg>
-        )}
-      </div>
+        <button
+          onClick={onLogout}
+          className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-300 hover:text-white hover:border-white/30 transition"
+        >
+          Salir
+        </button>
+        {/* Red Status */}
+        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
+          {isOffline ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+              <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+              <circle cx="12" cy="20" r="1" fill="currentColor" />
+            </svg>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -603,7 +602,7 @@ function ActionButton({
                  transition-all duration-200 p-5 group relative overflow-hidden"
       aria-label={label}
     >
-      <div 
+      <div
         className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
         style={{ background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }}
       />
@@ -707,7 +706,7 @@ function LockdownScreen({ message }: { message: string | null }) {
           </button>
         </div>
       </div>
-      
+
       <p className="mt-8 text-neutral-600 text-[10px] text-center font-bold uppercase tracking-[0.3em]">
         Tus datos se guardan localmente
       </p>
@@ -884,12 +883,23 @@ export default function DriverDashboard() {
     await refreshHub();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window === 'undefined') return;
+    // Clear ALL portal tokens
+    localStorage.removeItem('tad_admin_token');
+    localStorage.removeItem('tad_admin_user');
+    localStorage.removeItem('tad_advertiser_token');
+    localStorage.removeItem('tad_advertiser_user');
+    localStorage.removeItem('tad_driver_token');
+    localStorage.removeItem('tad_driver_user');
     localStorage.removeItem('token');
     localStorage.removeItem('sb-access-token');
     sessionStorage.removeItem('tad_driver_user');
-    window.location.href = '/login';
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch { /* no Supabase session — safe to ignore */ }
+    window.location.href = '/driver/login';
   };
 
   const handleReferir = () => {
@@ -913,8 +923,8 @@ export default function DriverDashboard() {
     connectionStatus === 'offline'
       ? { label: 'MODO OFFLINE: Guardando local y reintentando en segundo plano', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
       : connectionStatus === 'syncing'
-      ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
-      : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
+        ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
+        : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-10 font-sans">
@@ -967,13 +977,13 @@ export default function DriverDashboard() {
             hubData={
               hubData
                 ? {
-                    agreementVersion: hubData.agreementVersion,
-                    bankAccountConfigured: hubData.bankAccountConfigured,
-                    contractAccepted: hubData.contractAccepted,
-                    driverId: hubData.driverId,
-                    onboardingStatus: hubData.onboardingStatus,
-                    subscriptionPaid: hubData.subscriptionPaid,
-                  }
+                  agreementVersion: hubData.agreementVersion,
+                  bankAccountConfigured: hubData.bankAccountConfigured,
+                  contractAccepted: hubData.contractAccepted,
+                  driverId: hubData.driverId,
+                  onboardingStatus: hubData.onboardingStatus,
+                  subscriptionPaid: hubData.subscriptionPaid,
+                }
                 : null
             }
             onOpen={() => setShowOnboarding(true)}
@@ -989,8 +999,8 @@ export default function DriverDashboard() {
         />
 
         {/* Ledger Financiero */}
-        <EarningsLedger 
-          current={walletState?.total ?? 0} 
+        <EarningsLedger
+          current={walletState?.total ?? 0}
           max={7500}
           slotsUsed={hubData?.activeSlots ?? 0}
           totalSlots={hubData?.maxSlots ?? 15}
@@ -1100,13 +1110,13 @@ export default function DriverDashboard() {
           hubData={
             hubData
               ? {
-                  agreementVersion: hubData.agreementVersion,
-                  bankAccountConfigured: hubData.bankAccountConfigured,
-                  contractAccepted: hubData.contractAccepted,
-                  driverId: hubData.driverId,
-                  onboardingStatus: hubData.onboardingStatus,
-                  subscriptionPaid: hubData.subscriptionPaid,
-                }
+                agreementVersion: hubData.agreementVersion,
+                bankAccountConfigured: hubData.bankAccountConfigured,
+                contractAccepted: hubData.contractAccepted,
+                driverId: hubData.driverId,
+                onboardingStatus: hubData.onboardingStatus,
+                subscriptionPaid: hubData.subscriptionPaid,
+              }
               : null
           }
           onAcceptAgreement={() => void handleAcceptAgreement()}

@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
@@ -428,51 +429,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <ChevronDown className={clsx("w-4 h-4 text-zinc-500 group-hover:text-white transition-all", isUserMenuOpen && "rotate-180")} />
                   </div>
 
+                  {isUserMenuOpen && typeof window !== 'undefined' && ReactDOM.createPortal(
+                    <div className="fixed inset-0 z-[300]" onClick={() => setIsUserMenuOpen(false)} />,
+                    document.body
+                  )}
+
                   {isUserMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
-                      <div className="absolute right-0 mt-4 w-56 bg-zinc-900/95 border border-white-[0.05] backdrop-blur-3xl rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                        <div className="p-4 border-b border-white-[0.05] bg-zinc-950/50">
-                          <p className="text-[10px] font-black text-white uppercase tracking-widest truncate">{userEmail}</p>
-                          <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
-                        </div>
-                        <div className="p-2">
+                    <div className="absolute right-0 mt-4 w-56 bg-zinc-900/95 border border-white-[0.05] backdrop-blur-3xl rounded-2xl shadow-2xl z-[310] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                      <div className="p-4 border-b border-white-[0.05] bg-zinc-950/50">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest truncate">{userEmail}</p>
+                        <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
+                      </div>
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
+                        >
+                          <User className="w-4 h-4" />
+                          Mi Perfil
+                        </button>
+                        {role === 'ADMIN' && (
                           <button
                             onClick={() => {
                               setIsUserMenuOpen(false);
-                              router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
+                              router.push('/admin/settings');
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
                           >
-                            <User className="w-4 h-4" />
-                            Mi Perfil
+                            <ShieldCheck className="w-4 h-4" />
+                            Configuración
                           </button>
-                          {role === 'ADMIN' && (
-                            <button
-                              onClick={() => {
-                                setIsUserMenuOpen(false);
-                                router.push('/admin/settings');
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
-                            >
-                              <ShieldCheck className="w-4 h-4" />
-                              Configuración
-                            </button>
-                          )}
-                          <div className="h-px bg-white-[0.05] my-2" />
-                          <button
-                            onClick={() => {
-                              setIsUserMenuOpen(false);
-                              handleLogout();
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all uppercase tracking-wider"
-                          >
-                            <LogIn className="w-4 h-4 rotate-180" />
-                            Desconectar
-                          </button>
-                        </div>
+                        )}
+                        <div className="h-px bg-white-[0.05] my-2" />
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all uppercase tracking-wider"
+                        >
+                          <LogIn className="w-4 h-4 rotate-180" />
+                          Desconectar
+                        </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>

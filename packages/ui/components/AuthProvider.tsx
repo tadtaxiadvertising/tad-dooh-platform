@@ -145,8 +145,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, sbSession: Session | null) => {
         if (_event === 'SIGNED_IN' && sbSession) {
           setSession(sbSession);
+          // Redirect from login pages to role-specific dashboards
+          const userRole = sbSession.user?.app_metadata?.role
+            || sbSession.user?.user_metadata?.role
+            || 'ADMIN';
           if (currentPath === '/login' || currentPath === '/admin/login') {
             router.replace('/admin');
+          } else if (currentPath === '/advertiser/login') {
+            router.replace('/advertiser/dashboard');
+          } else if (currentPath === '/driver/login') {
+            router.replace('/driver/dashboard');
           }
         }
 

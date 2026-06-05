@@ -9,6 +9,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     let url = process.env.DATABASE_URL;
+    let warnMsg: string | undefined;
     // SRE v12.1.1: Default 5 connections para Supabase Free Tier en EasyPanel.
     // 20 conexiones puede agotar el pool durante CRON bursts + heartbeat storms.
     if (url && !url.includes('connection_limit=')) {
@@ -17,7 +18,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     } else if (url && url.includes('connection_limit=')) {
       const match = url.match(/connection_limit=(\d+)/);
       if (match && parseInt(match[1]) > 10) {
-        this.logger.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
+        warnMsg = `⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`;
       }
     }
 
@@ -38,6 +39,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       // Solo loguear errores en producción para no saturar el log de EasyPanel
       log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
     });
+
+    if (warnMsg) {
+      this.logger.warn(warnMsg);
+    }
   }
 
   async onModuleInit() {

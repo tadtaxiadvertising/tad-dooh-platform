@@ -183,7 +183,7 @@ export class TelemetryService {
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5,
                  date_trunc('minute', $6::timestamp),
                  false, $7)
-         ON CONFLICT (device_id, video_id, timestamp) WHERE timestamp = date_trunc('minute', $6::timestamp)
+         ON CONFLICT (device_id, video_id, timestamp)
          DO NOTHING`,
         data.deviceId,
         data.eventType,
@@ -264,7 +264,7 @@ export class TelemetryService {
         const insertResult = await this.prisma.$executeRawUnsafe(
           `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
            VALUES ${values.join(', ')}
-           ON CONFLICT (device_id, video_id, timestamp) WHERE timestamp = date_trunc('minute', $6::timestamp)
+           ON CONFLICT (device_id, video_id, timestamp)
            DO NOTHING`,
           ...params
         );

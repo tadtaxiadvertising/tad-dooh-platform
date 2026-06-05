@@ -548,14 +548,15 @@ export class FinanceService {
     csv += `Impactos Totales,${this.sanitizeCsvField(impressions)}\n`;
     csv += `Monto Total,${this.sanitizeCsvField(`RD$ ${total}`)}\n\n`;
 
-    csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
-    campaign.media.forEach(m => {
+    const mediaRows = campaign.media.map(m => {
       const dur = m.durationSeconds || 30;
-      const row = [
+      const blocks = Math.ceil(dur / 30);
+      return [
         m.id, m.originalFilename || m.filename || 'N/A', dur, blocks, `RD$ ${blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}`
       ].map(f => this.sanitizeCsvField(f)).join(',');
-      csv += `${row}\n`;
     });
+    csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
+    mediaRows.forEach(row => { csv += `${row}\n`; });
 
     return csv;
   }

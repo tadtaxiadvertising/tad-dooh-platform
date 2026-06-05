@@ -146,7 +146,7 @@
 | `POST` | `/campaigns/:id/drivers` | ADMIN | Assign drivers to campaign (segmentation) | `id` + `{ driverIds[], targetAll }` |
 | `POST` | `/campaigns/:id/link-media` | — | Link existing media to campaign | `id` + `mediaId` |
 | `POST` | `/campaigns/:id/unlink-media` | — | Unlink media + force sync on affected devices | `id` + `mediaId` |
-| `GET` | `/campaigns/:id/distribution` | ADMIN, ADVERTISER | Get campaign distribution (which taxis, revenue) | `id` |
+| `GET` | `/campaigns/stats/:id/distribution` | ADMIN, ADVERTISER | Get campaign distribution (which taxis, revenue) | `id` |
 | `GET` | `/campaigns/:campaignId/devices` | — | Get devices receiving this campaign | `campaignId` |
 | `GET` | `/campaigns/tablet/:deviceId/playlist` | `@Public` | Tablet playlist manifest (offline-first) | `deviceId` |
 | `GET` | `/campaigns/reports/summary` | ADMIN, ADVERTISER | Campaign KPIs summary | — |
@@ -335,9 +335,10 @@
 | `GET` | `/advertisers/:id` | ADMIN, ADVERTISER | Advertiser detail | `id` |
 | `GET` | `/advertisers/:id/portal` | ADMIN, ADVERTISER | Portal data (brand, stats, financials, campaigns, timeSeries) | `id` |
 | `GET` | `/advertisers/:id/invoices` | ADMIN, ADVERTISER | Invoices and billing data | `id` |
-| `POST` | `/advertisers` | ADMIN | Create advertiser | `{ companyName, contactName, email, phone? }` |
+| `POST` | `/advertisers` | `@Public` (Throttle: 3/min) | Self-register advertiser | `{ companyName, contactName, email, phone? }` |
 | `PUT` | `/advertisers/:id` | ADMIN | Update advertiser | `id` + body |
 | `DELETE` | `/advertisers/:id` | ADMIN | Delete advertiser | `id` |
+| `POST` | `/advertisers/reset-password` | `@Public` | Reset password with token | `{ token, newPassword }` |
 
 ---
 
@@ -440,23 +441,78 @@
 
 ---
 
+## 14b. TELEMETRY MODULE (`/api/v1/telemetry`) — ⚠️ REVENUE SHIELD v12.2.5
+
+> **CRITICAL:** This module was missing from previous versions of this document. It contains the anti-fraud playback validation logic that protects the platform's revenue.
+
+### `TelemetryController` — GPS Sync & Anti-Fraud Playback
+
+#### POST `/telemetry/sync` — Bulk GPS Telemetry
+
+| Field | Detail |
+| --- | --- |
+| **Auth** | JWT (requires global AuthGuard) |
+| **Throttle** | Default 120/min |
+| **Request Body** | `{ driverId: string; lat: number; lng: number; speed: number; timestamp?: string }[]` |
+| **Max Batch** | 500 points per request |
+| **Response** | `{ success: true }` (fire-and-forget) |
+| **Dedup** | Raw SQL `ON CONFLICT (driver_id, timestamp) DO NOTHING` |
+| **Anti-OOM** | Chunked inserts (100 per chunk), no `.map()` chains |
+
+#### POST `/telemetry/playback` — Anti-Fraud Validated Playback (REVENUE SHIELD)
+
+| Field | Detail |
+| --- | --- |
+| **Auth** | `@Public` — tablets send without JWT |
+| **Throttle** | Default + in-memory 60/min per deviceId |
+| **Request Body** | `{ deviceId: string; videoId: string; eventType: 'START' | 'END' | 'ERROR'; lat?: number; lng?: number; clientTimestamp?: string }` |
+| **Request Headers** | `x-tablet-key` (optional, shared-secret device verification) |
+| **Response (success)** | `{ success: true, verified: boolean }` |
+| **Response (duplicate)** | `{ success: true, duplicate: true }` |
+| **Response (failure)** | `{ success: false, reason: string, message: string }` |
+
+**Anti-Fraud Validation (5 checks):**
+1. **Rate limit**: Max 60 playback events/min per deviceId (sliding window, auto-prune >1000 map entries)
+2. **Device validation**: deviceId must exist with `status === 'OPERATIVO'`
+3. **Tablet key** (optional): `x-tablet-key` header validated against `device.authToken`
+4. **Campaign validation**: videoId must belong to campaign with `active=true && status='ACTIVE'`
+5. **Timestamp window**: `clientTimestamp` within [-5min, +1min] of server time
+
+**Dedup:** `ON CONFLICT (device_id, video_id, timestamp) DO NOTHING` — same device+video+same-minute = duplicate. Falls back to Prisma ORM if raw SQL fails.
+
+#### POST `/telemetry/playback-batch` — Batch Anti-Fraud Playback
+
+| Field | Detail |
+| --- | --- |
+| **Auth** | `@Public` |
+| **Throttle** | Default + in-memory per-device rate limit (accounts for batch size) |
+| **Request Body** | Array of same single-playback objects (all same deviceId) |
+| **Max Batch** | 200 events per request |
+| **Response (success)** | `{ success: true, processed: number, rejected: number }` |
+| **Response (failure)** | `{ success: false, reason: string }` |
+
+**Validation:** Empty payload check, missing deviceId check, device OPERATIVO check, video validation per unique videoId (warns on invalid but doesn't reject batch), rate limit with `additionalCount = payload.length`.
+
+---
+
 ## 24. HEALTH MODULE (`/api/v1/health`)
 
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
-| `GET` | `/health` | `@Public` | API health check (uptime, DB connection, memory) |
+| `GET` | `/health` | `@Public` | Liveness probe — `{ status, timestamp, service, node_env }` |
+| `GET` | `/health/db` | `@Public` | DB connectivity — `{ connected, activeConnections }` from `pg_stat_activity` |
+| `GET` | `/health/full` | `@Public` | Full diagnostics — `{ status, timestamp, service, node_env, db: { connected, activeConnections }, memory: process.memoryUsage(), uptime }` |
 
 ---
 
-## 25. APP CONTROLLER (Root Routes)
-
-These routes are excluded from the `api/v1` prefix:
+## 25. APP CONTROLLER (Root Routes — excluded from `api/v1` prefix)
 
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
-| `GET` | `/` | `@Public` | Basic API info |
-| `GET` | `/api` | `@Public` | API version info |
-| `GET` | `/health` | `@Public` | Health check |
+| `GET` | `/` | `@Public` | API info + route directory |
+| `GET` | `/api` | `@Public` | Same as root (alias) |
+| `GET` | `/api/v1` | `@Public` | Same as root (alias) |
+| `GET` | `/api/health` | `@Public` | Health probe (EasyPanel v10+ requirement) |
 
 ---
 
@@ -487,13 +543,45 @@ These routes are excluded from the `api/v1` prefix:
 | **Sheets** | `/sheets` | 3 | Mixed |
 | **System Settings** | `/system-settings` | 2 | ADMIN |
 | **Assets** | `/assets` | 2 | Public |
-| **Health** | `/health` | 1 | Public |
-| **App Root** | `/` | 3 | Public |
-| **TOTAL** | — | **~135** | — |
+| **Telemetry** | `/telemetry` | 3 | Public + JWT |
+| **Health** | `/health` | 3 | Public |
+| **App Root** | `/` | 4 | Public |
+| **TOTAL** | — | **~141** | — |
 
 ---
 
-## 27. COMMON ERROR RESPONSES
+## 28. ENDPOINT OVERLAP — Tablet Routing Table
+
+> **⚠️ CRITICAL:** Multiple endpoints serve similar purposes. Tablets must use the **correct** endpoint for each operation.
+
+| Tablet Operation | Correct Endpoint | Wrong Alternative | Why |
+| --- | --- | --- | --- |
+| GPS telemetry (bulk) | `POST /telemetry/sync` | `POST /monitoring/gps-batch` | `/telemetry/sync` has dedup (`ON CONFLICT DO NOTHING`) + chunked inserts |
+| Playback event (single) | `POST /telemetry/playback` | `POST /device/playback` | `/telemetry/playback` has **5-point anti-fraud validation** (REVENUE SHIELD) |
+| Playback event (batch) | `POST /telemetry/playback-batch` | `POST /analytics/batch` | `/telemetry/playback-batch` has per-device rate limit + dedup |
+| Analytics event (general) | `POST /analytics/event` | — | Correct for non-playback analytics |
+| Analytics batch (general) | `POST /analytics/batch` | — | Correct for bulk non-playback analytics |
+| Manifest sync | `GET /sync/manifest` | `GET /campaigns/tablet/:deviceId/playlist` | `/sync/manifest` has ETag + SubscriptionGuard |
+| Fleet tracking upload | `POST /fleet/track-batch` | `POST /monitoring/gps-batch` | `/fleet/track-batch` is fleet-optimized |
+
+**Rule:** Always use the `/telemetry/*` endpoints for playback and GPS. Use `/analytics/*` for non-playback events.
+
+---
+
+## 29. SUBSCRIPTIONGUARD NUANCE — Kill-Switch Enforcement
+
+> **⚠️ SECURITY CONCERN:** Two different `SubscriptionGuard` implementations exist:
+
+| Module | Guard Behavior | Kill-Switch? | Notes |
+| --- | --- | --- | --- |
+| **Device** (`/device/sync`, `/device/bulk-sync`) | **Enforced** — checks `Subscription.validUntil < now()` → returns 402 | ✅ Yes | 48h grace period before hard-block |
+| **Driver** (`/drivers/*` endpoints) | **Stub** — `return true;` always passes | ❌ No | No revenue protection on driver portal access |
+
+**Implication:** A driver with expired subscription can still access their portal endpoints, but their **tablet** will receive 402 on sync. The Kill-Switch is enforced at the device/tablet level, not the driver portal level.
+
+---
+
+## 30. COMMON ERROR RESPONSES
 
 | HTTP Status | Meaning | Context |
 | --- | --- | --- |

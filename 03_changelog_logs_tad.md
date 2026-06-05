@@ -4,6 +4,37 @@
 
 ---
 
+## [DOC-13-v13.1] - 2026-06-05
+
+### 📚 DOC: Major Audit & Expansion of Doc 13 — Prisma Schema & Database Architecture
+
+- **Cambio**: Reescritura comprehensiva del documento 13 (1,010→1,577 líneas). Corrección de errores críticos y adición de 8 nuevas secciones que representan brechas significativas entre la documentación original y el estado actual del código.
+- **Correcciones Críticas**:
+  - Model count corregido: 36 modelos + 1 enum (no 32 como indicaba)
+  - Wallet `onDelete` corregido: **RESTRICT** (no Cascade — era un error que implicaba que se podía borrar drivers con wallets)
+  - `FinancialTransaction.reference` corregido: **nullable** (no required — cambia la semántica de idempotencia)
+  - `Campaign.status` default en embedded client: `"DRAFT"` vs `"PENDING_PAYMENT"` en schema (staleness risk documentado)
+- **Campos Faltantes Documentados (56+)**:
+  - Driver: 24 campos (legal compliance gate, level/tier system, penalty escalation, self-ref relations, identidadVehicular, hardwareConfig)
+  - Campaign: 17 campos (dual-status active+status, 5 targeting modes, social/delivery links, createdById, version, category)
+  - Device: 15 campos (storageUsed/Total/Free, authToken, appVersion, lastSyncSuccess, lastPlayback, lastOnline)
+  - PayrollPayment: penaltyPercentage, referenceNum, paidAt, indexes
+  - Subscription: plan (required!), paymentMethod, notes
+  - Advertiser: phone, status, pedidosYaUrl, uberEatsUrl, 5 outbound relations
+  - PortalRequest: onDelete Cascade, 4 indexes, timestamps
+  - ContractAcceptance: driverId index, compliance gate reference
+- **8 Nuevas Secciones**:
+  - §7: `mv_active_campaigns` materialized view + 6-channel targeting SQL + refresh lifecycle
+  - §8: RLS policies (8 tables, 17 policies) + advertiser geofence dependency cycle
+  - §9: Shadow indexes (production + simulation) + cleanup procedure
+  - §10: Raw SQL patterns (Wallet SELECT FOR UPDATE, Analytics hourly aggregation, Health check)
+  - §11: Migration history (7 migrations documented) + zero-downtime strategy + rollback procedures + PostGIS lifecycle
+  - §12: onDelete behavior map (20 Cascade + 4 Restrict, with Prisma vs DB contradiction documented)
+  - §13: Generated client staleness risk (5 divergences between inlineSchema and schema.prisma)
+  - §14: @@map convention (13 model-to-table mappings for raw SQL)
+
+---
+
 ## [DOC-13-16] - 2026-06-05
 
 ### 📚 DOC: Expansión de Documentación Técnica — 4 Nuevos Documentos de Referencia

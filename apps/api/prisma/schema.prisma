@@ -291,7 +291,10 @@ model PlaybackEvent {
   @@index([timestamp])
   @@index([videoId])
   @@index([verified])
+  @@unique([deviceId, videoId, timestamp])
   @@index([deviceId, timestamp(sort: Desc)])
+  @@index([eventType, verified, timestamp])
+  @@index([videoId, eventType])
   @@map("playback_events")
 }
 
@@ -517,6 +520,7 @@ model DriverLocation {
 
   @@index([deviceId, timestamp])
   @@index([driverId, timestamp])
+  @@index([driverId, timestamp(sort: Desc)], map: "driver_locations_driver_id_timestamp_desc_idx")
   @@index([driverId])
   @@index([timestamp])
   @@map("driver_locations")

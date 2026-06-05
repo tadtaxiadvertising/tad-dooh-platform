@@ -268,4 +268,34 @@ export class MonitoringService {
       this.logger.error(`❌ [CRON] Error en checkOfflineDevices: ${err.message}`);
     }
   }
+
+  /**
+   * CRON: Limpieza de datos antiguos (Data Retention)
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async dataRetentionCleanup() {
+    this.logger.log('🧹 [CRON] Ejecutando limpieza de retención de datos...');
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const hbResult = await this.prisma.deviceHeartbeat.deleteMany({
+        where: { timestamp: { lt: thirtyDaysAgo } }
+      });
+      
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      const anResult = await this.prisma.analyticsEvent.deleteMany({
+        where: { 
+          processed: true,
+          occurredAt: { lt: ninetyDaysAgo }
+        }
+      });
+      
+      this.logger.log(`✅ [CRON] Limpieza completada: ${hbResult.count} heartbeats, ${anResult.count} analytics events eliminados.`);
+    } catch (err) {
+      this.logger.error(`❌ [CRON] Error en dataRetentionCleanup: ${err.message}`);
+    }
+  }
 }

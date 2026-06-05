@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
@@ -10,7 +10,6 @@ import { SubscriptionGuard } from './guards/subscription.guard';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { BulkSyncDto } from './dto/bulk-sync.dto';
 
-@SkipThrottle()
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
 export class DeviceController {
@@ -24,6 +23,7 @@ export class DeviceController {
   }
 
   @Post('heartbeat')
+  @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async heartbeat(@Body() dto: HeartbeatDto) {
     await this.deviceService.deviceHeartbeat(dto);
@@ -40,6 +40,7 @@ export class DeviceController {
   // REVENUE SHIELD: Subscription guard on content sync endpoints
   @UseGuards(SubscriptionGuard)
   @Post('sync')
+  @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {
     return this.deviceService.syncDeviceCampaigns(dto);
@@ -47,6 +48,7 @@ export class DeviceController {
 
   @UseGuards(SubscriptionGuard)
   @Post('bulk-sync')
+  @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async bulkSync(@Body() dto: BulkSyncDto) {
     return this.deviceService.processBulkSync(dto);

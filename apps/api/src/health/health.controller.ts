@@ -23,4 +23,19 @@ export class HealthController {
   async dbMetrics() {
     return this.prisma.getHealthMetrics();
   }
+
+  @Get('full')
+  @Public()
+  async checkFull() {
+    const db = await this.prisma.getHealthMetrics();
+    return {
+      status: 'up',
+      timestamp: new Date().toISOString(),
+      service: 'tad-backend-api',
+      node_env: process.env.NODE_ENV,
+      db,
+      memory: process.memoryUsage(),
+      uptime: process.uptime(),
+    };
+  }
 }

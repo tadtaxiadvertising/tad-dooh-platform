@@ -17,7 +17,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     } else if (url && url.includes('connection_limit=')) {
       const match = url.match(/connection_limit=(\d+)/);
       if (match && parseInt(match[1]) > 10) {
-        console.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
+        this.logger.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
       }
     }
 

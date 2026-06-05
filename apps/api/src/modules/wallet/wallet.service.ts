@@ -1,20 +1,38 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 /**
- * SRE v12.1.1 — WalletService
+ * SRE v12.1.2 — WalletService (VULN #5 PATCHED)
  *
  * INTEGRIDAD FINANCIERA:
  * - Suscripción Driver: RD$ 6,000
  * - Pago por Ad: RD$ 500/mes
  * - Toda inconsistencia dispara alerta al MonitoringController vía system_errors + notification
- * - Todas las operaciones monetarias usan prisma.$transaction
+ *
+ * VULN #5 PATCH (v12.1.2): Bloqueo Atómico de Billetera
+ * ────────────────────────────────────────────────────────
+ * Problema: withdraw() leía el balance y deducía en pasos separados.
+ * Dos peticiones concurrentes podían leer el mismo balance antes de que
+ * cualquiera decrementara, resultando en balance negativo (double-spend).
+ *
+ * Solución Arquitectónica:
+ * 1. SELECT FOR UPDATE → candado exclusivo a nivel de fila hasta COMMIT
+ * 2. UPDATE raw SQL → deducción atómica en una sola operación DB
+ * 3. ReadCommitted isolation → suficiente con SELECT FOR UPDATE;
+ *    Serializable sería overkill y causaría más fallos de transacción
+ * 4. Verificación post-deducción → safety net contra edge cases
+ *
+ * NOTA: El modelo Prisma `Wallet` (@map "wallets") existe pero no está
+ * poblado — el balance operativo vive en `Driver.walletBalance` (@map
+ * "wallet_balance" en tabla "drivers"). La migración al modelo `Wallet`
+ * como fuente autoritativa es scope P1 (VULN #7 divergence cleanup).
  */
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getBalance(driverId: string) {
     const activeAdsCount = await this.prisma.activeAd.count({
@@ -50,35 +68,120 @@ export class WalletService {
     };
   }
 
+  /**
+   * VULN #5 PATCH (v12.1.2): Double-spend prevention.
+   *
+   * Flujo de transacción atómica:
+   * ┌─────────────────────────────────────────────────────────────────┐
+   * │ 1. SELECT wallet_balance FROM drivers WHERE id=? FOR UPDATE    │
+   * │    → Candado exclusivo en la fila. Nadie puede leer/modificar  │
+   * │      este balance hasta COMMIT o ROLLBACK.                     │
+   * │                                                                │
+   * │ 2. Verificar: balance >= amount → si no, InsufficientFunds    │
+   * │                                                                │
+   * │ 3. UPDATE drivers SET wallet_balance = wallet_balance - amount │
+   * │    → Deducción atómica via raw SQL. No Prisma middleware.      │
+   * │                                                                │
+   * │ 4. SELECT wallet_balance (verify) → safety net post-deducción  │
+   * │    Si balance < 0: restaurar amount + throw (impossible edge)  │
+   * │                                                                │
+   * │ 5. INSERT financial_transactions → registro del retiro         │
+   * │                                                                │
+   * │ COMMIT → libera el candado FOR UPDATE                          │
+   * └─────────────────────────────────────────────────────────────────┘
+   *
+   * Isolation Level: ReadCommitted (sufficient with SELECT FOR UPDATE)
+   * - Serializable sería overkill: causa más serialization failures
+   * - SELECT FOR UPDATE ya garantiza exclusividad a nivel de fila
+   * - ReadCommitted permite que otras transacciones lean filas no-lockeadas
+   */
   async withdraw(driverId: string, amount: number) {
-    return this.prisma.$transaction(async (tx) => {
-      const driver = await tx.driver.findUnique({
-        where: { id: driverId },
-      });
+    if (amount <= 0) {
+      throw new BadRequestException('Withdrawal amount must be positive');
+    }
 
-      if (!driver) {
+    return this.prisma.$transaction(async (tx) => {
+      // ── STEP 1: Candado exclusivo en la fila del Wallet ──
+      // SELECT FOR UPDATE acquire un row-level exclusive lock.
+      // Concurrent withdrawals on the SAME driver will block here
+      // until this transaction commits or rolls back.
+      const [driverRow] = await tx.$queryRaw<
+        [{ id: string; wallet_balance: number; bank_account: string | null }]
+      >`
+        SELECT id, wallet_balance, bank_account
+        FROM drivers
+        WHERE id = ${driverId}
+        FOR UPDATE
+      `;
+
+      if (!driverRow) {
         throw new BadRequestException('Driver not found');
       }
 
-      if (!driver.bankAccount) {
-        throw new BadRequestException('Bank account not configured');
+      if (!driverRow.bank_account) {
+        throw new BadRequestException('Bank account not configured. Configure your bank details before withdrawing.');
       }
 
-      if (driver.walletBalance < amount) {
-        // SRE: Log attempted over-withdrawal as potential anomaly
+      const currentBalance = Number(driverRow.wallet_balance);
+
+      // ── STEP 2: Verificar fondos suficientes ──
+      if (currentBalance < amount) {
         this.logFinancialAnomaly(
           driverId,
-          `Intento de retiro excede balance: solicitó RD$ ${amount}, balance actual RD$ ${driver.walletBalance}`,
+          `Intento de retiro excede balance: solicitó RD$ ${amount}, balance actual RD$ ${currentBalance}`,
           'WARNING',
         );
-        throw new BadRequestException('Insufficient balance');
+        throw new BadRequestException({
+          code: 'INSUFFICIENT_BALANCE',
+          message: `Insufficient balance. Current: RD$ ${currentBalance}, Requested: RD$ ${amount}`,
+          currentBalance,
+          requestedAmount: amount,
+        });
       }
 
-      const updatedDriver = await tx.driver.update({
-        where: { id: driverId },
-        data: { walletBalance: { decrement: amount } },
-      });
+      // ── STEP 3: Deducción atómica via raw SQL ──
+      // No Prisma middleware, no ORM overhead — directa al motor DB.
+      // wallet_balance = wallet_balance - amount en una sola operación.
+      await tx.$executeRaw`
+        UPDATE drivers
+        SET wallet_balance = wallet_balance - ${amount}
+        WHERE id = ${driverId}
+      `;
 
+      // ── STEP 4: Safety net — verify post-deduction balance ──
+      // With SELECT FOR UPDATE + ReadCommitted, this should NEVER be < 0.
+      // But we check anyway as a belt-and-suspenders defense against
+      // DB corruption, negative amount bypass, or application bugs.
+      const [verify] = await tx.$queryRaw<
+        [{ wallet_balance: number }]
+      >`
+        SELECT wallet_balance FROM drivers WHERE id = ${driverId}
+      `;
+
+      const newBalance = Number(verify.wallet_balance);
+
+      if (newBalance < 0) {
+        // ── EMERGENCY ROLLBACK: Restore the withdrawn amount ──
+        // This should never happen, but if it does, we MUST revert.
+        await tx.$executeRaw`
+          UPDATE drivers
+          SET wallet_balance = wallet_balance + ${amount}
+          WHERE id = ${driverId}
+        `;
+
+        this.logFinancialAnomaly(
+          driverId,
+          `🚨 DOUBLE-SPEND PREVENTED: Retiro RD$ ${amount} revertido. Balance post-retiro era RD$ ${newBalance}. Transacción cancelada y balance restaurado.`,
+          'CRITICAL',
+        );
+
+        throw new BadRequestException({
+          code: 'DOUBLE_SPEND_PREVENTED',
+          message: 'Withdrawal rolled back — balance integrity violation detected. Operations team notified.',
+        });
+      }
+
+      // ── STEP 5: Registrar la transacción financiera ──
       const transaction = await tx.financialTransaction.create({
         data: {
           type: 'WITHDRAWAL',
@@ -88,24 +191,23 @@ export class WalletService {
           taxAmount: 0,
           status: 'PENDING',
           entityId: driverId,
-          reference: `WD-${driverId.substring(0, 8)}-${Date.now()}`
-        }
+          reference: `WD-${driverId.substring(0, 8)}-${Date.now()}`,
+        },
       });
 
-      // SRE v12.1.1: Post-transaction integrity check
-      if (updatedDriver.walletBalance < 0) {
-        this.logFinancialAnomaly(
-          driverId,
-          `🚨 BALANCE NEGATIVO detectado post-retiro: RD$ ${updatedDriver.walletBalance} (retiró RD$ ${amount})`,
-          'CRITICAL',
-        );
-      }
-
       this.logger.log(
-        `💰 Retiro procesado: Driver ${driverId} → RD$ ${amount} | Nuevo balance: RD$ ${updatedDriver.walletBalance}`
+        `💰 Retiro procesado: Driver ${driverId} → RD$ ${amount} | Nuevo balance: RD$ ${newBalance} | Tx: ${transaction.id}`
       );
 
-      return { success: true, newBalance: updatedDriver.walletBalance, transactionId: transaction.id };
+      return {
+        success: true,
+        newBalance,
+        transactionId: transaction.id,
+        reference: transaction.reference,
+      };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      timeout: 10000, // 10s timeout for concurrent contention
     });
   }
 
@@ -123,7 +225,6 @@ export class WalletService {
   // ─────────────────────────────────────────────────────────────────────
 
   private logFinancialAnomaly(driverId: string, message: string, severity: string): void {
-    // Fire-and-forget: Write to system_errors table
     this.prisma.systemError.create({
       data: {
         source: 'WALLET',
@@ -135,7 +236,6 @@ export class WalletService {
       this.logger.error(`[SYSTEM_ERROR_LOG_FAIL] WALLET: ${message} | DB Error: ${err.message}`);
     });
 
-    // Fire-and-forget: Create notification for admin dashboard
     this.prisma.notification.create({
       data: {
         title: severity === 'CRITICAL' ? '🚨 Anomalía Financiera' : '⚠️ Alerta Financiera',

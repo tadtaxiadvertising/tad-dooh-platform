@@ -734,3 +734,22 @@ model SystemError {
   @@map("system_errors")
 }
 
+// ── VULN #4 PATCH (v12.1.2): DB-backed Idempotency ──
+// Replaces the in-memory Map in IdempotencyInterceptor with a persistent store.
+// Survives pod restarts, OOM kills, and horizontal scaling.
+model IdempotencyKey {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  driverId   String?
+  path       String
+  method     String?
+  response   String?  // JSON-stringified response payload
+  isLocked   Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
+
+  @@index([createdAt])  // For TTL cleanup CRON
+  @@index([expiresAt])  // For TTL cleanup CRON
+  @@map("idempotency_keys")
+}
+

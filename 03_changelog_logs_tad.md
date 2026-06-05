@@ -4,6 +4,40 @@
 
 ---
 
+## [DOC-14-16-AUDIT] - 2026-06-05
+
+### 📚 DOC: Comprehensive Audit & Correction of Docs 14-16
+
+- **Cambio**: Auditoría exhaustiva de 3 documentos de referencia con corrección de errores críticos y adición de secciones nuevas basadas en el estado actual del código.
+- **DOC 15 (API Endpoints) — Correcciones Críticas**:
+  - Añadido módulo Telemetry completo (3 endpoints: `/telemetry/sync`, `/telemetry/playback`, `/telemetry/playback-batch`) con anti-fraud validation de 5 puntos (REVENUE SHIELD v12.2.5)
+  - Corregido `POST /advertisers` auth: `@Public` (Throttle: 3/min), no ADMIN — es self-registration
+  - Añadido `POST /advertisers/reset-password` endpoint
+  - Corregido ruta de campaign distribution: `/campaigns/stats/:id/distribution` (no `/campaigns/:id/distribution`)
+  - Corregido Health module: 3 endpoints (`/health`, `/health/db`, `/health/full`), no solo 1
+  - Corregido App Controller: 4 root routes (`/`, `/api`, `/api/v1`, `/api/health`)
+  - Añadida §28: Endpoint overlap routing table — define qué endpoint usar para GPS, playback, analytics
+  - Añadida §29: SubscriptionGuard nuance — Device module ENFORCED, Driver module STUB (`return true`)
+- **DOC 14 (Testing) — Correcciones Críticas**:
+  - Corregido Playwright config: `testDir: './tests/e2e'` (no `./tests`), `fullyParallel: false`, `workers: 1`, `baseURL: localhost:3004`, 3 projects (android-kiosk, admin-desktop, offline-resilience)
+  - Corregido seed credentials: `admin@tadtaxi.do` / `tad12345` (seed script), `admin@tad.do` / `TadAdmin2026!` (production)
+  - Corregido simulation routes: `/simulation/scenario` (no `/simulation/start`), `/simulation/state` (no `/simulation/status`), `/simulation/purge` added, port 3000 (no 3001)
+  - Reemplazada sección aspiracional CI con honest status: "NO CI pipeline exists, no quality gates"
+  - E2E status corregido: 4/6 (2 specs outside testDir), no 6/6
+  - Unit test coverage: 0% (no tests exist), no "PENDIENTE"
+- **DOC 16 (CI/CD Pipeline) — Correcciones Críticas**:
+  - Corregido port mapping: todos los frontends corren en 3000 internamente, dev ports: Admin=3002, Driver=3004, Advertiser=3000/3001
+  - Corregido API CMD: `node dist/main.js` (migrations NO run on startup)
+  - Corregido migration procedure: actual script es `db push --accept-data-loss` (dangerous), recommended is `migrate deploy`
+  - Corregido health check path: `/api/health` (no `/api/v1/health`)
+  - Corregido Remotion base image: `node:20-bullseye` (no node:18)
+  - Añadidos 2 servicios: tad-simulator, tad-player
+  - Añadida §13: CORS configuration (allowed origins, env override)
+  - Añadida §14: Honest CI status — "No pipeline exists, no quality gates"
+  - Añadida §15: API shutdown hooks (SIGTERM handling, Prisma cleanup)
+
+---
+
 ## [DOC-13-v13.1] - 2026-06-05
 
 ### 📚 DOC: Major Audit & Expansion of Doc 13 — Prisma Schema & Database Architecture

@@ -11,13 +11,17 @@
 
 ### 1.1 Servicios en Producción
 
-| Servicio | Tecnología | URL EasyPanel | RAM Limit | Port |
-| --- | --- | --- | --- | --- |
-| **tad-api** | NestJS 10 + Prisma | `tad-api.rewvid.easypanel.host` | 512 MB | 3000 |
-| **tad-dashboard** | Next.js 15 (Admin) | `tad-dashboard.rewvid.easypanel.host` | 512 MB | 3002 |
-| **tad-advertiser** | Next.js 15 (Adv Portal) | `tad-advertiser.rewvid.easypanel.host` | 512 MB | 3001 |
-| **tad-driver** | Next.js 15 (Driver PWA) | `tad-driver.rewvid.easypanel.host` | 512 MB | 3003 |
-| **tad-remotion** | Remotion + Chromium | `tad-remotion.rewvid.easypanel.host` | 1024 MB | 8000 |
+| Servicio | Tecnología | URL EasyPanel | RAM Limit | Internal Port | Dev Port |
+| --- | --- | --- | --- | --- | --- |
+| **tad-api** | NestJS 10 + Prisma | `tad-api.rewvid.easypanel.host` | 512 MB | 3000 | 3000 |
+| **tad-dashboard** | Next.js 15 (Admin) | `tad-dashboard.rewvid.easypanel.host` | 512 MB | 3000 | 3002 |
+| **tad-advertiser** | Next.js 15 (Adv Portal) | `tad-advertiser.rewvid.easypanel.host` | 512 MB | 3000 | 3000/3001 |
+| **tad-driver** | Next.js 15 (Driver PWA) | `tad-driver.rewvid.easypanel.host` | 512 MB | 3000 | 3004 |
+| **tad-remotion** | Remotion + Chromium | `tad-remotion.rewvid.easypanel.host` | 1024 MB | 8000 | 8000 |
+| **tad-simulator** | Next.js + SQLite | *(not deployed to prod)* | — | 3000 | 3000 |
+| **tad-player** | Static tablet player | *(not deployed to prod)* | — | 3000 | 3000 |
+
+> **⚠️ Port Clarification:** All Dockerfiles expose port **3000** internally. The external port mapping (3001, 3002, 3003, etc.) is an **EasyPanel routing concern** — not a code configuration. Dev ports differ: Admin=3002, Driver=3004, Advertiser=3000/3001.
 
 ### 1.2 Flujo de Despliegue
 
@@ -60,7 +64,7 @@ Todas las credenciales están centralizadas en EasyPanel bajo **Secrets**. **NUN
 Memory Limit: 512MB
 Memory Swap: 1GB
 CPU Limit: 0.5 cores
-Health Check Path: /api/v1/health
+Health Check Path: /api/health (NOT /api/v1/health)
 Health Check Interval: 30s
 Restart Policy: unless-stopped
 
@@ -70,7 +74,7 @@ Start: node dist/main
 
 # O con Dockerfile personalizado:
 Build: docker build -t tad-api .
-Start: npx prisma migrate deploy && node dist/main
+Start: node dist/main.js  # ⚠️ Migrations NOT run on startup — must run manually
 ```
 
 #### tad-dashboard (Next.js Admin)
@@ -98,7 +102,7 @@ Health Check Path: /health
 Health Check Interval: 30s
 Restart Policy: unless-stopped
 
-# Dockerfile requiere node:18-bullseye para compatibilidad con Chromium
+# Dockerfile requiere node:20-bullseye para compatibilidad con Chromium
 ```
 
 ---
@@ -133,21 +137,25 @@ git push origin main
 Cuando el `schema.prisma` cambia, la migración debe ejecutarse **ANTES** que el nuevo código esté live.
 
 ```bash
-# Opción A: En el Dockerfile CMD (actual)
-CMD npx prisma migrate deploy && node dist/main
-
-# Opción B: Manual (si la migración es crítica)
-# 1. Generar migración
+# Opción A: Usando deploy:migrate script (ACTUAL — uses db push)
 cd apps/api
-npx prisma migrate dev --name descriptive_name
+npm run deploy:migrate
+# ⚠️ This runs: npx prisma db push --accept-data-loss --skip-generate
+# ⚠️ --accept-data-loss is DANGEROUS — only use for controlled schema changes
 
-# 2. Aplicar en producción (CONNECTION DIRECT_URL)
+# Opción B: Safe migration (RECOMMENDED — uses migrate deploy)
+npx prisma migrate deploy  # Safer — respects migration history
+npx prisma generate        # Regenerate client
+
+# Opción C: Manual full cycle (for critical schema changes)
+# 1. Create migration
+npx prisma migrate dev --name descriptive_name --create-only
+# 2. Review SQL file in prisma/migrations/
+# 3. Apply in production (uses DIRECT_URL)
 npx prisma migrate deploy
-
-# 3. Generar cliente
+# 4. Regenerate client
 npx prisma generate
-
-# 4. Deploy normal
+# 5. Deploy normal
 git push origin main
 ```
 
@@ -218,7 +226,7 @@ docker rm tad-api
 
 | Service | Endpoint | Expected Response |
 | --- | --- | --- |
-| tad-api | `/api/v1/health` | `{ status: "ok", uptime: X, db: "connected" }` |
+| tad-api | `/api/health` | `{ status: "up", timestamp, service, node_env }` |
 | tad-dashboard | `/` | HTTP 200 (Next.js SSR) |
 | tad-advertiser | `/` | HTTP 200 |
 | tad-driver | `/` | HTTP 200 |
@@ -299,7 +307,7 @@ Cuando 50+ tablets wake up at 8:00 AM simultaneously:
 ```bash
 # 1. EasyPanel restores from Docker images automatically on VPS reboot
 # 2. Verify all services are up:
-curl -s https://tad-api.rewvid.easypanel.host/api/v1/health
+curl -s https://tad-api.rewvid.easypanel.host/api/health
 curl -s https://tad-dashboard.rewvid.easypanel.host/
 
 # 3. If DB is unreachable:
@@ -474,4 +482,57 @@ For horizontal scaling:
 
 ---
 
-*This document must be updated after each infrastructure change or new service deployment.*
+## 13. CORS CONFIGURATION — Production & Dev
+
+The NestJS API (`main.ts`) configures CORS with the following allowed origins:
+
+```typescript
+// apps/api/src/main.ts
+app.enableCors({
+  origin: [
+    'http://localhost:3002',    // Admin (dev)
+    'http://localhost:3003',    // Advertiser (dev)
+    'http://localhost:3004',    // Driver (dev)
+    'https://tad-dashboard.rewvid.easypanel.host',
+    'https://tad-advertiser.rewvid.easypanel.host',
+    'https://tad-driver.rewvid.easypanel.host',
+    process.env.CORS_ORIGIN,    // Additional origin override
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+});
+```
+
+**Environment Override:** Set `CORS_ORIGIN` in EasyPanel secrets to add additional domains (e.g., custom domains, staging URLs).
+
+**⚠️ Common Issue:** Frontend CORS errors usually mean `NEXT_PUBLIC_API_URL` is set incorrectly. Must match exact EasyPanel domain: `https://tad-api.rewvid.easypanel.host`.
+
+---
+
+## 14. CI PIPELINE STATUS — Honest Assessment
+
+> **⚠️ REALITY:** No CI/CD pipeline exists. The `.github/workflows/` directory is empty. EasyPanel auto-builds on every push to `main` with **zero quality gates**.
+
+**Current flow:**
+```
+Developer → git push main → EasyPanel auto-build → Container → Health check → Live
+            (NO lint gate, NO test gate, NO build verification)
+```
+
+**Recommended minimum CI pipeline (TODO):**
+1. `npm run lint` — 0 ESLint errors
+2. `npx prisma generate` — Client regenerated
+3. `npm run build` — TypeScript compiles
+4. `npm run test:e2e` — Critical path E2E passes
+5. Deploy only if all gates pass
+
+---
+
+## 15. API SHUTDOWN HOOKS
+
+`main.ts` calls `app.enableShutdownHooks()` which ensures:
+- Prisma `$disconnect()` runs on SIGTERM/SIGINT
+- No orphaned DB connections in Supabase
+- Clean container restart on EasyPanel redeploy
+
+**Important:** EasyPanel sends SIGTERM on redeploy. The container has 30s to gracefully shut down before SIGKILL.

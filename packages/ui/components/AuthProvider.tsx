@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .split('; ')
           .find(row => row.startsWith('sb-access-token='))
           ?.split('=')[1];
-        
+
         if (currentCookie !== activeSession.access_token) {
           const isSecure = window.location.protocol === 'https:';
           document.cookie = `sb-access-token=${activeSession.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
@@ -151,16 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (_event === 'SIGNED_OUT') {
-          // Only clear ADMIN (Supabase) tokens — leave advertiser/driver tokens intact
+          // Clear ALL portal tokens — user intentionally signed out
           localStorage.removeItem('tad_admin_token');
           localStorage.removeItem('tad_admin_user');
-          // Re-check if there's a portal session still valid
-          const s = buildSessionFromLocalToken('tad_advertiser_token', 'tad_advertiser_user')
-            || buildSessionFromLocalToken('tad_driver_token', 'tad_driver_user');
-          setSession(s);
-          if (!s) {
-            router.replace('/login');
-          }
+          localStorage.removeItem('tad_advertiser_token');
+          localStorage.removeItem('tad_advertiser_user');
+          localStorage.removeItem('tad_driver_token');
+          localStorage.removeItem('tad_driver_user');
+          setSession(null);
+          let loginTarget = '/login';
+          if (currentPath.startsWith('/advertiser')) loginTarget = '/advertiser/login';
+          else if (currentPath.startsWith('/driver')) loginTarget = '/driver/login';
+          else if (currentPath.startsWith('/admin')) loginTarget = '/admin/login';
+          router.replace(loginTarget);
         }
       });
 
@@ -169,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // No Supabase configured — try local tokens only
       resolveSession(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isPublicPage = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');

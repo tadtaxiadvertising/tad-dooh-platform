@@ -14,7 +14,20 @@ export async function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result as IDBDatabase;
-      db.createObjectStore('telemetry', { keyPath: 'ts' });
+      if (!db.objectStoreNames.contains('telemetry')) {
+        db.createObjectStore('telemetry', { keyPath: 'ts' });
+      }
+      dbInstance = db;
+      
+      db.onclose = () => {
+        dbInstance = null;
+      };
+      
+      db.onversionchange = () => {
+        db.close();
+        dbInstance = null;
+      };
+      
       resolve(db);
     };
 
@@ -26,12 +39,26 @@ export async function openDB(): Promise<IDBDatabase> {
         const upgradeRequest = indexedDB.open('TADTelemetryDB', version);
         upgradeRequest.onupgradeneeded = (upgradeEvent) => {
           const upgradeDb = (upgradeEvent.target as IDBOpenDBRequest).result as IDBDatabase;
-          upgradeDb.createObjectStore('telemetry', { keyPath: 'ts' });
+          if (!upgradeDb.objectStoreNames.contains('telemetry')) {
+            upgradeDb.createObjectStore('telemetry', { keyPath: 'ts' });
+          }
+          dbInstance = upgradeDb;
+          upgradeDb.onclose = () => { dbInstance = null; };
+          upgradeDb.onversionchange = () => { upgradeDb.close(); dbInstance = null; };
           resolve(upgradeDb);
         };
-        upgradeRequest.onsuccess = (upgradeEvent) => resolve((upgradeEvent.target as IDBOpenDBRequest).result as IDBDatabase);
+        upgradeRequest.onsuccess = (upgradeEvent) => {
+          const upgradeDb = (upgradeEvent.target as IDBOpenDBRequest).result as IDBDatabase;
+          dbInstance = upgradeDb;
+          upgradeDb.onclose = () => { dbInstance = null; };
+          upgradeDb.onversionchange = () => { upgradeDb.close(); dbInstance = null; };
+          resolve(upgradeDb);
+        };
         upgradeRequest.onerror = (error) => reject(error);
       } else {
+        dbInstance = db;
+        db.onclose = () => { dbInstance = null; };
+        db.onversionchange = () => { db.close(); dbInstance = null; };
         resolve(db);
       }
     };

@@ -285,6 +285,11 @@ export class DeviceService {
     return { blocked: false, reason: undefined }; // IMPORTANTE: Siempre desbloqueado
   }
 
+  /**
+   * @deprecated Use TelemetryController's /telemetry/playback endpoint instead.
+   * This method bypasses PoP (Proof of Play) validation, rate-limiting, and marks events as verified: false.
+   * Scheduled for removal in v13.0.
+   */
   async recordPlayback(dto: PlaybackConfirmationDto) {
     this.logger.log(`Playback confirmed on device: ${dto.device_id} for video: ${dto.video_id}`);
     
@@ -307,6 +312,7 @@ export class DeviceService {
         lat: dto.lat,
         lng: dto.lng,
         isSimulated: dto.isSimulated || false,
+        verified: false
       },
     });
   }
@@ -501,7 +507,8 @@ export class DeviceService {
         timestamp: new Date(p.timestamp),
         lat: p.lat,
         lng: p.lng,
-        isSimulated: p.isSimulated || dto.isSimulated || false
+        isSimulated: p.isSimulated || dto.isSimulated || false,
+        verified: false
       }));
       await this.prisma.playbackEvent.createMany({
         data: playbackData,

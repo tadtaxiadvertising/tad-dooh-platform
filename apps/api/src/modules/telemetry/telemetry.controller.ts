@@ -13,7 +13,7 @@ export class TelemetryController {
   async sync(
     @Body() payload: { driverId: string; lat: number; lng: number; speed: number; timestamp?: string }[]
   ) {
-    this.telemetryService.sync(payload).catch(err => console.error('Telemetry sync error', err));
+    this.telemetryService.sync(payload).catch(err => this.logger.error(`Telemetry sync error: ${err.message}`));
     return { success: true };
   }
 

@@ -3,18 +3,22 @@ import { supabase } from '@tad/services';
 import { usePaymentStore } from '../store/usePaymentStore';
 
 /**
- * useBackgroundTelemetry — Dual-channel telemetry hook (v12.1.2)
+ * useBackgroundTelemetry — Dual-channel telemetry hook (v12.2.5)
  *
  * Channels:
  *  1. Supabase Realtime (Live Pings): telemetry_ping every 30s
  *  2. HTTP Batch Sync: POST /fleet/track-batch every 5 minutes
  *
- * VULN #3 PATCH (v12.1.2):
- *  - HTTP 402/403 responses now trigger killSwitch via usePaymentStore.setLock()
- *  - Supabase Realtime channel is unsubscribed on suspension
- *  - GPS watchPosition is cleared on suspension
- *  - FORCE_KILL_SWITCH flag cached in localStorage for cross-hook propagation
+ * REVENUE SHIELD v12.2.5:
+ *  - HTTP 402/403 responses trigger killSwitch via usePaymentStore.setLock()
+ *  - Grace period: 48h continued playback after subscription expiry when offline
+ *  - Subscription status cached in localStorage for offline resilience
+ *  - FORCE_KILL_SWITCH flag cached for cross-hook propagation
  */
+const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000; // 48 hours
+const SUBSCRIPTION_CACHE_KEY = 'TAD_SUBSCRIPTION_STATUS';
+const SUBSCRIPTION_EXPIRY_KEY = 'TAD_SUBSCRIPTION_EXPIRY';
+
 export const useBackgroundTelemetry = (driverId: string) => {
   const lastSyncTime = useRef<number>(0);
   const lastLivePingTime = useRef<number>(0);
@@ -29,8 +33,24 @@ export const useBackgroundTelemetry = (driverId: string) => {
     // Check for cached killSwitch from another hook (e.g. useTelemetry)
     const cachedKill = localStorage.getItem('TAD_FORCE_KILL_SWITCH');
     if (cachedKill === 'true') {
-      suspendedRef.current = true;
-      return; // Don't start tracking if already suspended
+      // Check if we're still within the grace period
+      const cachedExpiry = localStorage.getItem(SUBSCRIPTION_EXPIRY_KEY);
+      if (cachedExpiry) {
+        const expiryDate = new Date(cachedExpiry);
+        const gracePeriodEnd = new Date(expiryDate.getTime() + GRACE_PERIOD_MS);
+        if (gracePeriodEnd > new Date()) {
+          // Within grace period — temporarily re-allow telemetry
+          suspendedRef.current = false;
+          console.warn('[TAD] Within 48h grace period after subscription expiry. Telemetry continues.');
+        } else {
+          // Grace period expired — remain suspended
+          suspendedRef.current = true;
+          return;
+        }
+      } else {
+        suspendedRef.current = true;
+        return; // Don't start tracking if already suspended without expiry info
+      }
     }
 
     const liveChannel = supabase.channel('fleet_tracking_live', {
@@ -47,12 +67,18 @@ export const useBackgroundTelemetry = (driverId: string) => {
       }
     });
 
-    const handleSuspension = () => {
-      // ── VULN #3 PATCH: Kill-Switch enforcement ──
+    const handleSuspension = (subscriptionEnd?: string) => {
+      // ── REVENUE SHIELD: Kill-Switch enforcement ──
       suspendedRef.current = true;
+
+      // Cache subscription expiry for grace period calculation
+      if (subscriptionEnd) {
+        localStorage.setItem(SUBSCRIPTION_EXPIRY_KEY, subscriptionEnd);
+      }
 
       // Cache flag in localStorage for cross-hook propagation
       localStorage.setItem('TAD_FORCE_KILL_SWITCH', 'true');
+      localStorage.setItem(SUBSCRIPTION_CACHE_KEY, 'SUSPENDED');
 
       // Activate PaymentLockOverlay
       setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
@@ -65,6 +91,14 @@ export const useBackgroundTelemetry = (driverId: string) => {
 
       // Destroy Supabase Realtime channel
       void supabase.removeChannel(liveChannel);
+    };
+
+    const clearSuspension = () => {
+      suspendedRef.current = false;
+      localStorage.removeItem('TAD_FORCE_KILL_SWITCH');
+      localStorage.removeItem(SUBSCRIPTION_EXPIRY_KEY);
+      localStorage.setItem(SUBSCRIPTION_CACHE_KEY, 'ACTIVE');
+      setLock(false, '');
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -116,7 +150,7 @@ export const useBackgroundTelemetry = (driverId: string) => {
           timestamp: new Date(position.timestamp).toISOString(),
         }];
 
-        // ── VULN #3 PATCH: Check 402 response from track-batch ──
+        // ── REVENUE SHIELD: Check 402 response from track-batch ──
         fetch('/api/proxy/fleet/track-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,8 +167,18 @@ export const useBackgroundTelemetry = (driverId: string) => {
           }),
         }).then((res) => {
           if (res.status === 402 || res.status === 403) {
-            handleSuspension();
+            // Try to parse subscription expiry date from response for grace period
+            res.json().then((body) => {
+              const subscriptionEnd = body?.subscriptionEnd || body?.subscription_end;
+              handleSuspension(subscriptionEnd);
+            }).catch(() => {
+              handleSuspension();
+            });
             return;
+          }
+          // Successful sync — clear any cached suspension state
+          if (res.ok) {
+            clearSuspension();
           }
           if (!res.ok) {
             console.error('[TELEMETRY_HTTP] Non-OK response:', res.status);

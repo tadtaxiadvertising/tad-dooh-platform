@@ -12,12 +12,13 @@ const finance_controller_1 = require("./finance.controller");
 const finance_service_1 = require("./finance.service");
 const invoice_service_1 = require("./invoice.service");
 const prisma_module_1 = require("../prisma/prisma.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let FinanceModule = class FinanceModule {
 };
 exports.FinanceModule = FinanceModule;
 exports.FinanceModule = FinanceModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [prisma_module_1.PrismaModule, notifications_module_1.NotificationsModule],
         controllers: [finance_controller_1.FinanceController],
         providers: [finance_service_1.FinanceService, invoice_service_1.InvoiceService],
         exports: [finance_service_1.FinanceService, invoice_service_1.InvoiceService],

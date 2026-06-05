@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -18,7 +20,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         console.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
       }
     }
-    
+
+    // SRE v12.2.5: pool_timeout=10s — evita que queries lentas bloqueen el pool durante spikes de telemetría
+    if (url && !url.includes('pool_timeout=')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}pool_timeout=10`;
+    }
+
     super({
       datasources: {
         db: {
@@ -52,11 +60,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       } catch (e) {
         attempts++;
         const delay = attempts * 2000;
-        this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido al conectar a Supabase. Reintentando en ${delay/1000}s...`);
+        this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido al conectar a Supabase. Reintentando en ${delay / 1000}s...`);
         if (attempts >= MAX_RETRIES) {
           this.logger.error('🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos.');
           // Don't exit immediately, let Nest trial continue if possible, or use a health check
-          return; 
+          return;
         }
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -69,10 +77,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private async initializeSreViews() {
     try {
       this.logger.log('🏗️ Sincronizando Vistas Materializadas (Master Sync)...');
-      const fs = require('fs');
-      const path = require('path');
       const viewsFile = path.resolve(process.cwd(), 'prisma/views.sql');
-      
+
       if (!fs.existsSync(viewsFile)) {
         this.logger.warn('⚠️ No se encontró prisma/views.sql. Saltando.');
         return;
@@ -80,7 +86,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
       const sql = fs.readFileSync(viewsFile, 'utf8');
       const queries = sql.split(';').map((q: string) => q.trim()).filter((q: string) => q.length > 0);
-      
+
       for (const query of queries) {
         await this.$executeRawUnsafe(query).catch(e => {
           if (!e.message.includes('already exists')) {
@@ -111,11 +117,28 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.log('✅ mv_active_campaigns actualizada con éxito.');
     } catch (e) {
       if (e.message.includes('not been populated')) {
-         // Fallback if not populated yet
-         await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW mv_active_campaigns;');
+        // Fallback if not populated yet
+        await this.$executeRawUnsafe('REFRESH MATERIALIZED VIEW mv_active_campaigns;');
       } else {
-         this.logger.error(`❌ Error al refrescar vista: ${e.message}`);
+        this.logger.error(`❌ Error al refrescar vista: ${e.message}`);
       }
+    }
+  }
+
+  /**
+   * Expose Prisma connectivity metrics for health monitoring.
+   */
+  async getHealthMetrics(): Promise<{ connected: boolean; activeConnections?: number }> {
+    try {
+      const result: any[] = await this.$queryRaw`
+        SELECT count(*) as active_connections FROM pg_stat_activity WHERE datname = current_database()
+      `;
+      return {
+        connected: true,
+        activeConnections: Number(result[0]?.active_connections ?? 0),
+      };
+    } catch {
+      return { connected: false };
     }
   }
 }

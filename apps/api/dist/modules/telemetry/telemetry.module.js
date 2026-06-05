@@ -19,6 +19,7 @@ exports.TelemetryModule = TelemetryModule = __decorate([
         imports: [prisma_module_1.PrismaModule],
         controllers: [telemetry_controller_1.TelemetryController],
         providers: [telemetry_service_1.TelemetryService],
+        exports: [telemetry_service_1.TelemetryService],
     })
 ], TelemetryModule);
 //# sourceMappingURL=telemetry.module.js.map

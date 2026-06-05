@@ -5,7 +5,8 @@ import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { Public } from '../auth/decorators/public.decorator';
-import { SubscriptionGuard } from '../drivers/guards/subscription.guard';
+import { SubscriptionGuard as DriversSubscriptionGuard } from '../drivers/guards/subscription.guard';
+import { SubscriptionGuard } from './guards/subscription.guard';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { BulkSyncDto } from './dto/bulk-sync.dto';
 
@@ -13,7 +14,7 @@ import { BulkSyncDto } from './dto/bulk-sync.dto';
 @Public() // All device routes are called by tablets (no JWT)
 @Controller('device')
 export class DeviceController {
-  constructor(private readonly deviceService: DeviceService) {}
+  constructor(private readonly deviceService: DeviceService) { }
 
   @Post('register')
   @HttpCode(HttpStatus.OK)
@@ -36,14 +37,15 @@ export class DeviceController {
     return { success: true };
   }
 
-  @Public()
+  // REVENUE SHIELD: Subscription guard on content sync endpoints
+  @UseGuards(SubscriptionGuard)
   @Post('sync')
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {
     return this.deviceService.syncDeviceCampaigns(dto);
   }
 
-  @Public()
+  @UseGuards(SubscriptionGuard)
   @Post('bulk-sync')
   @HttpCode(HttpStatus.OK)
   async bulkSync(@Body() dto: BulkSyncDto) {

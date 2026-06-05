@@ -155,11 +155,12 @@ export declare class DeviceService {
         id: string;
         deviceId: string;
         isSimulated: boolean;
-        timestamp: Date;
         lat: number | null;
         lng: number | null;
         eventType: string;
         videoId: string;
+        timestamp: Date;
+        verified: boolean;
     }>;
     syncDeviceCampaigns(dto: SyncDeviceDto): Promise<{
         blocked: boolean;
@@ -229,8 +230,8 @@ export declare class DeviceService {
         createdAt: Date;
         commandType: string;
         commandParams: string | null;
-        expiresAt: Date | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     processBulkSync(dto: BulkSyncDto): Promise<{
         success: boolean;

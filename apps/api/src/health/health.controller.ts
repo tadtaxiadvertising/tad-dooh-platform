@@ -1,8 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../modules/auth/decorators/public.decorator';
+import { PrismaService } from '../modules/prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {
+  constructor(private readonly prisma: PrismaService) { }
+
   @Get()
   @Public()
   check() {
@@ -13,5 +16,11 @@ export class HealthController {
       service: 'tad-backend-api',
       node_env: process.env.NODE_ENV
     };
+  }
+
+  @Get('db')
+  @Public()
+  async dbMetrics() {
+    return this.prisma.getHealthMetrics();
   }
 }

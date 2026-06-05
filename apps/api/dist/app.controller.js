@@ -14,19 +14,36 @@ const common_1 = require("@nestjs/common");
 const public_decorator_1 = require("./modules/auth/decorators/public.decorator");
 const swagger_1 = require("@nestjs/swagger");
 let AppController = class AppController {
-    getHealth() {
+    getStatus() {
         return {
             status: 'UP',
             timestamp: new Date().toISOString(),
             service: 'TAD API Gateway',
-            version: 'v12-shelter'
+            version: 'v12-shelter',
+            routes: {
+                health: ['/api/health', '/health', '/api/v1/health'],
+                api: '/api/v1',
+                docs: '/api/docs',
+            },
         };
     }
-    getHello() {
-        return 'TAD API Gateway v10.1.0 - Active & Ready';
+    getRoot() {
+        return this.getStatus();
+    }
+    getHealth() {
+        return this.getStatus();
     }
 };
 exports.AppController = AppController;
+__decorate([
+    (0, common_1.Get)('/'),
+    (0, common_1.Get)('api'),
+    (0, common_1.Get)('api/v1'),
+    (0, public_decorator_1.Public)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "getRoot", null);
 __decorate([
     (0, common_1.Get)('api/health'),
     (0, public_decorator_1.Public)(),
@@ -34,13 +51,6 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "getHealth", null);
-__decorate([
-    (0, common_1.Get)('/'),
-    (0, public_decorator_1.Public)(),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AppController.prototype, "getHello", null);
 exports.AppController = AppController = __decorate([
     (0, swagger_1.ApiTags)('Health'),
     (0, common_1.Controller)()

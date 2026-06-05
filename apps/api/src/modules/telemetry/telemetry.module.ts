@@ -7,5 +7,6 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [TelemetryController],
   providers: [TelemetryService],
+  exports: [TelemetryService],
 })
-export class TelemetryModule {}
+export class TelemetryModule { }

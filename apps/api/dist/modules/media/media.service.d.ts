@@ -16,8 +16,6 @@ export declare class MediaService {
         status: string;
         createdAt: Date;
         filename: string | null;
-        url: string | null;
-        campaign_id: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -26,10 +24,12 @@ export declare class MediaService {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
+        campaign_id: string | null;
         qrUrl: string | null;
     }>;
     generateUploadUrl(fileName: string, fileType: string): Promise<{
@@ -44,8 +44,6 @@ export declare class MediaService {
         status: string;
         createdAt: Date;
         filename: string | null;
-        url: string | null;
-        campaign_id: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -54,10 +52,12 @@ export declare class MediaService {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
+        campaign_id: string | null;
         qrUrl: string | null;
     }>;
     registerFileMock(dto: {
@@ -95,8 +95,6 @@ export declare class MediaService {
         status: string;
         createdAt: Date;
         filename: string | null;
-        url: string | null;
-        campaign_id: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -105,10 +103,12 @@ export declare class MediaService {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
+        campaign_id: string | null;
         qrUrl: string | null;
     }>;
     deleteFile(id: string): Promise<{

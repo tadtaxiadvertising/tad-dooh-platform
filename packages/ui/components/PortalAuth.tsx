@@ -32,7 +32,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [view, setView] = useState<AuthView>('login');
-  
+
   // Resiliency States
   const [isOffline, setIsOffline] = useState(false);
   const [lockedMs, setLockedMs] = useState(0);
@@ -65,7 +65,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
     if (lockedMs > 0) return;
 
     setError('');
-    
+
     // Zod Validation
     const result = LoginSchema.safeParse({ email, password });
     if (!result.success) {
@@ -78,7 +78,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
     try {
       // Execute through Circuit Breaker to prevent Silent Fails
-      const { data, error: authError } = await circuitBreaker.execute(() => 
+      const { data, error: authError } = await circuitBreaker.execute(() =>
         supabase.auth.signInWithPassword({
           email: result.data.email,
           password: result.data.password,
@@ -88,8 +88,12 @@ export function PortalAuth({ config }: PortalAuthProps) {
       if (authError) throw authError;
       if (!data.session || !data.user) throw new Error('No se pudo establecer la sesión.');
 
-      // Check Role
-      const userRole = data.user.app_metadata?.role || data.user.role || 'GUEST';
+      // Check Role — Supabase data.user.role is always 'authenticated', not a custom role.
+      // The authoritative role source is app_metadata.role (set via Supabase dashboard or trigger).
+      // As a fallback, also check user_metadata.role for accounts created via the NestJS API.
+      const userRole = data.user.app_metadata?.role
+        || data.user.user_metadata?.role
+        || 'GUEST';
       if (userRole !== config.role) {
         // Clear session immediately if wrong role
         await supabase.auth.signOut();
@@ -98,7 +102,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
       // Success
       clearRateLimit(result.data.email);
-      
+
       // Umami Analytics Tracking
       if (typeof window !== 'undefined' && (window as any).umami) {
         (window as any).umami.track('auth_login_attempt', { status: 'success', portal: config.role });
@@ -115,7 +119,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
     } catch (err: any) {
       const isCircuitOpen = err.name === 'CircuitBreakerOpenError';
-      
+
       if (isCircuitOpen) {
         setIsOffline(true);
         setError(err.message);
@@ -123,14 +127,14 @@ export function PortalAuth({ config }: PortalAuthProps) {
         // Handle invalid credentials
         const limitState = recordFailedAttempt(result.data.email);
         setLockedMs(limitState.remainingMs);
-        
+
         let msg = err.message || 'Credenciales incorrectas.';
         if (err.message?.includes('Invalid login credentials')) {
-            msg = 'Correo o contraseña incorrectos.';
+          msg = 'Correo o contraseña incorrectos.';
         }
-        
-        setError(limitState.isLocked 
-          ? `Demasiados intentos. Intenta nuevamente en ${Math.ceil(limitState.remainingMs / 1000)}s.` 
+
+        setError(limitState.isLocked
+          ? `Demasiados intentos. Intenta nuevamente en ${Math.ceil(limitState.remainingMs / 1000)}s.`
           : msg);
       }
 
@@ -147,7 +151,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
     if (lockedMs > 0) return;
 
     setError('');
-    
+
     // Zod Validation
     const result = RecoverySchema.safeParse({ email });
     if (!result.success) {
@@ -160,8 +164,8 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      
-      const { error: authError } = await circuitBreaker.execute(() => 
+
+      const { error: authError } = await circuitBreaker.execute(() =>
         supabase.auth.resetPasswordForEmail(result.data.email, {
           redirectTo: `${origin}${config.callbackPath}?next=${encodeURIComponent(config.updatePasswordPath)}`,
         })
@@ -184,8 +188,8 @@ export function PortalAuth({ config }: PortalAuthProps) {
       } else {
         const limitState = recordFailedAttempt(result.data.email);
         setLockedMs(limitState.remainingMs);
-        setError(limitState.isLocked 
-          ? `Demasiados intentos. Intenta nuevamente en ${Math.ceil(limitState.remainingMs / 1000)}s.` 
+        setError(limitState.isLocked
+          ? `Demasiados intentos. Intenta nuevamente en ${Math.ceil(limitState.remainingMs / 1000)}s.`
           : err.message || 'Error al solicitar recuperación.');
       }
     } finally {
@@ -202,9 +206,9 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
       {/* Environment Glow (Dynamic color based on portal) */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] blur-[180px] rounded-full animate-pulse-soft opacity-10" 
-          style={{ backgroundColor: config.accentColor }} 
+        <div
+          className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] blur-[180px] rounded-full animate-pulse-soft opacity-10"
+          style={{ backgroundColor: config.accentColor }}
         />
         <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-white/[0.01] blur-[150px] rounded-full" />
       </div>
@@ -216,11 +220,11 @@ export function PortalAuth({ config }: PortalAuthProps) {
         {/* Brand */}
         <div className="text-center mb-12">
           <div className="relative inline-block mb-8 group">
-            <div 
-              className="absolute inset-0 blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000" 
-              style={{ backgroundColor: config.accentColor }} 
+            <div
+              className="absolute inset-0 blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"
+              style={{ backgroundColor: config.accentColor }}
             />
-            <div 
+            <div
               className="relative w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-700 bg-yellow-400"
             >
               <span className="text-3xl font-black text-black tracking-tighter">TAD</span>
@@ -240,15 +244,15 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
         {/* Form Card (Glassmorphism) */}
         <div className="relative group/form">
-          <div 
-            className="absolute -inset-1 blur-2xl opacity-0 group-hover/form:opacity-20 transition-opacity duration-1000" 
-            style={{ backgroundImage: `linear-gradient(to bottom right, ${config.accentColor}, transparent)` }} 
+          <div
+            className="absolute -inset-1 blur-2xl opacity-0 group-hover/form:opacity-20 transition-opacity duration-1000"
+            style={{ backgroundImage: `linear-gradient(to bottom right, ${config.accentColor}, transparent)` }}
           />
 
           <div className="relative bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-[2.5rem] p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
-            <div 
-              className="absolute top-0 left-0 w-full h-0.5 opacity-30" 
-              style={{ backgroundImage: `linear-gradient(to right, transparent, ${config.accentColor}, transparent)` }} 
+            <div
+              className="absolute top-0 left-0 w-full h-0.5 opacity-30"
+              style={{ backgroundImage: `linear-gradient(to right, transparent, ${config.accentColor}, transparent)` }}
             />
 
             {/* Offline Circuit Breaker State */}
@@ -259,7 +263,7 @@ export function PortalAuth({ config }: PortalAuthProps) {
                 <p className="text-xs text-gray-400 leading-relaxed mb-6">
                   El sistema de autenticación no está disponible en este momento debido a un problema de red. Por favor intente más tarde.
                 </p>
-                <button 
+                <button
                   onClick={() => setIsOffline(false)}
                   className="bg-white/10 hover:bg-white/20 text-white font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 rounded-xl transition-all"
                 >

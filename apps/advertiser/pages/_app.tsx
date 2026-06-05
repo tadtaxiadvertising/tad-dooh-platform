@@ -25,7 +25,6 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/advertiser/onboarding',
     '/check-in',
   ].includes(router.pathname)
-    || router.pathname.startsWith('/advertiser/')
     || router.pathname.startsWith('/p');
 
   // Initialize Logger

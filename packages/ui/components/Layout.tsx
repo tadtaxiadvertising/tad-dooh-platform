@@ -138,7 +138,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [dropdownPos, setDropdownPos] = React.useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const avatarRef = React.useRef<HTMLDivElement>(null);
 
   // Auto-close mobile sidebar when route changes
   React.useEffect(() => {
@@ -156,6 +158,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Calculate dropdown position from avatar trigger when menu opens
+  React.useEffect(() => {
+    if (isUserMenuOpen && avatarRef.current) {
+      const rect = avatarRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 16,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isUserMenuOpen]);
 
   const navigationGroups = React.useMemo(() => {
     if (role === 'ADVERTISER') return ADVERTISER_NAVIGATION;
@@ -418,7 +431,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="relative">
-                  <div
+                  <div ref={avatarRef}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 cursor-pointer group select-none"
                   >
@@ -430,52 +443,54 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </div>
 
                   {isUserMenuOpen && typeof window !== 'undefined' && ReactDOM.createPortal(
-                    <div className="fixed inset-0 z-[300]" onClick={() => setIsUserMenuOpen(false)} />,
-                    document.body
-                  )}
-
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-4 w-56 bg-zinc-900/95 border border-white-[0.05] backdrop-blur-3xl rounded-2xl shadow-2xl z-[310] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                      <div className="p-4 border-b border-white-[0.05] bg-zinc-950/50">
-                        <p className="text-[10px] font-black text-white uppercase tracking-widest truncate">{userEmail}</p>
-                        <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
-                      </div>
-                      <div className="p-2">
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
-                        >
-                          <User className="w-4 h-4" />
-                          Mi Perfil
-                        </button>
-                        {role === 'ADMIN' && (
+                    <>
+                      <div className="fixed inset-0 z-[300]" onClick={() => setIsUserMenuOpen(false)} />
+                      <div
+                        className="fixed z-[310] w-56 bg-zinc-900/95 border border-white-[0.05] backdrop-blur-3xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right"
+                        style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                      >
+                        <div className="p-4 border-b border-white-[0.05] bg-zinc-950/50">
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest truncate">{userEmail}</p>
+                          <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
+                        </div>
+                        <div className="p-2">
                           <button
                             onClick={() => {
                               setIsUserMenuOpen(false);
-                              router.push('/admin/settings');
+                              router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
                           >
-                            <ShieldCheck className="w-4 h-4" />
-                            Configuración
+                            <User className="w-4 h-4" />
+                            Mi Perfil
                           </button>
-                        )}
-                        <div className="h-px bg-white-[0.05] my-2" />
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all uppercase tracking-wider"
-                        >
-                          <LogIn className="w-4 h-4 rotate-180" />
-                          Desconectar
-                        </button>
+                          {role === 'ADMIN' && (
+                            <button
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                router.push('/admin/settings');
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-wider"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              Configuración
+                            </button>
+                          )}
+                          <div className="h-px bg-white-[0.05] my-2" />
+                          <button
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              handleLogout();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all uppercase tracking-wider"
+                          >
+                            <LogIn className="w-4 h-4 rotate-180" />
+                            Desconectar
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>,
+                    document.body
                   )}
                 </div>
               </div>

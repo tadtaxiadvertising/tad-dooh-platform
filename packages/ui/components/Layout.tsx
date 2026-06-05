@@ -1,10 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { 
-  Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone, 
-  BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet, 
-  LogIn, IdCard, Tablet, Briefcase, Navigation, Activity, 
+import {
+  Menu, X, LayoutDashboard, CarFront, MonitorOff, Megaphone,
+  BarChart3, CloudUpload, User, Bell, Search, Zap, Wallet,
+  LogIn, IdCard, Tablet, Briefcase, Navigation, Activity,
   ShieldCheck, Cpu, Battery, MessageSquare, TrendingUp, Scale,
   Monitor, Map, Users, Building2, ClipboardList, Target, Image as ImageIcon, ChevronDown, Network
 } from 'lucide-react';
@@ -103,26 +103,26 @@ function FleetHealthStatus({ hasSession }: { hasSession: boolean }) {
 
   return (
     <div className="flex items-center gap-6 pr-8 border-r border-white-[0.03] hidden lg:flex">
-       <div className="text-right">
-          <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Fleet Health</p>
-          <div className="flex items-center gap-2 justify-end">
-             <span className={clsx(
-               "text-[10px] font-bold tracking-tight",
-               healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
-             )}>{healthScore}% ENERGY</span>
-             <Battery className={clsx(
-               "w-3 h-3 transition-colors",
-               healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
-             )} />
-          </div>
-       </div>
-       <div className="text-right">
-          <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Active Nodes</p>
-          <div className="flex items-center gap-2 justify-end">
-             <span className="text-[10px] font-bold text-white tracking-tight">{onlineCount} / {devices?.length || 0}</span>
-             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
-          </div>
-       </div>
+      <div className="text-right">
+        <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Fleet Health</p>
+        <div className="flex items-center gap-2 justify-end">
+          <span className={clsx(
+            "text-[10px] font-bold tracking-tight",
+            healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
+          )}>{healthScore}% ENERGY</span>
+          <Battery className={clsx(
+            "w-3 h-3 transition-colors",
+            healthScore > 70 ? "text-emerald-500" : healthScore > 30 ? "text-tad-yellow" : "text-rose-500"
+          )} />
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Active Nodes</p>
+        <div className="flex items-center gap-2 justify-end">
+          <span className="text-[10px] font-bold text-white tracking-tight">{onlineCount} / {devices?.length || 0}</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -168,19 +168,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
     if (role === 'DRIVER') target = '/driver/login';
     if (role === 'ADMIN') target = '/admin/login';
 
-    if (supabase) await supabase.auth.signOut();
-    
-    // Limpiar TODOS los tokens de TODOS los portales
+    // 1. Clear ALL localStorage tokens FIRST — prevents AuthProvider SIGNED_OUT
+    //    handler from rebuilding the session from remaining portal tokens
     localStorage.removeItem('tad_admin_token');
     localStorage.removeItem('tad_admin_user');
     localStorage.removeItem('tad_advertiser_token');
     localStorage.removeItem('tad_advertiser_user');
     localStorage.removeItem('tad_driver_token');
     localStorage.removeItem('tad_driver_user');
-    
-    // Matar cookie de middleware
+
+    // 2. Kill middleware cookie
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    
+
+    // 3. Sign out from Supabase (may fail if session was JWT-only, so wrap in try-catch)
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      // Session may not exist in Supabase (e.g. NestJS JWT login) — safe to ignore
+    }
+
     router.replace(target);
   };
 
@@ -198,26 +204,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
         isCollapsed ? "lg:w-20" : "lg:w-72"
       )}>
         <div className="absolute top-[-5%] left-[-5%] w-64 h-64 bg-tad-yellow/10 blur-[100px] -z-10 pointer-events-none transition-all duration-1000" />
-        
+
         {/* Brand Identity Section */}
         <div className={clsx(
-           "px-6 mb-10 w-full flex items-center transition-all duration-500", 
-           isCollapsed ? "justify-center" : "justify-between"
+          "px-6 mb-10 w-full flex items-center transition-all duration-500",
+          isCollapsed ? "justify-center" : "justify-between"
         )}>
           <div className="flex items-center group cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
             <div className={clsx("transition-all duration-500", isCollapsed ? "flex justify-center w-full" : "ml-2")}>
-               <TADLogo className={clsx("transition-all duration-500", isCollapsed ? "h-10" : "h-14")} showText={!isCollapsed} />
+              <TADLogo className={clsx("transition-all duration-500", isCollapsed ? "h-10" : "h-14")} showText={!isCollapsed} />
             </div>
           </div>
-          
-          <button 
-             onClick={() => setIsCollapsed(!isCollapsed)} 
-             title="Alternar Menú"
-             aria-label="Alternar Menú"
-             className={clsx(
-                "hidden lg:flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all outline-none", 
-                isCollapsed ? "hidden scale-0 opacity-0" : "opacity-100 scale-100"
-             )}
+
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title="Alternar Menú"
+            aria-label="Alternar Menú"
+            className={clsx(
+              "hidden lg:flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all outline-none",
+              isCollapsed ? "hidden scale-0 opacity-0" : "opacity-100 scale-100"
+            )}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -228,12 +234,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {navigationGroups.map((group: any, gi: number) => (
             <div key={group.label} className={clsx(gi > 0 && 'mt-8')}>
               <p className={clsx(
-                 "text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap px-2", 
-                 isCollapsed ? "justify-center px-0 opacity-40" : "gap-4"
+                "text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center transition-all duration-300 whitespace-nowrap px-2",
+                isCollapsed ? "justify-center px-0 opacity-40" : "gap-4"
               )}>
-                 {!isCollapsed && <span className="transition-all duration-300">{group.label}</span>}
-                 {!isCollapsed && <span className="h-px flex-1 bg-white/5" />}
-                 {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
+                {!isCollapsed && <span className="transition-all duration-300">{group.label}</span>}
+                {!isCollapsed && <span className="h-px flex-1 bg-white/5" />}
+                {isCollapsed && <span className="text-[8px] tracking-[0.2em] opacity-40">—</span>}
               </p>
               <div className="space-y-1.5">
                 {group.items.map((item: any) => {
@@ -242,10 +248,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   const isExactMatch = router.pathname === item.href;
                   const isPrefixMatch = item.href !== '/' && router.pathname.startsWith(item.href + '/');
                   // Es activo si es coincidencia exacta, O si es un sub-path y no hay otro botón en el menú que coincida mejor.
-                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some((otherHref: string) => 
-                      otherHref !== item.href && 
-                      otherHref.length > item.href.length && 
-                      (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
+                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some((otherHref: string) =>
+                    otherHref !== item.href &&
+                    otherHref.length > item.href.length &&
+                    (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
                   ));
 
                   return (
@@ -267,25 +273,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       )}
                     >
                       {isActive && (
-                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-black rounded-r-full opacity-20" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-black rounded-r-full opacity-20" />
                       )}
-                      
+
                       <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-4 w-5 h-5")}>
-                         <Icon
-                           className={clsx(
-                             'shrink-0 transition-all duration-500 relative z-10',
-                             isActive ? 'text-black' : 'text-zinc-500 group-hover:text-zinc-300',
-                             isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
-                           )}
-                           aria-hidden="true"
-                         />
+                        <Icon
+                          className={clsx(
+                            'shrink-0 transition-all duration-500 relative z-10',
+                            isActive ? 'text-black' : 'text-zinc-500 group-hover:text-zinc-300',
+                            isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
+                          )}
+                          aria-hidden="true"
+                        />
                       </div>
-                      
+
                       <span className={clsx(
-                         "relative z-10 transition-all duration-300 whitespace-nowrap", 
-                         isCollapsed ? "opacity-0 w-0 hidden lg:block translate-x-4" : "opacity-100 w-auto translate-x-0"
+                        "relative z-10 transition-all duration-300 whitespace-nowrap",
+                        isCollapsed ? "opacity-0 w-0 hidden lg:block translate-x-4" : "opacity-100 w-auto translate-x-0"
                       )}>
-                         {item.name}
+                        {item.name}
                       </span>
                     </a>
                   );
@@ -297,34 +303,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Terminal Workspace Profile */}
         <div className={clsx(
-           "p-4 w-full mt-auto bg-zinc-900/40 border-t border-white-[0.03] transition-all duration-500 relative",
-           isCollapsed ? "items-center flex flex-col px-2" : ""
+          "p-4 w-full mt-auto bg-zinc-900/40 border-t border-white-[0.03] transition-all duration-500 relative",
+          isCollapsed ? "items-center flex flex-col px-2" : ""
         )}>
-           <div className={clsx(
-              "bg-zinc-950 border border-white-[0.05] rounded-2xl group transition-all duration-500 relative overflow-hidden flex items-center",
-              isCollapsed ? "p-2 justify-center" : "p-3 gap-3"
-           )}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(255,212,0,0.2)] group-hover:scale-105 transition-transform text-xs uppercase shrink-0">
-                 {userEmail.slice(0, 2)}
-              </div>
-               <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                 <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5 italic">
-                    <ShieldCheck className="w-3 h-3 text-tad-yellow animate-pulse" /> SYSTEM_ROOT
-                 </p>
-                 <p className="font-black text-[11px] text-white truncate tracking-tight">{userEmail.toUpperCase()}</p>
-              </div>
-           </div>
-                      <button 
-               onClick={handleLogout}
-               title={isCollapsed ? "Cerrar Sesión" : undefined}
-               className={clsx(
-                  "mt-4 flex items-center justify-center bg-zinc-950/60 hover:bg-rose-500 text-zinc-600 hover:text-white rounded-xl border border-white/5 hover:border-rose-500/50 transition-all shadow-inner",
-                  isCollapsed ? "w-10 h-10" : "w-full py-3 gap-3 px-6"
-               )}
-             >
-               <LogIn className="w-3.5 h-3.5 rotate-180" />
-               {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Disconnect</span>}
-             </button>
+          <div className={clsx(
+            "bg-zinc-950 border border-white-[0.05] rounded-2xl group transition-all duration-500 relative overflow-hidden flex items-center",
+            isCollapsed ? "p-2 justify-center" : "p-3 gap-3"
+          )}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tad-yellow to-yellow-500 flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(255,212,0,0.2)] group-hover:scale-105 transition-transform text-xs uppercase shrink-0">
+              {userEmail.slice(0, 2)}
+            </div>
+            <div className={clsx("flex-1 min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
+              <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5 italic">
+                <ShieldCheck className="w-3 h-3 text-tad-yellow animate-pulse" /> SYSTEM_ROOT
+              </p>
+              <p className="font-black text-[11px] text-white truncate tracking-tight">{userEmail.toUpperCase()}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            title={isCollapsed ? "Cerrar Sesión" : undefined}
+            className={clsx(
+              "mt-4 flex items-center justify-center bg-zinc-950/60 hover:bg-rose-500 text-zinc-600 hover:text-white rounded-xl border border-white/5 hover:border-rose-500/50 transition-all shadow-inner",
+              isCollapsed ? "w-10 h-10" : "w-full py-3 gap-3 px-6"
+            )}
+          >
+            <LogIn className="w-3.5 h-3.5 rotate-180" />
+            {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Disconnect</span>}
+          </button>
         </div>
       </aside>
 
@@ -332,16 +338,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden relative h-full">
         {/* Environmental Glows */}
         <div className="fixed inset-0 -z-20 bg-[#0a0a0b]" />
-        
+
         {/* Global Control Bar — Ultra-Glass with high visibility for background details */}
         <header className="h-20 shrink-0 border-b border-white/[0.03] border-t border-tad-yellow/5 backdrop-blur-3xl bg-black/40 z-[110] relative">
           {/* Subtle glass light leak */}
           <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-tad-yellow/20 to-transparent" />
-          
+
           <div className="h-full px-6 flex items-center justify-between gap-6 w-full">
             {/* Left Section: Mobile Menu */}
             <div className="flex items-center shrink-0">
-              <button 
+              <button
                 className="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors"
                 onClick={() => setIsSidebarOpen(true)}
                 title="Abrir el panel de control"
@@ -355,7 +361,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {(role === 'ADMIN' || role === 'ADVERTISER') && (
                 <div className="hidden xl:flex items-center gap-6 shrink-0 z-20">
                   <FleetHealthStatus hasSession={!!session} />
-                  
+
                   <div className="flex items-center gap-6 pl-6 border-l border-white/5">
                     <div className="text-right">
                       <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">Network</p>
@@ -377,12 +383,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               <div className="w-full max-w-sm relative group z-10 hidden md:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-tad-yellow transition-colors" />
-                <input 
+                <input
                   ref={searchInputRef}
-                  type="text" 
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="SEARCH PROTOCOL..." 
+                  placeholder="SEARCH PROTOCOL..."
                   className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl py-2 pl-11 pr-16 text-[11px] font-medium outline-none focus:bg-white/10 focus-within:ring-2 focus-within:ring-[#FFCC00]/50 focus-within:border-[#FFCC00]/30 transition-all tracking-wider text-white placeholder:text-zinc-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchQuery) {
@@ -403,7 +409,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Right Section: User Nav Cluster */}
             <div className="flex items-center justify-end gap-4 z-20 shrink-0">
               <NotificationCenter />
-              
+
               <div className="flex items-center gap-4 pl-4 border-l border-white/10">
                 <div className="hidden sm:flex items-center gap-1.5 bg-green-500/10 text-green-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/20 uppercase tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -411,7 +417,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="relative">
-                  <div 
+                  <div
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 cursor-pointer group select-none"
                   >
@@ -431,7 +437,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{role || 'USUARIO'}</p>
                         </div>
                         <div className="p-2">
-                          <button 
+                          <button
                             onClick={() => {
                               setIsUserMenuOpen(false);
                               router.push(role === 'ADMIN' ? '/admin/profile' : role === 'ADVERTISER' ? '/advertiser/profile' : '/driver/profile');
@@ -442,7 +448,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             Mi Perfil
                           </button>
                           {role === 'ADMIN' && (
-                            <button 
+                            <button
                               onClick={() => {
                                 setIsUserMenuOpen(false);
                                 router.push('/admin/settings');
@@ -454,7 +460,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             </button>
                           )}
                           <div className="h-px bg-white-[0.05] my-2" />
-                          <button 
+                          <button
                             onClick={() => {
                               setIsUserMenuOpen(false);
                               handleLogout();
@@ -473,27 +479,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        
+
         {/* Dynamic Canvas Area */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-8 lg:p-10 relative scroll-smooth custom-scrollbar">
-           <div className="absolute right-[10%] top-[5%] w-[40%] h-[40%] bg-tad-yellow/[0.03] blur-[120px] rounded-full pointer-events-none -z-10" />
-           <div className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-10">
-             {children}
-           </div>
-           
-           <footer className="mt-32 pt-10 border-t border-white-[0.03] flex flex-col md:flex-row items-center justify-between opacity-30 hover:opacity-100 transition-opacity duration-700">
-              <div className="flex items-center gap-3 mt-4 md:mt-0">
-                 <Zap className="w-3.5 h-3.5 text-tad-yellow" />
-                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.3em]">TAD NODE OS v4.5.1 STABLE</p>
-              </div>
-              <div className="flex gap-8">
-                 <p className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">ECOSYSTEM REVISION: 04</p>
-                 <p className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">© 2026 TECHNOLOGY ASSET DEPLOYMENT</p>
-              </div>
-           </footer>
+          <div className="absolute right-[10%] top-[5%] w-[40%] h-[40%] bg-tad-yellow/[0.03] blur-[120px] rounded-full pointer-events-none -z-10" />
+          <div className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-10">
+            {children}
+          </div>
+
+          <footer className="mt-32 pt-10 border-t border-white-[0.03] flex flex-col md:flex-row items-center justify-between opacity-30 hover:opacity-100 transition-opacity duration-700">
+            <div className="flex items-center gap-3 mt-4 md:mt-0">
+              <Zap className="w-3.5 h-3.5 text-tad-yellow" />
+              <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.3em]">TAD NODE OS v4.5.1 STABLE</p>
+            </div>
+            <div className="flex gap-8">
+              <p className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">ECOSYSTEM REVISION: 04</p>
+              <p className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">© 2026 TECHNOLOGY ASSET DEPLOYMENT</p>
+            </div>
+          </footer>
         </main>
       </div>
-      
+
       {/* @ts-ignore */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

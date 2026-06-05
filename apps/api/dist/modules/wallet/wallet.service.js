@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WalletService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const client_1 = require("@prisma/client");
 let WalletService = WalletService_1 = class WalletService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -47,24 +48,53 @@ let WalletService = WalletService_1 = class WalletService {
         };
     }
     async withdraw(driverId, amount) {
+        if (amount <= 0) {
+            throw new common_1.BadRequestException('Withdrawal amount must be positive');
+        }
         return this.prisma.$transaction(async (tx) => {
-            const driver = await tx.driver.findUnique({
-                where: { id: driverId },
-            });
-            if (!driver) {
+            const [driverRow] = await tx.$queryRaw `
+        SELECT id, wallet_balance, bank_account
+        FROM drivers
+        WHERE id = ${driverId}
+        FOR UPDATE
+      `;
+            if (!driverRow) {
                 throw new common_1.BadRequestException('Driver not found');
             }
-            if (!driver.bankAccount) {
-                throw new common_1.BadRequestException('Bank account not configured');
+            if (!driverRow.bank_account) {
+                throw new common_1.BadRequestException('Bank account not configured. Configure your bank details before withdrawing.');
             }
-            if (driver.walletBalance < amount) {
-                this.logFinancialAnomaly(driverId, `Intento de retiro excede balance: solicitó RD$ ${amount}, balance actual RD$ ${driver.walletBalance}`, 'WARNING');
-                throw new common_1.BadRequestException('Insufficient balance');
+            const currentBalance = Number(driverRow.wallet_balance);
+            if (currentBalance < amount) {
+                this.logFinancialAnomaly(driverId, `Intento de retiro excede balance: solicitó RD$ ${amount}, balance actual RD$ ${currentBalance}`, 'WARNING');
+                throw new common_1.BadRequestException({
+                    code: 'INSUFFICIENT_BALANCE',
+                    message: `Insufficient balance. Current: RD$ ${currentBalance}, Requested: RD$ ${amount}`,
+                    currentBalance,
+                    requestedAmount: amount,
+                });
             }
-            const updatedDriver = await tx.driver.update({
-                where: { id: driverId },
-                data: { walletBalance: { decrement: amount } },
-            });
+            await tx.$executeRaw `
+        UPDATE drivers
+        SET wallet_balance = wallet_balance - ${amount}
+        WHERE id = ${driverId}
+      `;
+            const [verify] = await tx.$queryRaw `
+        SELECT wallet_balance FROM drivers WHERE id = ${driverId}
+      `;
+            const newBalance = Number(verify.wallet_balance);
+            if (newBalance < 0) {
+                await tx.$executeRaw `
+          UPDATE drivers
+          SET wallet_balance = wallet_balance + ${amount}
+          WHERE id = ${driverId}
+        `;
+                this.logFinancialAnomaly(driverId, `🚨 DOUBLE-SPEND PREVENTED: Retiro RD$ ${amount} revertido. Balance post-retiro era RD$ ${newBalance}. Transacción cancelada y balance restaurado.`, 'CRITICAL');
+                throw new common_1.BadRequestException({
+                    code: 'DOUBLE_SPEND_PREVENTED',
+                    message: 'Withdrawal rolled back — balance integrity violation detected. Operations team notified.',
+                });
+            }
             const transaction = await tx.financialTransaction.create({
                 data: {
                     type: 'WITHDRAWAL',
@@ -74,14 +104,19 @@ let WalletService = WalletService_1 = class WalletService {
                     taxAmount: 0,
                     status: 'PENDING',
                     entityId: driverId,
-                    reference: `WD-${driverId.substring(0, 8)}-${Date.now()}`
-                }
+                    reference: `WD-${driverId.substring(0, 8)}-${Date.now()}`,
+                },
             });
-            if (updatedDriver.walletBalance < 0) {
-                this.logFinancialAnomaly(driverId, `🚨 BALANCE NEGATIVO detectado post-retiro: RD$ ${updatedDriver.walletBalance} (retiró RD$ ${amount})`, 'CRITICAL');
-            }
-            this.logger.log(`💰 Retiro procesado: Driver ${driverId} → RD$ ${amount} | Nuevo balance: RD$ ${updatedDriver.walletBalance}`);
-            return { success: true, newBalance: updatedDriver.walletBalance, transactionId: transaction.id };
+            this.logger.log(`💰 Retiro procesado: Driver ${driverId} → RD$ ${amount} | Nuevo balance: RD$ ${newBalance} | Tx: ${transaction.id}`);
+            return {
+                success: true,
+                newBalance,
+                transactionId: transaction.id,
+                reference: transaction.reference,
+            };
+        }, {
+            isolationLevel: client_1.Prisma.TransactionIsolationLevel.ReadCommitted,
+            timeout: 10000,
         });
     }
     async updateBank(driverId, bankData) {

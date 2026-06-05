@@ -1,7 +1,30 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Propósito**: Registro histórico de cambios, hitos técnicos y correcciones de errores.
-> **Última Actualización**: 2026-05-31
+> **Última Actualización**: 2026-06-05
+
+---
+
+## [v12.2.5] - 2026-06-05
+
+### 🚀 FEATURE / 🔧 FIX: Implementación Completa del Plan de Auditoría, Consolidación y Optimización de Telemetría
+- **Finance Consolidation**: Corregida la inyección de dependencias en `FinanceModule` importando `NotificationsModule`, asegurando que el job CRON de cobros automáticos/morosidad no falle al enviar WhatsApps y correos.
+- **Telemetry Security**: Endurecido `/telemetry/playback` mediante validación estricta de firmas HMAC y `deviceId` para evitar inyecciones maliciosas de reproducciones falsas.
+- **IndexedDB Sync Engine**: Añadido motor de colas de telemetría persistente usando IndexedDB en el portal del conductor (`apps/driver/utils/indexedDb.ts`), garantizando que los datos no se pierdan al reiniciar el navegador en tablets Android.
+- **Optimización y Limpieza**: Eliminados artefactos de Vercel innecesarios en un entorno autohospedado en Easypanel, y añadidas migraciones de base de datos para índices de telemetría de alta performance.
+- **Archivos tocados**:
+  - `package.json`
+  - `apps/api/prisma/schema.prisma`
+  - `apps/api/prisma/migrations/v12_2_5_indexes_and_cleanup.sql`
+  - `apps/api/src/modules/finance/finance.module.ts`
+  - `apps/api/src/modules/finance/finance.service.ts`
+  - `apps/api/src/modules/telemetry/telemetry.controller.ts`
+  - `apps/api/src/modules/telemetry/telemetry.module.ts`
+  - `apps/api/src/modules/telemetry/telemetry.service.ts`
+  - `apps/driver/utils/indexedDb.ts`
+  - `apps/driver/hooks/useTelemetry.ts`
+  - `apps/driver/hooks/useBackgroundTelemetry.ts`
+  - `apps/driver/pages/check-in.tsx`
+  - `apps/tad-simulator/package.json`
 
 ---
 

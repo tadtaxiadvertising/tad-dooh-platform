@@ -1,9 +1,17 @@
-export declare class AppController {
-    getHealth(): {
-        status: string;
-        timestamp: string;
-        service: string;
-        version: string;
+interface ApiStatusResponse {
+    status: 'UP';
+    timestamp: string;
+    service: string;
+    version: string;
+    routes: {
+        health: string[];
+        api: string;
+        docs: string;
     };
-    getHello(): string;
 }
+export declare class AppController {
+    private getStatus;
+    getRoot(): ApiStatusResponse;
+    getHealth(): ApiStatusResponse;
+}
+export {};

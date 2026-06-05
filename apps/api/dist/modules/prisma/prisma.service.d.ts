@@ -7,4 +7,8 @@ export declare class PrismaService extends PrismaClient implements OnModuleInit,
     private initializeSreViews;
     onModuleDestroy(): Promise<void>;
     refreshActiveCampaignsView(): Promise<void>;
+    getHealthMetrics(): Promise<{
+        connected: boolean;
+        activeConnections?: number;
+    }>;
 }

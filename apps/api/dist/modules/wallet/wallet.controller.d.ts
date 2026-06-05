@@ -34,6 +34,7 @@ export declare class WalletController {
         success: boolean;
         newBalance: number;
         transactionId: string;
+        reference: string;
     }>;
     updateBank(req: any, payload: any): Promise<{
         success: boolean;

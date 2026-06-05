@@ -20,7 +20,13 @@ async function bootstrap() {
         const prismaService = app.get(prisma_service_1.PrismaService);
         app.enableShutdownHooks();
         app.setGlobalPrefix('api/v1', {
-            exclude: ['api/health', '/'],
+            exclude: [
+                { path: '/', method: common_1.RequestMethod.GET },
+                { path: 'api', method: common_1.RequestMethod.GET },
+                { path: 'api/health', method: common_1.RequestMethod.GET },
+                { path: 'api/v1', method: common_1.RequestMethod.GET },
+                { path: 'health', method: common_1.RequestMethod.GET },
+            ],
         });
         const envOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : [];
         const baseOrigins = [

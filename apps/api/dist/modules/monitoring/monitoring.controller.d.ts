@@ -35,8 +35,8 @@ export declare class MonitoringController {
             city: string | null;
             createdAt: Date;
             campaignId: string;
-            date: Date;
             totalImpressions: number;
+            date: Date;
             totalCompletions: number;
             totalErrors: number;
             uniqueDevices: number;

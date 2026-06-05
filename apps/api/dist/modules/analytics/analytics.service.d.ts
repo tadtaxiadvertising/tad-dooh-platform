@@ -13,11 +13,11 @@ export declare class AnalyticsService {
         id: string;
         deviceId: string;
         isSimulated: boolean;
-        timestamp: Date;
         lat: number | null;
         lng: number | null;
-        campaignId: string | null;
         eventType: string;
+        timestamp: Date;
+        campaignId: string | null;
         mediaId: string | null;
         eventData: string | null;
         occurredAt: Date;

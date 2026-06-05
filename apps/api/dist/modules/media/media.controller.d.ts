@@ -14,8 +14,6 @@ export declare class MediaController {
         status: string;
         createdAt: Date;
         filename: string | null;
-        url: string | null;
-        campaign_id: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -24,10 +22,12 @@ export declare class MediaController {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
+        campaign_id: string | null;
         qrUrl: string | null;
     }>;
     getMedia(): Promise<{
@@ -74,8 +74,6 @@ export declare class MediaController {
         status: string;
         createdAt: Date;
         filename: string | null;
-        url: string | null;
-        campaign_id: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -84,10 +82,12 @@ export declare class MediaController {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
+        campaign_id: string | null;
         qrUrl: string | null;
     }>;
 }

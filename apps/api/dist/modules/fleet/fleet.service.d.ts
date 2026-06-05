@@ -98,8 +98,8 @@ export declare class FleetService {
         createdAt: Date;
         commandType: string;
         commandParams: string | null;
-        expiresAt: Date | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string): Promise<{
         success: boolean;

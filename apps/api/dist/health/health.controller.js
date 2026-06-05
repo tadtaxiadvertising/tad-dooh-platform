@@ -12,7 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const common_1 = require("@nestjs/common");
 const public_decorator_1 = require("../modules/auth/decorators/public.decorator");
+const prisma_service_1 = require("../modules/prisma/prisma.service");
 let HealthController = class HealthController {
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
     check() {
         return {
             status: 'up',
@@ -20,6 +24,9 @@ let HealthController = class HealthController {
             service: 'tad-backend-api',
             node_env: process.env.NODE_ENV
         };
+    }
+    async dbMetrics() {
+        return this.prisma.getHealthMetrics();
     }
 };
 exports.HealthController = HealthController;
@@ -30,7 +37,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], HealthController.prototype, "check", null);
+__decorate([
+    (0, common_1.Get)('db'),
+    (0, public_decorator_1.Public)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], HealthController.prototype, "dbMetrics", null);
 exports.HealthController = HealthController = __decorate([
-    (0, common_1.Controller)('health')
+    (0, common_1.Controller)('health'),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], HealthController);
 //# sourceMappingURL=health.controller.js.map

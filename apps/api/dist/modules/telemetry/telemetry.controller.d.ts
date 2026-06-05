@@ -1,6 +1,7 @@
 import { TelemetryService } from './telemetry.service';
 export declare class TelemetryController {
     private readonly telemetryService;
+    private readonly logger;
     constructor(telemetryService: TelemetryService);
     sync(payload: {
         driverId: string;
@@ -17,14 +18,54 @@ export declare class TelemetryController {
         eventType: 'START' | 'END' | 'ERROR';
         lat?: number;
         lng?: number;
-    }): Promise<{
+        clientTimestamp?: string;
+    }, tabletKey?: string): Promise<{
         id: string;
         deviceId: string;
         isSimulated: boolean;
-        timestamp: Date;
         lat: number | null;
         lng: number | null;
         eventType: string;
         videoId: string;
+        timestamp: Date;
+        verified: boolean;
+    } | {
+        success: boolean;
+        duplicate: boolean;
+        verified?: undefined;
+    } | {
+        success: boolean;
+        verified: boolean;
+        duplicate?: undefined;
+    } | {
+        success: boolean;
+        reason: string;
+        message: string;
+    }>;
+    recordPlaybackBatch(payload: {
+        deviceId: string;
+        videoId: string;
+        eventType: 'START' | 'END' | 'ERROR';
+        lat?: number;
+        lng?: number;
+        clientTimestamp?: string;
+    }[], tabletKey?: string): Promise<{
+        success: boolean;
+        reason: string;
+        message?: undefined;
+        processed?: undefined;
+        rejected?: undefined;
+    } | {
+        success: boolean;
+        reason: string;
+        message: string;
+        processed?: undefined;
+        rejected?: undefined;
+    } | {
+        success: boolean;
+        processed: number;
+        rejected: number;
+        reason?: undefined;
+        message?: undefined;
     }>;
 }

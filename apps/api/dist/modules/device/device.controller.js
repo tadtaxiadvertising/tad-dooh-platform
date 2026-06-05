@@ -20,6 +20,7 @@ const register_device_dto_1 = require("./dto/register-device.dto");
 const heartbeat_dto_1 = require("./dto/heartbeat.dto");
 const playback_confirmation_dto_1 = require("./dto/playback-confirmation.dto");
 const public_decorator_1 = require("../auth/decorators/public.decorator");
+const subscription_guard_1 = require("./guards/subscription.guard");
 const sync_device_dto_1 = require("./dto/sync-device.dto");
 const bulk_sync_dto_1 = require("./dto/bulk-sync.dto");
 let DeviceController = class DeviceController {
@@ -77,7 +78,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DeviceController.prototype, "playback", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, common_1.UseGuards)(subscription_guard_1.SubscriptionGuard),
     (0, common_1.Post)('sync'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
@@ -86,7 +87,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DeviceController.prototype, "sync", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, common_1.UseGuards)(subscription_guard_1.SubscriptionGuard),
     (0, common_1.Post)('bulk-sync'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),

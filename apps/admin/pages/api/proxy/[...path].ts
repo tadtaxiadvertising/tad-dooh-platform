@@ -54,9 +54,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       proxy: 'OK',
       backendTarget: `${BACKEND_BASE}/api/v1/`,
       envSource: process.env.INTERNAL_BACKEND_URL ? 'INTERNAL_BACKEND_URL' :
-                 process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' : 
-                 process.env.BACKEND_URL ? 'BACKEND_URL' :
-                 process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' : 'HARDCODED',
+        process.env.BACKEND_INTERNAL_URL ? 'BACKEND_INTERNAL_URL' :
+          process.env.BACKEND_URL ? 'BACKEND_URL' :
+            process.env.NEXT_PUBLIC_API_URL ? 'NEXT_PUBLIC_API_URL' : 'HARDCODED',
       timestamp: new Date().toISOString(),
     });
   }
@@ -89,10 +89,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const getForwardHeaders = (target: string) => {
       const headers = { ...req.headers } as Record<string, string>;
-      
+
       // 🔑 Reenviar el token al backend
       let authHeader = req.headers.authorization || req.headers.Authorization;
-      
+
       if (!authHeader) {
         const cookieToken = req.cookies['sb-access-token'];
         if (cookieToken) {
@@ -105,14 +105,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         delete headers['Authorization'];
         headers['Authorization'] = Array.isArray(authHeader) ? authHeader[0] : authHeader;
       }
-      
+
       // 🛡️ SEGURIDAD y OPTIMIZACIÓN
       delete headers['accept-encoding'];
       headers['accept-encoding'] = 'identity';
       delete headers['connection'];
       headers['connection'] = 'close';
       delete headers['content-length'];
-      
+
       headers['host'] = new URL(target).host;
 
       const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
@@ -146,20 +146,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (fetchError: unknown) {
       const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
       // Si falló por red/DNS en el target interno, intentamos el FALLBACK PÚBLICO
-      const isNetworkError = errorMessage.includes('fetch failed') || 
-                            errorMessage.includes('ENOTFOUND') || 
-                            errorMessage.includes('ECONNREFUSED') ||
-                            errorMessage.includes('ETIMEDOUT') ||
-                            errorMessage.includes('EAI_AGAIN');
-      
+      const isNetworkError = errorMessage.includes('fetch failed') ||
+        errorMessage.includes('ENOTFOUND') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('EAI_AGAIN');
+
       if (isNetworkError && (BACKEND_BASE.includes('api:3000') || BACKEND_BASE.includes('localhost'))) {
         const publicFallback = 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage} -> ${fallbackUrl}`);
-        
+
         // REGENAR HEADERS: El host cambió a la URL pública
         fetchOptions.headers = getForwardHeaders(fallbackUrl);
-        
+
         try {
           backendResponse = await fetch(fallbackUrl, fetchOptions);
         } catch (fallbackError: unknown) {
@@ -167,7 +167,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw fallbackError;
         }
       } else {
-        throw fetchError; 
+        throw fetchError;
       }
     }
 
@@ -180,8 +180,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const hasOriginalHeader = !!(req.headers.authorization || req.headers.Authorization);
       const hasCookieToken = !!req.cookies['sb-access-token'];
       const authStatus = hasOriginalHeader ? 'PRESENTE' : (hasCookieToken ? 'FALLBACK_COOKIE' : 'AUSENTE');
-      
+
       console.error(`[PROXY 401] Backend rechazó credenciales: ${pathStr} | Auth: ${authStatus}`);
+      if (authStatus === 'AUSENTE') {
+        console.error(`[PROXY 401 DEBUG] No auth token. Cookies: [${Object.keys(req.cookies).join(',')}]. Headers: auth=${!!req.headers.authorization}, cookie=${!!req.headers.cookie}`);
+      }
     }
 
     // Headers CORS de respuesta
@@ -216,7 +219,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               upstreamStatusText: backendResponse.statusText,
             },
           });
-        } catch {}
+        } catch { }
       }
 
       return res.status(backendResponse.status).json({
@@ -234,7 +237,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const data = JSON.parse(buffer.toString('utf-8'));
         return res.status(backendResponse.status).json(data);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return res.status(backendResponse.status).send(buffer);

@@ -243,7 +243,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
   // Load heatmap when mode switches
   useEffect(() => {
     if (mapMode === 'heatmap' && heatmapData.length === 0) {
-      getHeatmapData().then(setHeatmapData).catch(() => {});
+      getHeatmapData().then(setHeatmapData).catch(() => { });
     }
   }, [mapMode, heatmapData.length]);
 
@@ -313,9 +313,9 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
   }, []);
 
   // Stats
-  const onlineCount   = visible.filter(d => d.isOnline).length;
-  const offlineCount  = visible.length - onlineCount;
-  const withGps       = visible.filter(d => d.lastLat && d.lastLng).length;
+  const onlineCount = visible.filter(d => d.isOnline).length;
+  const offlineCount = visible.length - onlineCount;
+  const withGps = visible.filter(d => d.lastLat && d.lastLng).length;
 
   // By advertiser table
   const byAdvertiser = useMemo(() => {
@@ -336,9 +336,9 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
         {/* Segment pills */}
         <div className="flex gap-1 p-1 bg-slate-900/60 border border-white/5 rounded-xl">
           {([
-            ['all',     'Todo',      <Layers   key="a" className="size-3" />],
-            ['taxis',   'Taxis',     <Car      key="b" className="size-3" />],
-            ['screens', 'Pantallas', <Tablet   key="c" className="size-3" />],
+            ['all', 'Todo', <Layers key="a" className="size-3" />],
+            ['taxis', 'Taxis', <Car key="b" className="size-3" />],
+            ['screens', 'Pantallas', <Tablet key="c" className="size-3" />],
           ] as [GeoSegment, string, React.ReactNode][]).map(([val, lbl, ic]) => (
             <button key={val} onClick={() => setSegment(val)}
               className={clsx(
@@ -401,10 +401,10 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
 
         {/* Stats chips */}
         <div className="ml-auto flex gap-2">
-          <Chip label="Visibles" value={visible.length}  accent="bg-slate-800/50 border-white/5 text-slate-300" />
-          <Chip label="Online"   value={onlineCount}     accent="bg-emerald-500/10 border-emerald-500/20 text-emerald-400" />
-          <Chip label="Offline"  value={offlineCount}    accent="bg-rose-500/10 border-rose-500/20 text-rose-400" />
-          <Chip label="GPS"      value={withGps}         accent="bg-indigo-500/10 border-indigo-500/20 text-indigo-400" />
+          <Chip label="Visibles" value={visible.length} accent="bg-slate-800/50 border-white/5 text-slate-300" />
+          <Chip label="Online" value={onlineCount} accent="bg-emerald-500/10 border-emerald-500/20 text-emerald-400" />
+          <Chip label="Offline" value={offlineCount} accent="bg-rose-500/10 border-rose-500/20 text-rose-400" />
+          <Chip label="GPS" value={withGps} accent="bg-indigo-500/10 border-indigo-500/20 text-indigo-400" />
         </div>
       </div>
 
@@ -487,156 +487,156 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
           {/* Sidebar content with opacity transition */}
           <div className={clsx("flex flex-col h-full w-[380px] transition-opacity duration-300", sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
 
-          {/* Sidebar header */}
-          <div className="p-5 border-b border-white/[0.05] flex-shrink-0">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-1">Control de Flota</p>
-                <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none flex items-center gap-2">
-                  <span className="w-1 h-5 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]" />
-                  Geolocalización
-                </h3>
+            {/* Sidebar header */}
+            <div className="p-5 border-b border-white/[0.05] flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-1">Control de Flota</p>
+                  <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none flex items-center gap-2">
+                    <span className="w-1 h-5 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]" />
+                    Geolocalización
+                  </h3>
+                </div>
+                <button onClick={() => setSidebarOpen(false)}
+                  className="size-9 rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all flex items-center justify-center">
+                  <X className="size-4" />
+                </button>
               </div>
-              <button onClick={() => setSidebarOpen(false)}
-                className="size-9 rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all flex items-center justify-center">
-                <X className="size-4" />
-              </button>
+
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-500" />
+                <input type="search" placeholder="ID, unidad, conductor…"
+                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-black/50 border border-white/[0.07] focus:border-emerald-500/30 rounded-xl py-3 pl-9 pr-4 text-[10px] font-bold uppercase tracking-widest text-white outline-none placeholder:text-slate-700 transition-all"
+                />
+              </div>
+
+              {/* Fleet filter buttons */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {([
+                  ['all', 'Todo', visible.length, 'text-slate-400'],
+                  ['active', 'Online', visible.filter(v => v.isOnline).length, 'text-emerald-500'],
+                  ['offline', 'Offline', visible.filter(v => !v.isOnline).length, 'text-slate-600'],
+                  ['unpaid', 'Mora', visible.filter(v => v.subscriptionStatus !== 'OPERATIVO').length, 'text-rose-500'],
+                ] as [FleetFilter, string, number, string][]).map(([val, lbl, cnt, col]) => (
+                  <button key={val} onClick={() => setFleetFilter(val)}
+                    className={clsx(
+                      'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[9px] font-black uppercase tracking-tight transition-all',
+                      fleetFilter === val
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                        : 'bg-black/30 border-white/[0.05] text-slate-500 hover:border-white/10 hover:text-white',
+                    )}>
+                    <span className={clsx('text-[8px]', col)}>{cnt}</span>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Search */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-500" />
-              <input type="search" placeholder="ID, unidad, conductor…"
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-black/50 border border-white/[0.07] focus:border-emerald-500/30 rounded-xl py-3 pl-9 pr-4 text-[10px] font-bold uppercase tracking-widest text-white outline-none placeholder:text-slate-700 transition-all"
-              />
-            </div>
-
-            {/* Fleet filter buttons */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              {([
-                ['all',     'Todo',    visible.length,                              'text-slate-400'],
-                ['active',  'Online',  visible.filter(v => v.isOnline).length,      'text-emerald-500'],
-                ['offline', 'Offline', visible.filter(v => !v.isOnline).length,     'text-slate-600'],
-                ['unpaid',  'Mora',    visible.filter(v => v.subscriptionStatus !== 'OPERATIVO').length, 'text-rose-500'],
-              ] as [FleetFilter, string, number, string][]).map(([val, lbl, cnt, col]) => (
-                <button key={val} onClick={() => setFleetFilter(val)}
+            {/* Vehicle list */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 space-y-1.5">
+              {visible.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-slate-700 gap-2">
+                  <Filter className="size-8" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-center">Sin resultados</p>
+                </div>
+              ) : visible.map(dev => (
+                <button
+                  key={dev.deviceId}
+                  onClick={() => selectVehicle(dev)}
                   className={clsx(
-                    'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[9px] font-black uppercase tracking-tight transition-all',
-                    fleetFilter === val
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                      : 'bg-black/30 border-white/[0.05] text-slate-500 hover:border-white/10 hover:text-white',
-                  )}>
-                  <span className={clsx('text-[8px]', col)}>{cnt}</span>
-                  {lbl}
+                    'w-full text-left p-3.5 rounded-2xl border transition-all duration-300 group',
+                    selectedId === dev.deviceId
+                      ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                      : 'bg-white/[0.01] border-white/[0.03] hover:bg-white/[0.03] hover:border-emerald-500/20',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div className={clsx(
+                      'size-10 rounded-xl border flex items-center justify-center font-mono text-[10px] font-black flex-shrink-0',
+                      dev.isOnline
+                        ? 'bg-black border-emerald-500/30 text-emerald-400'
+                        : 'bg-black border-white/5 text-slate-700',
+                    )}>
+                      {dev.taxiNumber
+                        ? dev.taxiNumber.replace(/[^0-9]/g, '').slice(-3)
+                        : dev.deviceId.slice(-3)}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-black text-slate-100 truncate group-hover:text-white transition-colors leading-none">
+                          {dev.driverName || dev.deviceId}
+                        </p>
+                        <div className={clsx('size-1.5 rounded-full flex-shrink-0 ml-auto',
+                          dev.isOnline ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-slate-700')} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {dev.taxiNumber && (
+                          <span className="text-[8px] font-black text-emerald-400/70 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10">
+                            {dev.taxiNumber}
+                          </span>
+                        )}
+                        {dev.plate && (
+                          <span className="text-[8px] font-bold text-slate-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                            {dev.plate}
+                          </span>
+                        )}
+                      </div>
+                      {dev.assignedAdvertiser && (
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <Building2 className="size-2.5 text-indigo-400 flex-shrink-0" />
+                          <span className="text-[8px] font-bold text-indigo-400 truncate">{dev.assignedAdvertiser}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Telemetry micro row */}
+                  <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-white/[0.04]">
+                    {dev.speed !== undefined && (
+                      <span className="text-[8px] text-slate-500 flex items-center gap-1">
+                        <SpeedIcon className="size-2.5 text-emerald-500/50" />
+                        {(dev.speed || 0).toFixed(0)} km/h
+                      </span>
+                    )}
+                    {dev.batteryLevel !== null && dev.batteryLevel !== undefined && (
+                      <span className={clsx('text-[8px] flex items-center gap-1', (dev.batteryLevel || 0) < 20 ? 'text-rose-400' : 'text-slate-500')}>
+                        <span className="size-2 rounded-sm border border-current" />
+                        {dev.batteryLevel}%
+                      </span>
+                    )}
+                    {dev.lastLat && (
+                      <span className="text-[8px] text-teal-500/60 flex items-center gap-1 ml-auto">
+                        <MapPin className="size-2.5" />
+                        GPS
+                      </span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Vehicle list */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 space-y-1.5">
-            {visible.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-slate-700 gap-2">
-                <Filter className="size-8" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-center">Sin resultados</p>
-              </div>
-            ) : visible.map(dev => (
-              <button
-                key={dev.deviceId}
-                onClick={() => selectVehicle(dev)}
-                className={clsx(
-                  'w-full text-left p-3.5 rounded-2xl border transition-all duration-300 group',
-                  selectedId === dev.deviceId
-                    ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-                    : 'bg-white/[0.01] border-white/[0.03] hover:bg-white/[0.03] hover:border-emerald-500/20',
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  {/* Icon */}
-                  <div className={clsx(
-                    'size-10 rounded-xl border flex items-center justify-center font-mono text-[10px] font-black flex-shrink-0',
-                    dev.isOnline
-                      ? 'bg-black border-emerald-500/30 text-emerald-400'
-                      : 'bg-black border-white/5 text-slate-700',
-                  )}>
-                    {dev.taxiNumber
-                      ? dev.taxiNumber.replace(/[^0-9]/g, '').slice(-3)
-                      : dev.deviceId.slice(-3)}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[11px] font-black text-slate-100 truncate group-hover:text-white transition-colors leading-none">
-                        {dev.driverName || dev.deviceId}
-                      </p>
-                      <div className={clsx('size-1.5 rounded-full flex-shrink-0 ml-auto',
-                        dev.isOnline ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-slate-700')} />
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      {dev.taxiNumber && (
-                        <span className="text-[8px] font-black text-emerald-400/70 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10">
-                          {dev.taxiNumber}
-                        </span>
-                      )}
-                      {dev.plate && (
-                        <span className="text-[8px] font-bold text-slate-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                          {dev.plate}
-                        </span>
-                      )}
-                    </div>
-                    {dev.assignedAdvertiser && (
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <Building2 className="size-2.5 text-indigo-400 flex-shrink-0" />
-                        <span className="text-[8px] font-bold text-indigo-400 truncate">{dev.assignedAdvertiser}</span>
-                      </div>
-                    )}
-                  </div>
+            {/* Sidebar footer */}
+            <div className="p-4 border-t border-white/[0.04] flex-shrink-0 flex items-center justify-between bg-black/20">
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />
+                <div>
+                  <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Telemetría Activa</p>
+                  <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Santiago RD • Piloto STI</p>
                 </div>
-
-                {/* Telemetry micro row */}
-                <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-white/[0.04]">
-                  {dev.speed !== undefined && (
-                    <span className="text-[8px] text-slate-500 flex items-center gap-1">
-                      <SpeedIcon className="size-2.5 text-emerald-500/50" />
-                      {(dev.speed || 0).toFixed(0)} km/h
-                    </span>
-                  )}
-                  {dev.batteryLevel !== null && dev.batteryLevel !== undefined && (
-                    <span className={clsx('text-[8px] flex items-center gap-1', (dev.batteryLevel || 0) < 20 ? 'text-rose-400' : 'text-slate-500')}>
-                      <span className="size-2 rounded-sm border border-current" />
-                      {dev.batteryLevel}%
-                    </span>
-                  )}
-                  {dev.lastLat && (
-                    <span className="text-[8px] text-teal-500/60 flex items-center gap-1 ml-auto">
-                      <MapPin className="size-2.5" />
-                      GPS
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Sidebar footer */}
-          <div className="p-4 border-t border-white/[0.04] flex-shrink-0 flex items-center justify-between bg-black/20">
-            <div className="flex items-center gap-2">
-              <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />
-              <div>
-                <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Telemetría Activa</p>
-                <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Santiago RD • Piloto STI</p>
               </div>
-            </div>
-            <div className="px-3 py-1.5 bg-white/5 rounded-lg border border-white/5">
-              <span className="text-[10px] font-black text-white">
-                {visible.length} <span className="text-emerald-400">unidades</span>
-              </span>
+              <div className="px-3 py-1.5 bg-white/5 rounded-lg border border-white/5">
+                <span className="text-[10px] font-black text-white">
+                  {visible.length} <span className="text-emerald-400">unidades</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* ── Advertiser coverage table ─────────── */}
       <div className="flex-shrink-0 border-t border-white/5 bg-black/20">
@@ -703,7 +703,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
 // FLEET TAB
 // ─────────────────────────────────────────────────────────────────────
 function FleetTab({ devices }: { devices: Device[] }) {
-  const online  = devices.filter(d => d.isOnline).length;
+  const online = devices.filter(d => d.isOnline).length;
   const offline = devices.length - online;
 
   const timeAgo = (iso: string | null) => {
@@ -723,7 +723,7 @@ function FleetTab({ devices }: { devices: Device[] }) {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Total Flota STI', val: devices.length, sub: 'pantallas piloto', color: 'border-white/5 text-white' },
-          { label: 'Online',  val: online,  sub: `${((online / Math.max(devices.length,1))*100).toFixed(0)}% disponibles`, color: 'border-emerald-500/20 text-emerald-400', bg: 'bg-emerald-500/5' },
+          { label: 'Online', val: online, sub: `${((online / Math.max(devices.length, 1)) * 100).toFixed(0)}% disponibles`, color: 'border-emerald-500/20 text-emerald-400', bg: 'bg-emerald-500/5' },
           { label: 'Offline', val: offline, sub: 'requieren revisión', color: 'border-rose-500/20 text-rose-400', bg: 'bg-rose-500/5' },
         ].map((k, i) => (
           <div key={i} className={clsx('p-5 rounded-2xl border flex flex-col gap-1', k.color, (k as any).bg || 'bg-slate-800/30')}>
@@ -780,9 +780,9 @@ function CampaignsTab({ campaigns }: { campaigns: Campaign[] }) {
     <div className="p-6 space-y-4">
       {campaigns.map(camp => {
         const impressions = camp.metrics?.[0]?.totalImpressions || 0;
-        const target      = camp.targetImpressions || 100_000;
-        const progress    = Math.min((impressions / target) * 100, 100);
-        const devices     = camp.devices?.length || 0;
+        const target = camp.targetImpressions || 100_000;
+        const progress = Math.min((impressions / target) * 100, 100);
+        const devices = camp.devices?.length || 0;
 
         return (
           <div key={camp.id}
@@ -820,14 +820,40 @@ function CampaignsTab({ campaigns }: { campaigns: Campaign[] }) {
 // PAGE
 // ─────────────────────────────────────────────────────────────────────
 export default function RealtimeDashboard() {
-  const [activeTab, setActiveTab]   = useState<TabId>('geo');
-  const [devices, setDevices]       = useState<Device[]>([]);
-  const [campaigns, setCampaigns]   = useState<Campaign[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>('geo');
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  // Wait for Supabase session to be hydrated before making API calls
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setAuthReady(true);
+          return;
+        }
+        // No session yet — listen for auth state changes
+        const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session) {
+            setAuthReady(true);
+            listener.subscription.unsubscribe();
+          }
+        });
+      } catch {
+        // Even on error, try to proceed — localStorage fallback in interceptor
+        setAuthReady(true);
+      }
+    };
+    checkSession();
+  }, []);
 
   const fetchData = useCallback(async () => {
+    if (!authReady) return;
     try {
       setIsRefreshing(true);
       // Fetch baseline tracking data (last known positions) + campaigns
@@ -845,13 +871,14 @@ export default function RealtimeDashboard() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [authReady]);
 
   useEffect(() => {
+    if (!authReady) return;
     fetchData();
     const id = setInterval(fetchData, 30_000);
     return () => clearInterval(id);
-  }, [fetchData]);
+  }, [fetchData, authReady]);
 
   // Real-time subscription to Supabase channel for telemetry pings
   useEffect(() => {
@@ -888,7 +915,7 @@ export default function RealtimeDashboard() {
     };
   }, []);
 
-  const online  = devices.filter(d => d.isOnline).length;
+  const online = devices.filter(d => d.isOnline).length;
   const offline = devices.length - online;
 
   return (
@@ -952,9 +979,9 @@ export default function RealtimeDashboard() {
 
         {/* ── Tab nav ─────────────────────────── */}
         <nav className="flex items-center gap-2 px-6 py-2.5 border-b border-white/[0.04] bg-black/15 flex-shrink-0">
-          <TabBtn active={activeTab === 'geo'}       onClick={() => setActiveTab('geo')}       icon={<MapPin    className="size-3.5" />} label="Geolocalización" />
-          <TabBtn active={activeTab === 'fleet'}     onClick={() => setActiveTab('fleet')}     icon={<Monitor   className="size-3.5" />} label="Flota STI"        badge={offline} />
-          <TabBtn active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={<PlayCircle className="size-3.5" />} label="Campañas"        badge={campaigns.length} />
+          <TabBtn active={activeTab === 'geo'} onClick={() => setActiveTab('geo')} icon={<MapPin className="size-3.5" />} label="Geolocalización" />
+          <TabBtn active={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} icon={<Monitor className="size-3.5" />} label="Flota STI" badge={offline} />
+          <TabBtn active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={<PlayCircle className="size-3.5" />} label="Campañas" badge={campaigns.length} />
 
           <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-black/30 border border-white/[0.04] rounded-xl">
             <Activity className={clsx('size-3', isRefreshing ? 'text-emerald-400 animate-pulse' : 'text-slate-700')} />
@@ -983,7 +1010,7 @@ export default function RealtimeDashboard() {
 
               {/* FLEET & CAMPAIGNS — scrollable */}
               <div className={clsx('absolute inset-0 overflow-y-auto custom-scrollbar', activeTab !== 'geo' ? 'visible' : 'invisible pointer-events-none')}>
-                {activeTab === 'fleet'     && <FleetTab devices={devices} />}
+                {activeTab === 'fleet' && <FleetTab devices={devices} />}
                 {activeTab === 'campaigns' && <CampaignsTab campaigns={campaigns} />}
               </div>
             </>

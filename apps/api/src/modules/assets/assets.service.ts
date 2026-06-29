@@ -16,6 +16,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
+  weight: true,
 };
 
 @Injectable()
@@ -34,7 +35,7 @@ export class AssetsService {
 
   async getAssetManifest(deviceId: string) {
     const now = new Date();
-    
+
     // Logic to generate checksum list, filter per device, optimize payload size
     // Grab all active campaigns with media Assets
     const activeCampaigns = await this.prisma.campaign.findMany({
@@ -64,24 +65,24 @@ export class AssetsService {
       }
     }
 
-    return { 
-      manifest, 
-      version: activeCampaigns.length > 0 ? activeCampaigns[0].updatedAt.getTime() : 0 
+    return {
+      manifest,
+      version: activeCampaigns.length > 0 ? activeCampaigns[0].updatedAt.getTime() : 0
     };
   }
 
   async handleAssetWebhook(payload: any) {
     this.logger.log(`📥 Webhook recibido: ${JSON.stringify(payload)}`);
-    
+
     if (payload.type === 'INVALID_ASSET' || payload.record?.status === 'INVALID_ASSET') {
       const assetId = payload.record?.id || payload.assetId;
       this.logger.warn(`⚠️ Asset inválido detectado (ID: ${assetId}). Iniciando recuperación automática...`);
-      
+
       // 1. Marcar el asset como FAILED inmediatamente
       if (assetId) {
         await this.prisma.mediaAsset.update({
           where: { id: assetId },
-          data: { 
+          data: {
             processingStatus: 'FAILED',
             validationError: 'Asset no cumple con requisitos H.264 o excedió el límite.'
           }
@@ -93,7 +94,7 @@ export class AssetsService {
         this.logger.error(`❌ Recuperación automática falló para asset ${assetId}: ${err.message}`);
       });
     }
-    
+
     return { received: true };
   }
 

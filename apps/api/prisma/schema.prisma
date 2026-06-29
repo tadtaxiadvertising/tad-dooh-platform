@@ -105,6 +105,15 @@ model Campaign {
   whatsapp          String?
   category          String?          @default("General")
   hasSeenTutorial   Boolean          @default(false) @map("has_seen_tutorial")
+
+  // ── GAP #6: Day-of-Week & Hour-of-Day Scheduling ──
+  // JSON arrays: e.g. scheduleDays=["MON","TUE","WED","THU","FRI"], scheduleHours=["06:00","22:00"]
+  // When empty/null, campaign plays 24/7 (legacy behavior preserved).
+  scheduleDays     String?          @default("[]") @map("schedule_days")
+  scheduleHours    String?          @default("[]") @map("schedule_hours")
+  // Frequency cap: max impressions per device per hour (0 = unlimited)
+  frequencyCap     Int              @default(0) @map("frequency_cap")
+
   metrics           CampaignMetric[]
   advertiserRef     Advertiser?      @relation(fields: [advertiserId], references: [id])
   createdBy         User?            @relation(fields: [createdById], references: [id])
@@ -126,7 +135,7 @@ model Playlist {
   id         String   @id @default(uuid())
   campaignId String   @map("campaign_id")
   name       String
-  loopType   String   @default("SEQUENTIAL")
+  loopType   String   @default("SEQUENTIAL")  // SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY
   createdAt  DateTime @default(now()) @map("created_at")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
@@ -312,6 +321,7 @@ model MediaAsset {
   qrUrl      String?  @map("qr_url")
   processingStatus String   @default("ACTIVE") @map("processing_status")
   validationError  String?  @map("validation_error")
+  weight     Int      @default(1) @map("weight") // GAP #7: playback weight (1-10), higher = more frequent
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])

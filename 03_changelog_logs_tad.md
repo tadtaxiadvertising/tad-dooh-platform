@@ -1,6 +1,69 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-06-05
+> **Última Actualización**: 2026-06-28
+
+---
+
+## [PLAYER-V2-CONT] - 2026-06-28
+
+### 🔄 PLAYER+BACKEND: Scheduling, Weighted Rotation, Payload Fix, SW Build, FullyKiosk Bridge
+
+- **PlaybackQueue payload fix**: Cambiado formato de `/telemetry/playback-batch` para coincidir con backend — `deviceId/videoId/eventType/clientTimestamp` (camelCase, bare array)
+- **Service Worker build**: Vite config con `rollupOptions.input` dual — `sw.js` emitido en dist root (1.44 KB)
+- **GAP #6 — Day-of-Week & Hour-of-Day Scheduling**:
+  - Prisma schema: `Campaign.scheduleDays`, `Campaign.scheduleHours`, `Campaign.frequencyCap`
+  - Migration SQL: `20260628_add_schedule_and_weight_fields/migration.sql`
+  - Backend: SyncService incluye `schedules[]` en manifest response
+  - Player: `PlaylistEngine.rebuildActivePlaylist()` — filtra por scheduleDays/scheduleHours cada 60s, soporta "HH:MM-HH:MM" ranges
+- **GAP #7 — Weighted Rotation + Frequency Capping**:
+  - Prisma schema: `MediaAsset.weight` (int 1-10), `Playlist.loopType` expanded (SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY)
+  - Player: `applyWeightedOrder()` — Fisher-Yates shuffle con weight-based repetition
+  - Backend: `mediaAssetSafeSelect` actualizado con `weight: true` en 5 archivos
+- **GAP #10 — FullyKiosk Bridge**:
+  - Player: `fullykiosk-bridge.ts` — REST API client para localhost:1312, soporta 13 commandTypes (SCREEN_ON/OFF, SET_BRIGHTNESS, SET_VOLUME, MUTE/UNMUTE, LOCK/UNLOCK_KIOSK, REBOOT, RESTART_APP, ENABLE/DISABLE_MOTION)
+  - Backend: `DeviceAdminController` — `POST /:deviceId/command` + `POST /broadcast` para enviar DeviceCommands de kiosk management
+  - Auto-detect kiosk availability + motion sensor enable + screen wake lock on init
+- **Player build final**: 0 TS errors, 23.30 KB JS (7.12 KB gzip) + 2.16 KB CSS + 1.44 KB SW + 3.86 KB HTML
+
+---
+
+## [PLAYER-V2-REBUILD] - 2026-06-28
+
+### 🎬 PLAYER: Reconstrucción completa del Tablet Player desde zero (TypeScript/Vite)
+
+- **Cambio**: El player (`apps/player/`) solo contenía `dist/` compilado y minificado — sin código fuente. Se reconstruyó completamente como TypeScript/Vite SPA con source modules, cerrando 10 gaps críticos identificados en la auditoría.
+- **Archivos Creados** (`apps/player/src/`):
+  - `config.ts` — Env vars (VITE_API_URL, VITE_SUPABASE_URL, intervals, sizes)
+  - `types.ts` — MediaAsset, SyncManifest, DeviceSyncPayload, PlaybackEvent, CachedVideo, PlayerStatus
+  - `cache-manager.ts` — IndexedDB video blob cache con 3-layer fallback (IDB → Cache API → Network), integrity check por checksum, stale asset eviction
+  - `playback-queue.ts` — Fire-and-forget queue con IndexedDB persistence, batch flush vía `/telemetry/playback-batch` (PoP validated, no deprecated `/device/playback`)
+  - `sync-manager.ts` — Full sync + delta (POST /device/sync + GET /sync/:id), heartbeat loop (5 min), network online/offline listeners, Supabase Realtime `WAKE_UP_CALL` subscription dinámica
+  - `playlist-engine.ts` — Sequential loop con intermission transitions (5s QR screen), watchdog timer, fallback behavior, Screen Wake Lock
+  - `killswitch.ts` — Fetch intercept para detectar killSwitch en sync responses, localStorage persistence (24h), overlay display/pause
+  - `sw.ts` — Service Worker: cache-first para videos, stale-while-revalidate para shell, network-first para API
+  - `main.ts` — Orchestration: init all subsystems, resolve deviceId from URL/localStorage, register SW, request Wake Lock, visibilitychange re-sync
+  - `index.html` — Shell HTML (video element, intermission, killswitch overlay, toast)
+  - `assets/player.css` — Kiosk-mode CSS (scroll lock, touch-action none, glassmorphism QR frame)
+  - `env.d.ts` — Vite client type declarations + Window.tadKillSwitchActive
+- **Archivos de Config**:
+  - `package.json` — Vite + TypeScript + @supabase/supabase-js
+  - `tsconfig.json` — ES2022, bundler moduleResolution, strict
+  - `vite.config.ts` — root=src, outDir=../dist, port=3006
+  - `.env.example` — Todas las VITE_ vars documentadas
+- **Gaps Cerrados**:
+  - ✅ GAP #1: Source code reconstruido — ahora es modificable y rebuildable
+  - ✅ GAP #2: Playback usa `/telemetry/playback-batch` (PoP validated) — no deprecated endpoint
+  - ✅ GAP #3: Service Worker registrado en main.ts — offline resilience en background thread
+  - ✅ GAP #4: Supabase Realtime subscription en SyncManager — WAKE_UP_CALL instant push
+  - ✅ GAP #5: Integrity check por checksum + stale eviction (delta-like via checksum comparison)
+  - ✅ GAP #8: PlaybackQueue con IndexedDB + anti-OOM trimming (max 50 events)
+  - ✅ GAP #9: KillSwitch TypeScript module (no inline JS hack)
+- **Gaps Pendientes (v13 evolution)**:
+  - 🔲 GAP #6: Scheduling por hora/día (requiere backend changes en Campaign model)
+  - 🔲 GAP #7: Weighted playback / frequency capping (requiere Playlist rotation logic)
+  - 🔲 GAP #10: FullyKiosk bridge (requiere REST API integration)
+- **Dockerfile.player** actualizado: COPY específico de `src/`, `vite.config.ts`, `tsconfig.json`
+- **Constraints respetadas**: Offline-first (IDB + SW + Cache API), GPS batching (PlaybackQueue batch), Easypanel Free Tier (nginx static, no Node runtime), RD$6,000 subscription (KillSwitch enforcement)
 
 ---
 

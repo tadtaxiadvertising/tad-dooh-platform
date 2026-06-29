@@ -33,6 +33,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
+  weight: true,
 };
 
 @Injectable()
@@ -43,7 +44,7 @@ export class AdvertisersService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService
-  ) {}
+  ) { }
 
   async findAll() {
     return this.prisma.advertiser.findMany({
@@ -274,17 +275,17 @@ export class AdvertisersService {
     const [metricsAgg, totalScans, liveImpressions, latestInvoice, geoData, uniqueNodes] = await Promise.all([
       campaignIds.length > 0
         ? this.prisma.campaignMetric.aggregate({
-            where: { campaignId: { in: campaignIds } },
-            _sum: { totalImpressions: true, totalCompletions: true },
-          })
+          where: { campaignId: { in: campaignIds } },
+          _sum: { totalImpressions: true, totalCompletions: true },
+        })
         : Promise.resolve({ _sum: { totalImpressions: 0, totalCompletions: 0 } }),
       campaignIds.length > 0
         ? this.prisma.analyticsEvent.count({
-            where: {
-              campaignId: { in: campaignIds },
-              eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] },
-            },
-          })
+          where: {
+            campaignId: { in: campaignIds },
+            eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] },
+          },
+        })
         : Promise.resolve(0),
       // Live impressions (Today only, as midnight cron handles previous days)
       campaignIds.length > 0
@@ -298,20 +299,20 @@ export class AdvertisersService {
       // Geo distribution by city
       campaignIds.length > 0
         ? this.prisma.campaignMetric.groupBy({
-            by: ['city'],
-            where: { campaignId: { in: campaignIds } },
-            _sum: { totalImpressions: true }
-          })
+          by: ['city'],
+          where: { campaignId: { in: campaignIds } },
+          _sum: { totalImpressions: true }
+        })
         : Promise.resolve([]),
       // Unique nodes (devices)
       campaignIds.length > 0
         ? this.prisma.playbackEvent.groupBy({
-            by: ['deviceId'],
-            where: { 
-              videoId: { in: await this.getAdvertiserVideoIds(advertiser.id) },
-              eventType: 'play_confirm'
-            }
-          })
+          by: ['deviceId'],
+          where: {
+            videoId: { in: await this.getAdvertiserVideoIds(advertiser.id) },
+            eventType: 'play_confirm'
+          }
+        })
         : Promise.resolve([])
     ]);
 
@@ -336,28 +337,28 @@ export class AdvertisersService {
     const [allCampaignMetrics, allCampaignScans, allAssignments] = await Promise.all([
       campaignIds.length > 0
         ? this.prisma.campaignMetric.groupBy({
-            by: ['campaignId'],
-            where: { campaignId: { in: campaignIds } },
-            _sum: { totalImpressions: true, totalCompletions: true },
-          })
+          by: ['campaignId'],
+          where: { campaignId: { in: campaignIds } },
+          _sum: { totalImpressions: true, totalCompletions: true },
+        })
         : Promise.resolve([]),
       campaignIds.length > 0
         ? this.prisma.analyticsEvent.groupBy({
-            by: ['campaignId'],
-            where: {
-              campaignId: { in: campaignIds },
-              eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] },
-            },
-            _count: { id: true },
-          })
+          by: ['campaignId'],
+          where: {
+            campaignId: { in: campaignIds },
+            eventType: { in: ['qr_scan', 'scan_redirect', 'scan', 'QR_SCAN'] },
+          },
+          _count: { id: true },
+        })
         : Promise.resolve([]),
       campaignIds.length > 0
         ? this.prisma.deviceCampaign.findMany({
-            where: { campaign_id: { in: campaignIds } },
-            include: {
-              device: { select: { lastSyncAt: true, lastSyncSuccess: true, status: true } },
-            },
-          })
+          where: { campaign_id: { in: campaignIds } },
+          include: {
+            device: { select: { lastSyncAt: true, lastSyncSuccess: true, status: true } },
+          },
+        })
         : Promise.resolve([]),
     ]);
 
@@ -494,10 +495,10 @@ export class AdvertisersService {
       driverIds,
       deviceIds,
       activeDriverIds: driverIds,
-      stats: { 
-        totalImpressions, 
-        totalCompletions, 
-        totalScans, 
+      stats: {
+        totalImpressions,
+        totalCompletions,
+        totalScans,
         activeCampaigns: totalAds,
         activeNodes,
         avgFrequency,
@@ -610,7 +611,7 @@ export class AdvertisersService {
       }
 
       const hashedPassword = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
-      
+
       await this.prisma.advertiser.update({
         where: { id: payload.sub },
         data: { password: hashedPassword }

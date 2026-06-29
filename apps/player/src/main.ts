@@ -1,0 +1,131 @@
+// ─── TAD DOOH Player — Main Entry Point ───
+// Orchestrates all player subsystems: SyncManager, CacheManager,
+// PlaylistEngine, PlaybackQueue, KillSwitch, FullyKiosk Bridge, and SW registration.
+
+import { CacheManager } from './cache-manager';
+import { PlaybackQueue } from './playback-queue';
+import { SyncManager } from './sync-manager';
+import { PlaylistEngine } from './playlist-engine';
+import { KillSwitchEnforcer } from './killswitch';
+import { FullyKioskBridge } from './fullykiosk-bridge';
+import type { MediaAsset, DeviceCommand, PlayerStatus, CampaignSchedule } from './types';
+
+// ── Device ID Resolution ──
+function resolveDeviceId(): string {
+  const urlParams = new URLSearchParams(window.location.search);
+  const fromUrl = urlParams.get('deviceId') || urlParams.get('device_id');
+  if (fromUrl) {
+    localStorage.setItem('TAD_DEVICE_ID', fromUrl);
+    return fromUrl;
+  }
+  const fromStorage = localStorage.getItem('TAD_DEVICE_ID');
+  if (fromStorage) return fromStorage;
+  console.error('[TAD Player] No deviceId found. Provide via URL param: ?deviceId=XXX');
+  return '';
+}
+
+// ── Initialize all subsystems ──
+async function initPlayer(): Promise<void> {
+  const deviceId = resolveDeviceId();
+  if (!deviceId) {
+    window.dispatchEvent(new CustomEvent('TAD_UI_TOAST', {
+      detail: 'ERROR — DEVICE ID NOT FOUND',
+    }));
+    return;
+  }
+
+  console.log(`[TAD Player] Initializing for device: ${deviceId}`);
+
+  // 1. Register Service Worker
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[TAD Player] Service Worker registered');
+    } catch (err) {
+      console.warn('[TAD Player] Service Worker registration failed:', err);
+    }
+  }
+
+  // 2. Initialize subsystems
+  const cacheManager = new CacheManager();
+  const playbackQueue = new PlaybackQueue();
+  const killSwitch = new KillSwitchEnforcer();
+  killSwitch.init();
+
+  const kioskBridge = new FullyKioskBridge();
+  kioskBridge.init();
+
+  const playlistEngine = new PlaylistEngine(playbackQueue, (status: PlayerStatus) => {
+    console.log(`[TAD Player] Status: ${status}`);
+  });
+  playlistEngine.init(deviceId);
+
+  const syncManager = new SyncManager(cacheManager, playbackQueue, {
+    onPlaylistUpdate: (assets: MediaAsset[], schedules: CampaignSchedule[]) => {
+      console.log(`[TAD Player] Playlist updated: ${assets.length} assets, ${schedules.length} schedules`);
+      playlistEngine.setPlaylist(assets, schedules);
+    },
+    onKillSwitch: (reason: string) => {
+      console.warn(`[TAD Player] Kill-switch activated: ${reason}`);
+      killSwitch.activate(reason);
+      kioskBridge.lockKiosk().catch(() => { });
+    },
+    onCommands: (commands: DeviceCommand[]) => {
+      console.log(`[TAD Player] Commands received: ${commands.length}`);
+      for (const cmd of commands) {
+        if (cmd.type === 'FORCE_SYNC') {
+          syncManager.executeFullSync();
+        } else {
+          // Delegate all other commands to FullyKiosk Bridge
+          kioskBridge.handleCommand(cmd.type, cmd.params).then(success => {
+            console.log(`[TAD Player] Command ${cmd.type} executed: ${success}`);
+          }).catch(() => { });
+        }
+      }
+    },
+  });
+  syncManager.init(deviceId);
+
+  // 3. Screen Wake Lock (fallback if FullyKiosk not available)
+  requestWakeLock();
+
+  // 4. Visibility change handler (re-sync when tablet comes back to foreground)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      console.log('[TAD Player] Tab visible — triggering sync');
+      syncManager.executeFullSync();
+      playbackQueue.flushQueue();
+      kioskBridge.screenOn().catch(() => { });
+    }
+  });
+
+  console.log('[TAD Player] ✅ All systems initialized');
+}
+
+// ── Screen Wake Lock ──
+async function requestWakeLock(): Promise<void> {
+  try {
+    if ('wakeLock' in navigator) {
+      const wakeLock = await navigator.wakeLock.request('screen');
+      console.log('[TAD Player] Screen Wake Lock acquired');
+
+      document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden && !wakeLock.released) {
+          try {
+            await navigator.wakeLock.request('screen');
+          } catch { /* non-critical */ }
+        }
+      });
+    }
+  } catch {
+    console.warn('[TAD Player] Wake Lock not available — relying on FullyKiosk');
+  }
+}
+
+// ── Boot ──
+initPlayer().catch(err => {
+  console.error('[TAD Player] Fatal initialization error:', err);
+  window.dispatchEvent(new CustomEvent('TAD_UI_TOAST', {
+    detail: 'ERROR FATAL — PLAYER INIT FAILED',
+  }));
+});

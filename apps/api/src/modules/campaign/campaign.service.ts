@@ -19,6 +19,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
+  weight: true,
 };
 
 @Injectable()
@@ -28,7 +29,7 @@ export class CampaignService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
-  ) {}
+  ) { }
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
@@ -67,12 +68,12 @@ export class CampaignService {
         // Broadcast to both v1 and v2 assignments
         const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
         const assignmentsV1 = await this.prisma.playlistItem.findMany({ where: { campaignId: id }, include: { device: { select: { id: true } } } });
-        
+
         const uniqueDeviceIds = new Set([
           ...assignmentsV2.map(a => a.device_id),
           ...assignmentsV1.map(a => a.device.id)
         ]);
-        
+
         devicesToSync = Array.from(uniqueDeviceIds).map(id => ({ id }));
       }
 
@@ -94,7 +95,7 @@ export class CampaignService {
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
         reason: 'campaign_updated',
         campaignId: id
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     return campaign;
@@ -108,11 +109,11 @@ export class CampaignService {
     let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
 
     if (isAdvertiser && user?.entityId) {
-       assignedAdvertiserId = user.entityId;
-       // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
-       const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
-       assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
-       initialStatus = 'PENDING_REVIEW';
+      assignedAdvertiserId = user.entityId;
+      // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
+      const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
+      assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
+      initialStatus = 'PENDING_REVIEW';
     } else if (!isAdmin && user?.email && !assignedAdvertiserId) {
       const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
       if (advertiser) {
@@ -148,7 +149,7 @@ export class CampaignService {
     // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];
-    
+
     if (devicesToAssign.length === 0 && !dto.target_all && dto.target_city) {
       this.logger.log(`🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`);
       const limit = Math.floor((dto.budget || 3000) / 3000) || 10; // Estimado de pantallas según presupuesto
@@ -165,7 +166,7 @@ export class CampaignService {
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
         reason: 'campaign_created',
         campaignId: campaign.id
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     return campaign;
@@ -174,13 +175,13 @@ export class CampaignService {
   async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {
     // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
-       where: { 
-         OR: [
-           { id: { in: idOrHwIds } },
-           { deviceId: { in: idOrHwIds } }
-         ]
-       },
-       select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
+      where: {
+        OR: [
+          { id: { in: idOrHwIds } },
+          { deviceId: { in: idOrHwIds } }
+        ]
+      },
+      select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
     });
 
     if (devices.length === 0 && idOrHwIds.length > 0) {
@@ -190,7 +191,7 @@ export class CampaignService {
     // 2. Identify available devices (respecting the limit)
     const availableDevices = devices.filter(d => d._count.campaigns < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
     const skippedCount = devices.length - availableDevices.length;
-    
+
     // 3. TRANSACTIONAL UPDATE: Clean old and insert new
     return await this.prisma.$transaction(async (tx) => {
       // Clear all existing assignments for this campaign
@@ -257,7 +258,7 @@ export class CampaignService {
    */
   async registerDirectMedia(dto: { brandId: string; fileName: string; url: string; fileSize?: number; storagePath: string }, user?: AuthUser) {
     this.logger.debug(`[MEDIA_REG] Intentando registro de ${dto.fileName} (${dto.fileSize} bytes)`);
-    
+
     // 🛡️ REGLA DE SEGURIDAD 10.2: Validación de Propiedad
     if (user?.role !== 'ADMIN') {
       // 1. Intentamos validar por entityId (Token) - Más rápido y seguro
@@ -266,7 +267,7 @@ export class CampaignService {
           this.logger.warn(`[MEDIA_REG] Rechazado: Entidad no coincide. Token=${user.entityId}, DTO=${dto.brandId}`);
           throw new BadRequestException('ID de marca no coincide con tu perfíl de anunciante');
         }
-      } 
+      }
       // 2. Fallback a búsqueda por Email (Base de Datos)
       else if (user?.email && dto.brandId) {
         const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
@@ -372,14 +373,14 @@ export class CampaignService {
 
     // BROADCAST WAKE_UP_CALL only if not rendering
     const isRendering = dto.status === 'RENDERING';
-    
+
     if (!isRendering) {
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
         reason: 'media_asset_added',
         campaignId,
         assetId: asset.id,
         count: devicesToSync.length
-      }).catch(() => {});
+      }).catch(() => { });
     } else {
       Logger.log(`[CONTENT_DIST] MediaAsset ${asset.id} is rendering. WAKE_UP_CALL deferred.`);
     }
@@ -407,7 +408,7 @@ export class CampaignService {
   async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
     this.logger.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
-    
+
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
@@ -426,7 +427,7 @@ export class CampaignService {
     this.logger.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
 
     let activeCampaigns: any[] = [];
-    
+
     try {
       // 2. MASTER SYNC (Materialized View)
       // Pre-calculated targeting avoids complex joins in heartbeats.
@@ -507,7 +508,8 @@ export class CampaignService {
         duration: Number(ma.duration || 30),
         qrUrl: campaign.targetUrl || ma.qrUrl || null,
         advertiserId: campaign.advertiserRef?.id || campaign.advertiserId || null,
-        advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser'
+        advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser',
+        weight: ma.weight ?? null,
       });
 
       if ((campaign as any).mediaAssets) mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));
@@ -593,7 +595,7 @@ export class CampaignService {
     if (campaign.targetAll || campaign.isGlobal) {
       devicesToSync = await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } });
     } else {
-      const assignments = await this.prisma.deviceCampaign.findMany({ 
+      const assignments = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: campaignId },
         include: { device: { select: { deviceId: true } } }
       });
@@ -617,7 +619,7 @@ export class CampaignService {
         campaignId,
         mediaId,
         targets: devicesToSync.map(d => d.deviceId)
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     return updated;

@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@tad/services';
 import { usePaymentStore } from '../store/usePaymentStore';
+import { openDB } from 'idb';
+
+const DB_NAME = 'tad_telemetry_db';
+const STORE_NAME = 'gps_buffer';
+const POSTGREST_RPC_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/bulk_insert_telemetry`;
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
  * useBackgroundTelemetry — Dual-channel telemetry hook (v12.2.5)
@@ -29,6 +35,15 @@ export const useBackgroundTelemetry = (driverId: string) => {
   useEffect(() => {
     if (!driverId) return;
     if (!('geolocation' in navigator)) return;
+
+    // IDB Setup
+    const dbPromise = openDB(DB_NAME, 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        }
+      },
+    });
 
     // Check for cached killSwitch from another hook (e.g. useTelemetry)
     const cachedKill = localStorage.getItem('TAD_FORCE_KILL_SWITCH');
@@ -138,52 +153,66 @@ export const useBackgroundTelemetry = (driverId: string) => {
           });
         }
 
-        // 5-minute debounce to prevent battery drain (300,000 ms)
+        // 1. Acumular punto en el Buffer Local (IndexedDB)
+        const addPoint = async () => {
+          const db = await dbPromise;
+          await db.add(STORE_NAME, {
+            device_id: localStorage.getItem('TAD_DEVICE_ID') || 'unknown',
+            driver_id: driverId,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            speed: position.coords.speed || 0,
+            captured_at: new Date(position.timestamp).toISOString(),
+          });
+        };
+        addPoint().catch(console.error);
+
+        // 5-minute debounce for bulk flush (300,000 ms)
         if (now - lastSyncTime.current < 300000) return;
+        
+        // No sincronizar si no hay red
+        if (!navigator.onLine) return;
+        
         lastSyncTime.current = now;
 
-        const payload = [{
-          driverId,
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          speed: position.coords.speed || 0,
-          timestamp: new Date(position.timestamp).toISOString(),
-        }];
+        const flushBatch = async () => {
+          const db = await dbPromise;
+          const allRecords = await db.getAll(STORE_NAME);
+          if (allRecords.length === 0) return;
 
-        // ── REVENUE SHIELD: Check 402 response from track-batch ──
-        fetch('/api/proxy/fleet/track-batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            driverId,
-            deviceId: localStorage.getItem('TAD_DEVICE_ID') || 'unknown',
-            points: payload.map((point) => ({
-              lat: point.lat,
-              lng: point.lng,
-              speed: point.speed,
-              timestamp: new Date(point.timestamp).getTime(),
-            })),
-          }),
-        }).then((res) => {
-          if (res.status === 402 || res.status === 403) {
-            // Try to parse subscription expiry date from response for grace period
-            res.json().then((body) => {
-              const subscriptionEnd = body?.subscriptionEnd || body?.subscription_end;
-              handleSuspension(subscriptionEnd);
-            }).catch(() => {
-              handleSuspension();
+          try {
+            const response = await fetch(POSTGREST_RPC_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': ANON_KEY!,
+                'Authorization': `Bearer ${ANON_KEY}`,
+              },
+              body: JSON.stringify({ telemetry_payload: allRecords }),
             });
-            return;
+
+            if (response.status === 402 || response.status === 403) {
+              // Manejo de Error 402/403 de RLS/Supabase
+              response.json().then((body) => {
+                const subscriptionEnd = body?.subscriptionEnd || body?.subscription_end;
+                handleSuspension(subscriptionEnd);
+              }).catch(() => handleSuspension());
+              return;
+            }
+
+            if (response.ok) {
+              const tx = db.transaction(STORE_NAME, 'readwrite');
+              await tx.store.clear();
+              await tx.done;
+              clearSuspension();
+            } else {
+              console.error('[TELEMETRY_HTTP] Non-OK response:', response.status);
+            }
+          } catch (err) {
+            console.error('Error flushing telemetry batch to PostgREST:', err);
           }
-          // Successful sync — clear any cached suspension state
-          if (res.ok) {
-            clearSuspension();
-          }
-          if (!res.ok) {
-            console.error('[TELEMETRY_HTTP] Non-OK response:', res.status);
-          }
-        }).catch(err => console.error('Telemetry error:', err));
+        };
+        flushBatch();
       },
       (error) => {
         console.error('Geolocation error:', error);

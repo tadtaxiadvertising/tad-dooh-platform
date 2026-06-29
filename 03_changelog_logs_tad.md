@@ -1,6 +1,16 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-06-28
+> **Última Actualización**: 2026-06-29
+
+---
+
+### 🚀 FEATURE / 🔧 FIX: Implementación de Cache ETag y Telemetría GPS Resiliente en Batch
+- **Cambio**: Refactorización del flujo de sincronización para soportar cabeceras HTTP 304 (If-None-Match), previniendo consultas redundantes a la base de datos en NestJS. Reescritura del hook de telemetría del driver para persistir coordenadas localmente en IndexedDB ante caídas de red 4G y envío masivo (batching) saltándose el gateway API directo hacia las funciones RPC de Supabase (PostgREST). Implementación estricta de reescritura de URLs hacia Cloudflare (media.tad.do) y límite duro de 15 slots de reproducción simultánea en el manifiesto.
+- **Archivos tocados**:
+  - `apps/api/src/modules/sync/sync.service.ts`
+  - `apps/api/src/modules/sync/sync.controller.ts`
+  - `apps/driver/hooks/useBackgroundTelemetry.ts`
+- **Nota Infraestructura**: Requiere la creación previa de la función almacenada `bulk_insert_telemetry` en PostgreSQL (Supabase) detallada en el plan de arquitectura para recibir arrays estructurados vía PostgREST RPC.
 
 ---
 

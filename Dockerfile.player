@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Copy player package files for better layer caching
 COPY apps/player/package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy player source (src/, vite.config.ts, tsconfig.json)
 COPY apps/player/src/ ./src/

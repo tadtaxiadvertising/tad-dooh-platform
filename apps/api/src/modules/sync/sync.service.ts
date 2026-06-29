@@ -226,9 +226,20 @@ export class SyncService {
       });
     });
 
-    const playlist = Array.from(playlistMap.values());
+    let playlist = Array.from(playlistMap.values());
+    
+    // 3.6 Limitar Slots (Regla de negocio estricta: 15 Máximo)
+    playlist = playlist.slice(0, 15);
+    
+    // 3.7 Inyección de Cloudflare CDN
+    playlist = playlist.map(item => {
+       if (item.url && item.url.includes('supabase.co')) {
+          item.url = item.url.replace(/https:\/\/[^\/]+\/storage\/v1\/object\/public/, 'https://media.tad.do');
+       }
+       return item;
+    });
 
-    // 3.7 Calculate Manifest Hash for ETagging
+    // 3.8 Calculate Manifest Hash for ETagging
     // Unique fingerprint based on campaign list and their last updates
     const manifestContent = activeCampaigns.map(c => `${c.id}-${c.updatedAt.getTime()}`).sort().join('|');
     const etag = crypto.createHash('md5').update(manifestContent).digest('hex');

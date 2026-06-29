@@ -3,6 +3,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
+const KIOSK_COMMAND_TYPES = [
+  'FORCE_SYNC',
+  'SCREEN_ON',
+  'SCREEN_OFF',
+  'SET_BRIGHTNESS',
+  'SET_VOLUME',
+  'MUTE',
+  'UNMUTE',
+  'LOCK_KIOSK',
+  'UNLOCK_KIOSK',
+  'REBOOT',
+  'RESTART_APP',
+  'ENABLE_MOTION',
+  'DISABLE_MOTION',
+];
+
 @Controller('devices')
 export class DeviceAdminController {
   private readonly logger = new Logger(DeviceAdminController.name);
@@ -10,7 +26,7 @@ export class DeviceAdminController {
   constructor(
     private prisma: PrismaService,
     private deviceService: DeviceService,
-  ) {}
+  ) { }
 
   // ─── PENDING DEVICE APPROVAL QUEUE ──────────────────────────────────────────
 
@@ -45,10 +61,10 @@ export class DeviceAdminController {
     const assignments = await this.prisma.deviceCampaign.findMany({
       where: { device_id: device.id },
       include: {
-        campaign: true, 
+        campaign: true,
       },
     });
-    
+
     return assignments.map(a => ({
       ...a.campaign,
       assigned_at: a.assigned_at
@@ -79,7 +95,7 @@ export class DeviceAdminController {
           campaign_id: campaignId,
         },
       });
-    } catch(e) {}
+    } catch (e) { }
 
     // 2. Intentamos borrar en la tabla v1 (legacy)
     try {
@@ -89,7 +105,7 @@ export class DeviceAdminController {
           deviceId: device.deviceId
         }
       });
-    } catch(e) {}
+    } catch (e) { }
 
     return { success: true, message: 'Campaña removida del dispositivo exitosamente' };
   }
@@ -98,7 +114,7 @@ export class DeviceAdminController {
   @Post()
   async createDevice(@Body() data: { deviceId: string, taxiNumber?: string, city?: string }) {
     if (!data.deviceId) throw new BadRequestException('ID de dispositivo (hardware) es obligatorio');
-    
+
     // Check if hardware ID already exists
     const existing = await this.prisma.device.findUnique({ where: { deviceId: data.deviceId } });
     if (existing) throw new BadRequestException(`El ID ${data.deviceId} ya está registrado`);
@@ -149,26 +165,26 @@ export class DeviceAdminController {
         // 1. Analytics & Metrics (References by UUID or Hardware ID)
         await tx.analyticsEvent.deleteMany({ where: { deviceId: hwId } });
         await tx.campaignMetric.deleteMany({ where: { deviceId: uuid } });
-        
+
         // 2. Telemetry & Logs (References by Hardware ID)
         await tx.playbackEvent.deleteMany({ where: { deviceId: hwId } });
         await tx.deviceHeartbeat.deleteMany({ where: { deviceId: hwId } });
         await tx.playlistItem.deleteMany({ where: { deviceId: hwId } });
         await tx.driverLocation.deleteMany({ where: { deviceId: hwId } });
-        
+
         // 3. Operational Data (References by UUID or Hardware ID)
         await tx.deviceCommand.deleteMany({ where: { deviceId: uuid } });
         await tx.deviceCampaign.deleteMany({ where: { device_id: uuid } });
         await tx.subscription.deleteMany({ where: { deviceId: hwId } });
-        
+
         // 4. Notifications (References by either ID in string field)
-        await tx.notification.deleteMany({ 
-          where: { 
+        await tx.notification.deleteMany({
+          where: {
             OR: [
               { entityId: uuid },
               { entityId: hwId }
-            ] 
-          } 
+            ]
+          }
         });
 
         // 5. Finally delete the device identity
@@ -194,7 +210,7 @@ export class DeviceAdminController {
           campaigns: { include: { campaign: { select: { id: true, name: true, advertiser: true, active: true } } } },
         }
       });
-      
+
       if (!device) {
         this.logger.warn(`🔍 Perfil solicitado para dispositivo inexistente: ${deviceId}`);
         return { error: 'Dispositivo no encontrado' };
@@ -233,7 +249,7 @@ export class DeviceAdminController {
       };
     } catch (error: any) {
       this.logger.error(`❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`);
-      return { 
+      return {
         error: 'Excepción interna al procesar el perfil',
         message: error.message
       };
@@ -247,7 +263,7 @@ export class DeviceAdminController {
       where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
       include: { driver: true }
     });
-    
+
     if (!device) throw new BadRequestException('Dispositivo no encontrado');
 
     // Update Device
@@ -283,5 +299,75 @@ export class DeviceAdminController {
     });
 
     return { success: true, message: 'Perfil actualizado', device: updated };
+  }
+
+  // ── FullyKiosk Remote Commands ──
+  // Send kiosk management commands to tablet devices via DeviceCommand queue.
+  // The player's FullyKioskBridge processes these on next sync cycle.
+
+  /** Send a command to a single device */
+  @Post(':deviceId/command')
+  async sendDeviceCommand(
+    @Param('deviceId') deviceId: string,
+    @Body() body: { commandType: string; params?: Record<string, unknown> },
+  ) {
+    if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
+      throw new BadRequestException(`Invalid command type: ${body.commandType}. Valid types: ${KIOSK_COMMAND_TYPES.join(', ')}`);
+    }
+
+    const device = await this.prisma.device.findFirst({
+      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+    });
+    if (!device) throw new BadRequestException('Dispositivo no encontrado');
+
+    const command = await this.prisma.deviceCommand.create({
+      data: {
+        deviceId: device.id,
+        commandType: body.commandType,
+        commandParams: body.params ? JSON.stringify(body.params) : null,
+        status: 'PENDING',
+        expiresAt: new Date(Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+      },
+    });
+
+    // Wake the device via Supabase Realtime
+    this.logger.log(`📤 Command ${body.commandType} queued for device ${device.deviceId}`);
+    return { success: true, command };
+  }
+
+  /** Broadcast a command to all devices in a fleet or city */
+  @Post('broadcast')
+  async broadcastCommand(
+    @Body() body: { commandType: string; params?: Record<string, unknown>; city?: string; fleet?: string },
+  ) {
+    if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
+      throw new BadRequestException(`Invalid command type: ${body.commandType}`);
+    }
+
+    const where: any = { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE };
+    if (body.city) where.city = body.city;
+    if (body.fleet) where.fleet = body.fleet;
+
+    const devices = await this.prisma.device.findMany({
+      where,
+      select: { id: true, deviceId: true },
+    });
+
+    if (devices.length === 0) {
+      return { success: false, message: 'No devices found for this filter' };
+    }
+
+    const commands = await this.prisma.deviceCommand.createMany({
+      data: devices.map(d => ({
+        deviceId: d.id,
+        commandType: body.commandType,
+        commandParams: body.params ? JSON.stringify(body.params) : null,
+        status: 'PENDING',
+        expiresAt: new Date(Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+      })),
+    });
+
+    this.logger.log(`📤 Broadcast ${body.commandType} to ${devices.length} devices`);
+    return { success: true, count: commands.count, commandType: body.commandType };
   }
 }

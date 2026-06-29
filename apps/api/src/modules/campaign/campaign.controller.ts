@@ -23,6 +23,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
+  weight: true,
 };
 
 @Controller('campaigns')
@@ -33,7 +34,7 @@ export class CampaignController {
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
     private readonly videoGenerator: VideoGeneratorService,
-  ) {}
+  ) { }
 
   @Public() // Catálogo público de marcas (Hub)
   @Get('advertiser/hub')
@@ -79,7 +80,7 @@ export class CampaignController {
     // Buscar si hay una campaña activa para este anunciante que tenga links personalizados
     // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
     const activeCampaign = await this.prisma.campaign.findFirst({
-      where: { 
+      where: {
         OR: [
           { advertiserId: advertiser.id },
           { advertiser: advertiser.companyName } // Legacy fallback por nombre
@@ -183,11 +184,11 @@ export class CampaignController {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     if (role === 'ADVERTISER' && entityId) {
-       return this.prisma.campaign.findMany({
-         where: { advertiserId: entityId },
-         include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
-         orderBy: { createdAt: 'desc' },
-       });
+      return this.prisma.campaign.findMany({
+        where: { advertiserId: entityId },
+        include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+        orderBy: { createdAt: 'desc' },
+      });
     }
     return this.campaignService.getAllCampaigns();
   }
@@ -219,7 +220,7 @@ export class CampaignController {
         const v1Dist = await this.prisma.playlistItem.findMany({
           where: { campaignId: id }
         });
-        
+
         const deviceIds = v1Dist.map(v => v.deviceId);
         const devices = await this.prisma.device.findMany({
           where: { deviceId: { in: deviceIds } }
@@ -232,8 +233,8 @@ export class CampaignController {
           driverName: 'No asignado',
           status: d.status,
           last_heartbeat: d.lastHeartbeat,
-          is_online: d.lastHeartbeat 
-            ? (new Date().getTime() - new Date(d.lastHeartbeat).getTime() < 300000) 
+          is_online: d.lastHeartbeat
+            ? (new Date().getTime() - new Date(d.lastHeartbeat).getTime() < 300000)
             : false
         }));
 
@@ -258,8 +259,8 @@ export class CampaignController {
         driverName: 'No asignado',
         status: d.status,
         last_heartbeat: d.lastHeartbeat,
-        is_online: d.lastHeartbeat 
-          ? (new Date().getTime() - new Date(d.lastHeartbeat).getTime() < 300000) 
+        is_online: d.lastHeartbeat
+          ? (new Date().getTime() - new Date(d.lastHeartbeat).getTime() < 300000)
           : false
       }));
 
@@ -309,7 +310,7 @@ export class CampaignController {
     const assignments = await this.prisma.deviceCampaign.findMany({
       where: { campaign_id: campaignId },
       include: {
-        device: true, 
+        device: true,
       },
     });
     console.log(`[CAMPAIGN_DEBUG] Explicit assignments found: ${assignments.length}`);
@@ -323,10 +324,10 @@ export class CampaignController {
       }
     });
     console.log(`[CAMPAIGN_DEBUG] Driver targeted devices found: ${targetedDriverDevices.length}`);
-    
+
     // Merge both (avoid duplicates)
     const deviceMap = new Map<string, any>();
-    
+
     for (const a of assignments) {
       if (a.device) {
         deviceMap.set(a.device.id, {
@@ -336,7 +337,7 @@ export class CampaignController {
         });
       }
     }
-    
+
     for (const d of targetedDriverDevices) {
       if (!deviceMap.has(d.id)) {
         deviceMap.set(d.id, {
@@ -447,7 +448,7 @@ export class CampaignController {
   ) {
     if (!mediaId) throw new NotFoundException('mediaId is required');
     let success = false;
-    
+
     // Attempt to unlink from Media (v2)
     try {
       const media = await this.prisma.media.findUnique({ where: { id: mediaId } });
@@ -458,7 +459,7 @@ export class CampaignController {
         });
         success = true;
       }
-    } catch(e) { /* ignore */ }
+    } catch (e) { /* ignore */ }
 
     // Attempt to delete MediaAsset (v1)
     if (!success) {
@@ -468,7 +469,7 @@ export class CampaignController {
           await this.prisma.mediaAsset.delete({ where: { id: mediaId } });
           success = true;
         }
-      } catch(e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
     }
 
     if (!success) {
@@ -478,7 +479,7 @@ export class CampaignController {
           where: { checksum: mediaId, campaignId: campaignId }
         });
         success = true;
-      } catch(e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
     }
 
     if (success) {
@@ -487,7 +488,7 @@ export class CampaignController {
         where: { id: campaignId },
         data: { updatedAt: new Date() }
       });
-      
+
       let devicesToSync = [];
       if (campaign.targetAll || campaign.isGlobal) {
         devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
@@ -557,13 +558,13 @@ export class CampaignController {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
-    
+
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
     if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
-       throw new ForbiddenException('No tienes permisos para ver esta campaña');
+      throw new ForbiddenException('No tienes permisos para ver esta campaña');
     }
-    
+
     return campaign;
   }
 }

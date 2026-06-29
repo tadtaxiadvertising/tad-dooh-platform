@@ -17,6 +17,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
+  weight: true,
 };
 
 @Injectable()
@@ -246,6 +247,14 @@ export class SyncService {
     );
 
     // 5. Formatear manifiesto
+    // Extract scheduling metadata for each campaign
+    const schedules = activeCampaigns.map(c => ({
+      campaignId: c.id,
+      scheduleDays: c.scheduleDays ? JSON.parse(c.scheduleDays) : [],
+      scheduleHours: c.scheduleHours ? JSON.parse(c.scheduleHours) : [],
+      frequencyCap: c.frequencyCap || 0,
+    }));
+
     return {
       timestamp: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
@@ -257,7 +266,8 @@ export class SyncService {
         taxi: device.taxiNumber
       },
       count: playlist.length,
-      playlist
+      playlist,
+      schedules
     };
   }
 

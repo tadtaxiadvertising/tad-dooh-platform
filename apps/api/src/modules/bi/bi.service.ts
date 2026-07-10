@@ -361,8 +361,16 @@ export class BiService {
     });
   }
 
-  async getFleetHealth() {
+  /**
+   * Fleet health snapshot. Returns up to `take` devices ordered by most
+   * recently seen (descending). Defaults to 500 to stay within the 512MB
+   * RAM budget; callers can pass a smaller `take` for dashboards.
+   */
+  async getFleetHealth(take: number = 500) {
+    const safeTake = Math.min(Math.max(1, Math.floor(take)), 500);
     const devices = await this.prisma.device.findMany({
+      take: safeTake,
+      orderBy: { lastSeen: { sort: 'desc', nulls: 'last' } },
       include: { driver: true }
     });
 

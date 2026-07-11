@@ -703,10 +703,24 @@ export class FleetService {
    * Procesa un lote de puntos GPS con validación de reglas de negocio críticas.
    * R3: Kill-Switch si la suscripción no está al día.
    * R2: Inserción masiva para optimizar latencia en producción.
+   *
+   * V12.1.3 (B3 PATCH): Ahora `skipDuplicates: true` es funcional porque
+   * `DriverLocation.@@unique([deviceId, timestamp])` existe (migración
+   * `20260110_driver_location_unique`). Sin UNIQUE el flag era NO-OP.
+   *
+   * Adicional: luego del createMany se hace un UPSERT del "last location" del
+   * dispositivo (lastSeen/lastLat/lastLng) idempotente.
    */
   async ingestTelemetryBatch(data: TrackBatchDto) {
     const logger = new Logger('FleetService');
-    
+
+    // Defensa: payload vacío no debería llegar aquí (DTO valida IsArray),
+    // pero protegemos contra puntos vacíos para no desperdiciar round-trip.
+    if (!data?.points || data.points.length === 0) {
+      logger.warn(`⚠️ Telemetry batch with 0 points from driver [${data?.driverId ?? 'unknown'}]`);
+      return { count: 0 };
+    }
+
     // 1. Validar existencia del conductor
     const driver = await this.prisma.driver.findUnique({
       where: { id: data.driverId },
@@ -724,7 +738,9 @@ export class FleetService {
       throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);
     }
 
-    // 3. Inserción Masiva (Batching) para optimizar I/O (Regla de Negocio #2)
+    // 3. Inserción Masiva (Batching) para optimizar I/O (Regla de Negocio #2).
+    //    `skipDuplicates: true` ahora es funcional gracias al UNIQUE constraint
+    //    y previene que el mismo (deviceId, timestamp) duplique filas.
     const telemetryData = data.points.map(p => ({
       driverId: data.driverId,
       deviceId: data.deviceId,
@@ -736,12 +752,12 @@ export class FleetService {
 
     const result = await this.prisma.driverLocation.createMany({
       data: telemetryData,
-      skipDuplicates: true,
+      skipDuplicates: true, // B3 PATCH: ahora SÍ funciona (UNIQUE existe)
     });
 
-    logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}]`);
-    
-    // 4. Update Device 'lastSeen' and current position
+    logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}] (input=${telemetryData.length})`);
+
+    // 4. Update Device 'lastSeen' and current position (idempotente)
     if (data.points.length > 0) {
       const lastPoint = data.points[data.points.length - 1];
       await this.prisma.device.update({
@@ -754,6 +770,6 @@ export class FleetService {
       }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
     }
 
-    return result;
+    return { count: result.count, input: telemetryData.length };
   }
 }

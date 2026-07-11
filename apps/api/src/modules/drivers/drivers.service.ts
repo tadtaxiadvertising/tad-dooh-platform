@@ -101,34 +101,74 @@ export class DriversService {
   }
 
   /**
-   * REGLA DE NEGOCIO 2: Cálculo automático de pagos
-   * RD$500 al mes por anuncio activo reproducido en su tablet.
+   * REGLA DE NEGOCIO 2: Cálculo automático de pagos (v12.1.3 B8 PATCH).
+   * Regla canónica (02_reglas_negocio_stack.md):
+   *     Earnings = min(playbacks, 15) × RD$500  +  confirmed_sales × RD$500
+   *
+   * Antes pagaba por campañas ASIGNADAS al dispositivo (no reproducidas),
+   * distorsionando métricas e incentivando BI inflado. Ahora pagamos por
+   * reproducciones CONFIRMADAS en `playback_events` (PoP — Proof of Play).
+   *
+   * Cap estricto: 15 anuncios máximo. Más allá, no se acredita.
    */
   async calculateMonthlyEarnings(driverId: string) {
-    // FIX A-1: Contar solo las campañas asignadas al dispositivo del conductor, no globalmente
-    const activeCampaignsCount = await this.prisma.deviceCampaign.count({
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+
+    // Reproducciones CONFIRMADAS (PoP): conjunto de videoIds únicos
+    // reproducidos en este mes en el(los) dispositivo(s) del conductor.
+    // `verified:true` filtra eventos validados; `distinct:['videoId']` evita
+    // pagar múltiples veces el mismo anuncio reproducido N veces al día.
+    // La regla canónica es "por anuncio activo reproducido en su tablet al
+    // mes", no "por evento de playback".
+    const playedRows = await this.prisma.playbackEvent.findMany({
       where: {
+        verified: true,
+        timestamp: { gte: monthStart, lte: monthEnd },
         device: { driverId },
-        campaign: { status: 'ACTIVE' },
       },
-    }).catch(async () => {
-      // Fallback: si DeviceCampaign no tiene datos, usar conteo global
-      return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+      distinct: ['videoId'],
+      select: { videoId: true },
+    }).catch((err) => {
+      this.logger.warn(`[EARNINGS] playbackEvent query failed for ${driverId}: ${err.message}`);
+      return [] as Array<{ videoId: string }>;
     });
 
-    const baseEarnings = activeCampaignsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
-    
-    // Aplicar lógica de auditoría y penalizaciones
-    const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driverId, baseEarnings);
+    const playedCampaignsCount = playedRows.length;
+    const cappedAds = Math.min(playedCampaignsCount, BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
+    const baseEarnings = cappedAds * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+
+    // CPA por referido de anunciante cerrado (best-effort; no se descuenta).
+    const confirmedSales = await this.prisma.commission.count({
+      where: {
+        driverId,
+        sourceType: 'ADVERTISER_SALE',
+        status: 'APPROVED',
+      },
+    }).catch(() => 0);
+    const cpaEarnings = confirmedSales * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+
+    const grossEarnings = baseEarnings + cpaEarnings;
+
+    // Auditoría + penalización por debajo de meta de horas.
+    const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(
+      driverId,
+      grossEarnings,
+    );
 
     return {
       driverId,
-      activeCampaigns: activeCampaignsCount,
+      playedCampaigns: playedCampaignsCount,
+      cappedAds,
+      activeCampaigns: cappedAds, // compat con shape legado (no se duplica)
+      confirmedSales,
       baseEarningsRD: baseEarnings,
-      projectedEarningsRD: amount,
+      cpaEarningsRD: cpaEarnings,
       penaltyApplied,
       penaltyAmount,
+      projectedEarningsRD: amount,
       currency: 'DOP',
+      period: { start: monthStart, end: monthEnd },
     };
   }
 

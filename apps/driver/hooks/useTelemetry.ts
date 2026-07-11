@@ -147,7 +147,7 @@ async function writeOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
         const all = allRequest.result || [];
         const offlineKeys = all.filter((x: any) => x.status === 'offline').map((x: any) => x.ts);
         offlineKeys.forEach((key: number) => store.delete(key));
-        
+
         coords.slice(-MAX_OFFLINE_RECORDS).forEach((coord) => {
           store.put({ ...coord, status: 'offline' });
         });
@@ -158,6 +158,40 @@ async function writeOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
   } catch (err) {
     console.error('IndexedDB writeOffline error:', err);
   }
+}
+
+/**
+ * triggerKillSwitch — patrón centralizado de respuesta a 402.
+ *
+ * Antes había DOS copias casi idénticas de la limpieza de credenciales +
+ * lock en este hook (`flushBatch` y `syncOfflineQueue`), ambas
+ * llamadas `setLock(true, ...)` pero SÓLO UNA invalidaba el JWT en
+ * `localStorage`. Resultado: requests autenticadas zombie durante el
+ * grace period post-lock.
+ *
+ * Esta helper centraliza:
+ *   1. Detener tracking GPS (si se le pasa stopFn).
+ *   2. Limpiar claves de identidad (`tad_driver_user`, `TAD_DRIVER_JWT`).
+ *   3. Disparar `TAD_FORCE_LOGOUT` para suscriptores del evento.
+ *   4. Activar el PaymentLockOverlay vía `setLock(true)`.
+ *
+ * Vive como free function (no hook) porque la lógica no depende del
+ * estado del componente y se reutiliza desde dos `useCallback`.
+ */
+function triggerKillSwitch(opts: {
+  setLock: (locked: boolean, message?: string | null) => void;
+  setConnectionStatus?: (s: 'online' | 'offline' | 'syncing') => void;
+  stopTracking?: () => void;
+}): void {
+  const { setLock, setConnectionStatus, stopTracking } = opts;
+  try {
+    localStorage.removeItem('tad_driver_user');
+    localStorage.removeItem('TAD_DRIVER_JWT');
+    window.dispatchEvent(new CustomEvent('TAD_FORCE_LOGOUT', { detail: { reason: 'SUBSCRIPTION_UNPAID' } }));
+  } catch {/* localStorage bloqueado no debe romper el flow */}
+  if (stopTracking) stopTracking();
+  if (setConnectionStatus) setConnectionStatus('offline');
+  setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
 }
 
 // ─── Hook Principal ───────────────────────────────────────────────────────────
@@ -236,8 +270,7 @@ export function useTelemetry(): UseTelemetryReturn {
       try {
         const retryRes = await postTrackBatch(apiBase, driverId, deviceId, chunk);
         if (retryRes.status === 402) {
-          setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
-          setConnectionStatus('offline');
+          triggerKillSwitch({ setLock });
           break;
         }
         if (!retryRes.ok) {
@@ -315,8 +348,10 @@ export function useTelemetry(): UseTelemetryReturn {
 
       if (res.status === 402) {
         stopTracking();
-        setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
-        setConnectionStatus('offline');
+        // B13 PATCH (v12.1.3) vía triggerKillSwitch: path centralizado para que
+        // AMBOS puntos de kill-switch (flushBatch + syncOfflineQueue) invaliden
+        // JWT local y disparen el evento de logout forzado. Ver helper arriba.
+        triggerKillSwitch({ setLock });
         return;
       }
 

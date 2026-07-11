@@ -44,7 +44,10 @@ export const BUSINESS_RULES = {
     DRIVER: {
       INITIAL: 'PENDIENTE_PAGO',
       ACTIVE: 'OPERATIVO',
+      // @deprecated Use 'BLOCKED' (alias) en código nuevo. Se conserva
+      // 'SUSPENDED' por compatibilidad — apunta al mismo string histórico.
       SUSPENDED: 'BLOQUEADO',
+      BLOCKED: 'BLOQUEADO',
       ONBOARDING: {
         TOS_PENDING: 'TOS_PENDING',
         READY: 'READY',
@@ -64,23 +67,36 @@ export const BUSINESS_RULES = {
     },
     DEVICE: {
       ACTIVE: 'OPERATIVO',
+      // @deprecated Use 'BLOCKED'.
       SUSPENDED: 'BLOQUEADO',
+      BLOCKED: 'BLOQUEADO',
       INITIAL: 'PENDIENTE_PAGO',
     }
   },
 
-  /** Niveles de desempeño del chofer basados en horas de transmisión */
+  /** Niveles de desempeño del chofer definidos según horas de transmisión */
   LEVELS: {
     BASE: { hours: 120, label: 'BASE', priority: 1, penalty: 0.10 },
     PLATA: { hours: 160, label: 'PLATA', priority: 2, penalty: 0 },
     ORO: { hours: 200, label: 'ORO', priority: 3, penalty: 0 },
   },
 
+  /** Penalización se aplica tras N meses consecutivos incumpliendo la meta de horas. */
+  PENALTY_THRESHOLD_MONTHS: 2,
+
   /** TTL de comandos de dispositivo en días */
   COMMAND_TTL_DAYS: 7,
 
   /** Tasa de retención por referidos (10%) */
   REFERRAL_RETENTION_RATE: 0.10,
+
+  /**
+   * Tasa de churn mensual por defecto (4.5%).
+   * Usada por `bi.service.ts:getBiDashboard()` cuando no hay datos históricos
+   * suficientes para calcular el churn real. Si se requiere un valor dinámico,
+   * debe migrarse a `SystemSettings` (tabla `system_settings`).
+   */
+  CHURN_RATE_DEFAULT: 0.045,
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

@@ -64,14 +64,14 @@ export class PayrollAuditService {
 
     if (!driver) return { amount, penaltyApplied: false, penaltyAmount: 0 };
 
-    // Penalización del 10% si lleva 2 o más meses incumpliendo
-    if (driver.consecutiveMonthsUnderGoal >= 2) {
-      const penaltyRate = BUSINESS_RULES.LEVELS.BASE.penalty; // 0.10
+    // Penalización del 10% (BASE.penalty) si lleva N+ meses incumpliendo.
+    if (driver.consecutiveMonthsUnderGoal >= BUSINESS_RULES.PENALTY_THRESHOLD_MONTHS) {
+      const penaltyRate = BUSINESS_RULES.LEVELS.BASE.penalty;
       const finalAmount = amount * (1 - penaltyRate);
-      return { 
-        amount: finalAmount, 
+      return {
+        amount: finalAmount,
         penaltyApplied: true,
-        penaltyAmount: amount * penaltyRate
+        penaltyAmount: amount * penaltyRate,
       };
     }
 

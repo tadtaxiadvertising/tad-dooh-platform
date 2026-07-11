@@ -1,18 +1,58 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Headers, Logger } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Headers, Logger, BadRequestException } from '@nestjs/common';
 import { TelemetryService } from './telemetry.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('telemetry')
 export class TelemetryController {
   private readonly logger = new Logger(TelemetryController.name);
 
-  constructor(private readonly telemetryService: TelemetryService) { }
+  constructor(
+    private readonly telemetryService: TelemetryService,
+    private readonly prisma: PrismaService,
+  ) { }
 
+  /**
+   * POST /telemetry/sync — Ingesta masiva de telemetría GPS.
+   *
+   * B9 PATCH (v12.1.3): endurecimiento mínimo.
+   * Antes: @Public() sin validación → cualquiera podía inyectar filas en
+   * `telemetry` para cualquier driverId. Ahora valida:
+   *   1. Payload no vacío.
+   *   2. Primer `driverId` presente.
+   *   3. Driver existe (1 query pre-flight, O(1) por el index del PK).
+   *
+   * El tamaño del batch ya está capeado aguas abajo por `MAX_BATCH_SIZE`
+   * en `TelemetryService.sync()` → no se duplica aquí deliberadamente.
+   *
+   * NOTA: Este endpoint NO es la ruta oficial de la PWA (la oficial va por
+   * PostgREST RPC `bulk_insert_telemetry`, ver regla #4). Se conserva público
+   * (no requiere JWT) para mantener compatibilidad con gateways legados.
+   */
   @Post('sync')
   @HttpCode(HttpStatus.CREATED)
   async sync(
     @Body() payload: { driverId: string; lat: number; lng: number; speed: number; timestamp?: string }[]
   ) {
+    if (!Array.isArray(payload) || payload.length === 0) {
+      throw new BadRequestException('EMPTY_PAYLOAD');
+    }
+
+    // Pre-flight: validar que el primer driverId existe (asumimos batch homogéneo).
+    // El servicio ya capa `MAX_BATCH_SIZE` arriba, no duplicamos la verificación.
+    const headDriverId = payload[0]?.driverId;
+    if (!headDriverId) {
+      throw new BadRequestException('MISSING_DRIVER_ID');
+    }
+
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: headDriverId },
+      select: { id: true },
+    });
+    if (!driver) {
+      throw new BadRequestException('DRIVER_NOT_FOUND');
+    }
+
     this.telemetryService.sync(payload).catch(err => this.logger.error(`Telemetry sync error: ${err.message}`));
     return { success: true };
   }

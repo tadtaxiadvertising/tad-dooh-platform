@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -63,7 +63,7 @@ model Device {
   subscriptions     Subscription[]
   isSimulated       Boolean           @default(false) @map("is_simulated")
 
-  connectivityStatus String           @default("ONLINE") @map("connectivity_status")
+  connectivityStatus String @default("ONLINE") @map("connectivity_status")
 
   @@index([status])
   @@index([lastSync])
@@ -75,55 +75,55 @@ model Device {
 }
 
 model Campaign {
-  id                String           @id @default(uuid())
+  id                String   @id @default(uuid())
   name              String
   advertiser        String
-  advertiserId      String?          @map("advertiser_id")
+  advertiserId      String?  @map("advertiser_id")
   description       String?
-  status            String           @default("PENDING_PAYMENT")
-  active            Boolean          @default(true)
-  startDate         DateTime         @map("start_date")
-  endDate           DateTime         @map("end_date")
-  version           Int              @default(1)
-  isGlobal          Boolean          @default(false) @map("is_global")
-  targetAll         Boolean          @default(true) @map("target_all")
-  targetCities      String           @default("[]") @map("target_cities")
-  targetCity        String           @default("Global") @map("target_city")
-  targetFleets      String           @default("[]") @map("target_fleets")
-  priority          Int              @default(0)
-  targetImpressions Int              @default(0) @map("target_impressions")
-  budget            Float            @default(0)
-  targetUrl         String?          @map("target_url")
-  createdById       String?          @map("created_by")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
+  status            String   @default("PENDING_PAYMENT")
+  active            Boolean  @default(true)
+  startDate         DateTime @map("start_date")
+  endDate           DateTime @map("end_date")
+  version           Int      @default(1)
+  isGlobal          Boolean  @default(false) @map("is_global")
+  targetAll         Boolean  @default(true) @map("target_all")
+  targetCities      String   @default("[]") @map("target_cities")
+  targetCity        String   @default("Global") @map("target_city")
+  targetFleets      String   @default("[]") @map("target_fleets")
+  priority          Int      @default(0)
+  targetImpressions Int      @default(0) @map("target_impressions")
+  budget            Float    @default(0)
+  targetUrl         String?  @map("target_url")
+  createdById       String?  @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
   facebook          String?
   instagram         String?
-  pedidosYaUrl      String?          @map("pedidos_ya_url")
-  uberEatsUrl       String?          @map("uber_eats_url")
-  websiteUrl        String?          @map("website_url")
+  pedidosYaUrl      String?  @map("pedidos_ya_url")
+  uberEatsUrl       String?  @map("uber_eats_url")
+  websiteUrl        String?  @map("website_url")
   whatsapp          String?
-  category          String?          @default("General")
-  hasSeenTutorial   Boolean          @default(false) @map("has_seen_tutorial")
+  category          String?  @default("General")
+  hasSeenTutorial   Boolean  @default(false) @map("has_seen_tutorial")
 
   // ── GAP #6: Day-of-Week & Hour-of-Day Scheduling ──
   // JSON arrays: e.g. scheduleDays=["MON","TUE","WED","THU","FRI"], scheduleHours=["06:00","22:00"]
   // When empty/null, campaign plays 24/7 (legacy behavior preserved).
-  scheduleDays     String?          @default("[]") @map("schedule_days")
-  scheduleHours    String?          @default("[]") @map("schedule_hours")
+  scheduleDays  String? @default("[]") @map("schedule_days")
+  scheduleHours String? @default("[]") @map("schedule_hours")
   // Frequency cap: max impressions per device per hour (0 = unlimited)
-  frequencyCap     Int              @default(0) @map("frequency_cap")
+  frequencyCap  Int     @default(0) @map("frequency_cap")
 
-  metrics           CampaignMetric[]
-  advertiserRef     Advertiser?      @relation(fields: [advertiserId], references: [id])
-  createdBy         User?            @relation(fields: [createdById], references: [id])
-  devices           DeviceCampaign[]
-  media             Media[]          @relation("MediaCampaign")
-  mediaAssets       MediaAsset[]
-  targets           PlaylistItem[]
-  playlists         Playlist[]
-  videos            Video[]
-  targetDrivers     Driver[]         @relation("CampaignToDriver")
+  metrics       CampaignMetric[]
+  advertiserRef Advertiser?      @relation(fields: [advertiserId], references: [id])
+  createdBy     User?            @relation(fields: [createdById], references: [id])
+  devices       DeviceCampaign[]
+  media         Media[]          @relation("MediaCampaign")
+  mediaAssets   MediaAsset[]
+  targets       PlaylistItem[]
+  playlists     Playlist[]
+  videos        Video[]
+  targetDrivers Driver[]         @relation("CampaignToDriver")
 
   @@index([active])
   @@index([status])
@@ -135,7 +135,7 @@ model Playlist {
   id         String   @id @default(uuid())
   campaignId String   @map("campaign_id")
   name       String
-  loopType   String   @default("SEQUENTIAL")  // SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY
+  loopType   String   @default("SEQUENTIAL") // SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY
   createdAt  DateTime @default(now()) @map("created_at")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
@@ -194,20 +194,20 @@ model Media {
 }
 
 model AnalyticsEvent {
-  id         String   @id @default(uuid())
-  deviceId   String   @map("device_id")
-  campaignId String?  @map("campaign_id")
-  mediaId    String?  @map("media_id")
-  eventType  String   @map("event_type")
-  eventData  String?  @map("event_data")
-  lat        Float?
-  lng        Float?
-  timestamp  DateTime @default(now())
-  occurredAt DateTime @map("occurred_at")
-  receivedAt DateTime @default(now()) @map("received_at")
-  processed  Boolean  @default(false)
-  isSimulated Boolean @default(false) @map("is_simulated")
-  device     Device   @relation(fields: [deviceId], references: [deviceId])
+  id          String   @id @default(uuid())
+  deviceId    String   @map("device_id")
+  campaignId  String?  @map("campaign_id")
+  mediaId     String?  @map("media_id")
+  eventType   String   @map("event_type")
+  eventData   String?  @map("event_data")
+  lat         Float?
+  lng         Float?
+  timestamp   DateTime @default(now())
+  occurredAt  DateTime @map("occurred_at")
+  receivedAt  DateTime @default(now()) @map("received_at")
+  processed   Boolean  @default(false)
+  isSimulated Boolean  @default(false) @map("is_simulated")
+  device      Device   @relation(fields: [deviceId], references: [deviceId])
 
   @@index([deviceId])
   @@index([campaignId])
@@ -296,11 +296,11 @@ model PlaybackEvent {
   verified    Boolean  @default(false) @map("verified")
   device      Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
+  @@unique([deviceId, videoId, timestamp])
   @@index([deviceId])
   @@index([timestamp])
   @@index([videoId])
   @@index([verified])
-  @@unique([deviceId, videoId, timestamp])
   @@index([deviceId, timestamp(sort: Desc)])
   @@index([eventType, verified, timestamp])
   @@index([videoId, eventType])
@@ -308,21 +308,21 @@ model PlaybackEvent {
 }
 
 model MediaAsset {
-  id         String   @id @default(uuid())
-  campaignId String   @map("campaign_id")
-  type       String
-  filename   String
-  url        String
-  fileSize   Int      @map("file_size")
-  checksum   String
-  duration   Int?
-  version    Int      @default(1)
-  createdAt  DateTime @default(now()) @map("created_at")
-  qrUrl      String?  @map("qr_url")
+  id               String   @id @default(uuid())
+  campaignId       String   @map("campaign_id")
+  type             String
+  filename         String
+  url              String
+  fileSize         Int      @map("file_size")
+  checksum         String
+  duration         Int?
+  version          Int      @default(1)
+  createdAt        DateTime @default(now()) @map("created_at")
+  qrUrl            String?  @map("qr_url")
   processingStatus String   @default("ACTIVE") @map("processing_status")
   validationError  String?  @map("validation_error")
-  weight     Int      @default(1) @map("weight") // GAP #7: playback weight (1-10), higher = more frequent
-  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  weight           Int      @default(1) @map("weight") // GAP #7: playback weight (1-10), higher = more frequent
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@map("media_assets")
@@ -338,52 +338,52 @@ model Fleet {
 }
 
 model Driver {
-  id                  String           @id @default(uuid())
-  fullName            String           @map("full_name")
-  cedula              String?          @unique
-  phone               String           @unique
-  licensePlate        String?          @map("license_plate")
-  taxiPlate           String?          @unique @map("taxi_plate")
-  taxiNumber          String?          @map("taxi_number")
-  subscriptionPaid    Boolean          @default(false) @map("subscription_paid")
-  subscriptionEnd     DateTime?        @map("subscription_end")
-  status              SystemStatus     @default(PENDIENTE_PAGO)
-  onboardingStatus    String           @default("PENDING_AGREEMENT") @map("onboarding_status")
-  onboardedAt         DateTime         @default(now()) @map("onboarded_at")
-  blockedAt           DateTime?        @map("blocked_at")
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
-  referredBy          String?          @map("referred_by")
-  password            String?
-  level               String           @default("BASE")
-  consecutiveMonthsUnderGoal Int       @default(0) @map("consecutive_months_under_goal")
-  referredAdvertisers Advertiser[]     @relation("AdvertiserReferrals")
-  identidadVehicular  Json?            @map("identidad_vehicular")
-  hardwareConfig      Json?            @map("hardware_config")
-  wallet              Wallet?
+  id                         String       @id @default(uuid())
+  fullName                   String       @map("full_name")
+  cedula                     String?      @unique
+  phone                      String       @unique
+  licensePlate               String?      @map("license_plate")
+  taxiPlate                  String?      @unique @map("taxi_plate")
+  taxiNumber                 String?      @map("taxi_number")
+  subscriptionPaid           Boolean      @default(false) @map("subscription_paid")
+  subscriptionEnd            DateTime?    @map("subscription_end")
+  status                     SystemStatus @default(PENDIENTE_PAGO)
+  onboardingStatus           String       @default("PENDING_AGREEMENT") @map("onboarding_status")
+  onboardedAt                DateTime     @default(now()) @map("onboarded_at")
+  blockedAt                  DateTime?    @map("blocked_at")
+  createdAt                  DateTime     @default(now()) @map("created_at")
+  updatedAt                  DateTime     @updatedAt @map("updated_at")
+  referredBy                 String?      @map("referred_by")
+  password                   String?
+  level                      String       @default("BASE")
+  consecutiveMonthsUnderGoal Int          @default(0) @map("consecutive_months_under_goal")
+  referredAdvertisers        Advertiser[] @relation("AdvertiserReferrals")
+  identidadVehicular         Json?        @map("identidad_vehicular")
+  hardwareConfig             Json?        @map("hardware_config")
+  wallet                     Wallet?
 
   // LEGAL COMPLIANCE: Acceptance of agreements
-  insuranceAccepted    Boolean   @default(false) @map("insurance_accepted")
-  insuranceAcceptedAt  DateTime? @map("insurance_accepted_at")
-  contractAccepted     Boolean   @default(false) @map("contract_accepted")
-  contractAcceptedAt   DateTime? @map("contract_accepted_at")
-  agreementVersion     String?   @map("agreement_version")
-  devices             Device[]
-  locations           DriverLocation[]
-  referredByDriver    Driver?          @relation("DriverReferrals", fields: [referredBy], references: [id])
-  referrals           Driver[]         @relation("DriverReferrals")
-  payrollPayments     PayrollPayment[]
-  subscriptions       Subscription[]
-  campaigns           Campaign[]       @relation("CampaignToDriver")
-  contractAcceptances ContractAcceptance[]
-  portalRequests      PortalRequest[]
-  isSimulated         Boolean          @default(false) @map("is_simulated")
-  walletBalance       Float          @default(0.0) @map("wallet_balance")
-  referralCode        String?        @unique @default(uuid()) @map("referral_code")
-  bankAccount         Json?          @map("bank_account")
-  commissions         Commission[]
-  telemetryLogs       Telemetry[]    @relation("DriverTelemetry")
-  activeAds           ActiveAd[]
+  insuranceAccepted     Boolean                @default(false) @map("insurance_accepted")
+  insuranceAcceptedAt   DateTime?              @map("insurance_accepted_at")
+  contractAccepted      Boolean                @default(false) @map("contract_accepted")
+  contractAcceptedAt    DateTime?              @map("contract_accepted_at")
+  agreementVersion      String?                @map("agreement_version")
+  devices               Device[]
+  locations             DriverLocation[]
+  referredByDriver      Driver?                @relation("DriverReferrals", fields: [referredBy], references: [id])
+  referrals             Driver[]               @relation("DriverReferrals")
+  payrollPayments       PayrollPayment[]
+  subscriptions         Subscription[]
+  campaigns             Campaign[]             @relation("CampaignToDriver")
+  contractAcceptances   ContractAcceptance[]
+  portalRequests        PortalRequest[]
+  isSimulated           Boolean                @default(false) @map("is_simulated")
+  walletBalance         Float                  @default(0.0) @map("wallet_balance")
+  referralCode          String?                @unique @default(uuid()) @map("referral_code")
+  bankAccount           Json?                  @map("bank_account")
+  commissions           Commission[]
+  telemetryLogs         Telemetry[]            @relation("DriverTelemetry")
+  activeAds             ActiveAd[]
   reconciliationReports ReconciliationReport[]
 
   @@index([status])
@@ -425,11 +425,11 @@ model PayrollPayment {
   createdAt    DateTime  @default(now()) @map("created_at")
   driver       Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  penaltyApplied     Boolean   @default(false) @map("penalty_applied")
-  penaltyPercentage  Float     @default(0)     @map("penalty_percentage")
-  transmissionHours  Float     @default(0)     @map("transmission_hours")
-  activeAds          Int       @default(0)     @map("active_ads")
-  gpsPoints          Int       @default(0)     @map("gps_points")
+  penaltyApplied    Boolean @default(false) @map("penalty_applied")
+  penaltyPercentage Float   @default(0) @map("penalty_percentage")
+  transmissionHours Float   @default(0) @map("transmission_hours")
+  activeAds         Int     @default(0) @map("active_ads")
+  gpsPoints         Int     @default(0) @map("gps_points")
 
   @@unique([driverId, month, year])
   @@index([driverId])
@@ -464,25 +464,25 @@ model Subscription {
 }
 
 model Advertiser {
-  id             String          @id @default(uuid())
-  companyName    String          @map("company_name")
-  contactName    String          @map("contact_name")
-  email          String          @unique
+  id             String                   @id @default(uuid())
+  companyName    String                   @map("company_name")
+  contactName    String                   @map("contact_name")
+  email          String                   @unique
   phone          String?
-  status         String          @default("ACTIVE")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  status         String                   @default("ACTIVE")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
   facebook       String?
   instagram      String?
-  productsData   String?         @default("[]") @map("products_data")
-  websiteUrl     String?         @map("website_url")
+  productsData   String?                  @default("[]") @map("products_data")
+  websiteUrl     String?                  @map("website_url")
   whatsapp       String?
-  category       String?         @default("General")
-  pedidosYaUrl   String?         @map("pedidos_ya_url")
-  uberEatsUrl    String?         @map("uber_eats_url")
-  referredBy     String?         @map("referred_by")
+  category       String?                  @default("General")
+  pedidosYaUrl   String?                  @map("pedidos_ya_url")
+  uberEatsUrl    String?                  @map("uber_eats_url")
+  referredBy     String?                  @map("referred_by")
   password       String?
-  referrer       Driver?         @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
+  referrer       Driver?                  @relation("AdvertiserReferrals", fields: [referredBy], references: [id])
   campaigns      Campaign[]
   portalRequests PortalRequest[]
   subscriptions  AdvertiserSubscription[]
@@ -517,17 +517,23 @@ model PortalRequest {
 }
 
 model DriverLocation {
-  id        String   @id @default(uuid())
-  driverId  String   @map("driver_id")
-  deviceId  String   @map("device_id")
-  latitude  Float
-  longitude Float
-  speed     Float    @default(0)
-  timestamp DateTime @default(now())
-  isSimulated Boolean @default(false) @map("is_simulated")
-  device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  driverId    String   @map("driver_id")
+  deviceId    String   @map("device_id")
+  latitude    Float
+  longitude   Float
+  speed       Float    @default(0)
+  timestamp   DateTime @default(now())
+  isSimulated Boolean  @default(false) @map("is_simulated")
+  device      Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  driver      Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
+  // V12.1.3 (B3 PATCH): UNIQUE constraint requerido por SRE para evitar
+  // crecimiento ilimitado de filas duplicadas que llevaba al backend con
+  // 512MB RAM a OOM. El hook `useBackgroundTelemetry` aplica debounce de 5
+  // minutos y la tablet envía coordenadas con timestamps únicos por ciclo.
+  // Migración previa `20260110_driver_location_unique` ejecuta dedupe.
+  @@unique([deviceId, timestamp], name: "driver_locations_device_timestamp_unique")
   @@index([deviceId, timestamp])
   @@index([driverId, timestamp])
   @@index([driverId, timestamp(sort: Desc)], map: "driver_locations_driver_id_timestamp_desc_idx")
@@ -564,14 +570,14 @@ model BiDashboardSnapshot {
   totalImpressionsMtd Int      @map("total_impressions_mtd")
   deliveryRateAvg     Float    @map("delivery_rate_avg")
   syncHealthRate      Float    @map("sync_health_rate")
-  
-  // METRICAS PARA INVERSIONISTAS (v7.5)
-  yieldPerScreen      Float    @default(0) @map("yield_per_screen")
-  arpu                Float    @default(0) @map("arpu")
-  churnRate           Float    @default(0) @map("churn_rate")
-  projectedRevenue    Float    @default(0) @map("projected_revenue")
 
-  generatedAt         DateTime @default(now()) @map("generated_at")
+  // METRICAS PARA INVERSIONISTAS (v7.5)
+  yieldPerScreen   Float @default(0) @map("yield_per_screen")
+  arpu             Float @default(0) @map("arpu")
+  churnRate        Float @default(0) @map("churn_rate")
+  projectedRevenue Float @default(0) @map("projected_revenue")
+
+  generatedAt DateTime @default(now()) @map("generated_at")
 
   @@map("bi_dashboard_snapshots")
 }
@@ -654,49 +660,56 @@ model Invoice {
 }
 
 model ActiveAd {
-  id              String         @id @default(uuid())
-  driverId        String         @map("driver_id")
-  campaignId      String         @map("campaign_id")
-  status          String         @default("ACTIVE") // ACTIVE, INACTIVE
-  driver          Driver         @relation(fields: [driverId], references: [id])
-  
+  id         String @id @default(uuid())
+  driverId   String @map("driver_id")
+  campaignId String @map("campaign_id")
+  status     String @default("ACTIVE") // ACTIVE, INACTIVE
+  driver     Driver @relation(fields: [driverId], references: [id])
+
   @@unique([driverId, campaignId])
   @@map("active_ads")
 }
 
 model Commission {
-  id              String         @id @default(uuid())
-  driverId        String         @map("driver_id")
-  amount          Float          @default(500.0)
-  sourceType      String         @map("source_type") // "ADVERTISER_SALE" | "DRIVER_REFERRAL"
-  status          String         @default("PENDING") // PENDING, APPROVED, PAID
-  createdAt       DateTime       @default(now()) @map("created_at")
-  driver          Driver         @relation(fields: [driverId], references: [id])
+  id         String   @id @default(uuid())
+  driverId   String   @map("driver_id")
+  amount     Float    @default(500.0)
+  sourceType String   @map("source_type") // "ADVERTISER_SALE" | "DRIVER_REFERRAL"
+  status     String   @default("PENDING") // PENDING, APPROVED, PAID
+  createdAt  DateTime @default(now()) @map("created_at")
+  driver     Driver   @relation(fields: [driverId], references: [id])
 
   @@map("commissions")
 }
 
 model Telemetry {
-  id              String         @id @default(uuid())
-  driverId        String         @map("driver_id")
-  coords          Unsupported("geography(Point, 4326)")
-  speed           Float
-  battery         Int            @default(100)
-  network         String         @default("4G")
-  timestamp       DateTime       @default(now())
-  driver          Driver         @relation("DriverTelemetry", fields: [driverId], references: [id])
+  id        String                                @id @default(uuid())
+  driverId  String                                @map("driver_id")
+  coords    Unsupported("geography(Point, 4326)")
+  speed     Float
+  battery   Int                                   @default(100)
+  network   String                                @default("4G")
+  timestamp DateTime                              @default(now())
+  driver    Driver                                @relation("DriverTelemetry", fields: [driverId], references: [id])
 
+  // V12.1.3 (B7 PATCH): UNIQUE constraint requerido por
+  // `telemetry.service.ts:sync()` que hace `ON CONFLICT (driver_id, timestamp)`.
+  // Sin UNIQUE, Postgres rechaza el batch entero (`there is no unique or exclusion
+  // constraint matching the ON CONFLICT specification`). La migración previa
+  // `20260110_telemetry_unique_constraint` ejecuta un dedupe y luego crea el índice.
+  @@unique([driverId, timestamp], name: "telemetry_driver_timestamp_unique")
+  @@index([driverId, timestamp(sort: Desc)], map: "idx_telemetry_driver_time")
   @@map("telemetry")
 }
 
 model Wallet {
-  id                String   @id @default(uuid())
-  driverId          String   @unique @map("driver_id")
-  availableBalance  Float    @default(0.0) @map("available_balance")
-  pendingWithdrawal Float    @default(0.0) @map("pending_withdrawal")
-  bankInfo          Json?    @map("bank_info")
-  driver            Driver   @relation(fields: [driverId], references: [id])
-  
+  id                String @id @default(uuid())
+  driverId          String @unique @map("driver_id")
+  availableBalance  Float  @default(0.0) @map("available_balance")
+  pendingWithdrawal Float  @default(0.0) @map("pending_withdrawal")
+  bankInfo          Json?  @map("bank_info")
+  driver            Driver @relation(fields: [driverId], references: [id])
+
   @@map("wallets")
 }
 
@@ -734,16 +747,16 @@ model CampaignIntent {
 /// SRE: Tabla para persistir errores operacionales (Brevo failures, balance anomalies, sync crashes).
 /// Protocolo: Todo fallo de email DEBE registrarse aquí para auditoría y retry.
 model SystemError {
-  id          String   @id @default(uuid())
-  source      String   // EMAIL, WALLET, TELEMETRY, DEVICE, SYNC
-  severity    String   @default("ERROR") // INFO, WARNING, ERROR, CRITICAL
-  message     String
-  details     String?  // Stack trace or JSON payload
-  entityId    String?  @map("entity_id") // Related device/driver/campaign ID
-  retryCount  Int      @default(0) @map("retry_count")
-  resolved    Boolean  @default(false)
-  resolvedAt  DateTime? @map("resolved_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String    @id @default(uuid())
+  source     String // EMAIL, WALLET, TELEMETRY, DEVICE, SYNC
+  severity   String    @default("ERROR") // INFO, WARNING, ERROR, CRITICAL
+  message    String
+  details    String? // Stack trace or JSON payload
+  entityId   String?   @map("entity_id") // Related device/driver/campaign ID
+  retryCount Int       @default(0) @map("retry_count")
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime? @map("resolved_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([source])
   @@index([severity])
@@ -756,18 +769,17 @@ model SystemError {
 // Replaces the in-memory Map in IdempotencyInterceptor with a persistent store.
 // Survives pod restarts, OOM kills, and horizontal scaling.
 model IdempotencyKey {
-  id         String   @id @default(cuid())
-  key        String   @unique
-  driverId   String?
-  path       String
-  method     String?
-  response   String?  // JSON-stringified response payload
-  isLocked   Boolean  @default(false)
-  createdAt  DateTime @default(now()) @map("created_at")
-  expiresAt  DateTime @map("expires_at")
+  id        String   @id @default(cuid())
+  key       String   @unique
+  driverId  String?
+  path      String
+  method    String?
+  response  String? // JSON-stringified response payload
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
 
-  @@index([createdAt])  // For TTL cleanup CRON
-  @@index([expiresAt])  // For TTL cleanup CRON
+  @@index([createdAt]) // For TTL cleanup CRON
+  @@index([expiresAt]) // For TTL cleanup CRON
   @@map("idempotency_keys")
 }
-

@@ -1,6 +1,21 @@
+-- =============================================================================
+-- ⚠️ ARCHIVO DEPRECADO — v12.1.3
+-- =============================================================================
+-- Este archivo coexistía con `views.sql` definiendo el mismo objeto
+-- `mv_active_campaigns` con columnas divergentes, provocando estados
+-- inconsistentes entre entornos.
+--
+-- **USE EXCLUSIVAMENTE `views.sql`** (el cual es cargado por
+-- `prisma.service.ts:initializeSreViews()` al iniciar la API).
+--
+-- Para mantener compat con scripts antiguos, este archivo continúa funcionando
+-- RUN-TIME (Prisma no lo lee, así que es no-op), pero su contenido se mantiene
+-- como referencia histórica únicamente. NO EJECUTAR directamente.
+-- =============================================================================
+--
 -- TAD DOOH - Optimized Materialized View for Universal Sync
 -- This view pre-calculates all campaign targets for every device/driver to avoid complex JOINs in heartbeats.
-
+--
 DROP MATERIALIZED VIEW IF EXISTS mv_active_campaigns;
 
 CREATE MATERIALIZED VIEW mv_active_campaigns AS

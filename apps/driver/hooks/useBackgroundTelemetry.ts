@@ -9,17 +9,18 @@ const POSTGREST_RPC_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/b
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
- * useBackgroundTelemetry — Dual-channel telemetry hook (v12.2.5)
+ * @deprecated v12.1.3 — usar `useTelemetry.ts` como hook único canónico.
+ * Mantenido temporalmente por compatibilidad histórica. NO MONTAR en código
+ * nuevo. La razón de la deprecación es:
+ *  - Duplica `geolocation.watchPosition` con `useTelemetry`, violando regla
+ *    #4 (un único worker GPS por dispositivo) y duplicando consumo de batería.
+ *  - Cada activación sumaba dos canales `navigator.geolocation` independientes.
  *
- * Channels:
- *  1. Supabase Realtime (Live Pings): telemetry_ping every 30s
- *  2. HTTP Batch Sync: POST /fleet/track-batch every 5 minutes
+ * Si necesitas telemetría offline-first + realtime + kill-switch, importa:
+ *     import { useTelemetry } from '../hooks/useTelemetry';
  *
- * REVENUE SHIELD v12.2.5:
- *  - HTTP 402/403 responses trigger killSwitch via usePaymentStore.setLock()
- *  - Grace period: 48h continued playback after subscription expiry when offline
- *  - Subscription status cached in localStorage for offline resilience
- *  - FORCE_KILL_SWITCH flag cached for cross-hook propagation
+ * Si necesitas el comportamiento legacy (canal realtime broadcast vía Supabase),
+ * refactorízalo al módulo `services/telemetry/` para que `useTelemetry` lo use.
  */
 const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000; // 48 hours
 const SUBSCRIPTION_CACHE_KEY = 'TAD_SUBSCRIPTION_STATUS';

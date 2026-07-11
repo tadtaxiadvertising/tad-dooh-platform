@@ -21,6 +21,14 @@ if (!BigInt.prototype.toJSON) {
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
+    // B16 PATCH (v12.1.3): fail-fast en producción si JWT_SECRET no está
+    // configurado. Sin esto, la app arranca y firma JWTs con `undefined`,
+    // permitiendo a cualquier cliente forjar tokens válidos.
+    if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+      logger.error('❌ FATAL: JWT_SECRET no configurado en producción. Abortando arranque.');
+      process.exit(1);
+    }
+
     // Forzamos el buffer de logs para capturar errores prematuros de inyección
     const app = await NestFactory.create(AppModule, {
       bufferLogs: true,

@@ -258,11 +258,27 @@ export class SyncService {
     );
 
     // 5. Formatear manifiesto
-    // Extract scheduling metadata for each campaign
+    // Extract scheduling metadata for each campaign.
+    // B2 PATCH: defensivo contra scheduleDays / scheduleHours corruptos.
+    // Si el string es null o no es JSON parseable, degradamos a [] sin
+    // romper el manifest entero (eso sería un 500 en todas las tablets).
+    const safeJsonArray = (raw: string | null | undefined): string[] => {
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        this.logger.warn(
+          `⚠️ [SYNC_V12.1.3] schedule JSON corrupto (${typeof raw}), degradando a []: ${(err as Error).message}`,
+        );
+        return [];
+      }
+    };
+
     const schedules = activeCampaigns.map(c => ({
       campaignId: c.id,
-      scheduleDays: c.scheduleDays ? JSON.parse(c.scheduleDays) : [],
-      scheduleHours: c.scheduleHours ? JSON.parse(c.scheduleHours) : [],
+      scheduleDays: safeJsonArray(c.scheduleDays as unknown as string | null),
+      scheduleHours: safeJsonArray(c.scheduleHours as unknown as string | null),
       frequencyCap: c.frequencyCap || 0,
     }));
 

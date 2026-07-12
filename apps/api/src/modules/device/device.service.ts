@@ -267,22 +267,26 @@ export class DeviceService {
 
     const { driver } = device;
 
-    // [ACTUALIZADO]: Siempre permitir reproducción sin importar el estado de suscripción
+    // [ACTUALIZADO]: Política TAD — permitir reproducción sin importar el estado de
+    // suscripción, notificando morosidad sin bloquear. Esto es defensa en profundidad
+    // pero coherente con el `SubscriptionGuard` de `device.controller.ts:41` que
+    // devuelve HTTP 402 cuando la suscripción realmente está vencida.
+    // El comportamiento real de bloqueo vive en el Guard HTTP (más estricto).
     if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
       return { blocked: false, reason: undefined };
     }
 
-    // Suscripción expirada o no pagada - Registramos pero NO bloqueamos
+    // Suscripción expirada o no pagada - Registramos pero NO bloqueamos (por política TAD)
     this.logger.warn(`⚠️ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
-    
-    // Trigger notification para administración (opcional)
+
+    // Trigger notification para administración (fire-and-forget)
     try {
       await this.financeService.notifyMorosidad(deviceId);
     } catch (e) {
       this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
     }
 
-    return { blocked: false, reason: undefined }; // IMPORTANTE: Siempre desbloqueado
+    return { blocked: false, reason: undefined }; // Importante: El Guard HTTP superior ya devuelve 402 si aplica.
   }
 
   /**

@@ -162,6 +162,9 @@ export class SyncService {
     // SRE Optimization: Pre-calculated targeting avoids complex joins in heartbeats.
     const city = device.city || 'Santiago';
 
+    // SRE Anti-OOM: LIMIT 15 en SQL — trae solo los campaign_ids necesarios desde Postgres,
+    // evitando cargar registros excesivos a la RAM del contenedor (512MB cap en EasyPanel).
+    // El .slice(0, 15) en JS (línea 232) queda como defensa en profundidad.
     const results: any[] = await this.prisma.$queryRaw`
       SELECT campaign_id FROM mv_active_campaigns
       WHERE active = true 
@@ -175,6 +178,7 @@ export class SyncService {
           assigned_hw_ids::jsonb @> ${JSON.stringify([deviceId])}::jsonb OR
           (assigned_driver_ids::jsonb @> ${JSON.stringify([driver?.id])}::jsonb AND ${!!isDriverActive})
         )
+      LIMIT 15
     `;
 
     const campaignIds = results.map(r => r.campaign_id);

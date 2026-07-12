@@ -431,6 +431,7 @@ export class CampaignService {
     try {
       // 2. MASTER SYNC (Materialized View)
       // Pre-calculated targeting avoids complex joins in heartbeats.
+      // SRE Anti-OOM: LIMIT 15 en SQL — reduce memoria trasladada desde Postgres.
       const results: any[] = await this.prisma.$queryRaw`
         SELECT campaign_id FROM mv_active_campaigns
         WHERE active = true 
@@ -444,6 +445,7 @@ export class CampaignService {
             assigned_hw_ids::jsonb @> ${JSON.stringify([hwId])}::jsonb OR
             (assigned_driver_ids::jsonb @> ${JSON.stringify([driverId])}::jsonb AND ${!!driverId})
           )
+        LIMIT 15
       `;
 
       const campaignIds = results.map(r => r.campaign_id);

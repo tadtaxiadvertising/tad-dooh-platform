@@ -183,6 +183,10 @@ export default function CheckIn() {
     }
 
     setDeviceId(id);
+    // Persist deviceId for telemetry hooks (useTelemetry, useBackgroundTelemetry)
+    // that read localStorage['TAD_DEVICE_ID'] on every batch send.
+    // Without this, page reload resets to 'unknown' → 404 Device Not Found.
+    localStorage.setItem('TAD_DEVICE_ID', id);
     onGatewayStateChange((state) => {
       setGatewayState({ ...state });
     });
@@ -392,8 +396,3 @@ function MetricBox({ label, value, icon, progress, color, size = "text-xl" }: Me
     </div>
   );
 }
-
-
-
-
-

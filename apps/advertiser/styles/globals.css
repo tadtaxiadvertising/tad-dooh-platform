@@ -1,6 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* stylelint-disable at-rule-no-unknown */
+@theme {
+  /* TAD Premium palette (migrada desde tailwind.config.js v3) */
+  --color-tad-bg: #0a0a0a;
+  --color-tad-surface: rgba(255, 255, 255, 0.05);
+  --color-tad-accent: #FFD400;
+  --color-tad-accent-hover: #e6be00;
+  --color-tad-text: #f0f0f0;
+  --color-tad-text-muted: #a0a0a0;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Animaciones migradas desde tailwind.config.js v3 */
+  --animate-spin-slow: spin-slow 10s linear infinite;
+  --animate-scan: scan 3s ease-in-out infinite;
+
+  @keyframes spin-slow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes scan {
+    0%   { top: 0;    opacity: 0; }
+    50%  {            opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+  }
+}
+/* stylelint-enable at-rule-no-unknown */
 
 @layer base {
   html {
@@ -19,13 +46,16 @@
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
   }

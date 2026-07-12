@@ -107,11 +107,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // 🛡️ SEGURIDAD y OPTIMIZACIÓN
-      delete headers['accept-encoding'];
-      headers['accept-encoding'] = 'identity';
-      delete headers['connection'];
-      headers['connection'] = 'close';
-      delete headers['content-length'];
+            delete headers['accept-encoding'];
+            headers['accept-encoding'] = 'identity';
+            delete headers['connection'];
+            headers['connection'] = 'close';
+            // NOTE: content-length se borra aquí para requests con body;
+            // será recalculado correctamente en el bloque getRawBody.
+            // Para GET/HEAD se preserva el original (típicamente undefined, inofensivo).
+            delete headers['content-length'];
 
       headers['host'] = new URL(target).host;
 
@@ -135,9 +138,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = req as any;
-      (fetchOptions as any).duplex = 'half';
-    }
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const getRawBody = require('next/dist/compiled/raw-body');
+            const rawBody = await getRawBody(req, {
+              length: req.headers['content-length'],
+              limit: '5mb',
+            });
+            fetchOptions.body = rawBody;
+            (fetchOptions.headers as Record<string, string>)['content-length'] = String(rawBody.length);
+            (fetchOptions as any).duplex = 'half';
+          } catch (bodyError: unknown) {
+            const errMsg = bodyError instanceof Error ? bodyError.message : String(bodyError);
+            console.error(`[PROXY] ❌ Body parse error: ${errMsg}`);
+            return res.status(400).json({
+              error: 'Invalid request body',
+              message: 'No se pudo leer el cuerpo de la petición — posiblemente malformado o excede 5MB.',
+              detail: errMsg,
+            });
+          }
+        }
 
     // --- REGLA DE RESILIENCIA TAD ---
     let backendResponse: Response | undefined;

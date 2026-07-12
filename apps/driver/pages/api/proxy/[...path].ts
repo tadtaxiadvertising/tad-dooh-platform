@@ -134,10 +134,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       signal: AbortSignal.timeout(60000),
     };
 
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = req as any;
-      (fetchOptions as any).duplex = 'half';
-    }
+    // ── CORRECCIÓN V12.1.4: Body forwarding robusto ──────────────────────
+        // Problema: `req as any` pasaba el stream Node.js crudo como body de fetch().
+        // Sin `content-length`, el backend NestJS podía recibir un body truncado o
+        // malinterpretado por el parser de Express/NestJS, resultando en 500.
+        //
+        // Solución: leer el body completo como Buffer con getRawBody (respetando
+        // bodyParser: false), recalcular content-length, y pasarlo como Buffer.
+        //
+        // getRawBody está disponible en Next.js (next/dist/compiled/raw-body).
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const getRawBody = require('next/dist/compiled/raw-body');
+            const rawBody = await getRawBody(req, {
+              length: req.headers['content-length'],
+              limit: '5mb',
+            });
+            fetchOptions.body = rawBody;
+            (fetchOptions.headers as Record<string, string>)['content-length'] = String(rawBody.length);
+            (fetchOptions as any).duplex = 'half';
+          } catch (bodyError: unknown) {
+            const errMsg = bodyError instanceof Error ? bodyError.message : String(bodyError);
+            console.error(`[PROXY] ❌ Body parse error: ${errMsg}`);
+            return res.status(400).json({
+              error: 'Invalid request body',
+              message: 'No se pudo leer el cuerpo de la petición — posiblemente malformado o excede 5MB.',
+              detail: errMsg,
+            });
+          }
+        }
 
     // --- REGLA DE RESILIENCIA TAD ---
     let backendResponse: Response | undefined;

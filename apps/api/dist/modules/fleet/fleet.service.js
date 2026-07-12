@@ -607,13 +607,23 @@ let FleetService = class FleetService {
             logger.warn(`⚠️ Telemetry batch with 0 points from driver [${data?.driverId ?? 'unknown'}]`);
             return { count: 0 };
         }
-        const driver = await this.prisma.driver.findUnique({
-            where: { id: data.driverId },
-            select: { id: true, subscriptionPaid: true, status: true, fullName: true }
-        });
+        const [driver, device] = await Promise.all([
+            this.prisma.driver.findUnique({
+                where: { id: data.driverId },
+                select: { id: true, subscriptionPaid: true, status: true, fullName: true },
+            }),
+            this.prisma.device.findUnique({
+                where: { deviceId: data.deviceId },
+                select: { id: true, deviceId: true },
+            }),
+        ]);
         if (!driver) {
             logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
             throw new common_1.HttpException('Driver Not Found', common_1.HttpStatus.NOT_FOUND);
+        }
+        if (!device) {
+            logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
+            throw new common_1.HttpException('Device Not Found', common_1.HttpStatus.NOT_FOUND);
         }
         if (driver.status !== business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
             logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
@@ -633,15 +643,22 @@ let FleetService = class FleetService {
         });
         logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}] (input=${telemetryData.length})`);
         if (data.points.length > 0) {
-            const lastPoint = data.points[data.points.length - 1];
-            await this.prisma.device.update({
-                where: { deviceId: data.deviceId },
-                data: {
-                    lastSeen: new Date(),
-                    lastLat: lastPoint.lat,
-                    lastLng: lastPoint.lng,
-                }
-            }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
+            const lastPoint = data.points.reduce((a, b) => (b.timestamp > a.timestamp) ? b : a, data.points[0]);
+            try {
+                await this.prisma.device.update({
+                    where: { deviceId: data.deviceId },
+                    data: {
+                        lastSeen: new Date(),
+                        lastLat: lastPoint.lat,
+                        lastLng: lastPoint.lng,
+                    }
+                });
+                logger.debug(`[FleetService] Device snapshot updated: ${data.deviceId} → (${lastPoint.lat}, ${lastPoint.lng}) @ ${new Date(lastPoint.timestamp).toISOString()}`);
+            }
+            catch (e) {
+                const errMessage = e instanceof Error ? e.message : String(e);
+                logger.error(`Failed to update device status (snapshot): ${errMessage}`);
+            }
         }
         return { count: result.count, input: telemetryData.length };
     }

@@ -721,18 +721,29 @@ export class FleetService {
       return { count: 0 };
     }
 
-    // 1. Validar existencia del conductor
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: data.driverId },
-      select: { id: true, subscriptionPaid: true, status: true, fullName: true }
-    });
+    // 1. Validar existencia del conductor Y del dispositivo (evita 500 por P2025)
+        const [driver, device] = await Promise.all([
+          this.prisma.driver.findUnique({
+            where: { id: data.driverId },
+            select: { id: true, subscriptionPaid: true, status: true, fullName: true },
+          }),
+          this.prisma.device.findUnique({
+            where: { deviceId: data.deviceId },
+            select: { id: true, deviceId: true },
+          }),
+        ]);
 
-    if (!driver) {
-      logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
-      throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
-    }
+        if (!driver) {
+          logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
+          throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
+        }
 
-    // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
+        if (!device) {
+          logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
+          throw new HttpException('Device Not Found', HttpStatus.NOT_FOUND);
+        }
+
+        // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
     if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
       logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
       throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);

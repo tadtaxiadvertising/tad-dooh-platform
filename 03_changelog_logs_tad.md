@@ -4,6 +4,16 @@
 
 ---
 
+### 🚀 FEATURE / 🔧 FIX: Resolución de Nginx Crash-Loop y 404 Assets en Player
+
+- **Cambio**: Ajuste en la configuración de Nginx y rutas de build para mapear correctamente los assets estáticos solicitados por el Service Worker, y estabilización del daemon para evitar reinicios constantes de Easypanel.
+- **Archivos tocados**:
+  - `Dockerfile.player`
+  - `apps/player/src/sw.ts`
+- **Nota Infraestructura**: Configuración de Nginx adaptada para despliegue en contenedor bajo Easypanel (Nixpacks/Docker).
+
+---
+
 ### 🚀 FEATURE / 🔧 FIX: Estabilización Definitiva del Sync Engine y Player PWA (v12.2.0)
 
 - **Cambio**: Auditoría SRE completa del pipeline de sincronización Backend ➔ Supabase Realtime ➔ Player PWA. Refactorización en 6 puntos críticos para eliminar saturación del API Gateway, memory leaks del blob cache, validar el JWT offline (anti-ghosting), y aplicar `LIMIT 15` defensivo en SQL:

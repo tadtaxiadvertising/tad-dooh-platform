@@ -20,11 +20,22 @@ let SyncController = class SyncController {
     constructor(syncService) {
         this.syncService = syncService;
     }
-    async getDeviceManifest(deviceId) {
+    async getDeviceManifest(deviceId, ifNoneMatch, res) {
         if (!deviceId) {
             throw new common_1.HttpException('DEVICE_ID_REQUIRED', common_1.HttpStatus.BAD_REQUEST);
         }
-        return this.syncService.getDeviceManifest(deviceId);
+        const manifest = await this.syncService.getDeviceManifest(deviceId);
+        if (manifest.killSwitch === true) {
+            res.setHeader('Cache-Control', 'no-store');
+            throw new common_1.HttpException(manifest, common_1.HttpStatus.PAYMENT_REQUIRED);
+        }
+        if (ifNoneMatch && ifNoneMatch === manifest.etag) {
+            res.status(common_1.HttpStatus.NOT_MODIFIED).send();
+            return;
+        }
+        res.setHeader('ETag', manifest.etag);
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+        return manifest;
     }
 };
 exports.SyncController = SyncController;
@@ -32,8 +43,10 @@ __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':deviceId'),
     __param(0, (0, common_1.Param)('deviceId')),
+    __param(1, (0, common_1.Headers)('if-none-match')),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], SyncController.prototype, "getDeviceManifest", null);
 exports.SyncController = SyncController = __decorate([

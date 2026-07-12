@@ -12,4 +12,16 @@ export declare class HealthController {
         connected: boolean;
         activeConnections?: number;
     }>;
+    checkFull(): Promise<{
+        status: string;
+        timestamp: string;
+        service: string;
+        node_env: string;
+        db: {
+            connected: boolean;
+            activeConnections?: number;
+        };
+        memory: NodeJS.MemoryUsage;
+        uptime: number;
+    }>;
 }

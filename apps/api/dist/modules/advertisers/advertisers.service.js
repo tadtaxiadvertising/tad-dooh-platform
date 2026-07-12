@@ -29,6 +29,7 @@ const mediaAssetSafeSelect = {
     version: true,
     createdAt: true,
     qrUrl: true,
+    weight: true,
 };
 let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
     constructor(prisma, configService) {

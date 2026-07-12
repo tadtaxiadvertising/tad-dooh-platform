@@ -214,6 +214,28 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
             this.logger.error(`❌ [CRON] Error en checkOfflineDevices: ${err.message}`);
         }
     }
+    async dataRetentionCleanup() {
+        this.logger.log('🧹 [CRON] Ejecutando limpieza de retención de datos...');
+        try {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const hbResult = await this.prisma.deviceHeartbeat.deleteMany({
+                where: { timestamp: { lt: thirtyDaysAgo } }
+            });
+            const ninetyDaysAgo = new Date();
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+            const anResult = await this.prisma.analyticsEvent.deleteMany({
+                where: {
+                    processed: true,
+                    occurredAt: { lt: ninetyDaysAgo }
+                }
+            });
+            this.logger.log(`✅ [CRON] Limpieza completada: ${hbResult.count} heartbeats, ${anResult.count} analytics events eliminados.`);
+        }
+        catch (err) {
+            this.logger.error(`❌ [CRON] Error en dataRetentionCleanup: ${err.message}`);
+        }
+    }
 };
 exports.MonitoringService = MonitoringService;
 __decorate([
@@ -222,6 +244,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], MonitoringService.prototype, "checkOfflineDevices", null);
+__decorate([
+    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_4AM),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], MonitoringService.prototype, "dataRetentionCleanup", null);
 exports.MonitoringService = MonitoringService = MonitoringService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,

@@ -1,8 +1,10 @@
 import { TelemetryService } from './telemetry.service';
+import { PrismaService } from '../prisma/prisma.service';
 export declare class TelemetryController {
     private readonly telemetryService;
+    private readonly prisma;
     private readonly logger;
-    constructor(telemetryService: TelemetryService);
+    constructor(telemetryService: TelemetryService, prisma: PrismaService);
     sync(payload: {
         driverId: string;
         lat: number;
@@ -22,12 +24,12 @@ export declare class TelemetryController {
     }, tabletKey?: string): Promise<{
         id: string;
         deviceId: string;
-        isSimulated: boolean;
-        lat: number | null;
-        lng: number | null;
         eventType: string;
         videoId: string;
+        lat: number | null;
+        lng: number | null;
         timestamp: Date;
+        isSimulated: boolean;
         verified: boolean;
     } | {
         success: boolean;

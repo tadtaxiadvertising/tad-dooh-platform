@@ -125,7 +125,23 @@ export default function MapView({
         
         const position: [number, number] = [latitude, longitude];
         const isSelected = selectedId === item.id;
-        const isOnline = item.status === 'online' || item.online === true;
+        // ALL-SEEING EYE PATCH (v12.1.3, MAP-SPEC-2026):
+        // El backend `FleetService.getFleetMap()` retorna `isOnline: boolean`
+        // y `status: SystemStatus` (enum: 'OPERATIVO' | 'PENDIENTE_PAGO' |
+        // 'BLOQUEADO'), NUNCA `status: 'online'`. La versión anterior evaluaba
+        // `item.status === 'online'`, que es falso para todos los registros,
+        // por lo que los marcadores pintaban siempre rojo (offline),
+        // rompiendo la lógica binaria MAP-SPEC-2026 (verde TAD = online,
+        // rojo TAD = offline).
+        //
+        // Provincias de datos aceptadas:
+        //  - baseline REST (`/tracking/baseline`):   { isOnline, status }
+        //  - realtime ping (`upsertTelemetryPing`):  { isOnline: true }
+        //  - legacy `TaxiData`:                       { status: 'online' }
+        const isOnline =
+          !!item.isOnline ||
+          item.online === true ||
+          String(item.status).toLowerCase() === 'online';
         
         if (currentMode) {
           // Heatmap mode: show density with circle markers

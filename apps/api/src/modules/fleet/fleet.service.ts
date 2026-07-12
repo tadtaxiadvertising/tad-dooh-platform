@@ -758,16 +758,36 @@ export class FleetService {
     logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}] (input=${telemetryData.length})`);
 
     // 4. Update Device 'lastSeen' and current position (idempotente)
+    // ALL-SEEING EYE PATCH (v12.1.3): antes tomábamos
+    // `data.points[data.points.length - 1]` como último punto, pero tras un
+    // período offline el buffer de IndexedDB no garantiza order cronológico
+    // estricto. Eso dejaba `Device.lastLat/lastLng` apuntando a un punto
+    // intermedio, no al más reciente — el Admin Map mostraba posiciones
+    // congeladas o retrocedidas (violación MAP-SPEC-2026).
+    //
+    // Ahora reducimos por `timestamp` máximo. `createMany` no se ve afectado
+    // porque sigue recibiendo el arreglo completo (historial). No tocamos
+    // `skipDuplicates: true` ni la transacción del WalletService (Regla #1).
     if (data.points.length > 0) {
-      const lastPoint = data.points[data.points.length - 1];
-      await this.prisma.device.update({
-        where: { deviceId: data.deviceId },
-        data: {
-          lastSeen: new Date(),
-          lastLat: lastPoint.lat,
-          lastLng: lastPoint.lng,
-        }
-      }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
+      const lastPoint = data.points.reduce((a, b) =>
+        (b.timestamp > a.timestamp) ? b : a
+      , data.points[0]);
+      try {
+        await this.prisma.device.update({
+          where: { deviceId: data.deviceId },
+          data: {
+            lastSeen: new Date(),
+            lastLat: lastPoint.lat,
+            lastLng: lastPoint.lng,
+          }
+        });
+        logger.debug(`[FleetService] Device snapshot updated: ${data.deviceId} → (${lastPoint.lat}, ${lastPoint.lng}) @ ${new Date(lastPoint.timestamp).toISOString()}`);
+      } catch (e: unknown) {
+        const errMessage = e instanceof Error ? e.message : String(e);
+        // Nunca romper el acknowledgment del batch por una falla del snapshot —
+        // el historial ya quedó persistido en `DriverLocation`.
+        logger.error(`Failed to update device status (snapshot): ${errMessage}`);
+      }
     }
 
     return { count: result.count, input: telemetryData.length };

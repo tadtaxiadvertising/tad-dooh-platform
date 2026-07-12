@@ -4,6 +4,17 @@
 
 ---
 
+### 🔧 FIX: Proxy Admin Dashboard 500 en `/api/proxy/campaigns` — Resiliencia V12.1.4b
+
+- **Cambio**: El proxy del Admin Dashboard (`apps/admin/pages/api/proxy/[...path].ts`) sufría el mismo defecto que el proxy del driver antes de V12.1.4 — pasaba `req as any` como body de `fetch()` sin recalcular `content-length`. Se replicó el fix del driver:
+  1. **Body forwarding robusto**: Se reemplazó `fetchOptions.body = req as any` por `getRawBody` de `next/dist/compiled/raw-body`, que lee el stream a Buffer, recalcula `content-length` correcto, y devuelve 400 controlado si el body excede 5 MB.
+  2. **Documentación de content-length**: Se documentó que `delete headers['content-length']` en `getForwardHeaders()` es intencional para requests con body (se recalcula en el bloque `getRawBody`); para GETs el header es típicamente `undefined` y su ausencia es inofensiva.
+- **Archivos tocados**:
+  - `apps/admin/pages/api/proxy/[...path].ts`
+- **Nota Infraestructura**: Tras redeploy de `tad-dashboard` (Admin), el endpoint `GET /api/proxy/campaigns` deja de tirar 500. Si el 500 persiste tras el redeploy, el origen está en el backend NestJS (`CampaignService.getAllCampaigns()` → `prisma.campaign.findMany` con `include: { mediaAssets, media }`), posiblemente por una columna fantasma en el include o relación que no existe en el schema actual de Prisma — revisar con `npx prisma validate` y comparar `mediaAssetSafeSelect` contra el schema.
+
+---
+
 ### 🔧 FIX: Estabilización de PWA Service Worker y API Proxy (Telemetría) — OPERACIÓN RESILIENCIA V12
 
 - **Cambio**: Tres correcciones quirúrgicas para eliminar los dos errores críticos que bloqueaban la PWA y la telemetría en producción:

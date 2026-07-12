@@ -16,7 +16,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       const separator = url.includes('?') ? '&' : '?';
       url = `${url}${separator}connection_limit=5`;
     } else if (url && url.includes('connection_limit=')) {
-      const match = url.match(/connection_limit=(\d+)/);
+      const match = url.match(/connection_limit=(\\d+)/);
       if (match && parseInt(match[1]) > 10) {
         warnMsg = `⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`;
       }
@@ -90,9 +90,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
 
       const sql = fs.readFileSync(viewsFile, 'utf8');
-      const queries = sql.split(';').map((q: string) => q.trim()).filter((q: string) => q.length > 0);
 
-      for (const query of queries) {
+      // PgBouncer (Supabase Pooler) no soporta multi-statement; dividimos
+      // el SQL en statements individuales respetando bloques PL/pgSQL
+      // con dollar-quoted strings ($$...$$).
+      const statements = this.splitSqlStatements(sql);
+
+      for (const query of statements) {
         await this.$executeRawUnsafe(query).catch(e => {
           if (!e.message.includes('already exists')) {
             this.logger.error(`Error SQL en vista: ${e.message}`);
@@ -101,8 +105,37 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
       this.logger.log('✅ Master Sync Views configuradas.');
     } catch (viewError) {
-      this.logger.error(`❌ Fallo al cargar script de vistas: ${viewError.message}`);
+      this.logger.error(`❌ Fallo al cargar script de vistas: ${(viewError as Error).message}`);
     }
+  }
+
+  /**
+   * Divide SQL en statements individuales respetando bloques de código
+   * PL/pgSQL delimitados por $$ (dollar-quoted strings). El split simple
+   * por `;` rompe definiciones de función en medio (CREATE FUNCTION ... $$).
+   */
+  private splitSqlStatements(sql: string): string[] {
+    const statements: string[] = [];
+    let current = '';
+    let dollarDepth = 0;
+    for (let i = 0; i < sql.length; i++) {
+      const c = sql[i];
+      current += c;
+      // Track dollar-quote depth: "$$" toggles inside/outside PL block
+      if (c === '$' && i + 1 < sql.length && sql[i + 1] === '$') {
+        dollarDepth++;
+        i++;
+        current += sql[i];
+      } else if (c === ';' && dollarDepth % 2 === 0) {
+        // Semicolon outside dollar-quoted block → statement boundary
+        const trimmed = current.replace(/;\s*$/, '').trim();
+        if (trimmed.length > 0) statements.push(trimmed + ';');
+        current = '';
+      }
+    }
+    const trimmed = current.trim();
+    if (trimmed.length > 0) statements.push(trimmed);
+    return statements;
   }
 
   // REGLA SRE: Cerrar conexiones zombie al re-desplegar en EasyPanel

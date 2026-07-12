@@ -18,6 +18,21 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const device_service_1 = require("./device.service");
 const business_rules_1 = require("../../common/constants/business-rules");
+const KIOSK_COMMAND_TYPES = [
+    'FORCE_SYNC',
+    'SCREEN_ON',
+    'SCREEN_OFF',
+    'SET_BRIGHTNESS',
+    'SET_VOLUME',
+    'MUTE',
+    'UNMUTE',
+    'LOCK_KIOSK',
+    'UNLOCK_KIOSK',
+    'REBOOT',
+    'RESTART_APP',
+    'ENABLE_MOTION',
+    'DISABLE_MOTION',
+];
 let DeviceAdminController = DeviceAdminController_1 = class DeviceAdminController {
     constructor(prisma, deviceService) {
         this.prisma = prisma;
@@ -234,6 +249,55 @@ let DeviceAdminController = DeviceAdminController_1 = class DeviceAdminControlle
         });
         return { success: true, message: 'Perfil actualizado', device: updated };
     }
+    async sendDeviceCommand(deviceId, body) {
+        if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
+            throw new common_1.BadRequestException(`Invalid command type: ${body.commandType}. Valid types: ${KIOSK_COMMAND_TYPES.join(', ')}`);
+        }
+        const device = await this.prisma.device.findFirst({
+            where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+        });
+        if (!device)
+            throw new common_1.BadRequestException('Dispositivo no encontrado');
+        const command = await this.prisma.deviceCommand.create({
+            data: {
+                deviceId: device.id,
+                commandType: body.commandType,
+                commandParams: body.params ? JSON.stringify(body.params) : null,
+                status: 'PENDING',
+                expiresAt: new Date(Date.now() + business_rules_1.BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+            },
+        });
+        this.logger.log(`📤 Command ${body.commandType} queued for device ${device.deviceId}`);
+        return { success: true, command };
+    }
+    async broadcastCommand(body) {
+        if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
+            throw new common_1.BadRequestException(`Invalid command type: ${body.commandType}`);
+        }
+        const where = { status: business_rules_1.BUSINESS_RULES.STATUS.DEVICE.ACTIVE };
+        if (body.city)
+            where.city = body.city;
+        if (body.fleet)
+            where.fleet = body.fleet;
+        const devices = await this.prisma.device.findMany({
+            where,
+            select: { id: true, deviceId: true },
+        });
+        if (devices.length === 0) {
+            return { success: false, message: 'No devices found for this filter' };
+        }
+        const commands = await this.prisma.deviceCommand.createMany({
+            data: devices.map(d => ({
+                deviceId: d.id,
+                commandType: body.commandType,
+                commandParams: body.params ? JSON.stringify(body.params) : null,
+                status: 'PENDING',
+                expiresAt: new Date(Date.now() + business_rules_1.BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+            })),
+        });
+        this.logger.log(`📤 Broadcast ${body.commandType} to ${devices.length} devices`);
+        return { success: true, count: commands.count, commandType: body.commandType };
+    }
 };
 exports.DeviceAdminController = DeviceAdminController;
 __decorate([
@@ -308,6 +372,21 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DeviceAdminController.prototype, "updateDeviceProfile", null);
+__decorate([
+    (0, common_1.Post)(':deviceId/command'),
+    __param(0, (0, common_1.Param)('deviceId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], DeviceAdminController.prototype, "sendDeviceCommand", null);
+__decorate([
+    (0, common_1.Post)('broadcast'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DeviceAdminController.prototype, "broadcastCommand", null);
 exports.DeviceAdminController = DeviceAdminController = DeviceAdminController_1 = __decorate([
     (0, common_1.Controller)('devices'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,

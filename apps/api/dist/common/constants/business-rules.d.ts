@@ -15,6 +15,7 @@ export declare const BUSINESS_RULES: {
             readonly INITIAL: "PENDIENTE_PAGO";
             readonly ACTIVE: "OPERATIVO";
             readonly SUSPENDED: "BLOQUEADO";
+            readonly BLOCKED: "BLOQUEADO";
             readonly ONBOARDING: {
                 readonly TOS_PENDING: "TOS_PENDING";
                 readonly READY: "READY";
@@ -35,6 +36,7 @@ export declare const BUSINESS_RULES: {
         readonly DEVICE: {
             readonly ACTIVE: "OPERATIVO";
             readonly SUSPENDED: "BLOQUEADO";
+            readonly BLOCKED: "BLOQUEADO";
             readonly INITIAL: "PENDIENTE_PAGO";
         };
     };
@@ -58,8 +60,10 @@ export declare const BUSINESS_RULES: {
             readonly penalty: 0;
         };
     };
+    readonly PENALTY_THRESHOLD_MONTHS: 2;
     readonly COMMAND_TTL_DAYS: 7;
     readonly REFERRAL_RETENTION_RATE: 0.1;
+    readonly CHURN_RATE_DEFAULT: 0.045;
 };
 export type BusinessRules = typeof BUSINESS_RULES;
 export declare const BCRYPT_ROUNDS: 10;

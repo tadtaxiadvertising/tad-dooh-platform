@@ -36,6 +36,7 @@ const mediaAssetSafeSelect = {
     version: true,
     createdAt: true,
     qrUrl: true,
+    weight: true,
 };
 let CampaignController = class CampaignController {
     constructor(campaignService, prisma, mediaService, videoGenerator) {

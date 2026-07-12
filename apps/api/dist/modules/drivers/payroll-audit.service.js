@@ -60,13 +60,13 @@ let PayrollAuditService = PayrollAuditService_1 = class PayrollAuditService {
         });
         if (!driver)
             return { amount, penaltyApplied: false, penaltyAmount: 0 };
-        if (driver.consecutiveMonthsUnderGoal >= 2) {
+        if (driver.consecutiveMonthsUnderGoal >= business_rules_1.BUSINESS_RULES.PENALTY_THRESHOLD_MONTHS) {
             const penaltyRate = business_rules_1.BUSINESS_RULES.LEVELS.BASE.penalty;
             const finalAmount = amount * (1 - penaltyRate);
             return {
                 amount: finalAmount,
                 penaltyApplied: true,
-                penaltyAmount: amount * penaltyRate
+                penaltyAmount: amount * penaltyRate,
             };
         }
         return { amount, penaltyApplied: false, penaltyAmount: 0 };

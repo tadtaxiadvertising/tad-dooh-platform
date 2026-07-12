@@ -9,11 +9,13 @@ export declare class MediaController {
     }>;
     registerBypassed(body: any): Promise<{
         fileSize: number;
-        id: string;
-        name: string | null;
         status: string;
+        name: string | null;
+        id: string;
         createdAt: Date;
         filename: string | null;
+        url: string | null;
+        qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -22,13 +24,11 @@ export declare class MediaController {
         width: number | null;
         height: number | null;
         storageKey: string | null;
-        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
         campaign_id: string | null;
-        qrUrl: string | null;
     }>;
     getMedia(): Promise<{
         id: string;
@@ -69,11 +69,13 @@ export declare class MediaController {
         qrUrl: string;
     }): Promise<{
         fileSize: number;
-        id: string;
-        name: string | null;
         status: string;
+        name: string | null;
+        id: string;
         createdAt: Date;
         filename: string | null;
+        url: string | null;
+        qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -82,12 +84,10 @@ export declare class MediaController {
         width: number | null;
         height: number | null;
         storageKey: string | null;
-        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
         campaign_id: string | null;
-        qrUrl: string | null;
     }>;
 }

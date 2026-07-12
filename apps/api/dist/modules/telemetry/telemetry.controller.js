@@ -17,13 +17,29 @@ exports.TelemetryController = void 0;
 const common_1 = require("@nestjs/common");
 const telemetry_service_1 = require("./telemetry.service");
 const public_decorator_1 = require("../auth/decorators/public.decorator");
+const prisma_service_1 = require("../prisma/prisma.service");
 let TelemetryController = TelemetryController_1 = class TelemetryController {
-    constructor(telemetryService) {
+    constructor(telemetryService, prisma) {
         this.telemetryService = telemetryService;
+        this.prisma = prisma;
         this.logger = new common_1.Logger(TelemetryController_1.name);
     }
     async sync(payload) {
-        this.telemetryService.sync(payload).catch(err => console.error('Telemetry sync error', err));
+        if (!Array.isArray(payload) || payload.length === 0) {
+            throw new common_1.BadRequestException('EMPTY_PAYLOAD');
+        }
+        const headDriverId = payload[0]?.driverId;
+        if (!headDriverId) {
+            throw new common_1.BadRequestException('MISSING_DRIVER_ID');
+        }
+        const driver = await this.prisma.driver.findUnique({
+            where: { id: headDriverId },
+            select: { id: true },
+        });
+        if (!driver) {
+            throw new common_1.BadRequestException('DRIVER_NOT_FOUND');
+        }
+        this.telemetryService.sync(payload).catch(err => this.logger.error(`Telemetry sync error: ${err.message}`));
         return { success: true };
     }
     async recordPlayback(payload, tabletKey) {
@@ -121,6 +137,7 @@ __decorate([
 ], TelemetryController.prototype, "recordPlaybackBatch", null);
 exports.TelemetryController = TelemetryController = TelemetryController_1 = __decorate([
     (0, common_1.Controller)('telemetry'),
-    __metadata("design:paramtypes", [telemetry_service_1.TelemetryService])
+    __metadata("design:paramtypes", [telemetry_service_1.TelemetryService,
+        prisma_service_1.PrismaService])
 ], TelemetryController);
 //# sourceMappingURL=telemetry.controller.js.map

@@ -376,11 +376,28 @@ let FinanceService = FinanceService_1 = class FinanceService {
         };
         return this.generateInvoiceTemplate(invoiceData);
     }
+    sanitizeCsvField(field) {
+        if (field == null)
+            return '';
+        let str = String(field);
+        if (/^[=+\-@\t\r]/.test(str)) {
+            str = "'" + str;
+        }
+        str = str.replace(/"/g, '""');
+        if (/[",\n\r]/.test(str)) {
+            str = `"${str}"`;
+        }
+        return str;
+    }
     async exportPayrollCsv(month, year) {
         const data = await this.calculateMonthlyPayroll(month, year);
         let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
         data.forEach(d => {
-            csv += `${d.driverId},${d.driverName},${d.taxiNumber || 'N/A'},${d.gpsPoints},RD$ ${d.referralBonus},${d.activeAds},RD$ ${d.adIncome},RD$ ${d.totalAmount}\n`;
+            const row = [
+                d.driverId, d.driverName, d.taxiNumber || 'N/A', d.gpsPoints,
+                `RD$ ${d.referralBonus}`, d.activeAds, `RD$ ${d.adIncome}`, `RD$ ${d.totalAmount}`
+            ].map(f => this.sanitizeCsvField(f)).join(',');
+            csv += `${row}\n`;
         });
         return csv;
     }
@@ -404,25 +421,31 @@ let FinanceService = FinanceService_1 = class FinanceService {
         const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
         const total = monthlyBase * diffMonths;
         let csv = 'Detalle de Facturación - TAD DOOH\n';
-        csv += `Campaña,${campaign.name}\n`;
-        csv += `Cliente,${campaign.advertiser}\n`;
-        csv += `Periodo,${campaign.startDate.toLocaleDateString()} - ${campaign.endDate.toLocaleDateString()}\n`;
-        csv += `Meses,${diffMonths}\n`;
-        csv += `Impactos Totales,${impressions}\n`;
-        csv += `Monto Total,RD$ ${total}\n\n`;
-        csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
-        campaign.media.forEach(m => {
+        csv += `Campaña,${this.sanitizeCsvField(campaign.name)}\n`;
+        csv += `Cliente,${this.sanitizeCsvField(campaign.advertiser)}\n`;
+        csv += `Periodo,${this.sanitizeCsvField(campaign.startDate.toLocaleDateString())} - ${this.sanitizeCsvField(campaign.endDate.toLocaleDateString())}\n`;
+        csv += `Meses,${this.sanitizeCsvField(diffMonths)}\n`;
+        csv += `Impactos Totales,${this.sanitizeCsvField(impressions)}\n`;
+        csv += `Monto Total,${this.sanitizeCsvField(`RD$ ${total}`)}\n\n`;
+        const mediaRows = campaign.media.map(m => {
             const dur = m.durationSeconds || 30;
             const blocks = Math.ceil(dur / 30);
-            csv += `${m.id},${m.originalFilename || m.filename || 'N/A'},${dur},${blocks},RD$ ${blocks * business_rules_1.BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}\n`;
+            return [
+                m.id, m.originalFilename || m.filename || 'N/A', dur, blocks, `RD$ ${blocks * business_rules_1.BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}`
+            ].map(f => this.sanitizeCsvField(f)).join(',');
         });
+        csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
+        mediaRows.forEach(row => { csv += `${row}\n`; });
         return csv;
     }
     async exportCampaignsCsv() {
         const data = await this.getCampaignBillingReport();
         let csv = 'ID Campaña,Nombre Campaña,Estado,Taxis Asignados,Impactos Reales,Ingreso Proyectado (RD$)\n';
         data.forEach(c => {
-            csv += `${c.campaignId},${c.campaignName},${c.status},${c.assignedTaxis},${c.totalImpressions},${c.estimatedRevenue}\n`;
+            const row = [
+                c.campaignId, c.campaignName, c.status, c.assignedTaxis, c.totalImpressions, c.estimatedRevenue
+            ].map(f => this.sanitizeCsvField(f)).join(',');
+            csv += `${row}\n`;
         });
         return csv;
     }

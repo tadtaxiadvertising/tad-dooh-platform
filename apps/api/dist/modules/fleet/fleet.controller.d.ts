@@ -17,8 +17,8 @@ export declare class FleetController {
         driver_name: string;
         last_playback: Date;
         deviceId: string;
-        taxiNumber: string;
         city: string;
+        taxiNumber: string;
         lastHeartbeat: Date;
         batteryLevel: number;
         storageUsed: bigint;
@@ -151,15 +151,15 @@ export declare class FleetController {
         type: string;
         params?: any;
     }): Promise<{
-        result: string | null;
-        id: string;
-        deviceId: string;
         status: string;
+        id: string;
         createdAt: Date;
+        expiresAt: Date | null;
+        result: string | null;
+        deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
-        expiresAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
         type: string;
@@ -254,5 +254,11 @@ export declare class FleetController {
             };
         };
     }[]>;
-    trackBatch(data: TrackBatchDto): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    trackBatch(data: TrackBatchDto): Promise<{
+        count: number;
+        input?: undefined;
+    } | {
+        count: number;
+        input: number;
+    }>;
 }

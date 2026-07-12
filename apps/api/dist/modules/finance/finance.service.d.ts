@@ -17,10 +17,10 @@ export declare class FinanceService {
     }>;
     checkHighDelinquency(targetDate?: Date): Promise<void>;
     calculateMonthlyPayroll(month: number, year: number): Promise<({
-        driverId: any;
-        driverName: any;
-        driverPhone: any;
-        taxiNumber: any;
+        driverId: string;
+        driverName: string;
+        driverPhone: string;
+        taxiNumber: string;
         activeAds: number;
         adIncome: number;
         baseCommission: number;
@@ -34,7 +34,7 @@ export declare class FinanceService {
         reference: string;
         error?: undefined;
     } | {
-        driverId: any;
+        driverId: string;
         driverName: any;
         driverPhone: any;
         taxiNumber: string;
@@ -61,15 +61,15 @@ export declare class FinanceService {
         message?: undefined;
     }>;
     processPayment(driverId: string, month: number, year: number, reference: string): Promise<{
-        id: string;
         status: string;
-        createdAt: Date;
+        id: string;
         driverId: string;
-        activeAds: number;
+        createdAt: Date;
         amount: number;
+        activeAds: number;
+        paidAt: Date | null;
         month: number;
         year: number;
-        paidAt: Date | null;
         referenceNum: string | null;
         penaltyApplied: boolean;
         penaltyPercentage: number;
@@ -85,6 +85,7 @@ export declare class FinanceService {
         status: string;
     }[]>;
     generateInvoiceHtml(campaignId: string): Promise<string>;
+    private sanitizeCsvField;
     exportPayrollCsv(month: number, year: number): Promise<string>;
     exportCampaignCsv(campaignId: string): Promise<string>;
     exportCampaignsCsv(): Promise<string>;
@@ -100,17 +101,17 @@ export declare class FinanceService {
         note?: string;
         status?: string;
     }): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         category: string;
-        entityId: string | null;
-        reference: string | null;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
+        entityId: string | null;
+        netAmount: number;
+        reference: string | null;
         note: string | null;
     }>;
     getFinancialSummary(): Promise<{
@@ -135,17 +136,17 @@ export declare class FinanceService {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         category: string;
-        entityId: string | null;
-        reference: string | null;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
+        entityId: string | null;
+        netAmount: number;
+        reference: string | null;
         note: string | null;
     }[]>;
     private generateInvoiceTemplate;

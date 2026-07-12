@@ -24,7 +24,7 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             url = `${url}${separator}connection_limit=5`;
         }
         else if (url && url.includes('connection_limit=')) {
-            const match = url.match(/connection_limit=(\d+)/);
+            const match = url.match(/connection_limit=(\\d+)/);
             if (match && parseInt(match[1]) > 10) {
                 warnMsg = `⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`;
             }
@@ -80,8 +80,8 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
                 return;
             }
             const sql = fs.readFileSync(viewsFile, 'utf8');
-            const queries = sql.split(';').map((q) => q.trim()).filter((q) => q.length > 0);
-            for (const query of queries) {
+            const statements = this.splitSqlStatements(sql);
+            for (const query of statements) {
                 await this.$executeRawUnsafe(query).catch(e => {
                     if (!e.message.includes('already exists')) {
                         this.logger.error(`Error SQL en vista: ${e.message}`);
@@ -93,6 +93,30 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         catch (viewError) {
             this.logger.error(`❌ Fallo al cargar script de vistas: ${viewError.message}`);
         }
+    }
+    splitSqlStatements(sql) {
+        const statements = [];
+        let current = '';
+        let dollarDepth = 0;
+        for (let i = 0; i < sql.length; i++) {
+            const c = sql[i];
+            current += c;
+            if (c === '$' && i + 1 < sql.length && sql[i + 1] === '$') {
+                dollarDepth++;
+                i++;
+                current += sql[i];
+            }
+            else if (c === ';' && dollarDepth % 2 === 0) {
+                const trimmed = current.replace(/;\s*$/, '').trim();
+                if (trimmed.length > 0)
+                    statements.push(trimmed + ';');
+                current = '';
+            }
+        }
+        const trimmed = current.trim();
+        if (trimmed.length > 0)
+            statements.push(trimmed);
+        return statements;
     }
     async onModuleDestroy() {
         this.logger.log('🔌 Cierre de conexiones al Pooler solicitado (Shutdown/Redeploy)...');

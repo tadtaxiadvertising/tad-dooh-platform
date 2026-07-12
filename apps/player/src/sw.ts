@@ -10,16 +10,29 @@ const CACHE_NAME = 'tad-player-v1';
 const VIDEO_CACHE = 'tad-player-videos-v1';
 const SHELL_CACHE = 'tad-player-shell-v1';
 
+// Shell assets — only cache the app shell (HTML references hashed CSS/JS).
+// Vite emits hashed filenames (e.g. main-6jpdjePn.css) that change per build,
+// so we must NOT hardcode /assets/player.css here — it doesn't exist and
+// causes cache.addAll() to reject, breaking the SW install.
+// The fetch handler below caches hashed assets on-demand via SWR.
 const SHELL_ASSETS = [
   '/',
   '/index.html',
-  '/assets/player.css',
 ];
 
-// Install: cache the shell assets
+// Install: cache the shell assets. Use individual puts (not addAll) so that
+// a single 404 doesn't abort the entire install.
 self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then(cache => cache.addAll(SHELL_ASSETS))
+    caches.open(SHELL_CACHE).then(cache =>
+      Promise.allSettled(
+        SHELL_ASSETS.map(asset =>
+          fetch(asset, { cache: 'no-cache' })
+            .then(resp => resp.ok ? cache.put(asset, resp.clone()) : null)
+            .catch(() => null) // tolerate transient failures
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

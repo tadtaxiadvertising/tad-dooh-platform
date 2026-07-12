@@ -1,10 +1,32 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-06-29
+> **Última Actualización**: 2026-07-11
+
+---
+
+### 🚀 FEATURE / 🔧 FIX: Estabilización Definitiva del Sync Engine y Player PWA (v12.2.0)
+
+- **Cambio**: Auditoría SRE completa del pipeline de sincronización Backend ➔ Supabase Realtime ➔ Player PWA. Refactorización en 6 puntos críticos para eliminar saturación del API Gateway, memory leaks del blob cache, validar el JWT offline (anti-ghosting), y aplicar `LIMIT 15` defensivo en SQL:
+  1. **Fix #5 — Anti-OOM (Backend)**: Añadido `LIMIT 15` directamente en los `$queryRaw` de `mv_active_campaigns` en `sync.service.ts:178` y `campaign.service.ts:448`. El slice en JS (`.slice(0, 15)`) queda como defensa en profundidad. Reduce uso de RAM en el contenedor de 512MB.
+  2. **Fix #1 — Filtrado de WAKE_UP_CALL por targets (Player)**: El listener del canal `fleet_sync` ahora inspecciona `payload.targets` y lo descarta silenciosamente cuando la lista está presente pero este `deviceId` no está incluido. Esto evita que las 100 tablets de la flota ejecuten `executeFullSync` simultáneo cuando solo 5 fueron el verdadero destino de un `campaign_updated`/`media_asset_added`.
+  3. **Fix #2 — Debounce 5s en WAKE_UP_CALL (Player)**: Cuando eventos legítimos pasan el filtro y llegan en ráfagas, `sync-manager.ts:230` aplica un timer de 5s (`WAKE_UP_DEBOUNCE_MS`). Solo el último dispara `executeFullSync()`, previniendo peticiones duplicadas a `/api/v1/device/sync`.
+  4. **Fix #4 — JWT Offline Self-Destruct (Player)**: Nuevo método `persistOfflineLicense()` (línea 281) guarda `licenseToken` + `expiresAt` en `localStorage` cada vez que llega un sync exitoso. Nuevo `startOfflineLicenseValidator()` (línea 297) evalúa cada 5 min si el JWT expiró: si está offline y expiró → activa KillSwitch con motivo `OFFLINE_LICENSE_EXPIRED` (pantalla negra "Conecte a Internet para Validar"), cerrando la ventana de evasión por morosidad que existía (un chofer podía apagar datos y seguir reproduciendo indefinidamente).
+  5. **Fix #6 — revokeObjectURL en eviction (Player)**: `cache-manager.ts` ahora mantiene un `Map<url, objectUrl>` de blob URLs activos. Cada llamada a `getVideoSource()` revoca el URL anterior antes de crear uno nuevo y el método `evict()` libera el blob antes de borrar el registro — eliminando el memory leak gradual que acumulaba RAM de la tablet tras múltiples syncs.
+  6. **Fix #3 — Documentación de consistencia kill-switch (Backend)**: Comentarios actualizados en `device.service.ts:checkSubscriptionStatus()` clarificando que el bloqueo real vive en el `SubscriptionGuard` HTTP (`device.controller.ts:41` que devuelve 402). El service queda como defensa en profundidad sin cambiar el comportamiento de negocio.
+- **Archivos tocados**:
+  - `apps/api/src/modules/sync/sync.service.ts`
+  - `apps/api/src/modules/campaign/campaign.service.ts`
+  - `apps/api/src/modules/device/device.service.ts`
+  - `apps/player/src/sync-manager.ts`
+  - `apps/player/src/cache-manager.ts`
+  - `implementation_plan_sync_engine.md` (nuevo, en raíz)
+- **Nota Infraestructura**: El fix #4 introduce persistencia del JWT en `localStorage` (clave `TAD_OFFLINE_LICENSE`). Si la fecha del sistema del tablet se adelanta manualmente podría disparar el SELF_DESTRUCT espuriamente — la primera vez que se reinicie vía EasyPanel deploy se refrescará la licencia y se corregirá. El `LIMIT 15` en SQL requiere la materialized view `mv_active_campaigns` inicializada (ver `13_prisma_schema_database_architecture.md §7`); si el primer deploy tras este cambio da error, ejecutar manualmente `REFRESH MATERIALIZED VIEW mv_active_campaigns;` en Supabase SQL Editor.
+- **Validación SRE**: `apps/api/node_modules/.bin/tsc --noEmit -p tsconfig.json` → 0 errores introducidos. `apps/player/tsc --noEmit` → 11 errores, **todos preexistentes** en `config.ts` por `import.meta.env` (no relacionado con estos fixes). Criterios de éxito cumplidos: Offline-First Resilience (Fix #4), Anti-OOM (Fix #5), Sincronización sin saturación (Fix #1+#2), Regla de 15 Slots SQL-enforced (Fix #5 + slice preexistente).
 
 ---
 
 ### 🚀 FEATURE / 🔧 FIX: Implementación de Cache ETag y Telemetría GPS Resiliente en Batch
+
 - **Cambio**: Refactorización del flujo de sincronización para soportar cabeceras HTTP 304 (If-None-Match), previniendo consultas redundantes a la base de datos en NestJS. Reescritura del hook de telemetría del driver para persistir coordenadas localmente en IndexedDB ante caídas de red 4G y envío masivo (batching) saltándose el gateway API directo hacia las funciones RPC de Supabase (PostgREST). Implementación estricta de reescritura de URLs hacia Cloudflare (media.tad.do) y límite duro de 15 slots de reproducción simultánea en el manifiesto.
 - **Archivos tocados**:
   - `apps/api/src/modules/sync/sync.service.ts`

@@ -11,6 +11,11 @@ const STORE_NAME = 'videos';
 
 export class CacheManager {
   private dbReady: Promise<IDBDatabase>;
+  // Fix #6: Track active blob URLs to revoke them when assets are evicted.
+  // Without this, blob URLs created via URL.createObjectURL() leak memory
+  // across multiple sync cycles. The browser keeps the underlying blob alive
+  // until either the URL is revoked or the document is unloaded.
+  private activeObjectUrls = new Map<string, string>();
 
   constructor() {
     this.dbReady = this.openDB();
@@ -38,7 +43,7 @@ export class CacheManager {
         // Integrity mismatch — evict stale entry
         await this.evict(asset.url);
       } else {
-        return URL.createObjectURL(cached.blob);
+        return this.trackBlobUrl(asset.url, cached.blob);
       }
     }
 
@@ -50,7 +55,7 @@ export class CacheManager {
         const blob = await response.blob();
         if (blob.size <= env.MAX_VIDEO_SIZE_BYTES) {
           await this.saveToIndexedDB(asset, blob);
-          return URL.createObjectURL(blob);
+          return this.trackBlobUrl(asset.url, blob);
         }
       }
     } catch {
@@ -69,7 +74,7 @@ export class CacheManager {
           const cache = await caches.open('tad-player-videos');
           await cache.put(asset.url, new Response(blob));
         } catch { /* non-critical */ }
-        return URL.createObjectURL(blob);
+        return this.trackBlobUrl(asset.url, blob);
       }
     } catch (err) {
       console.error(`[CacheManager] Network fetch failed for ${asset.filename}:`, err);
@@ -77,6 +82,16 @@ export class CacheManager {
     }
 
     throw new Error(`No video source available for ${asset.filename}`);
+  }
+
+  // Fix #6: Register a new blob URL while revoking any prior URL for the
+  // same asset key — prevents memory leaks across sync cycles.
+  private trackBlobUrl(key: string, blob: Blob): string {
+    const existing = this.activeObjectUrls.get(key);
+    if (existing) URL.revokeObjectURL(existing);
+    const objectUrl = URL.createObjectURL(blob);
+    this.activeObjectUrls.set(key, objectUrl);
+    return objectUrl;
   }
 
   async cacheVideos(assets: MediaAsset[]): Promise<{ cached: number; failed: number }> {
@@ -162,6 +177,15 @@ export class CacheManager {
 
   private async evict(url: string): Promise<void> {
     const db = await this.dbReady;
+
+    // Fix #6: Liberar el objeto URL del blob antes de borrar el registro.
+    // Sin esto, el blob permanece en RAM hasta que se descargue el documento.
+    const activeUrl = this.activeObjectUrls.get(url);
+    if (activeUrl) {
+      URL.revokeObjectURL(activeUrl);
+      this.activeObjectUrls.delete(url);
+    }
+
     return new Promise(resolve => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);

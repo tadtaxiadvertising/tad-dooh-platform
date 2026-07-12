@@ -17,12 +17,13 @@
   - `apps/api/src/modules/sync/sync.service.ts`
   - `apps/api/src/modules/campaign/campaign.service.ts`
   - `apps/api/src/modules/device/device.service.ts`
+  - `apps/api/src/modules/prisma/prisma.service.ts` (Fix rutinario: `splitSqlStatements()` respeta `$$` dollar-quoted blocks; el `split(';')` simple causaba `ERROR: unterminated dollar-quoted string` en PgBouncer al arrancar)
   - `apps/player/src/sync-manager.ts`
   - `apps/player/src/cache-manager.ts`
   - `apps/player/src/env.d.ts` (poblado con `declare global` para `ImportMetaEnv` + `Window.tadKillSwitchActive` — resuelve 11 errores TS2339 preexistentes)
   - `implementation_plan_sync_engine.md` (nuevo, en raíz)
 - **Nota Infraestructura**: El fix #4 introduce persistencia del JWT en `localStorage` (clave `TAD_OFFLINE_LICENSE`). Si la fecha del sistema del tablet se adelanta manualmente podría disparar el SELF_DESTRUCT espuriamente — la primera vez que se reinicie vía EasyPanel deploy se refrescará la licencia y se corregirá. El `LIMIT 15` en SQL requiere la materialized view `mv_active_campaigns` inicializada (ver `13_prisma_schema_database_architecture.md §7`); si el primer deploy tras este cambio da error, ejecutar manualmente `REFRESH MATERIALIZED VIEW mv_active_campaigns;` en Supabase SQL Editor.
-- **Validación SRE**: `apps/api/node_modules/.bin/tsc --noEmit -p tsconfig.json` → **0 errores**. `apps/player/tsc --noEmit` → **0 errores** (tras poblar `env.d.ts`). Criterios de éxito cumplidos: Offline-First Resilience (Fix #4), Anti-OOM (Fix #5), Sincronización sin saturación (Fix #1+#2), Regla de 15 Slots SQL-enforced (Fix #5 + slice preexistente).
+- **Validación SRE**: `apps/api/node_modules/.bin/tsc --noEmit -p tsconfig.json` → **0 errores** + `nest build` → exit 0. `apps/player/tsc --noEmit` → **0 errores** + `vite build` → 53 módulos, 25.23 KB JS. Un error runtime post-deploy (`split(';')` rompía `$$`) corregido en `prisma.service.ts`. Criterios de éxito cumplidos: Offline-First Resilience (Fix #4), Anti-OOM (Fix #5), Sincronización sin saturación (Fix #1+#2), Regla de 15 Slots SQL-enforced (Fix #5 + slice preexistente).
 
 ---
 

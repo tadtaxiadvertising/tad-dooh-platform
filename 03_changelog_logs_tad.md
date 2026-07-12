@@ -4,6 +4,20 @@
 
 ---
 
+### 🔧 FIX: Estabilización de PWA Service Worker y API Proxy (Telemetría) — OPERACIÓN RESILIENCIA V12
+
+- **Cambio**: Tres correcciones quirúrgicas para eliminar los dos errores críticos que bloqueaban la PWA y la telemetría en producción:
+  1. **SW Redirect → SecurityError**: El middleware de Next.js (`apps/driver/middleware.ts`) interceptaba `/sw.js` y `/workbox-*.js` porque el matcher de exclusiones no los listaba. Al no ser rutas "públicas", el guard de autenticación redirigía a `/driver/login`, causando que el browser rechazara el registro del Service Worker con `SecurityError: The script resource is behind a redirect`. **Fix**: Se añadieron `sw\\.js` y `workbox-.*\\.js` al regex de exclusiones del matcher, junto con escape correcto de dots en `favicon\\.svg` y `manifest\\.json` (que antes estaban sin escapar — no causaban issues pero eran técnicamente incorrectos como regex).
+  2. **Proxy 500 en `/api/proxy/fleet/track-batch`**: El proxy (`[...path].ts`) pasaba `req as any` como body al `fetch()` hacia el backend NestJS. Esto enviaba el stream Node.js crudo sin recalcular `content-length` (que era borrado en `getForwardHeaders()` línea 114 original). El parser de NestJS/Express recibía un body potencialmente truncado o malinterpretado → 500. **Fix**: Se reemplazó por `getRawBody` (`next/dist/compiled/raw-body`), que lee el stream completo a Buffer, recalcula `content-length` correcto, y devuelve 400 controlado si el body está malformado o excede 5 MB. Se preservan CORS/Credentials/fallback público intactos.
+  3. **Backend 500 por P2025 (device inexistente)**: `FleetService.ingestTelemetryBatch()` validaba existencia del driver pero NO del dispositivo. Si el `deviceId` recibido no existía en la DB, `prisma.device.update()` (línea 776) lanzaba `PrismaClientKnownRequestError` (P2025: "Record to update not found"), que sin exception filter global en NestJS se convertía en HTTP 500. **Fix**: Se agregó validación temprana de existencia del dispositivo con `Promise.all([driver, device])`, devolviendo 404 descriptivo (`Device Not Found`) si no existe, antes de tocar ninguna tabla.
+- **Archivos tocados**:
+  - `apps/driver/middleware.ts`
+  - `apps/driver/pages/api/proxy/[...path].ts`
+  - `apps/api/src/modules/fleet/fleet.service.ts`
+- **Nota Infraestructura**: No se requiere migración Prisma ni cambios en variables de entorno de EasyPanel. El proxy sigue usando `INTERNAL_BACKEND_URL` → `NEXT_PUBLIC_API_URL` → fallback hardcodeado; la lectura del body con `getRawBody` respeta el límite de 5 MB y el `bodyParser: false`. Tras redeploy de `tad-driver` y `tad-api`, el SW se registra sin redirect y la telemetría fluye con HTTP 200/201.
+
+---
+
 ### 🔧 FIX: Restauración de Telemetría en Vivo (Admin Map) — ALL-SEEING EYE v12.1.3
 
 - **Cambio**: Tres correcciones quirúrgicas para devolver la telemetría en vivo al mapa de `/admin/dashboard/realtime` y `/admin/tracking`, sin violar el debounce de 5 min, el Kill-Switch V12 (402) ni la transacción atómica del `WalletService`.

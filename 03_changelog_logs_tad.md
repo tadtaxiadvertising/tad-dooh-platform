@@ -1,6 +1,20 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-07-11
+> **Última Actualización**: 2026-07-12
+
+---
+
+### 🔧 FIX: Restauración de Telemetría en Vivo (Admin Map) — ALL-SEEING EYE v12.1.3
+
+- **Cambio**: Tres correcciones quirúrgicas para devolver la telemetría en vivo al mapa de `/admin/dashboard/realtime` y `/admin/tracking`, sin violar el debounce de 5 min, el Kill-Switch V12 (402) ni la transacción atómica del `WalletService`.
+  1. **Root Cause #1 (BACKEND-AWARE BROADCAST)**: El hook canónico `useTelemetry.ts` (montado en `apps/driver/pages/dashboard.tsx`) no publicaba `telemetry_ping` al canal Supabase `fleet_tracking_live`. Esa responsabilidad vivía sólo en el hook `@deprecated` `useBackgroundTelemetry.ts`, nunca instanciado. Resultado: el Admin Map quedaba "ciego" entre los refrescos de 30s del `setInterval(fetchData)`, ignorando posiciones frescas del GPS. Se añadió un canal realtime con `ack:true`, throttle de 30s, setup en `startTracking()` y teardown sincronizado con `stopTracking()` (lo cual se alinea con `triggerKillSwitch` para que el 402 también apague el broadcast y no queden canales zombie).
+  2. **Root Cause #2 (SNAPSHOT IDEMPOTENTE)**: `FleetService.ingestTelemetryBatch()` seleccionaba `data.points[data.points.length - 1]` como "último punto" para actualizar `Device.lastLat/lastLng/lastSeen`. Tras un período offline el buffer de IndexedDB reordena el orden de inserción, dejando el snapshot apuntando a un punto intermedio y haciendo que el Admin mostrara posiciones congeladas o retrocedidas. Se reemplaza por un `reduce` que busca el timestamp máximo; `createMany` no se ve afectado, `skipDuplicates` se mantiene, y el `Device.update` queda blindado con `try/catch` + `logger.error` (nunca rompe el ack del batch).
+  3. **Root Cause #3 (BINDING MAP-SPEC-2026)**: El componente `apps/admin/components/MapView.tsx` evaluaba `item.status === 'online'` para decidir el color del marker, pero `FleetService.getFleetMap()` devuelve `isOnline: boolean` y `status: SystemStatus` (`OPERATIVO`/`PENDIENTE_PAGO`/`BLOQUEADO`) — nunca `status: 'online'`. Por eso TODOS los marcadores pintaban rojo. La nueva evaluación lee `isOnline` directo del backend y conserva el fallback `status === 'online'` para data legacy (TaxiData) — colores TAD preservados: `#22c55e` online, `#ef4444` offline.
+- **Archivos tocados**:
+  - `apps/driver/hooks/useTelemetry.ts`
+  - `apps/api/src/modules/fleet/fleet.service.ts`
+  - `apps/admin/components/MapView.tsx`
+- **Nota Infraestructura**: No se requiere migración Prisma ni cambios en Supabase Realtime policies — el canal `fleet_tracking_live` ya existe y está autorizado para broadcast (sin RLS ya que es Realtime Broadcast, no Postgres Changes). Tras el redeploy del driver y de la API, los marcadores refrescan en ≤30s sin necesidad de tocar EasyPanel.
 
 ---
 

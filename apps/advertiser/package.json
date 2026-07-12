@@ -27,6 +27,9 @@
     "swr": "^2.4.1"
   },
   "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "typescript": "6.0.3"
   }
 }

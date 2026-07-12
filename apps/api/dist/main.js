@@ -13,6 +13,10 @@ if (!BigInt.prototype.toJSON) {
 async function bootstrap() {
     const logger = new common_1.Logger('Bootstrap');
     try {
+        if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+            logger.error('❌ FATAL: JWT_SECRET no configurado en producción. Abortando arranque.');
+            process.exit(1);
+        }
         const app = await core_1.NestFactory.create(app_module_1.AppModule, {
             bufferLogs: true,
             logger: ['error', 'warn', 'log', 'debug'],

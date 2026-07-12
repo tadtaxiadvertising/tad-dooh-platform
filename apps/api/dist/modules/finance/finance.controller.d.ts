@@ -15,10 +15,10 @@ export declare class FinanceController {
     downloadFleetPdf(res: Response): Promise<void>;
     downloadTransactionPdf(id: string, res: Response): Promise<Response<any, Record<string, any>>>;
     getPayroll(month?: string, year?: string): Promise<({
-        driverId: any;
-        driverName: any;
-        driverPhone: any;
-        taxiNumber: any;
+        driverId: string;
+        driverName: string;
+        driverPhone: string;
+        taxiNumber: string;
         activeAds: number;
         adIncome: number;
         baseCommission: number;
@@ -32,7 +32,7 @@ export declare class FinanceController {
         reference: string;
         error?: undefined;
     } | {
-        driverId: any;
+        driverId: string;
         driverName: any;
         driverPhone: any;
         taxiNumber: string;
@@ -59,15 +59,15 @@ export declare class FinanceController {
         year: number;
         reference: string;
     }): Promise<{
-        id: string;
         status: string;
-        createdAt: Date;
+        id: string;
         driverId: string;
-        activeAds: number;
+        createdAt: Date;
         amount: number;
+        activeAds: number;
+        paidAt: Date | null;
         month: number;
         year: number;
-        paidAt: Date | null;
         referenceNum: string | null;
         penaltyApplied: boolean;
         penaltyPercentage: number;
@@ -116,17 +116,17 @@ export declare class FinanceController {
         note?: string;
         status?: string;
     }): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         category: string;
-        entityId: string | null;
-        reference: string | null;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
+        entityId: string | null;
+        netAmount: number;
+        reference: string | null;
         note: string | null;
     }>;
     getSummary(): Promise<{
@@ -151,17 +151,17 @@ export declare class FinanceController {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         category: string;
-        entityId: string | null;
-        reference: string | null;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
+        entityId: string | null;
+        netAmount: number;
+        reference: string | null;
         note: string | null;
     }[]>;
     emailCampaignReport(id: string, body: {

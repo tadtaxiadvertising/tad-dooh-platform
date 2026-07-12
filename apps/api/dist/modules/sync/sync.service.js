@@ -29,6 +29,7 @@ const mediaAssetSafeSelect = {
     version: true,
     createdAt: true,
     qrUrl: true,
+    weight: true,
 };
 let SyncService = SyncService_1 = class SyncService {
     constructor(prisma, notifications) {
@@ -135,6 +136,7 @@ let SyncService = SyncService_1 = class SyncService {
           assigned_hw_ids::jsonb @> ${JSON.stringify([deviceId])}::jsonb OR
           (assigned_driver_ids::jsonb @> ${JSON.stringify([driver?.id])}::jsonb AND ${!!isDriverActive})
         )
+      LIMIT 15
     `;
         const campaignIds = results.map(r => r.campaign_id);
         const activeCampaigns = await this.prisma.campaign.findMany({
@@ -177,7 +179,14 @@ let SyncService = SyncService_1 = class SyncService {
                 }
             });
         });
-        const playlist = Array.from(playlistMap.values());
+        let playlist = Array.from(playlistMap.values());
+        playlist = playlist.slice(0, 15);
+        playlist = playlist.map(item => {
+            if (item.url && item.url.includes('supabase.co')) {
+                item.url = item.url.replace(/https:\/\/[^\/]+\/storage\/v1\/object\/public/, 'https://media.tad.do');
+            }
+            return item;
+        });
         const manifestContent = activeCampaigns.map(c => `${c.id}-${c.updatedAt.getTime()}`).sort().join('|');
         const etag = crypto.createHash('md5').update(manifestContent).digest('hex');
         const licenseToken = jwt.sign({
@@ -186,6 +195,24 @@ let SyncService = SyncService_1 = class SyncService {
             type: 'OFFLINE_LICENSE',
             iat: Math.floor(Date.now() / 1000)
         }, this.JWT_SECRET, { expiresIn: '24h' });
+        const safeJsonArray = (raw) => {
+            if (!raw)
+                return [];
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            }
+            catch (err) {
+                this.logger.warn(`⚠️ [SYNC_V12.1.3] schedule JSON corrupto (${typeof raw}), degradando a []: ${err.message}`);
+                return [];
+            }
+        };
+        const schedules = activeCampaigns.map(c => ({
+            campaignId: c.id,
+            scheduleDays: safeJsonArray(c.scheduleDays),
+            scheduleHours: safeJsonArray(c.scheduleHours),
+            frequencyCap: c.frequencyCap || 0,
+        }));
         return {
             timestamp: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
@@ -197,7 +224,8 @@ let SyncService = SyncService_1 = class SyncService {
                 taxi: device.taxiNumber
             },
             count: playlist.length,
-            playlist
+            playlist,
+            schedules
         };
     }
     async refreshManifestView() {

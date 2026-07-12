@@ -28,6 +28,7 @@ const mediaAssetSafeSelect = {
     version: true,
     createdAt: true,
     qrUrl: true,
+    weight: true,
 };
 let AssetsService = AssetsService_1 = class AssetsService {
     constructor(prisma, supabase, http) {

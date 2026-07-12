@@ -28,6 +28,7 @@ const mediaAssetSafeSelect = {
     version: true,
     createdAt: true,
     qrUrl: true,
+    weight: true,
 };
 let CampaignService = CampaignService_1 = class CampaignService {
     constructor(prisma, supabaseService) {
@@ -385,6 +386,7 @@ let CampaignService = CampaignService_1 = class CampaignService {
             assigned_hw_ids::jsonb @> ${JSON.stringify([hwId])}::jsonb OR
             (assigned_driver_ids::jsonb @> ${JSON.stringify([driverId])}::jsonb AND ${!!driverId})
           )
+        LIMIT 15
       `;
             const campaignIds = results.map(r => r.campaign_id);
             if (campaignIds.length > 0) {
@@ -444,7 +446,8 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 duration: Number(ma.duration || 30),
                 qrUrl: campaign.targetUrl || ma.qrUrl || null,
                 advertiserId: campaign.advertiserRef?.id || campaign.advertiserId || null,
-                advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser'
+                advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser',
+                weight: ma.weight ?? null,
             });
             if (campaign.mediaAssets)
                 mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));

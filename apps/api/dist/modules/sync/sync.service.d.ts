@@ -20,6 +20,7 @@ export declare class SyncService {
         };
         count: number;
         playlist: any[];
+        schedules?: undefined;
     } | {
         timestamp: string;
         expiresAt: string;
@@ -32,6 +33,12 @@ export declare class SyncService {
         };
         count: number;
         playlist: any[];
+        schedules: {
+            campaignId: string;
+            scheduleDays: string[];
+            scheduleHours: string[];
+            frequencyCap: number;
+        }[];
         killSwitch?: undefined;
         killSwitchReason?: undefined;
     }>;

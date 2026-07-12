@@ -18,6 +18,7 @@ exports.BUSINESS_RULES = {
             INITIAL: 'PENDIENTE_PAGO',
             ACTIVE: 'OPERATIVO',
             SUSPENDED: 'BLOQUEADO',
+            BLOCKED: 'BLOQUEADO',
             ONBOARDING: {
                 TOS_PENDING: 'TOS_PENDING',
                 READY: 'READY',
@@ -38,6 +39,7 @@ exports.BUSINESS_RULES = {
         DEVICE: {
             ACTIVE: 'OPERATIVO',
             SUSPENDED: 'BLOQUEADO',
+            BLOCKED: 'BLOQUEADO',
             INITIAL: 'PENDIENTE_PAGO',
         }
     },
@@ -46,8 +48,10 @@ exports.BUSINESS_RULES = {
         PLATA: { hours: 160, label: 'PLATA', priority: 2, penalty: 0 },
         ORO: { hours: 200, label: 'ORO', priority: 3, penalty: 0 },
     },
+    PENALTY_THRESHOLD_MONTHS: 2,
     COMMAND_TTL_DAYS: 7,
     REFERRAL_RETENTION_RATE: 0.10,
+    CHURN_RATE_DEFAULT: 0.045,
 };
 exports.BCRYPT_ROUNDS = exports.BUSINESS_RULES.BCRYPT_ROUNDS;
 exports.JWT_EXPIRY = exports.BUSINESS_RULES.JWT_EXPIRY;

@@ -259,6 +259,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
                 lat: dto.lat,
                 lng: dto.lng,
                 isSimulated: dto.isSimulated || false,
+                verified: false
             },
         });
     }
@@ -414,7 +415,8 @@ let DeviceService = DeviceService_1 = class DeviceService {
                 timestamp: new Date(p.timestamp),
                 lat: p.lat,
                 lng: p.lng,
-                isSimulated: p.isSimulated || dto.isSimulated || false
+                isSimulated: p.isSimulated || dto.isSimulated || false,
+                verified: false
             }));
             await this.prisma.playbackEvent.createMany({
                 data: playbackData,

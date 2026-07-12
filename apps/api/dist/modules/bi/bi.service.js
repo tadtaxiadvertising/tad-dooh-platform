@@ -321,8 +321,11 @@ let BiService = BiService_1 = class BiService {
             orderBy: { hasDiscrepancy: 'desc' }
         });
     }
-    async getFleetHealth() {
+    async getFleetHealth(take = 500) {
+        const safeTake = Math.min(Math.max(1, Math.floor(take)), 500);
         const devices = await this.prisma.device.findMany({
+            take: safeTake,
+            orderBy: { lastSeen: { sort: 'desc', nulls: 'last' } },
             include: { driver: true }
         });
         return devices.map(d => ({

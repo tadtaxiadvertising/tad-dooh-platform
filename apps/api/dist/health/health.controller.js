@@ -28,6 +28,18 @@ let HealthController = class HealthController {
     async dbMetrics() {
         return this.prisma.getHealthMetrics();
     }
+    async checkFull() {
+        const db = await this.prisma.getHealthMetrics();
+        return {
+            status: 'up',
+            timestamp: new Date().toISOString(),
+            service: 'tad-backend-api',
+            node_env: process.env.NODE_ENV,
+            db,
+            memory: process.memoryUsage(),
+            uptime: process.uptime(),
+        };
+    }
 };
 exports.HealthController = HealthController;
 __decorate([
@@ -44,6 +56,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], HealthController.prototype, "dbMetrics", null);
+__decorate([
+    (0, common_1.Get)('full'),
+    (0, public_decorator_1.Public)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], HealthController.prototype, "checkFull", null);
 exports.HealthController = HealthController = __decorate([
     (0, common_1.Controller)('health'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])

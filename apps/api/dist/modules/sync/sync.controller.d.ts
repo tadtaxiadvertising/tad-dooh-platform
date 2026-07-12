@@ -1,8 +1,9 @@
 import { SyncService } from './sync.service';
+import { Response } from 'express';
 export declare class SyncController {
     private readonly syncService;
     constructor(syncService: SyncService);
-    getDeviceManifest(deviceId: string): Promise<{
+    getDeviceManifest(deviceId: string, ifNoneMatch: string, res: Response): Promise<{
         timestamp: string;
         expiresAt: string;
         etag: string;
@@ -16,6 +17,7 @@ export declare class SyncController {
         };
         count: number;
         playlist: any[];
+        schedules?: undefined;
     } | {
         timestamp: string;
         expiresAt: string;
@@ -28,6 +30,12 @@ export declare class SyncController {
         };
         count: number;
         playlist: any[];
+        schedules: {
+            campaignId: string;
+            scheduleDays: string[];
+            scheduleHours: string[];
+            frequencyCap: number;
+        }[];
         killSwitch?: undefined;
         killSwitchReason?: undefined;
     }>;

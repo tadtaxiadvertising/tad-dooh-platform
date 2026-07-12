@@ -85,24 +85,46 @@ let DriversService = DriversService_1 = class DriversService {
         };
     }
     async calculateMonthlyEarnings(driverId) {
-        const activeCampaignsCount = await this.prisma.deviceCampaign.count({
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+        const playedRows = await this.prisma.playbackEvent.findMany({
             where: {
+                verified: true,
+                timestamp: { gte: monthStart, lte: monthEnd },
                 device: { driverId },
-                campaign: { status: 'ACTIVE' },
             },
-        }).catch(async () => {
-            return this.prisma.campaign.count({ where: { status: 'ACTIVE' } });
+            distinct: ['videoId'],
+            select: { videoId: true },
+        }).catch((err) => {
+            this.logger.warn(`[EARNINGS] playbackEvent query failed for ${driverId}: ${err.message}`);
+            return [];
         });
-        const baseEarnings = activeCampaignsCount * business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
-        const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driverId, baseEarnings);
+        const playedCampaignsCount = playedRows.length;
+        const cappedAds = Math.min(playedCampaignsCount, business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
+        const baseEarnings = cappedAds * business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+        const confirmedSales = await this.prisma.commission.count({
+            where: {
+                driverId,
+                sourceType: 'ADVERTISER_SALE',
+                status: 'APPROVED',
+            },
+        }).catch(() => 0);
+        const cpaEarnings = confirmedSales * business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+        const grossEarnings = baseEarnings + cpaEarnings;
+        const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(driverId, grossEarnings);
         return {
             driverId,
-            activeCampaigns: activeCampaignsCount,
+            playedCampaigns: playedCampaignsCount,
+            cappedAds,
+            activeCampaigns: cappedAds,
+            confirmedSales,
             baseEarningsRD: baseEarnings,
-            projectedEarningsRD: amount,
+            cpaEarningsRD: cpaEarnings,
             penaltyApplied,
             penaltyAmount,
+            projectedEarningsRD: amount,
             currency: 'DOP',
+            period: { start: monthStart, end: monthEnd },
         };
     }
     async findAll() {

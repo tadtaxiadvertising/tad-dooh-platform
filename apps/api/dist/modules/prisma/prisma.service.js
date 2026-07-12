@@ -18,6 +18,7 @@ const path = require("path");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
         let url = process.env.DATABASE_URL;
+        let warnMsg;
         if (url && !url.includes('connection_limit=')) {
             const separator = url.includes('?') ? '&' : '?';
             url = `${url}${separator}connection_limit=5`;
@@ -25,7 +26,7 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         else if (url && url.includes('connection_limit=')) {
             const match = url.match(/connection_limit=(\d+)/);
             if (match && parseInt(match[1]) > 10) {
-                console.warn(`⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`);
+                warnMsg = `⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`;
             }
         }
         if (url && !url.includes('pool_timeout=')) {
@@ -41,6 +42,9 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
         });
         this.logger = new common_1.Logger(PrismaService_1.name);
+        if (warnMsg) {
+            this.logger.warn(warnMsg);
+        }
     }
     async onModuleInit() {
         this.logger.log('🔌 Inicializando conexión al Pooler de Supabase...');

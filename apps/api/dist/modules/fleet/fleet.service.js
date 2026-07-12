@@ -603,6 +603,10 @@ let FleetService = class FleetService {
     }
     async ingestTelemetryBatch(data) {
         const logger = new common_1.Logger('FleetService');
+        if (!data?.points || data.points.length === 0) {
+            logger.warn(`⚠️ Telemetry batch with 0 points from driver [${data?.driverId ?? 'unknown'}]`);
+            return { count: 0 };
+        }
         const driver = await this.prisma.driver.findUnique({
             where: { id: data.driverId },
             select: { id: true, subscriptionPaid: true, status: true, fullName: true }
@@ -627,7 +631,7 @@ let FleetService = class FleetService {
             data: telemetryData,
             skipDuplicates: true,
         });
-        logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}]`);
+        logger.log(`✅ Telemetry Batch Processed: ${result.count} points from [${driver.fullName}] (input=${telemetryData.length})`);
         if (data.points.length > 0) {
             const lastPoint = data.points[data.points.length - 1];
             await this.prisma.device.update({
@@ -639,7 +643,7 @@ let FleetService = class FleetService {
                 }
             }).catch(e => logger.error(`Failed to update device status: ${e.message}`));
         }
-        return result;
+        return { count: result.count, input: telemetryData.length };
     }
 };
 exports.FleetService = FleetService;

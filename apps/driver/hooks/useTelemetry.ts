@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { supabase } from '@tad/services';
 import { usePaymentStore } from '../store/usePaymentStore';
 import { openDB } from '../utils/indexedDb';
 
@@ -216,6 +217,22 @@ export function useTelemetry(): UseTelemetryReturn {
 
   const resolveApiBase = useCallback(() => '/api/proxy', []);
 
+  // ─── Realtime broadcast al canal `fleet_tracking_live` (MAP-SPEC-2026) ──
+  // ALL-SEEING EYE PATCH (v12.1.3): el hook canónico V12.1.3 había perdido
+  // la publicación efímera de `telemetry_ping` que mantiene el Admin Map en
+  // vivo entre flushes de 5 min. Sin esto el Admin solo ve posiciones
+  // históricas cada 30s (contra-especificación MAP-SPEC-2026).
+  //
+  // Diseño:
+  //  - Throttle 30s idéntico al legacy `useBackgroundTelemetry` (no sumo
+  //    consumo de batería ni red; reutilizo el `pos.coords` ya capturado).
+  //  - No altera FLUSH_INTERVAL_MS (5 min) ni la transacción atómica del
+  //    WalletService (Regla de Oro #1 y #2).
+  //  - Canal dedicado al kill-switch: se destruye al dispararse.
+  const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastLivePingRef = useRef<number>(0);
+  const LIVE_PING_THROTTLE_MS = 30_000; // 30s — no configurable (MAP-SPEC-2026)
+
   // Hidratar contadores iniciales desde IndexedDB
   useEffect(() => {
     async function hydrate() {
@@ -408,10 +425,51 @@ export function useTelemetry(): UseTelemetryReturn {
   }, [flushBatch]);
 
   // ─── Añadir coordenada al batch (OPTIMIZADO: Memoria primero) ─────────────
+  // ALL-SEEING EYE PATCH: ahora también publica `telemetry_ping` efímero al
+  // canal `fleet_tracking_live` con throttle de 30s, respetando MAP-SPEC-2026.
   const addCoord = useCallback((coord: TelemetryCoord) => {
     memoryBufferRef.current.push(coord);
     setBatchCount(prev => prev + 1);
     writeBatchCoords(memoryBufferRef.current);
+
+    // ── Realtime broadcast (efímero, throttled 30s) ───────────────────────
+    // No suma idempotencia ni transacciones — sólo alimenta el Admin Map.
+    const now = Date.now();
+    if (now - lastLivePingRef.current >= LIVE_PING_THROTTLE_MS) {
+      lastLivePingRef.current = now;
+      const channel = liveChannelRef.current;
+      if (channel) {
+        const driverId = (() => {
+          try {
+            const userRaw = localStorage.getItem('tad_driver_user');
+            const user = userRaw ? JSON.parse(userRaw) : null;
+            return user?.entityId || null;
+          } catch { return null; }
+        })();
+        const deviceId = (typeof localStorage !== 'undefined'
+          && localStorage.getItem('TAD_DEVICE_ID')) || null;
+
+        if (driverId && deviceId) {
+          const ping = {
+            driverId,
+            deviceId,
+            lat: coord.lat,
+            lng: coord.lng,
+            speed: 0,
+            bearing: 0,
+            timestamp: new Date(coord.ts).toISOString(),
+          };
+          void channel.send({
+            type: 'broadcast',
+            event: 'telemetry_ping',
+            payload: ping,
+          }).catch((err) => {
+            // Fallo de broadcast no debe romper el tracking — sólo log.
+            console.error('[useTelemetry] telemetry_ping publish failed', err);
+          });
+        }
+      }
+    }
 
     // Persistir a disco solo si el buffer es grande o cada X tiempo 
     // para evitar I/O constante en cada segundo de GPS
@@ -442,6 +500,25 @@ export function useTelemetry(): UseTelemetryReturn {
             console.warn('[useTelemetry] Wake Lock no disponible:', err?.message || err);
           }
         });
+    }
+
+    // ─── ALL-SEEING EYE PATCH: abrir canal Realtime `fleet_tracking_live` ──
+    // El Admin Map y /admin/tracking escuchan este canal para pings efímeros.
+    // Reusamos el cliente supabase de @tad/services. ack:true exige PR que el
+    // servidor confirme la recepción del broadcast (mejor.visibility que fire-
+    // and-forget).
+    if (!liveChannelRef.current) {
+      const channel = supabase.channel('fleet_tracking_live', {
+        config: { broadcast: { ack: true } },
+      });
+      channel.subscribe((status, error) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error('[useTelemetry] Realtime channel rejected/closed', {
+            status, error, channel: 'fleet_tracking_live',
+          });
+        }
+      });
+      liveChannelRef.current = channel;
     }
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -483,6 +560,17 @@ export function useTelemetry(): UseTelemetryReturn {
       wakeLockRef.current.release().then(() => {
         wakeLockRef.current = null;
       });
+    }
+
+    // ─── ALL-SEEING EYE PATCH: cerrar canal Realtime ─────────────────────
+    // Alineado con el comportamiento legacy (`useBackgroundTelemetry`).
+    // Importante: el kill-switch (402) dispara `stopTracking`, lo que ahora
+    // también apaga el broadcast — refuerza de hecho la regla #1
+    // (Zero-Breakage + Kill-Switch). `triggerKillSwitch` invoca `stopTracking`,
+    // así que el canal perece con la sesión, no persiste zombie.
+    if (liveChannelRef.current) {
+      void supabase.removeChannel(liveChannelRef.current);
+      liveChannelRef.current = null;
     }
 
     setIsTracking(false);

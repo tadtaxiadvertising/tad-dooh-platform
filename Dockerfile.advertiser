@@ -37,7 +37,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=256"
+ENV NODE_OPTIONS="--max-old-space-size=384"
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADVERTISER
 
 RUN addgroup --system --gid 1001 nodejs

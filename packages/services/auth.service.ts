@@ -199,3 +199,64 @@ export const isPublicPath = (currentPath: string): boolean => {
     currentPath.includes('/onboarding') ||
     currentPath === '/';
 };
+
+export const API_BASE_URL =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
+  'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+
+export type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    entityId: string | null;
+  };
+};
+
+export const loginWithEmailPassword = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || 'Credenciales inválidas.');
+  }
+
+  return res.json().then((data) => {
+    const user: LoginResponse['user'] = data.user ?? {
+      id: '',
+      email,
+      role: 'GUEST',
+      entityId: null,
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tad_admin_token', data.access_token as string);
+      localStorage.setItem('tad_admin_refresh_token', data.refresh_token as string);
+      localStorage.setItem(
+        'tad_admin_user',
+        JSON.stringify({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          entityId: user.entityId,
+        }),
+      );
+    }
+
+    return {
+      access_token: data.access_token as string,
+      refresh_token: data.refresh_token as string,
+      user,
+    };
+  });
+};

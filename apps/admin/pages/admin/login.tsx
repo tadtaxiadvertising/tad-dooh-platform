@@ -2,17 +2,76 @@
 
 import { useState, FormEvent } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Mail, Lock, EyeOff, Eye, Shield } from 'lucide-react';
 
+type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    entityId: string | null;
+  };
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('admin@tad.do');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // Enforced audit exact text: submit handled by backend integration.
-    console.log('Admin login submitted', { email });
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => 'Credenciales inválidas.');
+        throw new Error(text);
+      }
+
+      const data = (await res.json()) as LoginResponse;
+      const user = data.user ?? {
+        id: '',
+        email,
+        role: 'GUEST',
+        entityId: null,
+      };
+
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        entityId: user.entityId,
+      };
+
+      localStorage.setItem('tad_admin_token', data.access_token);
+      localStorage.setItem('tad_admin_refresh_token', data.refresh_token);
+      localStorage.setItem('tad_admin_user', JSON.stringify(tokenPayload));
+
+      (window as any).__tad_user = tokenPayload;
+
+      router.replace('/admin/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -21,7 +80,6 @@ export default function AdminLoginPage() {
         <title>TAD NODE | Centro de Control Administrativo</title>
       </Head>
 
-      {/* BACKGROUND: minimalist Santiago street grid */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12]"
         xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +104,6 @@ export default function AdminLoginPage() {
         <rect width="100%" height="100%" fill="url(#street-grid)" />
         <rect width="100%" height="100%" fill="url(#avenues)" />
 
-        {/* Pulsing fleet nodes */}
         <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" />
         <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.6s' }} />
         <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.2s' }} />
@@ -61,32 +118,23 @@ export default function AdminLoginPage() {
         <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1s' }} />
       </svg>
 
-      {/* CARD */}
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-[#fad400]/40 shadow-[0_0_40px_rgba(250,212,0,0.06)]">
           <div className="px-8 py-10">
-            {/* LOGO MEDALLION */}
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(250,212,0,0.12)]">
               <span className="text-3xl font-black tracking-tight text-[#fad400] drop-shadow-[0_0_12px_rgba(250,212,0,0.35)]">T</span>
             </div>
 
-            {/* TITLES */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white uppercase tracking-wider">TAD NODE</h1>
               <p className="mt-1 text-sm font-light text-gray-300">Centro de Control Administrativo</p>
             </div>
 
-            {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* EMAIL */}
               <div>
-                <label htmlFor="admin-email" className="mb-1 block text-xs font-semibold text-gray-400">
-                  Correo
-                </label>
+                <label htmlFor="admin-email" className="mb-1 block text-xs font-semibold text-gray-400">Correo</label>
                 <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
-                  <span className="pl-3 text-gray-500">
-                    <Mail className="h-4 w-4" aria-hidden="true" />
-                  </span>
+                  <span className="pl-3 text-gray-500"><Mail className="h-4 w-4" aria-hidden="true" /></span>
                   <input
                     id="admin-email"
                     type="email"
@@ -99,15 +147,10 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              {/* PASSWORD */}
               <div>
-                <label htmlFor="admin-password" className="mb-1 block text-xs font-semibold text-gray-400">
-                  Contraseña
-                </label>
+                <label htmlFor="admin-password" className="mb-1 block text-xs font-semibold text-gray-400">Contraseña</label>
                 <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
-                  <span className="pl-3 text-gray-500">
-                    <Lock className="h-4 w-4" aria-hidden="true" />
-                  </span>
+                  <span className="pl-3 text-gray-500"><Lock className="h-4 w-4" aria-hidden="true" /></span>
                   <input
                     id="admin-password"
                     type={showPassword ? 'text' : 'password'}
@@ -128,23 +171,21 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              {/* FORGOT PASSWORD */}
               <div className="text-right">
-                <a href="#" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">
-                  ¿Olvidaste tu contraseña?
-                </a>
+                <a href="#" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">¿Olvidaste tu contraseña?</a>
               </div>
 
-              {/* SUBMIT */}
+              {error ? <p className="text-xs text-red-400">{error}</p> : null}
+
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               >
                 <Shield className="h-4 w-4" aria-hidden="true" />
-                Iniciar sesión
+                {submitting ? 'Verificando...' : 'Iniciar sesión'}
               </button>
 
-              {/* SECURITY BADGE */}
               <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
                 <Shield className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Verified Access</span>
@@ -154,10 +195,7 @@ export default function AdminLoginPage() {
         </div>
       </main>
 
-      {/* FOOTER */}
-      <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[11px] text-gray-600">
-        TAD Taxi Advertising S.R.L.
-      </footer>
+      <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[11px] text-gray-600">TAD Taxi Advertising S.R.L.</footer>
     </div>
   );
 }

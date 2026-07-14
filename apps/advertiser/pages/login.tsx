@@ -2,16 +2,76 @@
 
 import { useState, FormEvent } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { BarChart3, Mail, Lock, EyeOff, Eye } from 'lucide-react';
 
+type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    entityId: string | null;
+  };
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+
 export default function AdvertiserLoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('advertiser@tad.do');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Advertiser login submitted', { email });
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => 'Credenciales inválidas.');
+        throw new Error(text);
+      }
+
+      const data = (await res.json()) as LoginResponse;
+      const user = data.user ?? {
+        id: '',
+        email,
+        role: 'GUEST',
+        entityId: null,
+      };
+
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        entityId: user.entityId,
+      };
+
+      localStorage.setItem('tad_advertiser_token', data.access_token);
+      localStorage.setItem('tad_advertiser_refresh_token', data.refresh_token);
+      localStorage.setItem('tad_advertiser_user', JSON.stringify(tokenPayload));
+
+      (window as any).__tad_user = tokenPayload;
+
+      router.replace('/advertiser/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -20,7 +80,6 @@ export default function AdvertiserLoginPage() {
         <title>TAD ADVERTISER | Panel de Anunciantes</title>
       </Head>
 
-      {/* Scene background: subtle street grid + active vehicle nodes */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12]"
         xmlns="http://www.w3.org/2000/svg"
@@ -59,24 +118,19 @@ export default function AdvertiserLoginPage() {
         <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1s' }} />
       </svg>
 
-      {/* Login card */}
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.03)]">
           <div className="px-8 py-10">
-            {/* Icon medallion */}
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(255,255,255,0.05)]">
               <BarChart3 className="h-8 w-8 text-[#eab308]" aria-hidden="true" />
             </div>
 
-            {/* Titles */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white uppercase tracking-wider">TAD ADVERTISER</h1>
               <p className="mt-1 text-sm font-light text-gray-300">Panel de Control de Campañas</p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
               <div>
                 <label htmlFor="adv-email" className="mb-1 block text-xs font-semibold text-gray-400">Correo</label>
                 <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
@@ -93,7 +147,6 @@ export default function AdvertiserLoginPage() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label htmlFor="adv-password" className="mb-1 block text-xs font-semibold text-gray-400">Contraseña</label>
                 <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
@@ -118,20 +171,20 @@ export default function AdvertiserLoginPage() {
                 </div>
               </div>
 
-              {/* Forgot password */}
               <div className="text-right">
                 <a href="#" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">¿Olvidaste tu contraseña?</a>
               </div>
 
-              {/* Submit */}
+              {error ? <p className="text-xs text-red-400">{error}</p> : null}
+
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               >
-                Iniciar sesión
+                {submitting ? 'Verificando...' : 'Iniciar sesión'}
               </button>
 
-              {/* Security badge */}
               <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
                 <Lock className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Verified Access</span>

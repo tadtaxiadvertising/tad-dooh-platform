@@ -16,9 +16,6 @@ type LoginResponse = {
   };
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
-
 export default function AdminLoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -33,19 +30,22 @@ export default function AdminLoginPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      const res = await fetch('/api/proxy/auth/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
         cache: 'no-store',
       });
 
+      const text = await res.text().catch(() => '');
+
       if (!res.ok) {
-        const text = await res.text().catch(() => 'Credenciales inválidas.');
-        throw new Error(text);
+        const message = text || 'Credenciales inválidas.';
+        throw new Error(message);
       }
 
-      const data = (await res.json()) as LoginResponse;
+      const data = (JSON.parse(text) ?? {}) as Partial<LoginResponse>;
+
       const user = data.user ?? {
         id: '',
         email,
@@ -60,8 +60,12 @@ export default function AdminLoginPage() {
         entityId: user.entityId,
       };
 
+      if (!data.access_token) {
+        throw new Error('Respuesta de autenticación inválida (sin token).');
+      }
+
       localStorage.setItem('tad_admin_token', data.access_token);
-      localStorage.setItem('tad_admin_refresh_token', data.refresh_token);
+      localStorage.setItem('tad_admin_refresh_token', data.refresh_token ?? '');
       localStorage.setItem('tad_admin_user', JSON.stringify(tokenPayload));
 
       (window as any).__tad_user = tokenPayload;
@@ -104,25 +108,25 @@ export default function AdminLoginPage() {
         <rect width="100%" height="100%" fill="url(#street-grid)" />
         <rect width="100%" height="100%" fill="url(#avenues)" />
 
-        <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" />
-        <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.6s' }} />
-        <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.2s' }} />
-        <circle cx="71%" cy="19%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.3s' }} />
-        <circle cx="84%" cy="34%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.9s' }} />
-        <circle cx="27%" cy="68%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.5s' }} />
-        <circle cx="45%" cy="74%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.4s' }} />
-        <circle cx="66%" cy="62%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.1s' }} />
-        <circle cx="78%" cy="73%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.7s' }} />
-        <circle cx="15%" cy="88%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.3s' }} />
-        <circle cx="88%" cy="85%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.2s' }} />
-        <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1s' }} />
+        <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" />
+        <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.6s' }} />
+        <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.2s' }} />
+        <circle cx="71%" cy="19%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.3s' }} />
+        <circle cx="84%" cy="34%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.9s' }} />
+        <circle cx="27%" cy="68%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.5s' }} />
+        <circle cx="45%" cy="74%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.4s' }} />
+        <circle cx="66%" cy="62%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.1s' }} />
+        <circle cx="78%" cy="73%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.7s' }} />
+        <circle cx="15%" cy="88%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.3s' }} />
+        <circle cx="88%" cy="85%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.2s' }} />
+        <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1s' }} />
       </svg>
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.03)]">
+        <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-[#fad400]/40 shadow-[0_0_40px_rgba(250,212,0,0.06)]">
           <div className="px-8 py-10">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(255,255,255,0.05)]">
-              <Shield className="h-8 w-8 text-[#eab308]" aria-hidden="true" />
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(250,212,0,0.12)]">
+              <span className="text-3xl font-black tracking-tight text-[#fad400] drop-shadow-[0_0_12px_rgba(250,212,0,0.35)]">T</span>
             </div>
 
             <div className="text-center mb-8">
@@ -182,11 +186,12 @@ export default function AdminLoginPage() {
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               >
+                <Shield className="h-4 w-4" aria-hidden="true" />
                 {submitting ? 'Verificando...' : 'Iniciar sesión'}
               </button>
 
               <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
-                <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                <Shield className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Verified Access</span>
               </div>
             </form>

@@ -7,6 +7,7 @@ import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
 import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
 import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
+import { DriverShell } from '../../components/dashboard/DriverShell';
 import { DriverWalletCard, DriverWalletCardSkeleton, calculateWalletTotal, type WalletState } from '../../components/dashboard/DriverWalletCard';
 import { GrowthCenter } from '../../components/dashboard/GrowthCenter';
 
@@ -918,62 +919,67 @@ export default function DriverDashboard() {
     }
   };
 
-  // ─── Banner de estado del servicio ────────────────────────────────────────
-  const serviceBannerConfig =
-    connectionStatus === 'offline'
-      ? { label: 'MODO OFFLINE: Guardando local y reintentando en segundo plano', color: '#f97316', bg: '#2a1405', border: '#ea580c' }
-      : connectionStatus === 'syncing'
-        ? { label: 'SINCRONIZANDO TELEMETRÍA...', color: '#FFD400', bg: '#1a1400', border: '#FFD400' }
-        : { label: 'SERVICIO ACTIVO: PUBLICIDAD EN CURSO', color: '#22c55e', bg: '#052e16', border: '#16a34a' };
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+        <Head>
+          <title>TAD Driver | Monitor Operativo</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+          <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
+        </Head>
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white pb-10 font-sans">
-      <Head>
-        <title>TAD Driver | Monitor Operativo</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
-      </Head>
+        {/* DriverShell — maneja tabs internos + BottomNavigationBar */}
+        <DriverShell
+          connectionStatus={connectionStatus}
+          batchCount={batchCount}
+          offlineCount={offlineCount}
+          isTracking={isTracking}
+          hubData={hubData}
+          hubLoading={hubLoading}
+          isLocalMode={isLocalMode}
+          walletState={walletState}
+          onSupport={handleSupport}
+          onReportFalla={handleReportFalla}
+          onReferir={handleReferir}
+          onLogout={handleLogout}
+          syncingNow={syncingNow}
+          onSincronizar={handleSincronizar}
+          statusBar={
+            <StatusBar
+              connectionStatus={connectionStatus}
+              batchCount={batchCount}
+              offlineCount={offlineCount}
+              onLogout={handleLogout}
+            />
+          }
+          readinessCard={
+            !hubLoading ? (
+              <DriverReadinessCard
+                bankPendingSync={bankPendingSync}
+                hubData={
+                  hubData
+                    ? {
+                      agreementVersion: hubData.agreementVersion,
+                      bankAccountConfigured: hubData.bankAccountConfigured,
+                      contractAccepted: hubData.contractAccepted,
+                      driverId: hubData.driverId,
+                      onboardingStatus: hubData.onboardingStatus,
+                      subscriptionPaid: hubData.subscriptionPaid,
+                    }
+                    : null
+                }
+                onOpen={() => setShowOnboarding(true)}
+              />
+            ) : undefined
+          }
+        />
 
-      {/* Header fijo con telemetría */}
-      <StatusBar
-        connectionStatus={connectionStatus}
-        batchCount={batchCount}
-        offlineCount={offlineCount}
-        onLogout={handleLogout}
-      />
+        {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción, z-[100] */}
+        {isLocked && <LockdownScreen message={lockMessage} />}
 
-      {/* Contenido principal con padding-top para el header fijo */}
-      <main className="max-w-md mx-auto pt-[72px] px-4 space-y-5" id="dashboard-main">
-
-
-        {isLocalMode && (
-          <div className="rounded-2xl border border-amber-300/40 bg-amber-500/10 backdrop-blur-md px-4 py-3" role="status" aria-live="polite">
-            <p className="text-xs font-black tracking-wide text-amber-200">⚠️ Operando en Modo Local (Red Inestable)</p>
-          </div>
-        )}
-
-        {/* Banner de Estado de Servicio */}
-        <div
-          className="flex items-center justify-center gap-2 py-2.5 px-3 border"
-          style={{
-            backgroundColor: serviceBannerConfig.bg,
-            borderColor: serviceBannerConfig.border,
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          <PulseDot color={serviceBannerConfig.color} />
-          <span
-            className="text-[10px] font-black uppercase tracking-widest"
-            style={{ color: serviceBannerConfig.color }}
-          >
-            {serviceBannerConfig.label}
-          </span>
-        </div>
-
-        {!hubLoading && (
-          <DriverReadinessCard
+        {showOnboarding && !isLocked && (
+          <DriverOnboardingModal
             bankPendingSync={bankPendingSync}
+            busy={onboardingBusy}
             hubData={
               hubData
                 ? {
@@ -986,144 +992,11 @@ export default function DriverDashboard() {
                 }
                 : null
             }
-            onOpen={() => setShowOnboarding(true)}
+            onAcceptAgreement={() => void handleAcceptAgreement()}
+            onBankSuccess={() => void handleBankSaved()}
+            onClose={closeOnboarding}
           />
         )}
-
-        {walletState ? <DriverWalletCard wallet={walletState} /> : <DriverWalletCardSkeleton />}
-
-        <GrowthCenter
-          referralUrl={`/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
-          referralCode={hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500'}
-          onShare={handleReferir}
-        />
-
-        {/* Ledger Financiero */}
-        <EarningsLedger
-          current={walletState?.total ?? 0}
-          max={7500}
-          slotsUsed={hubData?.activeSlots ?? 0}
-          totalSlots={hubData?.maxSlots ?? 15}
-        />
-
-        {/* Herramientas del Chofer */}
-        <section aria-labelledby="quick-actions-title">
-          <h2
-            id="quick-actions-title"
-            className="text-neutral-600 font-black text-[10px] uppercase tracking-[0.2em] mb-3 ml-0.5"
-          >
-            Operaciones Tácticas
-          </h2>
-
-          <div className="grid grid-cols-2 gap-2">
-            <ActionButton
-              id="btn-soporte"
-              label="Soporte"
-              sublabel="WhatsApp"
-              color="#FFD400"
-              onClick={handleSupport}
-              icon={
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                </svg>
-              }
-            />
-
-            <ActionButton
-              id="btn-reportar"
-              label="Reportar Falla"
-              sublabel="Dispositivo"
-              color="#ef4444"
-              onClick={handleReportFalla}
-              icon={
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              }
-            />
-
-            <ActionButton
-              id="btn-sincronizar"
-              label="Sincronizar"
-              sublabel={syncingNow ? 'Sincronizando...' : (offlineCount > 0 ? `${offlineCount} pendientes` : 'Al día')}
-              color={syncingNow ? '#FFD400' : '#22c55e'}
-              onClick={handleSincronizar}
-              icon={
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="1 4 1 10 7 10" />
-                  <polyline points="23 20 23 14 17 14" />
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                </svg>
-              }
-            />
-
-            <ActionButton
-              id="btn-referir"
-              label="Referir Conductor"
-              sublabel="Compartir enlace"
-              color="#3b82f6"
-              onClick={handleReferir}
-              icon={
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <line x1="20" y1="8" x2="20" y2="14" />
-                  <line x1="23" y1="11" x2="17" y2="11" />
-                </svg>
-              }
-            />
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="pt-6 text-center space-y-2">
-          <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
-            TAD DOOH Platform v12.0.0
-          </p>
-          <p className="text-neutral-800 text-[9px] font-mono">
-            GPS: {isTracking ? 'ACTIVO' : 'INACTIVO'} · Batch: {batchCount}/10 · Red: {connectionStatus.toUpperCase()}
-          </p>
-
-          {/* Dev-only: Debug trigger */}
-          {process.env.NODE_ENV !== 'production' && (
-            <button
-              id="debug-trigger-402"
-              onClick={() => usePaymentStore.getState().setLock(true, 'DEBUG: Suscripción vencida (402)')}
-              className="mt-2 text-neutral-800 text-[9px] uppercase font-bold border border-neutral-900 px-3 py-1 hover:text-red-900 transition-colors"
-            >
-              Debug: Forzar Bloqueo 402
-            </button>
-          )}
-        </footer>
-      </main>
-
-      {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción */}
-      {isLocked && <LockdownScreen message={lockMessage} />}
-
-      {showOnboarding && !isLocked && (
-        <DriverOnboardingModal
-          bankPendingSync={bankPendingSync}
-          busy={onboardingBusy}
-          hubData={
-            hubData
-              ? {
-                agreementVersion: hubData.agreementVersion,
-                bankAccountConfigured: hubData.bankAccountConfigured,
-                contractAccepted: hubData.contractAccepted,
-                driverId: hubData.driverId,
-                onboardingStatus: hubData.onboardingStatus,
-                subscriptionPaid: hubData.subscriptionPaid,
-              }
-              : null
-          }
-          onAcceptAgreement={() => void handleAcceptAgreement()}
-          onBankSuccess={() => void handleBankSaved()}
-          onClose={closeOnboarding}
-        />
-      )}
-    </div>
-  );
-}
+      </div>
+    );
+  }

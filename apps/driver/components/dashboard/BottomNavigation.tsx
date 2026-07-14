@@ -2,6 +2,14 @@ import React from 'react';
 import { Home, ClipboardList, History, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * @deprecated v12.2.0 — Reemplazado por `BottomNavigationBar.tsx`.
+ * Este componente era estático (sin Next Router) y nunca se integró al dashboard.
+ * Mantenido temporalmente para compatibilidad—— eliminar en v12.3.0.
+ *
+ * Usar en su lugar:
+ *   import { BottomNavigationBar } from './BottomNavigationBar';
+ */
 const navItems = [
   { id: 'home', label: 'Inicio', icon: Home },
   { id: 'portal', label: 'Portal', icon: ClipboardList },

@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Mail, Lock, EyeOff, Eye, Shield } from 'lucide-react';
+import { Shield, Mail, Lock, EyeOff, Eye } from 'lucide-react';
 
 type LoginResponse = {
   access_token: string;
@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
             <path d="M0 120 L240 120 M120 0 L120 240" stroke="#2a2a2a" strokeWidth="1" />
           </pattern>
           <radialGradient id="node-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fad400" stopOpacity="0.9" />
+            <stop offset="0%" stopColor="#eab308" stopOpacity="0.9" />
             <stop offset="60%" stopColor="#eab308" stopOpacity="0.35" />
             <stop offset="100%" stopColor="#eab308" stopOpacity="0" />
           </radialGradient>
@@ -104,25 +104,25 @@ export default function AdminLoginPage() {
         <rect width="100%" height="100%" fill="url(#street-grid)" />
         <rect width="100%" height="100%" fill="url(#avenues)" />
 
-        <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" />
-        <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.6s' }} />
-        <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.2s' }} />
-        <circle cx="71%" cy="19%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.3s' }} />
-        <circle cx="84%" cy="34%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.9s' }} />
-        <circle cx="27%" cy="68%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.5s' }} />
-        <circle cx="45%" cy="74%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.4s' }} />
-        <circle cx="66%" cy="62%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.1s' }} />
-        <circle cx="78%" cy="73%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.7s' }} />
-        <circle cx="15%" cy="88%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.3s' }} />
-        <circle cx="88%" cy="85%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.2s' }} />
-        <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1s' }} />
+        <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" />
+        <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.6s' }} />
+        <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.2s' }} />
+        <circle cx="71%" cy="19%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.3s' }} />
+        <circle cx="84%" cy="34%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.9s' }} />
+        <circle cx="27%" cy="68%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.5s' }} />
+        <circle cx="45%" cy="74%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.4s' }} />
+        <circle cx="66%" cy="62%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.1s' }} />
+        <circle cx="78%" cy="73%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.7s' }} />
+        <circle cx="15%" cy="88%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1.3s' }} />
+        <circle cx="88%" cy="85%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '0.2s' }} />
+        <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-soft" style={{ animationDelay: '1s' }} />
       </svg>
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-[#fad400]/40 shadow-[0_0_40px_rgba(250,212,0,0.06)]">
+        <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.03)]">
           <div className="px-8 py-10">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(250,212,0,0.12)]">
-              <span className="text-3xl font-black tracking-tight text-[#fad400] drop-shadow-[0_0_12px_rgba(250,212,0,0.35)]">T</span>
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(255,255,255,0.05)]">
+              <Shield className="h-8 w-8 text-[#eab308]" aria-hidden="true" />
             </div>
 
             <div className="text-center mb-8">
@@ -182,12 +182,11 @@ export default function AdminLoginPage() {
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               >
-                <Shield className="h-4 w-4" aria-hidden="true" />
                 {submitting ? 'Verificando...' : 'Iniciar sesión'}
               </button>
 
               <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
-                <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                <Lock className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Verified Access</span>
               </div>
             </form>

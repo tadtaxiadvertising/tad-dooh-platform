@@ -214,20 +214,20 @@ export function PortalAuth({ config }: PortalAuthProps) {
       </div>
 
       <div className={clsx(
-        "w-full max-w-[440px] transition-all duration-1000",
+        "w-full max-w-[440px] px-4 sm:px-6 transition-all duration-1000",
         mounted ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
       )}>
         {/* Brand */}
         <div className="text-center mb-12">
           <div className="relative inline-block mb-8 group">
             <div
-              className="absolute inset-0 blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"
+              className="absolute inset-0 blur-[40px] opacity-20 group-hover:opacity-60 transition-opacity duration-1000"
               style={{ backgroundColor: config.accentColor }}
             />
             <div
-              className="relative w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-700 bg-yellow-400"
+              className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] flex items-center justify-center shadow-2xl group-hover:scale-105 group-hover:rotate-3 transition-all duration-700 bg-yellow-400"
             >
-              <span className="text-3xl font-black text-black tracking-tighter">TAD</span>
+              <span className="text-2xl sm:text-3xl font-black text-black tracking-tighter">TAD</span>
             </div>
           </div>
           <div className="space-y-4">
@@ -249,7 +249,9 @@ export function PortalAuth({ config }: PortalAuthProps) {
             style={{ backgroundImage: `linear-gradient(to bottom right, ${config.accentColor}, transparent)` }}
           />
 
-          <div className="relative bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-[2.5rem] p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
+          <div className="relative bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-[2.5rem] p-8 sm:p-10 lg:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 hover:border-zinc-700/50">
+            {/* Specular highlight — top reflection */}
+            <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-t-[2.5rem]" />
             <div
               className="absolute top-0 left-0 w-full h-0.5 opacity-30"
               style={{ backgroundImage: `linear-gradient(to right, transparent, ${config.accentColor}, transparent)` }}
@@ -288,8 +290,11 @@ export function PortalAuth({ config }: PortalAuthProps) {
                     </div>
                     <input id="login-email" type="email" value={email}
                       onChange={(e) => setEmail(e.target.value)} placeholder="usuario@tad.do" required
-                      className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-bold uppercase tracking-widest placeholder:text-gray-700 focus:outline-none focus:bg-black/80 transition-all shadow-inner"
-                      style={{ borderBottomColor: email ? config.accentColor : '' }}
+                      className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-bold uppercase tracking-widest placeholder:text-gray-700 focus:outline-none focus:bg-black/80 transition-all shadow-inner focus:ring-2 focus:ring-offset-0 focus:ring-offset-transparent"
+                      style={{
+                        borderBottomColor: email ? config.accentColor : '',
+                        '--tw-ring-color': config.accentColor + '20',
+                      } as React.CSSProperties}
                     />
                   </div>
 
@@ -305,8 +310,11 @@ export function PortalAuth({ config }: PortalAuthProps) {
                       <input id="login-password" type={showPassword ? 'text' : 'password'}
                         value={password} onChange={(e) => setPassword(e.target.value)} onKeyUp={handleKeyUp}
                         placeholder={showPassword ? 'MiContraseña' : '••••••••••••'} required minLength={6}
-                        className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 pr-14 text-white text-xs font-bold tracking-[0.3em] placeholder:text-zinc-600 focus:outline-none focus:bg-black/80 focus:ring-1 focus:ring-yellow-500 transition-all shadow-inner"
-                        style={{ borderBottomColor: password ? config.accentColor : '' }}
+                        className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 pr-14 text-white text-xs font-bold tracking-[0.3em] placeholder:text-zinc-600 focus:outline-none focus:bg-black/80 focus:ring-1 transition-all shadow-inner"
+                        style={{
+                          borderBottomColor: password ? config.accentColor : '',
+                          '--tw-ring-color': config.accentColor + '40',
+                        } as React.CSSProperties}
                       />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
                         className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-yellow-400 transition-colors"
@@ -333,9 +341,11 @@ export function PortalAuth({ config }: PortalAuthProps) {
 
                 {/* Submit */}
                 <button id="login-submit" type="submit" disabled={loading || lockedMs > 0}
-                  className="w-full text-black font-bold uppercase tracking-[0.2em] text-[10px] py-5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-4 group/btn relative overflow-hidden"
+                  className="w-full text-black font-bold uppercase tracking-[0.2em] text-[10px] py-5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-4 group/btn relative overflow-hidden shimmer-trigger"
                   style={{ backgroundColor: config.accentColor }}
                 >
+                  {/* Shimmer overlay */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 pointer-events-none" />
                   {loading ? (
                     <span className="flex items-center gap-3 relative z-10">
                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -381,16 +391,20 @@ export function PortalAuth({ config }: PortalAuthProps) {
                     </div>
                     <input id="forgot-email" type="email" value={email}
                       onChange={e => setEmail(e.target.value)} placeholder="usuario@tad.do" required
-                      className="w-full bg-black/50 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-white text-xs font-bold uppercase tracking-widest placeholder:text-gray-700 focus:outline-none transition-all"
-                      style={{ borderBottomColor: email ? config.accentColor : '' }}
+                      className="w-full bg-black/50 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-white text-xs font-bold uppercase tracking-widest placeholder:text-gray-700 focus:outline-none focus:bg-black/80 focus:ring-2 transition-all shadow-inner"
+                      style={{
+                        borderBottomColor: email ? config.accentColor : '',
+                        '--tw-ring-color': config.accentColor + '20',
+                      } as React.CSSProperties}
                     />
                   </div>
                 </div>
 
                 <button type="submit" disabled={loading || lockedMs > 0}
-                  className="w-full text-black font-bold uppercase tracking-[0.2em] text-[10px] py-5 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full text-black font-bold uppercase tracking-[0.2em] text-[10px] py-5 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 relative overflow-hidden group/forgot-btn"
                   style={{ backgroundColor: config.accentColor }}
                 >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/forgot-btn:translate-x-full transition-transform duration-1000 pointer-events-none" />
                   {loading ? (
                     <span className="flex items-center gap-3">
                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />

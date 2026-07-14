@@ -189,7 +189,7 @@ export const WalletTab: React.FC<WalletTabProps> = ({
           },
           {
             label: 'Referidos',
-            value: `RD$${(walletState?.referredDrivers && walletState.referredAdvertisers * 500 || walletState?.referredAdvertisers * 500 || 0).toLocaleString()}`,
+            value: `RD$${((walletState?.referredAdvertisers ?? 0) * 500).toLocaleString()}`,
             icon: Target,
             color: 'text-blue-400',
           },

@@ -920,7 +920,7 @@ export default function DriverDashboard() {
   };
 
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+      <>
         <Head>
           <title>TAD Driver | Monitor Operativo</title>
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
@@ -997,6 +997,6 @@ export default function DriverDashboard() {
             onClose={closeOnboarding}
           />
         )}
-      </div>
+      </>
     );
   }

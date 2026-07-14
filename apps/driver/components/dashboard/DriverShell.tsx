@@ -43,7 +43,6 @@ interface DriverShellProps {
   isTracking: boolean;
   // Hub
   hubData: DriverHubData | null;
-  hubLoading: boolean;
   isLocalMode: boolean;
   // Wallet card state
   walletState: WalletState | null;
@@ -76,7 +75,6 @@ function EarningsLedger({
 }) {
   const pctIncome = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
   const pctSlots = totalSlots > 0 ? Math.min(100, Math.round((slotsUsed / totalSlots) * 100)) : 0;
-  const pct = Math.max(pctIncome, pctSlots);
   const remaining = Math.max(0, max - current);
   const filledSlots = Math.max(0, Math.min(totalSlots, slotsUsed));
 
@@ -231,7 +229,6 @@ export const DriverShell: React.FC<DriverShellProps> = ({
   offlineCount,
   isTracking,
   hubData,
-  hubLoading,
   isLocalMode,
   walletState,
   statusBar,
@@ -261,10 +258,10 @@ export const DriverShell: React.FC<DriverShellProps> = ({
         {/* Tab transitions with AnimatePresence for smooth fade */}
         {activeTab === 'home' && (
           <HomeTab
+            connectionStatus={connectionStatus}
             hubData={hubData}
             isLocalMode={isLocalMode}
             walletState={walletState}
-            connectionStatus={connectionStatus}
             readinessCard={readinessCard}
           />
         )}
@@ -282,8 +279,8 @@ export const DriverShell: React.FC<DriverShellProps> = ({
 
         {activeTab === 'wallet' && (
           <WalletTab
-            hubData={hubData}
             connectionStatus={connectionStatus}
+            hubData={hubData}
             walletState={walletState}
             isLocalMode={isLocalMode}
           />

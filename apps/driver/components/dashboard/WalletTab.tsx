@@ -26,19 +26,18 @@ import type { DriverHubData } from '../../hooks/useDriverHub';
 import type { WalletState } from './DriverWalletCard';
 
 interface WalletTabProps {
+  connectionStatus?: "online" | "offline" | "syncing";
   hubData: DriverHubData | null;
-  connectionStatus: 'online' | 'offline' | 'syncing';
   walletState: WalletState | null;
   isLocalMode: boolean;
 }
 
 export const WalletTab: React.FC<WalletTabProps> = ({
   hubData,
-  connectionStatus,
   walletState,
   isLocalMode,
 }) => {
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<{id:number;type:string;amount:number;date:string;desc:string}[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
   useEffect(() => {
@@ -86,7 +85,7 @@ export const WalletTab: React.FC<WalletTabProps> = ({
   const balance = hubData?.balance ?? walletState?.total ?? 0;
   const nextWithdrawal = 5000;
   const withdrawalProgress = Math.min(100, (balance / nextWithdrawal) * 100);
-  const streak = (hubData as any)?.activeDaysStreak || 0;
+  const streak = (hubData as {activeDaysStreak?: number})?.activeDaysStreak || 0;
 
   return (
     <section
@@ -246,7 +245,7 @@ export const WalletTab: React.FC<WalletTabProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((tx: any) => (
+            {transactions.map((tx) => (
               <motion.div
                 key={tx.id}
                 initial={{ opacity: 0, y: 10 }}

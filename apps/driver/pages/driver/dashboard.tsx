@@ -8,8 +8,7 @@ import { useDriverHub } from '../../hooks/useDriverHub';
 import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
 import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
 import { DriverShell } from '../../components/dashboard/DriverShell';
-import { DriverWalletCard, DriverWalletCardSkeleton, calculateWalletTotal, type WalletState } from '../../components/dashboard/DriverWalletCard';
-import { GrowthCenter } from '../../components/dashboard/GrowthCenter';
+import { calculateWalletTotal, type WalletState } from "../../components/dashboard/DriverWalletCard";
 
 const DRIVER_AGREEMENT_VERSION = '2.0 (HaaS)';
 const DRIVER_STARTER_KIT_FEE_RD = 6000;
@@ -480,147 +479,8 @@ function StatusBar({
   );
 }
 
-/** Tarjeta de Ganancias con Ledger Financiero */
-function EarningsLedger({
-  current,
-  max,
-  slotsUsed,
-  totalSlots,
-}: {
-  current: number;
-  max: number;
-  slotsUsed: number;
-  totalSlots: number;
-}) {
-  const pctIncome = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
-  const pctSlots = totalSlots > 0 ? Math.min(100, Math.round((slotsUsed / totalSlots) * 100)) : 0;
-  const pct = Math.max(pctIncome, pctSlots);
-  const remaining = Math.max(0, max - current);
-  const filledSlots = Math.max(0, Math.min(totalSlots, slotsUsed));
-
-  return (
-    <section
-      className="bg-[#0a0a0a] border-2 border-neutral-900 p-5"
-      aria-label="Ledger de Ganancias"
-    >
-      <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-1">
-        Ganancias del Mes
-      </p>
-
-      <p
-        className="text-white font-black tracking-tighter font-mono leading-none"
-        style={{ fontSize: 'clamp(2.5rem, 10vw, 3.5rem)' }}
-        aria-label={`RD$ ${current.toLocaleString('es-DO')}`}
-      >
-        RD${current.toLocaleString('es-DO')}
-      </p>
-
-      {/* Tope y Slots */}
-      <div className="flex items-center justify-between mt-1 mb-4">
-        <span className="text-neutral-500 text-xs">
-          Tope: <strong className="text-neutral-300">RD${max.toLocaleString('es-DO')}</strong>
-          <span className="text-neutral-700 ml-1">({totalSlots} slots max)</span>
-        </span>
-        <span className="text-neutral-500 text-xs">
-          Slots: <strong className="text-[#FFD400]">{slotsUsed}/{totalSlots}</strong>
-        </span>
-      </div>
-
-      {/* Barra de progreso */}
-      <div
-        className="w-full h-3 bg-neutral-900 border border-neutral-800 overflow-hidden"
-        role="progressbar"
-        aria-valuenow={pctIncome}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${pctIncome}% de ingresos acumulados`}
-      >
-        <div
-          className="h-full bg-[#FFD400] transition-all duration-700 ease-out"
-          style={{ width: `${pctIncome}%` }}
-        />
-      </div>
-
-      <div className="mt-2 w-full h-2 bg-neutral-900 border border-neutral-800 overflow-hidden" aria-hidden="true">
-        <div
-          className="h-full bg-[#f97316] transition-all duration-700 ease-out"
-          style={{ width: `${pctSlots}%` }}
-        />
-      </div>
-
-      {/* Slots visuales */}
-      <div className="flex gap-1 mt-3" aria-hidden="true">
-        {Array.from({ length: totalSlots }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 h-1.5"
-            style={{ backgroundColor: i < filledSlots ? '#FFD400' : '#262626' }}
-          />
-        ))}
-      </div>
-
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-          0 slots
-        </span>
-        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-          Ingresos {pctIncome}% · Slots {filledSlots}/{totalSlots}
-        </span>
-        <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-          {totalSlots} slots
-        </span>
-      </div>
-
-      <p className="text-[10px] text-neutral-500 font-semibold mt-2">
-        Faltan <span className="text-[#FFD400]">RD${remaining.toLocaleString('es-DO')}</span> para RD${max.toLocaleString('es-DO')}
-      </p>
-    </section>
-  );
-}
 
 /** Botones de acciones con hit-targets masivos */
-function ActionButton({
-  id,
-  label,
-  sublabel,
-  color,
-  onClick,
-  icon,
-}: {
-  id: string;
-  label: string;
-  sublabel?: string;
-  color: string;
-  onClick: () => void;
-  icon: React.ReactNode;
-}) {
-  return (
-    <button
-      id={id}
-      onClick={onClick}
-      className="flex flex-col items-center justify-center min-h-[120px] bg-white/[0.03] border border-white/5 rounded-3xl
-                 hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.96] active:bg-white/[0.1]
-                 transition-all duration-200 p-5 group relative overflow-hidden"
-      aria-label={label}
-    >
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
-        style={{ background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }}
-      />
-      <span className="relative z-10 transition-transform duration-300 group-hover:-translate-y-1" style={{ color }} aria-hidden="true">
-        {icon}
-      </span>
-      <span className="text-white text-[11px] font-black uppercase tracking-tight mt-3 relative z-10">
-        {label}
-      </span>
-      {sublabel && (
-        <span className="text-neutral-500 text-[9px] uppercase tracking-[0.1em] mt-1 relative z-10 font-bold">
-          {sublabel}
-        </span>
-      )}
-    </button>
-  );
-}
 
 /** LockdownScreen — Paradoja 402 */
 function LockdownScreen({ message }: { message: string | null }) {
@@ -934,7 +794,6 @@ export default function DriverDashboard() {
           offlineCount={offlineCount}
           isTracking={isTracking}
           hubData={hubData}
-          hubLoading={hubLoading}
           isLocalMode={isLocalMode}
           walletState={walletState}
           onSupport={handleSupport}

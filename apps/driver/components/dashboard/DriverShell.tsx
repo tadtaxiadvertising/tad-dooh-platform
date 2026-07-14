@@ -82,7 +82,7 @@ function EarningsLedger({
 
   return (
     <section
-      className="bg-[#0a0a0a] border-2 border-neutral-900 p-5"
+      className="rounded-3xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-5 backdrop-blur-sm"
       aria-label="Ledger de Ganancias"
     >
       <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-1">
@@ -175,7 +175,7 @@ function HomeTab({
 
       {/* Service Status Banner */}
       <div
-        className="flex items-center justify-center gap-2 py-2.5 px-3 border"
+        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl border backdrop-blur-sm"
         style={{ backgroundColor: serviceBannerConfig.bg, borderColor: serviceBannerConfig.border }}
         role="status"
         aria-live="polite"
@@ -248,12 +248,17 @@ export const DriverShell: React.FC<DriverShellProps> = ({
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+    <>
       {/* Header fijo con telemetría — StatusBar injected from parent */}
       {statusBar}
 
       {/* Contenido principal con padding-top para header fijo + padding-bottom para bottom nav */}
-      <main className="mx-auto max-w-md px-4 pt-20 pb-28" id="dashboard-main">
+      <main
+        className="mx-auto max-w-md px-4 pt-20 pb-28 min-h-screen"
+        id="dashboard-main"
+        style={{ background: '#0a0a0a' }}
+      >
+        {/* Tab transitions with AnimatePresence for smooth fade */}
         {activeTab === 'home' && (
           <HomeTab
             hubData={hubData}
@@ -301,7 +306,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
 
         {/* Footer info (only on home tab) */}
         {activeTab === 'home' && (
-          <footer className="pt-6 text-center space-y-2">
+          <footer className="pt-8 text-center space-y-2">
             <p className="text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
               TAD DOOH Platform v12.0.0
             </p>
@@ -326,7 +331,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
         )}
       </main>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Navigation Bar — z-30, fija */}
       <BottomNavigationBar activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Pantalla de Lockdown 402 */}
@@ -334,7 +339,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
 
       {/* Onboarding Modal */}
       {onboardingModal}
-    </div>
+    </>
   );
 };
 

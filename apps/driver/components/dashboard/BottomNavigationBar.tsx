@@ -3,7 +3,7 @@
  * BottomNavigationBar — Barra de navegación inferior premium
  *
  * Mobile-first, 4 tabs (Inicio, Rutas, Billetera, Ajustes).
- * Glassmorphism, animaciones framer-motion, safe-area-inset.
+ * Glassmorphism intenso, animaciones framer-motion, safe-area-inset.
  * z-30 para que modales (DriverOnboardingModal z-[95], LockdownScreen z-[100])
  * queden por encima.
  *
@@ -41,65 +41,107 @@ export const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({
   onChange,
 }) => {
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-30 pb-[env(safe-area-inset-bottom,0px)] bg-black/80 backdrop-blur-3xl border-t border-white/[0.06] shadow-[0_-10px_40px_rgba(0,0,0,0.6)]"
-      role="navigation"
-      aria-label="Navegación principal del conductor"
-    >
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
-        {NAV_ITEMS.map((item) => {
-          const isActive = activeTab === item.id;
-          const Icon = item.icon;
+    <>
+      {/* Gradient fade para separar contenido del nav */}
+      <div
+        className="fixed bottom-16 left-0 right-0 z-30 h-8 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to top, #0a0a0a 0%, transparent 100%)',
+        }}
+        aria-hidden="true"
+      />
 
-          return (
-            <motion.button
-              key={item.id}
-              onClick={() => onChange(item.id)}
-              whileTap={{ scale: 0.9 }}
-              className={`relative flex flex-col items-center justify-center gap-0.5 w-20 h-14 rounded-2xl transition-colors duration-200 ${
-                isActive
-                  ? 'text-[#FFD400]'
-                  : 'text-zinc-600 active:text-zinc-400'
-              }`}
-              aria-current={isActive ? 'page' : undefined}
-              aria-label={item.label}
-            >
-              {/* Highlight background for active tab */}
-              {isActive && (
-                <motion.div
-                  layoutId="bottom-nav-active-bg"
-                  className="absolute inset-0 rounded-2xl bg-[#FFD400]/5 border border-[#FFD400]/10"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30"
+        role="navigation"
+        aria-label="Navegación principal del conductor"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          background: 'rgba(10, 10, 10, 0.92)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          borderTop: '1px solid rgba(255, 212, 0, 0.08)',
+          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(255, 255, 255, 0.03) inset',
+        }}
+      >
+        <div className="mx-auto flex h-16 max-w-md items-center justify-around px-3">
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.id;
+            const Icon = item.icon;
 
-              {/* Icon container */}
-              <div className="relative z-10 flex items-center justify-center">
-                <Icon size={22} />
-              </div>
-
-              {/* Label */}
-              <span
-                className={`relative z-10 text-[9px] font-black uppercase tracking-[0.15em] transition-colors duration-200 ${
-                  isActive ? 'text-[#FFD400]' : 'text-zinc-600'
-                }`}
+            return (
+              <motion.button
+                key={item.id}
+                onClick={() => onChange(item.id)}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className="relative flex flex-col items-center justify-center gap-1 rounded-2xl transition-colors duration-200"
+                style={{
+                  width: '64px',
+                  height: '56px',
+                  minHeight: '48px',
+                  color: isActive ? '#FFD400' : '#52525b',
+                }}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
               >
-                {item.label}
-              </span>
+                {/* Highlight background for active tab */}
+                {isActive && (
+                  <motion.div
+                    layoutId="bottom-nav-active-bg"
+                    className="absolute inset-0 rounded-2xl"
+                    style={{
+                      background: 'rgba(255, 212, 0, 0.08)',
+                      border: '1px solid rgba(255, 212, 0, 0.12)',
+                      boxShadow: '0 0 12px rgba(255, 212, 0, 0.1)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
 
-              {/* Active dot indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="bottom-nav-active-dot"
-                  className="absolute -top-0.5 w-5 h-0.5 rounded-full bg-[#FFD400] shadow-[0_0_10px_rgba(255,212,0,0.6)]"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
-    </nav>
+                {/* Icon container with glow when active */}
+                <div
+                  className="relative z-10 flex items-center justify-center"
+                  style={{
+                    filter: isActive
+                      ? 'drop-shadow(0 0 8px rgba(255, 212, 0, 0.4))'
+                      : 'none',
+                  }}
+                >
+                  <Icon size={22} />
+                </div>
+
+                {/* Label */}
+                <span
+                  className="relative z-10 font-black uppercase tracking-[0.12em] transition-colors duration-200"
+                  style={{
+                    fontSize: '9px',
+                    color: isActive ? '#FFD400' : '#52525b',
+                  }}
+                >
+                  {item.label}
+                </span>
+
+                {/* Active dot indicator — top center */}
+                {isActive && (
+                  <motion.div
+                    layoutId="bottom-nav-active-dot"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                    style={{
+                      width: '24px',
+                      height: '3px',
+                      background: '#FFD400',
+                      boxShadow: '0 0 10px rgba(255, 212, 0, 0.6)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 };
 

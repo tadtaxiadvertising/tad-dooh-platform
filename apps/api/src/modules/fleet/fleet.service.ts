@@ -170,12 +170,15 @@ export class FleetService {
         const lastSeen = d.lastSeen ?? lastLocation?.timestamp ?? null;
         // Online determination: use BOTH DB isOnline flag AND lastSeen freshness.
         // The DB flag is set to true by ingestTelemetryBatch, syncDeviceCampaigns,
-        // processBulkSync, etc. The lastSeen freshness catches devices that haven't
-        // flushed telemetry yet but were recently active.
-        // A device is considered online if EITHER the DB says it's online OR
-        // its lastSeen is within the freshness window.
-        const isOnlineByTimestamp = !!lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs;
-        const isOnline = d.isOnline || isOnlineByTimestamp;
+        // processBulkSync, deviceHeartbeat, etc. The monitoring cron clears it after
+        // 15 minutes of silence.
+        // Trust the DB isOnline flag only when lastSeen is within the cron's clearing
+        // window (15 min). Beyond that, the flag may be stale (cron hasn't yet flipped it).
+        const cronWindowMs = 15 * 60 * 1000;
+        const lastSeenAge = lastSeen ? now.getTime() - new Date(lastSeen).getTime() : Infinity;
+        const dbIsOnlineTrustworthy = d.isOnline && lastSeenAge <= cronWindowMs;
+        const isOnlineByTimestamp = !!lastSeen && lastSeenAge <= onlineWindowMs;
+        const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
 
         // Derive subscription status from the flag + expiry date (simpler, no nested query)
         let subscriptionStatus = 'PENDING';

@@ -433,6 +433,9 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
+      // SRE Cache Bust: Adding a trivial condition to force PgBouncer to parse a new Prepared Statement
+      // after the schedule_days column was added in the database.
+      where: { id: { not: '00000000-0000-0000-0000-000000000000' } },
       include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
       orderBy: { createdAt: 'desc' },
     });

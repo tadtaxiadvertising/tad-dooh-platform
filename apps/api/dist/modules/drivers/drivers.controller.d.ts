@@ -376,6 +376,27 @@ export declare class DriversController {
         bankAccountConfigured: boolean;
         deviceId: string;
     }>;
+    getMyTransactions(req: any): Promise<({
+        id: string;
+        type: string;
+        amount: number;
+        date: string;
+        desc: string;
+        status: string;
+        penaltyApplied: boolean;
+        penaltyPercentage: number;
+        transmissionHours: number;
+        activeAds: number;
+        gpsPoints: number;
+    } | {
+        id: string;
+        type: string;
+        amount: number;
+        date: string;
+        desc: string;
+        status: string;
+        validUntil: string;
+    })[]>;
     getHubPreview(id: string): Promise<{
         driverId: any;
         driverName: any;

@@ -104,7 +104,7 @@ let FleetService = class FleetService {
     async getFleetMap(advertiserId) {
         try {
             const now = new Date();
-            const onlineWindowMs = 90 * 1000;
+            const onlineWindowMs = 180 * 1000;
             const where = {};
             if (advertiserId) {
                 where.campaigns = {
@@ -129,11 +129,14 @@ let FleetService = class FleetService {
                     lastSeen: true,
                     lastLat: true,
                     lastLng: true,
+                    isOnline: true,
                     status: true,
+                    batteryLevel: true,
                     driver: {
                         select: {
                             id: true,
                             fullName: true,
+                            phone: true,
                             taxiPlate: true,
                             licensePlate: true,
                             status: true,
@@ -158,7 +161,11 @@ let FleetService = class FleetService {
                 const lastLat = d.lastLat ?? lastLocation?.latitude ?? null;
                 const lastLng = d.lastLng ?? lastLocation?.longitude ?? null;
                 const lastSeen = d.lastSeen ?? lastLocation?.timestamp ?? null;
-                const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+                const cronWindowMs = 15 * 60 * 1000;
+                const lastSeenAge = lastSeen ? now.getTime() - new Date(lastSeen).getTime() : Infinity;
+                const dbIsOnlineTrustworthy = d.isOnline && lastSeenAge <= cronWindowMs;
+                const isOnlineByTimestamp = !!lastSeen && lastSeenAge <= onlineWindowMs;
+                const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
                 let subscriptionStatus = 'PENDING';
                 if (d.driver) {
                     if (d.driver.subscriptionPaid) {
@@ -177,11 +184,17 @@ let FleetService = class FleetService {
                     lastSeen,
                     lastLat,
                     lastLng,
+                    lat: lastLat,
+                    lng: lastLng,
                     status: d.status,
                     isOnline,
                     driverName: d.driver?.fullName ?? null,
+                    phone: d.driver?.phone ?? null,
                     plate: d.driver?.taxiPlate ?? d.driver?.licensePlate ?? null,
                     subscriptionStatus,
+                    subscriptionEnd: d.driver?.subscriptionEnd ?? null,
+                    driverStatus: d.driver?.status ?? null,
+                    batteryLevel: d.batteryLevel ?? null,
                     speed: lastLocation?.speed ?? null,
                 };
             });
@@ -622,8 +635,16 @@ let FleetService = class FleetService {
             throw new common_1.HttpException('Driver Not Found', common_1.HttpStatus.NOT_FOUND);
         }
         if (!device) {
-            logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
-            throw new common_1.HttpException('Device Not Found', common_1.HttpStatus.NOT_FOUND);
+            logger.log(`📱 Auto-registering device [${data.deviceId}] as PENDING — awaiting admin approval.`);
+            await this.prisma.device.create({
+                data: {
+                    deviceId: data.deviceId,
+                    status: business_rules_1.BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+                    lastSeen: new Date(),
+                    isOnline: true,
+                    driverId: driver.id,
+                },
+            });
         }
         if (driver.status !== business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
             logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
@@ -648,6 +669,7 @@ let FleetService = class FleetService {
                 await this.prisma.device.update({
                     where: { deviceId: data.deviceId },
                     data: {
+                        isOnline: true,
                         lastSeen: new Date(),
                         lastLat: lastPoint.lat,
                         lastLng: lastPoint.lng,

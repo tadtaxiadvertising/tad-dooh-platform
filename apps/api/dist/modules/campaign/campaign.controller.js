@@ -38,6 +38,27 @@ const mediaAssetSafeSelect = {
     qrUrl: true,
     weight: true,
 };
+const mediaSafeSelect = {
+    id: true,
+    name: true,
+    filename: true,
+    originalFilename: true,
+    mime_type: true,
+    mimeType: true,
+    durationSeconds: true,
+    width: true,
+    height: true,
+    storageKey: true,
+    url: true,
+    cdnUrl: true,
+    hash: true,
+    hashMd5: true,
+    hashSha256: true,
+    campaign_id: true,
+    status: true,
+    createdAt: true,
+    qrUrl: true,
+};
 let CampaignController = class CampaignController {
     constructor(campaignService, prisma, mediaService, videoGenerator) {
         this.campaignService = campaignService;
@@ -151,7 +172,7 @@ let CampaignController = class CampaignController {
         if (role === 'ADVERTISER' && entityId) {
             return this.prisma.campaign.findMany({
                 where: { advertiserId: entityId },
-                include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+                include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
                 orderBy: { createdAt: 'desc' },
             });
         }

@@ -563,6 +563,66 @@ let DriversService = DriversService_1 = class DriversService {
             },
         });
     }
+    async getDriverTransactions(driverId) {
+        const payments = await this.prisma.payrollPayment.findMany({
+            where: { driverId },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+            select: {
+                id: true,
+                amount: true,
+                status: true,
+                month: true,
+                year: true,
+                paidAt: true,
+                createdAt: true,
+                penaltyApplied: true,
+                penaltyPercentage: true,
+                transmissionHours: true,
+                activeAds: true,
+                gpsPoints: true,
+            },
+        });
+        const subscriptions = await this.prisma.subscription.findMany({
+            where: { driverId },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            select: {
+                id: true,
+                plan: true,
+                amount: true,
+                status: true,
+                validUntil: true,
+                paidAt: true,
+                createdAt: true,
+            },
+        });
+        const transactions = [
+            ...payments.map(p => ({
+                id: p.id,
+                type: 'EARNING',
+                amount: p.amount,
+                date: (p.paidAt || p.createdAt).toISOString(),
+                desc: `Ganancias ${p.month}/${p.year} — ${p.activeAds} campañas, ${p.gpsPoints} puntos GPS`,
+                status: p.status,
+                penaltyApplied: p.penaltyApplied,
+                penaltyPercentage: p.penaltyPercentage,
+                transmissionHours: p.transmissionHours,
+                activeAds: p.activeAds,
+                gpsPoints: p.gpsPoints,
+            })),
+            ...subscriptions.map(s => ({
+                id: s.id,
+                type: s.status === 'ACTIVE' && s.paidAt ? 'SUBSCRIPTION' : 'SUBSCRIPTION_PENDING',
+                amount: -s.amount,
+                date: (s.paidAt || s.createdAt).toISOString(),
+                desc: `${s.plan} — ${s.status}`,
+                status: s.status,
+                validUntil: s.validUntil?.toISOString() || null,
+            })),
+        ];
+        return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
 };
 exports.DriversService = DriversService;
 exports.DriversService = DriversService = DriversService_1 = __decorate([

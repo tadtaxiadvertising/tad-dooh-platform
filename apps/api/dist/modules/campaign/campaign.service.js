@@ -30,6 +30,27 @@ const mediaAssetSafeSelect = {
     qrUrl: true,
     weight: true,
 };
+const mediaSafeSelect = {
+    id: true,
+    name: true,
+    filename: true,
+    originalFilename: true,
+    mime_type: true,
+    mimeType: true,
+    durationSeconds: true,
+    width: true,
+    height: true,
+    storageKey: true,
+    url: true,
+    cdnUrl: true,
+    hash: true,
+    hashMd5: true,
+    hashSha256: true,
+    campaign_id: true,
+    status: true,
+    createdAt: true,
+    qrUrl: true,
+};
 let CampaignService = CampaignService_1 = class CampaignService {
     constructor(prisma, supabaseService) {
         this.prisma = prisma;
@@ -345,14 +366,14 @@ let CampaignService = CampaignService_1 = class CampaignService {
     }
     async getAllCampaigns() {
         return this.prisma.campaign.findMany({
-            include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+            include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
             orderBy: { createdAt: 'desc' },
         });
     }
     async getCampaignById(id) {
         return this.prisma.campaign.findUnique({
             where: { id },
-            include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+            include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
         });
     }
     async getActiveSyncVideos(deviceIdOrUuid, deviceCity) {
@@ -394,7 +415,7 @@ let CampaignService = CampaignService_1 = class CampaignService {
                     where: { id: { in: campaignIds } },
                     include: {
                         mediaAssets: { select: mediaAssetSafeSelect },
-                        media: true,
+                        media: { select: mediaSafeSelect },
                         videos: true,
                         advertiserRef: true,
                     },
@@ -418,7 +439,7 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 },
                 include: {
                     mediaAssets: { select: mediaAssetSafeSelect },
-                    media: true,
+                    media: { select: mediaSafeSelect },
                     videos: true,
                     advertiserRef: true,
                 },

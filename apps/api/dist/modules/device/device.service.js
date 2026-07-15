@@ -61,6 +61,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
             return this.prisma.device.update({
                 where: { deviceId: dto.device_id },
                 data: {
+                    isOnline: true,
                     appVersion: dto.app_version,
                     lastSeen: new Date(),
                     driverId: dto.driver_id ?? undefined,
@@ -106,6 +107,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
                     id: true,
                     deviceId: true,
                     taxiNumber: true,
+                    isOnline: true,
                     status: true,
                     lastSeen: true,
                     batteryLevel: true,
@@ -126,7 +128,11 @@ let DeviceService = DeviceService_1 = class DeviceService {
             slotMap.set(row.device_id, row._count?.campaign_id || 0);
         }
         return devices.map((d) => {
-            const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs));
+            const cronWindowMs = 15 * 60 * 1000;
+            const lastSeenAge = d.lastSeen ? now.getTime() - d.lastSeen.getTime() : Infinity;
+            const dbIsOnlineTrustworthy = d.isOnline && lastSeenAge <= cronWindowMs;
+            const isOnlineByTimestamp = !!d.lastSeen && lastSeenAge <= thirtyMinMs;
+            const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
             const assignedSlots = slotMap.get(d.id) || 0;
             return {
                 id: d.id,
@@ -176,7 +182,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
             this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
             await this.prisma.device.update({
                 where: { deviceId: dto.device_id },
-                data: { lastSeen: new Date() },
+                data: { isOnline: true, lastSeen: new Date() },
             });
             return { success: true, blocked: true, reason: 'awaiting_approval' };
         }
@@ -184,6 +190,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
             await this.prisma.device.update({
                 where: { deviceId: dto.device_id },
                 data: {
+                    isOnline: true,
                     lastSeen: new Date(),
                     batteryLevel: dto.battery_level,
                     storageFree: dto.storage_free,

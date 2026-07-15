@@ -168,26 +168,24 @@ export declare class CampaignController {
     getAllCampaigns(req: any): Promise<({
         media: {
             status: string;
-            name: string | null;
+            name: string;
             id: string;
             createdAt: Date;
-            filename: string | null;
-            url: string | null;
-            fileSize: bigint | null;
-            qrUrl: string | null;
-            originalFilename: string | null;
-            mime_type: string | null;
-            mimeType: string | null;
-            size: bigint | null;
-            durationSeconds: number | null;
-            width: number | null;
-            height: number | null;
-            storageKey: string | null;
-            cdnUrl: string | null;
-            hash: string | null;
-            hashMd5: string | null;
-            hashSha256: string | null;
-            campaign_id: string | null;
+            filename: string;
+            url: string;
+            qrUrl: string;
+            originalFilename: string;
+            mime_type: string;
+            mimeType: string;
+            durationSeconds: number;
+            width: number;
+            height: number;
+            storageKey: string;
+            cdnUrl: string;
+            hash: string;
+            hashMd5: string;
+            hashSha256: string;
+            campaign_id: string;
         }[];
         mediaAssets: {
             type: string;
@@ -413,26 +411,24 @@ export declare class CampaignController {
     getCampaignById(id: string, req: any): Promise<{
         media: {
             status: string;
-            name: string | null;
+            name: string;
             id: string;
             createdAt: Date;
-            filename: string | null;
-            url: string | null;
-            fileSize: bigint | null;
-            qrUrl: string | null;
-            originalFilename: string | null;
-            mime_type: string | null;
-            mimeType: string | null;
-            size: bigint | null;
-            durationSeconds: number | null;
-            width: number | null;
-            height: number | null;
-            storageKey: string | null;
-            cdnUrl: string | null;
-            hash: string | null;
-            hashMd5: string | null;
-            hashSha256: string | null;
-            campaign_id: string | null;
+            filename: string;
+            url: string;
+            qrUrl: string;
+            originalFilename: string;
+            mime_type: string;
+            mimeType: string;
+            durationSeconds: number;
+            width: number;
+            height: number;
+            storageKey: string;
+            cdnUrl: string;
+            hash: string;
+            hashMd5: string;
+            hashSha256: string;
+            campaign_id: string;
         }[];
         mediaAssets: {
             type: string;

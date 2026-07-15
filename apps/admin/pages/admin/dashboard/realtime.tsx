@@ -64,6 +64,7 @@ interface Device {
   assignedAdvertiser?: string;
   assignedCampaign?: string;
   assignedCampaignId?: string;
+  _lastPingAt?: string;
 }
 
 interface Campaign {
@@ -89,7 +90,11 @@ const isFreshTelemetry = (timestamp?: string | null) => {
 const applyFleetFreshness = (vehicles: any[]) =>
   vehicles.map((vehicle) => ({
     ...vehicle,
-    isOnline: isFreshTelemetry(vehicle.lastSeen),
+    // Online determination: trust backend isOnline OR fresh lastSeen OR recent realtime ping.
+    // The backend's isOnline comes from Device.isOnline DB field (set by ingestTelemetryBatch,
+    // syncDeviceCampaigns, etc.) which persists across page loads. The client-side freshness
+    // check catches stale timestamps. A device is online if ANY of these signals are true.
+    isOnline: vehicle.isOnline || isFreshTelemetry(vehicle.lastSeen) || isFreshTelemetry(vehicle._lastPingAt),
   }));
 
 interface TelemetryPing {
@@ -130,6 +135,7 @@ const upsertTelemetryPing = (vehicles: Device[], ping: TelemetryPing) => {
     lastLng: ping.lng,
     lastSeen: ping.timestamp,
     isOnline: true,
+    _lastPingAt: new Date().toISOString(),  // client-side receipt time for freshness re-eval
   };
 
   if (idx === -1) {
@@ -148,6 +154,7 @@ const upsertTelemetryPing = (vehicles: Device[], ping: TelemetryPing) => {
         batteryLevel: undefined,
         subscriptionStatus: 'ACTIVE',
         speed: ping.speed,
+        _lastPingAt: new Date().toISOString(),
       } as Device,
     ];
   }

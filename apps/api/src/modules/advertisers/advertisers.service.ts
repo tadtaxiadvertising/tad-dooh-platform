@@ -140,7 +140,7 @@ export class AdvertisersService {
 
     const campaignIds = advertiser.campaigns.map(c => c.id);
     const now = new Date();
-    const onlineWindowMs = 90 * 1000;
+    const onlineWindowMs = 180 * 1000;  // 3 min — aligned with FleetService.getFleetMap
     const activeCampaignWhere = {
       advertiserId: id,
       active: true,
@@ -154,6 +154,7 @@ export class AdvertisersService {
       lastSeen: true,
       lastLat: true,
       lastLng: true,
+      isOnline: true,
       status: true,
       driverId: true,
       driver: {
@@ -209,7 +210,8 @@ export class AdvertisersService {
       const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
       const lastLng = device.lastLng ?? lastLocation?.longitude ?? null;
       const lastSeen = device.lastSeen ?? lastLocation?.timestamp ?? null;
-      const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+      const isOnlineByTimestamp = !!lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs;
+      const isOnline = device.isOnline || isOnlineByTimestamp;
       const driver = device.driver || null;
       const existing = contractedByDeviceId.get(device.deviceId);
       const campaigns = new Set<string>(existing?.campaigns || []);

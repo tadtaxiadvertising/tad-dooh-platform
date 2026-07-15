@@ -9,7 +9,8 @@ import { Toaster } from 'sonner';
 import { useAntigravity } from '@tad/ui';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
-
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import { NotificationToast } from '@/components/Notifications/NotificationToast';
 
 const PUBLIC_PAGES = [
   '/login',
@@ -37,15 +38,17 @@ function AppWrapper({ Component, pageProps, router }: AppProps) {
 
   return (
     <AuthProvider>
-      <div className="font-sans antialiased">
-        <Component {...pageProps} />
-      </div>
+      <NotificationProvider>
+        <div className="font-sans antialiased">
+          <Component {...pageProps} />
+        </div>
+        <NotificationToast />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
 
 export default function App(props: AppProps) {
-  // Ensure QueryClient is only created once on the client
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -71,8 +74,8 @@ export default function App(props: AppProps) {
   }
 
   return (
-    <PersistQueryClientProvider 
-      client={queryClient} 
+    <PersistQueryClientProvider
+      client={queryClient}
       persistOptions={{ persister }}
     >
       <AppWrapper {...props} />

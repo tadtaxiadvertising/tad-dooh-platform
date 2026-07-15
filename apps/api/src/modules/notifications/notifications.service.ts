@@ -102,4 +102,24 @@ export class NotificationsService {
       entityId: driverId,
     });
   }
+
+  /**
+   * Publica una notificación dirigida a un conductor por canal privado Realtime.
+   * No lanza: si el canal falla, solo registra el error para no romper el flujo.
+   */
+  async sendDriverNotification(driverId: string, type: string, payload: Record<string, unknown>) {
+    const channel = `driver_notifications_${driverId}`;
+    this.logger.log(`📣 [NOTIFY] ${type} -> ${channel}`);
+
+    try {
+      const supabase = this.supabaseService.getClient();
+      await supabase.channel(channel).send({
+        type: 'broadcast',
+        event: type,
+        payload,
+      });
+    } catch (err) {
+      this.logger.error(`[NOTIFY] Error enviando ${type} a ${driverId}: ${(err as Error).message}`);
+    }
+  }
 }

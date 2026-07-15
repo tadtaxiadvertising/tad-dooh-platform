@@ -78,7 +78,7 @@ interface Campaign {
 // ─────────────────────────────────────────────────────────────────────
 // REAL-TIME HELPERS (from /admin/tracking)
 // ─────────────────────────────────────────────────────────────────────
-const OFFLINE_THRESHOLD_MS = 90_000;
+const OFFLINE_THRESHOLD_MS = 180_000;  // 3 min — tolera hasta 5 pings consecutivos perdidos
 
 const isFreshTelemetry = (timestamp?: string | null) => {
   if (!timestamp) return false;

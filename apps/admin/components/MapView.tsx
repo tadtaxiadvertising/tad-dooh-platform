@@ -12,7 +12,7 @@ interface MapViewProps {
   center?: [number, number];
   zoom?: number;
   heatmapMode?: boolean;
-  
+
   // New props from realtime.tsx
   locations?: any[];
   heatmapData?: any[];
@@ -49,22 +49,22 @@ const createCustomIcon = (isOnline: boolean) => {
 // Component to update map view based on props
 function MapUpdater({ center, zoom }: { center?: [number, number]; zoom?: number }) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (center) {
       map.setView(center, zoom ?? map.getZoom());
     }
   }, [center, zoom, map]);
-  
+
   return null;
 }
 
-export default function MapView({ 
-  taxis, 
+export default function MapView({
+  taxis,
   locations,
   heatmapData,
-  center = [-34.6037, -58.3816], 
-  zoom = 12, 
+  center = [-34.6037, -58.3816],
+  zoom = 12,
   heatmapMode = false,
   mode = 'normal',
   mapTheme = 'dark',
@@ -81,8 +81,8 @@ export default function MapView({
   useEffect(() => {
     setIsClient(true);
     // Detect system preference or app theme
-    const isDark = document.documentElement.classList.contains('dark') || 
-                   window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = document.documentElement.classList.contains('dark') ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDark);
   }, []);
 
@@ -115,14 +115,14 @@ export default function MapView({
     >
       <TileLayer url={tileUrl} attribution={attribution} />
       <MapUpdater center={center} zoom={zoom} />
-      
+
       {dataToRender.map((item: any) => {
         // Support both TaxiData interface and generic location object
-        const latitude = item.latitude || item.lat;
-        const longitude = item.longitude || item.lng || item.lon;
-        
+        const latitude = item.latitude || item.lat || item.lastLat;
+        const longitude = item.longitude || item.lng || item.lon || item.lastLng;
+
         if (!latitude || !longitude) return null;
-        
+
         const position: [number, number] = [latitude, longitude];
         const isSelected = selectedId === item.id;
         // ALL-SEEING EYE PATCH (v12.1.3, MAP-SPEC-2026):
@@ -142,12 +142,12 @@ export default function MapView({
           !!item.isOnline ||
           item.online === true ||
           String(item.status).toLowerCase() === 'online';
-        
+
         if (currentMode) {
           // Heatmap mode: show density with circle markers
           const opacity = (isOnline ? heatmapIntensity : heatmapIntensity * 0.5);
           const radius = heatmapRadius || (isOnline ? 30 : 15);
-          
+
           return (
             <CircleMarker
               key={item.id}
@@ -160,7 +160,7 @@ export default function MapView({
             />
           );
         }
-        
+
         // Normal mode: show markers with details
         return (
           <Marker
@@ -176,10 +176,9 @@ export default function MapView({
                 <h3 className="font-bold text-lg mb-2">{item.driver_name || item.name || `Vehicle ${item.license_plate || item.plate || item.id}`}</h3>
                 <div className="space-y-1 text-sm">
                   <p><strong>Plate:</strong> {item.license_plate || item.plate || 'N/A'}</p>
-                  <p><strong>Status:</strong> 
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                      isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                  <p><strong>Status:</strong>
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {isOnline ? 'Online' : 'Offline'}
                     </span>
                   </p>

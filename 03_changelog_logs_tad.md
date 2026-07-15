@@ -1,8 +1,35 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-07-12
+> **Última Actualización**: 2026-07-15
 
 ---
+
+### 🚀 FEATURE / 🔧 FIX: Online Points on Map + Device Auto-Registration + Transaction Endpoint (v12.2.0)
+
+- **Root Cause**: Online points never appeared on the Admin Map because `Device.isOnline` was never set to `true` in production — two upstream 404 errors blocked ALL telemetry processing:
+  1. **POST /fleet/track-batch → 404 "Device Not Found"**: The driver PWA sends telemetry with a `deviceId` from QR-code localStorage, but the device wasn't registered in the DB. `ingestTelemetryBatch()` rejected ALL telemetry, so devices were never marked `isOnline = true`. Offline points appeared (historical GPS preserved) while online ones were invisible (no GPS ever persisted).
+  2. **GET /drivers/me/transactions → 404**: This endpoint didn't exist in the backend. Every dashboard load triggered a useless 404.
+
+- **Changes**:
+  1. **Backend: `Device.isOnline = true` lifecycle** — All device-contact endpoints now set `isOnline: true`:
+     - `ingestTelemetryBatch()` — sets `isOnline: true` on Device update
+     - `deviceHeartbeat()` — sets `isOnline: true` for active and PENDING devices
+     - `registerDevice()` — sets `isOnline: true` when re-registering existing device
+     - `syncDeviceCampaigns()` / `processBulkSync()` — already set it (unchanged)
+  2. **Backend: Auto-register unknown devices in `ingestTelemetryBatch()`** — Instead of rejecting with 404 "Device Not Found", unknown devices are now auto-registered as PENDING (awaiting admin approval), mirroring `deviceHeartbeat()` behavior. This ensures telemetry always gets processed.
+  3. **Backend: `isOnline` determination uses `dbIsOnlineTrustworthy || isOnlineByTimestamp`** — The DB `isOnline` flag is trusted only within the 15-minute monitoring cron window; beyond that, the timestamp freshness check takes over. Applied consistently in `FleetService.getFleetMap()`, `AdvertisersService`, and `DeviceService.getFleetStatusSummary()`.
+  4. **Backend: Added `GET /api/v1/drivers/me/transactions` endpoint** — Returns payroll payments + subscription payments as a unified transaction history. Eliminates the 404 that fired every dashboard load.
+  5. **Frontend: `applyFleetFreshness()` now uses 3 signals** — `vehicle.isOnline || isFreshTelemetry(vehicle.lastSeen) || isFreshTelemetry(vehicle._lastPingAt)`. The `_lastPingAt` field tracks when the admin received a Supabase realtime ping, preventing the 10-second re-evaluation from undoing `isOnline: true`.
+  6. **Frontend: `OFFLINE_THRESHOLD_MS` aligned** — Tracking page (90s → 180s) and advertisers service (90s → 180s) now match the realtime dashboard and `getFleetMap()` threshold.
+- **Archivos tocados**:
+  - `apps/api/src/modules/fleet/fleet.service.ts` (auto-register, isOnline lifecycle, dbIsOnlineTrustworthy)
+  - `apps/api/src/modules/device/device.service.ts` (heartbeat isOnline, register isOnline, getFleetStatusSummary)
+  - `apps/api/src/modules/advertisers/advertisers.service.ts` (isOnline select + dbIsOnlineTrustworthy, threshold aligned)
+  - `apps/api/src/modules/drivers/drivers.controller.ts` (me/transactions endpoint)
+  - `apps/api/src/modules/drivers/drivers.service.ts` (getDriverTransactions method)
+  - `apps/admin/pages/admin/dashboard/realtime.tsx` (applyFleetFreshness, upsertTelemetryPing _lastPingAt, Device interface)
+  - `apps/admin/pages/admin/tracking/index.tsx` (same pattern, threshold aligned)
+- **Nota Infraestructura**: The auto-registration of unknown devices as PENDING means they'll appear on the map immediately (with `isOnline: true`) but won't receive content (campaign sync returns `blocked: true, reason: awaiting_approval`). Admin must approve them to fully activate. The monitoring cron (every 30 min) will set `isOnline: false` after 15 minutes of silence, ensuring stale flags don't persist forever.
 
 ### 🔧 FIX: Proxy Admin Dashboard 500 en `/api/proxy/campaigns` — Resiliencia V12.1.4b
 

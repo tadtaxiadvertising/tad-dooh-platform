@@ -21,7 +21,7 @@ export class DriversService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService
-  ) {}
+  ) { }
 
   private hasBankAccountConfigured(bankAccount: unknown): boolean {
     if (!bankAccount || typeof bankAccount !== 'object' || Array.isArray(bankAccount)) {
@@ -528,7 +528,7 @@ export class DriversService {
 
       const deviceId = (driver as any).devices?.[0]?.deviceId || null;
       this.logger.debug(`[DRIVER_HUB][GET_BY_ID][FOUND] driverId=${driverId} deviceId=${deviceId}`);
-      
+
       return await this.buildHubData(driver, deviceId);
     } catch (err) {
       this.logger.error(`[DRIVER_HUB][GET_BY_ID][ERROR] driverId=${driverId} message=${err.message}`, err.stack);
@@ -543,15 +543,15 @@ export class DriversService {
    */
   private async buildHubData(driver: any, deviceId: string | null) {
     this.logger.debug(`[HUB_BUILD] Iniciando construcción para ${driver.id}`);
-    
+
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
 
     // Queries en paralelo con manejo individual de errores
-    const fetchAdsPlayed = deviceId 
+    const fetchAdsPlayed = deviceId
       ? this.prisma.analyticsEvent.count({
-          where: { deviceId, eventType: { in: ['play_confirm', 'video_end', 'impression'] } }
-        }).catch(e => { this.logger.warn(`[HUB_WARN] Error adsPlayed: ${e.message}`); return 0; })
+        where: { deviceId, eventType: { in: ['play_confirm', 'video_end', 'impression'] } }
+      }).catch(e => { this.logger.warn(`[HUB_WARN] Error adsPlayed: ${e.message}`); return 0; })
       : Promise.resolve(0);
 
     const fetchGpsPoints = this.prisma.driverLocation.count({
@@ -560,11 +560,11 @@ export class DriversService {
 
     const fetchActiveAds = deviceId
       ? this.prisma.deviceCampaign.count({
-          where: { device: { deviceId }, campaign: { status: 'ACTIVE' } }
-        }).catch(e => { 
-          this.logger.warn(`[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`);
-          return this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
-        })
+        where: { device: { deviceId }, campaign: { status: 'ACTIVE' } }
+      }).catch(e => {
+        this.logger.warn(`[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`);
+        return this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
+      })
       : this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
 
     const fetchLastPayment = this.prisma.payrollPayment.findFirst({
@@ -610,9 +610,9 @@ export class DriversService {
     const advertiserReferralEarnings = (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
     const totalPaid = (totalPaidSum as any)?._sum?.amount || 0;
-    
+
     this.logger.debug(`[HUB_BUILD] Aplicando penalizaciones...`);
-    
+
     // Aplicar penalizaciones al proyectado si aplica
     let finalProjected = projectedEarnings;
     let penaltyApplied = false;
@@ -626,7 +626,7 @@ export class DriversService {
     } catch (pErr) {
       this.logger.error(`[HUB_ERROR] Error en applyPenaltyLogic: ${pErr.message}`);
     }
-    
+
     const balance = finalProjected + referralEarnings + advertiserReferralEarnings - totalPaid;
 
     this.logger.log(`✅ [HUB_SUCCESS] Hub construido para ${driver.fullName} (${driver.id}). Balance: ${balance}`);
@@ -654,10 +654,10 @@ export class DriversService {
       balance,
       lastPayment: lastPayment
         ? {
-            amount: lastPayment.amount,
-            status: lastPayment.status,
-            date: lastPayment.paidAt || lastPayment.createdAt,
-          }
+          amount: lastPayment.amount,
+          status: lastPayment.status,
+          date: lastPayment.paidAt || lastPayment.createdAt,
+        }
         : null,
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid,
@@ -753,5 +753,73 @@ export class DriversService {
         status: 'ACTIVE',
       },
     });
+  }
+
+  /**
+   * GET /api/drivers/me/transactions — Returns payroll payment history for a driver.
+   * Includes earnings, withdrawals, referral bonuses, and subscription payments.
+   */
+  async getDriverTransactions(driverId: string) {
+    const payments = await this.prisma.payrollPayment.findMany({
+      where: { driverId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        month: true,
+        year: true,
+        paidAt: true,
+        createdAt: true,
+        penaltyApplied: true,
+        penaltyPercentage: true,
+        transmissionHours: true,
+        activeAds: true,
+        gpsPoints: true,
+      },
+    });
+
+    const subscriptions = await this.prisma.subscription.findMany({
+      where: { driverId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        plan: true,
+        amount: true,
+        status: true,
+        validUntil: true,
+        paidAt: true,
+        createdAt: true,
+      },
+    });
+
+    const transactions = [
+      ...payments.map(p => ({
+        id: p.id,
+        type: 'EARNING',
+        amount: p.amount,
+        date: (p.paidAt || p.createdAt).toISOString(),
+        desc: `Ganancias ${p.month}/${p.year} — ${p.activeAds} campañas, ${p.gpsPoints} puntos GPS`,
+        status: p.status,
+        penaltyApplied: p.penaltyApplied,
+        penaltyPercentage: p.penaltyPercentage,
+        transmissionHours: p.transmissionHours,
+        activeAds: p.activeAds,
+        gpsPoints: p.gpsPoints,
+      })),
+      ...subscriptions.map(s => ({
+        id: s.id,
+        type: s.status === 'ACTIVE' && s.paidAt ? 'SUBSCRIPTION' : 'SUBSCRIPTION_PENDING',
+        amount: -s.amount,
+        date: (s.paidAt || s.createdAt).toISOString(),
+        desc: `${s.plan} — ${s.status}`,
+        status: s.status,
+        validUntil: s.validUntil?.toISOString() || null,
+      })),
+    ];
+
+    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 }

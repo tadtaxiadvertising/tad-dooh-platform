@@ -10,7 +10,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 @Controller('drivers')
 export class DriversController {
   private readonly logger = new Logger(DriversController.name);
-  constructor(private readonly driversService: DriversService) {}
+  constructor(private readonly driversService: DriversService) { }
 
   /**
    * GET /api/drivers — Listar todos los choferes
@@ -139,7 +139,7 @@ export class DriversController {
     @Req() req: Request
   ) {
     if (!body.version) throw new BadRequestException('version es requerida');
-    
+
     // Fallbacks para IP address and headers
     const ipAddress = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown') as string;
     const userAgent = (req.headers['user-agent'] || 'unknown') as string;
@@ -199,6 +199,17 @@ export class DriversController {
     const { entityId } = req.user;
     if (!entityId) throw new ForbiddenException('No tienes un perfil de conductor asociado');
     return this.driversService.getDriverHubDataById(entityId);
+  }
+
+  /**
+   * GET /api/drivers/me/transactions — Historial de transacciones (pagos, retiros, bonos) del chofer autenticado
+   */
+  @Get('me/transactions')
+  @Roles(UserRole.DRIVER)
+  async getMyTransactions(@Req() req: any) {
+    const { entityId } = req.user;
+    if (!entityId) throw new ForbiddenException('No tienes un perfil de conductor asociado');
+    return this.driversService.getDriverTransactions(entityId);
   }
 
   /**

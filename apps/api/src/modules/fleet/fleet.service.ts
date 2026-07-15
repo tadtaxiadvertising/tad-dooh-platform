@@ -751,9 +751,20 @@ export class FleetService {
       throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
     }
 
+    // Auto-register unknown devices as PENDING (awaiting admin approval).
+    // This mirrors deviceHeartbeat's behavior for unknown devices and prevents
+    // the 404 that blocks ALL telemetry from an unregistered tablet.
     if (!device) {
-      logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
-      throw new HttpException('Device Not Found', HttpStatus.NOT_FOUND);
+      logger.log(`📱 Auto-registering device [${data.deviceId}] as PENDING — awaiting admin approval.`);
+      await this.prisma.device.create({
+        data: {
+          deviceId: data.deviceId,
+          status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+          lastSeen: new Date(),
+          isOnline: true,
+          driverId: driver.id,
+        },
+      });
     }
 
     // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día

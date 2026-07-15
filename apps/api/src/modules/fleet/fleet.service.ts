@@ -139,10 +139,12 @@ export class FleetService {
           lastLng: true,
           isOnline: true,
           status: true,
+          batteryLevel: true,
           driver: {
             select: {
               id: true,
               fullName: true,
+              phone: true,
               taxiPlate: true,
               licensePlate: true,
               status: true,
@@ -204,8 +206,12 @@ export class FleetService {
           status: d.status,
           isOnline,
           driverName: d.driver?.fullName ?? null,
+          phone: d.driver?.phone ?? null,
           plate: d.driver?.taxiPlate ?? d.driver?.licensePlate ?? null,
           subscriptionStatus,
+          subscriptionEnd: d.driver?.subscriptionEnd ?? null,
+          driverStatus: d.driver?.status ?? null,
+          batteryLevel: d.batteryLevel ?? null,
           speed: lastLocation?.speed ?? null,
         };
       });

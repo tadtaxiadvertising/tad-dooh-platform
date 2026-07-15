@@ -81,6 +81,21 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             entityId: driverId,
         });
     }
+    async sendDriverNotification(driverId, type, payload) {
+        const channel = `driver_notifications_${driverId}`;
+        this.logger.log(`📣 [NOTIFY] ${type} -> ${channel}`);
+        try {
+            const supabase = this.supabaseService.getClient();
+            await supabase.channel(channel).send({
+                type: 'broadcast',
+                event: type,
+                payload,
+            });
+        }
+        catch (err) {
+            this.logger.error(`[NOTIFY] Error enviando ${type} a ${driverId}: ${err.message}`);
+        }
+    }
 };
 exports.NotificationsService = NotificationsService;
 exports.NotificationsService = NotificationsService = NotificationsService_1 = __decorate([

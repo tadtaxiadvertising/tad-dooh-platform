@@ -14,6 +14,7 @@ exports.CampaignService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const supabase_service_1 = require("../supabase/supabase.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 const crypto = require("crypto");
 const business_rules_1 = require("../../common/constants/business-rules");
 const mediaAssetSafeSelect = {
@@ -51,9 +52,10 @@ const mediaSafeSelect = {
     qrUrl: true,
 };
 let CampaignService = CampaignService_1 = class CampaignService {
-    constructor(prisma, supabaseService) {
+    constructor(prisma, supabaseService, notificationsService) {
         this.prisma = prisma;
         this.supabaseService = supabaseService;
+        this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(CampaignService_1.name);
     }
     async updateCampaign(id, dto) {
@@ -234,6 +236,21 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 campaignId,
                 targets: availableDevices.map(d => d.deviceId)
             }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
+            if (availableDevices.length > 0) {
+                await Promise.all(availableDevices.map(async (device) => {
+                    const bound = await this.prisma.device.findUnique({
+                        where: { deviceId: device.deviceId },
+                        select: { driverId: true },
+                    });
+                    if (!bound?.driverId)
+                        return;
+                    void this.notificationsService.sendDriverNotification(bound.driverId, 'CAMPAIGN_ASSIGNED', {
+                        campaignId,
+                        deviceId: device.deviceId,
+                        assignedAt: new Date().toISOString(),
+                    }).catch((err) => this.logger.warn(`[CAMPAIGN_NOTIFY] ${device.deviceId}: ${err.message}`));
+                }));
+            }
             this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
             return { count: availableDevices.length, skipped: skippedCount };
         });
@@ -649,6 +666,7 @@ exports.CampaignService = CampaignService;
 exports.CampaignService = CampaignService = CampaignService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        supabase_service_1.SupabaseService])
+        supabase_service_1.SupabaseService,
+        notifications_service_1.NotificationsService])
 ], CampaignService);
 //# sourceMappingURL=campaign.service.js.map

@@ -2,14 +2,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceService } from './invoice.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { EmailService } from '../notifications/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class FinanceService {
     private readonly prisma;
     private readonly invoiceService;
     private readonly whatsappService;
     private readonly emailService;
+    private readonly notificationsService;
     private readonly logger;
     private readonly PAY_PER_AD;
-    constructor(prisma: PrismaService, invoiceService: InvoiceService, whatsappService: WhatsAppService, emailService: EmailService);
+    constructor(prisma: PrismaService, invoiceService: InvoiceService, whatsappService: WhatsAppService, emailService: EmailService, notificationsService: NotificationsService);
     onModuleInit(): Promise<void>;
     notifyMorosidad(deviceId: string): Promise<{
         success: boolean;

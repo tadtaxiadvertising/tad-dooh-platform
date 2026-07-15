@@ -2,12 +2,14 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddMediaAssetDto } from './dto/add-media-asset.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AuthUser } from '../auth/auth.types';
 export declare class CampaignService {
     private readonly prisma;
     private readonly supabaseService;
+    private readonly notificationsService;
     private readonly logger;
-    constructor(prisma: PrismaService, supabaseService: SupabaseService);
+    constructor(prisma: PrismaService, supabaseService: SupabaseService, notificationsService: NotificationsService);
     updateCampaign(id: string, dto: Partial<CreateCampaignDto> & {
         target_devices?: string[];
         active?: boolean;

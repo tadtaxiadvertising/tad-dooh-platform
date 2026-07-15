@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,27 +14,31 @@
     "jsx": "preserve",
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "../../node_modules/@types"
-    ],
+    "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "paths": {
       "@/*": ["./*"],
       "@tad/logging": ["../../packages/logging/index.ts"],
       "@tad/logging/*": ["../../packages/logging/*"]
     }
-
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx",
+    "contexts/**/*.ts",
+    "contexts/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "tests/e2e"
-  ]
+  "exclude": ["node_modules", "tests/e2e", "apps", ".next"]
 }

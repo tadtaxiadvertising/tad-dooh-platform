@@ -12,11 +12,11 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaClientExceptionFilter.name);
 
   catch(
-    exception: 
-      | Prisma.PrismaClientKnownRequestError 
-      | Prisma.PrismaClientUnknownRequestError 
-      | Prisma.PrismaClientValidationError 
-      | Prisma.PrismaClientInitializationError, 
+    exception:
+      | Prisma.PrismaClientKnownRequestError
+      | Prisma.PrismaClientUnknownRequestError
+      | Prisma.PrismaClientValidationError
+      | Prisma.PrismaClientInitializationError,
     host: ArgumentsHost
   ) {
     const ctx = host.switchToHttp();
@@ -29,7 +29,7 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       this.logger.error(`Prisma Known Error [${exception.code}]: ${exception.message}`);
       errorCode = exception.code;
-      
+
       switch (exception.code) {
         case 'P2002':
           status = HttpStatus.CONFLICT;
@@ -51,7 +51,10 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
       message = 'Error de validación de datos: Verifique el formato de fechas o IDs.';
       errorCode = 'VALIDATION_ERROR';
     } else {
-      this.logger.error(`Prisma Unhandled Error: ${exception.message}`);
+      // PrismaClientUnknownRequestError, PrismaClientInitializationError
+      this.logger.error(`Prisma Unknown/Initialization Error: ${exception.message}`);
+      message = exception.message;
+      errorCode = 'DB_ERROR';
     }
 
     response.status(status).json({

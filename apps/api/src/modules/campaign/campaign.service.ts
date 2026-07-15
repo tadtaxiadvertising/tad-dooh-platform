@@ -19,8 +19,7 @@ const mediaAssetSafeSelect = {
   version: true,
   createdAt: true,
   qrUrl: true,
-  weight: true,
-};
+} as const;
 
 const mediaSafeSelect = {
   id: true,

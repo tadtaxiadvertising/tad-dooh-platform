@@ -19,6 +19,27 @@ const whatsapp_service_1 = require("../notifications/whatsapp.service");
 const email_service_1 = require("../notifications/email.service");
 const schedule_1 = require("@nestjs/schedule");
 const business_rules_1 = require("../../common/constants/business-rules");
+const mediaSafeSelect = {
+    id: true,
+    name: true,
+    filename: true,
+    originalFilename: true,
+    mime_type: true,
+    mimeType: true,
+    durationSeconds: true,
+    width: true,
+    height: true,
+    storageKey: true,
+    url: true,
+    cdnUrl: true,
+    hash: true,
+    hashMd5: true,
+    hashSha256: true,
+    campaign_id: true,
+    status: true,
+    createdAt: true,
+    qrUrl: true,
+};
 let FinanceService = FinanceService_1 = class FinanceService {
     constructor(prisma, invoiceService, whatsappService, emailService) {
         this.prisma = prisma;
@@ -136,7 +157,8 @@ let FinanceService = FinanceService_1 = class FinanceService {
                     eventType: 'play_confirm',
                     verified: true,
                 },
-                select: { deviceId: true, videoId: true }
+                select: { deviceId: true, videoId: true },
+                distinct: ['deviceId', 'videoId']
             })
         ]);
         const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
@@ -339,7 +361,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
     async generateInvoiceHtml(campaignId) {
         const campaign = await this.prisma.campaign.findUnique({
             where: { id: campaignId },
-            include: { advertiserRef: true, media: true }
+            include: { advertiserRef: true, media: { select: mediaSafeSelect } }
         });
         if (!campaign)
             return null;
@@ -404,7 +426,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
     async exportCampaignCsv(campaignId) {
         const campaign = await this.prisma.campaign.findUnique({
             where: { id: campaignId },
-            include: { media: true, _count: { select: { devices: true } } }
+            include: { media: { select: mediaSafeSelect }, _count: { select: { devices: true } } }
         });
         if (!campaign)
             return 'Campaña no encontrada';
@@ -490,7 +512,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
         const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
         const activeCampaigns = await this.prisma.campaign.findMany({
             where: { status: 'ACTIVE' },
-            include: { media: true }
+            include: { media: { select: mediaSafeSelect } }
         });
         let campaignRevenue = 0;
         activeCampaigns.forEach(campaign => {

@@ -520,4 +520,25 @@ export declare class DriversService {
         driverId: string;
         campaignId: string;
     }>;
+    getDriverTransactions(driverId: string): Promise<({
+        id: string;
+        type: string;
+        amount: number;
+        date: string;
+        desc: string;
+        status: string;
+        penaltyApplied: boolean;
+        penaltyPercentage: number;
+        transmissionHours: number;
+        activeAds: number;
+        gpsPoints: number;
+    } | {
+        id: string;
+        type: string;
+        amount: number;
+        date: string;
+        desc: string;
+        status: string;
+        validUntil: string;
+    })[]>;
 }

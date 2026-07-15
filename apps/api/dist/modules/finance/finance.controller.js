@@ -20,6 +20,27 @@ const whatsapp_service_1 = require("../notifications/whatsapp.service");
 const email_service_1 = require("../notifications/email.service");
 const prisma_service_1 = require("../prisma/prisma.service");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const mediaSafeSelect = {
+    id: true,
+    name: true,
+    filename: true,
+    originalFilename: true,
+    mime_type: true,
+    mimeType: true,
+    durationSeconds: true,
+    width: true,
+    height: true,
+    storageKey: true,
+    url: true,
+    cdnUrl: true,
+    hash: true,
+    hashMd5: true,
+    hashSha256: true,
+    campaign_id: true,
+    status: true,
+    createdAt: true,
+    qrUrl: true,
+};
 let FinanceController = class FinanceController {
     constructor(financeService, invoiceService, whatsappService, emailService, prisma) {
         this.financeService = financeService;
@@ -31,7 +52,7 @@ let FinanceController = class FinanceController {
     async downloadCampaignPdf(id, res) {
         const campaign = await this.prisma.campaign.findUnique({
             where: { id },
-            include: { media: true }
+            include: { media: { select: mediaSafeSelect } }
         });
         if (!campaign)
             return res.status(404).send('Campaña no encontrada');
@@ -144,7 +165,7 @@ let FinanceController = class FinanceController {
     async emailCampaignReport(id, body) {
         const campaign = await this.prisma.campaign.findUnique({
             where: { id },
-            include: { media: true },
+            include: { media: { select: mediaSafeSelect } },
         });
         if (!campaign)
             return { success: false, message: 'Campaña no encontrada' };
@@ -159,7 +180,7 @@ let FinanceController = class FinanceController {
         return { ...result, message: result.success ? 'Reporte enviado correctamente' : 'Error al enviar el reporte' };
     }
     async emailInvoice(campaignId, body) {
-        const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { media: true } });
+        const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { media: { select: mediaSafeSelect } } });
         if (!campaign)
             return { success: false, message: 'Campaña no encontrada' };
         const invoiceId = `INV-${campaignId.slice(0, 8).toUpperCase()}`;

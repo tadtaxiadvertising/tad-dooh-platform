@@ -94,11 +94,17 @@ export declare class FleetController {
         lastSeen: Date;
         lastLat: number;
         lastLng: number;
+        lat: number;
+        lng: number;
         status: import(".prisma/client").$Enums.SystemStatus;
         isOnline: boolean;
         driverName: string;
+        phone: string;
         plate: string;
         subscriptionStatus: string;
+        subscriptionEnd: Date;
+        driverStatus: import(".prisma/client").$Enums.SystemStatus;
+        batteryLevel: number;
         speed: number;
     }[]>;
     getTrackingBaseline(req: any): Promise<{
@@ -109,11 +115,17 @@ export declare class FleetController {
         lastSeen: Date;
         lastLat: number;
         lastLng: number;
+        lat: number;
+        lng: number;
         status: import(".prisma/client").$Enums.SystemStatus;
         isOnline: boolean;
         driverName: string;
+        phone: string;
         plate: string;
         subscriptionStatus: string;
+        subscriptionEnd: Date;
+        driverStatus: import(".prisma/client").$Enums.SystemStatus;
+        batteryLevel: number;
         speed: number;
     }[]>;
     getOfflineDevices(): Promise<{

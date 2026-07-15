@@ -54,4 +54,5 @@ export declare class NotificationsService {
         entityId: string | null;
         read: boolean;
     }>;
+    sendDriverNotification(driverId: string, type: string, payload: Record<string, unknown>): Promise<void>;
 }

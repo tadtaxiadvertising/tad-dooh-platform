@@ -4,6 +4,7 @@ import { InvoiceService } from './invoice.service';
 import { throttledMap } from '../../utils/throttler.util';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { EmailService } from '../notifications/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
@@ -35,11 +36,12 @@ export class FinanceService {
   private readonly PAY_PER_AD = BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD; // RD$500 per active ad
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly invoiceService: InvoiceService,
-    private readonly whatsappService: WhatsAppService,
-    private readonly emailService: EmailService
-  ) { }
+   private readonly prisma: PrismaService,
+   private readonly invoiceService: InvoiceService,
+   private readonly whatsappService: WhatsAppService,
+   private readonly emailService: EmailService,
+   private readonly notificationsService: NotificationsService
+   ) { }
 
   /**
    * RECOVERY: On module init, check if the system missed any critical delinquency scans
@@ -388,6 +390,18 @@ export class FinanceService {
       note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
       status: 'COMPLETED'
     });
+
+    // 3. Notification unificada al conductor
+        await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
+      amount: driverEntry.totalAmount,
+      currency: driverEntry.currency,
+      month,
+      year,
+      activeAds: driverEntry.activeAds,
+      paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
+    }).catch((err) =>
+      this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`),
+    );
 
     return payrollRecord;
   }

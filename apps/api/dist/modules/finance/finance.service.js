@@ -17,6 +17,7 @@ const invoice_service_1 = require("./invoice.service");
 const throttler_util_1 = require("../../utils/throttler.util");
 const whatsapp_service_1 = require("../notifications/whatsapp.service");
 const email_service_1 = require("../notifications/email.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 const schedule_1 = require("@nestjs/schedule");
 const business_rules_1 = require("../../common/constants/business-rules");
 const mediaSafeSelect = {
@@ -41,11 +42,12 @@ const mediaSafeSelect = {
     qrUrl: true,
 };
 let FinanceService = FinanceService_1 = class FinanceService {
-    constructor(prisma, invoiceService, whatsappService, emailService) {
+    constructor(prisma, invoiceService, whatsappService, emailService, notificationsService) {
         this.prisma = prisma;
         this.invoiceService = invoiceService;
         this.whatsappService = whatsappService;
         this.emailService = emailService;
+        this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(FinanceService_1.name);
         this.PAY_PER_AD = business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
         this.ITBIS_RATE = business_rules_1.BUSINESS_RULES.ITBIS_RATE;
@@ -310,6 +312,14 @@ let FinanceService = FinanceService_1 = class FinanceService {
             note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
             status: 'COMPLETED'
         });
+        await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
+            amount: driverEntry.totalAmount,
+            currency: driverEntry.currency,
+            month,
+            year,
+            activeAds: driverEntry.activeAds,
+            paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
+        }).catch((err) => this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`));
         return payrollRecord;
     }
     async getCampaignBillingReport() {
@@ -740,6 +750,7 @@ exports.FinanceService = FinanceService = FinanceService_1 = __decorate([
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         invoice_service_1.InvoiceService,
         whatsapp_service_1.WhatsAppService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        notifications_service_1.NotificationsService])
 ], FinanceService);
 //# sourceMappingURL=finance.service.js.map

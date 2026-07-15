@@ -3,6 +3,7 @@ import { AddMediaAssetDto } from './dto/add-media-asset.dto';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { AuthUser } from '../auth/auth.types';
@@ -45,12 +46,13 @@ const mediaSafeSelect = {
 
 @Injectable()
 export class CampaignService {
-  private readonly logger = new Logger(CampaignService.name);
+ private readonly logger = new Logger(CampaignService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly supabaseService: SupabaseService,
-  ) { }
+ constructor(
+ private readonly prisma: PrismaService,
+ private readonly supabaseService: SupabaseService,
+ private readonly notificationsService: NotificationsService,
+ ) { }
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
@@ -247,10 +249,30 @@ export class CampaignService {
 
       // BROADCAST REALTIME: Send WAKE_UP_CALL to fleet_sync channel
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'campaign_assigned',
-        campaignId,
-        targets: availableDevices.map(d => d.deviceId)
+      reason: 'campaign_assigned',
+      campaignId,
+      targets: availableDevices.map(d => d.deviceId)
       }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
+
+      if (availableDevices.length > 0) {
+        // Notificar driver-specific si se pudo resolver el dueño del dispositivo.
+        await Promise.all(
+          availableDevices.map(async (device) => {
+            const bound = await this.prisma.device.findUnique({
+              where: { deviceId: device.deviceId },
+              select: { driverId: true },
+            });
+            if (!bound?.driverId) return;
+            void this.notificationsService.sendDriverNotification(bound.driverId, 'CAMPAIGN_ASSIGNED', {
+              campaignId,
+              deviceId: device.deviceId,
+              assignedAt: new Date().toISOString(),
+            }).catch((err) =>
+              this.logger.warn(`[CAMPAIGN_NOTIFY] ${device.deviceId}: ${err.message}`)
+            );
+          })
+        );
+      }
 
       // SRE Optimization: Refresh view so heartbeats get the new state immediately
       this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));

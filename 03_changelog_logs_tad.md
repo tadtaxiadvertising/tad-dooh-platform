@@ -4,6 +4,15 @@
 
 ---
 
+### 🔧 FIX: Prisma Schema Mismatch en GET /api/v1/campaigns
+- **Cambio**: El campo `schedule_days` es vital para la lógica de negocio actual (GAP #6: Scheduling por día/hora), implementado en `sync.service.ts` y en el motor del `playlist-engine.ts` del reproductor. El error 500 se debe a que la base de datos de producción (Supabase) no está sincronizada con `schema.prisma`. No se eliminó código TypeScript, se determinó que la base de datos necesita actualización (Escenario B).
+- **Archivos tocados**:
+  - Ninguno (Se preserva el código TypeScript original ya que es la base de datos la que está desfasada).
+- **Nota Infraestructura**: Debes correr los siguientes comandos de Prisma en la consola de Easypanel (dentro del contenedor de la API):
+  `npx prisma db push --accept-data-loss` o alternativamente `npx prisma migrate deploy` si manejas el historial en la carpeta migrations.
+
+---
+
 ### 🚀 FEATURE / 🔧 FIX: Online Points on Map + Device Auto-Registration + Transaction Endpoint (v12.2.0)
 
 - **Root Cause**: Online points never appeared on the Admin Map because `Device.isOnline` was never set to `true` in production — two upstream 404 errors blocked ALL telemetry processing:

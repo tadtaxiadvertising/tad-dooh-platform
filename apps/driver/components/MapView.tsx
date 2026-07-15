@@ -22,7 +22,7 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Status-driven number colors: yellow = on/active, red = off
-const NUMBER_COLOR_ACTIVE  = '#eab308'; // Yellow — encendido
+const NUMBER_COLOR_ACTIVE = '#eab308'; // Yellow — encendido
 const NUMBER_COLOR_OFFLINE = '#dc2626'; // Red   — apagado
 
 // Coordenadas aproximadas del Centro de Santiago (Monumento y alrededores)
@@ -58,7 +58,7 @@ const createIcon = (
 
   // ── Number & headlight color: simple binary rule ─────────────────────────
   const numberColor = isActive ? NUMBER_COLOR_ACTIVE : NUMBER_COLOR_OFFLINE;
-  const textGlow    = isActive
+  const textGlow = isActive
     ? '0 0 10px rgba(234,179,8,0.85)'
     : '0 0 8px rgba(220,38,38,0.7)';
 
@@ -67,8 +67,8 @@ const createIcon = (
     ? { from: '#f1f5f9', mid: '#ffffff', to: '#e2e8f0' }  // white body
     : { from: '#1e293b', mid: '#0f172a', to: '#0a0a0b' }; // black body
 
-  const bodyStroke  = mapTheme === 'dark' ? '#cbd5e1' : '#374151';
-  const screenFill  = mapTheme === 'dark' ? '#f8fafc' : '#1e293b';
+  const bodyStroke = mapTheme === 'dark' ? '#cbd5e1' : '#374151';
+  const screenFill = mapTheme === 'dark' ? '#f8fafc' : '#1e293b';
   const screenStrok = mapTheme === 'dark' ? '#e2e8f0' : '#334155';
   const shineStroke = mapTheme === 'dark' ? '#e2e8f0' : '#475569';
   const shineOpacity = mapTheme === 'dark' ? '0.6' : '0.3';
@@ -215,10 +215,13 @@ interface MapLocation {
   isOnline?: boolean;
   city?: string;
   driverName?: string;
+  phone?: string;
   plate?: string;
   batteryLevel?: number | null;
   lastSeen?: string | null;
   subscriptionStatus?: string;
+  subscriptionEnd?: string | null;
+  driverStatus?: string;
   speed?: number;
 }
 
@@ -293,8 +296,8 @@ const MapView: React.FC<MapViewProps> = ({
 }) => {
   const [ready, setReady] = useState(false);
 
-  useEffect(() => { 
-    setReady(true); 
+  useEffect(() => {
+    setReady(true);
   }, []);
 
   // Función Ray-Casting para detectar punto en polígono
@@ -318,7 +321,7 @@ const MapView: React.FC<MapViewProps> = ({
           const sel = selectedId === loc.deviceId;
           const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
           const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
-          
+
           // Si está fuera de rango y online, forzamos alerta
           const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
 
@@ -332,7 +335,7 @@ const MapView: React.FC<MapViewProps> = ({
             >
               <Popup className="popup-clean" offset={[0, -12]}>
                 <VehiclePopup
-                  device={{...loc, isOutsideFence: !inFence} as any}
+                  device={{ ...loc, isOutsideFence: !inFence } as any}
                   onViewHistory={() => onViewHistory?.(loc)}
                   onSyncCommand={() => onSyncCommand?.(loc)}
                 />
@@ -370,7 +373,7 @@ const MapView: React.FC<MapViewProps> = ({
         <TileLayer
           key={mapTheme}
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={mapTheme === 'dark' 
+          url={mapTheme === 'dark'
             ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           }
@@ -379,7 +382,7 @@ const MapView: React.FC<MapViewProps> = ({
 
         <ZoomControl position="bottomright" />
         <MapController center={center} zoom={zoom} onMapClick={handleClear} />
-        
+
         {/* GEOFENCE LAYER — Cobertura Oficial */}
         <GeofenceLayer />
 
@@ -396,7 +399,7 @@ const MapView: React.FC<MapViewProps> = ({
 
         {/* HEATMAP — Optimized Layer */}
         {mode === 'heatmap' && heatmapData.length > 0 && (
-          <HeatmapLayer 
+          <HeatmapLayer
             points={heatmapData.map(p => [p.lat, p.lng, (p.count || 1) / 100])}
             radius={heatmapRadius}
             blur={Math.max(15, heatmapRadius * 0.7)}
@@ -421,12 +424,12 @@ const MapView: React.FC<MapViewProps> = ({
         <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.95)] opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
-        
+
         {/* Animated Scanline (Subtle) */}
         {mapTheme === 'dark' && (
           <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
         )}
-        
+
         {/* Corner Accents */}
         <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-white/10 rounded-tl-2xl" />
         <div className="absolute top-8 right-16 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl" />

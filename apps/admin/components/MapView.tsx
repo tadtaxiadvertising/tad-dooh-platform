@@ -172,23 +172,69 @@ export default function MapView({
             }}
           >
             <Popup>
-              <div className="min-w-[200px]">
-                <h3 className="font-bold text-lg mb-2">{item.driver_name || item.name || `Vehicle ${item.license_plate || item.plate || item.id}`}</h3>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Plate:</strong> {item.license_plate || item.plate || 'N/A'}</p>
-                  <p><strong>Status:</strong>
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              <div className="min-w-[260px] p-1">
+                <h3 className="font-bold text-sm mb-2 truncate">
+                  {item.driverName || item.driver_name || item.name || `Vehicle ${item.license_plate || item.plate || item.id}`}
+                </h3>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Placa</span>
+                    <span className="font-mono font-bold">{item.plate || item.license_plate || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Taxi #</span>
+                    <span className="font-mono font-bold text-amber-500">{item.taxiNumber || 'N/A'}</span>
+                  </div>
+                  {item.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Teléfono</span>
+                      <span className="font-mono">{item.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Estado</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                       {isOnline ? 'Online' : 'Offline'}
                     </span>
-                  </p>
+                  </div>
                   {(item.speed !== undefined || item.velocity !== undefined) && (
-                    <p><strong>Speed:</strong> {item.speed || item.velocity || 0} km/h</p>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Velocidad</span>
+                      <span className="font-bold">{item.speed || item.velocity || 0} km/h</span>
+                    </div>
                   )}
-                  {(item.last_update || item.updated_at) && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Updated: {new Date(item.last_update || item.updated_at).toLocaleTimeString()}
-                    </p>
+                  {item.batteryLevel != null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Batería</span>
+                      <span className={`font-bold ${item.batteryLevel < 20 ? 'text-red-500' : 'text-green-600'}`}>
+                        {item.batteryLevel}%
+                      </span>
+                    </div>
+                  )}
+                  {item.subscriptionStatus && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Suscripción</span>
+                      <span className={`font-bold uppercase text-[10px] ${item.subscriptionStatus === 'ACTIVE' ? 'text-green-600' : 'text-red-500'
+                        }`}>
+                        {item.subscriptionStatus === 'ACTIVE' ? 'Activa' :
+                          item.subscriptionStatus === 'EXPIRED' ? 'Expirada' : 'Pendiente'}
+                      </span>
+                    </div>
+                  )}
+                  {item.city && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Ciudad</span>
+                      <span className="font-bold">{item.city}</span>
+                    </div>
+                  )}
+                  {(item.lastSeen || item.last_update || item.updated_at) && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Último Sync</span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(item.lastSeen || item.last_update || item.updated_at).toLocaleTimeString()}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>

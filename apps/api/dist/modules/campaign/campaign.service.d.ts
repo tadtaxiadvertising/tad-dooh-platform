@@ -175,7 +175,6 @@ export declare class CampaignService {
             checksum: string;
             duration: number;
             qrUrl: string;
-            weight: number;
         }[];
     } & {
         status: string;
@@ -246,7 +245,6 @@ export declare class CampaignService {
             checksum: string;
             duration: number;
             qrUrl: string;
-            weight: number;
         }[];
     } & {
         status: string;

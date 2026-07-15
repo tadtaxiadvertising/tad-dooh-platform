@@ -210,8 +210,11 @@ export class AdvertisersService {
       const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
       const lastLng = device.lastLng ?? lastLocation?.longitude ?? null;
       const lastSeen = device.lastSeen ?? lastLocation?.timestamp ?? null;
-      const isOnlineByTimestamp = !!lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs;
-      const isOnline = device.isOnline || isOnlineByTimestamp;
+      const cronWindowMs = 15 * 60 * 1000;
+      const lastSeenAge = lastSeen ? now.getTime() - new Date(lastSeen).getTime() : Infinity;
+      const dbIsOnlineTrustworthy = device.isOnline && lastSeenAge <= cronWindowMs;
+      const isOnlineByTimestamp = !!lastSeen && lastSeenAge <= onlineWindowMs;
+      const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
       const driver = device.driver || null;
       const existing = contractedByDeviceId.get(device.deviceId);
       const campaigns = new Set<string>(existing?.campaigns || []);

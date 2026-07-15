@@ -22,7 +22,7 @@ export class DeviceService {
     private readonly prisma: PrismaService,
     private readonly campaignService: CampaignService,
     private readonly financeService: FinanceService,
-  ) {}
+  ) { }
 
   /**
    * Calculates availability slots for a device.
@@ -32,7 +32,7 @@ export class DeviceService {
     try {
       const device = await this.prisma.device.findUnique({ where: { deviceId } });
       if (!device) throw new Error('Device not found');
-      
+
       const payload = await this.campaignService.getActiveSyncVideos(deviceId, device.city || 'Santiago');
       const occupied = payload.media_assets?.length || 0;
 
@@ -65,7 +65,8 @@ export class DeviceService {
       this.logger.log(`Device already exists, updating lastSeen: ${dto.device_id}`);
       return this.prisma.device.update({
         where: { deviceId: dto.device_id },
-        data: { 
+        data: {
+          isOnline: true,
           appVersion: dto.app_version,
           lastSeen: new Date(),
           driverId: dto.driver_id ?? undefined,
@@ -123,6 +124,7 @@ export class DeviceService {
           id: true,
           deviceId: true,
           taxiNumber: true,
+          isOnline: true,
           status: true,
           lastSeen: true,
           batteryLevel: true,
@@ -147,7 +149,11 @@ export class DeviceService {
     }
 
     return devices.map((d) => {
-      const isOnline = !!(d.lastSeen && (now.getTime() - d.lastSeen.getTime() <= thirtyMinMs));
+      const cronWindowMs = 15 * 60 * 1000;
+      const lastSeenAge = d.lastSeen ? now.getTime() - d.lastSeen.getTime() : Infinity;
+      const dbIsOnlineTrustworthy = d.isOnline && lastSeenAge <= cronWindowMs;
+      const isOnlineByTimestamp = !!d.lastSeen && lastSeenAge <= thirtyMinMs;
+      const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
       const assignedSlots = slotMap.get(d.id) || 0;
 
       return {
@@ -203,13 +209,14 @@ export class DeviceService {
       this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
-        data: { lastSeen: new Date() },
+        data: { isOnline: true, lastSeen: new Date() },
       });
       return { success: true, blocked: true, reason: 'awaiting_approval' };
     } else {
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
         data: {
+          isOnline: true,
           lastSeen: new Date(),
           batteryLevel: dto.battery_level,
           storageFree: dto.storage_free,
@@ -219,11 +226,11 @@ export class DeviceService {
         },
       });
     }
-    
+
     // SRE v12.1.1: Inline subscription check using already-loaded driver (no extra DB call)
     let blocked = false;
     let reason: string | undefined;
-    
+
     if (device.driver) {
       const { driver } = device;
       if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
@@ -296,7 +303,7 @@ export class DeviceService {
    */
   async recordPlayback(dto: PlaybackConfirmationDto) {
     this.logger.log(`Playback confirmed on device: ${dto.device_id} for video: ${dto.video_id}`);
-    
+
     // Updates the device's last playback time (and last seen time)
     await this.prisma.device.updateMany({
       where: { deviceId: dto.device_id },
@@ -381,8 +388,8 @@ export class DeviceService {
     // REMOTE COMMANDS — Fetch pending tasks
     // ============================================
     const pendingCommands = await this.prisma.deviceCommand.findMany({
-      where: { 
-        device: { deviceId }, 
+      where: {
+        device: { deviceId },
         status: 'PENDING',
         OR: [
           { expiresAt: null },
@@ -414,32 +421,32 @@ export class DeviceService {
     // ============================================
     if (lastHash && lastHash === payload.sync_hash) {
       this.logger.log(`🔄 Device ${deviceId}: Delta Sync matches (${lastHash}). No update needed.`);
-      return { 
-        update: false, 
+      return {
+        update: false,
         blocked: false,
-        sync_hash: payload.sync_hash 
+        sync_hash: payload.sync_hash
       };
     }
 
     if (!payload.media_assets || payload.media_assets.length === 0) {
-      return { 
-        update: true, 
-        blocked: false, 
-        media_assets: [], 
-        sync_hash: 'empty' 
+      return {
+        update: true,
+        blocked: false,
+        media_assets: [],
+        sync_hash: 'empty'
       };
     }
 
     this.logger.log(`📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`);
 
     const licenseToken = jwt.sign(
-      { 
-        deviceId, 
+      {
+        deviceId,
         taxi: device.taxiNumber,
         type: 'OFFLINE_LICENSE',
         iat: Math.floor(Date.now() / 1000)
-      }, 
-      this.JWT_SECRET, 
+      },
+      this.JWT_SECRET,
       { expiresIn: '48h' }
     );
 
@@ -475,7 +482,7 @@ export class DeviceService {
 
   async processBulkSync(dto: BulkSyncDto) {
     this.logger.log(`🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`);
-    
+
     // 1. Validate Device
     const device = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id }
@@ -518,11 +525,11 @@ export class DeviceService {
         data: playbackData,
         skipDuplicates: true
       });
-      
+
       // Update lastPlayback
       await this.prisma.device.update({
-         where: { deviceId: dto.device_id },
-         data: { lastPlayback: new Date() }
+        where: { deviceId: dto.device_id },
+        data: { lastPlayback: new Date() }
       });
     }
 
@@ -537,7 +544,7 @@ export class DeviceService {
         timestamp: new Date(l.timestamp),
         isSimulated: l.isSimulated || dto.isSimulated || false
       }));
-      
+
       await this.prisma.driverLocation.createMany({
         data: locationData,
         skipDuplicates: true

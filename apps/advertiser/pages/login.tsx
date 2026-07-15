@@ -1,109 +1,205 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
+'use client';
+
+import { useState, FormEvent } from 'react';
 import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { Shield, BarChart3, Car, ChevronRight, LayoutDashboard } from 'lucide-react';
-import clsx from 'clsx';
+import { useRouter } from 'next/router';
+import { BarChart3, Mail, Lock, EyeOff, Eye, Shield } from 'lucide-react';
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    entityId: string | null;
+  };
+};
 
-export default function LoginGateway() {
+export default function AdvertiserLoginPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('advertiser@tad.do');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const portalType = process.env.NEXT_PUBLIC_PORTAL_TYPE;
-    if (portalType === 'ADVERTISER') router.replace('/advertiser/login');
-    if (portalType === 'DRIVER') router.replace('/driver/login');
-    if (portalType === 'ADMIN') router.replace('/admin/login');
-  }, [router]);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/proxy/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        cache: 'no-store',
+      });
+
+      const text = await res.text().catch(() => '');
+
+      if (!res.ok) {
+        const message = text || 'Credenciales inválidas.';
+        throw new Error(message);
+      }
+
+      const data = (JSON.parse(text) ?? {}) as Partial<LoginResponse>;
+
+      const user = data.user ?? {
+        id: '',
+        email,
+        role: 'GUEST',
+        entityId: null,
+      };
+
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        entityId: user.entityId,
+      };
+
+      if (!data.access_token) {
+        throw new Error('Respuesta de autenticación inválida (sin token).');
+      }
+
+      localStorage.setItem('tad_advertiser_token', data.access_token);
+      localStorage.setItem('tad_advertiser_refresh_token', data.refresh_token ?? '');
+      localStorage.setItem('tad_advertiser_user', JSON.stringify(tokenPayload));
+
+      (window as any).__tad_user = tokenPayload;
+
+      router.replace('/advertiser/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-black font-sans text-white relative overflow-hidden">
       <Head>
-        <title>TAD | Selecciona tu Portal</title>
+        <title>TAD ADVERTISER | Panel de Anunciantes</title>
       </Head>
 
-      {/* Decorative background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-tad-yellow/10 blur-[150px] rounded-full animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-blue-500/5 blur-[150px] rounded-full" />
-      </div>
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12]"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <defs>
+          <pattern id="street-grid" width="120" height="120" patternUnits="userSpaceOnUse">
+            <rect width="120" height="120" fill="none" />
+            <path d="M0 60 L120 60 M60 0 L60 120" stroke="#1f1f1f" strokeWidth="0.5" />
+          </pattern>
+          <pattern id="avenues" width="240" height="240" patternUnits="userSpaceOnUse">
+            <rect width="240" height="240" fill="none" />
+            <path d="M0 120 L240 120 M120 0 L120 240" stroke="#2a2a2a" strokeWidth="1" />
+          </pattern>
+          <radialGradient id="node-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#eab308" stopOpacity="0.9" />
+            <stop offset="60%" stopColor="#eab308" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#eab308" stopOpacity="0" />
+          </radialGradient>
+        </defs>
 
-      <div className="z-10 w-full max-w-4xl">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-black text-white tracking-widest uppercase mb-4">
-            TAD <span className="text-tad-yellow">PLATFORM</span>
-          </h1>
-          <p className="text-gray-500 font-bold uppercase tracking-[0.5em] text-xs">Access Management Gateway</p>
+        <rect width="100%" height="100%" fill="url(#street-grid)" />
+        <rect width="100%" height="100%" fill="url(#avenues)" />
+
+        <circle cx="18%" cy="22%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" />
+        <circle cx="34%" cy="18%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.6s' }} />
+        <circle cx="52%" cy="27%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.2s' }} />
+        <circle cx="71%" cy="19%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.3s' }} />
+        <circle cx="84%" cy="34%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.9s' }} />
+        <circle cx="27%" cy="68%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.5s' }} />
+        <circle cx="45%" cy="74%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.4s' }} />
+        <circle cx="66%" cy="62%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.1s' }} />
+        <circle cx="78%" cy="73%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.7s' }} />
+        <circle cx="15%" cy="88%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1.3s' }} />
+        <circle cx="88%" cy="85%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '0.2s' }} />
+        <circle cx="59%" cy="46%" r="2.4" fill="url(#node-glow)" className="animate-pulse-node" style={{ animationDelay: '1s' }} />
+      </svg>
+
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-[24px] bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.03)]">
+          <div className="px-8 py-10">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_40px_rgba(255,255,255,0.05)]">
+              <span className="text-3xl font-black tracking-tight text-[#fad400] drop-shadow-[0_0_12px_rgba(250,212,0,0.35)]">T</span>
+            </div>
+
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-white uppercase tracking-wider">TAD ADVERTISER</h1>
+              <p className="mt-1 text-sm font-light text-gray-300">Panel de Control de Campañas</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="adv-email" className="mb-1 block text-xs font-semibold text-gray-400">Correo</label>
+                <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
+                  <span className="pl-3 text-gray-500"><Mail className="h-4 w-4" aria-hidden="true" /></span>
+                  <input
+                    id="adv-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="advertiser@tad.do"
+                    className="w-full bg-transparent px-3 py-2.5 text-sm text-white placeholder-white outline-none"
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="adv-password" className="mb-1 block text-xs font-semibold text-gray-400">Contraseña</label>
+                <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.03] transition-colors focus-within:border-[#eab308] focus-within:shadow-[0_0_0_1px_rgba(234,179,8,0.35)]">
+                  <span className="pl-3 text-gray-500"><Lock className="h-4 w-4" aria-hidden="true" /></span>
+                  <input
+                    id="adv-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-transparent px-3 py-2.5 text-sm text-white outline-none"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="mr-3 text-[#eab308] transition-colors hover:text-[#fad400]"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <a href="#" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">¿Olvidaste tu contraseña?</a>
+              </div>
+
+              {error ? <p className="text-xs text-red-400">{error}</p> : null}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#eab308] to-[#fad400] py-2.5 text-sm font-bold text-black shadow-[0_0_30px_rgba(234,179,8,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+              >
+                <Shield className="h-4 w-4" aria-hidden="true" />
+                {submitting ? 'Verificando...' : 'Iniciar sesión'}
+              </button>
+
+              <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
+                <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Verified Access</span>
+              </div>
+            </form>
+          </div>
         </div>
+      </main>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PortalCard
-            title="Administrador"
-            subtitle="Central Command & Fleet Controls"
-            icon={<Shield className="w-8 h-8 text-black" />}
-            bgColor="bg-tad-yellow"
-            onClick={() => router.push('/admin/login')}
-            delay="delay-0"
-          />
-
-          <PortalCard
-            title="Anunciante"
-            subtitle="Campaign Performance & Insights"
-            icon={<BarChart3 className="w-8 h-8 text-white" />}
-            bgColor="bg-zinc-800"
-            onClick={() => router.push('/advertiser/login')}
-            delay="delay-75"
-          />
-
-          <PortalCard
-            title="Conductor"
-            subtitle="Earnings & Device Status PWA"
-            icon={<Car className="w-8 h-8 text-white" />}
-            bgColor="bg-zinc-900"
-            onClick={() => router.push('/driver/login')}
-            delay="delay-150"
-          />
-        </div>
-
-        <div className="mt-20 text-center opacity-30 hover:opacity-100 transition-opacity">
-          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.8em]">
-            TAD TECHNOLOGIES © SANTIAGO PILOT v2
-          </p>
-        </div>
-      </div>
+      <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[11px] text-gray-600">TAD Taxi Advertising S.R.L.</footer>
     </div>
   );
 }
-
-function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={clsx(
-        "group p-1 rounded-[2.5rem] bg-white/5 border border-white/5 transition-all duration-500 hover:scale-[1.02] active:scale-95 text-left h-full",
-        delay
-      )}
-    >
-      <div className="bg-zinc-900/50 backdrop-blur-3xl p-8 rounded-[2.3rem] h-full flex flex-col justify-between border border-transparent group-hover:border-white/10 transition-colors">
-        <div>
-          <div className={clsx("w-16 h-16 rounded-3xl flex items-center justify-center mb-10 shadow-2xl group-hover:rotate-6 transition-transform duration-500", bgColor)}>
-            {icon}
-          </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">{title}</h2>
-          <p className="text-gray-500 text-xs font-bold leading-relaxed">{subtitle}</p>
-        </div>
-
-        <div className="mt-12 flex items-center gap-3 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Enter Portal</span>
-          <ChevronRight className="w-4 h-4 text-tad-yellow" />
-        </div>
-      </div>
-    </button>
-  );
-}
-
-
-
-
-

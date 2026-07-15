@@ -11,7 +11,7 @@ export class FleetService {
     private readonly prisma: PrismaService,
     private readonly deviceService: DeviceService,
     private readonly supabaseService: SupabaseService,
-  ) {}
+  ) { }
 
   /**
    * Return all devices in the fleet, determining online/offline status logically.
@@ -109,7 +109,7 @@ export class FleetService {
   async getFleetMap(advertiserId?: string) {
     try {
       const now = new Date();
-      const onlineWindowMs = 90 * 1000;
+      const onlineWindowMs = 180 * 1000;  // 3 min — alineado con frontend
 
       // Build filter: if advertiserId is provided, only show devices assigned to their campaigns
       const where: Record<string, unknown> = {};
@@ -188,6 +188,8 @@ export class FleetService {
           lastSeen,
           lastLat,
           lastLng,
+          lat: lastLat,
+          lng: lastLng,
           status: d.status,
           isOnline,
           driverName: d.driver?.fullName ?? null,
@@ -327,17 +329,17 @@ export class FleetService {
     if (!deviceId) {
       deviceId = 'TAD-' + crypto.randomUUID().split('-')[0].toUpperCase();
     }
-    
+
     // 1. Verificar simultáneamente Dispositivo y Driver (por ID o por Teléfono generado)
     const phone = 'PH-' + deviceId;
-    
+
     const [existingDevice, existingDriver] = await Promise.all([
       this.prisma.device.findUnique({
         where: { deviceId },
         include: { driver: true }
       }),
       this.prisma.driver.findFirst({
-        where: { 
+        where: {
           OR: [
             { devices: { some: { deviceId } } },
             { phone }
@@ -354,28 +356,28 @@ export class FleetService {
         data: {
           taxiNumber: placa,
           status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-          driver: existingDevice.driver 
+          driver: existingDevice.driver
             ? {
-                update: {
+              update: {
+                fullName: nombreChofer,
+                licensePlate: placa,
+                taxiNumber: placa,
+                status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+              }
+            }
+            : {
+              // Si el dispositivo no tiene driver pero encontramos uno huérfano con este ID/Phone
+              connectOrCreate: {
+                where: { phone },
+                create: {
                   fullName: nombreChofer,
+                  phone: phone,
                   licensePlate: placa,
                   taxiNumber: placa,
                   status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
                 }
               }
-            : {
-                // Si el dispositivo no tiene driver pero encontramos uno huérfano con este ID/Phone
-                connectOrCreate: {
-                  where: { phone },
-                  create: {
-                    fullName: nombreChofer,
-                    phone: phone,
-                    licensePlate: placa,
-                    taxiNumber: placa,
-                    status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-                  }
-                }
-              }
+            }
         }
       });
       return { success: true, device_id: updated.deviceId, driver_name: nombreChofer, linked: true };
@@ -421,8 +423,8 @@ export class FleetService {
       }
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       device_id: device.deviceId,
       driver_name: nombreChofer,
       new_registration: true
@@ -514,8 +516,8 @@ export class FleetService {
         where,
         include: {
           devices: {
-             // We also want to filter the devices shown per driver if needed, 
-             // but usually a driver has 1 device and if that device is assigned to the advertiser, we show the driver.
+            // We also want to filter the devices shown per driver if needed, 
+            // but usually a driver has 1 device and if that device is assigned to the advertiser, we show the driver.
             select: {
               deviceId: true,
               taxiNumber: true,
@@ -562,10 +564,10 @@ export class FleetService {
         ]);
 
         countMap = new Map(counts.map((c) => [
-          c.driverId, 
-          { 
-            count: (c._count as { id: number }).id, 
-            avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0 
+          c.driverId,
+          {
+            count: (c._count as { id: number }).id,
+            avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0
           }
         ]));
 
@@ -584,7 +586,7 @@ export class FleetService {
         const lastLocation = d.locations[0] || null;
         const todayStats = countMap.get(d.id) || { count: 0, avgSpeed: 0 };
         const totalPoints = totalMap.get(d.id) || 0;
-        
+
         // Determinar si está activo (señal en los últimos 5 minutos)
         const isActive = lastLocation
           ? (now.getTime() - new Date(lastLocation.timestamp).getTime()) < fiveMinMs
@@ -642,33 +644,33 @@ export class FleetService {
 
     // 1. Emitir vía Realtime para efectos inmediatos en dispositivos conectados
     await this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        command: type,
-        params,
-        timestamp: new Date().toISOString()
+      command: type,
+      params,
+      timestamp: new Date().toISOString()
     }).catch(e => Logger.error(`[FLEET_C2] Realtime broadcast failed: ${e.message}`));
 
     // 2. Registrar en DeviceCommand para dispositivos offline/desconectados
     const activeDevices = await this.prisma.device.findMany({
-        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
-        select: { id: true }
+      where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+      select: { id: true }
     });
 
     if (activeDevices.length > 0) {
-        await this.prisma.deviceCommand.createMany({
-            data: activeDevices.map(d => ({
-                deviceId: d.id,
-                commandType: type,
-                commandParams: JSON.stringify(params),
-                status: 'PENDING',
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days life
-            }))
-        });
+      await this.prisma.deviceCommand.createMany({
+        data: activeDevices.map(d => ({
+          deviceId: d.id,
+          commandType: type,
+          commandParams: JSON.stringify(params),
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days life
+        }))
+      });
     }
 
-    return { 
-        success: true, 
-        broadcastType: type,
-        deviceCount: activeDevices.length 
+    return {
+      success: true,
+      broadcastType: type,
+      deviceCount: activeDevices.length
     };
   }
 
@@ -722,28 +724,28 @@ export class FleetService {
     }
 
     // 1. Validar existencia del conductor Y del dispositivo (evita 500 por P2025)
-        const [driver, device] = await Promise.all([
-          this.prisma.driver.findUnique({
-            where: { id: data.driverId },
-            select: { id: true, subscriptionPaid: true, status: true, fullName: true },
-          }),
-          this.prisma.device.findUnique({
-            where: { deviceId: data.deviceId },
-            select: { id: true, deviceId: true },
-          }),
-        ]);
+    const [driver, device] = await Promise.all([
+      this.prisma.driver.findUnique({
+        where: { id: data.driverId },
+        select: { id: true, subscriptionPaid: true, status: true, fullName: true },
+      }),
+      this.prisma.device.findUnique({
+        where: { deviceId: data.deviceId },
+        select: { id: true, deviceId: true },
+      }),
+    ]);
 
-        if (!driver) {
-          logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
-          throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
-        }
+    if (!driver) {
+      logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
+      throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
+    }
 
-        if (!device) {
-          logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
-          throw new HttpException('Device Not Found', HttpStatus.NOT_FOUND);
-        }
+    if (!device) {
+      logger.warn(`⚠️ Telemetry Rejected: Device [${data.deviceId}] not found.`);
+      throw new HttpException('Device Not Found', HttpStatus.NOT_FOUND);
+    }
 
-        // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
+    // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día
     if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
       logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);
       throw new HttpException('Payment Required - Subscription Inactive', HttpStatus.PAYMENT_REQUIRED);
@@ -782,7 +784,7 @@ export class FleetService {
     if (data.points.length > 0) {
       const lastPoint = data.points.reduce((a, b) =>
         (b.timestamp > a.timestamp) ? b : a
-      , data.points[0]);
+        , data.points[0]);
       try {
         await this.prisma.device.update({
           where: { deviceId: data.deviceId },

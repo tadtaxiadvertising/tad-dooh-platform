@@ -1,0 +1,1 @@
+debemos hacer mejoras, ahora aparecen los puntos offline en el mapa, pero no los que estan online, creo que desde el servicio de driver no se estan compartiendo los pts, verifica y no te detengas hasta resolver todo, no hagas cambios sin verificar y estar seguro que son correctos

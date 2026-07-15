@@ -137,6 +137,7 @@ export class FleetService {
           lastSeen: true,
           lastLat: true,
           lastLng: true,
+          isOnline: true,
           status: true,
           driver: {
             select: {
@@ -167,7 +168,14 @@ export class FleetService {
         const lastLat = d.lastLat ?? lastLocation?.latitude ?? null;
         const lastLng = d.lastLng ?? lastLocation?.longitude ?? null;
         const lastSeen = d.lastSeen ?? lastLocation?.timestamp ?? null;
-        const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+        // Online determination: use BOTH DB isOnline flag AND lastSeen freshness.
+        // The DB flag is set to true by ingestTelemetryBatch, syncDeviceCampaigns,
+        // processBulkSync, etc. The lastSeen freshness catches devices that haven't
+        // flushed telemetry yet but were recently active.
+        // A device is considered online if EITHER the DB says it's online OR
+        // its lastSeen is within the freshness window.
+        const isOnlineByTimestamp = !!lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs;
+        const isOnline = d.isOnline || isOnlineByTimestamp;
 
         // Derive subscription status from the flag + expiry date (simpler, no nested query)
         let subscriptionStatus = 'PENDING';
@@ -789,6 +797,7 @@ export class FleetService {
         await this.prisma.device.update({
           where: { deviceId: data.deviceId },
           data: {
+            isOnline: true,
             lastSeen: new Date(),
             lastLat: lastPoint.lat,
             lastLng: lastPoint.lng,

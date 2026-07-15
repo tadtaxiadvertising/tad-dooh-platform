@@ -7,6 +7,28 @@ import { EmailService } from '../notifications/email.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
+const mediaSafeSelect = {
+  id: true,
+  name: true,
+  filename: true,
+  originalFilename: true,
+  mime_type: true,
+  mimeType: true,
+  durationSeconds: true,
+  width: true,
+  height: true,
+  storageKey: true,
+  url: true,
+  cdnUrl: true,
+  hash: true,
+  hashMd5: true,
+  hashSha256: true,
+  campaign_id: true,
+  status: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class FinanceService {
   private readonly logger = new Logger(FinanceService.name);
@@ -438,7 +460,7 @@ export class FinanceService {
   async generateInvoiceHtml(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { advertiserRef: true, media: true }
+      include: { advertiserRef: true, media: { select: mediaSafeSelect } }
     });
 
     if (!campaign) return null;
@@ -521,7 +543,7 @@ export class FinanceService {
   async exportCampaignCsv(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { media: true, _count: { select: { devices: true } } }
+      include: { media: { select: mediaSafeSelect }, _count: { select: { devices: true } } }
     });
 
     if (!campaign) return 'Campaña no encontrada';
@@ -648,7 +670,7 @@ export class FinanceService {
     // 2. Campaign Revenue Calculation (Projected)
     const activeCampaigns = await this.prisma.campaign.findMany({
       where: { status: 'ACTIVE' },
-      include: { media: true }
+      include: { media: { select: mediaSafeSelect } }
     });
 
     let campaignRevenue = 0;

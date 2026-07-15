@@ -5,10 +5,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var GlobalExceptionFilter_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GlobalExceptionFilter = void 0;
 const common_1 = require("@nestjs/common");
-let GlobalExceptionFilter = class GlobalExceptionFilter {
+let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilter {
+    constructor() {
+        this.logger = new common_1.Logger(GlobalExceptionFilter_1.name);
+    }
     catch(exception, host) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse();
@@ -29,6 +33,7 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
             }
         }
         else if (exception instanceof Error) {
+            this.logger.error(`Unhandled exception on ${request.url}: ${exception.message}`, exception.stack);
             if (exception.message.includes('NETWORK_OFFLINE')) {
                 status = common_1.HttpStatus.GATEWAY_TIMEOUT;
                 code = 'NETWORK_OFFLINE';
@@ -37,6 +42,9 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
                 status = common_1.HttpStatus.SERVICE_UNAVAILABLE;
                 code = 'DEVICE_NOT_FOUND';
             }
+        }
+        else {
+            this.logger.error(`Unknown exception on ${request.url}: ${JSON.stringify(exception)}`);
         }
         response.status(status).json({
             statusCode: status,
@@ -63,7 +71,7 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
     }
 };
 exports.GlobalExceptionFilter = GlobalExceptionFilter;
-exports.GlobalExceptionFilter = GlobalExceptionFilter = __decorate([
+exports.GlobalExceptionFilter = GlobalExceptionFilter = GlobalExceptionFilter_1 = __decorate([
     (0, common_1.Catch)()
 ], GlobalExceptionFilter);
 //# sourceMappingURL=global-exception.filter.js.map

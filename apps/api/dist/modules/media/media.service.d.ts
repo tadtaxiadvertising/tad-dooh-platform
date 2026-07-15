@@ -9,29 +9,6 @@ export declare class MediaService {
     private supabase;
     constructor(config: ConfigService, prisma: PrismaService, supabaseService: SupabaseService);
     generateHash(buffer: Buffer): any;
-    uploadFile(file: any, campaignId: string, qrUrl?: string): Promise<{
-        fileSize: number;
-        status: string;
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        filename: string | null;
-        url: string | null;
-        qrUrl: string | null;
-        originalFilename: string | null;
-        mime_type: string | null;
-        mimeType: string | null;
-        size: bigint | null;
-        durationSeconds: number | null;
-        width: number | null;
-        height: number | null;
-        storageKey: string | null;
-        cdnUrl: string | null;
-        hash: string | null;
-        hashMd5: string | null;
-        hashSha256: string | null;
-        campaign_id: string | null;
-    }>;
     generateUploadUrl(fileName: string, fileType: string): Promise<{
         uploadUrl: any;
         path: string;

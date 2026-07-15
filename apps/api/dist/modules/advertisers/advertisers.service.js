@@ -116,7 +116,7 @@ let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
             return null;
         const campaignIds = advertiser.campaigns.map(c => c.id);
         const now = new Date();
-        const onlineWindowMs = 90 * 1000;
+        const onlineWindowMs = 180 * 1000;
         const activeCampaignWhere = {
             advertiserId: id,
             active: true,
@@ -130,6 +130,7 @@ let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
             lastSeen: true,
             lastLat: true,
             lastLng: true,
+            isOnline: true,
             status: true,
             driverId: true,
             driver: {
@@ -184,7 +185,11 @@ let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
             const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
             const lastLng = device.lastLng ?? lastLocation?.longitude ?? null;
             const lastSeen = device.lastSeen ?? lastLocation?.timestamp ?? null;
-            const isOnline = !!(lastSeen && (now.getTime() - new Date(lastSeen).getTime()) <= onlineWindowMs);
+            const cronWindowMs = 15 * 60 * 1000;
+            const lastSeenAge = lastSeen ? now.getTime() - new Date(lastSeen).getTime() : Infinity;
+            const dbIsOnlineTrustworthy = device.isOnline && lastSeenAge <= cronWindowMs;
+            const isOnlineByTimestamp = !!lastSeen && lastSeenAge <= onlineWindowMs;
+            const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
             const driver = device.driver || null;
             const existing = contractedByDeviceId.get(device.deviceId);
             const campaigns = new Set(existing?.campaigns || []);

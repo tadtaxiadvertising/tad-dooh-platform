@@ -104,6 +104,12 @@ let DriversController = DriversController_1 = class DriversController {
             throw new common_1.ForbiddenException('No tienes un perfil de conductor asociado');
         return this.driversService.getDriverHubDataById(entityId);
     }
+    async getMyTransactions(req) {
+        const { entityId } = req.user;
+        if (!entityId)
+            throw new common_1.ForbiddenException('No tienes un perfil de conductor asociado');
+        return this.driversService.getDriverTransactions(entityId);
+    }
     async getHubPreview(id) {
         return this.driversService.getDriverHubDataById(id);
     }
@@ -244,6 +250,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DriversController.prototype, "getMyHub", null);
+__decorate([
+    (0, common_1.Get)('me/transactions'),
+    (0, roles_decorator_1.Roles)(roles_decorator_2.UserRole.DRIVER),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DriversController.prototype, "getMyTransactions", null);
 __decorate([
     (0, common_1.Get)(':id/hub-preview'),
     (0, roles_decorator_1.Roles)(roles_decorator_2.UserRole.ADMIN),

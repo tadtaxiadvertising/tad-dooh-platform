@@ -30,49 +30,6 @@ let MediaService = MediaService_1 = class MediaService {
         const crypto = require('crypto');
         return crypto.createHash('md5').update(buffer).digest('hex');
     }
-    async uploadFile(file, campaignId, qrUrl) {
-        if (file.size > business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
-            throw new common_1.BadRequestException(`El archivo excede el límite permitido de ${business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
-        }
-        await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => { });
-        const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        const storagePath = `${campaignId}/${Date.now()}_${sanitizedFilename}`;
-        const { data, error } = await this.supabase.storage
-            .from('campaign-videos')
-            .upload(storagePath, file.buffer, {
-            upsert: true
-        });
-        if (error) {
-            this.logger.error("Supabase Storage Error: ", error);
-            throw new common_1.BadRequestException(`Error subiendo a Storage: ${error.message}`);
-        }
-        try {
-            const cdnPrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
-            const media = await this.prisma.media.create({
-                data: {
-                    filename: file.originalname,
-                    originalFilename: file.originalname,
-                    url: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
-                    cdnUrl: `${cdnPrefix}/storage/v1/object/public/campaign-videos/${data.path}`,
-                    storageKey: data.path,
-                    campaign_id: campaignId,
-                    mimeType: file.mimetype,
-                    fileSize: BigInt(file.size),
-                    status: 'READY',
-                    qrUrl: qrUrl,
-                    hashMd5: this.generateHash(file.buffer)
-                }
-            });
-            return {
-                ...media,
-                fileSize: Number(media.fileSize)
-            };
-        }
-        catch (dbError) {
-            this.logger.error("Database Insert Error: ", dbError);
-            throw new common_1.BadRequestException(`Error en base de datos: ${dbError.message}`);
-        }
-    }
     async generateUploadUrl(fileName, fileType) {
         try {
             const { error: bucketError } = await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(err => ({ error: err }));

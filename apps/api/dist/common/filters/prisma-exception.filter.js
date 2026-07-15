@@ -46,7 +46,9 @@ let PrismaClientExceptionFilter = PrismaClientExceptionFilter_1 = class PrismaCl
             errorCode = 'VALIDATION_ERROR';
         }
         else {
-            this.logger.error(`Prisma Unhandled Error: ${exception.message}`);
+            this.logger.error(`Prisma Unknown/Initialization Error: ${exception.message}`);
+            message = exception.message;
+            errorCode = 'DB_ERROR';
         }
         response.status(status).json({
             statusCode: status,

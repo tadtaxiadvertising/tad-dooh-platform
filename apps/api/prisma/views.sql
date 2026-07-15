@@ -25,6 +25,7 @@ DROP MATERIALIZED VIEW IF EXISTS mv_active_campaigns;
 CREATE MATERIALIZED VIEW mv_active_campaigns AS
 SELECT
   c.id AS campaign_id,
+  c.status,
   c.active,
   c.start_date,
   c.end_date,

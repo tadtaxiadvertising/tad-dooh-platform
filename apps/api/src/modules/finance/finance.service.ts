@@ -164,7 +164,8 @@ export class FinanceService {
           eventType: 'play_confirm',
           verified: true, // REVENUE SHIELD: Only count validated playback events
         },
-        select: { deviceId: true, videoId: true }
+        select: { deviceId: true, videoId: true },
+        distinct: ['deviceId', 'videoId'] // ANTIDOTE-OOM: deduplica en DB, evita millones de filas en RAM
       })
     ]);
 

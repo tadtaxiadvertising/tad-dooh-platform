@@ -26,59 +26,6 @@ export class MediaService {
     return crypto.createHash('md5').update(buffer).digest('hex');
   }
 
-  async uploadFile(file: any, campaignId: string, qrUrl?: string) {
-    if (file.size > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
-      throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
-    }
-
-    // 0. Auto-create bucket if missing
-    await this.supabase.storage.createBucket('campaign-videos', { public: true }).catch(() => {});
-
-    // Sanitize filename
-    const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const storagePath = `${campaignId}/${Date.now()}_${sanitizedFilename}`;
-
-    // 1. Subir a Supabase Storage
-    const { data, error } = await this.supabase.storage
-      .from('campaign-videos')
-      .upload(storagePath, file.buffer, {
-        upsert: true 
-      });
-
-    if (error) {
-       this.logger.error("Supabase Storage Error: ", error);
-       throw new BadRequestException(`Error subiendo a Storage: ${error.message}`);
-    }
-
-    // 2. Registrar en la BD para que aparezca en el Dashboard
-    try {
-      const cdnPrefix = this.config.get('CDN_URL_PREFIX') || this.config.get('SUPABASE_URL');
-      const media = await this.prisma.media.create({
-        data: {
-          filename: file.originalname,
-          originalFilename: file.originalname,
-          url: `${this.config.get('SUPABASE_URL')}/storage/v1/object/public/campaign-videos/${data.path}`,
-          cdnUrl: `${cdnPrefix}/storage/v1/object/public/campaign-videos/${data.path}`,
-          storageKey: data.path,
-          campaign_id: campaignId,
-          mimeType: file.mimetype,
-          fileSize: BigInt(file.size),
-          status: 'READY',
-          // @ts-ignore
-          qrUrl: qrUrl,
-          hashMd5: this.generateHash(file.buffer)
-        }
-      });
-
-      return {
-        ...media,
-        fileSize: Number(media.fileSize)
-      };
-    } catch(dbError: any) {
-      this.logger.error("Database Insert Error: ", dbError);
-      throw new BadRequestException(`Error en base de datos: ${dbError.message}`);
-    }
-  }
 
   /**
    * REGLA DE SEGURIDAD 07: Signed URL — El video NO pasa por NestJS RAM

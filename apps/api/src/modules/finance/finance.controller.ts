@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
   Query,
-  Res, 
-  HttpStatus, 
+  Res,
+  HttpStatus,
   UseGuards,
   Req
 } from '@nestjs/common';
@@ -18,6 +18,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+
+const mediaSafeSelect = {
+  id: true,
+  name: true,
+  filename: true,
+  originalFilename: true,
+  mime_type: true,
+  mimeType: true,
+  durationSeconds: true,
+  width: true,
+  height: true,
+  storageKey: true,
+  url: true,
+  cdnUrl: true,
+  hash: true,
+  hashMd5: true,
+  hashSha256: true,
+  campaign_id: true,
+  status: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Controller('finance')
 @Roles(UserRole.ADMIN)
 export class FinanceController {
@@ -27,7 +50,7 @@ export class FinanceController {
     private readonly whatsappService: WhatsAppService,
     private readonly emailService: EmailService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   /**
    * PDF: Certificado de Exhibición (Proof of Play) para Anunciantes.
@@ -36,7 +59,7 @@ export class FinanceController {
   async downloadCampaignPdf(@Param('id') id: string, @Res() res: Response) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { media:true }
+      include: { media: { select: mediaSafeSelect } }
     });
     if (!campaign) return res.status(404).send('Campaña no encontrada');
 
@@ -84,7 +107,7 @@ export class FinanceController {
     const pdf = await this.invoiceService.generateTransactionReceiptPDF(tx);
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename=Recibo_${tx.id.substring(0,8)}.pdf`,
+      'Content-Disposition': `attachment; filename=Recibo_${tx.id.substring(0, 8)}.pdf`,
       'Content-Length': pdf.length,
     });
     res.end(pdf);
@@ -105,10 +128,10 @@ export class FinanceController {
       return results;
     } catch (error) {
       console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', error);
-      return { 
-        error: 'Error al calcular la nómina', 
+      return {
+        error: 'Error al calcular la nómina',
         message: error.message,
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString()
       };
     }
   }
@@ -121,9 +144,9 @@ export class FinanceController {
     @Body() data: { driverId: string; month: number; year: number; reference: string }
   ) {
     return this.financeService.processPayment(
-      data.driverId, 
-      data.month || new Date().getMonth() + 1, 
-      data.year || new Date().getFullYear(), 
+      data.driverId,
+      data.month || new Date().getMonth() + 1,
+      data.year || new Date().getFullYear(),
       data.reference
     );
   }
@@ -213,13 +236,13 @@ export class FinanceController {
    */
   @Post('transactions')
   async recordTransaction(
-    @Body() data: { 
-      type: string; 
-      category: string; 
-      amount: number; 
-      entityId?: string; 
-      reference?: string; 
-      note?: string; 
+    @Body() data: {
+      type: string;
+      category: string;
+      amount: number;
+      entityId?: string;
+      reference?: string;
+      note?: string;
       status?: string;
     }
   ) {
@@ -266,7 +289,7 @@ export class FinanceController {
   ) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { media: true },
+      include: { media: { select: mediaSafeSelect } },
     });
     if (!campaign) return { success: false, message: 'Campaña no encontrada' };
 
@@ -300,7 +323,7 @@ export class FinanceController {
     @Param('campaignId') campaignId: string,
     @Body() body: { email: string; amount?: number },
   ) {
-    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { media: true } });
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { media: { select: mediaSafeSelect } } });
     if (!campaign) return { success: false, message: 'Campaña no encontrada' };
 
     const invoiceId = `INV-${campaignId.slice(0, 8).toUpperCase()}`;

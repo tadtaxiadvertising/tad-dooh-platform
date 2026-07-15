@@ -22,6 +22,28 @@ const mediaAssetSafeSelect = {
   weight: true,
 };
 
+const mediaSafeSelect = {
+  id: true,
+  name: true,
+  filename: true,
+  originalFilename: true,
+  mime_type: true,
+  mimeType: true,
+  durationSeconds: true,
+  width: true,
+  height: true,
+  storageKey: true,
+  url: true,
+  cdnUrl: true,
+  hash: true,
+  hashMd5: true,
+  hashSha256: true,
+  campaign_id: true,
+  status: true,
+  createdAt: true,
+  qrUrl: true,
+};
+
 @Injectable()
 export class CampaignService {
   private readonly logger = new Logger(CampaignService.name);
@@ -390,7 +412,7 @@ export class CampaignService {
 
   async getAllCampaigns() {
     return this.prisma.campaign.findMany({
-      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -398,7 +420,7 @@ export class CampaignService {
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: true },
+      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
     });
   }
 
@@ -455,7 +477,7 @@ export class CampaignService {
           where: { id: { in: campaignIds } },
           include: {
             mediaAssets: { select: mediaAssetSafeSelect },
-            media: true,
+            media: { select: mediaSafeSelect },
             videos: true,
             advertiserRef: true,
           },
@@ -479,7 +501,7 @@ export class CampaignService {
         } as any,
         include: {
           mediaAssets: { select: mediaAssetSafeSelect },
-          media: true,
+          media: { select: mediaSafeSelect },
           videos: true,
           advertiserRef: true,
         },

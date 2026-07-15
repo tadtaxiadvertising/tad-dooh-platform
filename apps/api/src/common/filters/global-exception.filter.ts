@@ -1,8 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -24,13 +26,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code = this.mapStatusToCode(status, message);
       }
     } else if (exception instanceof Error) {
+      this.logger.error(`Unhandled exception on ${request.url}: ${exception.message}`, exception.stack);
       if (exception.message.includes('NETWORK_OFFLINE')) {
-        status = HttpStatus.GATEWAY_TIMEOUT; 
+        status = HttpStatus.GATEWAY_TIMEOUT;
         code = 'NETWORK_OFFLINE';
       } else if (exception.message.includes('DEVICE_NOT_FOUND')) {
         status = HttpStatus.SERVICE_UNAVAILABLE;
         code = 'DEVICE_NOT_FOUND';
       }
+    } else {
+      this.logger.error(`Unknown exception on ${request.url}: ${JSON.stringify(exception)}`);
     }
 
     // Do not return stack trace, standardized error response

@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --color-tad-yellow: #FFD400;
+  --color-tad-accent: #facc15;
+  --color-tad-dark: #0a0a0a;
+  --color-tad-gold: #fad400;
+  --color-tad-red: #dc2626;
+  --color-tad-green: #22c55e;
+  --font-sans: 'Inter';
+  --font-display: 'Outfit';
+}
+
+/* Stitched UI — Glassmorphism Design System (RN-compatible via NativeWind) */
+.stitched-card {
+  @apply bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden;
+  shadow-opacity: 0.5;
+  shadow-radius: 50px;
+  shadow-color: rgba(0, 0, 0, 0.5);
+  shadow-offset: 0px 20px;
+}
+
+.stitched-header {
+  @apply border-b border-white/5 pb-6 mb-6;
+}
+
+.text-gradient-gold {
+  @apply text-white;
+  /* RN doesn't support background-clip:text; use solid gold on dark bg */
+}

@@ -453,15 +453,21 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
             recentPath={recentPath}
             onClearSelection={() => { setSelectedId(null); setRecentPath([]); }}
             onViewHistory={(v: any) => selectVehicle(v)}
+            onSyncCommand={(deviceId: string) => {
+              console.log('[TAD] WAKE_UP command requested for', deviceId);
+            }}
           />
 
-          {/* Map overlay: legend */}
+          {/* Map overlay: 3-color legend */}
           <div className="absolute bottom-4 left-4 z-[500] flex gap-2 pointer-events-none">
             <div className="px-3 py-1.5 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-              <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />Online
+              <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />En línea
             </div>
             <div className="px-3 py-1.5 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-              <span className="size-2 rounded-full bg-zinc-600" />Offline
+              <span className="size-2 rounded-full bg-yellow-500 shadow-[0_0_6px_#eab308]" />Off &lt;24h
+            </div>
+            <div className="px-3 py-1.5 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+              <span className="size-2 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]" />Off &gt;24h
             </div>
             {selectedAdvertiser !== 'all' && (
               <div className="px-3 py-1.5 bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 rounded-lg flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-indigo-400">

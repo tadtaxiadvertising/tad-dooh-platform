@@ -32,7 +32,15 @@
       "Bash(git *)",
       "Bash(timeout *)",
       "Bash(curl *)",
-      "Skill(tad-frontend-dev)"
+      "Skill(tad-frontend-dev)",
+      "Bash(robocopy *)",
+      "Read(C:\\tad-dooh-platform\\apps\\api\\src\\modules\\finance/**)",
+      "Read(C:\\tad-dooh-platform\\apps\\api\\src\\modules\\notifications/**)",
+      "Read(C:\\tad-dooh-platform/**)",
+      "Read(C:\\tad-dooh-platform\\apps\\driver\\pages/**)",
+      "Read(C:\\tad-dooh-platform\\apps\\driver/**)",
+      "Read(C:\\tad-dooh-platform\\apps\\driver\\contexts/**)",
+      "Read(C:\\tad-dooh-platform\\apps\\driver\\components\\Notifications/**)"
     ]
   },
   "$version": 4

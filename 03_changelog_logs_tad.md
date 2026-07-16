@@ -1,6 +1,83 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-07-15
+> **Última Actualización**: 2026-07-16
+
+---
+
+### 🚀 FEATURE: Sistema de Notificaciones No-Bloqueante + Motor de Sincronización GPS Consolidado (V13)
+
+- **Módulos Implementados**:
+
+  1. **NotificationEngine** (`lib/notificationEngine.ts`) — Motor de notificaciones con 3 niveles de prioridad:
+     - `CRITICAL`: vibra + sonido, no auto-dismiss, requiere ack manual, Push Notification cuando la app no está visible
+     - `OPERATIONAL`: toast visible con auto-dismiss 5s
+     - `INFO`: badge-only, auto-dismiss 3s
+     - 10 tipos de notificación con mapping automático a prioridad
+     - Persistencia en IndexedDB (`TADDriverNotifications`) con historial máx. 100 items
+     - Integración con Notification API del navegador para Push Notifications
+     - Reemplazo automático de dedup por localStorage → IndexedDB (resiliencia offline)
+
+  2. **useBackgroundTelemetry** (`hooks/useBackgroundTelemetry.ts`) — Motor consolidado de GPS sync:
+     - Consolidación del hook `useTelemetry` V12.1.3 con mejoras críticas
+     - **Debounce estricto 5 min (300,000ms)** — FLUSH_INTERVAL_MS inmutable, regla de negocio
+     - **Background tracking**: visibilitychange handler que mantiene GPS activo en segundo plano; Wake Lock re-adquirido al volver al foreground
+     - **Non-blocking batch sync**: requestIdleCallback (o setTimeout fallback) procesa cola offline por chunks de 50 hacia `/fleet/track-batch` sin bloquear la UI thread
+     - **Reconnect detection**: `navigator.onLine` → true triggera sync automático con delay de stabilización (1.5s) via requestIdleCallback
+     - IndexedDB buffer (`TADTelemetryDB`) con status 'batch' (en vuelo) y 'offline' (pendientes), máx. 500 registros
+     - Kill-switch 402 centralizado via `triggerKillSwitch()` — invalida JWT, dispara `TAD_FORCE_LOGOUT`, activa `PaymentLockOverlay`, emite `SUBS_CRITICAL` al NotificationEngine
+     - Realtime broadcast a `fleet_tracking_live` con throttle 30s (MAP-SPEC-2026)
+     - Notificaciones automáticas: `GPS_TRACKING_STARTED`, `GPS_TRACKING_STOPPED`, `OFFLINE_MODE`, `SYNC_COMPLETED`, `SYNC_FAILED`
+     - Backward compatibility: `useTelemetry.ts` re-exporta desde `useBackgroundTelemetry` para componentes existentes
+
+  3. **NotificationCenter** (`components/Notifications/NotificationCenter.tsx`) — Panel de notificaciones:
+     - Bell icon con badge de unread count
+     - Panel sliding con secciones "Sin leer" y "Anteriores"
+     - Cards por prioridad (CRITICAL=rojo, OPERATIONAL=amarillo, INFO=gris)
+     - Ack manual para CRITICAL (Check icon), dismiss para todas
+     - Push permission toggle integrado (VolumeX → Volume2)
+     - DismissAll bulk action
+     - Cierre on outside click + Escape key
+     - Estilos Stitched UI: rounded-[2rem], glassmorphism backdrop-blur-xl
+
+  4. **NotificationToast** (update) — Priority-based rendering:
+     - CRITICAL toasts: duration 0 (manual ack) o 7s mínimo
+     - OPERATIONAL: 5s auto-dismiss
+     - INFO: 3s auto-dismiss
+     - Network status toasts mantenidos (online/offline)
+     - 10 tipos de notificación con descripciones contextualizadas
+
+  5. **NotificationContext** (update) — Integración con NotificationEngine:
+     - Items, unreadCount, pushPermissionGranted en estado del context
+     - `emit()` para emitir notificaciones con overrides de prioridad/título/descripción
+     - `dismiss()`, `acknowledge()`, `dismissAll()` para gestión de lifecycle
+     - `requestPush()` para solicitar permiso de Push Notifications
+     - Dedup mantenido via localStorage con TTL 5 min
+
+  6. **Service Worker** (`public/service-worker.js`) — Push Notification handler:
+     - `push` event handler con prioridad CRITICAL → `requireInteraction: true` + vibración
+     - `notificationclick` handler que focus/navigate al tab existente o abre nuevo
+     - Background Sync `sync-tad-telemetry` mantenido
+
+- **Archivos Creados**:
+  - `apps/driver/lib/notificationEngine.ts` — Motor de notificaciones (417 líneas)
+  - `apps/driver/hooks/useBackgroundTelemetry.ts` — Hook consolidado GPS sync (290 líneas)
+  - `apps/driver/components/Notifications/NotificationCenter.tsx` — Panel UI (185 líneas)
+
+- **Archivos Modificados**:
+  - `apps/driver/hooks/useTelemetry.ts` — Wrapper backward-compatible re-exportando useBackgroundTelemetry
+  - `apps/driver/contexts/NotificationContext.tsx` — Integración con NotificationEngine + API extendida
+  - `apps/driver/components/Notifications/NotificationToast.tsx` — Priority-based toast rendering
+  - `apps/driver/pages/_app.tsx` — NotificationCenter en AppWrapper
+  - `apps/driver/pages/driver/dashboard.tsx` — Import useBackgroundTelemetry (reemplaza useTelemetry)
+  - `apps/driver/pages/gps-test.tsx` — Import useBackgroundTelemetry
+  - `apps/driver/public/service-worker.js` — push + notificationclick handlers
+
+- **Reglas de Negocio Preservadas**:
+  - Zero-Breakage: backward compatibility via re-export
+  - Kill-Switch: HTTP 402 → triggerKillSwitch() → stop GPS + clear JWT + TAD_FORCE_LOGOUT + PaymentLockOverlay + SUBS_CRITICAL notification
+  - Debounce 5 min: FLUSH_INTERVAL_MS = 300_000 (inmutable)
+  - Offline-first: IndexedDB buffer con drip-sync non-blocking
+  - MAP-SPEC-2026: Realtime broadcast throttle 30s
 
 ---
 

@@ -195,7 +195,7 @@ export default function FinancePage() {
 
         <div className="flex items-center gap-4">
           <Link
-            href="/finance/exports"
+            href="/admin/finance/exports"
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all bg-gray-900 border border-gray-700 text-gray-400 hover:text-white hover:border-tad-yellow"
           >
             <FileBarChart className="w-4 h-4" /> Centro de Exportación

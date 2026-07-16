@@ -60,7 +60,69 @@ const nextConfig: NextConfig = {
         source: '/dashboard',
         destination: '/admin',
         permanent: false,
-      }
+      },
+      // Fix 404: Internal links use shorthand paths but pages live under /admin/*
+      // Catch-all for all known admin sections used without prefix
+      {
+        source: '/campaigns/:path*',
+        destination: '/admin/campaigns/:path*',
+        permanent: false,
+      },
+      {
+        source: '/campaigns',
+        destination: '/admin/campaigns',
+        permanent: false,
+      },
+      {
+        source: '/finance/:path*',
+        destination: '/admin/finance/:path*',
+        permanent: false,
+      },
+      {
+        source: '/finance',
+        destination: '/admin/finance',
+        permanent: false,
+      },
+      {
+        source: '/analytics/:path*',
+        destination: '/admin/analytics/:path*',
+        permanent: false,
+      },
+      {
+        source: '/analytics',
+        destination: '/admin/analytics',
+        permanent: false,
+      },
+      {
+        source: '/advertisers/:path*',
+        destination: '/admin/advertisers/:path*',
+        permanent: false,
+      },
+      {
+        source: '/advertisers',
+        destination: '/admin/advertisers',
+        permanent: false,
+      },
+      {
+        source: '/media/:path*',
+        destination: '/admin/media/:path*',
+        permanent: false,
+      },
+      {
+        source: '/media',
+        destination: '/admin/media',
+        permanent: false,
+      },
+      {
+        source: '/tracking/:path*',
+        destination: '/admin/tracking/:path*',
+        permanent: false,
+      },
+      {
+        source: '/tracking',
+        destination: '/admin/tracking',
+        permanent: false,
+      },
     ];
   },
 };

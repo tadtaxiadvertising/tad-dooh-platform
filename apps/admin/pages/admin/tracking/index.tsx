@@ -328,6 +328,10 @@ export default function TrackingPage() {
                      setSelectedVehicleId(null);
                      setRecentPath([]);
                   }}
+                  onViewHistory={(v: any) => selectVehicleOnMap(v)}
+                  onSyncCommand={(deviceId: string) => {
+                     console.log('[TAD] WAKE_UP command requested for', deviceId);
+                  }}
                />
             ) : loading ? (
                <div className="w-full h-full bg-[#0a0a0a] flex flex-col items-center justify-center text-zinc-600 gap-6">

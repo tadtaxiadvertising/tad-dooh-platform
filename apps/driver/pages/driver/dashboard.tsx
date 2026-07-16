@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import Head from 'next/head';
 import api, { supabase } from '@tad/services';
-import { useTelemetry } from '../../hooks/useTelemetry';
+import { useBackgroundTelemetry } from '../../hooks/useBackgroundTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
 import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
@@ -578,7 +578,7 @@ function LockdownScreen({ message }: { message: string | null }) {
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function DriverDashboard() {
   const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
-    useTelemetry();
+    useBackgroundTelemetry();
   const { data: hubData, loading: hubLoading, isLocalMode, refresh: refreshHub } = useDriverHub();
   const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
@@ -779,83 +779,83 @@ export default function DriverDashboard() {
     }
   };
 
-    return (
-      <>
-        <Head>
-          <title>TAD Driver | Monitor Operativo</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-          <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
-        </Head>
+  return (
+    <>
+      <Head>
+        <title>TAD Driver | Monitor Operativo</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
+      </Head>
 
-        {/* DriverShell — maneja tabs internos + BottomNavigationBar */}
-        <DriverShell
-          connectionStatus={connectionStatus}
-          batchCount={batchCount}
-          offlineCount={offlineCount}
-          isTracking={isTracking}
-          hubData={hubData}
-          isLocalMode={isLocalMode}
-          walletState={walletState}
-          onSupport={handleSupport}
-          onReportFalla={handleReportFalla}
-          onReferir={handleReferir}
-          onLogout={handleLogout}
-          syncingNow={syncingNow}
-          onSincronizar={handleSincronizar}
-          statusBar={
-            <StatusBar
-              connectionStatus={connectionStatus}
-              batchCount={batchCount}
-              offlineCount={offlineCount}
-              onLogout={handleLogout}
-            />
-          }
-          readinessCard={
-            !hubLoading ? (
-              <DriverReadinessCard
-                bankPendingSync={bankPendingSync}
-                hubData={
-                  hubData
-                    ? {
-                      agreementVersion: hubData.agreementVersion,
-                      bankAccountConfigured: hubData.bankAccountConfigured,
-                      contractAccepted: hubData.contractAccepted,
-                      driverId: hubData.driverId,
-                      onboardingStatus: hubData.onboardingStatus,
-                      subscriptionPaid: hubData.subscriptionPaid,
-                    }
-                    : null
-                }
-                onOpen={() => setShowOnboarding(true)}
-              />
-            ) : undefined
-          }
-        />
-
-        {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción, z-[100] */}
-        {isLocked && <LockdownScreen message={lockMessage} />}
-
-        {showOnboarding && !isLocked && (
-          <DriverOnboardingModal
-            bankPendingSync={bankPendingSync}
-            busy={onboardingBusy}
-            hubData={
-              hubData
-                ? {
-                  agreementVersion: hubData.agreementVersion,
-                  bankAccountConfigured: hubData.bankAccountConfigured,
-                  contractAccepted: hubData.contractAccepted,
-                  driverId: hubData.driverId,
-                  onboardingStatus: hubData.onboardingStatus,
-                  subscriptionPaid: hubData.subscriptionPaid,
-                }
-                : null
-            }
-            onAcceptAgreement={() => void handleAcceptAgreement()}
-            onBankSuccess={() => void handleBankSaved()}
-            onClose={closeOnboarding}
+      {/* DriverShell — maneja tabs internos + BottomNavigationBar */}
+      <DriverShell
+        connectionStatus={connectionStatus}
+        batchCount={batchCount}
+        offlineCount={offlineCount}
+        isTracking={isTracking}
+        hubData={hubData}
+        isLocalMode={isLocalMode}
+        walletState={walletState}
+        onSupport={handleSupport}
+        onReportFalla={handleReportFalla}
+        onReferir={handleReferir}
+        onLogout={handleLogout}
+        syncingNow={syncingNow}
+        onSincronizar={handleSincronizar}
+        statusBar={
+          <StatusBar
+            connectionStatus={connectionStatus}
+            batchCount={batchCount}
+            offlineCount={offlineCount}
+            onLogout={handleLogout}
           />
-        )}
-      </>
-    );
-  }
+        }
+        readinessCard={
+          !hubLoading ? (
+            <DriverReadinessCard
+              bankPendingSync={bankPendingSync}
+              hubData={
+                hubData
+                  ? {
+                    agreementVersion: hubData.agreementVersion,
+                    bankAccountConfigured: hubData.bankAccountConfigured,
+                    contractAccepted: hubData.contractAccepted,
+                    driverId: hubData.driverId,
+                    onboardingStatus: hubData.onboardingStatus,
+                    subscriptionPaid: hubData.subscriptionPaid,
+                  }
+                  : null
+              }
+              onOpen={() => setShowOnboarding(true)}
+            />
+          ) : undefined
+        }
+      />
+
+      {/* ⚠️ Pantalla de Lockdown 402 — bloquea toda interacción, z-[100] */}
+      {isLocked && <LockdownScreen message={lockMessage} />}
+
+      {showOnboarding && !isLocked && (
+        <DriverOnboardingModal
+          bankPendingSync={bankPendingSync}
+          busy={onboardingBusy}
+          hubData={
+            hubData
+              ? {
+                agreementVersion: hubData.agreementVersion,
+                bankAccountConfigured: hubData.bankAccountConfigured,
+                contractAccepted: hubData.contractAccepted,
+                driverId: hubData.driverId,
+                onboardingStatus: hubData.onboardingStatus,
+                subscriptionPaid: hubData.subscriptionPaid,
+              }
+              : null
+          }
+          onAcceptAgreement={() => void handleAcceptAgreement()}
+          onBankSuccess={() => void handleBankSaved()}
+          onClose={closeOnboarding}
+        />
+      )}
+    </>
+  );
+}

@@ -2,13 +2,20 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import {
+  emitNotification,
+  initNotificationEngine,
+  type NotificationItem,
+  type NotificationPriority,
+  type NotificationType,
+  onNotificationEngineStateChange,
+  dismissNotification,
+  acknowledgeNotification,
+  dismissAllNotifications,
+  requestPushPermission,
+} from '../lib/notificationEngine';
 
-type NotificationType =
-  | 'PAYMENT_LIQUIDATED'
-  | 'CAMPAIGN_ASSIGNED'
-  | 'SUBS_WARNING'
-  | 'SUBS_CRITICAL'
-  | 'DRIVER_STATUS';
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 
 type NotificationEnvelope = {
   type: NotificationType;
@@ -18,7 +25,14 @@ type NotificationEnvelope = {
 
 type NotificationState = {
   lastEvent: NotificationEnvelope | null;
-  push: (envelope: NotificationEnvelope) => void;
+  items: NotificationItem[];
+  unreadCount: number;
+  pushPermissionGranted: boolean;
+  requestPush: () => Promise<boolean>;
+  emit: (type: NotificationType, payload?: Record<string, unknown>, overrides?: { priority?: NotificationPriority; title?: string; description?: string }) => Promise<NotificationItem>;
+  dismiss: (id: string) => Promise<void>;
+  acknowledge: (id: string) => Promise<void>;
+  dismissAll: () => Promise<void>;
   subscribe: (listener: (envelope: NotificationEnvelope) => void) => () => void;
 };
 
@@ -34,9 +48,7 @@ function getDriverId(): string | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return typeof parsed?.driverId === 'string' ? parsed.driverId : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function buildChannelName(driverId: string) {
@@ -44,11 +56,8 @@ function buildChannelName(driverId: string) {
 }
 
 function stableKey(type: NotificationType, payload: Record<string, unknown>) {
-  try {
-    return `${type}:${JSON.stringify(payload)}`;
-  } catch {
-    return `${type}:${Object.keys(payload).join(',')}`;
-  }
+  try { return `${type}:${JSON.stringify(payload)}`; }
+  catch { return `${type}:${Object.keys(payload).join(',')}`; }
 }
 
 function loadHistory(): Array<{ key: string; env: NotificationEnvelope }> {
@@ -57,20 +66,13 @@ function loadHistory(): Array<{ key: string; env: NotificationEnvelope }> {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as Array<{ key: string; env: NotificationEnvelope }>;
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-function saveHistory(
-  history: Array<{ key: string; env: NotificationEnvelope }>
-) {
+function saveHistory(history: Array<{ key: string; env: NotificationEnvelope }>) {
   if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  } catch {
-    // quota exceeded — ignore
-  }
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); }
+  catch {/* quota exceeded */ }
 }
 
 function pruneHistory(
@@ -84,11 +86,31 @@ function pruneHistory(
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [lastEvent, setLastEvent] = useState<NotificationEnvelope | null>(null);
-  const listenersRef = useRef<Set<(envelope: NotificationEnvelope) => void>>(
-    new Set()
-  );
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [pushPermissionGranted, setPushPermissionGranted] = useState(false);
+  const listenersRef = useRef<Set<(envelope: NotificationEnvelope) => void>>(new Set());
   const channelRef = useRef<RealtimeChannel | null>(null);
 
+  // ─── Inicializar NotificationEngine ──────────────────────────────────────
+  useEffect(() => {
+    void initNotificationEngine();
+
+    // Escuchar cambios del engine
+    const unsubscribe = onNotificationEngineStateChange((state) => {
+      setItems(state.items);
+      setUnreadCount(state.unreadCount);
+    });
+
+    // Check push permission status
+    if ('Notification' in window) {
+      setPushPermissionGranted(Notification.permission === 'granted');
+    }
+
+    return unsubscribe;
+  }, []);
+
+  // ─── Supabase Realtime Channel ──────────────────────────────────────────
   useEffect(() => {
     const driverId = getDriverId();
     if (!driverId) return;
@@ -107,11 +129,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         let history = pruneHistory(loadHistory(), now);
         const key = stableKey(raw.type as NotificationType, raw.payload ?? {});
 
-        if (
-          history.some(
-            (h) => h.key === key && now - h.env.receivedAt < DEDUP_TTL_MS
-          )
-        ) {
+        // Dedup: evitar procesar la misma notificación duplicada
+        if (history.some((h) => h.key === key && now - h.env.receivedAt < DEDUP_TTL_MS)) {
           return;
         }
 
@@ -119,6 +138,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         saveHistory(history);
         setLastEvent(raw);
         listenersRef.current.forEach((fn) => fn(raw));
+
+        // Emitir al NotificationEngine (non-blocking, con prioridad)
+        void emitNotification(raw.type as NotificationType, raw.payload ?? {});
       });
 
       ch.subscribe();
@@ -135,29 +157,52 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  const push = useCallback((envelope: NotificationEnvelope) => {
-    const now = Date.now();
-    let history = pruneHistory(loadHistory(), now);
-    const key = stableKey(envelope.type, envelope.payload ?? {});
-    history = pruneHistory([...history, { key, env: envelope }], now);
-    saveHistory(history);
+  // ─── API del Context ────────────────────────────────────────────────────
+
+  const emit = useCallback(async (
+    type: NotificationType,
+    payload: Record<string, unknown> = {},
+    overrides?: { priority?: NotificationPriority; title?: string; description?: string }
+  ): Promise<NotificationItem> => {
+    const item = await emitNotification(type, payload, overrides);
+    const envelope: NotificationEnvelope = { type, receivedAt: item.receivedAt, payload };
     setLastEvent(envelope);
     listenersRef.current.forEach((fn) => fn(envelope));
+    return item;
+  }, []);
+
+  const dismiss = useCallback(async (id: string) => {
+    await dismissNotification(id);
+  }, []);
+
+  const acknowledge = useCallback(async (id: string) => {
+    await acknowledgeNotification(id);
+  }, []);
+
+  const dismissAll = useCallback(async () => {
+    await dismissAllNotifications();
+  }, []);
+
+  const requestPush = useCallback(async (): Promise<boolean> => {
+    const granted = await requestPushPermission();
+    setPushPermissionGranted(granted);
+    return granted;
   }, []);
 
   const subscribe = useCallback(
     (listener: (envelope: NotificationEnvelope) => void) => {
       listenersRef.current.add(listener);
-      return () => {
-        listenersRef.current.delete(listener);
-      };
+      return () => { listenersRef.current.delete(listener); };
     },
     []
   );
 
   const value = React.useMemo<NotificationState>(
-    () => ({ lastEvent, push, subscribe }),
-    [lastEvent, push, subscribe]
+    () => ({
+      lastEvent, items, unreadCount, pushPermissionGranted,
+      requestPush, emit, dismiss, acknowledge, dismissAll, subscribe,
+    }),
+    [lastEvent, items, unreadCount, pushPermissionGranted, emit, dismiss, acknowledge, dismissAll, requestPush, subscribe]
   );
 
   return (
@@ -172,9 +217,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 export function useNotifications(): NotificationState {
   const ctx = React.useContext(NotificationContext);
   if (!ctx) {
-    throw new Error(
-      'useNotifications must be used inside NotificationProvider'
-    );
+    throw new Error('useNotifications must be used inside NotificationProvider');
   }
   return ctx;
 }

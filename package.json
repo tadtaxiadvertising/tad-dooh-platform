@@ -16,6 +16,7 @@
     "dev:advertiser": "npm run dev --workspace advertiser",
     "dev:driver": "npm run dev --workspace driver",
     "dev:tablet": "cd apps/tablet-player && python -m http.server 8080",
+    "dev:driver-native": "npm run dev --workspace driver-native",
     "dev:simulator": "npm run dev --workspace tad-simulator",
     "install:all": "npm install",
     "build": "npm run build --workspaces --if-present",

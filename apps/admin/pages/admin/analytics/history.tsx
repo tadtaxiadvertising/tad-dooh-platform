@@ -53,7 +53,7 @@ export default function AnalyticsHistoryPage() {
       {/* Page Context Transition */}
       <div className="flex items-center gap-3 mb-8 opacity-60">
         <Link
-          href="/analytics"
+          href="/admin/analytics"
           className="group w-8 h-8 bg-zinc-900/40 border border-white/5 rounded-lg flex items-center justify-center hover:bg-tad-yellow hover:text-black transition-all active:scale-95"
           aria-label="Volver a Analytics"
         >

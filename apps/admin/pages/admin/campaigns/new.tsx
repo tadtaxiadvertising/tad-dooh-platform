@@ -62,7 +62,7 @@ export default function NewCampaignPage() {
         end_date: form.end_date ? new Date(form.end_date).toISOString() : ''
       };
       await createCampaign(payload);
-      router.push('/campaigns');
+      router.push('/admin/campaigns');
     } catch (err) {
       console.error(err);
       alert('FALLA_DE_PROTOCOLO: Revisa la consola para detalles técnicos.');
@@ -82,7 +82,7 @@ export default function NewCampaignPage() {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Navigation Nexus */}
         <div className="flex items-center justify-between">
-          <Link href="/campaigns" className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all flex items-center gap-2 shadow-sm">
+          <Link href="/admin/campaigns" className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all flex items-center gap-2 shadow-sm">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Cerrar Terminal</span>
           </Link>

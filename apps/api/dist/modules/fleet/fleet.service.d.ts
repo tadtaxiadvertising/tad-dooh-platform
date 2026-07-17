@@ -21,8 +21,8 @@ export declare class FleetService {
         driver_name: string;
         last_playback: Date;
         deviceId: string;
-        city: string;
         taxiNumber: string;
+        city: string;
         lastHeartbeat: Date;
         batteryLevel: number;
         storageUsed: bigint;
@@ -97,15 +97,15 @@ export declare class FleetService {
         }[];
     }>;
     sendCommand(deviceId: string, type: string, params?: Record<string, unknown>): Promise<{
-        status: string;
-        id: string;
-        createdAt: Date;
-        expiresAt: Date | null;
         result: string | null;
+        id: string;
         deviceId: string;
+        status: string;
+        createdAt: Date;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string): Promise<{
         success: boolean;

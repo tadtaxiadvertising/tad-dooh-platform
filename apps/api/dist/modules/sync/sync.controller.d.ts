@@ -2,7 +2,11 @@ import { SyncService } from './sync.service';
 import { Response } from 'express';
 export declare class SyncController {
     private readonly syncService;
+    private readonly etagCache;
+    private readonly ttlMs;
     constructor(syncService: SyncService);
+    private resolveCachedEtag;
+    private cacheEtag;
     getDeviceManifest(deviceId: string, ifNoneMatch: string, res: Response): Promise<{
         timestamp: string;
         expiresAt: string;

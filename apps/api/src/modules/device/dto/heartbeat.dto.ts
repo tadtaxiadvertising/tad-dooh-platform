@@ -1,30 +1,9 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
-
 export class HeartbeatDto {
-  @IsString()
-  device_id: string;
-
-  @IsNumber()
-  @IsOptional()
+  device_id!: string;
   battery_level?: number;
-
-  @IsString()
-  @IsOptional()
   storage_free?: string;
-
-  @IsString()
-  @IsOptional()
   player_status?: string;
-
-  @IsNumber()
-  @IsOptional()
   lat?: number;
-
-  @IsNumber()
-  @IsOptional()
   lng?: number;
-
-  @IsString()
-  @IsOptional()
   timestamp?: string;
 }

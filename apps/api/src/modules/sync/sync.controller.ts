@@ -3,23 +3,32 @@ import { SyncService } from './sync.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Response } from 'express';
 
+type CacheEntry = {
+  value: string;
+  expiresAt: number;
+};
+
 @Controller('sync')
 export class SyncController {
+  private readonly etagCache = new Map<string, CacheEntry>();
+  private readonly ttlMs = 5 * 60 * 1000;
+
   constructor(private readonly syncService: SyncService) {}
 
-  /**
-   * GET /sync/:deviceId — Manifiesto de playlist + kill-switch.
-   *
-   * CAMBIO v12.1.3: cuando el servicio emite un manifest con `killSwitch:true`
-   * (conductor moroso / sin suscripción activa), el endpoint responde HTTP 402
-   * PAYMENT_REQUIRED en lugar de 200 con playlist vacía. La PWA del tablet y los
-   * hooks `useBackgroundTelemetry`/`useTelemetry` se enteran del kill-switch
-   * por código HTTP, no por inspección de payload (defensa en profundidad).
-   *
-   * El cuerpo del 402 sigue siendo el mismo manifest (incluye killSwitch, reason,
-   * graceToken, expiresAt) para que cualquier cliente que inspeccione el body
-   * también pueda tomar acción.
-   */
+  private resolveCachedEtag(deviceId: string, ifNoneMatch?: string): boolean {
+    if (!ifNoneMatch) return false;
+    const cached = this.etagCache.get(deviceId);
+    if (!cached || cached.expiresAt < Date.now()) {
+      if (cached) this.etagCache.delete(deviceId);
+      return false;
+    }
+    return cached.value === ifNoneMatch;
+  }
+
+  private cacheEtag(deviceId: string, etag: string): void {
+    this.etagCache.set(deviceId, { value: etag, expiresAt: Date.now() + this.ttlMs });
+  }
+
   @Public()
   @Get(':deviceId')
   async getDeviceManifest(
@@ -31,23 +40,21 @@ export class SyncController {
       throw new HttpException('DEVICE_ID_REQUIRED', HttpStatus.BAD_REQUEST);
     }
 
-    const manifest = await this.syncService.getDeviceManifest(deviceId);
-
-    // ── KILL-SWITCH: 402 cuando el manifest marca bloqueo ──
-    if ((manifest as any).killSwitch === true) {
-      // Importante: NO fijar ETag en respuestas 402 para evitar
-      // caching del estado de bloqueo por parte del cliente o proxy intermedio.
-      res.setHeader('Cache-Control', 'no-store');
-      throw new HttpException(manifest, HttpStatus.PAYMENT_REQUIRED);
-    }
-
-    // Fast-path 304 Not Modified cuando el cliente tenía ETag actualizado
-    if (ifNoneMatch && ifNoneMatch === manifest.etag) {
+    if (this.resolveCachedEtag(deviceId, ifNoneMatch)) {
       res.status(HttpStatus.NOT_MODIFIED).send();
       return;
     }
 
-    res.setHeader('ETag', manifest.etag);
+    const manifest = await this.syncService.getDeviceManifest(deviceId);
+
+    if ((manifest as Record<string, unknown>).killSwitch === true) {
+      res.setHeader('Cache-Control', 'no-store');
+      throw new HttpException(manifest, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    const etag = (manifest as Record<string, unknown>).etag as string || '';
+    this.cacheEtag(deviceId, etag);
+    res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     return manifest;
   }

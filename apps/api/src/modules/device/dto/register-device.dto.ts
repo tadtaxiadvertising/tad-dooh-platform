@@ -1,19 +1,10 @@
 import { PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
 
 export class RegisterDeviceDto {
-  @IsString()
-  device_id: string;
-
-  @IsString()
-  @IsOptional()
+  device_id!: string;
   model?: string;
-
-  @IsString()
-  @IsOptional()
+  os_version?: string;
   app_version?: string;
-
-  @IsString()
-  @IsOptional()
   driver_id?: string;
+  manufacturer?: string;
 }

@@ -47,17 +47,61 @@ async function initPlayer(): Promise<void> {
   }
 
   // 2. Initialize subsystems
-  const cacheManager = new CacheManager();
-  const playbackQueue = new PlaybackQueue();
-  const killSwitch = new KillSwitchEnforcer();
-  killSwitch.init();
+    const cacheManager = new CacheManager();
+    const playbackQueue = new PlaybackQueue();
+    const killSwitch = new KillSwitchEnforcer();
+    killSwitch.init();
 
-  const kioskBridge = new FullyKioskBridge();
+    // Sprint 2: Register video downloader Web Worker (offload network I/O
+    // from UI thread so the playlist never stutters on low-end tablets).
+    // The worker handles pre-fetching and updates CacheManager's IndexedDB
+    // via postMessage progress events.
+    const worker = new Worker(
+      new URL('./workers/video-downloader.worker.js', import.meta.url),
+      { type: 'module' },
+    );
+    (window as unknown as Record<string, unknown>).__tadVideoWorker = worker;
+
+    worker.addEventListener('message', (event: MessageEvent) => {
+      const { type, ok, enqueued, skipped, finished, failed, message } = event.data;
+
+      switch (type) {
+        case 'SYNC_ASSETS_RESULT':
+          if (ok && enqueued > 0) {
+            // Tasks enqueued — trigger actual downloads
+            worker.postMessage({ type: 'DOWNLOAD_ASSETS', requestId: `dl-${Date.now()}`, payload: { concurrency: 2 } });
+          }
+          if (skipped > 0) {
+            console.log(`[TAD Player] Worker: ${skipped} assets already cached or downloading`);
+          }
+          break;
+
+        case 'DOWNLOAD_STATUS':
+          if (ok && typeof finished === 'number') {
+            console.log(`[TAD Player] Worker download complete: ${finished} done, ${failed ?? 0} failed`);
+          }
+          break;
+
+        case 'ERROR':
+          console.warn(`[TAD Player] Worker error: ${message}`);
+          break;
+
+        // PROGRESS events are informational only (non-critical)
+        default:
+          break;
+      }
+    });
+
+    const kioskBridge = new FullyKioskBridge();
   kioskBridge.init();
 
-  const playlistEngine = new PlaylistEngine(playbackQueue, (status: PlayerStatus) => {
+  const playlistEngine = new PlaylistEngine(
+   playbackQueue,
+   cacheManager,
+   (status: PlayerStatus) => {
     console.log(`[TAD Player] Status: ${status}`);
-  });
+   },
+  );
   playlistEngine.init(deviceId);
 
   const syncManager = new SyncManager(cacheManager, playbackQueue, {

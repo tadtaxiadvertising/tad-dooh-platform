@@ -11,26 +11,28 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import okhttp3.MediaType.Companion.toMediaType
+import java.util.concurrent.TimeUnit
 
 /**
- * Singleton that creates and configures the Retrofit instance for the
+ * Singleton that creates and configures the Retrofit instances for the
  * TAD NestJS backend.
  *
- * Wire-up:
- * 1. Builds an [OkHttpClient] with the full interceptor chain:
- *    - [NetworkMonitorInterceptor] — pre-flight connectivity check + network-type header
- *    - [KillSwitchInterceptor] — auth headers, 402 kill-switch, 401 refresh
- *    - [HttpLoggingInterceptor] — debug-only request/response logging
- * 2. Creates a [Retrofit] instance with kotlinx-serialization JSON converter.
- * 3. Exposes [apiService] as the primary entry point for all API calls.
+ * Wire-up (after Hilt migration):
+ * 1. Builds two [OkHttpClient]s:
+ *    - **fullClient** — NetworkMonitor → KillSwitch → Logging. Used by
+ *      [apiService] for all authenticated requests.
+ *    - **bareClient** — NetworkMonitor → Logging only (no KillSwitch, no auth
+ *      headers). Used by [bareApiService], which the [KillSwitchInterceptor]
+ *      itself calls for silent re-login on 401. This breaks the circular
+ *      dependency Retrofit → Interceptor → Retrofit.
+ * 2. Creates two [Retrofit] instances (full + bare).
+ * 3. Exposes [apiService] (with kill-switch) and [bareApiService] (without).
  *
  * The base URL is sourced from [BuildConfig.API_BASE_URL] which is already
  * differentiated between debug (emulator localhost) and release (production).
  *
- * Usage (from TadApplication.initRetrofit):
- * ```
- *     val apiService = TadApiClient.instance.apiService
- * ```
+ * The Hilt [com.tad.dooh.driver.di.NetworkModule] exposes these singletons to
+ * the DI graph; existing direct callers (`TadApiClient.apiService`) keep working.
  */
 object TadApiClient {
 
@@ -69,15 +71,44 @@ object TadApiClient {
         NetworkMonitorInterceptor(TadApplication.getInstance())
     }
 
+    /**
+     * Kill-switch interceptor — depends on [bareApiService] (defined below)
+     * to avoid interceptor ←→ Retrofit recursion on the 401 re-login path.
+     */
     private val killSwitchInterceptor: KillSwitchInterceptor by lazy {
-        val supabaseClient = try {
-            TadApplication.getInstance().supabaseClient
-        } catch (_: UninitializedPropertyAccessException) {
-            Log.w(TAG, "Supabase client not yet initialized — kill-switch will skip refresh")
-            null
-        }
-        KillSwitchInterceptor(authDao, supabaseClient)
+        KillSwitchInterceptor(authDao, bareApiService)
     }
+
+    // ── Bare client & service (no KillSwitch, no auth headers) ──────────────
+    // Used ONLY by the KillSwitchInterceptor for silent re-login. Binding this
+    // to the full client would recurse: client → interceptor → client → ...
+
+    private val bareOkHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(networkMonitorInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(90, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val bareRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(ensureTrailingSlash(BuildConfig.API_BASE_URL))
+            .client(bareOkHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    /** Retrofit service WITHOUT the kill-switch/auth interceptor chain.
+     *  Used internally by [killSwitchInterceptor] for re-login on 401. */
+    val bareApiService: TadApiService by lazy {
+        bareRetrofit.create(TadApiService::class.java)
+    }
+
+    // ── Full client & service (with KillSwitch + auth) ─────────────────────
 
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -87,10 +118,10 @@ object TadApiClient {
             .addInterceptor(killSwitchInterceptor)
             .addInterceptor(loggingInterceptor)
             // Timeout configuration for taxi-tablet network conditions
-            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)     // hub endpoint can be slow
-            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)     // telemetry batch uploads
-            .callTimeout(90, java.util.concurrent.TimeUnit.SECONDS)      // overall call budget
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)     // hub endpoint can be slow
+            .writeTimeout(30, TimeUnit.SECONDS)     // telemetry batch uploads
+            .callTimeout(90, TimeUnit.SECONDS)      // overall call budget
             .build()
     }
 
@@ -111,36 +142,27 @@ object TadApiClient {
     // ── Public API ──────────────────────────────────────────────────────────
 
     /**
-     * The single [TadApiService] instance used by the entire app.
+     * The single [TadApiService] instance used by the entire app (with kill-switch).
      *
-     * Prefer accessing this directly rather than calling [create] with
-     * a custom service class.
+     * Prefer accessing this via Hilt injection (provided by [NetworkModule])
+     * rather than the singleton directly.
      */
     val apiService: TadApiService by lazy {
         retrofit.create(TadApiService::class.java)
     }
 
-    /**
-     * Create a Retrofit service for a custom interface (e.g. for future
-     * endpoints not yet in [TadApiService]).
-     */
+    /** Create a Retrofit service for a custom interface (advanced use). */
     fun <T> create(serviceClass: Class<T>): T {
         return retrofit.create(serviceClass)
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
-    /**
-     * Retrofit requires the base URL to end with `/`.  BuildConfig values
-     * may not, so we enforce it here.
-     */
+    /** Retrofit requires the base URL to end with `/`. */
     private fun ensureTrailingSlash(url: String): String {
         return if (url.endsWith("/")) url else "$url/"
     }
 
-    /**
-     * Expose the underlying OkHttp client for advanced use (e.g. WebSocket,
-     * custom request builders).  Most code should prefer [apiService].
-     */
+    /** Expose the underlying OkHttp client for advanced use. */
     val httpClient: OkHttpClient by lazy { okHttpClient }
 }

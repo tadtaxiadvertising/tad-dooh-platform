@@ -40,7 +40,9 @@
       "Read(C:\\tad-dooh-platform\\apps\\driver\\pages/**)",
       "Read(C:\\tad-dooh-platform\\apps\\driver/**)",
       "Read(C:\\tad-dooh-platform\\apps\\driver\\contexts/**)",
-      "Read(C:\\tad-dooh-platform\\apps\\driver\\components\\Notifications/**)"
+      "Read(C:\\tad-dooh-platform\\apps\\driver\\components\\Notifications/**)",
+      "Bash(@echo *)",
+      "Bash(@findstr *)"
     ]
   },
   "$version": 4

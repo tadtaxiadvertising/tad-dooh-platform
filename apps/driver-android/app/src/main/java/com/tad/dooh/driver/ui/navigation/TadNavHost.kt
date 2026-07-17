@@ -27,7 +27,7 @@ fun TadNavHost(
     ) {
         composable(TadRoute.Login.route) {
             LoginScreen(
-                onLoginSuccess = {
+                onNavigateToDashboard = {
                     navController.navigate(TadRoute.Dashboard.route) {
                         popUpTo(TadRoute.Login.route) { inclusive = true }
                     }
@@ -60,7 +60,7 @@ fun TadNavHost(
 
         composable(TadRoute.Onboarding.route) {
             OnboardingScreen(
-                onComplete = {
+                onNavigateToDashboard = {
                     navController.navigate(TadRoute.Dashboard.route) {
                         popUpTo(TadRoute.Onboarding.route) { inclusive = true }
                     }
@@ -79,6 +79,9 @@ fun TadNavHost(
         composable(TadRoute.BankWizard.route) {
             BankWizardScreen(
                 onComplete = {
+                    navController.popBackStack()
+                },
+                onBack = {
                     navController.popBackStack()
                 },
             )

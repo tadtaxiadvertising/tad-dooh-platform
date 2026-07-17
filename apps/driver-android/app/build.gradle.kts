@@ -55,6 +55,46 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.browser:browser:1.8.0")
+        // Force kotlinx libs to metadata-compatible versions for Kotlin 2.1.20
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.7.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.7.3")
+        force("org.jetbrains.kotlinx:kotlinx-io-core:0.5.4")
+        force("org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.5.4")
+        force("org.jetbrains.kotlinx:kotlinx-io-bytestring:0.5.4")
+        // Force Kotlin stdlib/reflect to 2.1.20
+        force("org.jetbrains.kotlin:kotlin-stdlib:2.1.20")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20")
+        force("org.jetbrains.kotlin:kotlin-reflect:2.1.20")
+        // Force ALL Ktor modules to 2.3.11 to match Kotlin 2.1.20 (Supabase 3.6 pulls 3.4.3 with 2.3.x metadata)
+        force("io.ktor:ktor-client-core:2.3.11")
+        force("io.ktor:ktor-client-okhttp:2.3.11")
+        force("io.ktor:ktor-client-content-negotiation:2.3.11")
+        force("io.ktor:ktor-client-logging:2.3.11")
+        force("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+        force("io.ktor:ktor-websockets:2.3.11")
+        force("io.ktor:ktor-http:2.3.11")
+        force("io.ktor:ktor-utils:2.3.11")
+        force("io.ktor:ktor-sse:2.3.11")
+        force("io.ktor:ktor-network:2.3.11")
+        force("io.ktor:ktor-events:2.3.11")
+        force("io.ktor:ktor-serialization:2.3.11")
+        force("io.ktor:ktor-serialization-json:2.3.11")
+        force("io.ktor:ktor-websocket-serialization:2.3.11")
+        force("io.ktor:ktor-io:2.3.11")
+        force("io.ktor:ktor-http-cio:2.3.11")
+        force("io.ktor:ktor-range-support:2.3.11")
+        force("io.ktor:ktor-websockets-cio:2.3.11")
+        force("io.ktor:ktor-serialization-kotlinx:2.3.11")
+    }
+}
+
 dependencies {
     // ─── Jetpack Compose ──────────────────────────────────────────────
     val composeBom = platform("androidx.compose:compose-bom:2025.01.01")
@@ -88,12 +128,12 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // ─── Supabase ─────────────────────────────────────────────────────
-    implementation("io.github.jan-tennert.supabase:realtime-kt:2.6.1")
-    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
-    implementation("io.github.jan-tennert.supabase:auth-kt:2.6.1")
-    implementation("io.ktor:ktor-client-okhttp:3.0.3")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:3.1.0")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.0")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.1.0")
+    implementation("io.ktor:ktor-client-okhttp:2.3.11")
 
-    // ─── Android Core ────────────────────────────────────────────────
+    // ─── Android Core ────────────────────────────────────────────────────
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")

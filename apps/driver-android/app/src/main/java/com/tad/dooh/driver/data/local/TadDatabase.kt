@@ -9,8 +9,8 @@ import kotlinx.coroutines.launch
 
 // ─── Type Converters ─────────────────────────────────────────────────────────
 // Room natively handles Long, Double, Int, String — no converters needed for
-// the current schema.  This class is a placeholder for future non-primitive
-// types (e.g. enums, Date, List<String>).
+// the current schema.  Add @TypeConverters annotation back when non-primitive
+// types (e.g. enums, Date, List<String>) are introduced.
 
 class TadConverters {
     // Reserved for future type conversions
@@ -43,7 +43,6 @@ class TadConverters {
     version = 1,
     exportSchema = true
 )
-@TypeConverters(TadConverters::class)
 abstract class TadDatabase : RoomDatabase() {
 
     abstract fun telemetryDao(): TelemetryDao

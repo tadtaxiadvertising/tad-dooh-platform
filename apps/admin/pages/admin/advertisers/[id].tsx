@@ -50,7 +50,7 @@ export default function AdvertiserProfilePage() {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
         <p className="text-xl text-white font-bold uppercase tracking-widest mb-4">Anunciante no encontrado</p>
-        <Link href="/advertisers" className="text-tad-yellow uppercase font-bold text-xs hover:underline">
+        <Link href="/admin/advertisers" className="text-tad-yellow uppercase font-bold text-xs hover:underline">
           Volver
         </Link>
       </div>
@@ -85,7 +85,7 @@ export default function AdvertiserProfilePage() {
       </div>
 
       <div className="mb-8">
-        <Link href="/advertisers" className="inline-flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-white uppercase tracking-widest transition-colors bg-gray-900/50 px-4 py-2 rounded-xl border border-gray-800">
+        <Link href="/admin/advertisers" className="inline-flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-white uppercase tracking-widest transition-colors bg-gray-900/50 px-4 py-2 rounded-xl border border-gray-800">
           <ArrowLeft className="w-4 h-4" /> Directorio
         </Link>
       </div>
@@ -125,7 +125,7 @@ export default function AdvertiserProfilePage() {
           )}
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => router.push('/media?openUpload=true')}
+              onClick={() => router.push('/admin/media?openUpload=true')}
               className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-xl border border-gray-700/50 hover:border-gray-500 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2"
             >
               <CloudUpload className="w-4 h-4" /> Subir Contenido

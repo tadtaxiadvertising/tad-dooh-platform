@@ -305,7 +305,7 @@ export default function AnalyticsPage() {
                         </div>
                      </div>
                      <Link
-                        href="/tracking"
+                        href="/admin/tracking"
                         className="w-full mt-8 py-4 bg-gray-900/50 hover:bg-tad-yellow hover:text-black border border-gray-700/50 hover:border-transparent rounded-xl text-xs font-bold uppercase tracking-widest text-gray-400 transition-all flex items-center justify-center gap-2 group/link relative z-10"
                      >
                         Ver Heatmap Satelital
@@ -373,7 +373,7 @@ export default function AnalyticsPage() {
 
                   <div className="p-4 bg-gray-900/50 border-t border-gray-700/50 mt-auto">
                      <Link
-                        href="/analytics/history"
+                        href="/admin/analytics/history"
                         className="w-full py-3 bg-gray-800 hover:bg-tad-yellow text-gray-400 hover:text-black rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 group border border-gray-700 hover:border-transparent"
                      >
                         Ver Registro Completo

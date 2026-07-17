@@ -46,7 +46,7 @@ export default function ExportsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <Link href="/finance" className="flex items-center gap-2 text-gray-400 hover:text-tad-yellow transition-colors mb-4 text-xs font-bold uppercase tracking-widest">
+            <Link href="/admin/finance" className="flex items-center gap-2 text-gray-400 hover:text-tad-yellow transition-colors mb-4 text-xs font-bold uppercase tracking-widest">
               <ArrowLeft className="w-4 h-4" /> Volver a Finanzas
             </Link>
             <h1 className="text-4xl font-black tracking-tighter text-white flex items-center gap-4">

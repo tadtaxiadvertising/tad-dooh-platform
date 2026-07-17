@@ -130,6 +130,57 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+// ── Push Notification: mostrar notificación CRITICAL cuando la app no está visible ──
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const priority = data.priority || 'INFO';
+    const title = data.title || 'TAD Driver';
+    const options = {
+      body: data.description || data.body || '',
+      icon: '/icons/icon.svg',
+      tag: data.id || `tad-push-${Date.now()}`,
+      requireInteraction: priority === 'CRITICAL',
+      silent: priority !== 'CRITICAL',
+      vibrate: priority === 'CRITICAL' ? [200, 100, 200] : [],
+      data: { type: data.type || 'DRIVER_STATUS', payload: data.payload || {}, url: data.url || '/driver/dashboard' },
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch {
+    // Payload corrupto — mostrar notificación genérica
+    event.waitUntil(
+      self.registration.showNotification('TAD Driver', {
+        body: 'Nueva alerta operativa.',
+        icon: '/icons/icon.svg',
+        tag: `tad-push-${Date.now()}`,
+      })
+    );
+  }
+});
+
+// ── Notification Click: abrir la app y navegar a la URL indicada ──
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data?.url || '/driver/dashboard';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // Si ya hay un tab abierto, focus y navegar
+      for (const client of clients) {
+        if (client.url.includes('/driver/') && 'focus' in client) {
+          return client.navigate(urlToOpen).then(() => client.focus());
+        }
+      }
+      // Si no hay tabs, abrir nuevo
+      return self.clients.openWindow(urlToOpen);
+    })
+  );
+});
+
 async function notifyClientsToFlush() {
   // Los Service Workers no acceden a localStorage directamente.
   // Le enviamos un mensaje a los tabs activos para que hagan el flush.

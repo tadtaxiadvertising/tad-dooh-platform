@@ -1,11 +1,11 @@
 import Head from 'next/head';
 import type { GetServerSideProps } from 'next';
-import { useTelemetry } from '../hooks/useTelemetry';
+import { useBackgroundTelemetry } from '../hooks/useBackgroundTelemetry';
 
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
 
 export default function GpsTestPage() {
-  const { connectionStatus, offlineCount, batchCount, syncPending } = useTelemetry();
+  const { connectionStatus, offlineCount, batchCount, syncPending } = useBackgroundTelemetry();
 
   return (
     <>

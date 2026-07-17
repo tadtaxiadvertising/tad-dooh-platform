@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { NotificationToast } from '@/components/Notifications/NotificationToast';
+import { NotificationCenter } from '@/components/Notifications/NotificationCenter';
 
 const PUBLIC_PAGES = [
   '/login',
@@ -43,6 +44,7 @@ function AppWrapper({ Component, pageProps, router }: AppProps) {
           <Component {...pageProps} />
         </div>
         <NotificationToast />
+        <NotificationCenter />
       </NotificationProvider>
     </AuthProvider>
   );

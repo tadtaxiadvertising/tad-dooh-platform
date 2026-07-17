@@ -12,8 +12,13 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.tad.dooh.driver.data.local.TadDatabase
+import com.tad.dooh.driver.data.remote.TadApiService
 import com.tad.dooh.driver.worker.TelemetrySyncWorker
 import dagger.hilt.android.HiltAndroidApp
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,22 +30,13 @@ import javax.inject.Inject
  *
  * Boot sequence:
  *  1. Hilt generates the singleton component and injects `@Inject` fields
- *     (database) before [onCreate] runs.
- *  2. Room database is now provided by [com.tad.dooh.driver.di.DatabaseModule]
- *     and injected; the `lateinit var database` service-locator is removed.
- *  3. The Retrofit client (`TadApiClient`) remains a Kotlin `object` (option
- *     C2→b) and is exposed to Hilt via [com.tad.dooh.driver.di.NetworkModule].
- *  4. Network connectivity observer is registered (legacy — kept as-is, will
- *     migrate to a Hilt-provided NetworkMonitor in a later iteration).
- *  5. WorkManager periodic telemetry-sync schedule is enqueued; the
- *     [HiltWorkerFactory] is wired via [Configuration.Provider] so
- *     `@HiltWorker`-annotated workers (e.g. [TelemetrySyncWorker]) receive
- *     their `@AssistedInject` dependencies.
+ *     before [onCreate] runs.
+ *  2. Room database is provided by [com.tad.dooh.driver.di.DatabaseModule].
+ *  3. Retrofit client via [com.tad.dooh.driver.di.NetworkModule].
+ *  4. Network connectivity observer is registered.
+ *  5. WorkManager periodic telemetry-sync is enqueued via [HiltWorkerFactory].
  *
- * Supabase initialization has been removed: the kill-switch no longer uses
- * Supabase GoTrue for token refresh — drivers auth is HS256 JWT local with
- * silent re-login via `POST /drivers/login` (verified against backend, no
- * `/drivers/refresh` endpoint exists).
+ * Drivers auth is HS256 JWT local with silent re-login via `POST /drivers/login`.
  */
 @HiltAndroidApp
 class TadApplication : Application(), Configuration.Provider {
@@ -52,20 +48,22 @@ class TadApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var database: TadDatabase
 
-    /**
-     * Hilt-provided [HiltWorkerFactory]. Used by WorkManager to construct
-     * `@HiltWorker`-annotated workers with their `@AssistedInject` deps.
-     * Provided automatically by `androidx.hilt:hilt-work` once it's on the
-     * classpath and this Application is `@HiltAndroidApp`.
-     */
+    @Inject
+    lateinit var apiService: TadApiService
+
+    /** Hilt-provided [HiltWorkerFactory]. */
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
-    // ── Legacy singleton accessor (for non-Hilt callers, e.g. TadApiClient) ─
+    /**
+     * Supabase client — kept for [TelemetryForegroundService] realtime broadcast
+     * to the Admin Map (channel `fleet_tracking_live`). NOT used for auth.
+     */
+    lateinit var supabaseClient: SupabaseClient
+        private set
 
-    /** Static accessor used by [com.tad.dooh.driver.data.remote.TadApiClient]
-     *  until its own migration to Hilt is complete. New code should prefer Hilt
-     *  injection over this. */
+    // ── Legacy singleton accessor ──────────────────────────────────────────
+
     companion object {
         @Volatile
         private lateinit var instance: TadApplication
@@ -73,7 +71,7 @@ class TadApplication : Application(), Configuration.Provider {
         fun getInstance(): TadApplication = instance
     }
 
-    // ── Network state (legacy — will migrate to Hilt NetworkMonitor) ─────────
+    // ── Network state ──────────────────────────────────────────────────────
 
     var isNetworkAvailable: Boolean = false
         private set
@@ -103,32 +101,36 @@ class TadApplication : Application(), Configuration.Provider {
         }
     }
 
-    // ── WorkManager Configuration.Provider ───────────────────────────────────
+    // ── WorkManager Configuration.Provider ──────────────────────────────────
 
-    /**
-     * Required by WorkManager to inject the [HiltWorkerFactory] so that
-     * `@HiltWorker`-annotated workers receive their `@AssistedInject` deps.
-     * Returning `null` for `workManagerConfiguration` would fall back to the
-     * default factory and crash on the first `@HiltWorker` instantiation.
-     */
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
 
-    // ── Lifecycle ───────────────────────────────────────────────────────────
+    // ── Lifecycle ──────────────────────────────────────────────────────────
 
     override fun onCreate() {
         super.onCreate()
         instance = this
 
-        // `database` is already injected by Hilt at this point.
+        // `database`, `apiService`, `workerFactory` already injected by Hilt.
+        initSupabase()
         registerNetworkObserver()
         schedulePeriodicTelemetrySync()
     }
 
+    private fun initSupabase() {
+        supabaseClient = createSupabaseClient(
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            supabaseKey = BuildConfig.SUPABASE_ANON_KEY
+        ) {
+            install(Postgrest)
+            install(Realtime)
+        }
+    }
+
     private fun registerNetworkObserver() {
-        // Seed initial state
         @Suppress("DEPRECATION")
         val activeNetwork = connectivityManager.activeNetworkInfo
         isNetworkAvailable = activeNetwork?.isConnectedOrConnecting == true

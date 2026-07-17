@@ -62,6 +62,17 @@ class TelemetryRepository(
         const val DRIP_CHUNK_SIZE = 50
 
         private const val TAG = "TelemetryRepository"
+
+        fun create(context: Context): TelemetryRepository {
+            val app = TadApplication.getInstance()
+            return TelemetryRepository(
+                context       = context,
+                telemetryDao  = app.database.telemetryDao(),
+                authDao       = app.database.authDao(),
+                apiService    = app.apiService,
+                app           = app
+            )
+        }
     }
 
     // ─── Coroutine scope ────────────────────────────────────────────────

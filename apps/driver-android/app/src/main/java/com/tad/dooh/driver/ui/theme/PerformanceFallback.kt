@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.StaticCompositionLocal
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 
@@ -38,7 +38,7 @@ data class PerformanceFallback(
  * Composition local that glassmorphism modifiers read to decide degradation.
  * Default is no fallback (full visual fidelity).
  */
-val LocalPerformanceFallback = StaticCompositionLocal<PerformanceFallback> {
+val LocalPerformanceFallback = staticCompositionLocalOf<PerformanceFallback> {
     PerformanceFallback(
         disableGlassmorphism = false,
         disableAnimations = false,

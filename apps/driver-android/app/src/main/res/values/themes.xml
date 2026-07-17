@@ -1,36 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <!-- ── Base application theme (Material3 Dark) ─────────────────────────── -->
-
-    <style name="Theme.TadDriver" parent="android:Theme.Material3.Dark.NoActionBar">
-
-        <!-- Brand colours ────────────────────────────────────────────────────── -->
-        <item name="android:colorPrimary">@color/tad_yellow</item>
-        <item name="android:colorPrimaryDark">@color/tad_yellow_dark</item>
-        <item name="android:colorPrimaryVariant">@color/tad_yellow_variant</item>
-        <item name="android:colorAccent">@color/tad_yellow</item>
-
-        <!-- Surface / background ─────────────────────────────────────────────── -->
-        <item name="android:colorBackground">@color/tad_dark</item>
-        <item name="android:windowBackground">@color/tad_dark</item>
-        <item name="android:colorSurface">@color/tad_surface</item>
-
-        <!-- System bars ──────────────────────────────────────────────────────── -->
-        <item name="android:statusBarColor">@color/tad_status_bar</item>
-        <item name="android:navigationBarColor">@color/tad_nav_bar</item>
-
-        <!-- Text ──────────────────────────────────────────────────────────────── -->
-        <item name="android:textColorPrimary">@color/tad_text_primary</item>
-        <item name="android:textColorSecondary">@color/tad_text_secondary</item>
-
-        <!-- Splash screen (Android 12+) ──────────────────────────────────────── -->
-        <item name="android:windowSplashScreenBackground">@color/tad_dark</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_tad</item>
-
-        <!-- Edge-to-edge: translucent system bars ─────────────────────────────── -->
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-
-    </style>
-
+    <style name="Theme.TadDriver" parent="android:Theme.DeviceDefault.Light.NoActionBar" />
 </resources>

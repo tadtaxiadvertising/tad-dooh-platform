@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.hilt.work.HiltWorker
-import androidx.work.Assisted
-import androidx.work.AssistedInject
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.tad.dooh.driver.data.local.AuthDao
@@ -13,13 +11,15 @@ import com.tad.dooh.driver.data.local.TelemetryDao
 import com.tad.dooh.driver.data.local.TelemetryEntity
 import com.tad.dooh.driver.data.remote.AUTH_KEY_DEVICE_ID
 import com.tad.dooh.driver.data.remote.AUTH_KEY_TOKEN
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import com.tad.dooh.driver.data.remote.GlobalState
 import com.tad.dooh.driver.data.remote.NetworkUnavailableException
 import com.tad.dooh.driver.data.remote.TadApiService
 import com.tad.dooh.driver.data.remote.TrackBatchRequest
 import com.tad.dooh.driver.data.remote.TelemetryPoint
 import com.tad.dooh.driver.service.TelemetryForegroundService
-import dagger.assisted.AssistedFactory
 import kotlinx.coroutines.delay
 import retrofit2.HttpException
 

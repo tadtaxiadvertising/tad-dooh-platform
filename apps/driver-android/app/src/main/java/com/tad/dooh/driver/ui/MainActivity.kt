@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.rememberNavController
 import com.tad.dooh.driver.ui.navigation.TadNavHost
 import com.tad.dooh.driver.ui.theme.TadDriverTheme
 import com.tad.dooh.driver.ui.viewmodel.DriverViewModel
@@ -59,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TadNavHost()
+                    TadNavHost(navController = rememberNavController())
                 }
             }
         }

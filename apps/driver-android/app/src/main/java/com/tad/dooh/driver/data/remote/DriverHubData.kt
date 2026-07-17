@@ -1,6 +1,7 @@
 package com.tad.dooh.driver.data.remote
 
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -78,41 +79,41 @@ object FlexibleBooleanSerializer : KSerializer<Boolean> {
  */
 @Serializable
 data class DriverHubData(
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val balance: Double = 0.0,
 
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val projectedEarnings: Double = 0.0,
 
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val activeAds: Double = 0.0,
 
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val activeSlots: Double = 0.0,
 
     val maxSlots: Int = MAX_DRIVER_SLOTS,
 
-    @Serializable(with = FlexibleBooleanSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val subscriptionPaid: Boolean = false,
 
     val subscriptionStatus: String = "UNKNOWN",
 
     val deviceId: String? = null,
 
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val gpsPoints: Double = 0.0,
 
-    @Serializable(with = FlexibleDoubleSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val adsPlayed: Double = 0.0,
 
-    @Serializable(with = FlexibleBooleanSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val contractAccepted: Boolean = false,
 
     val agreementVersion: String? = null,
 
     val onboardingStatus: String = "UNKNOWN",
 
-    @Serializable(with = FlexibleBooleanSerializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val bankAccountConfigured: Boolean = false,
 
     val driverId: String = "",

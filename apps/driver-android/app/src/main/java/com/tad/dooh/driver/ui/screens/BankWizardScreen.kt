@@ -133,13 +133,13 @@ fun BankWizardScreen(
                     errorMessage = null
                     when (currentStep) {
                         1 -> {
-                            if (selectedBank.isBlank()) { errorMessage = "Selecciona un banco"; return }
+                            if (selectedBank.isBlank()) { errorMessage = "Selecciona un banco"; return@Button }
                             currentStep = 2
                         }
                         2 -> {
                             if (accountNumber.length != 10 || accountNumber.any { !it.isDigit() }) {
                                 errorMessage = "El número de cuenta debe tener 10 dígitos"
-                                return
+                                return@Button
                             }
                             currentStep = 3
                         }
@@ -147,7 +147,7 @@ fun BankWizardScreen(
                         4 -> {
                             if (ownerName.isBlank() || ownerName.length < 3) {
                                 errorMessage = "Ingresa tu nombre completo"
-                                return
+                                return@Button
                             }
                             currentStep = 5
                         }
@@ -155,7 +155,7 @@ fun BankWizardScreen(
                             val cleanCedula = cedula.replace("-", "")
                             if (cleanCedula.length != 11 || cleanCedula.any { !it.isDigit() }) {
                                 errorMessage = "La cédula debe tener 11 dígitos"
-                                return
+                                return@Button
                             }
                             isLoading = true
                             scope.launch {

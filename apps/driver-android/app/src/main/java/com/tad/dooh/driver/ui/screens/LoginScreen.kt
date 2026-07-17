@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -129,7 +130,7 @@ fun LoginScreen(
                 onClick = {
                     if (phone.isBlank() || password.isBlank()) {
                         errorMessage = "Ingresa teléfono y contraseña"
-                        return
+                        return@Button
                     }
                     isLoading = true
                     errorMessage = null
@@ -193,7 +194,7 @@ fun LoginScreen(
             // ─── Register link ──────────────────────────────────────────────
             TextButton(
                 onClick = onNavigateToRegister,
-                colors = TextButtonDefaults.textButtonColors(contentColor = TadYellow)
+                colors = ButtonDefaults.textButtonColors(contentColor = TadYellow)
             ) {
                 Text("¿Nuevo conductor? Regístrate", style = TadLabel)
             }

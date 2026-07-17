@@ -108,10 +108,11 @@ fun OnboardingScreen(
                             errorMessage = null
                             scope.launch {
                                 try {
-                                    val driverId = GlobalState.driverId ?: run {
+                                    val driverId = GlobalState.driverId
+                                    if (driverId == null) {
                                         isLoading = false
                                         errorMessage = "No se encontró ID de conductor"
-                                        return
+                                        return@launch
                                     }
                                     apiService.acceptAgreement(
                                         driverId,

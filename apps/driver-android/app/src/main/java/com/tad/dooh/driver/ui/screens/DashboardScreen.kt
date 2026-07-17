@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -23,6 +24,7 @@ import com.tad.dooh.driver.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 import kotlin.math.round
 
 enum class DashboardTab(val label: String, val icon: String) {
@@ -68,7 +70,7 @@ fun DashboardScreen(
             hubCacheDao.save(
                 com.tad.dooh.driver.data.local.HubCacheEntity(
                     key = "TAD_DRIVER_HUB_CACHE",
-                    data = Json.encodeToString(hubData),
+                    data = Json.encodeToString(serializer(), hubData),
                     updatedAt = System.currentTimeMillis()
                 )
             )
@@ -383,7 +385,7 @@ private fun RoutesTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Estado GPS", style = TadSubheading, color = TadTextPrimary)
-                val (statusText, statusColor) = if (isTracking) ("Activo", TadGreen) else ("Inactivo", TadRed)
+                val (statusText, statusColor) = if (isTracking) Pair("Activo", TadGreen) else Pair("Inactivo", TadRed)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(8.dp).background(statusColor, BadgeShape))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -550,7 +552,7 @@ private fun SettingsTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Conexión", style = TadSubheading, color = TadTextPrimary)
-                val (label, color) = if (isOnline) ("Online", TadGreen) else ("Offline", TadRed)
+                val (label, color) = if (isOnline) Pair("Online", TadGreen) else Pair("Offline", TadRed)
                 Text(label, style = TadLabel, color = color)
             }
             Row(
@@ -559,7 +561,7 @@ private fun SettingsTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("GPS tracking", style = TadSubheading, color = TadTextPrimary)
-                val (gpsLabel, gpsColor) = if (isTracking) ("Activo", TadGreen) else ("Inactivo", TadWarning)
+                val (gpsLabel, gpsColor) = if (isTracking) Pair("Activo", TadGreen) else Pair("Inactivo", TadWarning)
                 Text(gpsLabel, style = TadLabel, color = gpsColor)
             }
         }

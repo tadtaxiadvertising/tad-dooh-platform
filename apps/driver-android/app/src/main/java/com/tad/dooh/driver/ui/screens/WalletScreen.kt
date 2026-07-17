@@ -173,7 +173,7 @@ fun WalletScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LinearProgressIndicator(
-                    progress = { withdrawalProgress },
+                    progress = { withdrawalProgress.toFloat() },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
                     color = if (withdrawalProgress >= 1.0) TadGreen else TadYellow,
                     trackColor = TadBorder

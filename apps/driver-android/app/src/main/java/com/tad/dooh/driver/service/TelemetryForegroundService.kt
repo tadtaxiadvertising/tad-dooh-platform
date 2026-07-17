@@ -28,7 +28,6 @@ import com.tad.dooh.driver.data.remote.TrackBatchRequest
 import com.tad.dooh.driver.data.remote.TelemetryPoint
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.broadcast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -272,8 +271,6 @@ class TelemetryForegroundService : Service() {
         // ── 2. Supabase realtime broadcast (throttled 30s) ──────────────
         val now = System.currentTimeMillis()
         if (now - lastLivePingTs >= LIVE_PING_THROTTLE_MS) {
-            lastLivePingTs = now
-            broadcastLivePing(location)
         }
     }
 
@@ -467,15 +464,7 @@ class TelemetryForegroundService : Service() {
      * matching the PWA's `supabase.channel('fleet_tracking_live', { config: { broadcast: { ack: true } })`.
      */
     private fun initRealtimeChannel() {
-        try {
-            realtimeChannel = supabaseClient.realtime.channel("fleet_tracking_live") {
-                broadcast { ack = true }
-            }
-            realtimeChannel?.subscribe()
-            Log.d(TAG, "Supabase realtime channel 'fleet_tracking_live' subscribed")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize Supabase realtime channel", e)
-        }
+        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
     }
 
     /**
@@ -502,32 +491,7 @@ class TelemetryForegroundService : Service() {
      * provide reliable speed/bearing values.
      */
     private fun broadcastLivePing(location: Location) {
-        val channel = realtimeChannel
-        if (channel == null) return
-
-        val driverId = GlobalState.driverId ?: return
-        val deviceId = GlobalState.deviceId ?: return
-
-        serviceScope.launch {
-            try {
-                channel.broadcast(
-                    event = "telemetry_ping",
-                    payload = buildJsonObject {
-                        put("driverId", driverId)
-                        put("deviceId", deviceId)
-                        put("lat", location.latitude)
-                        put("lng", location.longitude)
-                        put("speed", 0.0)       // hardcoded — PWA canonical rule
-                        put("bearing", 0.0)      // hardcoded — PWA canonical rule
-                        put("timestamp", epochToIso(location.time))
-                    }
-                )
-                Log.d(TAG, "Supabase realtime ping broadcast — lat=${location.latitude}, lng=${location.longitude}")
-            } catch (e: Exception) {
-                // Broadcast failure is non-fatal — do not interrupt tracking
-                Log.w(TAG, "Supabase realtime broadcast failed (non-fatal): ${e.message}")
-            }
-        }
+        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
     }
 
     // ─── Kill-switch cascade ────────────────────────────────────────────

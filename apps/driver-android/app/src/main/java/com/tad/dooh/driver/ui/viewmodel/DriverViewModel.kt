@@ -2,12 +2,23 @@ package com.tad.dooh.driver.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tad.dooh.driver.data.local.*
-import com.tad.dooh.driver.data.remote.*
+import com.tad.dooh.driver.data.local.AuthDao
+import com.tad.dooh.driver.data.local.HubCacheDao
+import com.tad.dooh.driver.data.local.HubCacheEntity
+import com.tad.dooh.driver.data.remote.DriverHubData
+import com.tad.dooh.driver.data.remote.GlobalState
+import com.tad.dooh.driver.data.remote.TadApiService
+import com.tad.dooh.driver.data.remote.normalizeHubData
 import com.tad.dooh.driver.service.TelemetryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -26,12 +37,7 @@ data class DashboardUiState(
  * Hilt-injected ViewModel for the driver dashboard / wallet / onboarding flows.
  *
  * `@HiltViewModel` makes this constructible by the generated `HiltViewModelFactory`
- * which [androidx.hilt.navigation.compose.hiltViewModel] wires into any
- * `@Composable`. All 4 deps are resolved from the Hilt graph:
- *  - [TadApiService]            → [com.tad.dooh.driver.di.NetworkModule]
- *  - [HubCacheDao]              → [com.tad.dooh.driver.di.DatabaseModule]
- *  - [AuthDao]                  → [com.tad.dooh.driver.di.DatabaseModule]
- *  - [TelemetryRepository]      → [com.tad.dooh.driver.di.RepositoryModule]
+ * which `hiltViewModel()` wires into any `@Composable`.
  */
 @HiltViewModel
 class DriverViewModel @Inject constructor(
@@ -50,7 +56,7 @@ class DriverViewModel @Inject constructor(
             val cached = hubCacheDao.read("TAD_DRIVER_HUB_CACHE")
             if (cached != null) {
                 try {
-                    val parsed = normalizeHubDataFromJson(cached)
+                    val parsed = normalizeHubDataFromJson(cached.data)
                     _uiState.update { it.copy(hubData = parsed, isLoading = false) }
                 } catch (_: Exception) { /* corrupted cache */ }
             }
@@ -64,16 +70,16 @@ class DriverViewModel @Inject constructor(
                 telemetryRepo.batchCount,
                 telemetryRepo.offlineCount,
                 telemetryRepo.isTracking,
-            ) { status, batch, offline, tracking ->
+            ) { isOnline, batch, offline, tracking ->
                 _uiState.update {
                     it.copy(
-                        connectionStatus = status,
+                        connectionStatus = if (isOnline) "online" else "offline",
                         batchCount = batch,
                         offlineCount = offline,
                         isTracking = tracking,
                     )
                 }
-            }.collect()
+            }.launchIn(viewModelScope)
         }
 
         // Observe kill-switch
@@ -86,12 +92,18 @@ class DriverViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val response = apiService.getHub()
-                val normalized = DriverHubData.normalize(response)
+                val normalized = response
                 _uiState.update {
                     it.copy(hubData = normalized, isLoading = false, isLocalMode = false, error = null)
                 }
                 // Cache to Room
-                hubCacheDao.save("TAD_DRIVER_HUB_CACHE", serializeHubData(normalized))
+                hubCacheDao.save(
+                    HubCacheEntity(
+                        key = "TAD_DRIVER_HUB_CACHE",
+                        data = serializeHubData(normalized),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
                 // Circuit breaker: fallback to cache
@@ -99,7 +111,7 @@ class DriverViewModel @Inject constructor(
                 if (cached != null) {
                     try {
                         _uiState.update {
-                            it.copy(hubData = normalizeHubDataFromJson(cached), isLocalMode = true)
+                            it.copy(hubData = normalizeHubDataFromJson(cached.data), isLocalMode = true)
                         }
                     } catch (_: Exception) { /* corrupted */ }
                 }
@@ -124,14 +136,12 @@ class DriverViewModel @Inject constructor(
     }
 
     companion object {
-        private fun serializeHubData(data: DriverHubData): String {
-            // kotlinx.serialization or manual JSON — placeholder
-            return "{}" // TODO: implement with kotlinx.serialization
-        }
+        private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-        private fun normalizeHubDataFromJson(json: String): DriverHubData {
-            // TODO: implement with kotlinx.serialization
-            return DriverHubData.default()
-        }
+        private fun serializeHubData(data: DriverHubData): String =
+            json.encodeToString(DriverHubData.serializer(), data)
+
+        private fun normalizeHubDataFromJson(json: String): DriverHubData =
+            Companion.json.decodeFromString(DriverHubData.serializer(), json)
     }
 }

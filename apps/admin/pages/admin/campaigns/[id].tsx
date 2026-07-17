@@ -96,7 +96,7 @@ export default function CampaignDetailPage() {
         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs max-w-sm leading-relaxed mb-8 mx-auto">
           {error || "La campaña solicitada no ha podido ser localizada."}
         </p>
-        <Link href="/campaigns" className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all">
+        <Link href="/admin/campaigns" className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all">
           ← Volver a Campañas
         </Link>
       </div>
@@ -134,7 +134,7 @@ export default function CampaignDetailPage() {
 
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-6">
-          <Link href="/campaigns" className="w-12 h-12 bg-gray-900 border border-gray-700 rounded-xl flex items-center justify-center hover:border-tad-yellow/40 hover:bg-tad-yellow hover:text-black transition-all shadow-sm shrink-0 group">
+          <Link href="/admin/campaigns" className="w-12 h-12 bg-gray-900 border border-gray-700 rounded-xl flex items-center justify-center hover:border-tad-yellow/40 hover:bg-tad-yellow hover:text-black transition-all shadow-sm shrink-0 group">
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </Link>
           <div className="space-y-1">
@@ -165,7 +165,7 @@ export default function CampaignDetailPage() {
               try {
                 await (await import('@tad/services')).deleteCampaign(campaign.id);
                 toast.success(`Campaña "${campaign.name}" eliminada`);
-                router.push('/campaigns');
+                router.push('/admin/campaigns');
               } catch (err: unknown) {
                 toast.error('Error: ' + (err as Error).message);
               }

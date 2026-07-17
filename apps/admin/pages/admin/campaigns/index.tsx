@@ -70,7 +70,7 @@ export default function CampaignsPage() {
           </button>
         </div>
         <Link
-          href="/campaigns/new"
+          href="/admin/campaigns/new"
           className="bg-[#FFD400] text-black px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#e6be00] transition-all shadow-md shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
@@ -235,7 +235,7 @@ export default function CampaignsPage() {
                         Despliegue
                       </button>
                       <Link
-                        href={`/campaigns/${camp.id}`}
+                        href={`/admin/campaigns/${camp.id}`}
                         title="Ver detalle de campaña"
                         className="p-3 bg-gray-900/50 border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 rounded-xl transition-all shadow-sm flex items-center justify-center"
                       >
@@ -271,7 +271,7 @@ export default function CampaignsPage() {
               El clúster regional no tiene campañas activas. Inicie un nuevo protocolo de inyección creativa.
             </p>
             <Link
-              href="/campaigns/new"
+              href="/admin/campaigns/new"
               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-4 rounded-xl border border-gray-700 hover:border-tad-yellow hover:shadow-lg hover:-translate-y-1 text-xs font-bold uppercase tracking-widest transition-all"
             >
               Generar Protocolo Creativo

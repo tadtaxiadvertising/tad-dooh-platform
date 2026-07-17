@@ -1,10 +1,39 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { TaxiData } from '@/types/tracking';
+import { getDriverStatusInfo } from '@/utils/driverStatus';
+import { VehiclePopup } from '@/components/ui/VehiclePopup';
+
+interface MapLocation {
+  id?: string;
+  deviceId?: string;
+  taxiNumber?: string;
+  lastLat?: number;
+  lastLng?: number;
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  lng?: number;
+  lon?: number;
+  isOnline?: boolean;
+  city?: string;
+  driverName?: string;
+  phone?: string;
+  plate?: string;
+  batteryLevel?: number | null;
+  lastSeen?: string | null;
+  subscriptionStatus?: string;
+  subscriptionEnd?: string | null;
+  driverStatus?: string;
+  speed?: number;
+  assignedAdvertiser?: string;
+  assignedCampaign?: string;
+  assignedCampaignId?: string;
+}
 
 interface MapViewProps {
   // Legacy props
@@ -24,25 +53,76 @@ interface MapViewProps {
   recentPath?: any[];
   onClearSelection?: () => void;
   onViewHistory?: (v: any) => void;
+  onSyncCommand?: (deviceId: string) => void;
 }
 
-// Fix for default marker icon in Next.js
-const createCustomIcon = (isOnline: boolean) => {
-  const color = isOnline ? '#22c55e' : '#ef4444';
+// ─────────────────────────────────────────────────────────────────────
+// 3-STATUS MARKER ICON (Green/Yellow/Red based on connection)
+// ─────────────────────────────────────────────────────────────────────
+const createStatusIcon = (isOnline: boolean, lastSeen?: string | null, isSelected?: boolean, taxiNumber?: string): L.DivIcon => {
+  const statusInfo = getDriverStatusInfo(isOnline, lastSeen);
+  const color = statusInfo.color;
+  const shadowColor = statusInfo.shadowColor;
+  const shortLabel = taxiNumber
+    ? taxiNumber.replace(/[^0-9]/g, '').slice(-3)
+    : '';
+
+  const scale = isSelected ? 1.15 : 1;
+  const pulse = isOnline ? `
+    <div style="position:absolute;inset:-6px;border-radius:50%;border:2px solid ${color};opacity:0;animation:markerPulse 2s ease-out infinite;"></div>
+  ` : '';
+
   return L.divIcon({
     className: 'custom-marker',
     html: `
-      <div style="
-        background-color: ${color};
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-      "></div>
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;transform:scale(${scale});transition:transform 0.3s ease;">
+        ${pulse}
+        <div style="
+          width:36px;height:36px;border-radius:50%;
+          background:${color};
+          border:3px solid rgba(255,255,255,0.9);
+          box-shadow:0 2px 12px ${shadowColor}66, 0 0 ${isSelected ? 20 : 0}px ${shadowColor}44;
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Inter',sans-serif;font-size:11px;font-weight:900;
+          color:#000;text-align:center;line-height:1;
+        ">
+          ${shortLabel}
+        </div>
+        <style>
+          @keyframes markerPulse {
+            0% { opacity:0.6;transform:scale(1); }
+            100% { opacity:0;transform:scale(1.8); }
+          }
+        </style>
+      </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
+  });
+};
+
+// Heatmap cluster icon
+const createClusterIcon = (cluster: L.MarkerCluster) => {
+  const count = cluster.getChildCount();
+  let size = 40;
+  if (count > 50) size = 60;
+  else if (count > 20) size = 50;
+
+  return L.divIcon({
+    html: `
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:#fad400;border:2px solid rgba(255,255,255,0.2);
+        display:flex;align-items:center;justify-content:center;
+        font-family:'Inter',sans-serif;font-size:${size > 50 ? 14 : 11}px;font-weight:900;
+        color:#000;box-shadow:0 0 15px rgba(250,212,0,0.3);
+      ">
+        ${count}
+      </div>
+    `,
+    className: 'custom-cluster',
+    iconSize: [size, size],
   });
 };
 
@@ -73,14 +153,14 @@ export default function MapView({
   selectedId,
   recentPath = [],
   onClearSelection,
-  onViewHistory
+  onViewHistory,
+  onSyncCommand
 }: MapViewProps) {
   const [isClient, setIsClient] = useState(false);
   const [darkMode, setDarkMode] = useState(mapTheme === 'dark');
 
   useEffect(() => {
     setIsClient(true);
-    // Detect system preference or app theme
     const isDark = document.documentElement.classList.contains('dark') ||
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDark);
@@ -103,7 +183,7 @@ export default function MapView({
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // Support both old (taxis) and new (locations) data format
-  const dataToRender = locations || taxis || [];
+  const dataToRender: MapLocation[] = locations || taxis || [];
   const currentMode = mode === 'heatmap' || heatmapMode ? true : false;
 
   return (
@@ -116,132 +196,109 @@ export default function MapView({
       <TileLayer url={tileUrl} attribution={attribution} />
       <MapUpdater center={center} zoom={zoom} />
 
-      {dataToRender.map((item: any) => {
+      {dataToRender.map((item: MapLocation) => {
         // Support both TaxiData interface and generic location object
-        const latitude = item.latitude || item.lat || item.lastLat;
-        const longitude = item.longitude || item.lng || item.lon || item.lastLng;
+        const latitude = item.lastLat || item.latitude || item.lat;
+        const longitude = item.lastLng || item.longitude || item.lng || item.lon;
 
         if (!latitude || !longitude) return null;
 
         const position: [number, number] = [latitude, longitude];
-        const isSelected = selectedId === item.id;
+        const isSelected = selectedId === (item.deviceId || item.id);
+
         // ALL-SEEING EYE PATCH (v12.1.3, MAP-SPEC-2026):
-        // El backend `FleetService.getFleetMap()` retorna `isOnline: boolean`
-        // y `status: SystemStatus` (enum: 'OPERATIVO' | 'PENDIENTE_PAGO' |
-        // 'BLOQUEADO'), NUNCA `status: 'online'`. La versión anterior evaluaba
-        // `item.status === 'online'`, que es falso para todos los registros,
-        // por lo que los marcadores pintaban siempre rojo (offline),
-        // rompiendo la lógica binaria MAP-SPEC-2026 (verde TAD = online,
-        // rojo TAD = offline).
-        //
-        // Provincias de datos aceptadas:
-        //  - baseline REST (`/tracking/baseline`):   { isOnline, status }
-        //  - realtime ping (`upsertTelemetryPing`):  { isOnline: true }
-        //  - legacy `TaxiData`:                       { status: 'online' }
+        // Backend FleetService.getFleetMap() returns isOnline: boolean
+        // and status: SystemStatus (OPERATIVO | PENDIENTE_PAGO | BLOQUEADO),
+        // NEVER status: 'online'. The previous version evaluated
+        // item.status === 'online', which was false for all records.
         const isOnline =
           !!item.isOnline ||
-          item.online === true ||
-          String(item.status).toLowerCase() === 'online';
+          (item as any).online === true ||
+          String((item as any).status).toLowerCase() === 'online';
 
         if (currentMode) {
-          // Heatmap mode: show density with circle markers
-          const opacity = (isOnline ? heatmapIntensity : heatmapIntensity * 0.5);
+          // Heatmap mode: show density with circle markers using 3-color system
+          const statusInfo = getDriverStatusInfo(isOnline, item.lastSeen);
+          const opacity = isOnline ? heatmapIntensity : heatmapIntensity * 0.5;
           const radius = heatmapRadius || (isOnline ? 30 : 15);
 
           return (
             <CircleMarker
-              key={item.id}
+              key={item.deviceId || item.id}
               center={position}
               radius={radius}
-              color={isOnline ? '#22c55e' : '#ef4444'}
-              fillColor={isOnline ? '#22c55e' : '#ef4444'}
+              color={statusInfo.color}
+              fillColor={statusInfo.color}
               fillOpacity={opacity}
               weight={1}
             />
           );
         }
 
-        // Normal mode: show markers with details
+        // Normal mode: show markers with 3-color status system
         return (
           <Marker
-            key={item.id}
+            key={item.deviceId || item.id}
             position={position}
-            icon={createCustomIcon(isOnline || isSelected)}
+            icon={createStatusIcon(isOnline, item.lastSeen, isSelected, item.taxiNumber)}
             eventHandlers={{
               click: () => onViewHistory?.(item)
             }}
           >
-            <Popup>
-              <div className="min-w-[260px] p-1">
-                <h3 className="font-bold text-sm mb-2 truncate">
-                  {item.driverName || item.driver_name || item.name || `Vehicle ${item.license_plate || item.plate || item.id}`}
-                </h3>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Placa</span>
-                    <span className="font-mono font-bold">{item.plate || item.license_plate || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Taxi #</span>
-                    <span className="font-mono font-bold text-amber-500">{item.taxiNumber || 'N/A'}</span>
-                  </div>
-                  {item.phone && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Teléfono</span>
-                      <span className="font-mono">{item.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Estado</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                      {isOnline ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                  {(item.speed !== undefined || item.velocity !== undefined) && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Velocidad</span>
-                      <span className="font-bold">{item.speed || item.velocity || 0} km/h</span>
-                    </div>
-                  )}
-                  {item.batteryLevel != null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Batería</span>
-                      <span className={`font-bold ${item.batteryLevel < 20 ? 'text-red-500' : 'text-green-600'}`}>
-                        {item.batteryLevel}%
-                      </span>
-                    </div>
-                  )}
-                  {item.subscriptionStatus && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Suscripción</span>
-                      <span className={`font-bold uppercase text-[10px] ${item.subscriptionStatus === 'ACTIVE' ? 'text-green-600' : 'text-red-500'
-                        }`}>
-                        {item.subscriptionStatus === 'ACTIVE' ? 'Activa' :
-                          item.subscriptionStatus === 'EXPIRED' ? 'Expirada' : 'Pendiente'}
-                      </span>
-                    </div>
-                  )}
-                  {item.city && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Ciudad</span>
-                      <span className="font-bold">{item.city}</span>
-                    </div>
-                  )}
-                  {(item.lastSeen || item.last_update || item.updated_at) && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Último Sync</span>
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(item.lastSeen || item.last_update || item.updated_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <Popup className="popup-clean" maxWidth={400} minWidth={340}>
+              <VehiclePopup
+                device={{
+                  deviceId: item.deviceId || 'N/A',
+                  taxiNumber: item.taxiNumber,
+                  city: item.city,
+                  batteryLevel: item.batteryLevel,
+                  lastSeen: item.lastSeen,
+                  isOnline: isOnline,
+                  speed: item.speed,
+                  subscriptionStatus: item.subscriptionStatus,
+                  subscriptionEnd: item.subscriptionEnd,
+                  driverStatus: item.driverStatus,
+                  driverName: item.driverName,
+                  phone: item.phone,
+                  plate: item.plate,
+                  assignedCampaign: item.assignedCampaign,
+                  assignedAdvertiser: item.assignedAdvertiser,
+                  lastLat: item.lastLat,
+                  lastLng: item.lastLng,
+                }}
+                onViewHistory={() => onViewHistory?.(item)}
+                onSyncCommand={() => onSyncCommand?.(item.deviceId || '')}
+              />
             </Popup>
           </Marker>
         );
       })}
+
+      {/* Global Leaflet styles */}
+      <style jsx global>{`
+        .leaflet-container { font-family: 'Inter', sans-serif !important; background: #07080d !important; }
+        .popup-clean .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+        .popup-clean .leaflet-popup-content { margin: 0 !important; width: auto !important; }
+        .popup-clean .leaflet-popup-tip-container { display: none !important; }
+        .leaflet-control-zoom { border: none !important; margin: 24px !important; }
+        .leaflet-control-zoom a {
+          background: rgba(10,10,13,.9) !important;
+          color: #10b981 !important;
+          border: 1px solid rgba(255,255,255,.06) !important;
+          width: 40px !important; height: 40px !important; line-height: 40px !important;
+          border-radius: 10px !important;
+          margin-bottom: 6px !important;
+          font-weight: 900 !important;
+          transition: all .2s;
+        }
+        .leaflet-control-zoom a:hover {
+          background: #10b981 !important;
+          color: #000 !important;
+          transform: translateY(-2px);
+        }
+        .custom-marker { background: none !important; border: none !important; }
+        .custom-cluster { background: none !important; border: none !important; }
+      `}</style>
     </MapContainer>
   );
 }

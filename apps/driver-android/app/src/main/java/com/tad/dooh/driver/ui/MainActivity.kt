@@ -11,24 +11,31 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.tad.dooh.driver.ui.screen.HomeScreen
-import com.tad.dooh.driver.ui.screen.OfflineScreen
-import com.tad.dooh.driver.ui.screen.SettingsScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.tad.dooh.driver.ui.navigation.TadNavHost
 import com.tad.dooh.driver.ui.theme.TadDriverTheme
+import com.tad.dooh.driver.ui.viewmodel.DriverViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * MainActivity — the single Compose entry-point for the kiosk-mode driver app.
  *
  * Key behaviours:
- *  - Splash screen API (Android 12+) with keep-on condition until Supabase auth resolves
- *  - FLAG_KEEP_SCREEN_ON for always-on kiosk display
- *  - Edge-to-edge rendering (status/nav bars transparent under TadDark background)
- *  - Landscape-only orientation enforced via manifest
+ * - `@AndroidEntryPoint` required so Hilt-generated code can inject this Activity
+ *   and any nested `@Composable owns it (e.g. a ViewModel created with `hiltViewModel()`).
+ * - Splash screen API (Android 12+) with keep-on condition until state is ready.
+ * - FLAG_KEEP_SCREEN_ON for always-on kiosk display (taxi-tablet use-case).
+ * - Edge-to-edge rendering (status/nav bars transparent under TadDark background).
+ * - Landscape-only orientation enforced via AndroidManifest (`screenOrientation`).
  */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    // The splash keep-on condition flag. In a production build you'd observe the
+    // coroutine-rout (first telemetry sync / auth resolution) instead of this manual bool.
+
+    @Volatile
+    private var isReady: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // ── Splash screen: keep visible until initialisation finishes ────────
@@ -52,47 +59,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TadDriverApp()
+                    TadNavHost()
                 }
             }
         }
     }
 
-    // ── Readiness flag — set true once Supabase session + GPS are initialised ──
-
-    @Volatile
-    private var isReady: Boolean = false
+    // ── Readiness flag — set true once auth + first telemetry are initialised ─
 
     fun markReady() {
         isReady = true
-    }
-}
-
-// ── Navigation host ──────────────────────────────────────────────────────────
-
-@Composable
-fun TadDriverApp() {
-    val navController = rememberNavController()
-
-    NavHost(
-        navController = navController,
-        startDestination = "home"
-    ) {
-        composable("home") {
-            HomeScreen(
-                onNavigateToSettings = { navController.navigate("settings") },
-                onNavigateToOffline = { navController.navigate("offline") }
-            )
-        }
-        composable("settings") {
-            SettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-        composable("offline") {
-            OfflineScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
     }
 }

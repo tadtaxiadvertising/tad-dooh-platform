@@ -382,6 +382,7 @@ let CampaignService = CampaignService_1 = class CampaignService {
     }
     async getAllCampaigns() {
         return this.prisma.campaign.findMany({
+            where: { id: { not: '00000000-0000-0000-0000-000000000000' } },
             include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
             orderBy: { createdAt: 'desc' },
         });

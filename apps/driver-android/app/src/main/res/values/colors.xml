@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ── TAD Brand Palette ────────────────────────────────────────────────── -->
+
+    <!-- Primary — TAD Yellow -->
+    <color name="tad_yellow">#FFD400</color>
+    <color name="tad_yellow_dark">#E5BF00</color>
+    <color name="tad_yellow_variant">#FFD466</color>
+    <color name="tad_yellow_alpha_20">#33FFD400</color>   <!-- 20% opacity -->
+    <color name="tad_yellow_alpha_50">#80FFD400</color>   <!-- 50% opacity -->
+
+    <!-- Backgrounds -->
+    <color name="tad_dark">#0C0F14</color>
+    <color name="tad_surface">#161B22</color>
+    <color name="tad_surface_variant">#1C2128</color>
+    <color name="tad_card">#1A1F26</color>
+
+    <!-- System bars -->
+    <color name="tad_status_bar">#0A0A0A</color>
+    <color name="tad_nav_bar">#0A0A0A</color>
+
+    <!-- Text -->
+    <color name="tad_text_primary">#F0F6FC</color>
+    <color name="tad_text_secondary">#8B949E</color>
+    <color name="tad_text_disabled">#484F58</color>
+
+    <!-- Semantic / state -->
+    <color name="tad_success">#2EA043</color>
+    <color name="tad_error">#F85149</color>
+    <color name="tad_warning">#D29922</color>
+    <color name="tad_info">#58A6FF</color>
+
+    <!-- Borders / outlines -->
+    <color name="tad_border">#30363D</color>
+    <color name="tad_border_focus">#FFD400</color>
+
+    <!-- Overlay / scrim -->
+    <color name="tad_scrim">#800C0F14</color>            <!-- 50% dark overlay -->
+
+    <!-- ── Standard Android colour references ──────────────────────────────── -->
+
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+</resources>

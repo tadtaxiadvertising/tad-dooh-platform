@@ -6,52 +6,74 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.tad.dooh.driver.data.local.TadDatabase
-import com.tad.dooh.driver.data.remote.TadApiClient
-import com.tad.dooh.driver.data.remote.TadApiService
 import com.tad.dooh.driver.worker.TelemetrySyncWorker
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.gotrue.GoTrue
-import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.Realtime
+import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 /**
- * TAD Driver Application — initializes all core infrastructure singletons.
+ * TAD Driver Application — `@HiltAndroidApp` entry point for the DI graph.
  *
  * Boot sequence:
- *  1. Room database (offline-first telemetry cache)
- *  2. Retrofit client (REST API for fallback / non-Realtime endpoints)
- *  3. Supabase client (Realtime + Postgrest + GoTrue)
- *  4. Network connectivity observer (drive online/offline transitions)
- *  5. WorkManager periodic telemetry-sync schedule
+ *  1. Hilt generates the singleton component and injects `@Inject` fields
+ *     (database) before [onCreate] runs.
+ *  2. Room database is now provided by [com.tad.dooh.driver.di.DatabaseModule]
+ *     and injected; the `lateinit var database` service-locator is removed.
+ *  3. The Retrofit client (`TadApiClient`) remains a Kotlin `object` (option
+ *     C2→b) and is exposed to Hilt via [com.tad.dooh.driver.di.NetworkModule].
+ *  4. Network connectivity observer is registered (legacy — kept as-is, will
+ *     migrate to a Hilt-provided NetworkMonitor in a later iteration).
+ *  5. WorkManager periodic telemetry-sync schedule is enqueued; the
+ *     [HiltWorkerFactory] is wired via [Configuration.Provider] so
+ *     `@HiltWorker`-annotated workers (e.g. [TelemetrySyncWorker]) receive
+ *     their `@AssistedInject` dependencies.
+ *
+ * Supabase initialization has been removed: the kill-switch no longer uses
+ * Supabase GoTrue for token refresh — drivers auth is HS256 JWT local with
+ * silent re-login via `POST /drivers/login` (verified against backend, no
+ * `/drivers/refresh` endpoint exists).
  */
-class TadApplication : Application() {
+@HiltAndroidApp
+class TadApplication : Application(), Configuration.Provider {
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    // ── Singletons ──────────────────────────────────────────────────────────
+    // ── Hilt-injected dependencies ──────────────────────────────────────────
 
+    @Inject
     lateinit var database: TadDatabase
-        private set
 
-    /** Retrofit API client — provides auth, kill-switch, and network interceptors. */
-    val tadApiClient: TadApiClient = TadApiClient
+    /**
+     * Hilt-provided [HiltWorkerFactory]. Used by WorkManager to construct
+     * `@HiltWorker`-annotated workers with their `@AssistedInject` deps.
+     * Provided automatically by `androidx.hilt:hilt-work` once it's on the
+     * classpath and this Application is `@HiltAndroidApp`.
+     */
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
 
-    /** Pre-built API service instance for convenient access. */
-    val apiService: TadApiService by lazy { tadApiClient.apiService }
+    // ── Legacy singleton accessor (for non-Hilt callers, e.g. TadApiClient) ─
 
-    lateinit var supabaseClient: SupabaseClient
-        private set
+    /** Static accessor used by [com.tad.dooh.driver.data.remote.TadApiClient]
+     *  until its own migration to Hilt is complete. New code should prefer Hilt
+     *  injection over this. */
+    companion object {
+        @Volatile
+        private lateinit var instance: TadApplication
 
-    // ── Network state ───────────────────────────────────────────────────────
+        fun getInstance(): TadApplication = instance
+    }
+
+    // ── Network state (legacy — will migrate to Hilt NetworkMonitor) ─────────
 
     var isNetworkAvailable: Boolean = false
         private set
@@ -81,45 +103,33 @@ class TadApplication : Application() {
         }
     }
 
+    // ── WorkManager Configuration.Provider ───────────────────────────────────
+
+    /**
+     * Required by WorkManager to inject the [HiltWorkerFactory] so that
+     * `@HiltWorker`-annotated workers receive their `@AssistedInject` deps.
+     * Returning `null` for `workManagerConfiguration` would fall back to the
+     * default factory and crash on the first `@HiltWorker` instantiation.
+     */
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
+
     // ── Lifecycle ───────────────────────────────────────────────────────────
 
     override fun onCreate() {
         super.onCreate()
         instance = this
 
-        initRoomDatabase()
-        initRetrofit()
-        initSupabase()
+        // `database` is already injected by Hilt at this point.
         registerNetworkObserver()
         schedulePeriodicTelemetrySync()
     }
 
-    // ── Initialization ──────────────────────────────────────────────────────
-
-    private fun initRoomDatabase() {
-        database = TadDatabase.getInstance(this)
-    }
-
-    private fun initRetrofit() {
-        // TadApiClient is an object singleton — no explicit init needed;
-        // apiService is lazily created on first access via the Retrofit builder.
-        // The lazy delegates above (tadApiClient, apiService) will resolve
-        // automatically when any code first calls apiService.
-    }
-
-    private fun initSupabase() {
-        supabaseClient = createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_ANON_KEY
-        ) {
-            install(GoTrue)
-            install(Postgrest)
-            install(Realtime)
-        }
-    }
-
     private fun registerNetworkObserver() {
         // Seed initial state
+        @Suppress("DEPRECATION")
         val activeNetwork = connectivityManager.activeNetworkInfo
         isNetworkAvailable = activeNetwork?.isConnectedOrConnecting == true
 
@@ -149,14 +159,5 @@ class TadApplication : Application() {
                 ExistingPeriodicWorkPolicy.KEEP,
                 syncRequest
             )
-    }
-
-    // ── Static accessor ─────────────────────────────────────────────────────
-
-    companion object {
-        @Volatile
-        private lateinit var instance: TadApplication
-
-        fun getInstance(): TadApplication = instance
     }
 }

@@ -1,21 +1,25 @@
 package com.tad.dooh.driver.worker
 
+import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.hilt.work.HiltWorker
+import androidx.work.Assisted
+import androidx.work.AssistedInject
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.tad.dooh.driver.TadApplication
+import com.tad.dooh.driver.data.local.AuthDao
 import com.tad.dooh.driver.data.local.TelemetryDao
 import com.tad.dooh.driver.data.local.TelemetryEntity
-import com.tad.dooh.driver.data.local.AuthDao
-import com.tad.dooh.driver.data.remote.AUTH_KEY_TOKEN
 import com.tad.dooh.driver.data.remote.AUTH_KEY_DEVICE_ID
+import com.tad.dooh.driver.data.remote.AUTH_KEY_TOKEN
 import com.tad.dooh.driver.data.remote.GlobalState
 import com.tad.dooh.driver.data.remote.NetworkUnavailableException
 import com.tad.dooh.driver.data.remote.TadApiService
 import com.tad.dooh.driver.data.remote.TrackBatchRequest
 import com.tad.dooh.driver.data.remote.TelemetryPoint
 import com.tad.dooh.driver.service.TelemetryForegroundService
+import dagger.assisted.AssistedFactory
 import kotlinx.coroutines.delay
 import retrofit2.HttpException
 
@@ -26,9 +30,17 @@ import retrofit2.HttpException
  * records to the backend, complementing the foreground service's 5-minute
  * flush cycle.
  *
- * Scheduled by [TadApplication.schedulePeriodicTelemetrySync] as a
- * `PeriodicWorkRequest` every 15 minutes with `NetworkType.CONNECTED`
+ * Scheduled by [com.tad.dooh.driver.TadApplication.schedulePeriodicTelemetrySync]
+ * as a `PeriodicWorkRequest` every 15 minutes with `NetworkType.CONNECTED`
  * constraint.
+ *
+ * **Hilt integration:** annotated with [HiltWorker] and constructed via
+ * [AssistedInject] — the [HiltWorkerFactory] (installed by [TadApplication]
+ * via `Configuration.Provider`) supplies the non-assisted dependencies
+ * (`telemetryDao`, `authDao`, `apiService`) from the Hilt graph, while
+ * WorkManager supplies the [Context] and [WorkerParameters] via the
+ * assisted parameters. The previous `TadApplication.getInstance()` service-
+ * locator pattern has been removed.
  *
  * **Business rules (matching PWA's `syncOfflineQueue`):**
  *
@@ -40,13 +52,17 @@ import retrofit2.HttpException
  * - Marks work as `Result.retry()` on transient failures so WorkManager
  *   reschedules with its backoff policy
  */
-class TelemetrySyncWorker(
-    context: android.content.Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params) {
+@HiltWorker
+class TelemetrySyncWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted params: WorkerParameters,
+    private val telemetryDao: TelemetryDao,
+    private val authDao: AuthDao,
+    private val apiService: TadApiService
+) : CoroutineWorker(appContext, params) {
 
     companion object {
-        /** Unique work name for WorkManager enqueue — matches [TadApplication]'s schedule. */
+        /** Unique work name for WorkManager enqueue — matches schedule in TadApplication. */
         const val WORK_NAME = "TelemetrySyncWorker"
 
         /** Drip-sync chunk size — 50 items per POST, matching PWA DRIP_CHUNK_SIZE. */
@@ -55,12 +71,17 @@ class TelemetrySyncWorker(
         private const val TAG = "TelemetrySyncWorker"
     }
 
-    // ─── Dependencies ────────────────────────────────────────────────────
-
-    private val app: TadApplication = TadApplication.getInstance()
-    private val telemetryDao: TelemetryDao = app.database.telemetryDao()
-    private val authDao: AuthDao = app.database.authDao()
-    private val apiService: TadApiService = app.apiService
+    /**
+     * Hilt-assisted factory — WorkManager + Hilt use this to build instances of
+     * [TelemetrySyncWorker]. Generated for us by the `androidx.hilt:hilt-compiler`
+     * KSP processor when it sees [HiltWorker] + [AssistedInject]. We declare it
+     * explicitly so the compiler wires [create] to be called with the assisted
+     * [Context] + [WorkerParameters], and Hilt resolves the other deps.
+     */
+    @AssistedFactory
+    interface Factory {
+        fun create(appContext: Context, params: WorkerParameters): TelemetrySyncWorker
+    }
 
     // ─── Work execution ──────────────────────────────────────────────────
 
@@ -158,9 +179,11 @@ class TelemetrySyncWorker(
 
         // ── Clear auth from Room ──────────────────────────────────────────
         try {
-            authDao.delete(AUTH_KEY_TOKEN)
-            authDao.delete(AUTH_KEY_DEVICE_ID)
-            authDao.delete("tad_driver_user")
+            kotlinx.coroutines.runBlocking {
+                authDao.delete(AUTH_KEY_TOKEN)
+                authDao.delete(AUTH_KEY_DEVICE_ID)
+                authDao.delete("tad_driver_user")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to clear auth in Worker kill-switch", e)
         }

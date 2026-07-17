@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.tad.dooh.driver.data.local.*
 import com.tad.dooh.driver.data.remote.*
 import com.tad.dooh.driver.service.TelemetryRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class DashboardUiState(
     val hubData: DriverHubData? = null,
@@ -20,7 +22,19 @@ data class DashboardUiState(
     val isKillSwitchActive: Boolean = false,
 )
 
-class DriverViewModel(
+/**
+ * Hilt-injected ViewModel for the driver dashboard / wallet / onboarding flows.
+ *
+ * `@HiltViewModel` makes this constructible by the generated `HiltViewModelFactory`
+ * which [androidx.hilt.navigation.compose.hiltViewModel] wires into any
+ * `@Composable`. All 4 deps are resolved from the Hilt graph:
+ *  - [TadApiService]            → [com.tad.dooh.driver.di.NetworkModule]
+ *  - [HubCacheDao]              → [com.tad.dooh.driver.di.DatabaseModule]
+ *  - [AuthDao]                  → [com.tad.dooh.driver.di.DatabaseModule]
+ *  - [TelemetryRepository]      → [com.tad.dooh.driver.di.RepositoryModule]
+ */
+@HiltViewModel
+class DriverViewModel @Inject constructor(
     private val apiService: TadApiService,
     private val hubCacheDao: HubCacheDao,
     private val authDao: AuthDao,

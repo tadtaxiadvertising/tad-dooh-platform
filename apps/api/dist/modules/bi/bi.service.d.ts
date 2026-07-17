@@ -12,18 +12,18 @@ export declare class BiService {
     }>;
     getReconciliationReport(period: string): Promise<({
         driver: {
-            phone: string;
             fullName: string;
+            phone: string;
             taxiPlate: string;
         };
     } & {
         id: string;
-        driverId: string;
+        deviceId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        deviceId: string | null;
-        period: string;
+        driverId: string;
         subscriptionStatus: string;
+        period: string;
         subscriptionDueDate: Date | null;
         subscriptionAmount: number;
         totalPlaybacks: number;

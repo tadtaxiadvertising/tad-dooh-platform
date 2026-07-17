@@ -95,24 +95,53 @@ export class CacheManager {
   }
 
   async cacheVideos(assets: MediaAsset[]): Promise<{ cached: number; failed: number }> {
-    let cached = 0;
-    let failed = 0;
-
-    for (const asset of assets) {
-      try {
-        const existing = await this.getFromIndexedDB(asset.url);
-        if (existing && existing.checksum === asset.checksum) {
-          cached++;
-          continue; // Already cached and valid
-        }
-        await this.getVideoSource(asset); // Downloads + caches
-        cached++;
-      } catch {
-        failed++;
+      if (
+        typeof window !== 'undefined' &&
+        (window as unknown as Record<string, unknown>).__tadVideoWorker
+      ) {
+        const worker = (window as unknown as Record<string, Worker>).__tadVideoWorker;
+        worker.postMessage({
+          type: 'SYNC_ASSETS',
+          requestId: `sync-${Date.now()}`,
+          payload: {
+            assets: assets.map((asset) => ({
+              id: asset.id,
+              url: asset.url,
+              filename: asset.filename,
+              checksum: asset.checksum ?? null,
+              duration: asset.duration,
+              campaignId: asset.campaignId,
+            })),
+          },
+        });
+        return { cached: assets.length, failed: 0 };
       }
+
+      let cached = 0;
+      let failed = 0;
+
+      for (const asset of assets) {
+        try {
+          const existing = await this.getFromIndexedDB(asset.url);
+          if (existing && existing.checksum === asset.checksum) {
+            cached++;
+            continue;
+          }
+          await this.getVideoSource(asset);
+          cached++;
+        } catch {
+          failed++;
+        }
+      }
+
+      return { cached, failed };
     }
 
-    return { cached, failed };
+  async hasAssetAvailable(asset: MediaAsset): Promise<boolean> {
+    const cached = await this.getFromIndexedDB(asset.url);
+    if (!cached) return false;
+    if (asset.checksum && cached.checksum !== asset.checksum) return false;
+    return true;
   }
 
   async hasMissingAssets(assets: MediaAsset[]): Promise<boolean> {

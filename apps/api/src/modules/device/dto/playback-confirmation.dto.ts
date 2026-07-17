@@ -1,26 +1,8 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
-
 export class PlaybackConfirmationDto {
-  @IsString()
-  @IsNotEmpty()
-  device_id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  video_id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  timestamp: string;
-
-  @IsOptional()
-  @IsNumber()
+  device_id!: string;
+  video_id!: string;
+  timestamp!: string;
   lat?: number;
-
-  @IsOptional()
-  @IsNumber()
   lng?: number;
-
-  @IsOptional()
   isSimulated?: boolean;
 }

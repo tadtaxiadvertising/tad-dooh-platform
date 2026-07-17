@@ -19,21 +19,39 @@ const public_decorator_1 = require("../auth/decorators/public.decorator");
 let SyncController = class SyncController {
     constructor(syncService) {
         this.syncService = syncService;
+        this.etagCache = new Map();
+        this.ttlMs = 5 * 60 * 1000;
+    }
+    resolveCachedEtag(deviceId, ifNoneMatch) {
+        if (!ifNoneMatch)
+            return false;
+        const cached = this.etagCache.get(deviceId);
+        if (!cached || cached.expiresAt < Date.now()) {
+            if (cached)
+                this.etagCache.delete(deviceId);
+            return false;
+        }
+        return cached.value === ifNoneMatch;
+    }
+    cacheEtag(deviceId, etag) {
+        this.etagCache.set(deviceId, { value: etag, expiresAt: Date.now() + this.ttlMs });
     }
     async getDeviceManifest(deviceId, ifNoneMatch, res) {
         if (!deviceId) {
             throw new common_1.HttpException('DEVICE_ID_REQUIRED', common_1.HttpStatus.BAD_REQUEST);
+        }
+        if (this.resolveCachedEtag(deviceId, ifNoneMatch)) {
+            res.status(common_1.HttpStatus.NOT_MODIFIED).send();
+            return;
         }
         const manifest = await this.syncService.getDeviceManifest(deviceId);
         if (manifest.killSwitch === true) {
             res.setHeader('Cache-Control', 'no-store');
             throw new common_1.HttpException(manifest, common_1.HttpStatus.PAYMENT_REQUIRED);
         }
-        if (ifNoneMatch && ifNoneMatch === manifest.etag) {
-            res.status(common_1.HttpStatus.NOT_MODIFIED).send();
-            return;
-        }
-        res.setHeader('ETag', manifest.etag);
+        const etag = manifest.etag || '';
+        this.cacheEtag(deviceId, etag);
+        res.setHeader('ETag', etag);
         res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
         return manifest;
     }

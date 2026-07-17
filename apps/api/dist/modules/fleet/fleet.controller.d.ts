@@ -17,8 +17,8 @@ export declare class FleetController {
         driver_name: string;
         last_playback: Date;
         deviceId: string;
-        city: string;
         taxiNumber: string;
+        city: string;
         lastHeartbeat: Date;
         batteryLevel: number;
         storageUsed: bigint;
@@ -163,15 +163,15 @@ export declare class FleetController {
         type: string;
         params?: any;
     }): Promise<{
-        status: string;
-        id: string;
-        createdAt: Date;
-        expiresAt: Date | null;
         result: string | null;
+        id: string;
         deviceId: string;
+        status: string;
+        createdAt: Date;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
         type: string;

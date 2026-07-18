@@ -1,7 +1,6 @@
 package com.tad.dooh.driver.di
 
 import android.content.Context
-import com.tad.dooh.driver.TadApplication
 import com.tad.dooh.driver.data.local.AuthDao
 import com.tad.dooh.driver.data.local.TelemetryDao
 import com.tad.dooh.driver.data.remote.TadApiService
@@ -34,7 +33,10 @@ object RepositoryModule {
         @ApplicationContext context: Context,
         telemetryDao: TelemetryDao,
         authDao: AuthDao,
-        apiService: TadApiService,
-        app: TadApplication
-    ): TelemetryRepository = TelemetryRepository(context, telemetryDao, authDao, apiService, app)
+        apiService: TadApiService
+    ): TelemetryRepository {
+        val app = context.applicationContext as? com.tad.dooh.driver.TadApplication
+            ?: throw IllegalStateException("Context is not TadApplication")
+        return TelemetryRepository(context, telemetryDao, authDao, apiService, app)
+    }
 }

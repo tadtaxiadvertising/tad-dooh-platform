@@ -1,0 +1,5 @@
+{$TAD_REMOTION_DOMAIN} {
+	reverse_proxy tad-remotion:8000
+	encode gzip
+	# TLS automático gestionado por Caddy cuando el dominio apunte al host.
+}

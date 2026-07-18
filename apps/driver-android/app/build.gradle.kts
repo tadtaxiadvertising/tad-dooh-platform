@@ -128,7 +128,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // ─── Supabase ─────────────────────────────────────────────────────
-    implementation("io.github.jan-tennert.supabase:realtime-kt:3.1.0")
+    // realtime-kt disabled: requires Kotlin 2.3.0+ metadata, incompatible with project Kotlin 2.1.20
+    // implementation("io.github.jan-tennert.supabase:realtime-kt:3.1.0")
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.0")
     implementation("io.github.jan-tennert.supabase:auth-kt:3.1.0")
     implementation("io.ktor:ktor-client-okhttp:2.3.11")
@@ -144,8 +145,8 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // ─── Dagger-Hilt (Dependency Injection) ───────────────────────────────
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    ksp("com.google.dagger:hilt-compiler:2.56.2")
     // Hilt ViewModel integration with Compose (hiltViewModel() in @Composable)
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     // Hilt + WorkManager (@HiltWorker @AssistedInject via HiltWorkerFactory)

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Composition, registerRoot } from 'remotion';
 import { DynamicAdTemplate } from './dynamic-ad';
+import { TadPromoVideo } from './tad-promo';
 
 const fps = 30;
-const durationInSeconds = 10;
 
 export const RemotionVideo: React.FC = () => {
   return (
@@ -11,7 +11,7 @@ export const RemotionVideo: React.FC = () => {
       <Composition
         id="DynamicAd"
         component={DynamicAdTemplate}
-        durationInFrames={Math.round(fps * durationInSeconds)}
+        durationInFrames={300}
         fps={fps}
         width={1080}
         height={1920}
@@ -21,6 +21,14 @@ export const RemotionVideo: React.FC = () => {
           primaryText: 'MI OFERTA TAD',
           secondaryText: 'Contacto: tadtaxi.com',
         }}
+      />
+      <Composition
+        id="TADPromoVideo"
+        component={TadPromoVideo}
+        durationInFrames={900}
+        fps={fps}
+        width={1920}
+        height={1080}
       />
     </>
   );

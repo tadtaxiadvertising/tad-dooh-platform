@@ -1,0 +1,39 @@
+services:
+  tad-remotion:
+    build:
+      context: ./apps/tad-remotion
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 8000
+      NODE_ENV: production
+      REMOTION_CONCURRENCY: 1
+    # Bind solo en localhost; Caddy consume por red interna
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Cambiar por tu dominio en EasyPanel (sin https://)
+      TAD_REMOTION_DOMAIN: ${TAD_REMOTION_DOMAIN:-tad-remotion.rewvid.easypanel.host}
+    depends_on:
+      tad-remotion:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://tad-remotion:8000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:

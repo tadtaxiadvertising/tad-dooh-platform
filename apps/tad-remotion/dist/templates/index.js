@@ -1,21 +1,19 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemotionVideo = void 0;
-const react_1 = __importDefault(require("react"));
+const jsx_runtime_1 = require("react/jsx-runtime");
 const remotion_1 = require("remotion");
 const dynamic_ad_1 = require("./dynamic-ad");
-const remotion_2 = require("remotion");
+const fps = 30;
+const durationInSeconds = 10;
 const RemotionVideo = () => {
-    return (react_1.default.createElement(react_1.default.Fragment, null,
-        react_1.default.createElement(remotion_2.Composition, { id: "DynamicAd", component: dynamic_ad_1.DynamicAdTemplate, durationInFrames: 300, fps: 30, width: 1080, height: 1920, defaultProps: {
+    return ((0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: (0, jsx_runtime_1.jsx)(remotion_1.Composition, { id: "DynamicAd", component: dynamic_ad_1.DynamicAdTemplate, durationInFrames: Math.round(fps * durationInSeconds), fps: fps, width: 1080, height: 1920, defaultProps: {
                 logoUrl: '',
                 brandColor: '#e51636',
                 primaryText: 'MI OFERTA TAD',
                 secondaryText: 'Contacto: tadtaxi.com',
-            } })));
+            } }) }));
 };
 exports.RemotionVideo = RemotionVideo;
 (0, remotion_1.registerRoot)(exports.RemotionVideo);
+//# sourceMappingURL=index.js.map

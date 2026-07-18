@@ -185,13 +185,12 @@ const SceneHook: React.FC<{ frame: number }> = ({ frame }) => {
           position: 'absolute',
           top: '61%',
           left: `${dotX}%`,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) scale(${beaconScale})`,
           width: 40,
           height: 40,
           borderRadius: '50%',
           border: `1.5px solid ${C.tadYellow}`,
           opacity: beaconOpacity,
-          transform: `translate(-50%, -50%) scale(${beaconScale})`,
           zIndex: 1,
         }}
       />

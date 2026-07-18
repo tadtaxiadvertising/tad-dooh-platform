@@ -13,13 +13,15 @@ const path_1 = __importDefault(require("path"));
 const generative_ai_1 = require("@google/generative-ai");
 const bundler_1 = require("@remotion/bundler");
 const renderer_1 = require("@remotion/renderer");
-dotenv_1.default.config();
+// Load .env from the app directory
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '..', '.env') });
 // --- AI Architect Setup ---
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 const app = (0, express_1.default)();
 exports.app = app;
-const PORT = process.env.PORT || 8000;
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = parseInt(process.env.PORT || '8000', 10);
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 let cachedBundleUrl = null;
@@ -353,7 +355,24 @@ NO incluyas markdown, ni explicaciones, solo el JSON.`;
         res.status(500).json({ error: 'AI generation failed', details: err.message });
     }
 });
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
     console.log(`🎬 TAD Remotion Engine corriendo en puerto ${PORT}`);
+    console.log(`   Local:   http://localhost:${PORT}`);
+    console.log(`   Red:     http://${getLocalIP()}:${PORT}`);
+    console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
 });
+/** Get the local network IP for display */
+function getLocalIP() {
+    const interfaces = os_1.default.networkInterfaces();
+    for (const iface of Object.values(interfaces)) {
+        if (!iface)
+            continue;
+        for (const info of iface) {
+            if (info.family === 'IPv4' && !info.internal) {
+                return info.address;
+            }
+        }
+    }
+    return '0.0.0.0';
+}
 //# sourceMappingURL=index.js.map

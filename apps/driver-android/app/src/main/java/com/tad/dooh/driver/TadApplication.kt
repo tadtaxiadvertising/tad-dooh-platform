@@ -18,7 +18,7 @@ import dagger.hilt.android.HiltAndroidApp
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.Realtime
+// Realtime disabled: requires Kotlin 2.3.0+ metadata, incompatible with project Kotlin 2.1.20
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,8 +56,9 @@ class TadApplication : Application(), Configuration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     /**
-     * Supabase client — kept for [TelemetryForegroundService] realtime broadcast
-     * to the Admin Map (channel `fleet_tracking_live`). NOT used for auth.
+     * Supabase client — used for PostgREST queries.
+     * Realtime disabled (requires Kotlin 2.3.0+ metadata, incompatible with project Kotlin 2.1.20).
+     * NOT used for auth — driver auth is JWT HS256 via TadApiService.
      */
     lateinit var supabaseClient: SupabaseClient
         private set
@@ -126,7 +127,8 @@ class TadApplication : Application(), Configuration.Provider {
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY
         ) {
             install(Postgrest)
-            install(Realtime)
+            // Realtime disabled: requires Kotlin 2.3.0+ metadata, incompatible with project Kotlin 2.1.20
+            // install(Realtime)
         }
     }
 

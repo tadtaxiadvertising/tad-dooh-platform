@@ -26,8 +26,6 @@ import com.tad.dooh.driver.data.remote.NetworkUnavailableException
 import com.tad.dooh.driver.data.remote.TadApiService
 import com.tad.dooh.driver.data.remote.TrackBatchRequest
 import com.tad.dooh.driver.data.remote.TelemetryPoint
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.realtime.RealtimeChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,13 +34,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import retrofit2.HttpException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 // ─── Constants ─────────────────────────────────────────────────────────
 
@@ -123,15 +115,10 @@ class TelemetryForegroundService : Service() {
     private lateinit var authDao: AuthDao
     private lateinit var apiService: TadApiService
     private lateinit var database: TadDatabase
-    private lateinit var supabaseClient: SupabaseClient
 
     // ─── Mutable state ─────────────────────────────────────────────────
 
-    /** Supabase realtime channel for Admin Map live pings. */
-    private var realtimeChannel: RealtimeChannel? = null
 
-    /** Timestamp of the last Supabase realtime broadcast (throttle gate). */
-    private var lastLivePingTs: Long = 0L
 
     /** Active flush-timer coroutine job. */
     private var flushJob: Job? = null
@@ -164,7 +151,6 @@ class TelemetryForegroundService : Service() {
         if (!isTracking) {
             startLocationUpdates()
             startFlushTimer()
-            initRealtimeChannel()
             isTracking = true
             Log.i(TAG, "Telemetry foreground service started — GPS tracking active")
         }
@@ -189,7 +175,6 @@ class TelemetryForegroundService : Service() {
         telemetryDao = database.telemetryDao()
         authDao = database.authDao()
         apiService = app.apiService
-        supabaseClient = app.supabaseClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
@@ -258,7 +243,7 @@ class TelemetryForegroundService : Service() {
             ts       = location.time,          // epoch millis (immutable PK)
             lat      = location.latitude,
             lng      = location.longitude,
-            accuracy = location.accuracy,
+            accuracy = location.accuracy.toDouble(),
             status   = "batch"                 // awaiting flush
         )
 
@@ -267,11 +252,7 @@ class TelemetryForegroundService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to insert telemetry entity into Room", e)
         }
-
-        // ── 2. Supabase realtime broadcast (throttled 30s) ──────────────
-        val now = System.currentTimeMillis()
-        if (now - lastLivePingTs >= LIVE_PING_THROTTLE_MS) {
-        }
+        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
     }
 
     // ─── Flush timer ────────────────────────────────────────────────────
@@ -375,10 +356,9 @@ class TelemetryForegroundService : Service() {
         val offlineCoords = coords.map { it.copy(status = "offline") }
 
         // ── Atomic status transition inside Room transaction ──────────────
-        database.withTransaction {
-            telemetryDao.insertAll(offlineCoords)   // REPLACE by PK (ts)
-            telemetryDao.deleteByStatus("batch")     // clear any remaining batch
-        }
+        // Sequential insert + delete (no Room transaction needed)
+        telemetryDao.insertAll(offlineCoords)
+        telemetryDao.deleteByStatus("batch")
 
         // ── Enforce 500-record offline cap ──────────────────────────────
         val offlineCount = telemetryDao.countByStatus("offline")
@@ -455,45 +435,6 @@ class TelemetryForegroundService : Service() {
         Log.i(TAG, "Drip-sync complete — offline queue fully synced")
     }
 
-    // ─── Supabase realtime broadcast ────────────────────────────────────
-
-    /**
-     * Initializes the Supabase realtime channel for Admin Map live pings.
-     *
-     * Channel: `fleet_tracking_live` (broadcast mode with `ack: true`),
-     * matching the PWA's `supabase.channel('fleet_tracking_live', { config: { broadcast: { ack: true } })`.
-     */
-    private fun initRealtimeChannel() {
-        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
-    }
-
-    /**
-     * Broadcasts a `telemetry_ping` event on the Supabase realtime channel.
-     *
-     * Payload matches the PWA's exact shape:
-     * ```json
-     * {
-     *   "driverId": "...",
-     *   "deviceId": "...",
-     *   "lat": 4.xxx,
-     *   "lng": -74.xxx,
-     *   "speed": 0,
-     *   "bearing": 0,
-     *   "timestamp": "2026-07-16T12:34:56.789Z"
-     * }
-     * ```
-     *
-     * The broadcast is fire-and-forget — failures are logged but never
-     * block the GPS capture cycle.
-     *
-     * Note: `speed` and `bearing` are hardcoded to 0, matching the PWA
-     * which hardcodes them because the browser Geolocation API does not
-     * provide reliable speed/bearing values.
-     */
-    private fun broadcastLivePing(location: Location) {
-        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
-    }
-
     // ─── Kill-switch cascade ────────────────────────────────────────────
 
     /**
@@ -566,17 +507,7 @@ class TelemetryForegroundService : Service() {
         flushJob = null
 
         // ── Cleanup Supabase realtime channel ────────────────────────────
-        realtimeChannel?.let { channel ->
-            try {
-                channel.unsubscribe()
-                supabaseClient.realtime.removeChannel(channel)
-                Log.d(TAG, "Supabase realtime channel unsubscribed and removed")
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to cleanup Supabase realtime channel", e)
-            }
-        }
-        realtimeChannel = null
-        lastLivePingTs = 0L
+        // Supabase Realtime disabled — library requires Kotlin 2.3.0+ metadata (TAD v1.2+)
     }
 
     // ─── Extension helpers ───────────────────────────────────────────────
@@ -597,14 +528,4 @@ class TelemetryForegroundService : Service() {
         timestamp = ts          // epoch millis — same as Location.time()
     )
 
-    /**
-     * Converts an epoch-millis timestamp to an ISO-8601 UTC string.
-     *
-     * Matches the PWA's `new Date(coord.ts).toISOString()`.
-     */
-    private fun epochToIso(ts: Long): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-        sdf.timeZone = TimeZone.getTimeZone("UTC")
-        return sdf.format(Date(ts))
-    }
 }

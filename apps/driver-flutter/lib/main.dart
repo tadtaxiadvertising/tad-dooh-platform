@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/tad_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'models/hub_data.dart';
 
 void main() => runApp(const TadDriverApp());
 
@@ -14,6 +15,11 @@ class TadDriverApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: tadTheme(),
     home: const LoginScreen(),
-    routes: {'/dashboard': (_) => const DashboardScreen()},
+    routes: {
+      '/dashboard': (context) {
+        final hub = ModalRoute.of(context)?.settings.arguments as DriverHubData?;
+        return DashboardScreen(hub: hub);
+      },
+    },
   );
 }

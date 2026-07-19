@@ -46,11 +46,18 @@ async function runPipeline(input) {
         accentColor: input.brand?.colorPrimary ?? (0, director_1.pickAccentColor)({ ...beats[idx], accentColor: '' }, idx),
         remotionTechnique: scene.remotionTechnique,
     }));
-    // 5. Construir proyecto base
+    // 5. Construit projecte base
     const projectId = `tad-video-${Date.now()}`;
     const totalFrames = Math.round(durationSec * fps);
+    const narrativeOrientation = input.tone === 'provocative'
+        ? 'INVASIÓN DE ATENCIÓN'
+        : input.tone === 'educational'
+            ? 'CONOCIMIENTO EN MOVIMIENTO'
+            : 'EXPERIENCIA URBANA';
     const peakEndValidation = (0, models_1.validatePeakEndRule)(scenes, totalFrames);
     const pacingScore = (0, models_1.computePacingScore)(scenes, platform);
+    const transcriptSummary = scriptOutput.narrativeSummary ||
+        'Narrativa estructurada por TAD Remotion skill.';
     const project = {
         projectId,
         theme,
@@ -60,13 +67,13 @@ async function runPipeline(input) {
         fps,
         actualFps: fps,
         headline,
-        narrativeSummary: scriptOutput.narrativeSummary,
+        narrativeSummary: transcriptSummary,
         scenes,
         citations: [],
         metadata: {
-            title: '',
-            description: '',
-            hashtags: [],
+            title: headline,
+            description: `${headline} — publi TAD DOOH de ${durationSec}s sobre ${theme}.`,
+            hashtags: ['DOOH', 'TAD', theme],
             postText: {
                 instagram: '',
                 tiktok: '',
@@ -74,11 +81,11 @@ async function runPipeline(input) {
                 facebook: '',
                 youtube: '',
             },
-            thumbnailPrompt: '',
+            thumbnailPrompt: `Publicidad DOOH TAD para ${theme}: taxis en movimiento, tipografía brillante sobre fondo oscuro.`,
         },
         assetManifest: {
             icons: [],
-            gradients: scenes.map((_, i) => (0, director_1.getBackgroundGradient)(beats[i], platform)),
+            gradients: scenes.map((_, i) => (0, director_1.getBackgroundGradient)({ ...beats[i], accentColor: scenes[i]?.accentColor ?? director_1.TAD_PALETTE.primary }, platform)),
             customAssets: [],
         },
         remotionCode: '',

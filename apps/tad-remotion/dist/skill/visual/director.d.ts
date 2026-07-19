@@ -37,32 +37,44 @@ export declare function getPlatformComposition(platform: Platform): {
 export declare function getBackgroundGradient(beat: NarrativeBeat, platform: Platform): string;
 export declare function describeAnimationProps(effect: MotionEffect, emotion: EmotionTrigger, frame: number, fps: number): {
     opacity: string;
-    transform: string;
+    scale: string;
+    translateX?: undefined;
     filter?: undefined;
     clipPath?: undefined;
 } | {
-    transform: string;
+    translateX: string;
     opacity?: undefined;
+    scale?: undefined;
+    filter?: undefined;
+    clipPath?: undefined;
+} | {
+    scale: string;
+    opacity?: undefined;
+    translateX?: undefined;
     filter?: undefined;
     clipPath?: undefined;
 } | {
     opacity: string;
-    transform?: undefined;
+    scale?: undefined;
+    translateX?: undefined;
     filter?: undefined;
     clipPath?: undefined;
 } | {
     filter: string;
     opacity: string;
-    transform?: undefined;
+    scale?: undefined;
+    translateX?: undefined;
     clipPath?: undefined;
 } | {
     clipPath: string;
     opacity?: undefined;
-    transform?: undefined;
+    scale?: undefined;
+    translateX?: undefined;
     filter?: undefined;
 } | {
     opacity?: undefined;
-    transform?: undefined;
+    scale?: undefined;
+    translateX?: undefined;
     filter?: undefined;
     clipPath?: undefined;
 };

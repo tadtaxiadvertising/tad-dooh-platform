@@ -1,0 +1,1 @@
+{"version":3,"file":"storyteller.js","sourceRoot":"","sources":["../../src/skill/storyteller.ts"],"names":[],"mappings":";;AAAA,sDAEC;AAED,gCAGC;AAPD,SAAgB,qBAAqB,CAAC,OAAe;IACnD,OAAO,gDAAgD,CAAC;AAC1D,CAAC;AAED,SAAgB,UAAU;IACxB,OAAO,CAAC,GAAG,CAAC,sBAAsB,CAAC,CAAC;IACpC,OAAO,EAAE,CAAC;AACZ,CAAC"}

@@ -1,19 +1,20 @@
 import React from 'react';
 interface CounterAnimProps {
-    /** El número final a mostrar */
-    target: number;
+    /** Número final a mostrar */
+    target?: number;
     /** Sufijo (ej: "x", "%", "RD$") */
     suffix?: string;
     /** Prefijo (ej: "5", "de") */
     prefix?: string;
-    /** Duración de la animación en frames */
+    /** Frames que dura la animación del contador */
     durationFrames?: number;
-    /** Color del número */
+    /** Color principal del número */
     color?: string;
     /** Tamaño en px del número */
     fontSize?: number;
     /** Label descriptivo debajo */
     label?: string;
+    /** Dirección de entrada del slider */
     slideFrom?: 'left' | 'right' | 'bottom';
 }
 declare const CounterAnim: React.FC<CounterAnimProps>;

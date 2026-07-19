@@ -27,6 +27,11 @@ export interface NarrativeBeat {
     /** Color de acento del beat */
     accentColor: string;
 }
+export interface SceneVisualProfile {
+    component: 'TadHook' | 'KineticText' | 'CounterAnim' | 'GlowCard' | 'AcidAndGlowCard';
+    props: Record<string, unknown>;
+    desc?: string;
+}
 export declare function buildStory(theme: ContentType | string, totalSec: number, platform: Platform, engagementTier?: 'informative' | 'persuasive' | 'authority'): NarrativeBeat[];
 export declare function beatsToSceneSpecs(beats: NarrativeBeat[], fps?: number): SceneSpec[];
 export interface ScriptQAReport {

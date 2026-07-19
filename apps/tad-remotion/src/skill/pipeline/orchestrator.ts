@@ -23,7 +23,7 @@ import { generateOpenLoopHeadline, rankHeadlines, generateCTA, writeFullScript }
 import { scriptWriterAgent } from '../agents/script-writer';
 import { applyResearch, getStatsForTheme, buildCitations } from '../agents/research-agent';
 import { validatePeakEndRule, computePacingScore, checkCognitiveLoad, computeEmotionalArc } from '../psychology/models';
-import { TAD_PALETTE, pickAccentColor, getBackgroundGradient, getTypographyScale } from '../visual/director';
+import { TAD_PALETTE, pickAccentColor, getBackgroundGradient, getTypographyScale, getMotionCurve } from '../visual/director';
 import { exportMetadata, exportSRT, exportASS, exportMetadataJSON } from '../agents/export-agent';
 import { runFullQA } from '../agents/qa-agent';
 
@@ -70,50 +70,61 @@ export async function runPipeline(input: SkillPipelineInput): Promise<VideoProje
     remotionTechnique: scene.remotionTechnique,
   }));
 
-  // 5. Construir proyecto base
+  // 5. Construit projecte base
   const projectId = `tad-video-${Date.now()}`;
   const totalFrames = Math.round(durationSec * fps);
+  const narrativeOrientation =
+   input.tone === 'provocative'
+    ? 'INVASIÓN DE ATENCIÓN'
+    : input.tone === 'educational'
+     ? 'CONOCIMIENTO EN MOVIMIENTO'
+     : 'EXPERIENCIA URBANA';
   const peakEndValidation = validatePeakEndRule(scenes, totalFrames);
   const pacingScore = computePacingScore(scenes, platform);
+  const transcriptSummary =
+   scriptOutput.narrativeSummary ||
+   'Narrativa estructurada por TAD Remotion skill.';
 
   const project: VideoProject = {
-    projectId,
-    theme,
-    platform,
+   projectId,
+   theme,
+   platform,
+   title: headline,
+   totalDurationSec: durationSec,
+   fps,
+   actualFps: fps,
+   headline,
+   narrativeSummary: transcriptSummary,
+   scenes,
+   citations: [],
+   metadata: {
     title: headline,
-    totalDurationSec: durationSec,
-    fps,
-    actualFps: fps,
-    headline,
-    narrativeSummary: scriptOutput.narrativeSummary,
-    scenes,
-    citations: [],
-    metadata: {
-      title: '',
-      description: '',
-      hashtags: [],
-      postText: {
-        instagram: '',
-        tiktok: '',
-        linkedin: '',
-        facebook: '',
-        youtube: '',
-      },
-      thumbnailPrompt: '',
+    description: `${headline} — publi TAD DOOH de ${durationSec}s sobre ${theme}.`,
+    hashtags: ['DOOH', 'TAD', theme],
+    postText: {
+     instagram: '',
+     tiktok: '',
+     linkedin: '',
+     facebook: '',
+     youtube: '',
     },
-    assetManifest: {
-      icons: [],
-      gradients: scenes.map((_, i) => getBackgroundGradient(beats[i] as any, platform)),
-      customAssets: [],
-    },
-    remotionCode: '',
-    qaReport: {
-      passed: false,
-      checks: [],
-      warnings: [],
-      errors: [],
-    },
-    generatedAt: new Date().toISOString(),
+    thumbnailPrompt: `Publicidad DOOH TAD para ${theme}: taxis en movimiento, tipografía brillante sobre fondo oscuro.`,
+   },
+   assetManifest: {
+    icons: [],
+    gradients: scenes.map((_, i) =>
+     getBackgroundGradient({ ...(beats[i] as any), accentColor: scenes[i]?.accentColor ?? TAD_PALETTE.primary }, platform),
+    ),
+    customAssets: [],
+   },
+   remotionCode: '',
+   qaReport: {
+    passed: false,
+    checks: [],
+    warnings: [],
+    errors: [],
+   },
+   generatedAt: new Date().toISOString(),
   };
 
   // 6. Research Agent — insertar citas verificadas

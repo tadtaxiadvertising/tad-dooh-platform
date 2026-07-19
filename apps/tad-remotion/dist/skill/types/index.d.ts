@@ -41,6 +41,35 @@ export interface SceneSpec {
     emotionTriggers: EmotionTrigger[];
     /** Copywriting framework aplicado */
     copyFramework?: 'hook' | 'open-loop' | 'pas' | 'aida' | 'before-after' | 'story-spine';
+    /** Profile de motion por escena (executable spec para compositor) */
+    motionProfile?: MotionSceneProfile;
+}
+export interface MotionSceneProfile {
+    component: 'TadHook' | 'KineticText' | 'CounterAnim' | 'GlowCard' | 'AcidAndGlowCard';
+    props: Record<string, unknown>;
+    children?: any;
+    scale?: boolean;
+    entrance?: string;
+    sustain?: string;
+    exit?: string;
+    timing?: string;
+    foregroundRef?: string;
+    translate?: {
+        x?: number;
+        y?: number;
+        rotate?: number;
+    };
+    entranceParams?: {
+        from?: number;
+        to?: number;
+        delayFrames?: number;
+        damping?: number;
+        stiffness?: number;
+    };
+    pulseParams?: {
+        intensity?: number;
+        rhythmFrames?: number;
+    };
 }
 export interface VoiceoverSegment {
     /** Palabra o frase breve */

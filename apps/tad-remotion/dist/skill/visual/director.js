@@ -166,36 +166,37 @@ function getBackgroundGradient(beat, platform) {
 function describeAnimationProps(effect, emotion, frame, fps) {
     const curve = getMotionCurve(emotion, effect);
     const local = frame - 2; // anticípate 2 frames
+    const easing = `Easing.bezier(0.16, 1, 0.3, 1)`;
     switch (effect) {
         case 'spring-enter':
             return {
-                opacity: `interpolate(local, [0, ${curve.durationFrames}], [0, 1], { extrapolateLeft: 'clamp' })`,
-                transform: `spring({ frame: local, fps: ${fps}, from: 30, to: 0, config: curve.config })`,
+                opacity: `interpolate(local, [0, ${curve.durationFrames}], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ${easing} })`,
+                scale: `spring({ frame: local, fps: ${fps}, from: 0.9, to: 1, config: { damping: 14, mass: 0.8, stiffness: 180 } })`,
             };
         case 'slide-in-left':
             return {
-                transform: `spring({ frame: local, fps: ${fps}, from: -200, to: 0, config: { damping: 14, mass: 0.7 } })`,
+                translateX: `spring({ frame: local, fps: ${fps}, from: -200, to: 0, config: { damping: 14, mass: 0.7, stiffness: 160 } })`,
             };
         case 'slide-in-right':
             return {
-                transform: `spring({ frame: local, fps: ${fps}, from: 200, to: 0, config: { damping: 14, mass: 0.7 } })`,
+                translateX: `spring({ frame: local, fps: ${fps}, from: 200, to: 0, config: { damping: 14, mass: 0.7, stiffness: 160 } })`,
             };
         case 'scale-pulse':
             return {
-                transform: `spring({ frame: local, fps: ${fps}, from: 0.8, to: 1, config: { damping: 10, mass: 0.8 } })`,
+                scale: `spring({ frame: local, fps: ${fps}, from: 0.85, to: 1, config: { damping: 10, mass: 0.8, stiffness: 220 } })`,
             };
         case 'glow-pulse':
             return {
-                opacity: `interpolate(local % 30, [0, 15, 30], [0.5, 1, 0.5])`,
+                opacity: `interpolate(local % 30, [0, 15, 30], [0.5, 1, 0.5], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ${easing} })`,
             };
         case 'blur-reveal':
             return {
-                filter: `interpolate(local, [0, 15, 30], ['blur(12px)', 'blur(4px)', 'blur(0px)'])`,
-                opacity: `interpolate(local, [0, 15, 30], [0, 0.5, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })`,
+                filter: `interpolate(local, [0, 15, 30], ['blur(12px)', 'blur(4px)', 'blur(0px)'], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ${easing} })`,
+                opacity: `interpolate(local, [0, 15, 30], [0, 0.5, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ${easing} })`,
             };
         case 'mask-reveal':
             return {
-                clipPath: `polygon(-10% -10%, -10% 110%, interpolate(local, [0, 20], [-10, 110], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })% 110%, -10% -10%)`,
+                clipPath: `polygon(-10% -10%, -10% 110%, interpolate(local, [0, 20], [-10, 110], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ${easing} })% 110%, -10% -10%)`,
             };
         default:
             return {};

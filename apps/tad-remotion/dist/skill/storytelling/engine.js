@@ -206,28 +206,314 @@ function buildStory(theme, totalSec, platform, engagementTier = 'informative') {
 }
 // ─── Convertir NarrativeBeat[] → SceneSpec[] (ready for pipeline) ─────────────
 function beatsToSceneSpecs(beats, fps = 30) {
-    return beats.map((beat, idx) => ({
-        id: idx,
-        startSec: beat.startSec,
-        durationSec: beat.durationSec,
-        narrativeFunction: beat.narrativeFunction,
-        cognitiveGoal: beat.cognitiveGoal,
-        voiceover: beat.voiceover
-            .split(' ')
-            .map((w, i) => ({
-            word: w,
-            durationSec: 0.35, // aproximado; el Voice Agent recalibra con TTS real
-            startSec: beat.startSec + i * 0.35,
-        })),
-        subtitles: [], // se llenan en pipeline con subtítulos sincronizados
-        onScreenText: beat.onScreenText,
-        visualDescription: beat.visualDescription,
-        assetsNeeded: inferAssetsFromBeat(beat),
-        motionEffects: beat.motionEffects,
-        accentColor: beat.accentColor,
-        remotionTechnique: beat.remotionTechnique,
-        emotionTriggers: beat.emotionTriggers,
-    }));
+    return beats.map((beat, idx) => {
+        const motionProfile = buildMotionProfile(beat);
+        return {
+            id: idx,
+            startSec: beat.startSec,
+            durationSec: beat.durationSec,
+            narrativeFunction: beat.narrativeFunction,
+            cognitiveGoal: beat.cognitiveGoal,
+            voiceover: beat.voiceover
+                .split(' ')
+                .map((w, i) => ({
+                word: w,
+                durationSec: 0.35,
+                startSec: beat.startSec + i * 0.35,
+            })),
+            subtitles: [],
+            onScreenText: beat.onScreenText,
+            visualDescription: beat.visualDescription,
+            assetsNeeded: inferAssetsFromBeat(beat),
+            motionEffects: beat.motionEffects,
+            accentColor: beat.accentColor,
+            remotionTechnique: beat.remotionTechnique,
+            emotionTriggers: beat.emotionTriggers,
+            motionProfile,
+        };
+    });
+}
+function buildMotionProfile(beat) {
+    const { beatId, narrativeFunction, accentColor, onScreenText, motionEffects } = beat;
+    const isShort = beat.durationSec <= 4;
+    const isMedium = beat.durationSec > 4 && beat.durationSec <= 8;
+    const baseTiming = isShort ? 'snap' : isMedium ? 'reveal' : 'cinematic';
+    const colorStack = [accentColor];
+    switch (narrativeFunction) {
+        case 'hook': {
+            const texture = motionEffects.includes('glow-pulse') ? 'neon' : motionEffects.includes('particle-drift') ? 'particles' : 'minimal';
+            const profile = {
+                component: 'TadHook',
+                entrance: 'scale-spring',
+                sustain: 'float',
+                exit: 'fade-out',
+                timing: baseTiming,
+                foregroundRef: 'hook-headline',
+                props: {
+                    text: onScreenText || 'Tu cerebro recuerda esto sin querer',
+                    headline: onScreenText || 'Tu cerebro recuerda esto sin querer',
+                    subline: '',
+                    accentColor,
+                    colorStack,
+                    texture,
+                    depth: 3,
+                    easingIn: 'ease-out',
+                    easingOut: 'ease-in-out',
+                    contrast: 'high',
+                },
+                children: onScreenText,
+                scale: true,
+            };
+            return profile;
+        }
+        case 'open-loop': {
+            const profile = {
+                component: 'KineticText',
+                entrance: 'slide-in-right',
+                sustain: 'tilt',
+                exit: 'slide-out-left',
+                timing: 'reveal',
+                foregroundRef: 'open-loop-body',
+                props: {
+                    text: onScreenText || '¿Por qué esta pantalla?',
+                    accentColor,
+                    colorStack,
+                    fontSize: 68,
+                    fontWeight: 800,
+                    fontColor: '#ffffff',
+                    revealCharByChar: true,
+                    revealDelay: beat.beatId * 4,
+                    cursorTrail: true,
+                    blend: 'normal',
+                },
+                children: onScreenText,
+                scale: true,
+            };
+            return profile;
+        }
+        case 'revelation': {
+            const profile = {
+                component: 'GlowCard',
+                entrance: 'blur-reveal',
+                sustain: 'pulse-glow',
+                exit: 'mask-scale',
+                timing: 'cinematic',
+                foregroundRef: 'revelation-body',
+                props: {
+                    glowColor: accentColor,
+                    children: onScreenText || 'Ciencia, no magia',
+                    intensity: 0.85,
+                    glass: true,
+                    border: true,
+                    depth: 4,
+                    blur: 30,
+                    grain: true,
+                    chrome: true,
+                    innerStroke: true,
+                    innerStrokeColor: accentColor,
+                    innerStrokeWidth: 1,
+                    cornerRadius: 28,
+                    padding: 28,
+                    skew: 0,
+                    tilt: 0,
+                    chromaShift: 4,
+                    noiseTexture: 'film',
+                    vignette: true,
+                    bloom: true,
+                    scanlines: false,
+                    chromatic: true,
+                    reflection: true,
+                    backgroundGradient: `radial-gradient(circle at 30% 20%, ${accentColor}26, #020202 70%)`,
+                    opacity: 1,
+                    scale: isShort ? 1.08 : 1.0,
+                    durationInFrames: Math.max(beat.durationSec * 30, 30),
+                },
+                children: onScreenText || 'Ciencia, no magia',
+                scale: true,
+            };
+            return profile;
+        }
+        case 'proof': {
+            const profile = {
+                component: 'CounterAnim',
+                entrance: 'count-up',
+                sustain: 'drift',
+                exit: 'mask-fade',
+                timing: 'data',
+                foregroundRef: 'proof-stats',
+                props: {
+                    target: 3,
+                    suffix: 'x',
+                    label: 'más recordación',
+                    color: accentColor,
+                    slideFrom: 'bottom',
+                    digits: 1,
+                    tension: 180,
+                    friction: 12,
+                    precision: 1,
+                    prefix: '',
+                    suffixGap: 6,
+                    easing: 'ease-out',
+                    glowTrail: true,
+                    barChart: true,
+                    barData: [
+                        { label: 'Redes', value: 1, color: '#64748b' },
+                        { label: 'TAD', value: 3, color: accentColor },
+                    ],
+                    barLabelAbove: true,
+                    barGrowth: 'from-bottom',
+                    barRadius: 8,
+                    barPadding: 14,
+                    barGrowthDurationFrames: Math.round((isMedium ? 2.5 : 1.4) * 30),
+                },
+                children: undefined,
+                scale: false,
+            };
+            return profile;
+        }
+        case 'calibration': {
+            const profile = {
+                component: 'AcidAndGlowCard',
+                entrance: 'spring-enter',
+                sustain: 'parallax-y',
+                exit: 'scale-out',
+                timing: 'scene',
+                foregroundRef: 'calibration-body',
+                props: {
+                    glowColor: accentColor,
+                    children: onScreenText || 'Imagina el impacto',
+                    intensity: 0.9,
+                    glass: true,
+                    border: true,
+                    depth: 5,
+                    blur: 42,
+                    grain: true,
+                    chrome: true,
+                    innerStroke: true,
+                    innerStrokeColor: accentColor,
+                    innerStrokeWidth: 1,
+                    cornerRadius: 32,
+                    padding: 32,
+                    skew: 0,
+                    tilt: 4,
+                    chromaShift: 6,
+                    noiseTexture: 'film',
+                    vignette: true,
+                    bloom: true,
+                    scanlines: false,
+                    chromatic: true,
+                    reflection: true,
+                    backgroundGradient: `radial-gradient(circle at 60% 30%, ${accentColor}22, #020202 78%)`,
+                    opacity: 1,
+                    scale: isShort ? 1.04 : 1.0,
+                    durationInFrames: Math.max(beat.durationSec * 30, 30),
+                },
+                children: onScreenText || 'Imagina el impacto',
+                scale: true,
+            };
+            return profile;
+        }
+        case 'takeaway': {
+            const profile = {
+                component: 'KineticText',
+                entrance: 'mask-reveal',
+                sustain: 'float',
+                exit: 'fade-out',
+                timing: 'message',
+                foregroundRef: 'takeaway-message',
+                props: {
+                    text: onScreenText || 'Conecta con tu audiencia',
+                    accentColor,
+                    colorStack,
+                    fontSize: 76,
+                    fontWeight: 800,
+                    fontColor: '#ffffff',
+                    revealCharByChar: false,
+                    revealDelay: 0,
+                    cursorTrail: false,
+                    blend: 'screen',
+                    letterSpacing: -1.2,
+                    lineHeight: 1.05,
+                    maxWidth: 980,
+                    align: 'center',
+                    vignetteBehindText: true,
+                    glowBehindText: true,
+                    glowColor: accentColor,
+                },
+                children: onScreenText || 'Conecta con tu audiencia',
+                scale: true,
+            };
+            return profile;
+        }
+        case 'cta': {
+            const profile = {
+                component: 'GlowCard',
+                entrance: 'zoom-in-spring',
+                sustain: 'pulse-glow',
+                exit: 'fade-out',
+                timing: 'cinematic',
+                foregroundRef: 'cta-body',
+                props: {
+                    glowColor: accentColor,
+                    children: onScreenText || 'Conecta tu marca HOY',
+                    intensity: 1.0,
+                    glass: true,
+                    border: true,
+                    depth: 6,
+                    blur: 48,
+                    grain: true,
+                    chrome: true,
+                    innerStroke: true,
+                    innerStrokeColor: accentColor,
+                    innerStrokeWidth: 1,
+                    cornerRadius: 36,
+                    padding: 36,
+                    skew: 0,
+                    tilt: 0,
+                    chromaShift: 8,
+                    noiseTexture: 'film',
+                    vignette: true,
+                    bloom: true,
+                    scanlines: false,
+                    chromatic: true,
+                    reflection: true,
+                    backgroundGradient: `radial-gradient(circle at 50% 40%, ${accentColor}2e, #020202 82%)`,
+                    opacity: 1,
+                    scale: 1.0,
+                    durationInFrames: Math.max(beat.durationSec * 30, 30),
+                    urgency: 'now',
+                },
+                children: onScreenText || 'Conecta tu marca HOY',
+                scale: true,
+            };
+            return profile;
+        }
+        default: {
+            const profile = {
+                component: 'KineticText',
+                entrance: 'fade-in-up',
+                sustain: 'float',
+                exit: 'fade-out',
+                timing: 'scene',
+                foregroundRef: 'generic-body',
+                props: {
+                    text: onScreenText,
+                    accentColor,
+                    colorStack,
+                    fontSize: 58,
+                    fontWeight: 800,
+                    fontColor: '#f8fafc',
+                    revealCharByChar: false,
+                    revealDelay: 0,
+                    cursorTrail: false,
+                    blend: 'normal',
+                },
+                children: onScreenText || '',
+                scale: true,
+            };
+            return profile;
+        }
+    }
 }
 // ─── Helpers privados ─────────────────────────────────────────────────────────
 function getAccentForBeat(beatId, theme, platform) {

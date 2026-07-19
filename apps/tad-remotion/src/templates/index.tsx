@@ -1,37 +1,46 @@
 import React from 'react';
 import { Composition, registerRoot } from 'remotion';
-import { DynamicAdTemplate } from './dynamic-ad';
-import { TadPromoVideo } from './tad-promo';
+import { TADCanonicalComposition } from '../skill/remotion/compositions/tad-canonical';
+import type { VideoProject } from '../skill/types';
 
-const fps = 30;
+// Default project — type assertion porque los campos reales se inyectan vía pipeline
+const DEFAULT_PROJECT = {
+  projectId: 'tad-default',
+  theme: 'promo' as any,
+  platform: 'tiktok' as any,
+  title: 'TAD Video',
+  totalDurationSec: 30,
+  fps: 30,
+  actualFps: 30,
+  headline: 'Tu mensaje aquí',
+  narrativeSummary: '',
+  scenes: [],
+  citations: [],
+  metadata: {} as any,
+  assetManifest: {} as any,
+  remotionCode: '',
+  qaReport: {} as any,
+  generatedAt: new Date().toISOString(),
+} as VideoProject;
 
-export const RemotionVideo: React.FC = () => {
-  return (
-    <>
-      <Composition
-        id="DynamicAd"
-        component={DynamicAdTemplate}
-        durationInFrames={300}
-        fps={fps}
-        width={1080}
-        height={1920}
-        defaultProps={{
-          logoUrl: '',
-          brandColor: '#e51636',
-          primaryText: 'MI OFERTA TAD',
-          secondaryText: 'Contacto: tadtaxi.com',
-        }}
-      />
-      <Composition
-        id="TADPromoVideo"
-        component={TadPromoVideo}
-        durationInFrames={900}
-        fps={fps}
-        width={1920}
-        height={1080}
-      />
-    </>
-  );
-};
+const WrappedComposition: React.FC<{ project?: VideoProject }> = ({ project }) => (
+  <TADCanonicalComposition project={project ?? DEFAULT_PROJECT} />
+);
 
-registerRoot(RemotionVideo);
+// ── Remotion entry root ─────────────────────────────────────────────────────
+const RemotionRoot: React.FC = () => (
+  <>
+    <Composition
+      id="DynamicAd"
+      component={WrappedComposition as any}
+      durationInFrames={900}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+  </>
+);
+
+registerRoot(RemotionRoot);
+
+export default RemotionRoot;

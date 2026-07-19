@@ -5,7 +5,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React from 'react';
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import {
+ AbsoluteFill,
+ interpolate,
+ spring,
+ useCurrentFrame,
+ useVideoConfig,
+ Easing,
+} from 'remotion';
 
 export interface RemainderBarProps {
   /** Duración total en frames */

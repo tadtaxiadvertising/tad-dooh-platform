@@ -13,36 +13,41 @@ import { KineticText } from '../components/KineticText';
 import { CounterAnim } from '../components/CounterAnim';
 import { GlowCard } from '../components/AcidAndGlowCard';
 import type { VideoProject } from '../../types';
+import { buildStory, beatsToSceneSpecs } from '../../storytelling/engine';
 
 const FONT_FAMILY = "'Inter', 'Outfit', 'Segoe UI', sans-serif";
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 const EASE_IN_OUT = Easing.bezier(0.7, 0, 0.84, 0);
 const FPS = 30;
 
+// Seed: genera escenas reales del pipeline para que el render de prueba tenga motion
+const seedBeats = buildStory('why-diesel', 30, 'tiktok', 'persuasive');
+const seedScenes = beatsToSceneSpecs(seedBeats, FPS);
+
 const DEFAULT_PROJECT = {
  projectId: 'tad-default',
- theme: 'promo',
+ theme: 'why-diesel',
  platform: 'tiktok',
- title: 'TAD Video',
+ title: 'TAD — Por qué tu cerebro recuerda esto sin querer',
  totalDurationSec: 30,
  fps: FPS,
  actualFps: FPS,
- headline: 'Tu mensaje aquí',
- narrativeSummary: '',
- scenes: [],
+ headline: 'Tu cerebro recuerda esto sin querer',
+ narrativeSummary: 'Un anuncio en pantalla de taxi planta tu marca en memoria episódica — sin scrolls, sin skip, sin escape.',
+ scenes: seedScenes,
  citations: [],
  metadata: {
-  title: '',
-  description: '',
-  hashtags: [],
+  title: 'TAD · DOOH',
+  description: 'Recordación 3x vs. redes sociales',
+  hashtags: ['#DOOH', '#TAD', '#advertising'],
   postText: {
-   instagram: '',
-   tiktok: '',
-   linkedin: '',
-   facebook: '',
-   youtube: '',
+   instagram: 'TAD — el medio que tu cerebro no puede ignorar.',
+   tiktok: '3x más recordación. Sin scroll. Sin skip. Solo TAD.',
+   linkedin: 'TAD convierte tiempo muerto en recordación de marca.',
+   facebook: 'TAD — cada trayecto es una oportunidad.',
+   youtube: 'Tu cerebro recuerda esto sin querer.',
   },
-  thumbnailPrompt: '',
+  thumbnailPrompt: 'Pantalla de taxi con marca TAD y glow rojo',
  },
  assetManifest: {
   icons: [],
@@ -56,7 +61,7 @@ const DEFAULT_PROJECT = {
   errors: [],
  },
  generatedAt: new Date().toISOString(),
- engagementTier: 'informative',
+ engagementTier: 'persuasive',
 } as unknown as VideoProject;
 
 interface CanonicalSceneProps {

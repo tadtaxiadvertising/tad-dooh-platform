@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 
@@ -459,7 +460,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 10),
                       TextButton(
                         onPressed: () {
-                          // TODO: navigate to registration
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Registro coming soon — contacta a soporte'),
+                              backgroundColor: TadColors.tadSurface,
+                              behavior: SnackBarBehavior.floating,
+                              action: SnackBarAction(
+                                label: 'WhatsApp',
+                                textColor: TadColors.tadYellow,
+                                onPressed: () {
+                                  launchUrl(
+                                    Uri.parse('https://wa.me/+18095551234?text=Hola%2C%20quiero%20registrarme%20como%20conductor%20TAD'),
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                },
+                              ),
+                            ),
+                          );
                         },
                         child: Text(
                           '¿Nuevo conductor? Regístrate',

@@ -1,5 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
+
+const _supportPhone = '+18095551234';
+const _paymentUrl = 'https://pay.tad.do/subscribe';
+
+void _openUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+void _openWhatsApp() async {
+  final uri = Uri.parse('https://wa.me/$_supportPhone?text=Hola%2C%20tengo%20un%20problema%20con%20mi%20suscripción');
+  if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
 
 /// Full-screen red overlay shown when the driver subscription is past-due (HTTP 402).
 ///
@@ -140,9 +154,7 @@ class KillSwitchOverlay extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: open Stripe/Wise/PayPal payment link
-                    },
+                    onPressed: () => _openUrl(_paymentUrl),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: TadColors.tadYellow,
                       foregroundColor: TadColors.black,
@@ -162,9 +174,7 @@ class KillSwitchOverlay extends StatelessWidget {
                   width: double.infinity,
                   height: 48,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: open WhatsApp support
-                    },
+                    onPressed: _openWhatsApp,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: TadColors.tadTextPrimary,
                       side: BorderSide(color: TadColors.tadBorder),

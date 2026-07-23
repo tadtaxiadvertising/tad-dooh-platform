@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
+import '../services/hub_service.dart';
 import '../widgets/kill_switch_overlay.dart';
 import '../widgets/dashboard_widgets.dart';
+import 'login_screen.dart' show clearLogin;
 import 'onboarding_screen.dart';
 import 'routes_screen.dart';
 
@@ -19,31 +21,29 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   _Tab _tab = _Tab.home;
-  late final DriverHubData _hub;
+  DriverHubData _hub;
+  bool _loading = true;
+
+  _DashboardScreenState() : _hub = const DriverHubData();
 
   @override
   void initState() {
     super.initState();
-    // Use passed hub or fall back to default mock data
-    _hub = widget.hub ?? const DriverHubData(
-      driverName: 'Juan Pérez',
-      balance: 3200,
-      projectedEarnings: 8500,
-      activeAds: 8,
-      activeSlots: 4,
-      maxSlots: 15,
-      subscriptionPaid: true,
-      subscriptionStatus: 'ACTIVE',
-      deviceId: 'TAD-EMU-01',
-      gpsPoints: 1240,
-      contractAccepted: false,
-      bankAccountConfigured: false,
-    );
+    _hub = widget.hub ?? const DriverHubData();
+    _loadHub();
+  }
 
-    // Check subscription status on mount
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkSubscriptionLock();
-    });
+  Future<void> _loadHub() async {
+    final fresh = await fetchHub();
+    if (fresh != null && mounted) {
+      setState(() {
+        _hub = fresh;
+        _loading = false;
+      });
+    } else if (mounted) {
+      setState(() => _loading = false);
+    }
+    if (mounted) _checkSubscriptionLock();
   }
 
   void _checkSubscriptionLock() {
@@ -85,6 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
+              clearLogin(); // borra token + creds cached
               Navigator.pushReplacementNamed(context, '/');
             },
             child: const Text('Salir', style: TextStyle(color: TadColors.tadError)),
@@ -104,10 +105,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _topBar(),
           // Tab content
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: _body(),
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: TadColors.tadGreen))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: _body(),
+                  ),
           ),
           // Bottom nav
           _bottomNav(),

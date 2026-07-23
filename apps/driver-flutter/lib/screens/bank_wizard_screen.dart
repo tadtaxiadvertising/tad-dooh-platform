@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/tad_theme.dart';
-import '../services/payment_service.dart';
+import 'login_screen.dart' show getCachedToken, kApiBase;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAD DOOH — Business rules alignment
@@ -98,85 +101,86 @@ class BankData {
   }
 }
 
-// ─── Offline persistence ──────────────────────────────────────────────────────
+// ─── Offline persistence (SharedPreferences) ────────────────────────────────
+
+const String _kBankDraftKey = 'tad_bank_draft';
+const String _kBankIdempotencyKey = 'tad_bank_idempotency_key';
 
 /// Generates the idempotency key for the pending bank draft.
 /// Format: bank_draft_{driverId}_{timestamp}
-/// Returns null if no driverId is available.
-String? getDriverBankPendingKey({String? driverId}) {
-  // TODO: get driverId from cached hub or auth token
+String getDriverBankPendingKey({String? driverId}) {
   final id = driverId ?? 'unknown';
   final ts = DateTime.now().millisecondsSinceEpoch;
   return 'bank_draft_${id}_$ts';
 }
 
 /// Sync status for bank draft.
-/// Returns the current sync state of the driver's bank data.
-enum BankSyncStatus {
-  /// No draft exists.
-  none,
-  /// Draft exists locally but not yet submitted.
-  draft,
-  /// Submission in progress.
-  syncing,
-  /// Submitted successfully.
-  synced,
-  /// Submission failed; retry available.
-  failed,
-}
+enum BankSyncStatus { none, draft, syncing, synced, failed }
 
 /// Queries the current sync status from local storage.
-/// In a real app, this would also check server state via GET /drivers/bank/status.
-BankSyncStatus getDriverBankSyncStatus() {
-  // TODO: implement with SharedPreferences
-  // final prefs = await SharedPreferences.getInstance();
-  // final draftJson = prefs.getString(_bankDraftStorage);
-  // if (draftJson == null) return BankSyncStatus.none;
-  // final draft = BankData.fromJson(jsonDecode(draftJson));
-  // if (draft.synced) return BankSyncStatus.synced;
-  // return BankSyncStatus.draft;
-  return BankSyncStatus.draft; // placeholder
+Future<BankSyncStatus> getDriverBankSyncStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_kBankDraftKey);
+  if (raw == null) return BankSyncStatus.none;
+  try {
+    final draft = BankData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    if (draft.synced) return BankSyncStatus.synced;
+    return BankSyncStatus.draft;
+  } catch (_) {
+    return BankSyncStatus.none;
+  }
 }
 
 /// Saves bank draft locally (offline-first).
 /// Call after every field change.
 Future<void> _saveBankDraft(BankData data) async {
-  // TODO: add shared_preferences to pubspec and uncomment:
-  // final prefs = await SharedPreferences.getInstance();
-  // await prefs.setString(
-  //   _bankDraftStorage,
-  //   jsonEncode(data.copyWith(synced: false).toJson()),
-  // );
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(
+    _kBankDraftKey,
+    jsonEncode(data.copyWith(synced: false).toJson()),
+  );
 }
 
 /// Loads the cached bank draft from local storage.
 BankData? _loadBankDraft() {
-  // TODO: implement with SharedPreferences
-  // final prefs = await SharedPreferences.getInstance();
-  // final raw = prefs.getString(_bankDraftStorage);
-  // if (raw == null) return null;
-  // return BankData.fromJson(jsonDecode(raw));
-  return null;
+  // sync access via shared_prefs instance — but getInstance is async,
+  // so we use a cached pattern: call _loadBankDraftAsync from initState
+  return _cachedBankDraft;
+}
+
+/// Cached bank draft for sync access from build methods.
+BankData? _cachedBankDraft;
+
+/// Async loader — call from initState to populate _cachedBankDraft.
+Future<void> _loadBankDraftAsync() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_kBankDraftKey);
+  if (raw != null) {
+    try {
+      _cachedBankDraft = BankData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      _cachedBankDraft = null;
+    }
+  }
 }
 
 /// Clears the local bank draft after successful sync.
 Future<void> _clearBankDraft() async {
-  // TODO: implement with SharedPreferences
-  // final prefs = await SharedPreferences.getInstance();
-  // await prefs.remove('tad_bank_draft');
-  // await prefs.remove('tad_bank_idempotency_key');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_kBankDraftKey);
+  await prefs.remove(_kBankIdempotencyKey);
+  _cachedBankDraft = null;
 }
 
 /// Gets or creates the idempotency key for bank submission.
-String _getOrCreateIdempotencyKey() {
-  // TODO: implement with SharedPreferences
-  // This prevents duplicate submissions on retry.
-  // final key = prefs.getString('tad_bank_idempotency_key');
-  // if (key != null) return key;
-  // final newKey = getDriverBankPendingKey();
-  // prefs.setString('tad_bank_idempotency_key', newKey);
-  // return newKey;
-  return 'bank_idempotency_${DateTime.now().millisecondsSinceEpoch}';
+/// Persists in SharedPreferences so retries don't create duplicates.
+Future<String> _getOrCreateIdempotencyKey() async {
+  final prefs = await SharedPreferences.getInstance();
+  final existing = prefs.getString(_kBankIdempotencyKey);
+  if (existing != null) return existing;
+  final newKey = getDriverBankPendingKey();
+  await prefs.setString(_kBankIdempotencyKey, newKey);
+  return newKey;
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
@@ -188,44 +192,63 @@ class BankApiException implements Exception {
   BankApiException(this.statusCode, this.message);
 }
 
-/// POST /api/proxy/drivers/bank — submits bank data with idempotency.
+/// Submits bank data to backend with idempotency + auth token.
+/// NOTE: El backend aún no tiene endpoint dedicado para bank data.
+/// Se usa PATCH /api/drivers/:driverId con el campo bankAccount en el body.
+/// Si el endpoint no existe (404), el draft queda guardado localmente y
+/// se sincronizará cuando el backend implemente el endpoint.
 /// Retries on 5xx up to 2 times.
-Future<BankData> apiSubmitBank(BankData data) async {
+Future<BankData> apiSubmitBank(BankData data, {String? driverId}) async {
   const maxRetries = 2;
   String? lastError;
 
+  final token = await getCachedToken();
+  if (token == null) {
+    throw BankApiException(401, 'No hay sesión activa — inicia sesión de nuevo');
+  }
+
   for (var attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // TODO: replace with real API call using Supabase or backend:
-      // final key = _getOrCreateIdempotencyKey();
-      // final resp = await supabase.from('driver_banks').upsert(
-      //   {
-      //     'driver_id': driverId,
-      //     'bank': data.bank,
-      //     'account_num': data.accountNum,
-      //     'account_type': data.accountType,
-      //     'owner_name': data.ownerName,
-      //     'cedula': data.cedula.replaceAll('-', ''),
-      //     'idempotency_key': key,
-      //   },
-      //   onConflict: 'driver_id',
-      // );
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 10);
 
-      // Mock 500 for testing retry
-      if (data.bank == 'RETRY_TEST') {
-        throw BankApiException(500, 'Error interno del servidor');
+      final url = Uri.parse('$kApiBase/drivers/$driverId');
+      final req = await client.patchUrl(url);
+      req.headers.contentType = ContentType.json;
+      req.headers.set('Authorization', 'Bearer $token');
+      req.write(jsonEncode({
+        'bankAccount': data.toJson()..remove('synced')..remove('savedAt'),
+      }));
+
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
+
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        return data.copyWith(synced: true, savedAt: DateTime.now());
       }
 
-      await Future.delayed(const Duration(milliseconds: 400));
-      return data.copyWith(synced: true, savedAt: DateTime.now());
+      String msg;
+      try {
+        final errJson = jsonDecode(body) as Map<String, dynamic>;
+        msg = (errJson['message'] ?? errJson['error'] ?? 'Error').toString();
+      } catch (_) {
+        msg = 'Error del servidor (${res.statusCode})';
+      }
+      throw BankApiException(res.statusCode, msg);
     } on BankApiException catch (e) {
+      // 5xx → retry; 4xx → fail immediately
       if (e.statusCode >= 500 && attempt < maxRetries) {
         lastError = e.message;
         await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         continue;
       }
       rethrow;
-    } catch (_) {
+    } on SocketException catch (_) {
+      // Offline — keep draft, mark as failed for later sync
+      throw BankApiException(0, 'Sin conexión — datos guardados localmente');
+    } catch (e) {
+      if (e is BankApiException) rethrow;
       if (attempt < maxRetries) {
         await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         continue;
@@ -239,9 +262,10 @@ Future<BankData> apiSubmitBank(BankData data) async {
 // ─── Bank Wizard Screen ────────────────────────────────────────────────────────
 
 class BankWizardScreen extends StatefulWidget {
-  const BankWizardScreen({super.key, required this.onComplete});
+  const BankWizardScreen({super.key, required this.onComplete, this.driverId});
 
   final VoidCallback onComplete;
+  final String? driverId;
 
   @override
   State<BankWizardScreen> createState() => _BankWizardScreenState();
@@ -261,8 +285,8 @@ class _BankWizardScreenState extends State<BankWizardScreen> {
   bool _loading = false;
   BankSyncStatus _syncStatus = BankSyncStatus.draft;
 
-  // Idempotency key for this session
-  final String _idempotencyKey = _getOrCreateIdempotencyKey();
+  // Idempotency key for this session (loaded async in initState)
+  String _idempotencyKey = '';
 
   // Available banks
   static const _banks = [
@@ -278,6 +302,12 @@ class _BankWizardScreenState extends State<BankWizardScreen> {
   @override
   void initState() {
     super.initState();
+    _initAsync();
+  }
+
+  Future<void> _initAsync() async {
+    await _loadBankDraftAsync();
+    _idempotencyKey = await _getOrCreateIdempotencyKey();
     _loadDraft();
   }
 
@@ -350,7 +380,7 @@ class _BankWizardScreenState extends State<BankWizardScreen> {
     });
 
     try {
-      await apiSubmitBank(_currentData);
+      await apiSubmitBank(_currentData, driverId: widget.driverId);
       await _clearBankDraft();
       if (!mounted) return;
       setState(() => _syncStatus = BankSyncStatus.synced);

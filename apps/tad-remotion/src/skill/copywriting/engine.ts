@@ -29,7 +29,7 @@ export interface HeadlineCandidate {
 }
 
 export function generateOpenLoopHeadline(theme: ContentType): HeadlineCandidate[] {
-  const templates: Record<ContentType, Partial<HeadlineCandidate>[]> = {
+  const templates: Partial<Record<ContentType, Partial<HeadlineCandidate>[]>> = {
     'why-diesel': [
       {
         text: 'Tu cerebro recordó ESTO sin querer',

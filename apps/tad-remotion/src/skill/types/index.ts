@@ -83,7 +83,8 @@ export type ContentType =
  | 'dead-time' // Cómo las marcas aprovechan los momentos muertos
  | 'impossible-to-ignore' // Qué hace que una publicidad sea imposible de ignorar
  | 'myth-busting' // Desmentir mitos del DOOH
- | 'explainer'; // Explicación de qué es DOOH
+ | 'explainer' // Explicación de qué es DOOH
+ | 'driver-recruit'; // Reclutamiento de conductores para red TAD
 
 // ─── Specline — escena individual del guión ──────────────────────────────────
 

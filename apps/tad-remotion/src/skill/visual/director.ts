@@ -84,6 +84,11 @@ const VISUAL_STYLE: Record<ContentType, {
     dominantShape: 'circle',
     motionDirection: 'diagonal',
   },
+  'driver-recruit': {
+    palette: [TAD_PALETTE.yellow, TAD_PALETTE.primary, TAD_PALETTE.bgDark],
+    dominantShape: 'card',
+    motionDirection: 'vertical',
+  },
 };
 
 // ─── Selección de técnica Remotion por función narrativa ─────────────────────

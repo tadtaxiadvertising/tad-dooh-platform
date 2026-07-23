@@ -7,6 +7,7 @@ import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
+import { runPipeline } from './skill/pipeline/orchestrator';
 
 // Load .env from the app directory
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -361,13 +362,52 @@ NO incluyas markdown, ni explicaciones, solo el JSON.`;
     let text = response.text();
 
     // Strip markdown code fences if present
-    text = text.replace(/\\\`\`\`json?\\n?/gi, '').replace(/\\\`\`\`\\n?/g, '').trim();
+    text = text.replace(/\\`\\`\\`json?\\n?/gi, '').replace(/\\`\\`\\`\\n?/g, '').trim();
 
     const config = JSON.parse(text);
     res.json(config);
   } catch (err: any) {
     console.error('❌ Error en AI Architect:', err);
     res.status(500).json({ error: 'AI generation failed', details: err.message });
+  }
+});
+
+// ─── Pipeline endpoint: generate video from theme ──────────────────────────
+
+app.post('/api/pipeline', async (req, res) => {
+  try {
+    const { theme, platform, durationSec, tone, brand } = req.body;
+
+    console.log(`🎬 Pipeline solicitado: theme=${theme || 'why-diesel'}, platform=${platform || 'tiktok'}`);
+
+    // Run the full pipeline
+    const project = await runPipeline({
+      theme: theme || 'why-diesel',
+      platform: platform || 'tiktok',
+      durationSec: durationSec || 30,
+      tone: tone || 'persuasive',
+      brand,
+    });
+
+    console.log(`✅ Pipeline completado: ${project.scenes.length} escenas, ${project.totalDurationSec}s`);
+
+    res.json({
+      success: true,
+      projectId: project.projectId,
+      headline: project.headline,
+      scenes: project.scenes.map((s: any) => ({
+        id: s.id,
+        narrativeFunction: s.narrativeFunction,
+        durationSec: s.durationSec,
+        component: s.motionProfile?.component,
+        onScreenText: s.onScreenText,
+      })),
+      citations: project.citations,
+      qaReport: project.qaReport,
+    });
+  } catch (err: any) {
+    console.error('❌ Pipeline error:', err);
+    res.status(500).json({ error: 'Pipeline failed', details: err.message });
   }
 });
 

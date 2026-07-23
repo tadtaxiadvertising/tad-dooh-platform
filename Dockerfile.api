@@ -56,15 +56,15 @@ COPY --from=deps --chown=nestjs:nodejs /usr/src/app/node_modules ./node_modules
 COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/package.json ./apps/api/
 COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 
-# Copy build output from Phase 1
+# Copy build output and Prisma schema from Phase 1
 COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/dist ./apps/api/dist
 COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/api/prisma
 
-# SHELTER: Ejecutar como usuario no-root
+# SHELTER: Ejecutar como usuario no-root, pero con acceso para prisma migrate
 USER nestjs
 
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 WORKDIR /usr/src/app/apps/api
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]

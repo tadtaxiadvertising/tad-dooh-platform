@@ -4,15 +4,29 @@
 # apps/player/src/ contains the full TypeScript source.
 # Stage 1 builds static files; Stage 2 serves them via nginx.
 #
+# BUILD-TIME ENV VARS (passed as --build-arg by EasyPanel):
+#   VITE_API_URL          — API Gateway URL
+#   VITE_SUPABASE_URL     — Supabase project URL
+#   VITE_SUPABASE_ANON_KEY— Supabase anon key (for Realtime)
+#
 # FIX HISTORY:
-#   - 404 /assets/player.css: The Service Worker precached a non-existent
-#     unhashed path. Fixed in sw.ts (shell-only precache + on-demand SWR).
-#   - Crash-loop (SIGQUIT): Hardened nginx config — explicit daemon off,
-#     pid path, worker config, robust health endpoint, and proper error
-#     handling to satisfy EasyPanel health probes.
+# - 404 /assets/player.css: The Service Worker precached a non-existent
+# unhashed path. Fixed in sw.ts (shell-only precache + on-demand SWR).
+# - Crash-loop (SIGQUIT): Hardened nginx config — explicit daemon off,
+# pid path, worker config, robust health endpoint, and proper error
+# handling to satisfy EasyPanel health probes.
 
 # --- STAGE 1: Builder ---
 FROM node:20-alpine AS builder
+
+# ── Vite build-time env vars (injected by EasyPanel) ──
+ARG VITE_API_URL
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 

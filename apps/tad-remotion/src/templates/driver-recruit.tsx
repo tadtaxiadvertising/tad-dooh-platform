@@ -85,7 +85,7 @@ const S5: React.FC<{ f: number }> = ({ f }) => {
     <AbsoluteFill style={{ background: BG, justifyContent:'center', padding:'0 40px' }}>
       <h2 style={{fontFamily:FONT,fontSize:22,fontWeight:800,color:WHITE,textAlign:'center',marginBottom:24}}>TODO INCLUIDO</h2>
       {items.map((t,i)=>{const d=3+i*6;const op=interpolate(Math.max(0,f-d),[0,8],[0,1],{extrapolateLeft:'clamp',extrapolateRight:'clamp'});const x=interpolate(Math.max(0,f-d),[0,10],[20,0],{extrapolateLeft:'clamp',extrapolateRight:'clamp'});
-      return <div key={i} style={{opacity,transform:`translateX(${x}px)`,padding:'14px 16px',marginBottom:8,border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,fontFamily:FONT,fontSize:18,fontWeight:600,color:WHITE}}>{t}</div>})}
+      return <div key={i} style={{opacity:op,transform:`translateX(${x}px)`,padding:'14px 16px',marginBottom:8,border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,fontFamily:FONT,fontSize:18,fontWeight:600,color:WHITE}}>{t}</div>})}
     </AbsoluteFill>
   );
 };

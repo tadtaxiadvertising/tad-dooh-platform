@@ -18,17 +18,51 @@ class _RoutesTabState extends State<RoutesTab> {
   String _searchQuery = '';
   String _filter = 'todas'; // 'todas' | 'activas' | 'completadas'
 
-  // Mock routes data
-  static final _mockRoutes = [
-    _RouteData(id: 'R001', name: 'Zona Colonial → SDQ', status: 'active', progress: 0.65),
-    _RouteData(id: 'R002', name: 'Plaza Lama Churchill', status: 'active', progress: 0.30),
-    _RouteData(id: 'R003', name: 'Av. Winston Churchill ↺', status: 'pending', progress: 0.0),
-    _RouteData(id: 'R004', name: 'Boca Chica → SDQ', status: 'completed', progress: 1.0),
-    _RouteData(id: 'R005', name: 'Alcazar de Reyes', status: 'pending', progress: 0.0),
-  ];
+  /// Routes derivadas del hub data real (no mock).
+  /// Cada anuncio activo = una "ruta" donde se reproduce contenido.
+  List<_RouteData> get _routes {
+    final hub = widget.hub;
+    final active = hub.activeAds;
+    final slots = hub.activeSlots;
+    final maxSlots = hub.maxSlots;
+
+    // Activa: anuncios actualmente reproduciéndose
+    final List<_RouteData> routes = List.generate(
+      active,
+      (i) => _RouteData(
+        id: 'AD-${(i + 1).toString().padLeft(3, '0')}',
+        name: 'Anuncio activo #${i + 1}',
+        status: 'active',
+        progress: slots > 0 ? ((i + 1) / maxSlots).clamp(0.0, 1.0) : 0.0,
+      ),
+    );
+
+    // Slots disponibles sin asignar = pending
+    final pendingCount = (maxSlots - active - slots).clamp(0, maxSlots);
+    for (var i = 0; i < pendingCount; i++) {
+      routes.add(_RouteData(
+        id: 'SLOT-${(i + 1).toString().padLeft(3, '0')}',
+        name: 'Slot disponible #${i + 1}',
+        status: 'pending',
+        progress: 0.0,
+      ));
+    }
+
+    // Slots ya usados = completed (reproducción finalizada del período)
+    for (var i = 0; i < slots; i++) {
+      routes.add(_RouteData(
+        id: 'DONE-${(i + 1).toString().padLeft(3, '0')}',
+        name: 'Slot completado #${i + 1}',
+        status: 'completed',
+        progress: 1.0,
+      ));
+    }
+
+    return routes;
+  }
 
   List<_RouteData> get _filtered {
-    var routes = _mockRoutes;
+    var routes = _routes;
     if (_filter == 'activas') {
       routes = routes.where((r) => r.status == 'active').toList();
     } else if (_filter == 'completadas') {
@@ -657,7 +691,10 @@ class _WalletTabState extends State<WalletTab> with SingleTickerProviderStateMix
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => BankWizardScreen(onComplete: () => Navigator.pop(context)),
+                builder: (_) => BankWizardScreen(
+                      onComplete: () => Navigator.pop(context),
+                      driverId: widget.hub.driverId,
+                    ),
               ),
             ),
             style: ElevatedButton.styleFrom(

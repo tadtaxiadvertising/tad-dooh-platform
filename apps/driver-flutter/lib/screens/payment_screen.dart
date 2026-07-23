@@ -96,7 +96,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final effective = _isProcessing;
 
     return Scaffold(

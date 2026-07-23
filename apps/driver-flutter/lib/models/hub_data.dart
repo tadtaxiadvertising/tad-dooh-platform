@@ -7,8 +7,20 @@ class DriverHubData {
   const DriverHubData({
     this.driverId = '',
     this.driverName = 'Conductor',
+    this.level = 'BRONZE',
+    this.consecutiveMonthsUnderGoal = 0,
+    this.phone,
+    this.cedula,
+    this.taxiNumber,
     this.balance = 0,
     this.projectedEarnings = 0,
+    this.baseEarnings = 0,
+    this.penaltyApplied = false,
+    this.penaltyAmount = 0,
+    this.referralEarnings = 0,
+    this.referralsCount = 0,
+    this.advertiserReferralEarnings = 0,
+    this.advertiserReferralsCount = 0,
     this.activeAds = 0,
     this.activeSlots = 0,
     this.maxSlots = 15,
@@ -17,6 +29,8 @@ class DriverHubData {
     this.deviceId,
     this.gpsPoints = 0,
     this.adsPlayed = 0,
+    this.totalPaid = 0,
+    this.lastPayment,
     this.contractAccepted = false,
     this.agreementVersion,
     this.onboardingStatus = 'UNKNOWN',
@@ -25,8 +39,20 @@ class DriverHubData {
 
   final String driverId;
   final String driverName;
+  final String level;
+  final int consecutiveMonthsUnderGoal;
+  final String? phone;
+  final String? cedula;
+  final String? taxiNumber;
   final double balance;
   final double projectedEarnings;
+  final double baseEarnings;
+  final bool penaltyApplied;
+  final double penaltyAmount;
+  final double referralEarnings;
+  final int referralsCount;
+  final double advertiserReferralEarnings;
+  final int advertiserReferralsCount;
   final int activeAds;
   final int activeSlots;
   final int maxSlots;
@@ -35,6 +61,8 @@ class DriverHubData {
   final String? deviceId;
   final int gpsPoints;
   final int adsPlayed;
+  final double totalPaid;
+  final LastPayment? lastPayment;
   final bool contractAccepted;
   final String? agreementVersion;
   final String onboardingStatus;
@@ -44,14 +72,32 @@ class DriverHubData {
     return DriverHubData(
       driverId: (json['driverId'] ?? '').toString(),
       driverName: (json['driverName'] ?? 'Conductor').toString(),
+      level: (json['level'] ?? 'BRONZE').toString(),
+      consecutiveMonthsUnderGoal: _toNum(json['consecutiveMonthsUnderGoal'])?.toInt() ?? 0,
+      phone: json['phone']?.toString(),
+      cedula: json['cedula']?.toString(),
+      taxiNumber: json['taxiNumber']?.toString(),
       balance: _toNum(json['balance']) ?? 0,
       projectedEarnings: _toNum(json['projectedEarnings']) ?? 0,
+      baseEarnings: _toNum(json['baseEarnings']) ?? 0,
+      penaltyApplied: json['penaltyApplied'] == true,
+      penaltyAmount: _toNum(json['penaltyAmount']) ?? 0,
+      referralEarnings: _toNum(json['referralEarnings']) ?? 0,
+      referralsCount: _toNum(json['referralsCount'])?.toInt() ?? 0,
+      advertiserReferralEarnings: _toNum(json['advertiserReferralEarnings']) ?? 0,
+      advertiserReferralsCount: _toNum(json['advertiserReferralsCount'])?.toInt() ?? 0,
       activeAds: (_toNum(json['activeAds']) ?? 0).toInt(),
       activeSlots: (_toNum(json['activeSlots']) ?? 0).toInt(),
       maxSlots: (_toNum(json['maxSlots']) ?? 15).toInt(),
+      subscriptionPaid: json['subscriptionPaid'] == true || json['subscriptionStatus'] == 'ACTIVE',
+      subscriptionStatus: (json['subscriptionStatus'] ?? json['status'] ?? 'UNKNOWN').toString(),
+      deviceId: json['deviceId']?.toString(),
       gpsPoints: (_toNum(json['gpsPoints']) ?? 0).toInt(),
       adsPlayed: (_toNum(json['adsPlayed']) ?? 0).toInt(),
-      deviceId: json['deviceId']?.toString(),
+      totalPaid: _toNum(json['totalPaid']) ?? 0,
+      lastPayment: json['lastPayment'] != null
+          ? LastPayment.fromJson(json['lastPayment'] as Map<String, dynamic>)
+          : null,
       contractAccepted: json['contractAccepted'] == true,
       agreementVersion: json['agreementVersion']?.toString(),
       onboardingStatus: (json['onboardingStatus'] ?? 'UNKNOWN').toString(),
@@ -62,8 +108,20 @@ class DriverHubData {
   Map<String, dynamic> toJson() => {
     'driverId': driverId,
     'driverName': driverName,
+    'level': level,
+    'consecutiveMonthsUnderGoal': consecutiveMonthsUnderGoal,
+    'phone': phone,
+    'cedula': cedula,
+    'taxiNumber': taxiNumber,
     'balance': balance,
     'projectedEarnings': projectedEarnings,
+    'baseEarnings': baseEarnings,
+    'penaltyApplied': penaltyApplied,
+    'penaltyAmount': penaltyAmount,
+    'referralEarnings': referralEarnings,
+    'referralsCount': referralsCount,
+    'advertiserReferralEarnings': advertiserReferralEarnings,
+    'advertiserReferralsCount': advertiserReferralsCount,
     'activeAds': activeAds,
     'activeSlots': activeSlots,
     'maxSlots': maxSlots,
@@ -72,6 +130,8 @@ class DriverHubData {
     'deviceId': deviceId,
     'gpsPoints': gpsPoints,
     'adsPlayed': adsPlayed,
+    'totalPaid': totalPaid,
+    'lastPayment': lastPayment?.toJson(),
     'contractAccepted': contractAccepted,
     'agreementVersion': agreementVersion,
     'onboardingStatus': onboardingStatus,
@@ -83,6 +143,23 @@ class DriverHubData {
     if (value is String) return double.tryParse(value);
     return null;
   }
+}
+
+@immutable
+class LastPayment {
+  const LastPayment({this.amount = 0, this.status = '', this.date});
+
+  final double amount;
+  final String status;
+  final String? date;
+
+  factory LastPayment.fromJson(Map<String, dynamic> json) => LastPayment(
+    amount: DriverHubData._toNum(json['amount']) ?? 0,
+    status: (json['status'] ?? '').toString(),
+    date: json['date']?.toString(),
+  );
+
+  Map<String, dynamic> toJson() => {'amount': amount, 'status': status, 'date': date};
 }
 
 @immutable

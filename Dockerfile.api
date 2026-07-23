@@ -67,4 +67,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 WORKDIR /usr/src/app/apps/api
-CMD npx prisma migrate deploy && node dist/main.js
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 import 'bank_wizard_screen.dart';
@@ -344,14 +345,22 @@ class SettingsTab extends StatelessWidget {
             title: 'Actualizar contraseña',
             subtitle: 'Cambia tu contraseña de acceso',
             onTap: () {
-              // TODO: navigate to update-password screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: const Text('Próximamente — usa la app web'),
+                    backgroundColor: TadColors.tadSurface),
+              );
             },
           ),
           _settingsTile(
             icon: Icons.person_outline,
             title: 'Editar perfil',
             subtitle: 'Nombre, teléfono, foto',
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: const Text('Próximamente en futuras actualizaciones'),
+                    backgroundColor: TadColors.tadSurface),
+              );
+            },
           ),
         ]),
 
@@ -386,20 +395,33 @@ class SettingsTab extends StatelessWidget {
             title: 'WhatsApp Soporte',
             subtitle: 'Escríbenos directamente',
             onTap: () {
-              // TODO: open WhatsApp deep link
+              launchUrl(
+                Uri.parse('https://wa.me/+18095551234?text=Hola%2C%20tengo%20una%20consulta'),
+                mode: LaunchMode.externalApplication,
+              );
             },
           ),
           _settingsTile(
             icon: Icons.bug_report_outlined,
             title: 'Reportar problema',
             subtitle: 'Envía un reporte al equipo técnico',
-            onTap: () {},
+            onTap: () {
+              launchUrl(
+                Uri.parse('mailto:soporte@tad.do?subject=Reporte%20de%20problema%20TAD%20Driver'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
           ),
           _settingsTile(
             icon: Icons.help_outline,
             title: 'Ayuda y preguntas frecuentes',
             subtitle: 'Resuelve tus dudas',
-            onTap: () {},
+            onTap: () {
+              launchUrl(
+                Uri.parse('https://tad.do/ayuda'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
           ),
         ]),
 

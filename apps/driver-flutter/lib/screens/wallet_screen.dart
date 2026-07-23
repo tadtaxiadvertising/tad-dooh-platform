@@ -1,24 +1,61 @@
 import 'package:flutter/material.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
+import '../services/hub_service.dart';
 import 'bank_wizard_screen.dart';
 
 class WalletScreen extends StatefulWidget {
-  const WalletScreen({super.key});
+  const WalletScreen({super.key, this.hub});
+
+  final DriverHubData? hub;
 
   @override
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final _hub = const DriverHubData(balance: 3200, projectedEarnings: 8500, activeAds: 8, activeSlots: 4, maxSlots: 6);
+  DriverHubData _hub = const DriverHubData();
+  bool _loading = true;
 
   static const _withdrawThreshold = 5000.0;
 
   @override
+  void initState() {
+    super.initState();
+    _hub = widget.hub ?? const DriverHubData();
+    _loadHub();
+  }
+
+  Future<void> _loadHub() async {
+    final fresh = await fetchHub();
+    if (fresh != null && mounted) {
+      setState(() { _hub = fresh; _loading = false; });
+    } else if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: TadColors.tadDark,
+        appBar: AppBar(
+          backgroundColor: TadColors.tadDark,
+          leading: IconButton(
+            icon: const Text('←', style: TextStyle(color: TadColors.tadYellow, fontSize: 22)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text('Billetera',
+              style: TextStyle(color: TadColors.tadYellow, fontWeight: FontWeight.w800)),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: TadColors.tadGreen)),
+      );
+    }
+
     final progress = (_hub.balance / _withdrawThreshold).clamp(0.0, 1.0);
     final breakdown = (_hub.activeAds.clamp(0, 15) * 500).toDouble();
+    final referraTotal = _hub.referralEarnings + _hub.advertiserReferralEarnings;
 
     return Scaffold(
       backgroundColor: TadColors.tadDark,
@@ -112,47 +149,69 @@ class _WalletScreenState extends State<WalletScreen> {
                       style: TextStyle(
                           color: TadColors.tadYellow, fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
-                  _row('Min(anuncios, 15) × RD\$500',
+                  _row('Anuncios activos × RD\$500',
                       'RD\$${breakdown.toStringAsFixed(0)}'),
                   const SizedBox(height: 8),
                   _row('Proyectado mensual',
                       'RD\$${_hub.projectedEarnings.toStringAsFixed(0)}',
                       valueColor: TadColors.tadGreen),
+                  if (_hub.penaltyApplied) ...[
+                    const SizedBox(height: 8),
+                    _row('Penalización',
+                        '-RD\$${_hub.penaltyAmount.toStringAsFixed(0)}',
+                        valueColor: TadColors.tadError),
+                  ],
+                  if (referraTotal > 0) ...[
+                    const SizedBox(height: 8),
+                    _row('Referidos',
+                        '+RD\$${referraTotal.toStringAsFixed(0)}',
+                        valueColor: TadColors.tadGreen),
+                  ],
+                  const SizedBox(height: 8),
+                  _row('Total pagado',
+                      'RD\$${_hub.totalPaid.toStringAsFixed(0)}',
+                      valueColor: TadColors.tadTextSecondary),
                 ],
               ),
             ),
             const SizedBox(height: 22),
 
-            // Transactions header
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Transacciones',
-                  style: TextStyle(
-                      color: TadColors.tadYellow,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18)),
-            ),
-            const SizedBox(height: 12),
-
-            // Empty state
-            _card(
-              child: const SizedBox(
-                width: double.infinity,
-                child: Column(
+            // Last payment
+            if (_hub.lastPayment != null) ...[
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Último pago',
+                    style: TextStyle(
+                        color: TadColors.tadYellow,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18)),
+              ),
+              const SizedBox(height: 12),
+              _card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(
-                      width: 60, height: 60,
-                      child: Icon(Icons.receipt_long_outlined,
-                          color: TadColors.tadTextDisabled, size: 50),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('RD\$${_hub.lastPayment!.amount.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                                color: TadColors.tadGreen,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18)),
+                        const SizedBox(height: 4),
+                        Text(_hub.lastPayment!.status,
+                            style: const TextStyle(color: TadColors.tadTextSecondary, fontSize: 12)),
+                      ],
                     ),
-                    SizedBox(height: 10),
-                    Text('Sin transacciones registradas',
-                        style: TextStyle(color: TadColors.tadTextSecondary, fontSize: 14)),
+                    if (_hub.lastPayment!.date != null)
+                      Text(_hub.lastPayment!.date!,
+                          style: const TextStyle(color: TadColors.tadTextSecondary, fontSize: 12)),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 22),
+            ],
 
             // Configure bank button
             SizedBox(
@@ -164,6 +223,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   MaterialPageRoute(
                     builder: (_) => BankWizardScreen(
                       onComplete: () => Navigator.pop(context),
+                      driverId: _hub.driverId.isNotEmpty ? _hub.driverId : null,
                     ),
                   ),
                 ),

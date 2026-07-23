@@ -1,27 +1,60 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
+/// API base URL — production vs debug (emulator maps 10.0.2.2 → host localhost)
+final String kApiBase = kReleaseMode
+    ? 'https://tad-api.rewvid.easypanel.host/api'
+    : 'http://10.0.2.2:3000/api';
+
+/// SharedPreferences keys
+const String kPrefToken = 'tad_driver_token';
+const String kPrefHub = 'tad_driver_user';
+const String kPrefTokenExp = 'tad_driver_token_exp';
+const String kPrefPhone = 'tad_driver_phone';
+const String kPrefPassword = 'tad_driver_pass';
+
 class LoginResult {
   final DriverHubData hub;
   final String accessToken;
+
+  /// Backend no emite refresh token — re-login via cached creds on 401.
+  /// Este campo se mantiene por compatibilidad pero siempre es ''.
   final String refreshToken;
 
   LoginResult({
     required this.hub,
     required this.accessToken,
-    required this.refreshToken,
+    this.refreshToken = '',
   });
 
   factory LoginResult.fromJson(Map<String, dynamic> json) {
+    // Backend contract (POST /api/drivers/login):
+    //   access_token, driverId, name, role, entityId, deviceId,
+    //   subscriptionPaid, contractAccepted, agreementVersion,
+    //   onboardingStatus, bankAccountConfigured
+    final hub = DriverHubData(
+      driverId: (json['driverId'] ?? json['entityId'] ?? '').toString(),
+      driverName: (json['name'] ?? json['driverName'] ?? 'Conductor').toString(),
+      subscriptionPaid: json['subscriptionPaid'] == true,
+      subscriptionStatus: json['subscriptionPaid'] == true ? 'ACTIVE' : 'PENDING',
+      deviceId: json['deviceId']?.toString(),
+      contractAccepted: json['contractAccepted'] == true,
+      agreementVersion: json['agreementVersion']?.toString(),
+      onboardingStatus: (json['onboardingStatus'] ?? 'UNKNOWN').toString(),
+      bankAccountConfigured: json['bankAccountConfigured'] == true,
+    );
     return LoginResult(
-      hub: DriverHubData.fromJson(json['driver'] ?? json),
-      accessToken: json['accessToken'] ?? json['access_token'] ?? '',
-      refreshToken: json['refreshToken'] ?? json['refresh_token'] ?? '',
+      hub: hub,
+      accessToken: (json['access_token'] ?? json['accessToken'] ?? '').toString(),
     );
   }
 }
@@ -36,64 +69,67 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode): $message';
 }
 
-/// POST /api/proxy/drivers/login
-/// 200 → LoginResult
+/// POST /api/drivers/login
+/// 200 → LoginResult (access_token + driver hub data)
 /// 401 → "Credenciales inválidas"
-/// 402 → "Suscripción vencida" (KillSwitch)
-/// 403 → "Cuenta suspendida"
-/// 5xx → retry up to 2 times
+/// 402 → "Suscripción vencida" (KillSwitch — backend bloquea si no pagó)
+/// 403 → "Cuenta suspendada"
+/// 403 AUTH_CONFIG_MISSING → "Error de configuración del servidor"
+/// 5xx → retry up to 2 times with backoff
 Future<LoginResult> apiLogin(String phone, String password) async {
   const maxRetries = 2;
   String? lastError;
 
   for (var attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // TODO: replace with real Supabase / backend call:
-      // final resp = await supabase.auth.signInWithPassword(
-      //   phone: phone,
-      //   password: password,
-      // );
-      await Future.delayed(const Duration(milliseconds: 600));
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 10);
 
-      // Mock 402 for testing KillSwitch
-      if (phone.startsWith('402')) throw ApiException(402, 'Suscripción vencida');
-      // Mock 403
-      if (phone.startsWith('403')) throw ApiException(403, 'Cuenta suspendida');
-      // Mock 401
-      if (password.length < 6) throw ApiException(401, 'Credenciales inválidas');
+      final req = await client.postUrl(Uri.parse('$kApiBase/drivers/login'));
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({'phone': phone, 'password': password}));
 
-      final mock = {
-        'driver': {
-          'driverId': 'drv_001',
-          'driverName': 'Juan Pérez',
-          'balance': 3200.0,
-          'projectedEarnings': 8500.0,
-          'activeAds': 8,
-          'activeSlots': 4,
-          'maxSlots': 15,
-          'subscriptionPaid': true,
-          'subscriptionStatus': 'ACTIVE',
-          'deviceId': 'TAD-EMUL-01',
-          'gpsPoints': 1240,
-          'adsPlayed': 340,
-          'contractAccepted': false,
-          'agreementVersion': '1.0',
-          'onboardingStatus': 'PENDING_PAYMENT',
-          'bankAccountConfigured': false,
-        },
-        'accessToken': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock',
-        'refreshToken': 'refresh_mock_token',
-      };
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
 
-      return LoginResult.fromJson(mock);
+      if (res.statusCode == 200) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        return LoginResult.fromJson(json);
+      }
+
+      // Error responses
+      String msg;
+      try {
+        final errJson = jsonDecode(body) as Map<String, dynamic>;
+        msg = (errJson['message'] ?? errJson['error'] ?? 'Error').toString();
+      } catch (_) {
+        msg = 'Error del servidor (${res.statusCode})';
+      }
+
+      throw ApiException(res.statusCode, msg);
     } on ApiException catch (e) {
+      // 5xx → retry
       if (e.statusCode >= 500 && attempt < maxRetries) {
         lastError = e.message;
         await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         continue;
       }
       rethrow;
-    } catch (_) {
+    } on HandshakeException catch (_) {
+      if (attempt < maxRetries) {
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        continue;
+      }
+      throw ApiException(0, 'No se pudo conectar al servidor');
+    } on SocketException catch (_) {
+      if (attempt < maxRetries) {
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        continue;
+      }
+      throw ApiException(0, 'Sin conexión a internet');
+    } catch (e) {
+      if (e is ApiException) rethrow;
       if (attempt < maxRetries) {
         await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         continue;
@@ -104,56 +140,71 @@ Future<LoginResult> apiLogin(String phone, String password) async {
   throw ApiException(0, lastError ?? 'Error desconocido');
 }
 
-// ─── Token persistence ───────────────────────────────────────────────────────
+// ─── Token persistence (SharedPreferences) ──────────────────────────────────
 
-/// Saves auth after successful login.
-/// Call this: persistLogin(result)
-///
-/// Flutter implementation uses SharedPreferences (cross-platform key-value).
-/// Once shared_preferences is added to pubspec.yaml, uncomment the implementation.
-/// Web additionally needs document.cookie handling via js_interop.
-Future<void> persistLogin(LoginResult result) async {
-  // Add to pubspec.yaml: shared_preferences: ^2.2.0
-  // Then uncomment:
-  // final prefs = await SharedPreferences.getInstance();
-  // await prefs.setString('tad_driver_token', result.accessToken);
-  // await prefs.setString('tad_driver_refresh_token', result.refreshToken);
-  // await prefs.setString('tad_driver_user', jsonEncode(result.hub.toJson()));
-  // await prefs.setString(
-  //   'tad_driver_token_exp',
-  //   DateTime.now().add(const Duration(days: 7)).toIso8601String(),
-  // );
+/// Saves auth + cached creds after successful login.
+/// Creds se guardan para re-login silencioso en 401 (backend no tiene refresh).
+Future<void> persistLogin(LoginResult result, {String? phone, String? password}) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(kPrefToken, result.accessToken);
+  await prefs.setString(kPrefHub, jsonEncode(result.hub.toJson()));
+  await prefs.setString(
+    kPrefTokenExp,
+    DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+  );
+  // Cache creds for silent re-login on 401
+  if (phone != null) await prefs.setString(kPrefPhone, phone);
+  if (password != null) await prefs.setString(kPrefPassword, password);
 }
 
 /// Clears all auth state — call on logout.
 Future<void> clearLogin() async {
-  // Add to pubspec.yaml: shared_preferences: ^2.2.0
-  // Then uncomment:
-  // final prefs = await SharedPreferences.getInstance();
-  // await prefs.remove('tad_driver_token');
-  // await prefs.remove('tad_driver_refresh_token');
-  // await prefs.remove('tad_driver_user');
-  // await prefs.remove('tad_driver_token_exp');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(kPrefToken);
+  await prefs.remove(kPrefHub);
+  await prefs.remove(kPrefTokenExp);
+  await prefs.remove(kPrefPhone);
+  await prefs.remove(kPrefPassword);
 }
 
 /// Restores cached DriverHubData for fast initial load (before API fetch).
-DriverHubData? restoreCachedHub() {
-  // Add to pubspec.yaml: shared_preferences: ^2.2.0
-  // Then uncomment:
-  // final prefs = await SharedPreferences.getInstance();
-  // final raw = prefs.getString('tad_driver_user');
-  // if (raw == null) return null;
-  // return DriverHubData.fromJson(jsonDecode(raw));
-  return null;
+Future<DriverHubData?> restoreCachedHub() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(kPrefHub);
+  if (raw == null) return null;
+  try {
+    return DriverHubData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  } catch (_) {
+    return null;
+  }
 }
 
-/// Sets onboarding force flag in sessionStorage.
-/// Call when contractAccepted=false or bankAccountConfigured=false.
-/// In Flutter, the dashboard checks hub flags directly; this persists the signal
-/// for web (sessionStorage) environments.
+/// Returns cached token or null — for authenticated API calls.
+Future<String?> getCachedToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(kPrefToken);
+}
+
+/// Silent re-login using cached phone/password (called on 401).
+/// Returns new LoginResult or null if no cached creds.
+Future<LoginResult?> silentReLogin() async {
+  final prefs = await SharedPreferences.getInstance();
+  final phone = prefs.getString(kPrefPhone);
+  final password = prefs.getString(kPrefPassword);
+  if (phone == null || password == null) return null;
+  try {
+    final result = await apiLogin(phone, password);
+    await persistLogin(result, phone: phone, password: password);
+    return result;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Sets onboarding force flag. In Flutter native, the dashboard checks
+/// hub flags directly; this is a no-op preserved for web compatibility.
 void setOnboardingForceFlag() {
   // Flutter native: no-op (dashboard checks hub flags directly).
-  // Web: sessionStorage.setItem('tad_driver_force_onboarding', '1');
 }
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
@@ -241,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final result = await apiLogin(phone, password);
-      await persistLogin(result);
+      await persistLogin(result, phone: phone, password: password);
 
       // Set onboarding force flag if onboarding not complete
       final hub = result.hub;

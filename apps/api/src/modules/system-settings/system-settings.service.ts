@@ -61,6 +61,11 @@ export class SystemSettingsService implements OnModuleInit {
       { key: 'offlineLimit', value: '48', type: 'NUMBER', group: 'FLEET' },
       { key: 'remotionUrl', value: 'https://tad-remotion.rewvid.easypanel.host', type: 'STRING', group: 'SYSTEM' },
       { key: 'whatsappGateway', value: 'https://api.whatsapp.com/send', type: 'STRING', group: 'SYSTEM' },
+      { key: 'driverAppLatestVersion', value: '1.0.0', type: 'STRING', group: 'DRIVER_APP' },
+      { key: 'driverAppMinVersion', value: '1.0.0', type: 'STRING', group: 'DRIVER_APP' },
+      { key: 'driverAppForceUpdate', value: 'false', type: 'BOOLEAN', group: 'DRIVER_APP' },
+      { key: 'driverAppDownloadUrl', value: '', type: 'STRING', group: 'DRIVER_APP' },
+      { key: 'driverAppReleaseNotes', value: '', type: 'STRING', group: 'DRIVER_APP' },
     ];
 
     for (const setting of defaults) {
@@ -71,5 +76,37 @@ export class SystemSettingsService implements OnModuleInit {
         create: setting,
       });
     }
+  }
+
+  /**
+   * Devuelve la configuración de versión de la app Flutter.
+   * Usado por GET /api/drivers/app-version (público, sin auth).
+   */
+  async getDriverAppVersion() {
+    const keys = [
+      'driverAppLatestVersion',
+      'driverAppMinVersion',
+      'driverAppForceUpdate',
+      'driverAppDownloadUrl',
+      'driverAppReleaseNotes',
+    ];
+    // @ts-ignore - Temporary bypass for locked Prisma Client on Windows
+    const rows = await this.prisma.systemSetting.findMany({
+      where: { key: { in: keys } },
+    });
+    const map: Record<string, string> = {};
+    for (const r of rows) map[r.key] = r.value;
+
+    const latestVersion = map.driverAppLatestVersion || '1.0.0';
+    const minVersion = map.driverAppMinVersion || '1.0.0';
+    const forceUpdate = map.driverAppForceUpdate === 'true';
+
+    return {
+      latestVersion,
+      minVersion,
+      forceUpdate,
+      downloadUrl: map.driverAppDownloadUrl || '',
+      releaseNotes: map.driverAppReleaseNotes || '',
+    };
   }
 }

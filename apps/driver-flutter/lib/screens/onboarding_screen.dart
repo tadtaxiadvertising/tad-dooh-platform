@@ -830,8 +830,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       setState(() => _step++);
     } else {
       widget.onDone?.call();
-      if (mounted) Navigator.pop(context);
     }
+  }
+
+  void _showComingSoon(String feature) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature — coming soon'),
+        backgroundColor: TadColors.tadSurface,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _prev() {
@@ -1037,9 +1047,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   );
 
   Widget _stepFleetProfile() => FleetProfileStep(
-    onAddVehicle: () {},
-    onAddDriver: () {},
-    onCreateAdvertiser: () {},
+    onAddVehicle: () => _showComingSoon('Agregar vehículo'),
+    onAddDriver: () => _showComingSoon('Agregar conductor'),
+    onCreateAdvertiser: () => _showComingSoon('Crear cuenta anunciante'),
   );
 
   Widget _stepHardwarePairing() => const HardwarePairingStep();

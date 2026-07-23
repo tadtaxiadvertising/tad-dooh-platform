@@ -6,11 +6,27 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 @Controller('drivers')
 export class DriversController {
   private readonly logger = new Logger(DriversController.name);
-  constructor(private readonly driversService: DriversService) { }
+  constructor(
+    private readonly driversService: DriversService,
+    private readonly systemSettings: SystemSettingsService,
+  ) { }
+
+  /**
+   * GET /api/drivers/app-version — Última versión publicada de la app Flutter.
+   * Endpoint público (sin auth) para que la app consulte al arrancar y decida
+   * si debe forzar update. Responde antes que @Get(':id') para evitar colisión.
+   */
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Get('app-version')
+  async getAppVersion() {
+    return this.systemSettings.getDriverAppVersion();
+  }
 
   /**
    * GET /api/drivers — Listar todos los choferes

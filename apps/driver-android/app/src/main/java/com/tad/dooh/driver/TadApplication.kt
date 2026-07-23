@@ -112,8 +112,14 @@ class TadApplication : Application(), Configuration.Provider {
     // ── Lifecycle ──────────────────────────────────────────────────────────
 
     override fun onCreate() {
-        super.onCreate()
+        // Assign `instance` BEFORE super.onCreate() so that Hilt's field
+        // injection (performed by the generated Hilt_TadApplication.onCreate,
+        // which runs inside super.onCreate()) can safely reach
+        // TadApplication.getInstance() from any `by lazy` in TadApiClient.
+        // Otherwise the networkMonitorInterceptor lazy resolves during
+        // apiService injection and throws UninitializedPropertyAccessException.
         instance = this
+        super.onCreate()
 
         // `database`, `apiService`, `workerFactory` already injected by Hilt.
         initSupabase()

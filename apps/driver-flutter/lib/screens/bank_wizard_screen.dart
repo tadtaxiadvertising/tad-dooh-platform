@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import '../theme/tad_theme.dart';
+import '../services/payment_service.dart';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAD DOOH — Business rules alignment
+// Source of truth: apps/api/src/common/constants/business-rules.ts
+//
+// - STARTER_KIT_ANNUAL_FEE_RD = RD$ 6,000 (subtotal sin ITBIS)
+// - ITBIS_RATE = 18% → ITBIS = RD$ 1,080
+// - Total con ITBIS = RD$ 7,080
+// - Backend referencia: DRV-{driverId}-{yyyyMMdd}
+// - Pago inicial → status PENDIENTE_PAGO / PENDING_PAYMENT
+// - Pago confirmado → status OPERATIVO / ACTIVE
+// ═══════════════════════════════════════════════════════════════════════════════
 
 
 

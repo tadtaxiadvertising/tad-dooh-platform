@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { CreditCard, Receipt, TrendingUp, ShieldCheck, CheckCircle2, ArrowLeft, Copy, RefreshCw } from 'lucide-react';

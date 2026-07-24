@@ -7,7 +7,7 @@ export class AntigravityService {
 
   async streamAIContent(prompt: string) {
     const API_KEY = process.env.GEMINI_API_KEY?.trim();
-    const PROJECT_ID = "ltdcdhqixvbpdcitthqf"; // Confirmado en Doc 02
+    const PROJECT_ID = process.env.SUPABASE_PROJECT_ID?.trim() || "ltdcdhqixvbpdcitthqf";
     
     // Intentaremos el endpoint de Vertex AI regionalizado para coincidir con nuestra latitud
     // us-central1 es el estándar para Gemini, pero forzaremos la versión v1beta

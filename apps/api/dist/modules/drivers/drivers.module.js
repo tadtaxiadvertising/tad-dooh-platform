@@ -12,12 +12,13 @@ const drivers_controller_1 = require("./drivers.controller");
 const drivers_service_1 = require("./drivers.service");
 const prisma_module_1 = require("../prisma/prisma.module");
 const payroll_audit_service_1 = require("./payroll-audit.service");
+const system_settings_module_1 = require("../system-settings/system-settings.module");
 let DriversModule = class DriversModule {
 };
 exports.DriversModule = DriversModule;
 exports.DriversModule = DriversModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [prisma_module_1.PrismaModule, system_settings_module_1.SystemSettingsModule],
         controllers: [drivers_controller_1.DriversController],
         providers: [drivers_service_1.DriversService, payroll_audit_service_1.PayrollAuditService],
         exports: [drivers_service_1.DriversService, payroll_audit_service_1.PayrollAuditService],

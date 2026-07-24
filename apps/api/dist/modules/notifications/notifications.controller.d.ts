@@ -3,26 +3,26 @@ export declare class NotificationsController {
     private readonly notificationsService;
     constructor(notificationsService: NotificationsService);
     findAll(): Promise<{
+        message: string;
+        type: string;
         id: string;
         createdAt: Date;
-        type: string;
-        title: string;
-        message: string;
         category: string;
-        read: boolean;
+        title: string;
         entityId: string | null;
+        read: boolean;
     }[]>;
     getUnreadCount(): Promise<number>;
     markAllAsRead(): Promise<import(".prisma/client").Prisma.BatchPayload>;
     markAsRead(id: string): Promise<{
+        message: string;
+        type: string;
         id: string;
         createdAt: Date;
-        type: string;
-        title: string;
-        message: string;
         category: string;
-        read: boolean;
+        title: string;
         entityId: string | null;
+        read: boolean;
     }>;
     createTestAlert(body: {
         title: string;
@@ -30,13 +30,13 @@ export declare class NotificationsController {
         type: any;
         category: any;
     }): Promise<{
+        message: string;
+        type: string;
         id: string;
         createdAt: Date;
-        type: string;
-        title: string;
-        message: string;
         category: string;
-        read: boolean;
+        title: string;
         entityId: string | null;
+        read: boolean;
     }>;
 }

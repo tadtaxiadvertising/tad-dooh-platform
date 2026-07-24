@@ -21,10 +21,15 @@ const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const roles_decorator_2 = require("../auth/decorators/roles.decorator");
 const throttler_1 = require("@nestjs/throttler");
 const tenant_guard_1 = require("../auth/guards/tenant.guard");
+const system_settings_service_1 = require("../system-settings/system-settings.service");
 let DriversController = DriversController_1 = class DriversController {
-    constructor(driversService) {
+    constructor(driversService, systemSettings) {
         this.driversService = driversService;
+        this.systemSettings = systemSettings;
         this.logger = new common_1.Logger(DriversController_1.name);
+    }
+    async getAppVersion() {
+        return this.systemSettings.getDriverAppVersion();
     }
     async findAll() {
         return this.driversService.findAll();
@@ -146,6 +151,14 @@ let DriversController = DriversController_1 = class DriversController {
     }
 };
 exports.DriversController = DriversController;
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, throttler_1.Throttle)({ default: { limit: 30, ttl: 60000 } }),
+    (0, common_1.Get)('app-version'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], DriversController.prototype, "getAppVersion", null);
 __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)(roles_decorator_2.UserRole.ADMIN),
@@ -310,6 +323,7 @@ __decorate([
 ], DriversController.prototype, "linkActiveAd", null);
 exports.DriversController = DriversController = DriversController_1 = __decorate([
     (0, common_1.Controller)('drivers'),
-    __metadata("design:paramtypes", [drivers_service_1.DriversService])
+    __metadata("design:paramtypes", [drivers_service_1.DriversService,
+        system_settings_service_1.SystemSettingsService])
 ], DriversController);
 //# sourceMappingURL=drivers.controller.js.map

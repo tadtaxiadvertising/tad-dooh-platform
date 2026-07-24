@@ -68,6 +68,11 @@ let SystemSettingsService = class SystemSettingsService {
             { key: 'offlineLimit', value: '48', type: 'NUMBER', group: 'FLEET' },
             { key: 'remotionUrl', value: 'https://tad-remotion.rewvid.easypanel.host', type: 'STRING', group: 'SYSTEM' },
             { key: 'whatsappGateway', value: 'https://api.whatsapp.com/send', type: 'STRING', group: 'SYSTEM' },
+            { key: 'driverAppLatestVersion', value: '1.0.0', type: 'STRING', group: 'DRIVER_APP' },
+            { key: 'driverAppMinVersion', value: '1.0.0', type: 'STRING', group: 'DRIVER_APP' },
+            { key: 'driverAppForceUpdate', value: 'false', type: 'BOOLEAN', group: 'DRIVER_APP' },
+            { key: 'driverAppDownloadUrl', value: '', type: 'STRING', group: 'DRIVER_APP' },
+            { key: 'driverAppReleaseNotes', value: '', type: 'STRING', group: 'DRIVER_APP' },
         ];
         for (const setting of defaults) {
             await this.prisma.systemSetting.upsert({
@@ -76,6 +81,31 @@ let SystemSettingsService = class SystemSettingsService {
                 create: setting,
             });
         }
+    }
+    async getDriverAppVersion() {
+        const keys = [
+            'driverAppLatestVersion',
+            'driverAppMinVersion',
+            'driverAppForceUpdate',
+            'driverAppDownloadUrl',
+            'driverAppReleaseNotes',
+        ];
+        const rows = await this.prisma.systemSetting.findMany({
+            where: { key: { in: keys } },
+        });
+        const map = {};
+        for (const r of rows)
+            map[r.key] = r.value;
+        const latestVersion = map.driverAppLatestVersion || '1.0.0';
+        const minVersion = map.driverAppMinVersion || '1.0.0';
+        const forceUpdate = map.driverAppForceUpdate === 'true';
+        return {
+            latestVersion,
+            minVersion,
+            forceUpdate,
+            downloadUrl: map.driverAppDownloadUrl || '',
+            releaseNotes: map.driverAppReleaseNotes || '',
+        };
     }
 };
 exports.SystemSettingsService = SystemSettingsService;

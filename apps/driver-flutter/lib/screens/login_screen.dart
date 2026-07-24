@@ -94,7 +94,7 @@ Future<LoginResult> apiLogin(String phone, String password) async {
       final body = await res.transform(utf8.decoder).join();
       client.close();
 
-      if (res.statusCode == 200) {
+      if (res.statusCode == 200 || res.statusCode == 201) {
         final json = jsonDecode(body) as Map<String, dynamic>;
         return LoginResult.fromJson(json);
       }

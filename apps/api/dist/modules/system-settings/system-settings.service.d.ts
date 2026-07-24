@@ -7,4 +7,11 @@ export declare class SystemSettingsService implements OnModuleInit {
     getAll(): Promise<Record<string, any>>;
     updateMany(settings: Record<string, any>): Promise<Record<string, any>>;
     private seedDefaults;
+    getDriverAppVersion(): Promise<{
+        latestVersion: string;
+        minVersion: string;
+        forceUpdate: boolean;
+        downloadUrl: string;
+        releaseNotes: string;
+    }>;
 }

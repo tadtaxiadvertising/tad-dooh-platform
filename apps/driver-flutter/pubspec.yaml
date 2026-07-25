@@ -1,5 +1,5 @@
 name: tad_driver
-description: TAD Driver Flutter app (replica of the Kotlin driver app).
+description: TAD Driver Flutter app (official driver service — offline-first, Riverpod, Isar, Supabase realtime).
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,15 +9,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_animate: ^4.5.2
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  supabase_flutter: ^2.8.0
+  path_provider: ^2.1.5
   flutter_local_notifications: ^19.5.0
-  flutter_map: ^8.3.1
-  google_fonts: ^6.2.1
-  latlong2: ^0.10.1
+  connectivity_plus: ^6.1.3
   permission_handler: ^12.0.3
-  sembast: ^3.8.3
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
+  qr_flutter: ^4.1.0
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:

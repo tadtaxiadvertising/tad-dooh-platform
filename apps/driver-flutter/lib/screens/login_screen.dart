@@ -14,7 +14,7 @@ import '../models/hub_data.dart';
 /// Backend uses global prefix `/api/v1`, so all paths start from `/api/v1`.
 final String kApiBase = kReleaseMode
  ? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1'
- : 'http://10.0.2.2:3000/api/v1';
+ : 'http://10.0.0.2:3000/api/v1';
 
 /// SharedPreferences keys
 const String kPrefToken = 'tad_driver_token';
@@ -230,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _phoneCtrl = TextEditingController(text: '809-123-4567');
+    _phoneCtrl = TextEditingController(text: '8090000000');
     _passwordCtrl = TextEditingController(text: 'tad123');
     _passwordFocus.addListener(_onPasswordFocusChange);
     HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -269,95 +269,83 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final phone = _phoneCtrl.text.trim();
+    final rawPhone = _phoneCtrl.text.trim();
     final password = _passwordCtrl.text;
+    final phone = _toDigitsOnly(rawPhone);
 
-    // ── Validation ──
-    if (phone.isEmpty) {
-      setState(() => _error = 'Ingresa tu número de teléfono');
-      return;
-    }
-    if (password.isEmpty) {
-      setState(() => _error = 'Ingresa tu contraseña');
-      return;
-    }
-    if (password.length < 6) {
-      setState(() => _error = 'La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
+    if (phone.isEmpty) { setState(() => _error = 'Ingresa tu número de teléfono'); return; }
+    if (password.isEmpty) { setState(() => _error = 'Ingresa tu contraseña'); return; }
+    if (password.length < 6) { setState(() => _error = 'La contraseña debe tener al menos 6 caracteres'); return; }
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
 
     try {
       final result = await apiLogin(phone, password);
       await persistLogin(result, phone: phone, password: password);
 
-      // Set onboarding force flag if onboarding not complete
       final hub = result.hub;
       if (!hub.contractAccepted || !hub.bankAccountConfigured) {
         setOnboardingForceFlag();
       }
 
       if (mounted) {
-        Navigator.pushReplacementNamed(
-          context,
-          '/dashboard',
-          arguments: result.hub,
-        );
+        Navigator.pushReplacementNamed(context, '/dashboard', arguments: result.hub);
       }
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = switch (e.statusCode) {
-          401 => 'Credenciales inválidas',
-          402 => 'Suscripción vencida — contacta a soporte',
-          403 => 'Cuenta suspendida — contacta a soporte',
-          _ => e.message.isNotEmpty ? e.message : 'Error de conexión',
-        };
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Error de conexión — intenta de nuevo';
-      });
+       // Let dashboard decide onboarding from hub.contractAccepted /
+       // hub.bankAccountConfigured (already computed by backend).
+       return;
+     } on ApiException catch (e) {
+       if (!mounted) return;
+       setState(() {
+         _loading = false;
+         _error = switch (e.statusCode) {
+           401 => 'Credenciales inválidas',
+           402 => 'Suscripción vencida — contacta a soporte',
+           403 => 'Cuenta suspendida — contacta a soporte',
+           _ => e.message.isNotEmpty ? e.message : 'Error de conexión',
+         };
+       });
+     } catch (_) {
+       if (!mounted) return;
+       setState(() {
+         _loading = false;
+         _error = 'Error de conexión — intenta de nuevo';
+       });
+     }
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: TadColors.tadDark,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo
-                Text(
-                  'TAD Driver',
-                  style: TextStyle(
-                    color: TadColors.tadYellow,
-                    fontSize: 44,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Inicia sesión en tu cuenta',
-                  style: TextStyle(
-                    color: TadColors.tadTextSecondary,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 36),
+    static String _toDigitsOnly(String value) => value.replaceAll(RegExp(r'\D+'), '');
+
+     @override
+     Widget build(BuildContext context) {
+       return Scaffold(
+         backgroundColor: TadColors.tadDark,
+         body: SafeArea(
+           child: Center(
+             child: SingleChildScrollView(
+               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+               child: Column(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                 children: [
+                   // Logo
+                   const Text(
+                     'TAD Driver',
+                     style: TextStyle(
+                       color: TadColors.tadYellow,
+                       fontSize: 44,
+                       fontWeight: FontWeight.w900,
+                       letterSpacing: -1,
+                     ),
+                   ),
+                   const SizedBox(height: 8),
+                   const Text(
+                     'Inicia sesión en tu cuenta',
+                     style: TextStyle(
+                       color: TadColors.tadTextSecondary,
+                       fontSize: 15,
+                     ),
+                   ),
+                   const SizedBox(height: 36),
 
                 // Card
                 stitchedCard(
@@ -522,7 +510,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 textColor: TadColors.tadYellow,
                                 onPressed: () {
                                   launchUrl(
-                                    Uri.parse('https://wa.me/18295551234?text=Hola%2C%20quiero%20registrarme%20como%20conductor%20TAD')
+                                    Uri.parse('https://wa.me/18295551234?text=Hello%2C%20I%20want%20to%20register%20as%20a%20TAD%20driver'),
                                     mode: LaunchMode.externalApplication,
                                   );
                                 },

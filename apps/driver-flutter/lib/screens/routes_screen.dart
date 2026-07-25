@@ -430,7 +430,7 @@ class SettingsTab extends StatelessWidget {
             subtitle: 'Escríbenos directamente',
             onTap: () {
               launchUrl(
-                Uri.parse('https://wa.me/+18095551234?text=Hola%2C%20tengo%20una%20consulta'),
+                Uri.parse('https://wa.me/18295551234?text=Hola%2C%20tengo%20una%20consulta'),
                 mode: LaunchMode.externalApplication,
               );
             },

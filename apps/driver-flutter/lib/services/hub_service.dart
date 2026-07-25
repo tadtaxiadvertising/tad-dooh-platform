@@ -1,10 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:dio/dio.dart';
 import '../models/hub_data.dart';
 import '../screens/login_screen.dart' show getCachedToken, silentReLogin, kApiBase;
 
-/// Fetches driver hub data from backend.
-/// GET /api/drivers/me/hub — requires JWT Bearer token.
+/// Fetches driver hub data from backend via Dio (goes through KillSwitchInterceptor).
+/// GET /api/v1/drivers/me/hub — requires JWT Bearer token.
 ///
 /// On 401, attempts silent re-login with cached creds, then retries once.
 /// Returns null if no session or both attempts fail.
@@ -24,19 +23,12 @@ Future<DriverHubData?> fetchHub() async {
 
 Future<DriverHubData?> _doFetch(String token) async {
   try {
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 10);
-
-    final req = await client.getUrl(Uri.parse('$kApiBase/drivers/me/hub'));
-    req.headers.contentType = ContentType.json;
-    req.headers.set('Authorization', 'Bearer $token');
-
-    final res = await req.close();
-    final body = await res.transform(utf8.decoder).join();
-    client.close();
-
+    final res = await Dio().get(
+      '$kApiBase/drivers/me/hub',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
     if (res.statusCode == 200) {
-      return DriverHubData.fromJson(jsonDecode(body) as Map<String, dynamic>);
+      return DriverHubData.fromJson(res.data as Map<String, dynamic>);
     }
     return null;
   } catch (_) {

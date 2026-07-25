@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════════════════════════
@@ -8,46 +9,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ═══════════════════════════════════════════════════════════════════════════════
 
 /// ── Business rule constants (mirror backend) ─────────────────────────────────
-/// STARTER_KIT_ANNUAL_FEE_RD = RD$ 6,000
-/// ITBIS_RATE = 18% → RD$ 1,080
-/// Total con ITBIS = RD$ 7,080
 const int kAnnualSubscriptionRD = 6000;
 const int kItbisRD = 1080;
 const int kTotalWithItbisRD = 7080;
 
-/// Entrada Firestore: /drivers/{driverId}/subscription
-const String kFirestoreDriversSubscriptionPath = 'drivers';
-const String kFirestoreSubscriptionFieldName = 'subscription';
-
-/// Cuenta por defecto (alineada al backend).
-const String kDefaultAccountId = 'AD-ACCOUNT-DEFAULT';
-
-/// ═══════════════════════════════════════════════════════════════════════════════
-/// Backend contracts (mock now, HTTP later)
-/// ═══════════════════════════════════════════════════════════════════════════════
+/// ── API endpoints ────────────────────────────────────────────────────────────
 /// GET  /drivers/me/subscription       -> SubscriptionStatus
 /// POST /drivers/me/payment/intent     -> PaymentTransaction (pending)
 /// POST /drivers/me/payment/confirm    -> { ok, receiptUrl? }
 /// GET  /drivers/me/transactions       -> List<PaymentTransaction>
 /// PUT  /drivers/:id/subscription      -> Driver (admin only)
-/// Status 402 + body.reason in { SUBSCRIPTION_UNPAID, SUBSCRIPTION_EXPIRED,
-///       STATE_BLOCKED, SUBSCRIPTION_PENDING }
-/// Grace period: 48h after expiry if offline >24h (lastHeartbeat)
+
+/// Backend API base — read from login_screen shared constant
+// ignore: depend_on_referenced_packages
+import '../screens/login_screen.dart' show kApiBase;
 
 /// ── Enums ────────────────────────────────────────────────────────────────────
 enum PaymentStatus { pending, paid, failed, expired }
+enum PaymentMethod { unknown, cash, transfer, card, link, whatsapp }
 
-enum PaymentMethod {
-  unknown,
-  cash,
-  transfer,
-  card,
-  link,
-  whatsapp,}
-
-/// ═══════════════════════════════════════════════════════════════════════════════
-/// Models (must remain backend-contract-safe; do NOT add business logic here)
-/// ═══════════════════════════════════════════════════════════════════════════════
+/// ── Models ───────────────────────────────────────────────────────────────────
 
 @immutable
 class PaymentTransaction {
@@ -74,6 +55,44 @@ class PaymentTransaction {
     this.receiptUrl,
     this.externalRef,
   });
+
+  factory PaymentTransaction.fromJson(Map<String, dynamic> json) {
+    return PaymentTransaction(
+      id: (json['id'] ?? '').toString(),
+      date: json['date'] != null
+          ? DateTime.tryParse(json['date'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      amountRD: (json['amount'] ?? 0).toInt(),
+      itbisRD: (json['itbis'] ?? kItbisRD).toInt(),
+      subtotalRD: (json['subtotal'] ?? json['amount'] ?? 0).toInt(),
+      status: _parseStatus(json['status']),
+      method: _parseMethod(json['paymentMethod'] ?? json['method']),
+      notes: json['notes']?.toString(),
+      receiptUrl: json['receiptUrl']?.toString(),
+      externalRef: json['externalRef']?.toString(),
+    );
+  }
+
+  static PaymentStatus _parseStatus(dynamic s) {
+    switch (s?.toString().toUpperCase()) {
+      case 'PENDING': return PaymentStatus.pending;
+      case 'PAID': return PaymentStatus.paid;
+      case 'FAILED': return PaymentStatus.failed;
+      case 'EXPIRED': return PaymentStatus.expired;
+      default: return PaymentStatus.pending;
+    }
+  }
+
+  static PaymentMethod _parseMethod(dynamic m) {
+    switch (m?.toString().toUpperCase()) {
+      case 'CASH': return PaymentMethod.cash;
+      case 'TRANSFER': return PaymentMethod.transfer;
+      case 'CARD': return PaymentMethod.card;
+      case 'LINK': return PaymentMethod.link;
+      case 'WHATSAPP': return PaymentMethod.whatsapp;
+      default: return PaymentMethod.unknown;
+    }
+  }
 
   PaymentTransaction copyWith({
     String? id,
@@ -120,64 +139,138 @@ class SubscriptionStatus {
     this.graceHoursLeft,
   });
 
+  factory SubscriptionStatus.fromJson(Map<String, dynamic> json) {
+    final endStr = json['endDate']?.toString();
+    final end = endStr != null ? DateTime.tryParse(endStr) : null;
+    final hasPaid = json['paid'] == true || json['status'] == 'ACTIVE';
+    final isExpired = end != null && end.isBefore(DateTime.now());
+
+    return SubscriptionStatus(
+      paid: hasPaid,
+      expired: isExpired,
+      endDate: end,
+      plan: json['plan']?.toString(),
+      amountPaidRD: (json['amount'] ?? 0).toInt(),
+      graceHoursLeft: (isExpired && end != null)
+          ? end.add(const Duration(hours: 48)).difference(DateTime.now()).inHours
+          : null,
+    );
+  }
+
   bool get needsPayment => !(paid ?? false) || (expired ?? true);
 }
 
-/// ═══════════════════════════════════════════════════════════════════════════════
-/// API client (mock offline-first, replace with HTTP when backend ready)
-/// ═══════════════════════════════════════════════════════════════════════════════
+/// ── API Client ───────────────────────────────────────────────────────────────
 
 class PaymentService {
-  static const _kSubscriptionKey = 'tad_subscription_status';
+  static const Duration _timeout = Duration(seconds: 10);
 
-  static Future<SubscriptionStatus> loadSubscription() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kSubscriptionKey);
-    if (raw == null) {
-      return _mockSubscriptionActive;
-    }
-
+  static Future<SubscriptionStatus?> getSubscription(String token) async {
     try {
-      final Map<String, dynamic> map = json.decode(raw);
-      final end = map['endDate'] != null ? DateTime.tryParse(map['endDate'] as String) : null;
-      final paid = map['paid'] as bool? ?? true;
-      final expired = end != null && end.isBefore(DateTime.now());
-      final graceHoursLeft = (end != null && expired)
-          ? end.add(const Duration(hours: 48)).difference(DateTime.now()).inHours
-          : null;
-
-      return SubscriptionStatus(
-        paid: paid,
-        expired: expired,
-        endDate: end,
-        plan: map['plan'] as String?,
-        amountPaidRD: map['amountPaidRD'] as int?,
-        graceHoursLeft: graceHoursLeft,
+      final client = HttpClient();
+      client.connectionTimeout = _timeout;
+      final req = await client.getUrl(
+        Uri.parse('$kApiBase/drivers/me/subscription'),
       );
+      req.headers.set('Authorization', 'Bearer $token');
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
+
+      if (res.statusCode == 200) {
+        return SubscriptionStatus.fromJson(
+          jsonDecode(body) as Map<String, dynamic>,
+        );
+      }
+      if (res.statusCode == 404) return null;
+      return null;
     } catch (_) {
-      return _mockSubscriptionActive;
+      return null;
     }
   }
 
-  static Future<void> setMockSubscriptionActive() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kSubscriptionKey,
-      json.encode({
-        'paid': true,
-        'expired': false,
-        'endDate': DateTime.now().add(const Duration(days: 365)).toIso8601String(),
-        'plan': 'basic',
-        'amountPaidRD': kAnnualSubscriptionRD,
-        'graceHoursLeft': null,
-      }),
-    );
+  static Future<PaymentTransaction?> createPaymentIntent(
+    String token, {
+    required int amountRD,
+    PaymentMethod method = PaymentMethod.transfer,
+  }) async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = _timeout;
+      final req = await client.postUrl(
+        Uri.parse('$kApiBase/drivers/me/payment/intent'),
+      );
+      req.headers.set('Authorization', 'Bearer $token');
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({
+        'amount': amountRD,
+        'method': method.name.toUpperCase(),
+      }));
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return PaymentTransaction.fromJson(
+          jsonDecode(body) as Map<String, dynamic>,
+        );
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> confirmPayment(
+    String token, {
+    required String paymentId,
+  }) async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = _timeout;
+      final req = await client.postUrl(
+        Uri.parse('$kApiBase/drivers/me/payment/confirm'),
+      );
+      req.headers.set('Authorization', 'Bearer $token');
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({'paymentId': paymentId}));
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
+
+      if (res.statusCode == 200) {
+        return jsonDecode(body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<List<PaymentTransaction>> getTransactions(
+    String token,
+  ) async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = _timeout;
+      final req = await client.getUrl(
+        Uri.parse('$kApiBase/drivers/me/transactions'),
+      );
+      req.headers.set('Authorization', 'Bearer $token');
+      final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
+      client.close();
+
+      if (res.statusCode == 200) {
+        final list = jsonDecode(body) as List<dynamic>;
+        return list
+            .map((e) =>
+                PaymentTransaction.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 }
-
-const SubscriptionStatus _mockSubscriptionActive = SubscriptionStatus(
-  paid: true,
-  expired: false,
-  plan: 'basic',
-  amountPaidRD: kAnnualSubscriptionRD,
-);

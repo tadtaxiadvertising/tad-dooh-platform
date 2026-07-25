@@ -22,6 +22,7 @@ class TadDriverApp extends StatelessWidget {
     theme: tadTheme(),
     home: const _AppVersionGate(child: LoginScreen()),
     routes: {
+      '/': (context) => const _AppVersionGate(child: LoginScreen()),
       '/dashboard': (context) {
         final hub = ModalRoute.of(context)?.settings.arguments as DriverHubData?;
         return DashboardScreen(hub: hub);

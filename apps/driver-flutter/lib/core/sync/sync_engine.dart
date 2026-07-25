@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:dio/dio.dart';
 
 part 'sync_queue.dart';
@@ -7,7 +6,7 @@ part 'sync_queue.dart';
 /// Telemetría híbrida TAD.
 /// - Pasivo (default): acumula coordenadas y hace batch cada 5 min a POST /fleet/track-batch.
 /// - Activo (on-demand): responde a TRACK_REQUEST de Supabase Realtime
-///   y transmite por broadcast durante 2 min.
+/// y transmite por broadcast durante 2 min.
 ///
 /// NOTE: Supabase realtime integration (channel.on, broadcast) will be wired
 /// once the realtime channel types are confirmed from supabase_flutter 2.15.4.
@@ -15,16 +14,14 @@ part 'sync_queue.dart';
 class HybridSyncEngine {
   HybridSyncEngine({
     required Dio dio,
-    required String apiBase,
+    String? apiBase,
     String? deviceId,
     this.batchInterval = const Duration(minutes: 5),
     this.activeStreamDuration = const Duration(minutes: 2),
-  })  : _dio = dio,
-        _apiBase = apiBase,
-        _deviceId = deviceId;
+  }) : _dio = dio,
+       _deviceId = deviceId;
 
   final Dio _dio;
-  final String _apiBase;
   final String? _deviceId;
   final Duration batchInterval;
   final Duration activeStreamDuration;
@@ -83,21 +80,5 @@ class HybridSyncEngine {
   void _stopRealtimeListener() {
     _activeMode = false;
     _activeModeTimer?.cancel();
-  }
-
-  void _enterActiveMode() {
-    if (_activeMode) return;
-    _activeMode = true;
-    _activeModeTimer?.cancel();
-    _activeModeTimer = Timer(activeStreamDuration, () {
-      _activeMode = false;
-    });
-    // TODO: broadcast loop via supabase.broadcast()
-  }
-
-  String _randomId() {
-    final r = Random.secure();
-    final vals = List<int>.generate(6, (_) => r.nextInt(256));
-    return vals.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }

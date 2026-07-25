@@ -9,8 +9,8 @@ import '../../models/hub_data.dart';
 
 /// API base — production vs emulator (10.0.2.2 maps Android emulator → host localhost).
 String get apiBase => kReleaseMode
-    ? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1'
-    : 'http://10.0.2.2:3000/api/v1';
+ ? 'https://ltdcdhqixvbpdcitthqf.supabase.co/api/v1'
+ : 'http://10.0.2.2:3000/api/v1';
 
 /// ─── KillSwitch state (ChangeNotifier) ──────────────────────────────────────
 

@@ -148,7 +148,7 @@ class SubscriptionStatus {
       endDate: end,
       plan: json['plan']?.toString(),
       amountPaidRD: (json['amount'] ?? 0).toInt(),
-      graceHoursLeft: (isExpired && end != null)
+      graceHoursLeft: (isExpired)
           ? end.add(const Duration(hours: 48)).difference(DateTime.now()).inHours
           : null,
     );

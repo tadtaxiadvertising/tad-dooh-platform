@@ -24,6 +24,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "clean": "ts-node scripts/clean-db.ts",
+    "cleanup:logs": "ts-node scripts/cleanup-old-logs.ts",
+    "seed:devices": "ts-node scripts/seed-fleet.ts",
+    "test:remotion": "ts-node scripts/test-video-render.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

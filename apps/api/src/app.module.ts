@@ -36,6 +36,7 @@ import { ReferralModule } from './modules/referral/referral.module';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { KYCModule } from './modules/kyc/kyc.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -105,6 +106,7 @@ import { HealthController } from './health/health.controller';
     SystemSettingsModule,
     SimulationModule,
     OnboardingModule,
+    KYCModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

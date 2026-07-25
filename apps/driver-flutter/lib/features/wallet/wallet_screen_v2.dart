@@ -59,9 +59,8 @@ class _WalletScreenV2State extends State<WalletScreenV2> {
     final d = _hub!;
     final activeAds = (d.activeAds).clamp(0, 15);
     final baseEarnings = activeAds * 500.0;
-    final referralTotal = (d.referralEarnings ?? 0.0) + (d.advertiserReferralEarnings ?? 0.0);
-    final totalEarnings = baseEarnings + referralTotal;
-    final penaltyAmount = d.penaltyApplied == true ? (d.penaltyAmount ?? 0.0) : 0.0;
+    final referralTotal = d.referralEarnings + d.advertiserReferralEarnings;
+    final penaltyAmount = d.penaltyApplied ? d.penaltyAmount : 0.0;
 
     return Scaffold(
       backgroundColor: TadColors.tadDark,

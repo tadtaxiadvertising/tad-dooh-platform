@@ -1,7 +1,8 @@
-# Task: Fix Android Inspection Errors
+# Task: Fix Flutter Build Failure and Java Configuration
 
-- [x] Modify `AndroidManifest.xml` to resolve class names and placeholders.
-- [x] Update `launch_background.xml` (values) to use hex colors.
-- [x] Update `launch_background.xml` (values-v21) to use hex colors.
-- [x] Update `styles.xml` files to resolve theme and background issues.
-- [x] Verify changes with `analyze_file`.
+- [x] Revert `AndroidManifest.xml` changes to support v2 embedding.
+- [x] Configure `org.gradle.java.home` in `gradle.properties`.
+- [x] Update `local.properties` with standard SDK path.
+- [x] Resolved "v1 embedding" build error.
+- [x] Check IDE for symbol resolution errors.
+- [ ] Investigate machine-specific `AndroidLocationsBuildService` error.

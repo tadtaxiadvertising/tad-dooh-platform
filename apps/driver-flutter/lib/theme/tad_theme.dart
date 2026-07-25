@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class TadColors {
   TadColors._();
 
-  static const tadYellow = Color(0xFFFFD400);
+  static const tadYellow = Color(0xFFFAD400);
   static const tadDark = Color(0xFF0C0F14);
   static const tadSurface = Color(0xFF161B22);
   static const tadSurfaceVariant = Color(0xFF1C2128);
-  static const tadRed = Color(0xFFDC2626);
+  static const tadRed = Color(0xFFE51636);
   static const tadGreen = Color(0xFF22C55E);
   static const tadError = Color(0xFFF85149);
   static const tadWarning = Color(0xFFD29922);

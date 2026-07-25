@@ -522,7 +522,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 textColor: TadColors.tadYellow,
                                 onPressed: () {
                                   launchUrl(
-                                    Uri.parse('https://wa.me/+18095551234?text=Hola%2C%20quiero%20registrarme%20como%20conductor%20TAD'),
+                                    Uri.parse('https://wa.me/18295551234?text=Hola%2C%20quiero%20registrarme%20como%20conductor%20TAD')
                                     mode: LaunchMode.externalApplication,
                                   );
                                 },

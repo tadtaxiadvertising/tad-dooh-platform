@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 
-const _supportPhone = '+18095551234';
-const _paymentUrl = 'https://pay.tad.do/subscribe';
+const _supportPhone = '+18295551234';
+const _paymentUrl = 'https://tad.do/pago';
 
 void _openUrl(String url) async {
   final uri = Uri.parse(url);

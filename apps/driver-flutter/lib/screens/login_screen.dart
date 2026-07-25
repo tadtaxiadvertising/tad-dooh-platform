@@ -13,8 +13,8 @@ import '../models/hub_data.dart';
 /// API base URL — production vs debug (emulator maps 10.0.2.2 → host localhost)
 /// Backend uses global prefix `/api/v1`, so all paths start from `/api/v1`.
 final String kApiBase = kReleaseMode
- ? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1'
- : 'http://10.0.0.2:3000/api/v1';
+    ? 'https://tad-api.rewvid.easypanel.host/api/v1'
+    : 'http://10.0.2.2:3000/api/v1';
 
 /// SharedPreferences keys
 const String kPrefToken = 'tad_driver_token';

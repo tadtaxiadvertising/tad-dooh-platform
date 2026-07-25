@@ -50,7 +50,7 @@ class AppVersionService {
   AppVersionService({String? apiBase})
     : apiBase = apiBase ??
           (kReleaseMode
-              ? 'https://tad-api.rewvid.easypanel.host/api/v1'
+              ? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1'
               : 'http://10.0.2.2:3000/api/v1');
 
   final String apiBase;

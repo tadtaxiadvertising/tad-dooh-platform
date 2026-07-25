@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../screens/login_screen.dart' show kApiBase;
 
 /// ═══════════════════════════════════════════════════════════════════════════════
 /// TAD DOOH Driver — Payment Service (backend business rules)
@@ -19,10 +20,6 @@ const int kTotalWithItbisRD = 7080;
 /// POST /drivers/me/payment/confirm    -> { ok, receiptUrl? }
 /// GET  /drivers/me/transactions       -> List<PaymentTransaction>
 /// PUT  /drivers/:id/subscription      -> Driver (admin only)
-
-/// Backend API base — read from login_screen shared constant
-// ignore: depend_on_referenced_packages
-import '../screens/login_screen.dart' show kApiBase;
 
 /// ── Enums ────────────────────────────────────────────────────────────────────
 enum PaymentStatus { pending, paid, failed, expired }

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum OnboardingStage { contract, bank, payment, ready }
+enum OnboardingStage { contract, bank, payment, starterKit, ready }
 
 @immutable
 class DriverHubData {
@@ -18,6 +18,7 @@ class DriverHubData {
     this.penaltyApplied = false,
     this.penaltyAmount = 0,
     this.referralEarnings = 0,
+    this.referralCode = '',
     this.referralsCount = 0,
     this.advertiserReferralEarnings = 0,
     this.advertiserReferralsCount = 0,
@@ -50,6 +51,7 @@ class DriverHubData {
   final bool penaltyApplied;
   final double penaltyAmount;
   final double referralEarnings;
+  final String referralCode;
   final int referralsCount;
   final double advertiserReferralEarnings;
   final int advertiserReferralsCount;
@@ -83,6 +85,7 @@ class DriverHubData {
       penaltyApplied: json['penaltyApplied'] == true,
       penaltyAmount: _toNum(json['penaltyAmount']) ?? 0,
       referralEarnings: _toNum(json['referralEarnings']) ?? 0,
+      referralCode: json['referralCode'] as String? ?? '',
       referralsCount: _toNum(json['referralsCount'])?.toInt() ?? 0,
       advertiserReferralEarnings: _toNum(json['advertiserReferralEarnings']) ?? 0,
       advertiserReferralsCount: _toNum(json['advertiserReferralsCount'])?.toInt() ?? 0,
@@ -119,6 +122,7 @@ class DriverHubData {
     'penaltyApplied': penaltyApplied,
     'penaltyAmount': penaltyAmount,
     'referralEarnings': referralEarnings,
+    'referralCode': referralCode,
     'referralsCount': referralsCount,
     'advertiserReferralEarnings': advertiserReferralEarnings,
     'advertiserReferralsCount': advertiserReferralsCount,

@@ -25,8 +25,8 @@ class _LoginScreenV2State extends State<LoginScreenV2> {
   @override
   void initState() {
     super.initState();
-    _phoneCtrl = TextEditingController(text: '8090000000');
-    _passwordCtrl = TextEditingController(text: 'tad123');
+    _phoneCtrl = TextEditingController();
+    _passwordCtrl = TextEditingController();
   }
 
   @override

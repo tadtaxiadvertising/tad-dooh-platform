@@ -2,16 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/di/providers.dart';
+import '../../models/hub_data.dart';
 import '../../theme/tad_theme.dart';
 
-/// Pantalla de referidos — genera QR offline con el referralCode del conductor.
-class ReferQrScreen extends StatelessWidget {
-  const ReferQrScreen({super.key});
+/// Pantalla de referidos — QR offline del referralCode real del conductor.
+class ReferQrScreen extends StatefulWidget {
+  const ReferQrScreen({super.key, this.hub});
+
+  final DriverHubData? hub;
+
+  @override
+  State<ReferQrScreen> createState() => _ReferQrScreenState();
+}
+
+class _ReferQrScreenState extends State<ReferQrScreen> {
+  String _cachedCode = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReferralCode();
+  }
+
+  Future<void> _loadReferralCode() async {
+    final code = widget.hub?.referralCode;
+    if (code != null && code.isNotEmpty) {
+      setState(() => _cachedCode = code);
+      return;
+    }
+    // Try fetchHub
+    final hub = await fetchHub();
+    if (mounted && hub != null && hub.referralCode.isNotEmpty) {
+      setState(() => _cachedCode = hub.referralCode);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Get referral code from cached hub data (set after login)
-    final code = _getCachedReferralCode();
+    final code = _cachedCode.isNotEmpty ? _cachedCode : 'Cargando...';
     final shareUrl = 'https://tad.dooh/r/$code';
 
     return Scaffold(
@@ -74,12 +102,6 @@ class ReferQrScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _getCachedReferralCode() {
-    // TODO: read from SharedPreferences cache after login
-    // For now return a placeholder
-    return 'TAD-DRIVER';
   }
 
   void _copyCode(BuildContext context, String code) {

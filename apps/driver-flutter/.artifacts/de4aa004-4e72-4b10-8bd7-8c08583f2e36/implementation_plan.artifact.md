@@ -1,28 +1,20 @@
-# Fix Android Inspection Errors
+# Fix Flutter Build Failure and Java Configuration
 
-The project is showing several Android-related errors in the IDE, mostly due to unresolved symbols and placeholders in `AndroidManifest.xml` and resource files.
-
-## User Review Required
-
-> [!IMPORTANT]
-> Some changes involve replacing placeholders like `${applicationName}` with their default values (`io.flutter.app.FlutterApplication`). This is done to satisfy the IDE's analyzer, but the Flutter build tool normally handles this replacement dynamically.
+The previous changes to `AndroidManifest.xml` introduced a build failure because `io.flutter.app.FlutterApplication` is part of the deprecated Android v1 embedding. Additionally, the project's `JAVA_HOME` is pointing to an invalid directory, causing Gradle sync and resource resolution issues in the IDE.
 
 ## Proposed Changes
 
 ### Android Configuration
 
 #### [MODIFY] [AndroidManifest.xml](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/app/src/main/AndroidManifest.xml)
-- Add the `package` attribute to the `<manifest>` tag to help the IDE resolve relative class names.
-- Replace `${applicationName}` with `io.flutter.app.FlutterApplication`.
-- Use the fully qualified name for `MainActivity`.
+- Revert `android:name` to `${applicationName}` to allow the Flutter tool to inject the correct v2 application class.
+- Revert `MainActivity` name to `.MainActivity` (with `package` attribute present, this is correctly resolved).
 
-#### [MODIFY] [launch_background.xml](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/app/src/main/res/drawable/launch_background.xml)
-- Replace `@android:color/white` with the literal hex value `#FFFFFF` to avoid resolution issues.
-
-#### [MODIFY] [launch_background.xml](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/app/src/main/res/drawable-v21/launch_background.xml)
-- Replace `?android:colorBackground` with `#FFFFFF`.
+#### [MODIFY] [gradle.properties](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/gradle.properties)
+- Add `org.gradle.java.home=C:\\Program Files\\Android\\Android Studio\\jbr` to ensure Gradle uses a valid JDK, fixing the "Cannot resolve symbol" errors in the IDE.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `analyze_file` on the modified files to check if the "Unresolved symbol" and "Unknown attribute" errors are resolved.
+- Run `flutter build apk --debug` to verify the "v1 embedding" error is resolved.
+- Check IDE problems for resource resolution.

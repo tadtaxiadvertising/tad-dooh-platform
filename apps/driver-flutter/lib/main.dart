@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/tad_theme.dart';
 import 'features/auth/login_screen_v2.dart';
@@ -7,7 +6,6 @@ import 'features/onboarding/onboarding_flow_screen.dart';
 import 'features/wallet/wallet_screen_v2.dart';
 import 'features/refer_qr/refer_qr_screen.dart';
 import 'core/di/providers.dart';
-import 'core/network/kill_switch_state.dart';
 import 'models/hub_data.dart';
 
 const kAppVersion = '1.0.0';

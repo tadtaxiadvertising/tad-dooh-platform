@@ -15,7 +15,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://ltdcdhqixvbpdcitthqf.supabase.co',
-    anonKey:
+    publishableKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0ZGNkaHFpeHZicGRjaXR0aHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMTc4MTYsImV4cCI6MjA2NDY5MzgxNn0.ZopN0cOPM1cCqIlx9FiA5Y7A4_NRX',
   );
 

@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../theme/tad_theme.dart';
 import '../../models/hub_data.dart';
-import '../../core/network/kill_switch_state.dart';
 
 /// Login screen — consume los providers globales directamente.
 class LoginScreenV2 extends StatefulWidget {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/di/providers.dart';
 import '../../theme/tad_theme.dart';
-import '../../models/hub_data.dart';
 
 enum OnboardingStage { contract, bank, payment, starterKit, ready }
 

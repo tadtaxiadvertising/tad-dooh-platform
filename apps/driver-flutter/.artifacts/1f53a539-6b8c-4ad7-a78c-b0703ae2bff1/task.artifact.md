@@ -1,0 +1,5 @@
+- [x] Fix Windows path escaping in `local.properties`
+- [x] Add missing imports to `settings.gradle`
+- [x] Add `package` attribute to `AndroidManifest.xml`
+- [x] Fix Markdown table formatting in `README.md`
+- [x] Verify if Android resource errors in `styles.xml` are resolved (fixed configuration to allow sync)

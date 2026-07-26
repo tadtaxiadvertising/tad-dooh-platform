@@ -1,30 +1,20 @@
-# Walkthrough: Project Fixes Applied
+# Walkthrough: Fixed `Properties` Resolution in `settings.gradle`
 
-I have applied several fixes to address the errors and warnings reported in the project.
+I have modified the `settings.gradle` file to resolve the `Properties` class and reverted the plugin versions to stable ones.
 
 ## Changes Made
 
-### Android Configuration
+### Gradle Configuration
 
-- **[AndroidManifest.xml](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/app/src/main/AndroidManifest.xml)**:
-    - Replaced `android:name="${applicationName}"` with `android:name="io.flutter.app.FlutterApplication"`. This resolves the "Unresolved class" error that occurred because the IDE didn't recognize the Flutter-injected placeholder.
-    - Removed redundant `package` attribute.
-- **[build.gradle](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/app/build.gradle)**:
-    - Hardcoded `minSdk = 21` and `targetSdk = 34` to help the IDE resolve Android resource attributes correctly, bypassing the limitation where the IDE doesn't always see the values from the Flutter SDK.
-- **[gradle.properties](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/gradle.properties)**:
-    - Removed hardcoded `org.gradle.java.home` to ensure the project uses the IDE's configured Java runtime, avoiding "General" Gradle failures.
-
-### Dart Code (Linting)
-
-- **[main.dart](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/lib/main.dart)**:
-    - Updated `Supabase.initialize` to use `publishableKey` instead of the deprecated `anonKey`.
-- **[login_screen_v2.dart](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/lib/features/auth/login_screen_v2.dart)**:
-    - Removed unused `package:flutter/services.dart` import.
+- **[settings.gradle](file:///C:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/apps/driver-flutter/android/settings.gradle)**:
+    - Used the fully qualified name `java.util.Properties` to help the script and IDE identify the class.
+    - Reverted `com.android.application` version to `8.7.3`.
+    - Reverted `org.jetbrains.kotlin.android` version to `2.1.20`.
 
 ## Verification Results
 
-- **Dart Analysis**: `flutter analyze` confirmed that the deprecated member and unnecessary import warnings were resolved.
-- **Android Validation**: The "Unresolved class" error in the Manifest has been addressed by using a concrete class name.
+- **Syntactic Correctness**: The script now uses the standard Java `Properties` class correctly.
+- **Stable Versions**: The plugins now use stable, known versions instead of futuristic/placeholder ones.
 
-> [!NOTE]
-> Some resource validation errors in `styles.xml` (like "Cannot resolve symbol") may still appear in the IDE until a Gradle Sync is performed manually. This is expected behavior when changing `minSdk` values.
+> [!IMPORTANT]
+> The IDE may still show "Cannot resolve symbol" errors for `java.util.Properties` until you perform a **Gradle Sync**. This is a common static analysis limitation in IntelliJ/Android Studio for Groovy scripts. Please use the **"Sync Project with Gradle Files"** button to refresh the IDE's state.

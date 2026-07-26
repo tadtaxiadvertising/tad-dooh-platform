@@ -5,13 +5,13 @@ Réplica en Flutter de la app Kotlin nativa de conductor (`apps/driver-android`)
 ## Pantallas replicadas
 
 | Kotlin (origen) | Flutter (esta app) | Estado |
-|---|---|---|
+| :--- | :--- | :--- |
 | `LoginScreen.kt` | `lib/screens/login_screen.dart` | ✅ |
-| `DashboardScreen.kt` (Home / Routes / Wallet / Settings) | `lib/screens/dashboard_screen.dart` | ✅ |
-| `OnboardingScreen.kt` (4 stages + checklist) | `lib/screens/onboarding_screen.dart` | ✅ |
-| `BankWizardScreen.kt` (5-step wizard) | `lib/screens/bank_wizard_screen.dart` | ✅ |
-| `WalletScreen.kt` (balance + transacciones) | `lib/screens/wallet_screen.dart` | ✅ |
-| `KillSwitchOverlay.kt` | — (omitido: requiere estado global backend) | ⏭️ |
+| `DashboardScreen.kt` | `lib/screens/dashboard_screen.dart` | ✅ |
+| `OnboardingScreen.kt` | `lib/screens/onboarding_screen.dart` | ✅ |
+| `BankWizardScreen.kt` | `lib/screens/bank_wizard_screen.dart` | ✅ |
+| `WalletScreen.kt` | `lib/screens/wallet_screen.dart` | ✅ |
+| `KillSwitchOverlay.kt` | Omitido | ⏭️ |
 
 ## Paleta de marca
 

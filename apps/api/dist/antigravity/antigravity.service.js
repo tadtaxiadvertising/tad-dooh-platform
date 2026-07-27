@@ -15,7 +15,7 @@ let AntigravityService = class AntigravityService {
     }
     async streamAIContent(prompt) {
         const API_KEY = process.env.GEMINI_API_KEY?.trim();
-        const PROJECT_ID = "ltdcdhqixvbpdcitthqf";
+        const PROJECT_ID = process.env.SUPABASE_PROJECT_ID?.trim() || "ltdcdhqixvbpdcitthqf";
         const region = 'us-central1';
         const model = 'gemini-1.5-flash';
         const url = `https://${region}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${region}/publishers/google/models/${model}:streamGenerateContent`;

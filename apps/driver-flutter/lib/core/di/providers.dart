@@ -7,10 +7,10 @@ import '../network/kill_switch_interceptor.dart';
 import '../sync/sync_engine.dart';
 import '../../models/hub_data.dart';
 
-/// API base — production vs emulator (10.0.2.2 maps Android emulator → host localhost).
+/// API base — production vs debug (10.0.0.2 = host LAN IP for physical devices).
 String get apiBase => kReleaseMode
- ? 'https://ltdcdhqixvbpdcitthqf.supabase.co/api/v1'
- : 'http://10.0.2.2:3000/api/v1';
+    ? 'https://tad-api.rewvid.easypanel.host/api/v1'
+    : 'http://10.0.0.2:3000/api/v1';
 
 /// ─── KillSwitch state (ChangeNotifier) ──────────────────────────────────────
 

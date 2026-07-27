@@ -27,6 +27,7 @@
 
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -84,22 +85,22 @@ export class KYCService {
     const computedHash = fileHash || this.generateDocumentHash(driverId, documentType, documentNumber);
 
     if (this.mockMode) {
-      // MODO MOCK: Guardar en identidadVehicular del Driver
-      const existingIdentity = (driver.identidadVehicular as Record<string, unknown>) || {};
-      
-      await this.prisma.driver.update({
-        where: { id: driverId },
-        data: {
-          identidadVehicular: {
-            ...existingIdentity,
-            [`${documentType.toLowerCase()}_number`]: documentNumber,
-            [`${documentType.toLowerCase()}_hash`]: computedHash,
-            [`${documentType.toLowerCase()}_uploaded_at`]: new Date().toISOString(),
-            kyc_status: 'PENDING_REVIEW',
-            kyc_submitted_at: new Date().toISOString(),
-          },
-        },
-      });
+          // MODO MOCK: Guardar en identidadVehicular del Driver
+          const existingIdentity = (driver.identidadVehicular as Record<string, unknown>) || {};
+
+          await this.prisma.driver.update({
+            where: { id: driverId },
+            data: {
+              identidadVehicular: {
+                ...existingIdentity,
+                [`${documentType.toLowerCase()}_number`]: documentNumber,
+                [`${documentType.toLowerCase()}_hash`]: computedHash,
+                [`${documentType.toLowerCase()}_uploaded_at`]: new Date().toISOString(),
+                kyc_status: 'PENDING_REVIEW',
+                kyc_submitted_at: new Date().toISOString(),
+              } as Prisma.InputJsonValue,
+            },
+          });
 
       this.logger.log(`📋 KYC MOCK: ${documentType} ${documentNumber} → ${driverId} (PENDING_REVIEW)`);
       

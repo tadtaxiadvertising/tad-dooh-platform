@@ -16,23 +16,23 @@ export declare class FleetController {
         is_online: boolean;
         driver_name: string;
         last_playback: Date;
-        deviceId: string;
-        city: string;
-        taxiNumber: string;
-        lastHeartbeat: Date;
-        batteryLevel: number;
-        storageUsed: bigint;
-        storageTotal: bigint;
-        appVersion: string;
-        fleet: string;
-        lastSeen: Date;
-        storageFree: string;
-        lastPlayback: Date;
-        playerStatus: string;
         driver: {
             id: string;
             fullName: string;
         };
+        taxiNumber: string;
+        fleet: string;
+        deviceId: string;
+        batteryLevel: number;
+        city: string;
+        lastHeartbeat: Date;
+        storageUsed: bigint;
+        storageTotal: bigint;
+        appVersion: string;
+        lastSeen: Date;
+        storageFree: string;
+        lastPlayback: Date;
+        playerStatus: string;
     }[]>;
     getFleetStats(): Promise<{
         total: number;
@@ -129,8 +129,8 @@ export declare class FleetController {
         speed: number;
     }[]>;
     getOfflineDevices(): Promise<{
-        deviceId: string;
         taxiNumber: string;
+        deviceId: string;
         lastSeen: Date;
     }[]>;
     getFleetFinance(): Promise<{
@@ -163,14 +163,14 @@ export declare class FleetController {
         type: string;
         params?: any;
     }): Promise<{
-        status: string;
-        id: string;
-        createdAt: Date;
-        expiresAt: Date | null;
         result: string | null;
+        id: string;
+        status: string;
+        createdAt: Date;
         deviceId: string;
         commandType: string;
         commandParams: string | null;
+        expiresAt: Date | null;
         executedAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
@@ -208,10 +208,10 @@ export declare class FleetController {
         linked_driver?: undefined;
     }>;
     getDeviceRecentPath(deviceId: string): Promise<{
-        timestamp: Date;
         latitude: number;
         longitude: number;
         speed: number;
+        timestamp: Date;
     }[]>;
     getTrackingData(): Promise<{
         id: string;

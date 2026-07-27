@@ -11,21 +11,21 @@ export declare class ReferralController {
     getStats(): Promise<{
         topRecruiters: {
             id: string;
+            fullName: string;
+            referralCode: string;
             _count: {
                 referrals: number;
             };
-            fullName: string;
-            referralCode: string;
         }[];
         totalReferrals: number;
         pendingCommissions: number;
     }>;
     getNetwork(): Promise<{
-        status: import(".prisma/client").$Enums.SystemStatus;
         id: string;
+        fullName: string;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         referredBy: string;
-        fullName: string;
         referredByDriver: {
             fullName: string;
         };

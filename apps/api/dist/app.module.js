@@ -48,6 +48,7 @@ const telemetry_module_1 = require("./modules/telemetry/telemetry.module");
 const referral_module_1 = require("./modules/referral/referral.module");
 const system_settings_module_1 = require("./modules/system-settings/system-settings.module");
 const onboarding_module_1 = require("./modules/onboarding/onboarding.module");
+const kyc_module_1 = require("./modules/kyc/kyc.module");
 const health_controller_1 = require("./health/health.controller");
 let AppModule = AppModule_1 = class AppModule {
     constructor(authService) {
@@ -122,6 +123,7 @@ exports.AppModule = AppModule = AppModule_1 = __decorate([
             system_settings_module_1.SystemSettingsModule,
             simulation_module_1.SimulationModule,
             onboarding_module_1.OnboardingModule,
+            kyc_module_1.KYCModule,
         ],
         controllers: [app_controller_1.AppController, health_controller_1.HealthController],
         providers: [

@@ -7,14 +7,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
+import '../core/network/api_constants.dart';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
 /// API base URL — production vs debug (emulator maps 10.0.2.2 → host localhost)
 /// Backend uses global prefix `/api/v1`, so all paths start from `/api/v1`.
+<<<<<<< Updated upstream
 final String kApiBase = kReleaseMode
     ? 'https://tad-api.rewvid.easypanel.host/api/v1'
     : 'http://10.0.0.2:3000/api/v1';
+=======
+final String kApiBase = ApiConstants.baseUrl;
+>>>>>>> Stashed changes
 
 /// SharedPreferences keys
 const String kPrefToken = 'tad_driver_token';
@@ -309,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
        if (!mounted) return;
        setState(() {
          _loading = false;
-         _error = 'Error de conexión — intenta de nuevo';
+         _error = 'V1 ERROR: $_';
        });
      }
     }

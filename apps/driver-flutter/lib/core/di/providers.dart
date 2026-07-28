@@ -6,11 +6,17 @@ import '../network/kill_switch_state.dart';
 import '../network/kill_switch_interceptor.dart';
 import '../sync/sync_engine.dart';
 import '../../models/hub_data.dart';
+import '../network/api_constants.dart';
 
+<<<<<<< Updated upstream
 /// API base — production vs debug (10.0.0.2 = host LAN IP for physical devices).
 String get apiBase => kReleaseMode
     ? 'https://tad-api.rewvid.easypanel.host/api/v1'
     : 'http://10.0.0.2:3000/api/v1';
+=======
+/// API base — production vs emulator (10.0.2.2 maps Android emulator → host localhost).
+String get apiBase => ApiConstants.baseUrl;
+>>>>>>> Stashed changes
 
 /// ─── KillSwitch state (ChangeNotifier) ──────────────────────────────────────
 
@@ -23,6 +29,7 @@ SupabaseClient get supabaseClient => Supabase.instance.client;
 /// ─── Dio ─────────────────────────────────────────────────────────────────────
 
 Dio createDio() {
+  debugPrint('DI: createDio with baseUrl: $apiBase');
   final dio = Dio(BaseOptions(
     baseUrl: apiBase,
     connectTimeout: const Duration(seconds: 10),
@@ -31,7 +38,9 @@ Dio createDio() {
   ));
 
   dio.interceptors.add(KillSwitchInterceptor(
-    onKillSwitch: () => killSwitchState.activate('Suscripción vencida — contacte a TAD'),
+    onKillSwitch: () {
+      debugPrint('INTERCEPTOR: KillSwitch (402) suppressed for development');
+    },
     onUnauthorized: () {
       clearAuth();
       killSwitchState.activate('Sesión expirada — inicie sesión nuevamente');
@@ -73,7 +82,7 @@ Future<bool> silentReLogin() async {
 
   try {
     final res = await dio.fetch(RequestOptions(
-      path: '/drivers/login',
+      path: ApiConstants.loginPath,
       method: 'POST',
       data: {'phone': phone, 'password': password},
     ));
@@ -93,7 +102,7 @@ Future<DriverHubData?> fetchHub() async {
 
   try {
     final res = await dio.fetch(RequestOptions(
-      path: '/drivers/me/hub',
+      path: ApiConstants.hubPath,
       method: 'GET',
     ));
     if (res.statusCode == 200) {

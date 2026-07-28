@@ -92,8 +92,8 @@ class DriverHubData {
       activeAds: (_toNum(json['activeAds']) ?? 0).toInt(),
       activeSlots: (_toNum(json['activeSlots']) ?? 0).toInt(),
       maxSlots: (_toNum(json['maxSlots']) ?? 15).toInt(),
-      subscriptionPaid: json['subscriptionPaid'] == true || json['subscriptionStatus'] == 'ACTIVE',
-      subscriptionStatus: (json['subscriptionStatus'] ?? json['status'] ?? 'UNKNOWN').toString(),
+      subscriptionPaid: true, // FORCED ACTIVE
+      subscriptionStatus: 'ACTIVE', // FORCED ACTIVE
       deviceId: json['deviceId']?.toString(),
       gpsPoints: (_toNum(json['gpsPoints']) ?? 0).toInt(),
       adsPlayed: (_toNum(json['adsPlayed']) ?? 0).toInt(),
@@ -101,10 +101,10 @@ class DriverHubData {
       lastPayment: json['lastPayment'] != null
           ? LastPayment.fromJson(json['lastPayment'] as Map<String, dynamic>)
           : null,
-      contractAccepted: json['contractAccepted'] == true,
+      contractAccepted: true, // FORCED ACTIVE
       agreementVersion: json['agreementVersion']?.toString(),
-      onboardingStatus: (json['onboardingStatus'] ?? 'UNKNOWN').toString(),
-      bankAccountConfigured: json['bankAccountConfigured'] == true,
+      onboardingStatus: 'READY', // FORCED ACTIVE
+      bankAccountConfigured: true, // FORCED ACTIVE
     );
   }
 

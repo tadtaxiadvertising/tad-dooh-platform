@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../core/network/api_constants.dart';
 
 /// Respuesta del endpoint GET /api/drivers/app-version.
 @immutable
@@ -48,10 +49,7 @@ class VersionCheckResult {
 /// de la app Flutter y decidir si se debe forzar actualización.
 class AppVersionService {
   AppVersionService({String? apiBase})
-    : apiBase = apiBase ??
-          (kReleaseMode
-              ? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1'
-              : 'http://10.0.2.2:3000/api/v1');
+    : apiBase = apiBase ?? ApiConstants.baseUrl;
 
   final String apiBase;
   static const Duration timeout = Duration(seconds: 8);
@@ -80,7 +78,10 @@ class AppVersionService {
     try {
       final client = HttpClient();
       client.connectionTimeout = timeout;
-      final req = await client.getUrl(Uri.parse('$apiBase/drivers/app-version'));
+      final fullUrl = apiBase.endsWith('/') 
+          ? '$apiBase${ApiConstants.versionPath}' 
+          : '$apiBase/${ApiConstants.versionPath}';
+      final req = await client.getUrl(Uri.parse(fullUrl));
       final res = await req.close();
       if (res.statusCode != 200) {
         return VersionCheckResult(

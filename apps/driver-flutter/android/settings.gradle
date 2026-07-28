@@ -1,5 +1,3 @@
-import java.util.Properties
-
 pluginManagement {
     def flutterSdkPath = {
         def properties = new Properties()

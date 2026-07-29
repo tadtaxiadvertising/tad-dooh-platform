@@ -56,3 +56,6 @@ kotlin-profile/
 
 # Agent artifacts (not source code)
 .artifacts/
+
+# Heap dumps (large files, never commit)
+*.hprof

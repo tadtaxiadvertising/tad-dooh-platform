@@ -1,0 +1,19 @@
+- [x] Create directory structure for missing files
+- [x] Restore `pubspec.yaml` from `main` branch
+- [x] Restore `lib/` directory contents from `main` branch
+- [x] Restore Gradle configuration files from `main` branch:
+    - [x] `android/settings.gradle`
+    - [x] `android/build.gradle`
+    - [x] `android/gradle.properties`
+    - [x] `android/gradle/wrapper/gradle-wrapper.properties`
+- [x] Restore Android app configuration from `main` branch:
+    - [x] `android/app/build.gradle`
+    - [x] `android/app/src/main/AndroidManifest.xml`
+- [x] Verify build configuration:
+    - [x] Run `gradlew tasks` in `apps/driver-flutter/android`
+    - [x] Run `flutter pub get` in `apps/driver-flutter/`
+- [x] Stabilize IDE resource validation errors:
+    - [x] Run `flutter clean` to clear stale build artifacts
+    - [x] Add explicit `appcompat` dependency to `app/build.gradle`
+    - [x] Fix minor Dart analyzer warnings (unused imports, wildcard uses)
+- [x] Final build verification

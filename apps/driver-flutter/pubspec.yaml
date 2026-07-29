@@ -1,0 +1,32 @@
+name: tad_driver
+description: TAD Driver Flutter app (official driver service — offline-first, Riverpod, Isar, Supabase realtime).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  supabase_flutter: ^2.8.0
+  path_provider: ^2.1.5
+  flutter_local_notifications: ^19.5.0
+  connectivity_plus: ^6.1.3
+  permission_handler: ^12.0.3
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
+  qr_flutter: ^4.1.0
+  shared_preferences: ^2.5.3
+  url_launcher: ^6.3.2
+  flutter_animate: ^4.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

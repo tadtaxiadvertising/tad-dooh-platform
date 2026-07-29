@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "openrouter-free": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@physics91/openrouter-mcp", "start"],
+      "env": {
+        "OPENROUTER_API_KEY": "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"
+      }
+    }
+  }
+}

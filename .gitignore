@@ -39,3 +39,20 @@ generated/
 scratch/
 apps/*/scratch/
 *.tsbuildinfo
+
+# Flutter / Dart build cache
+.dart_tool/
+.cache/
+*.jar
+caches/
+daemon/
+native/
+wrapper/
+kotlin-profile/
+
+# IDE
+.idea/
+*.iml
+
+# Agent artifacts (not source code)
+.artifacts/

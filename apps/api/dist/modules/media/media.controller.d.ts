@@ -9,11 +9,11 @@ export declare class MediaController {
     }>;
     registerBypassed(body: any): Promise<{
         fileSize: number;
-        id: string;
-        status: string;
-        createdAt: Date;
         name: string | null;
         url: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
         campaign_id: string | null;
         filename: string | null;
         originalFilename: string | null;
@@ -69,11 +69,11 @@ export declare class MediaController {
         qrUrl: string;
     }): Promise<{
         fileSize: number;
-        id: string;
-        status: string;
-        createdAt: Date;
         name: string | null;
         url: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
         campaign_id: string | null;
         filename: string | null;
         originalFilename: string | null;

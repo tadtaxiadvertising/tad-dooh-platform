@@ -15,21 +15,14 @@ export declare class AuthController {
     }>;
     getProfile(req: any): Promise<{
         role: string;
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         password: string;
-        name: string;
         email: string;
     } | {
         role: string;
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -37,6 +30,13 @@ export declare class AuthController {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -44,20 +44,21 @@ export declare class AuthController {
     } | {
         role: string;
         id: string;
+        createdAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
         fullName: string;
         cedula: string | null;
         phone: string;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
         onboardingStatus: string;
         onboardedAt: Date;
         blockedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
         referredBy: string | null;
         password: string | null;
         level: string;
@@ -69,7 +70,6 @@ export declare class AuthController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -83,21 +83,14 @@ export declare class AuthController {
         currentPassword?: string;
     }): Promise<{
         role: string;
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         password: string;
-        name: string;
         email: string;
     } | {
         role: string;
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -105,6 +98,13 @@ export declare class AuthController {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -112,20 +112,21 @@ export declare class AuthController {
     } | {
         role: string;
         id: string;
+        createdAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
         fullName: string;
         cedula: string | null;
         phone: string;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
         onboardingStatus: string;
         onboardedAt: Date;
         blockedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
         referredBy: string | null;
         password: string | null;
         level: string;
@@ -137,7 +138,6 @@ export declare class AuthController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;

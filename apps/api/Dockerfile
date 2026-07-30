@@ -19,7 +19,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
-EXPOSE 3000
+EXPOSE 80
+ENV PORT=80
 
 # Ejecutamos migraciones y lanzamos la app
 CMD npx prisma migrate deploy && node dist/main

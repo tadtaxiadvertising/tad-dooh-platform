@@ -23,13 +23,6 @@ export declare class AdvertisersService {
             campaigns: number;
         };
     } & {
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -37,6 +30,13 @@ export declare class AdvertisersService {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -45,11 +45,11 @@ export declare class AdvertisersService {
     findOne(id: string): Promise<{
         campaigns: ({
             media: {
-                id: string;
-                status: string;
-                createdAt: Date;
                 name: string | null;
                 url: string | null;
+                id: string;
+                createdAt: Date;
+                status: string;
                 campaign_id: string | null;
                 filename: string | null;
                 originalFilename: string | null;
@@ -68,9 +68,9 @@ export declare class AdvertisersService {
                 qrUrl: string | null;
             }[];
             metrics: {
+                deviceId: string | null;
                 id: bigint;
                 createdAt: Date;
-                deviceId: string | null;
                 city: string | null;
                 campaignId: string;
                 date: Date;
@@ -82,20 +82,21 @@ export declare class AdvertisersService {
             }[];
             targetDrivers: {
                 id: string;
+                createdAt: Date;
+                status: import(".prisma/client").$Enums.SystemStatus;
+                updatedAt: Date;
+                taxiNumber: string | null;
+                isSimulated: boolean;
                 fullName: string;
                 cedula: string | null;
                 phone: string;
                 licensePlate: string | null;
                 taxiPlate: string | null;
-                taxiNumber: string | null;
                 subscriptionPaid: boolean;
                 subscriptionEnd: Date | null;
-                status: import(".prisma/client").$Enums.SystemStatus;
                 onboardingStatus: string;
                 onboardedAt: Date;
                 blockedAt: Date | null;
-                createdAt: Date;
-                updatedAt: Date;
                 referredBy: string | null;
                 password: string | null;
                 level: string;
@@ -107,19 +108,13 @@ export declare class AdvertisersService {
                 contractAccepted: boolean;
                 contractAcceptedAt: Date | null;
                 agreementVersion: string | null;
-                isSimulated: boolean;
                 walletBalance: number;
                 referralCode: string | null;
                 bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
             }[];
         } & {
-            id: string;
-            status: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            version: number;
             advertiser: string;
+            name: string;
             active: boolean;
             budget: number;
             category: string | null;
@@ -129,32 +124,30 @@ export declare class AdvertisersService {
             websiteUrl: string | null;
             pedidosYaUrl: string | null;
             uberEatsUrl: string | null;
+            id: string;
+            createdAt: Date;
             advertiserId: string | null;
+            description: string | null;
+            status: string;
             startDate: Date;
             endDate: Date;
-            targetAll: boolean;
-            targetCity: string;
-            targetImpressions: number;
-            description: string | null;
+            version: number;
             isGlobal: boolean;
+            targetAll: boolean;
             targetCities: string;
+            targetCity: string;
             targetFleets: string;
             priority: number;
+            targetImpressions: number;
             targetUrl: string | null;
             createdById: string | null;
+            updatedAt: Date;
             hasSeenTutorial: boolean;
             scheduleDays: string | null;
             scheduleHours: string | null;
             frequencyCap: number;
         })[];
     } & {
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -162,6 +155,13 @@ export declare class AdvertisersService {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -174,13 +174,6 @@ export declare class AdvertisersService {
         phone?: string;
         password?: string;
     }): Promise<{
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -188,19 +181,19 @@ export declare class AdvertisersService {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
         productsData: string | null;
     }>;
     update(id: string, data: UpdateAdvertiserDto): Promise<{
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -208,19 +201,19 @@ export declare class AdvertisersService {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
         productsData: string | null;
     }>;
     remove(id: string): Promise<{
-        id: string;
-        phone: string | null;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        referredBy: string | null;
-        password: string | null;
         category: string | null;
         whatsapp: string | null;
         instagram: string | null;
@@ -228,6 +221,13 @@ export declare class AdvertisersService {
         websiteUrl: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
+        id: string;
+        createdAt: Date;
+        status: string;
+        updatedAt: Date;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;

@@ -58,9 +58,9 @@ class PaymentTransaction {
       date: json['date'] != null
           ? DateTime.tryParse(json['date'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      amountRD: (json['amount'] ?? 0).toInt(),
-      itbisRD: (json['itbis'] ?? kItbisRD).toInt(),
-      subtotalRD: (json['subtotal'] ?? json['amount'] ?? 0).toInt(),
+      amountRD: (json['amount'] as num? ?? 0).toInt(),
+      itbisRD: (json['itbis'] as num? ?? kItbisRD).toInt(),
+      subtotalRD: ((json['subtotal'] ?? json['amount']) as num? ?? 0).toInt(),
       status: _parseStatus(json['status']),
       method: _parseMethod(json['paymentMethod'] ?? json['method']),
       notes: json['notes']?.toString(),
@@ -146,7 +146,7 @@ class SubscriptionStatus {
       expired: isExpired,
       endDate: end,
       plan: json['plan']?.toString(),
-      amountPaidRD: (json['amount'] ?? 0).toInt(),
+      amountPaidRD: (json['amount'] as num? ?? 0).toInt(),
       graceHoursLeft: (isExpired)
           ? end.add(const Duration(hours: 48)).difference(DateTime.now()).inHours
           : null,

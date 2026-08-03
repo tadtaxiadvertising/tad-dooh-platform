@@ -12,7 +12,7 @@ import {
   onGatewayStateChange,
   type GatewayState,
   type GatewayStatus,
-} from '@tad/services/mobile-gateway';
+} from '@tad/services';
 import clsx from 'clsx';
 import type { GetServerSideProps } from 'next';
 

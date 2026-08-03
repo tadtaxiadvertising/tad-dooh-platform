@@ -24,8 +24,8 @@ export declare class AuthService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        password: string;
         email: string;
+        password: string;
     } | {
         role: string;
         category: string | null;
@@ -39,13 +39,13 @@ export declare class AuthService {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     } | {
         role: string;
         id: string;
@@ -54,9 +54,11 @@ export declare class AuthService {
         updatedAt: Date;
         taxiNumber: string | null;
         isSimulated: boolean;
+        phone: string;
+        referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
-        phone: string;
         licensePlate: string | null;
         taxiPlate: string | null;
         subscriptionPaid: boolean;
@@ -64,8 +66,6 @@ export declare class AuthService {
         onboardingStatus: string;
         onboardedAt: Date;
         blockedAt: Date | null;
-        referredBy: string | null;
-        password: string | null;
         level: string;
         consecutiveMonthsUnderGoal: number;
         identidadVehicular: import("@prisma/client/runtime/library").JsonValue | null;
@@ -92,8 +92,8 @@ export declare class AuthService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        password: string;
         email: string;
+        password: string;
     } | {
         role: string;
         category: string | null;
@@ -107,13 +107,13 @@ export declare class AuthService {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     } | {
         role: string;
         id: string;
@@ -122,9 +122,11 @@ export declare class AuthService {
         updatedAt: Date;
         taxiNumber: string | null;
         isSimulated: boolean;
+        phone: string;
+        referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
-        phone: string;
         licensePlate: string | null;
         taxiPlate: string | null;
         subscriptionPaid: boolean;
@@ -132,8 +134,6 @@ export declare class AuthService {
         onboardingStatus: string;
         onboardedAt: Date;
         blockedAt: Date | null;
-        referredBy: string | null;
-        password: string | null;
         level: string;
         consecutiveMonthsUnderGoal: number;
         identidadVehicular: import("@prisma/client/runtime/library").JsonValue | null;

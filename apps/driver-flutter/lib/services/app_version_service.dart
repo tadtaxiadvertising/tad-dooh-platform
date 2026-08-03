@@ -1,7 +1,13 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../core/di/providers.dart';
 import '../core/network/api_constants.dart';
+
+// Generador de provider para el servicio
+final appVersionServiceProvider = Provider((ref) {
+  return AppVersionService(dio: ref.watch(dioProvider));
+});
 
 /// Respuesta del endpoint GET /api/drivers/app-version.
 @immutable
@@ -21,12 +27,12 @@ class AppVersionInfo {
   final String releaseNotes;
 
   factory AppVersionInfo.fromJson(Map<String, dynamic> json) => AppVersionInfo(
-    latestVersion: (json['latestVersion'] ?? '1.0.0').toString(),
-    minVersion: (json['minVersion'] ?? '1.0.0').toString(),
-    forceUpdate: json['forceUpdate'] == true,
-    downloadUrl: (json['downloadUrl'] ?? '').toString(),
-    releaseNotes: (json['releaseNotes'] ?? '').toString(),
-  );
+        latestVersion: (json['latestVersion'] ?? '1.0.0').toString(),
+        minVersion: (json['minVersion'] ?? '1.0.0').toString(),
+        forceUpdate: json['forceUpdate'] == true,
+        downloadUrl: (json['downloadUrl'] ?? '').toString(),
+        releaseNotes: (json['releaseNotes'] ?? '').toString(),
+      );
 }
 
 /// Resultado de la verificación de versión.
@@ -48,11 +54,9 @@ class VersionCheckResult {
 /// Servicio que consulta el backend para chequear la versión publicada
 /// de la app Flutter y decidir si se debe forzar actualización.
 class AppVersionService {
-  AppVersionService({String? apiBase})
-    : apiBase = apiBase ?? ApiConstants.baseUrl;
+  AppVersionService({required this.dio});
 
-  final String apiBase;
-  static const Duration timeout = Duration(seconds: 8);
+  final Dio dio;
 
   /// Compara dos versiones semver (string). Devuelve:
   ///  >0 si current > other, 0 si iguales, <0 si current < other.
@@ -76,13 +80,8 @@ class AppVersionService {
   /// Devuelve [VersionStatus] para que el widget decida la UI.
   Future<VersionCheckResult> checkVersion({required String currentVersion}) async {
     try {
-      final client = HttpClient();
-      client.connectionTimeout = timeout;
-      final fullUrl = apiBase.endsWith('/') 
-          ? '$apiBase${ApiConstants.versionPath}' 
-          : '$apiBase/${ApiConstants.versionPath}';
-      final req = await client.getUrl(Uri.parse(fullUrl));
-      final res = await req.close();
+      final res = await dio.get(ApiConstants.versionPath);
+
       if (res.statusCode != 200) {
         return VersionCheckResult(
           status: VersionStatus.unknown,
@@ -90,10 +89,8 @@ class AppVersionService {
           currentVersion: currentVersion,
         );
       }
-      final body = await res.transform(utf8.decoder).join();
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      final info = AppVersionInfo.fromJson(json);
-      client.close();
+
+      final info = AppVersionInfo.fromJson(res.data as Map<String, dynamic>);
 
       if (forceUpdateFlag(info, currentVersion)) {
         return VersionCheckResult(

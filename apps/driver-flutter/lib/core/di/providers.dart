@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../network/kill_switch_state.dart';
@@ -8,28 +9,20 @@ import '../sync/sync_engine.dart';
 import '../../models/hub_data.dart';
 import '../network/api_constants.dart';
 
-<<<<<<< Updated upstream
-/// API base — production vs debug (10.0.0.2 = host LAN IP for physical devices).
-String get apiBase => kReleaseMode
-    ? 'https://tad-api.rewvid.easypanel.host/api/v1'
-    : 'http://10.0.0.2:3000/api/v1';
-=======
-/// API base — production vs emulator (10.0.2.2 maps Android emulator → host localhost).
-String get apiBase => ApiConstants.baseUrl;
->>>>>>> Stashed changes
+/// ─── KillSwitch state ────────────────────────────────────────────────────────
 
-/// ─── KillSwitch state (ChangeNotifier) ──────────────────────────────────────
-
-final killSwitchState = KillSwitchState();
+final killSwitchProvider = ChangeNotifierProvider((ref) => KillSwitchState());
 
 /// ─── Supabase client ─────────────────────────────────────────────────────────
 
-SupabaseClient get supabaseClient => Supabase.instance.client;
+final supabaseClientProvider = Provider((ref) => Supabase.instance.client);
 
 /// ─── Dio ─────────────────────────────────────────────────────────────────────
 
-Dio createDio() {
+final dioProvider = Provider((ref) {
+  final apiBase = ApiConstants.baseUrl;
   debugPrint('DI: createDio with baseUrl: $apiBase');
+
   final dio = Dio(BaseOptions(
     baseUrl: apiBase,
     connectTimeout: const Duration(seconds: 10),
@@ -42,72 +35,79 @@ Dio createDio() {
       debugPrint('INTERCEPTOR: KillSwitch (402) suppressed for development');
     },
     onUnauthorized: () {
-      clearAuth();
-      killSwitchState.activate('Sesión expirada — inicie sesión nuevamente');
+      ref.read(authHelpersProvider).clearAuth();
+      ref.read(killSwitchProvider).activate('Sesión expirada — inicie sesión nuevamente');
     },
-    silentReLogin: silentReLogin,
+    silentReLogin: ref.read(authHelpersProvider).silentReLogin,
   ));
 
   return dio;
-}
-
-final dio = createDio();
+});
 
 /// ─── Sync engine ─────────────────────────────────────────────────────────────
 
-HybridSyncEngine createSyncEngine() => HybridSyncEngine(
-  dio: dio,
-  apiBase: apiBase,
-  deviceId: null,
-);
+final syncEngineProvider = Provider((ref) => HybridSyncEngine(
+      dio: ref.watch(dioProvider),
+      apiBase: ApiConstants.baseUrl,
+      deviceId: null,
+    ));
 
 /// ─── Auth helpers ───────────────────────────────────────────────────────────
 
-const _kPrefToken = 'tad_driver_token';
-const _kPrefPhone = 'tad_driver_phone';
-const _kPrefPass = 'tad_driver_pass';
+final authHelpersProvider = Provider((ref) => AuthHelpers(ref));
 
-Future<void> clearAuth() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove(_kPrefToken);
-  await prefs.remove(_kPrefPhone);
-  await prefs.remove(_kPrefPass);
-}
+class AuthHelpers {
+  AuthHelpers(this.ref);
+  final Ref ref;
 
-Future<bool> silentReLogin() async {
-  final prefs = await SharedPreferences.getInstance();
-  final phone = prefs.getString(_kPrefPhone);
-  final password = prefs.getString(_kPrefPass);
-  if (phone == null || password == null) return false;
+  static const _kPrefToken = 'tad_driver_token';
+  static const _kPrefPhone = 'tad_driver_phone';
+  static const _kPrefPass = 'tad_driver_pass';
 
-  try {
-    final res = await dio.fetch(RequestOptions(
-      path: ApiConstants.loginPath,
-      method: 'POST',
-      data: {'phone': phone, 'password': password},
-    ));
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      final data = res.data as Map<String, dynamic>;
-      await prefs.setString(_kPrefToken, data['access_token']?.toString() ?? '');
-      return true;
-    }
-  } catch (_) {}
-  return false;
-}
+  Future<void> clearAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kPrefToken);
+    await prefs.remove(_kPrefPhone);
+    await prefs.remove(_kPrefPass);
+  }
 
-Future<DriverHubData?> fetchHub() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString(_kPrefToken);
-  if (token == null) return null;
+  Future<bool> silentReLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final phone = prefs.getString(_kPrefPhone);
+    final password = prefs.getString(_kPrefPass);
+    if (phone == null || password == null) return false;
 
-  try {
-    final res = await dio.fetch(RequestOptions(
-      path: ApiConstants.hubPath,
-      method: 'GET',
-    ));
-    if (res.statusCode == 200) {
-      return DriverHubData.fromJson(res.data as Map<String, dynamic>);
-    }
-  } catch (_) {}
-  return null;
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.fetch(RequestOptions(
+        path: ApiConstants.loginPath,
+        method: 'POST',
+        data: {'phone': phone, 'password': password},
+      ));
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final data = res.data as Map<String, dynamic>;
+        await prefs.setString(_kPrefToken, data['access_token']?.toString() ?? '');
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<DriverHubData?> fetchHub() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_kPrefToken);
+    if (token == null) return null;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.fetch(RequestOptions(
+        path: ApiConstants.hubPath,
+        method: 'GET',
+      ));
+      if (res.statusCode == 200) {
+        return DriverHubData.fromJson(res.data as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return null;
+  }
 }

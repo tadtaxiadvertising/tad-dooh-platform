@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/gps_service.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 import 'bank_wizard_screen.dart';
@@ -210,7 +211,18 @@ class _RoutesTabState extends State<RoutesTab> {
           height: 46,
           child: OutlinedButton.icon(
             onPressed: () {
-              // TODO: trigger GPS sync
+              final gps = GPSService.I;
+              gps.syncNow();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'GPS sincronizado: ${gps.pointCount} puntos',
+                    ),
+                    backgroundColor: TadColors.tadSurface,
+                  ),
+                );
+              }
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: TadColors.tadYellow,

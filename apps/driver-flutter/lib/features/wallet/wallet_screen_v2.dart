@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/di/providers.dart';
+import '../../services/hub_service.dart';
 import '../../theme/tad_theme.dart';
 import '../../models/hub_data.dart';
 

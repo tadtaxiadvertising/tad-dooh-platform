@@ -68,8 +68,8 @@ export declare class FinanceService {
         status: string;
         driverId: string;
         activeAds: number;
-        paidAt: Date | null;
         amount: number;
+        paidAt: Date | null;
         month: number;
         year: number;
         referenceNum: string | null;
@@ -110,10 +110,10 @@ export declare class FinanceService {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        reference: string | null;
         amount: number;
         netAmount: number;
         taxAmount: number;
+        reference: string | null;
         note: string | null;
     }>;
     getFinancialSummary(): Promise<{
@@ -145,10 +145,10 @@ export declare class FinanceService {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        reference: string | null;
         amount: number;
         netAmount: number;
         taxAmount: number;
+        reference: string | null;
         note: string | null;
     }[]>;
     private generateInvoiceTemplate;

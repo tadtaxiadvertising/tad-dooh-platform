@@ -3,7 +3,7 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
-import { getMyProfile, updateMyProfile } from '@tad/services/api';
+import { getMyProfile, updateMyProfile } from '@tad/services';
 
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });

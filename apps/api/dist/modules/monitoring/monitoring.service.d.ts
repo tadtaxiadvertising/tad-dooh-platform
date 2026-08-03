@@ -38,8 +38,8 @@ export declare class MonitoringService {
         };
         devices: {
             driver: {
-                fullName: string;
                 phone: string;
+                fullName: string;
                 subscriptionPaid: boolean;
             };
             deviceId: string;

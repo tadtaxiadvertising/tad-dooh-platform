@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 import '../services/hub_service.dart';
+import '../services/gps_service.dart';
+import '../core/network/api_constants.dart';
+import '../core/sync/sync_engine.dart';
 import '../widgets/kill_switch_overlay.dart';
 import '../widgets/dashboard_widgets.dart';
 import 'login_screen.dart' show clearLogin;
 import 'onboarding_screen.dart';
 import 'routes_screen.dart';
+import 'package:dio/dio.dart';
 
 enum _Tab { home, routes, wallet, settings }
 
@@ -27,6 +31,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _DashboardScreenState() : _hub = const DriverHubData();
 
   @override
+  void dispose() {
+    GPSService.I.detachSyncEngine();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _hub = widget.hub ?? const DriverHubData();
@@ -40,10 +50,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _hub = fresh;
         _loading = false;
       });
+      _startGpsAndSync();
     } else if (mounted) {
       setState(() => _loading = false);
     }
     if (mounted) _checkSubscriptionLock();
+  }
+
+  /// Wire GPS capture → HybridSyncEngine → POST /fleet/track-batch.
+  /// Called once after hub data arrives with a valid driverId.
+  void _startGpsAndSync() {
+    if (_hub.driverId.isEmpty) return;
+
+    final dio = Dio(BaseOptions(
+      baseUrl: ApiConstants.baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {'Content-Type': 'application/json'},
+    ));
+
+    final engine = HybridSyncEngine(
+      dio: dio,
+      apiBase: ApiConstants.baseUrl,
+      driverId: _hub.driverId,
+    );
+
+    GPSService.I.attachSyncEngine(engine);
+    GPSService.I.startTracking();
   }
 
   void _checkSubscriptionLock() {
@@ -68,6 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
 
   void _logout() {
+    GPSService.I.detachSyncEngine();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -338,7 +372,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: TadColors.tadGreen,
               badge: '${_hub.activeAds}',
               tooltip: 'Ver campañas activas',
-              onTap: () {},
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Campañas próximamente'),
+                    backgroundColor: TadColors.tadSurface,
+                  ),
+                );
+              },
             ),
             QuickActionTile(
               icon: Icons.account_balance_wallet,

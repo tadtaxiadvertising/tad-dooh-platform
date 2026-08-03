@@ -16,13 +16,16 @@ class HybridSyncEngine {
     required Dio dio,
     String? apiBase,
     String? deviceId,
+    String? driverId,
     this.batchInterval = const Duration(minutes: 5),
     this.activeStreamDuration = const Duration(minutes: 2),
   }) : _dio = dio,
-       _deviceId = deviceId;
+       _deviceId = deviceId,
+       _driverId = driverId;
 
   final Dio _dio;
   final String? _deviceId;
+  final String? _driverId;
   final Duration batchInterval;
   final Duration activeStreamDuration;
 
@@ -48,17 +51,24 @@ class HybridSyncEngine {
   /// Llamado por el plugin de background location con cada nueva coordenada.
   void addPoint(double lat, double lng, double? speedMps, DateTime ts) {
     _pending.add(GpsPoint(lat: lat, lng: lng, speedMps: speedMps, ts: ts));
-    if (_pending.length >= 60) _flushBatch();
+    if (_pending.length >= 60) flushBatch();
   }
 
-  Future<void> _flushBatch() async {
+  /// Flush buffered GPS points to the backend immediately.
+  /// Called by the batch timer, when 60 points accumulate, or on
+  /// manual sync request from the UI.
+  Future<void> flushBatch() async {
     if (_pending.isEmpty) return;
     final buffer = List<GpsPoint>.from(_pending);
     _pending.clear();
     try {
       await _dio.post(
         '/fleet/track-batch',
-        data: {'points': buffer.map((p) => p.toJson()).toList()},
+        data: {
+          'driverId': _driverId ?? '',
+          'deviceId': _deviceId ?? '',
+          'points': buffer.map((p) => p.toJson()).toList(),
+        },
         options: Options(
           headers: _deviceId != null ? {'X-Device-Id': _deviceId} : null,
         ),

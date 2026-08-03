@@ -21,6 +21,18 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@tad/services": [
+        "../../packages/services"
+      ],
+      "@tad/ui": [
+        "../../packages/ui"
+      ],
+      "@tad/store": [
+        "../../packages/store"
+      ],
+      "@tad/logging": [
+        "../../packages/logging"
       ]
     },
     "target": "ES2017"

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/di/providers.dart';
 import '../../models/hub_data.dart';
+import '../../services/hub_service.dart';
 import '../../theme/tad_theme.dart';
 
 /// Pantalla de referidos — QR offline del referralCode real del conductor.

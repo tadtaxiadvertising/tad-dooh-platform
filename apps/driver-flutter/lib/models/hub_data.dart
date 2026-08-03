@@ -178,8 +178,8 @@ class GpsCoord {
   factory GpsCoord.fromJson(Map<String, dynamic> json) => GpsCoord(
     lat: (json['lat'] as double?) ?? 0,
     lng: (json['lng'] as double?) ?? 0,
-    timestamp: json['ts'] ?? json['timestamp'] ?? 0,
-    accuracy: json['accuracy']?.toDouble(),
+    timestamp: (json['ts'] ?? json['timestamp'] ?? 0) as int,
+    accuracy: (json['accuracy'] as num?)?.toDouble(),
   );
 
   Map<String, dynamic> toJson() => {'lat': lat, 'lng': lng, 'timestamp': timestamp, if (accuracy != null) 'accuracy': accuracy};

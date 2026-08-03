@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/hub_data.dart';
-import '../screens/login_screen.dart' show getCachedToken, silentReLogin, kApiBase;
+import '../core/auth/auth_helpers.dart';
 
 /// Fetches driver hub data from backend via Dio (goes through KillSwitchInterceptor).
 /// GET /api/v1/drivers/me/hub — requires JWT Bearer token.

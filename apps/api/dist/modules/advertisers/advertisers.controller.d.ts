@@ -18,13 +18,13 @@ export declare class AdvertisersController {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     })[]>;
     login(body: {
         email: string;
@@ -94,9 +94,11 @@ export declare class AdvertisersController {
                 updatedAt: Date;
                 taxiNumber: string | null;
                 isSimulated: boolean;
+                phone: string;
+                referredBy: string | null;
+                password: string | null;
                 fullName: string;
                 cedula: string | null;
-                phone: string;
                 licensePlate: string | null;
                 taxiPlate: string | null;
                 subscriptionPaid: boolean;
@@ -104,8 +106,6 @@ export declare class AdvertisersController {
                 onboardingStatus: string;
                 onboardedAt: Date;
                 blockedAt: Date | null;
-                referredBy: string | null;
-                password: string | null;
                 level: string;
                 consecutiveMonthsUnderGoal: number;
                 identidadVehicular: import("@prisma/client/runtime/library").JsonValue | null;
@@ -134,18 +134,18 @@ export declare class AdvertisersController {
             id: string;
             createdAt: Date;
             advertiserId: string | null;
-            description: string | null;
-            status: string;
             startDate: Date;
             endDate: Date;
+            targetAll: boolean;
+            targetCity: string;
+            targetImpressions: number;
+            description: string | null;
+            status: string;
             version: number;
             isGlobal: boolean;
-            targetAll: boolean;
             targetCities: string;
-            targetCity: string;
             targetFleets: string;
             priority: number;
-            targetImpressions: number;
             targetUrl: string | null;
             createdById: string | null;
             updatedAt: Date;
@@ -166,13 +166,13 @@ export declare class AdvertisersController {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     }>;
     create(body: {
         companyName: string;
@@ -192,13 +192,13 @@ export declare class AdvertisersController {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     }>;
     update(id: string, body: any): Promise<{
         category: string | null;
@@ -212,13 +212,13 @@ export declare class AdvertisersController {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     }>;
     delete(id: string): Promise<{
         category: string | null;
@@ -232,13 +232,13 @@ export declare class AdvertisersController {
         createdAt: Date;
         status: string;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
+        phone: string | null;
         productsData: string | null;
+        referredBy: string | null;
+        password: string | null;
     }>;
     getPortal(id: string): Promise<{
         brand: {

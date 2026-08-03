@@ -41,13 +41,13 @@ class BankData {
   });
 
   factory BankData.fromJson(Map<String, dynamic> json) => BankData(
-        bank: json['bank'] ?? '',
-        accountNum: json['accountNum'] ?? '',
-        accountType: json['accountType'] ?? 'AHORRO',
-        ownerName: json['ownerName'] ?? '',
-        cedula: json['cedula'] ?? '',
-        savedAt: json['savedAt'] != null ? DateTime.tryParse(json['savedAt']) : null,
-        synced: json['synced'] ?? false,
+        bank: (json['bank'] ?? '').toString(),
+        accountNum: (json['accountNum'] ?? '').toString(),
+        accountType: (json['accountType'] ?? 'AHORRO').toString(),
+        ownerName: (json['ownerName'] ?? '').toString(),
+        cedula: (json['cedula'] ?? '').toString(),
+        savedAt: json['savedAt'] != null ? DateTime.tryParse(json['savedAt'].toString()) : null,
+        synced: json['synced'] == true,
       );
 
   Map<String, dynamic> toJson() => {

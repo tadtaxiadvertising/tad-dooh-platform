@@ -17,8 +17,8 @@ class GpsPoint {
   Map<String, dynamic> toJson() => {
         'lat': lat,
         'lng': lng,
-        'speed': speedMps,
-        'ts': ts.toUtc().toIso8601String(),
+        'speed': speedMps ?? 0.0,
+        'timestamp': ts.millisecondsSinceEpoch,
       };
 }
 

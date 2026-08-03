@@ -2,31 +2,31 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
-import '../core/network/api_constants.dart';
+import '../core/auth/auth_helpers.dart';
+
+// Re-export auth helpers for backwards compatibility with existing callers
+// (bank_wizard_screen.dart, dashboard_screen.dart, hub_service.dart).
+export '../core/auth/auth_helpers.dart'
+    show
+        kApiBase,
+        kPrefToken,
+        kPrefHub,
+        kPrefTokenExp,
+        kPrefPhone,
+        kPrefPassword,
+        getCachedToken,
+        silentReLogin,
+        clearLogin,
+        restoreCachedHub;
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
-/// API base URL — production vs debug (emulator maps 10.0.2.2 → host localhost)
-/// Backend uses global prefix `/api/v1`, so all paths start from `/api/v1`.
-<<<<<<< Updated upstream
-final String kApiBase = kReleaseMode
-    ? 'https://tad-api.rewvid.easypanel.host/api/v1'
-    : 'http://10.0.0.2:3000/api/v1';
-=======
-final String kApiBase = ApiConstants.baseUrl;
->>>>>>> Stashed changes
-
-/// SharedPreferences keys
-const String kPrefToken = 'tad_driver_token';
-const String kPrefHub = 'tad_driver_user';
-const String kPrefTokenExp = 'tad_driver_token_exp';
-const String kPrefPhone = 'tad_driver_phone';
-const String kPrefPassword = 'tad_driver_pass';
+/// API base URL and SharedPreferences keys are re-exported from
+/// core/auth/auth_helpers.dart (single source of truth).
 
 class LoginResult {
   final DriverHubData hub;
@@ -161,50 +161,6 @@ Future<void> persistLogin(LoginResult result, {String? phone, String? password})
   // Cache creds for silent re-login on 401
   if (phone != null) await prefs.setString(kPrefPhone, phone);
   if (password != null) await prefs.setString(kPrefPassword, password);
-}
-
-/// Clears all auth state — call on logout.
-Future<void> clearLogin() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove(kPrefToken);
-  await prefs.remove(kPrefHub);
-  await prefs.remove(kPrefTokenExp);
-  await prefs.remove(kPrefPhone);
-  await prefs.remove(kPrefPassword);
-}
-
-/// Restores cached DriverHubData for fast initial load (before API fetch).
-Future<DriverHubData?> restoreCachedHub() async {
-  final prefs = await SharedPreferences.getInstance();
-  final raw = prefs.getString(kPrefHub);
-  if (raw == null) return null;
-  try {
-    return DriverHubData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-  } catch (_) {
-    return null;
-  }
-}
-
-/// Returns cached token or null — for authenticated API calls.
-Future<String?> getCachedToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString(kPrefToken);
-}
-
-/// Silent re-login using cached phone/password (called on 401).
-/// Returns new LoginResult or null if no cached creds.
-Future<LoginResult?> silentReLogin() async {
-  final prefs = await SharedPreferences.getInstance();
-  final phone = prefs.getString(kPrefPhone);
-  final password = prefs.getString(kPrefPassword);
-  if (phone == null || password == null) return null;
-  try {
-    final result = await apiLogin(phone, password);
-    await persistLogin(result, phone: phone, password: password);
-    return result;
-  } catch (_) {
-    return null;
-  }
 }
 
 /// Sets onboarding force flag. In Flutter native, the dashboard checks

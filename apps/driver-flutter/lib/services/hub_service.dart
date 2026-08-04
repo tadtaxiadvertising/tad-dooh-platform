@@ -1,37 +1,31 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/hub_data.dart';
-import '../core/auth/auth_helpers.dart';
+import '../core/di/providers.dart';
+import '../core/network/api_constants.dart';
 
-/// Fetches driver hub data from backend via Dio (goes through KillSwitchInterceptor).
-/// GET /api/v1/drivers/me/hub — requires JWT Bearer token.
-///
-/// On 401, attempts silent re-login with cached creds, then retries once.
-/// Returns null if no session or both attempts fail.
-Future<DriverHubData?> fetchHub() async {
-  final token = await getCachedToken();
-  if (token == null) return null;
+final hubServiceProvider = Provider((ref) => HubService(ref));
 
-  final hub = await _doFetch(token);
-  if (hub != null) return hub;
+class HubService {
+  HubService(this.ref);
+  final Ref ref;
 
-  // 401 — try silent re-login, then retry
-  final newLogin = await silentReLogin();
-  if (newLogin == null) return null;
-
-  return _doFetch(newLogin.accessToken);
-}
-
-Future<DriverHubData?> _doFetch(String token) async {
-  try {
-    final res = await Dio().get(
-      '$kApiBase/drivers/me/hub',
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-    if (res.statusCode == 200) {
-      return DriverHubData.fromJson(res.data as Map<String, dynamic>);
+  Future<DriverHubData?> fetchHub() async {
+    try {
+      final dio = ref.read(dioProvider);
+      debugPrint('[HubService] Fetching hub from: ${dio.options.baseUrl}${ApiConstants.hubPath}');
+      final res = await dio.get(ApiConstants.hubPath);
+      if (res.statusCode == 200) {
+        debugPrint('[HubService] Hub data received OK');
+        return DriverHubData.fromJson(res.data as Map<String, dynamic>);
+      }
+    } on DioException catch (e) {
+      debugPrint('[HubService] DioException: ${e.type} - ${e.message}');
+      debugPrint('[HubService] Response: ${e.response?.statusCode} - ${e.response?.data}');
+    } catch (e) {
+      debugPrint('[HubService] Unexpected error: $e');
     }
-    return null;
-  } catch (_) {
     return null;
   }
 }

@@ -1,0 +1,1053 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 85.0.0 (105.0.0 available)
+  analyzer 7.6.0 (14.1.0 available)
+  analyzer_plugin 0.13.4 (0.14.14 available)
+  app_links 6.4.1 (7.2.1 available)
+  app_links_platform_interface 2.0.2 (2.0.4 available)
+  async 2.11.0 (2.13.1 available)
+  boolean_selector 2.1.1 (2.1.2 available)
+  build 2.5.4 (4.0.10 available)
+  build_config 1.1.2 (1.3.2 available)
+  build_daemon 4.1.3 (retracted)
+  build_resolvers 2.5.4 (3.0.4 available)
+  build_runner 2.5.4 (2.16.0 available)
+  build_runner_core 9.1.2 (9.3.2 available)
+  connectivity_plus 6.1.5 (7.3.1 available)
+  custom_lint_core 0.7.5 (0.8.2 available)
+  custom_lint_visitor 1.0.0+7.7.0 (1.0.0+9.0.0 available)
+  dart_jsonwebtoken 2.17.0 (3.4.1 available)
+  dart_style 3.1.1 (3.1.12 available)
+  dbus 0.7.12 (0.7.14 available)
+  dio 5.10.0 (5.11.0 available)
+  dio_web_adapter 2.2.0 (2.2.1 available)
+  ffi 2.1.3 (2.2.0 available)
+  flutter_dotenv 5.2.1 (6.0.1 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_local_notifications 19.5.0 (22.2.0 available)
+  flutter_local_notifications_linux 6.0.0 (8.0.1 available)
+  flutter_local_notifications_platform_interface 9.1.0 (12.1.0 available)
+  flutter_local_notifications_windows 1.0.3 (3.1.1 available)
+  flutter_riverpod 2.6.1 (3.4.2 available)
+  freezed 2.5.8 (3.2.5 available)
+  freezed_annotation 2.4.4 (3.1.0 available)
+  go_router 14.8.1 (17.3.0 available)
+  gotrue 2.25.0 (2.26.0 available)
+  intl 0.20.2 (0.20.3 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.9.0 (4.12.0 available)
+  json_serializable 6.9.5 (6.14.1 available)
+  lints 5.1.1 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.18.0 (1.19.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  package_info_plus 9.0.1 (10.2.1 available)
+  package_info_plus_platform_interface 3.2.1 (4.1.0 available)
+  passkeys_platform_interface 2.7.0 (2.9.0 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_android 2.2.17 (2.3.1 available)
+  path_provider_foundation 2.4.1 (2.6.0 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  permission_handler 12.0.3 (13.0.0 available)
+  permission_handler_android 13.0.1 (14.0.0 available)
+  permission_handler_apple 9.4.10 (9.5.0 available)
+  permission_handler_html 0.1.3+5 (0.1.4+1 available)
+  permission_handler_platform_interface 4.3.0 (4.4.0 available)
+  permission_handler_windows 0.2.1 (0.2.2 available)
+  petitparser 6.0.2 (7.0.2 available)
+  pointycastle 3.9.1 (4.0.0 available)
+  posix 6.5.0 (6.5.2 available)
+  qr 3.0.2 (4.0.0 available)
+  realtime_client 2.10.0 (2.11.0 available)
+  riverpod 2.6.1 (3.4.2 available)
+  riverpod_analyzer_utils 0.5.9 (0.5.10 available)
+  riverpod_annotation 2.6.1 (4.0.6 available)
+  riverpod_generator 2.6.4 (4.0.8 available)
+  shared_preferences 2.5.3 (2.5.5 available)
+  shared_preferences_android 2.4.11 (2.4.27 available)
+  shared_preferences_foundation 2.5.4 (2.5.6 available)
+  shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+  source_gen 2.0.0 (4.2.4 available)
+  source_helper 1.3.7 (1.3.13 available)
+  source_span 1.10.0 (1.10.2 available)
+  string_scanner 1.3.0 (1.4.1 available)
+  supabase 2.13.4 (2.14.0 available)
+  supabase_flutter 2.15.4 (2.16.0 available)
+  term_glyph 1.2.1 (1.2.2 available)
+  test_api 0.7.11 (0.7.13 available)
+  timezone 0.10.1 (0.11.1 available)
+  url_launcher_android 6.3.17 (6.3.32 available)
+  url_launcher_ios 6.3.3 (6.4.1 available)
+  url_launcher_linux 3.2.1 (3.2.2 available)
+  url_launcher_macos 3.2.2 (3.2.5 available)
+  url_launcher_web 2.4.1 (2.4.3 available)
+  url_launcher_windows 3.1.4 (3.1.5 available)
+  vector_math 2.2.0 (2.4.2 available)
+  very_good_analysis 6.0.0 (10.3.0 available)
+  vm_service 14.3.0 (15.2.0 available)
+  win32 5.13.0 (6.3.0 available)
+  xml 6.5.0 (7.0.1 available)
+Got dependencies!
+87 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing driver-flutter...                                     
+
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\auth\auth_helpers.dart:3:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\core\auth\auth_helpers.dart:4:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\auth\auth_helpers.dart:4:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\auth\auth_helpers.dart:5:8 - always_use_package_imports
+   info - Sort combinator names alphabetically. Try sorting the combinator names alphabetically - lib\core\auth\auth_helpers.dart:5:42 - combinators_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\di\providers.dart:6:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\core\di\providers.dart:7:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\di\providers.dart:7:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\di\providers.dart:8:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\core\di\providers.dart:9:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\di\providers.dart:9:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\core\di\providers.dart:10:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:12:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:16:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:20:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\core\di\providers.dart:31:4 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:39:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\core\di\providers.dart:42:4 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:47:81 - lines_longer_than_80_chars
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\core\di\providers.dart:52:17 - avoid_redundant_argument_values
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\core\di\providers.dart:53:6 - require_trailing_commas
+   info - Closure should be a tearoff. Try using a tearoff rather than a closure - lib\core\di\providers.dart:57:38 - unnecessary_lambdas
+warning - The type argument(s) of the function 'fetch' can't be inferred. Use explicit type argument(s) for 'fetch' - lib\core\di\providers.dart:82:29 - inference_failure_on_function_invocation
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\core\di\providers.dart:86:8 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\di\providers.dart:89:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the function 'fetch' can't be inferred. Use explicit type argument(s) for 'fetch' - lib\core\di\providers.dart:103:29 - inference_failure_on_function_invocation
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\core\di\providers.dart:106:8 - require_trailing_commas
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\core\network\kill_switch_interceptor.dart:38:2 - eol_at_end_of_file
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\core\network\kill_switch_state.dart:23:2 - eol_at_end_of_file
+   info - The parameter 'apiBase' is not used in the constructor. Try using the parameter or removing it - lib\core\sync\sync_engine.dart:17:5 - avoid_unused_constructor_parameters
+warning - The type argument(s) of the function 'post' can't be inferred. Use explicit type argument(s) for 'post' - lib\core\sync\sync_engine.dart:65:18 - inference_failure_on_function_invocation
+   info - To-do comment doesn't follow the Flutter style. Try following the Flutter style for to-do comments - lib\core\sync\sync_engine.dart:87:5 - flutter_style_todos
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\core\sync\sync_engine.dart:87:81 - lines_longer_than_80_chars
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\core\sync\sync_queue.dart:9:19 - always_put_required_named_parameters_first
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\core\sync\sync_queue.dart:44:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\auth\login_screen_v2.dart:2:8 - always_use_package_imports
+warning - Unused import: '../../core/di/providers.dart'. Try removing the import directive - lib\features\auth\login_screen_v2.dart:2:8 - unused_import
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\auth\login_screen_v2.dart:3:8 - always_use_package_imports
+warning - Unused import: '../../core/network/api_constants.dart'. Try removing the import directive - lib\features\auth\login_screen_v2.dart:3:8 - unused_import
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\auth\login_screen_v2.dart:4:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\features\auth\login_screen_v2.dart:5:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\auth\login_screen_v2.dart:5:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:57:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:57:94 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:57:95 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:64:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:64:97 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:64:98 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:67:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:67:106 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:89:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:91:33 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:92:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:103:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:106:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:106:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:119:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:124:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:124:99 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:126:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:126:106 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:137:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\auth\login_screen_v2.dart:137:107 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\auth\login_screen_v2.dart:142:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\features\auth\login_screen_v2.dart:166:11 - inference_failure_on_instance_creation
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\features\auth\login_screen_v2.dart:167:5 - prefer_const_declarations
+   info - Missing an 'await' for the 'Future' computed by this expression. Try adding an 'await' or wrapping the expression with 'unawaited' - lib\features\auth\login_screen_v2.dart:177:17 - unawaited_futures
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\onboarding\onboarding_flow_screen.dart:3:8 - always_use_package_imports
+warning - Unused import: '../../core/di/providers.dart'. Try removing the import directive - lib\features\onboarding\onboarding_flow_screen.dart:3:8 - unused_import
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\onboarding\onboarding_flow_screen.dart:4:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\onboarding\onboarding_flow_screen.dart:5:8 - always_use_package_imports
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\features\onboarding\onboarding_flow_screen.dart:11:56 - always_put_required_named_parameters_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:55:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:59:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:59:92 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:63:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:64:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:101:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:102:81 - lines_longer_than_80_chars
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\onboarding\onboarding_flow_screen.dart:103:13 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:104:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:120:10 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:133:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:133:82 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:145:78 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:158:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:158:106 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:160:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:161:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:161:84 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:176:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:176:82 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:198:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:198:109 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\onboarding\onboarding_flow_screen.dart:200:18 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:201:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:201:104 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\onboarding\onboarding_flow_screen.dart:203:18 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:204:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:204:82 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:205:12 - require_trailing_commas
+   info - Closure should be a tearoff. Try using a tearoff rather than a closure - lib\features\onboarding\onboarding_flow_screen.dart:212:24 - unnecessary_lambdas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:215:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:215:82 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:241:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:241:109 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:244:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:244:82 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:245:12 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\onboarding\onboarding_flow_screen.dart:258:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\onboarding\onboarding_flow_screen.dart:258:82 - require_trailing_commas
+   info - To-do comment doesn't follow the Flutter style. Try following the Flutter style for to-do comments - lib\features\onboarding\onboarding_flow_screen.dart:268:7 - flutter_style_todos
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\features\onboarding\onboarding_flow_screen.dart:269:13 - inference_failure_on_instance_creation
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\features\onboarding\onboarding_flow_screen.dart:291:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\refer_qr\refer_qr_screen.dart:4:8 - always_use_package_imports
+warning - Unused import: '../../core/di/providers.dart'. Try removing the import directive - lib\features\refer_qr\refer_qr_screen.dart:4:8 - unused_import
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\refer_qr\refer_qr_screen.dart:5:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\refer_qr\refer_qr_screen.dart:6:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\refer_qr\refer_qr_screen.dart:7:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:51:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:55:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:55:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:62:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:63:44 - require_trailing_commas
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\features\refer_qr\refer_qr_screen.dart:73:26 - avoid_redundant_argument_values
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:81:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:82:37 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:82:38 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\refer_qr\refer_qr_screen.dart:85:15 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:85:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:97:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:97:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\refer_qr\refer_qr_screen.dart:99:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\refer_qr\refer_qr_screen.dart:99:90 - require_trailing_commas
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\features\refer_qr\refer_qr_screen.dart:118:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\wallet\wallet_screen_v2.dart:2:8 - always_use_package_imports
+warning - Unused import: '../../core/di/providers.dart'. Try removing the import directive - lib\features\wallet\wallet_screen_v2.dart:2:8 - unused_import
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\wallet\wallet_screen_v2.dart:3:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\wallet\wallet_screen_v2.dart:4:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\features\wallet\wallet_screen_v2.dart:5:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\features\wallet\wallet_screen_v2.dart:5:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:44:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:45:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:52:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:55:66 - require_trailing_commas
+   info - Unnecessary use of parentheses. Try removing the parentheses - lib\features\wallet\wallet_screen_v2.dart:61:23 - unnecessary_parenthesis
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:71:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:75:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:75:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:84:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:84:95 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:84:96 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:87:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:87:82 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:93:14 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:100:76 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\features\wallet\wallet_screen_v2.dart:102:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\features\wallet\wallet_screen_v2.dart:103:36 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:103:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:103:94 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:111:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:119:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:119:100 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\wallet\wallet_screen_v2.dart:120:28 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:121:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:121:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:127:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:127:93 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:135:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:135:104 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\features\wallet\wallet_screen_v2.dart:137:18 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:137:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:141:49 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:146:49 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:149:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:150:47 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:153:55 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:160:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:166:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:166:110 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:170:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:171:81 - lines_longer_than_80_chars
+   info - Unnecessary use of parentheses. Try removing the parentheses - lib\features\wallet\wallet_screen_v2.dart:188:35 - unnecessary_parenthesis
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:190:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:190:99 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:190:100 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:193:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:193:98 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:198:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:198:96 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:203:10 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:209:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:209:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:228:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:233:27 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:233:28 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\features\wallet\wallet_screen_v2.dart:241:47 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\features\wallet\wallet_screen_v2.dart:242:81 - lines_longer_than_80_chars
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\features\wallet\wallet_screen_v2.dart:244:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:5:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\main.dart:6:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:6:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:7:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:8:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:9:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\main.dart:10:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:10:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:11:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:12:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\main.dart:13:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:13:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:14:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\main.dart:15:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:25:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:27:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\main.dart:40:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\main.dart:42:22 - prefer_const_constructors
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\main.dart:65:33 - avoid_redundant_argument_values
+   info - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes - lib\main.dart:65:33 - prefer_single_quotes
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:66:81 - lines_longer_than_80_chars
+   info - 'anonKey' is deprecated and shouldn't be used. Use publishableKey instead. anonKey will be removed in a future major version. Try replacing the use of the deprecated member with the replacement - lib\main.dart:76:7 - deprecated_member_use
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:123:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:129:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:131:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\main.dart:136:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\models\hub_data.dart:73:11 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:78:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:90:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:91:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\models\hub_data.dart:160:11 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:166:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:171:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\models\hub_data.dart:178:11 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\models\hub_data.dart:185:81 - lines_longer_than_80_chars
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\bank_wizard_screen.dart:5:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\bank_wizard_screen.dart:6:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:8:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:18:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:22:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\bank_wizard_screen.dart:33:9 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\bank_wizard_screen.dart:43:11 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:49:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:160:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:186:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\bank_wizard_screen.dart:192:3 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:207:81 - lines_longer_than_80_chars
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\screens\bank_wizard_screen.dart:213:7 - cascade_invocations
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\bank_wizard_screen.dart:221:9 - require_trailing_commas
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\bank_wizard_screen.dart:243:15 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\bank_wizard_screen.dart:253:15 - inference_failure_on_instance_creation
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:262:81 - lines_longer_than_80_chars
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\bank_wizard_screen.dart:265:52 - always_put_required_named_parameters_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:323:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:412:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:412:34 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:412:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:424:16 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:426:18 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:426:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:435:26 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:435:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:439:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:442:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:445:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:478:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:480:30 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\bank_wizard_screen.dart:481:35 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:482:27 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:482:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:484:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:485:36 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:486:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:488:38 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:488:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:504:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:508:27 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:508:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:513:38 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:513:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:546:31 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:550:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:562:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:565:36 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:571:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:572:36 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:572:81 - lines_longer_than_80_chars
+   info - Missing an 'await' for the 'Future' computed by this expression. Try adding an 'await' or wrapping the expression with 'unawaited' - lib\screens\bank_wizard_screen.dart:586:5 - unawaited_futures
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:603:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:605:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:612:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:614:18 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:631:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:634:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:644:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:650:25 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:650:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\bank_wizard_screen.dart:655:14 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:664:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:666:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:673:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:675:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:680:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:693:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:695:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:698:26 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:698:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:709:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:711:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:718:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:720:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:771:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:773:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:780:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:782:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:786:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:797:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:799:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:814:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:816:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:823:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:825:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:830:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:846:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:848:25 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:848:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:864:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:866:24 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\bank_wizard_screen.dart:874:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:893:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\bank_wizard_screen.dart:897:20 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\bank_wizard_screen.dart:907:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:2:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\dashboard_screen.dart:3:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:3:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:4:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\dashboard_screen.dart:5:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:5:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\dashboard_screen.dart:6:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:6:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:7:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:8:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\dashboard_screen.dart:9:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:9:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:10:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:11:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\dashboard_screen.dart:12:8 - always_use_package_imports
+   info - Place 'package:' imports before relative imports. Try sorting the directives - lib\screens\dashboard_screen.dart:13:1 - directives_ordering
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\dashboard_screen.dart:31:3 - sort_constructors_first
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:70:6 - require_trailing_commas
+warning - The type argument(s) of the function 'showDialog' can't be inferred. Use explicit type argument(s) for 'showDialog' - lib\screens\dashboard_screen.dart:105:5 - inference_failure_on_function_invocation
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:110:62 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:112:64 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:117:68 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:125:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:143:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:184:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:194:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:211:24 - prefer_const_constructors
+   info - Closure should be a tearoff. Try using a tearoff rather than a closure - lib\screens\dashboard_screen.dart:233:35 - unnecessary_lambdas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:243:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:295:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:337:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:339:18 - prefer_const_constructors
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred. Use explicit type argument(s) for 'MaterialPageRoute' - lib\screens\dashboard_screen.dart:401:15 - inference_failure_on_instance_creation
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:415:33 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:432:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:434:32 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:442:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:445:76 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\dashboard_screen.dart:452:54 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:464:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:466:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:471:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\dashboard_screen.dart:473:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dashboard_screen.dart:504:22 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\dashboard_screen.dart:514:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\login_screen.dart:7:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\login_screen.dart:8:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\login_screen.dart:8:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\login_screen.dart:9:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\login_screen.dart:9:8 - always_use_package_imports
+   info - Sort combinator names alphabetically. Try sorting the combinator names alphabetically - lib\screens\login_screen.dart:14:5 - combinators_ordering
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:26:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\login_screen.dart:39:3 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\login_screen.dart:45:11 - sort_constructors_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:52:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:54:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:63:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\login_screen.dart:72:3 - sort_constructors_first
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\screens\login_screen.dart:92:7 - cascade_invocations
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\login_screen.dart:121:15 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\login_screen.dart:127:15 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\login_screen.dart:133:15 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\login_screen.dart:140:15 - inference_failure_on_instance_creation
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:153:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:172:81 - lines_longer_than_80_chars
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\screens\login_screen.dart:205:5 - cascade_invocations
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:237:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:238:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:239:81 - lines_longer_than_80_chars
+   info - Missing an 'await' for the 'Future' computed by this expression. Try adding an 'await' or wrapping the expression with 'unawaited' - lib\screens\login_screen.dart:253:19 - unawaited_futures
+   info - The referenced identifier is a wildcard. Use an identifier name that is not a wildcard - lib\screens\login_screen.dart:273:31 - no_wildcard_variable_uses
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:287:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:321:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:325:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:328:39 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:344:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:350:39 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:364:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:370:40 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\login_screen.dart:383:58 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:388:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:391:34 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\login_screen.dart:392:39 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:393:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:399:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:401:40 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:426:36 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:444:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:447:42 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:452:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:454:42 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\login_screen.dart:466:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:482:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\login_screen.dart:484:34 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\login_screen.dart:500:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\onboarding_screen.dart:2:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:4:81 - lines_longer_than_80_chars
+   info - Unnecessary use of parentheses. Try removing the parentheses - lib\screens\onboarding_screen.dart:11:26 - unnecessary_parenthesis
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\onboarding_screen.dart:20:9 - sort_constructors_first
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\onboarding_screen.dart:31:15 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:31:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:36:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:41:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:79:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:81:24 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:88:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:95:26 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:143:81 - lines_longer_than_80_chars
+   info - Unnecessary use of a 'double' literal. Try using an 'int' literal - lib\screens\onboarding_screen.dart:144:62 - prefer_int_literals
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:144:81 - lines_longer_than_80_chars
+   info - Unnecessary use of a 'double' literal. Try using an 'int' literal - lib\screens\onboarding_screen.dart:145:58 - prefer_int_literals
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:145:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:167:22 - prefer_const_constructors
+   info - Unnecessary braces in a string interpolation. Try removing the braces - lib\screens\onboarding_screen.dart:205:22 - unnecessary_brace_in_string_interps
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:206:20 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:222:81 - lines_longer_than_80_chars
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\screens\onboarding_screen.dart:229:5 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:250:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:252:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:260:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:262:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:272:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:282:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:308:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:313:30 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:329:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:339:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:341:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:369:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:378:34 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\onboarding_screen.dart:403:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\onboarding_screen.dart:405:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\onboarding_screen.dart:406:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\onboarding_screen.dart:407:19 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:415:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:417:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:424:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:426:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:502:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:523:81 - lines_longer_than_80_chars
+   info - To-do comment doesn't follow the Flutter style. Try following the Flutter style for to-do comments - lib\screens\onboarding_screen.dart:550:5 - flutter_style_todos
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\screens\onboarding_screen.dart:552:11 - inference_failure_on_instance_creation
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:575:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:577:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:584:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:586:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:612:17 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\onboarding_screen.dart:613:29 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:614:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:619:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:621:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:629:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:631:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:637:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:639:26 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:649:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:655:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:656:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:656:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:666:9 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\onboarding_screen.dart:667:21 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:668:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:668:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:669:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:671:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:673:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:676:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:676:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:693:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:695:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:702:15 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:703:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:704:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:714:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:721:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:723:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:737:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:748:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:750:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:752:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:752:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:802:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:864:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:864:44 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:864:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:879:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:919:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:919:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:961:29 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\onboarding_screen.dart:963:15 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:964:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:964:41 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:965:78 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:965:79 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:967:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:968:16 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:968:74 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:974:30 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\onboarding_screen.dart:976:15 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:977:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:977:43 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:978:78 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:978:79 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:980:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:981:16 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:981:74 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:992:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:992:44 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:993:78 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:993:79 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1003:16 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1004:18 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1006:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1007:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1008:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1011:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1012:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1013:20 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1013:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1044:16 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1044:48 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1044:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1068:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1068:40 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1069:80 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1069:81 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1069:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1071:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1072:18 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1072:76 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1081:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1083:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1084:22 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1084:60 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1091:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1092:22 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1092:66 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1109:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1109:60 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1110:80 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1110:81 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1110:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1123:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1124:22 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1124:80 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1124:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1135:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1137:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1138:22 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1138:80 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1138:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1164:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1167:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1167:37 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1168:80 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\onboarding_screen.dart:1168:81 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1168:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1170:9 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\onboarding_screen.dart:1171:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\onboarding_screen.dart:1172:18 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\onboarding_screen.dart:1178:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\payment_screen.dart:2:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\payment_screen.dart:17:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\payment_screen.dart:21:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\payment_screen.dart:21:86 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\payment_screen.dart:23:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\payment_screen.dart:24:16 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\payment_screen.dart:26:21 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\payment_screen.dart:27:13 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\payment_screen.dart:30:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\payment_screen.dart:30:109 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\payment_screen.dart:35:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\payment_screen.dart:36:81 - lines_longer_than_80_chars
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\payment_screen.dart:45:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\routes_screen.dart:3:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\routes_screen.dart:4:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\routes_screen.dart:5:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\routes_screen.dart:5:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\routes_screen.dart:6:8 - always_use_package_imports
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\routes_screen.dart:10:45 - always_put_required_named_parameters_first
+   info - Unnecessary type annotation on a local variable. Try removing the type annotation - lib\screens\routes_screen.dart:31:11 - omit_local_variable_types
+   info - Unnecessary use of a 'double' literal. Try using an 'int' literal - lib\screens\routes_screen.dart:48:19 - prefer_int_literals
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:49:8 - require_trailing_commas
+   info - Unnecessary use of a 'double' literal. Try using an 'int' literal - lib\screens\routes_screen.dart:58:19 - prefer_int_literals
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:59:8 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:73:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:89:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:91:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:105:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:119:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:122:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:123:25 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:123:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:126:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:129:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:133:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:157:15 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\routes_screen.dart:158:27 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:159:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:161:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:163:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:173:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:192:20 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\routes_screen.dart:193:25 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:194:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:196:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:198:26 - prefer_const_constructors
+   info - Closure should be a tearoff. Try using a tearoff rather than a closure - lib\screens\routes_screen.dart:204:25 - unnecessary_lambdas
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\screens\routes_screen.dart:215:15 - cascade_invocations
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:229:21 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:250:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:302:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:310:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:340:24 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\routes_screen.dart:359:3 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\screens\routes_screen.dart:371:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\routes_screen.dart:371:47 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:378:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:380:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:395:17 - prefer_const_constructors
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:396:58 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:406:17 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:406:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:407:58 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:418:23 - prefer_const_constructors
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement - lib\screens\routes_screen.dart:432:15 - deprecated_member_use
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:456:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:485:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:486:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:488:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:505:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:561:30 - prefer_const_constructors
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\routes_screen.dart:580:45 - always_put_required_named_parameters_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:588:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:613:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:615:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:630:24 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:639:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:644:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:647:99 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:650:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:651:40 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:675:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred. Use explicit type argument(s) for 'MaterialPageRoute' - lib\screens\routes_screen.dart:705:15 - inference_failure_on_instance_creation
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:736:81 - lines_longer_than_80_chars
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\routes_screen.dart:746:23 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:746:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:747:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:748:43 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:751:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\routes_screen.dart:752:56 - require_trailing_commas
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:758:12 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:759:14 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\routes_screen.dart:761:19 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:762:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:764:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:766:20 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\screens\routes_screen.dart:774:5 - prefer_const_declarations
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:787:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:794:24 - prefer_const_constructors
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\routes_screen.dart:804:23 - use_raw_strings
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:833:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:835:20 - prefer_const_constructors
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\routes_screen.dart:836:15 - use_raw_strings
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:837:22 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:844:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:853:22 - prefer_const_constructors
+warning - The type argument(s) of the function 'showDialog' can't be inferred. Use explicit type argument(s) for 'showDialog' - lib\screens\routes_screen.dart:869:5 - inference_failure_on_function_invocation
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:873:16 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:875:18 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:875:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:879:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:884:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\routes_screen.dart:884:44 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\routes_screen.dart:884:81 - lines_longer_than_80_chars
+   info - To-do comment doesn't follow the Flutter style. Try following the Flutter style for to-do comments - lib\screens\routes_screen.dart:889:15 - flutter_style_todos
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\screens\routes_screen.dart:901:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\update_available_screen.dart:4:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\update_available_screen.dart:5:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\update_available_screen.dart:5:8 - always_use_package_imports
+   info - 'required' is deprecated and shouldn't be used. In Dart 2.12 and later, use the built-in `required` keyword to mark a named parameter as required. Try replacing the use of the deprecated member with the replacement - lib\screens\update_available_screen.dart:8:20 - deprecated_member_use
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\update_available_screen.dart:15:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\screens\update_available_screen.dart:16:19 - always_put_required_named_parameters_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:26:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:49:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:56:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:79:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:111:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\update_available_screen.dart:127:36 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:190:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\update_available_screen.dart:211:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\update_available_screen.dart:233:12 - require_trailing_commas
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\wallet_screen.dart:2:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\screens\wallet_screen.dart:3:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\wallet_screen.dart:3:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\wallet_screen.dart:4:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\screens\wallet_screen.dart:5:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:46:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:50:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:50:88 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:52:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:58:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:65:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:69:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:69:86 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:84:54 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:84:55 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:87:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:87:88 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:107:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:107:82 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\wallet_screen.dart:109:30 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:110:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:110:88 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:118:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:127:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:127:86 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:127:87 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\wallet_screen.dart:128:34 - use_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:129:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:129:92 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:136:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:136:99 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:150:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:150:96 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:150:97 - require_trailing_commas
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\screens\wallet_screen.dart:152:24 - use_raw_strings
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:153:60 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:157:53 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:162:55 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:168:55 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:173:61 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:187:37 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:187:38 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:197:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:201:45 - require_trailing_commas
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:201:46 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:204:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:204:100 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:209:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:209:98 - require_trailing_commas
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred. Use explicit type argument(s) for 'MaterialPageRoute' - lib\screens\wallet_screen.dart:223:19 - inference_failure_on_instance_creation
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:232:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:232:86 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:234:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\screens\wallet_screen.dart:234:90 - require_trailing_commas
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:263:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:271:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\screens\wallet_screen.dart:273:81 - lines_longer_than_80_chars
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\app_version_service.dart:4:8 - always_use_package_imports
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\app_version_service.dart:5:8 - always_use_package_imports
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\app_version_service.dart:29:11 - sort_constructors_first
+   info - Unnecessary use of a raw string. Try using a normal string - lib\services\app_version_service.dart:75:34 - unnecessary_raw_strings
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\app_version_service.dart:81:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the function 'get' can't be inferred. Use explicit type argument(s) for 'get' - lib\services\app_version_service.dart:83:29 - inference_failure_on_function_invocation
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\gps_service.dart:4:8 - always_use_package_imports
+   info - Unnecessary use of a 'double' literal. Try using an 'int' literal - lib\services\gps_service.dart:16:33 - prefer_int_literals
+   info - Unnecessary type annotation on a local variable. Try removing the type annotation - lib\services\gps_service.dart:41:5 - omit_local_variable_types
+   info - The expression has no effect and can be removed. Try removing the expression - lib\services\gps_service.dart:95:32 - noop_primitive_operations
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\hub_service.dart:2:8 - always_use_package_imports
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\services\hub_service.dart:3:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\hub_service.dart:3:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\hub_service.dart:5:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the function 'get' can't be inferred. Use explicit type argument(s) for 'get' - lib\services\hub_service.dart:26:29 - inference_failure_on_function_invocation
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\services\hub_service.dart:37:2 - eol_at_end_of_file
+   info - The imported package 'http' isn't a dependency of the importing package. Try adding a dependency for 'http' in the 'pubspec.yaml' file - lib\services\modules\api_client\api_client.dart:3:8 - depend_on_referenced_packages
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\modules\api_client\api_client.dart:19:81 - lines_longer_than_80_chars
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\services\modules\api_client\api_client.dart:26:6 - require_trailing_commas
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\services\modules\api_client\api_client.dart:28:2 - eol_at_end_of_file
+   info - Sort directive sections alphabetically. Try sorting the directives - lib\services\notification_service.dart:6:1 - directives_ordering
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\notification_service.dart:12:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\notification_service.dart:13:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\notification_service.dart:19:11 - sort_constructors_first
+   info - Invalid location for the unnamed constructor. Try moving the unnamed constructor before all other constructors - lib\services\notification_service.dart:19:11 - sort_unnamed_constructors_first
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\services\notification_service.dart:73:18 - avoid_redundant_argument_values
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\services\notification_service.dart:95:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\services\notification_service.dart:96:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\services\notification_service.dart:127:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\services\notification_service.dart:128:18 - prefer_const_constructors
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\services\notification_service.dart:131:23 - avoid_redundant_argument_values
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\services\notification_service.dart:132:21 - avoid_redundant_argument_values
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\services\payment_service.dart:4:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:6:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:9:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:11:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:16:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:23:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:27:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\payment_service.dart:42:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:44:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:45:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:46:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:47:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:48:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\services\payment_service.dart:49:19 - always_put_required_named_parameters_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\payment_service.dart:55:11 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\payment_service.dart:129:9 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\services\payment_service.dart:138:11 - sort_constructors_first
+   info - Unnecessary use of parentheses. Try removing the parentheses - lib\services\payment_service.dart:150:23 - unnecessary_parenthesis
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:151:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\services\payment_service.dart:159:81 - lines_longer_than_80_chars
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\services\payment_service.dart:167:7 - cascade_invocations
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\services\payment_service.dart:195:7 - cascade_invocations
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\services\payment_service.dart:204:9 - require_trailing_commas
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\services\payment_service.dart:226:7 - cascade_invocations
+   info - Unnecessary duplication of receiver. Try using a cascade to avoid the duplication - lib\services\payment_service.dart:251:7 - cascade_invocations
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\services\payment_service.dart:264:71 - require_trailing_commas
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\services\payment_service.dart:272:2 - eol_at_end_of_file
+   info - Don't cast a nullable value to a non-nullable type. Try adding a not-null assertion ('!') to make the type non-nullable - lib\services\tad_payment_service.dart:33:10 - cast_nullable_to_non_nullable
+   info - Missing a required trailing comma. Try adding a trailing comma - lib\services\tad_payment_service.dart:44:75 - require_trailing_commas
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\services\tad_payment_service.dart:66:2 - eol_at_end_of_file
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\theme\tad_theme.dart:29:18 - avoid_redundant_argument_values
+   info - The value of the argument is redundant because it matches the default value. Try removing the argument - lib\theme\tad_theme.dart:44:73 - avoid_redundant_argument_values
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\theme\tad_theme.dart:54:81 - lines_longer_than_80_chars
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\theme\tad_theme.dart:85:2 - eol_at_end_of_file
+   info - Place 'dart:' imports before other imports. Try sorting the directives - lib\widgets\dashboard_widgets.dart:2:1 - directives_ordering
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\widgets\dashboard_widgets.dart:3:8 - always_use_package_imports
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\dashboard_widgets.dart:37:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:39:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:40:19 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:96:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:98:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:115:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:117:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:133:19 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\widgets\dashboard_widgets.dart:134:31 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:135:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:137:32 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\dashboard_widgets.dart:161:3 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\dashboard_widgets.dart:208:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:208:58 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:222:16 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\dashboard_widgets.dart:240:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:242:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:243:19 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:270:24 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\dashboard_widgets.dart:302:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:304:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\dashboard_widgets.dart:305:19 - always_put_required_named_parameters_first
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\dashboard_widgets.dart:339:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:346:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\dashboard_widgets.dart:358:24 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\widgets\dashboard_widgets.dart:370:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\widgets\kill_switch_overlay.dart:3:8 - always_use_package_imports
+   info - An 'async' function should have a 'Future' return type when it doesn't return a value. Try changing the return type - lib\widgets\kill_switch_overlay.dart:8:6 - avoid_void_async
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:10:81 - lines_longer_than_80_chars
+   info - An 'async' function should have a 'Future' return type when it doesn't return a value. Try changing the return type - lib\widgets\kill_switch_overlay.dart:13:6 - avoid_void_async
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:15:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:18:81 - lines_longer_than_80_chars
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:27:81 - lines_longer_than_80_chars
+warning - The type argument(s) of the function 'showDialog' can't be inferred. Use explicit type argument(s) for 'showDialog' - lib\widgets\kill_switch_overlay.dart:29:5 - inference_failure_on_function_invocation
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:62:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:71:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:73:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:83:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:87:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:107:26 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\widgets\kill_switch_overlay.dart:108:31 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:109:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:111:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:118:23 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\widgets\kill_switch_overlay.dart:120:35 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:121:27 - prefer_const_constructors
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\widgets\kill_switch_overlay.dart:122:29 - use_raw_strings
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:123:36 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:130:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:132:36 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:140:23 - prefer_const_constructors
+   info - Use a raw string to avoid using escapes. Try making the string a raw string and removing the escapes - lib\widgets\kill_switch_overlay.dart:141:25 - use_raw_strings
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:142:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:180:29 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:185:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:195:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\kill_switch_overlay.dart:197:28 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\kill_switch_overlay.dart:197:81 - lines_longer_than_80_chars
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\kill_switch_overlay.dart:216:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\kill_switch_overlay.dart:218:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\kill_switch_overlay.dart:219:19 - always_put_required_named_parameters_first
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\widgets\kill_switch_overlay.dart:237:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\widgets\payment_method_selector.dart:2:8 - always_use_package_imports
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\payment_method_selector.dart:10:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\payment_method_selector.dart:11:19 - always_put_required_named_parameters_first
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\payment_method_selector.dart:24:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\payment_method_selector.dart:26:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\payment_method_selector.dart:28:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\payment_method_selector.dart:33:20 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\widgets\payment_method_selector.dart:39:2 - eol_at_end_of_file
+   info - Use 'package:' imports for files in the 'lib' directory. Try converting the URI to a 'package:' URI - lib\widgets\upload_and_qr.dart:5:8 - always_use_package_imports
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\upload_and_qr.dart:7:81 - lines_longer_than_80_chars
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\upload_and_qr.dart:14:54 - always_put_required_named_parameters_first
+   info - To-do comment doesn't follow the Flutter style. Try following the Flutter style for to-do comments - lib\widgets\upload_and_qr.dart:34:7 - flutter_style_todos
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\widgets\upload_and_qr.dart:51:13 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'Future.delayed' can't be inferred. Use explicit type argument(s) for 'Future.delayed' - lib\widgets\upload_and_qr.dart:56:13 - inference_failure_on_instance_creation
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:103:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:105:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:114:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:120:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:122:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:130:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:136:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:138:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:147:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:150:24 - prefer_const_constructors
+   info - Constructor declarations should be before non-constructor declarations. Try moving the constructor declaration before all other members - lib\widgets\upload_and_qr.dart:170:3 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\upload_and_qr.dart:190:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters. Try moving the required named parameter to be before any optional named parameters - lib\widgets\upload_and_qr.dart:191:19 - always_put_required_named_parameters_first
+warning - The type argument(s) of the function 'showDialog' can't be inferred. Use explicit type argument(s) for 'showDialog' - lib\widgets\upload_and_qr.dart:209:5 - inference_failure_on_function_invocation
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:240:7 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:241:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:241:48 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\upload_and_qr.dart:241:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:262:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:264:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:271:25 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\upload_and_qr.dart:271:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:277:13 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\upload_and_qr.dart:278:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:279:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:302:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:326:19 - prefer_const_constructors
+   info - The line length exceeds the 80-character limit. Try breaking the line across multiple lines - lib\widgets\upload_and_qr.dart:326:81 - lines_longer_than_80_chars
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:330:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\upload_and_qr.dart:348:29 - prefer_const_constructors
+   info - Missing a newline at the end of the file. Try adding a newline at the end of the file - lib\widgets\upload_and_qr.dart:420:2 - eol_at_end_of_file
+   info - Dependencies not sorted alphabetically. Try sorting the dependencies alphabetically (A to Z) - pubspec.yaml:13:3 - sort_pub_dependencies
+   info - Dependencies not sorted alphabetically. Try sorting the dependencies alphabetically (A to Z) - pubspec.yaml:37:3 - sort_pub_dependencies
+

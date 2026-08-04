@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -7,16 +8,16 @@ import '../../services/hub_service.dart';
 import '../../theme/tad_theme.dart';
 
 /// Pantalla de referidos — QR offline del referralCode real del conductor.
-class ReferQrScreen extends StatefulWidget {
+class ReferQrScreen extends ConsumerStatefulWidget {
   const ReferQrScreen({super.key, this.hub});
 
   final DriverHubData? hub;
 
   @override
-  State<ReferQrScreen> createState() => _ReferQrScreenState();
+  ConsumerState<ReferQrScreen> createState() => _ReferQrScreenState();
 }
 
-class _ReferQrScreenState extends State<ReferQrScreen> {
+class _ReferQrScreenState extends ConsumerState<ReferQrScreen> {
   String _cachedCode = '';
 
   @override
@@ -32,7 +33,7 @@ class _ReferQrScreenState extends State<ReferQrScreen> {
       return;
     }
     // Try fetchHub
-    final hub = await fetchHub();
+    final hub = await ref.read(hubServiceProvider).fetchHub();
     if (mounted && hub != null && hub.referralCode.isNotEmpty) {
       setState(() => _cachedCode = hub.referralCode);
     }

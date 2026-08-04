@@ -2,7 +2,12 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../theme/tad_theme.dart';
+import '../core/di/providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─── Direct Upload Button ─────────────────────────────────────────────────────
 
@@ -10,16 +15,16 @@ import '../theme/tad_theme.dart';
 enum UploadState { idle, picking, uploading, success, error }
 
 /// CTA button that triggers direct content upload to the TAD device.
-class DirectUploadButton extends StatefulWidget {
+class DirectUploadButton extends ConsumerStatefulWidget {
   const DirectUploadButton({super.key, required this.deviceId});
 
   final String deviceId;
 
   @override
-  State<DirectUploadButton> createState() => _DirectUploadButtonState();
+  ConsumerState<DirectUploadButton> createState() => _DirectUploadButtonState();
 }
 
-class _DirectUploadButtonState extends State<DirectUploadButton> {
+class _DirectUploadButtonState extends ConsumerState<DirectUploadButton> {
   UploadState _state = UploadState.idle;
   String? _fileName;
   String? _error;
@@ -31,40 +36,52 @@ class _DirectUploadButtonState extends State<DirectUploadButton> {
     });
 
     try {
-      // TODO: integrate file_picker package:
-      // final result = await FilePicker.platform.pickFiles(
-      //   type: FileType.video,
-      //   allowMultiple: false,
-      // );
-      // if (result == null || result.files.isEmpty) {
-      //   setState(() => _state = UploadState.idle);
-      //   return;
-      // }
-      // final file = result.files.first;
-      // final formData = FormData.fromMap({
-      //   'deviceId': widget.deviceId,
-      //   'file': await MultipartFile.fromFile(file.path, filename: file.name),
-      // });
-      // await dio.post('/api/devices/${widget.deviceId}/upload', data: formData);
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.video,
+        allowMultiple: false,
+      );
 
-      // Mock: simulate file pick + upload
-      await Future.delayed(const Duration(milliseconds: 300));
+      if (result == null || result.files.isEmpty) {
+        setState(() => _state = UploadState.idle);
+        return;
+      }
+
+      final file = result.files.first;
       setState(() {
-        _fileName = 'campana_taxi_colonial.mp4';
+        _fileName = file.name;
         _state = UploadState.uploading;
       });
-      await Future.delayed(const Duration(milliseconds: 800));
-      setState(() => _state = UploadState.success);
+
+      final dio = ref.read(dioProvider);
+      final formData = FormData.fromMap({
+        'deviceId': widget.deviceId,
+        'file': await MultipartFile.fromFile(file.path!, filename: file.name),
+      });
+
+      await dio.post('/fleet/devices/${widget.deviceId}/upload', data: formData);
+
+      if (mounted) setState(() => _state = UploadState.success);
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = UploadState.error;
+          _error = (e.response?.data as Map?)?['message']?.toString() ?? 'Error de red';
+        });
+      }
     } on PlatformException catch (e) {
-      setState(() {
-        _state = UploadState.error;
-        _error = e.message ?? 'Error al seleccionar/upload';
-      });
-    } catch (_) {
-      setState(() {
-        _state = UploadState.error;
-        _error = 'Error de conexión';
-      });
+      if (mounted) {
+        setState(() {
+          _state = UploadState.error;
+          _error = e.message ?? 'Error al seleccionar';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = UploadState.error;
+          _error = 'Error inesperado';
+        });
+      }
     }
   }
 
@@ -283,7 +300,7 @@ class _ReferralQRModalState extends State<ReferralQRModal> {
             ),
             const SizedBox(height: 20),
 
-            // QR Code placeholder
+            // QR Code
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -292,9 +309,11 @@ class _ReferralQRModalState extends State<ReferralQRModal> {
               ),
               child: Column(
                 children: [
-                  CustomPaint(
-                    size: const Size(160, 160),
-                    painter: _QRCodePainter(_qrData.url),
+                  QrImageView(
+                    data: _qrData.url,
+                    version: QrVersions.auto,
+                    size: 160.0,
+                    backgroundColor: Colors.white,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -374,47 +393,3 @@ class _ReferralQRModalState extends State<ReferralQRModal> {
   }
 }
 
-/// Simple QR code painter — placeholder.
-/// For production, replace with `qr_flutter` package: QrImageView.
-class _QRCodePainter extends CustomPainter {
-  _QRCodePainter(this.data);
-
-  final String data;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final byteData = utf8.encode(data);
-    final hash = byteData.fold<int>(0, (prev, b) => prev ^ b);
-
-    final cellSize = size.width / 21;
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.fill;
-
-    final rng = math.Random(hash);
-
-    for (var row = 0; row < 21; row++) {
-      for (var col = 0; col < 21; col++) {
-        if (_isFinderPosition(row, col)) continue;
-        if (row >= 17 && col >= 17) continue;
-
-        if (rng.nextDouble() > 0.5) {
-          canvas.drawRect(
-            Rect.fromLTWH(col * cellSize, row * cellSize, cellSize, cellSize),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  bool _isFinderPosition(int row, int col) {
-    if (row < 7 && col < 7) return true;
-    if (row < 7 && col > 13) return true;
-    if (row > 13 && col < 7) return true;
-    return false;
-  }
-
-  @override
-  bool shouldRepaint(_QRCodePainter old) => old.data != data;
-}

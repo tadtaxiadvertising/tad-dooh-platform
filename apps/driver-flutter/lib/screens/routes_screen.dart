@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../services/gps_service.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
+import '../core/di/providers.dart';
 import 'bank_wizard_screen.dart';
 
 /// Routes tab — shows assigned routes with search and filter.
@@ -576,16 +579,16 @@ class SettingsTab extends StatelessWidget {
 
 /// Wallet tab (replaces old wallet_screen for use inside dashboard).
 /// Shows total calculation, Resumen / Movimientos / Configurar retiro tabs.
-class WalletTab extends StatefulWidget {
+class WalletTab extends ConsumerStatefulWidget {
   const WalletTab({super.key, required this.hub});
 
   final DriverHubData hub;
 
   @override
-  State<WalletTab> createState() => _WalletTabState();
+  ConsumerState<WalletTab> createState() => _WalletTabState();
 }
 
-class _WalletTabState extends State<WalletTab> with SingleTickerProviderStateMixin {
+class _WalletTabState extends ConsumerState<WalletTab> with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
 
   @override
@@ -884,9 +887,41 @@ class _WalletTabState extends State<WalletTab> with SingleTickerProviderStateMix
             child: Text('Cancelar', style: TextStyle(color: TadColors.tadTextSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              // TODO: call withdraw API
+              try {
+                final dio = ref.read(dioProvider);
+                await dio.post(
+                  '/fleet/drivers/${widget.hub.driverId}/withdrawals',
+                  data: {'amount': widget.hub.balance},
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Solicitud de retiro enviada con éxito'),
+                      backgroundColor: TadColors.tadGreen,
+                    ),
+                  );
+                }
+              } on DioException catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text((e.response?.data?['message'] ?? 'Error al solicitar retiro') as String),
+                      backgroundColor: TadColors.tadError,
+                    ),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error inesperado'),
+                      backgroundColor: TadColors.tadError,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: TadColors.tadGreen,

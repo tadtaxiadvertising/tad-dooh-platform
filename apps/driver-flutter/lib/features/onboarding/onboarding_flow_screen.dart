@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../core/di/providers.dart';
 import '../../services/hub_service.dart';
 import '../../theme/tad_theme.dart';
@@ -7,16 +9,16 @@ import '../../theme/tad_theme.dart';
 enum OnboardingStage { contract, bank, payment, starterKit, ready }
 
 /// Flujo de onboarding del conductor: contrato → banco → pago → listo.
-class OnboardingFlowScreen extends StatefulWidget {
+class OnboardingFlowScreen extends ConsumerStatefulWidget {
   const OnboardingFlowScreen({super.key, required this.onComplete});
 
   final VoidCallback onComplete;
 
   @override
-  State<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
+  ConsumerState<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
 }
 
-class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
+class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
   late OnboardingStage _stage;
   bool _contractAccepted = false;
   bool _loading = false;
@@ -28,7 +30,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   Future<void> _resolveStage() async {
-    final hub = await fetchHub();
+    final hub = await ref.read(hubServiceProvider).fetchHub();
     if (!mounted) return;
     if (hub == null) {
       setState(() => _stage = OnboardingStage.contract);
@@ -265,17 +267,42 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   Future<void> _submitContract() async {
     setState(() => _loading = true);
     try {
-      // TODO: POST /api/v1/drivers/{id}/accept-agreement
-      await Future.delayed(const Duration(milliseconds: 600));
-      setState(() { _loading = false; _stage = OnboardingStage.bank; });
+      final user = ref.read(supabaseClientProvider).auth.currentUser;
+      if (user == null) throw Exception('No session found');
+
+      final dio = ref.read(dioProvider);
+      await dio.post(
+        '/fleet/drivers/${user.id}/agreement',
+        data: {
+          'accepted': true,
+          'version': '2.0',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _stage = OnboardingStage.bank;
+        });
+      }
+    } on DioException catch (e) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text((e.response?.data?['message'] ?? 'Error al firmar contrato') as String),
+            backgroundColor: TadColors.tadError,
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error al firmar contrato'),
+            content: Text('Error inesperado'),
             backgroundColor: TadColors.tadError,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }

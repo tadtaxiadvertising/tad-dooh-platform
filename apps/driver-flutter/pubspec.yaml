@@ -30,6 +30,8 @@ dependencies:
   # isar_flutter_libs: ^3.1.0+1
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  file_picker: ^8.1.7
+  mobile_scanner: ^6.0.4
 
 dev_dependencies:
   flutter_test:
@@ -40,7 +42,21 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   freezed: ^2.5.8
   json_serializable: ^6.9.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
   # isar_generator: ^3.1.0+1
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "tad_launch.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: "tad_launch.png"
+  android: true
+  ios: true

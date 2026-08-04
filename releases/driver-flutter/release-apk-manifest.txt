@@ -1,0 +1,7 @@
+TAD Driver — release APK
+Built: 2026-08-04T01:35:04
+Artifact: C:\Users\Arismendy\Documents\TAD PLASTFORM\tad-dooh-platform\apps\driver-flutter\build\app\outputs\flutter-apk\app-release.apk
+Bytes: 35431292
+Size MB: 33.79
+SHA-256: 2de557db8d4fec9a01f8d8ddafcef000d9c9a8b090a478b1eb368f3dd3df3a1b
+Signing config: android/app/build.gradle signingConfigs.release + android/app/key.properties

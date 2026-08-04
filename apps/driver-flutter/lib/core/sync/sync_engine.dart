@@ -6,11 +6,24 @@ part 'sync_queue.dart';
 /// Telemetría híbrida TAD.
 /// - Pasivo (default): acumula coordenadas y hace batch cada 5 min a POST /fleet/track-batch.
 /// - Activo (on-demand): responde a TRACK_REQUEST de Supabase Realtime
-/// y transmite por broadcast durante 2 min.
+///   y transmite por broadcast durante 2 min.
 ///
 /// NOTE: Supabase realtime integration (channel.on, broadcast) will be wired
 /// once the realtime channel types are confirmed from supabase_flutter 2.15.4.
 /// The batch-only mode works immediately.
+class _SyncLogger {
+  const _SyncLogger();
+
+  static void _log(String message) {
+    // ignore: avoid_print
+    print(message);
+  }
+
+  void call(String message) => _log(message);
+}
+
+const _kLog = _SyncLogger();
+
 class HybridSyncEngine {
   HybridSyncEngine({
     required Dio dio,
@@ -19,9 +32,9 @@ class HybridSyncEngine {
     String? driverId,
     this.batchInterval = const Duration(minutes: 5),
     this.activeStreamDuration = const Duration(minutes: 2),
-  }) : _dio = dio,
-       _deviceId = deviceId,
-       _driverId = driverId;
+  })  : _dio = dio,
+        _deviceId = deviceId,
+        _driverId = driverId;
 
   final Dio _dio;
   final String? _deviceId;
@@ -38,7 +51,7 @@ class HybridSyncEngine {
 
   void start() {
     _batchTimer?.cancel();
-    _batchTimer = Timer.periodic(batchInterval, (_) => _flushBatch());
+    _batchTimer = Timer.periodic(batchInterval, (_) => flushBatch());
     _startRealtimeListener();
   }
 
@@ -61,9 +74,13 @@ class HybridSyncEngine {
     if (_pending.isEmpty) return;
     final buffer = List<GpsPoint>.from(_pending);
     _pending.clear();
+
+    final path = '/fleet/track-batch';
+    _kLog('[SyncEngine] Flushing ${buffer.length} points to $path');
+
     try {
-      await _dio.post(
-        '/fleet/track-batch',
+      final res = await _dio.post(
+        path,
         data: {
           'driverId': _driverId ?? '',
           'deviceId': _deviceId ?? '',
@@ -73,12 +90,18 @@ class HybridSyncEngine {
           headers: _deviceId != null ? {'X-Device-Id': _deviceId} : null,
         ),
       );
+      _kLog('[SyncEngine] Batch sync success: ${res.statusCode}');
     } on DioException catch (e) {
+      _kLog('[SyncEngine] DioException: ${e.type} - ${e.message}');
       if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout) {
+          e.type == DioExceptionType.connectionTimeout ||
+          e.response == null) {
+        _kLog('[SyncEngine] Connection failed. Enqueueing offline.');
         await OfflineQueue.instance.enqueueGpsBatch(buffer);
       }
-    } catch (_) {}
+    } catch (e) {
+      _kLog('[SyncEngine] Unexpected sync error: $e');
+    }
   }
 
   // ── Supabase realtime placeholder ───────────────────────────────────────

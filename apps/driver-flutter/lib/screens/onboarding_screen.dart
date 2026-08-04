@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../theme/tad_theme.dart';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -543,15 +544,72 @@ class _HardwarePairingStepState extends State<HardwarePairingStep> {
   }
 
   Future<void> _startScan() async {
-    setState(() {
-      _state = PairingState.scanning;
-      _error = null;
-    });
-    // TODO: integrate camera QR scanner (mobile) or desktop QR reader.
-    // For now simulate scan after 1.5s
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      setState(() => _state = PairingState.idle);
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: TadColors.tadDark,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: TadColors.tadBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Escanear QR del dispositivo',
+              style: TextStyle(
+                color: TadColors.tadYellow,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: MobileScanner(
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty) {
+                      Navigator.pop(context, barcodes.first.rawValue);
+                    }
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Apunta la cámara al código QR que se muestra en la pantalla TAD.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: TadColors.tadTextSecondary, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      // Pin from QR usually comes in a format like "TAD-123456"
+      final pin = result.contains('-') ? result.split('-').last : result;
+      if (pin.length == 6 && int.tryParse(pin) != null) {
+        _pinCtrl.text = pin;
+        await _submitPin();
+      } else {
+        setState(() => _error = 'Código QR inválido ($result)');
+      }
     }
   }
 

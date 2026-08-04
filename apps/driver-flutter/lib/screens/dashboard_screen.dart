@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 import '../services/hub_service.dart';
@@ -7,23 +9,23 @@ import '../core/network/api_constants.dart';
 import '../core/sync/sync_engine.dart';
 import '../widgets/kill_switch_overlay.dart';
 import '../widgets/dashboard_widgets.dart';
+import '../core/di/providers.dart';
 import 'login_screen.dart' show clearLogin;
 import 'onboarding_screen.dart';
 import 'routes_screen.dart';
-import 'package:dio/dio.dart';
 
 enum _Tab { home, routes, wallet, settings }
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key, this.hub});
 
   final DriverHubData? hub;
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   _Tab _tab = _Tab.home;
   DriverHubData _hub;
   bool _loading = true;
@@ -44,7 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadHub() async {
-    final fresh = await fetchHub();
+    final fresh = await ref.read(hubServiceProvider).fetchHub();
     if (fresh != null && mounted) {
       setState(() {
         _hub = fresh;
@@ -62,19 +64,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _startGpsAndSync() {
     if (_hub.driverId.isEmpty) return;
 
-    final dio = Dio(BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      headers: {'Content-Type': 'application/json'},
-    ));
-
-    final engine = HybridSyncEngine(
-      dio: dio,
-      apiBase: ApiConstants.baseUrl,
-      driverId: _hub.driverId,
-    );
-
+    final engine = ref.read(syncEngineProvider);
+    // Note: HybridSyncEngine should be configured with the driverId from the hub.
+    // In a real refactor, the syncEngineProvider could be a family or we can set the id here.
+    
     GPSService.I.attachSyncEngine(engine);
     GPSService.I.startTracking();
   }

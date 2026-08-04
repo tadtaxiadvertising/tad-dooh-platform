@@ -23,10 +23,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     // SRE v12.2.5: pool_timeout=10s — evita que queries lentas bloqueen el pool durante spikes de telemetría
-    if (url && !url.includes('pool_timeout=')) {
-      const separator = url.includes('?') ? '&' : '?';
-      url = `${url}${separator}pool_timeout=10`;
-    }
+        if (url && !url.includes('pool_timeout=')) {
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}pool_timeout=10`;
+        }
+
+        // SRE: Forzar sslmode=require para Supabase Pooler (puerto 6543)
+        // Sin esto, Prisma 5.x no puede conectarse al pooler transaccional de Supabase
+        if (url && !url.includes('sslmode=')) {
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}sslmode=require`;
+        }
 
     super({
       datasources: {

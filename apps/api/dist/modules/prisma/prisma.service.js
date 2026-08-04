@@ -33,6 +33,10 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             const separator = url.includes('?') ? '&' : '?';
             url = `${url}${separator}pool_timeout=10`;
         }
+        if (url && !url.includes('sslmode=')) {
+            const separator = url.includes('?') ? '&' : '?';
+            url = `${url}${separator}sslmode=require`;
+        }
         super({
             datasources: {
                 db: {
@@ -62,9 +66,11 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             catch (e) {
                 attempts++;
                 const delay = attempts * 2000;
-                this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido al conectar a Supabase. Reintentando en ${delay / 1000}s...`);
+                const errMsg = e instanceof Error ? e.message : String(e);
+                this.logger.error(`❌ Intento ${attempts}/${MAX_RETRIES} fallido: ${errMsg}`);
                 if (attempts >= MAX_RETRIES) {
                     this.logger.error('🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos.');
+                    this.logger.error(`Último error: ${errMsg}`);
                     return;
                 }
                 await new Promise(resolve => setTimeout(resolve, delay));

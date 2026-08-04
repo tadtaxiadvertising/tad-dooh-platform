@@ -72,8 +72,14 @@ class AppVersionService {
   }
 
   List<int> _parseSemver(String v) {
-    final clean = v.split(RegExp(r'[^0-9]'))..retainWhere((s) => s.isNotEmpty);
-    return [for (var i = 0; i < 3; i++) int.tryParse(clean[i]) ?? 0];
+    final clean = v.split(RegExp(r'[^0-9]'))
+      ..removeWhere((s) => s.isEmpty);
+    final segments = [for (var i = 0; i < clean.length; i++) int.tryParse(clean[i]) ?? 0];
+    // Asegurar al menos 3 segmentos (mayor.menor.patch)
+    while (segments.length < 3) {
+      segments.add(0);
+    }
+    return segments.sublist(0, 3);
   }
 
   /// Verifica la versión local contra el backend.

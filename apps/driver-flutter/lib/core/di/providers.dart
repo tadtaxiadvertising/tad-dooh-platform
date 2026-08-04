@@ -93,21 +93,4 @@ class AuthHelpers {
     return false;
   }
 
-  Future<DriverHubData?> fetchHub() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_kPrefToken);
-    if (token == null) return null;
-
-    try {
-      final dio = ref.read(dioProvider);
-      final res = await dio.fetch(RequestOptions(
-        path: ApiConstants.hubPath,
-        method: 'GET',
-      ));
-      if (res.statusCode == 200) {
-        return DriverHubData.fromJson(res.data as Map<String, dynamic>);
-      }
-    } catch (_) {}
-    return null;
-  }
 }

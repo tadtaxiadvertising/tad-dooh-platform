@@ -1,4 +1,4 @@
-package com.example.tad_driver
+package com.tad.driver
 
 import io.flutter.embedding.android.FlutterActivity
 

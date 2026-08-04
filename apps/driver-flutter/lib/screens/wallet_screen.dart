@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tad_theme.dart';
 import '../models/hub_data.dart';
 import '../services/hub_service.dart';
 import 'bank_wizard_screen.dart';
 
-class WalletScreen extends StatefulWidget {
+class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key, this.hub});
 
   final DriverHubData? hub;
 
   @override
-  State<WalletScreen> createState() => _WalletScreenState();
+  ConsumerState<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends State<WalletScreen> {
+class _WalletScreenState extends ConsumerState<WalletScreen> {
   DriverHubData _hub = const DriverHubData();
   bool _loading = true;
 
@@ -27,7 +28,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _loadHub() async {
-    final fresh = await fetchHub();
+    final fresh = await ref.read(hubServiceProvider).fetchHub();
     if (fresh != null && mounted) {
       setState(() { _hub = fresh; _loading = false; });
     } else if (mounted) {

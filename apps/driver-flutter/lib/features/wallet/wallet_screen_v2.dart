@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import '../../core/di/providers.dart';
 import '../../services/hub_service.dart';
@@ -7,16 +8,16 @@ import '../../models/hub_data.dart';
 /// Wallet con la fórmula oficial de ganancias:
 /// E = min(Ads,15) × 500 + CPA × 500
 /// (RD$500 por anuncio activo, tope de 15, y RD$500 por cada referido)
-class WalletScreenV2 extends StatefulWidget {
+class WalletScreenV2 extends ConsumerStatefulWidget {
   const WalletScreenV2({super.key, this.hub});
 
   final DriverHubData? hub;
 
   @override
-  State<WalletScreenV2> createState() => _WalletScreenV2State();
+  ConsumerState<WalletScreenV2> createState() => _WalletScreenV2State();
 }
 
-class _WalletScreenV2State extends State<WalletScreenV2> {
+class _WalletScreenV2State extends ConsumerState<WalletScreenV2> {
   DriverHubData? _hub;
   bool _loading = true;
 
@@ -28,7 +29,7 @@ class _WalletScreenV2State extends State<WalletScreenV2> {
   }
 
   Future<void> _loadHub() async {
-    final fresh = await fetchHub();
+    final fresh = await ref.read(hubServiceProvider).fetchHub();
     if (fresh != null && mounted) {
       setState(() { _hub = fresh; _loading = false; });
     } else if (mounted) {

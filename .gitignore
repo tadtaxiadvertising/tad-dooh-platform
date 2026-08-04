@@ -110,3 +110,4 @@ out/
 *.hprof
 *.hprof.txt
 TAD/java-1.8.0-openjdk*
+NUL

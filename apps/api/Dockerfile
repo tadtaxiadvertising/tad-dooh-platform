@@ -19,8 +19,18 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
+# Regeneramos el cliente Prisma para el target Alpine (linux-musl-openssl-3.0.x)
+RUN npx prisma generate
+
 EXPOSE 80
 ENV PORT=80
 
-# Ejecutamos migraciones y lanzamos la app
-CMD npx prisma migrate deploy && node dist/main
+# HEALTHCHECK: curl mínimo para que Easypanel sepa cuando está listo
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+
+# Migraciones en entrypoint separado para que el crash-loop no opaque la causa
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["node", "dist/main"]

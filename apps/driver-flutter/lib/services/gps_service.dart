@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator_plus/geolocator_plus.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import '../core/sync/sync_engine.dart';
 
 /// Single-instance GPS tracker used by the driver app.
@@ -65,13 +66,24 @@ final class GPSService {
     );
     _subscription = Geolocator.getPositionStream(locationSettings: settings)
         .listen(_onPosition);
-    debugPrint('[GPS] tracking started');
+    
+    // Start background service to prevent OS from killing the process
+    final background = FlutterBackgroundService();
+    if (!(await background.isRunning())) {
+      await background.startService();
+    }
+    
+    debugPrint('[GPS] tracking started (with background service)');
   }
 
   Future<void> stopTracking() async {
     await _subscription?.cancel();
     _subscription = null;
     _tracking = false;
+    
+    // Stop background service
+    FlutterBackgroundService().invoke('stopService');
+    
     debugPrint('[GPS] tracking stopped');
   }
 

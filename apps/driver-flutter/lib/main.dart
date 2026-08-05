@@ -10,6 +10,7 @@ import 'screens/wallet_screen.dart';
 import 'screens/update_available_screen.dart';
 import 'services/app_version_service.dart';
 import 'services/notification_service.dart';
+import 'services/background_service.dart';
 import 'core/di/providers.dart';
 import 'models/hub_data.dart';
 import 'widgets/kill_switch_overlay.dart';

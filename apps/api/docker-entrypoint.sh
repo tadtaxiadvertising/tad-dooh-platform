@@ -15,4 +15,4 @@ if [ -z "$JWT_SECRET" ]; then
 fi
 
 echo "[entrypoint] Starting node dist/main.js ..."
-exec node dist/main.js
+exec node --expose-gc dist/main.js

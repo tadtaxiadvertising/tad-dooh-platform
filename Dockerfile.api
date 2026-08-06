@@ -24,7 +24,7 @@ RUN npm prune --omit=dev --workspace=apps/api
 
 # 4. Runtime config
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=384"
+ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"
 ENV PORT=3000
 
 # 5. Security: non-root user
@@ -40,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
 
 WORKDIR /app/apps/api
 COPY --chown=nestjs:nodejs apps/api/docker-entrypoint.sh docker-entrypoint.sh
-ENTRYPOINT ["/bin/sh", "/app/apps/api/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/apps/api/docker-entrypoint.sh"]

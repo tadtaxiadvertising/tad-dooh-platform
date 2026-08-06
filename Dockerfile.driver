@@ -14,8 +14,10 @@ COPY apps/driver ./apps/driver
 # Instalar dependencias (usa el lockfile local para consistencia)
 RUN npm install --legacy-peer-deps --no-audit --no-fund
 
-# Build con vars del entorno de build de Easypanel
+# Build con vars del entorno
 ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
+ENV NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 

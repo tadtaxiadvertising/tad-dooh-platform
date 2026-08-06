@@ -1,27 +1,19 @@
-# ============================================
-# TAD DOOH Dashboard - Production Monorepo Dockerfile
-# ============================================
-FROM node:20-alpine AS builder
+# Single-stage Dockerfile para TAD Admin Dashboard (Easypanel Free Tier)
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Runtime deps
+RUN apk add --no-cache openssl curl
+
 # Archivos core del monorepo
 COPY package.json ./
-
-
-# Copiar configuración de workspaces
 COPY packages ./packages
 COPY apps/admin ./apps/admin
 
-# Instalar TODO (para resolver las dependencias cruzadas como @tad/services).
-# EasyPanel only copies apps/admin plus shared packages into this image, so
-# install the admin-only runtime imports that are currently provided by other
-# workspaces/root installs in development. Keep this in the Dockerfile instead
-# of changing package-lock.json because this image intentionally deletes the
-# lockfile before installing.
-RUN rm -rf package-lock.json node_modules \
-    && npm install --legacy-peer-deps --no-audit --no-fund \
-    && npm install --legacy-peer-deps --no-save --no-audit --no-fund \
+# Instalar dependencias
+RUN npm install --legacy-peer-deps --no-audit --no-fund && \
+    npm install --legacy-peer-deps --no-save --no-audit --no-fund \
         @sentry/nextjs@^10.46.0 \
         @tanstack/react-query@^5.91.3 \
         date-fns@^4.1.0 \
@@ -29,48 +21,39 @@ RUN rm -rf package-lock.json node_modules \
         qrcode.react@^4.2.0 \
         recharts@^2.15.0
 
-# INYECCIÓN CRÍTICA DE IDENTIDAD ADMIN
-ARG NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi
-ARG NEXT_PUBLIC_API_URL=
-
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Build con vars del entorno
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
+ENV NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build específico para admin
 WORKDIR /app/apps/admin
 RUN npm run build
 
-# ---- Runner (Production) ----
-FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=256"
-ENV NEXT_PUBLIC_PORTAL_TYPE=ADMIN
+# Preparar standalone
+RUN cp -r apps/admin/.next/standalone/* ./ || true
+RUN mkdir -p apps/admin/.next/static && cp -r apps/admin/.next/static ./apps/admin/.next/static/ 2>/dev/null || true
+RUN cp -r apps/admin/public ./apps/admin/public && cp -r apps/admin/public ./public 2>/dev/null || true
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Podar devDeps
+RUN npm prune --production --force
 
-# Los archivos standalone de Next.js en un monorepo se estructuran así:
-# apps/admin/server.js
-# node_modules/
-# .next/static e imágenes deben estar disponibles para el server.
-
-# Copiamos los archivos y aseguramos que el usuario nextjs sea el dueño
-# FIX: Copiar public a ambas rutas para compatibilidad con el servidor standalone
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/admin/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/public ./apps/admin/public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/public ./public
-
+# Usuario no-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nextjs && \
+    chown -R nextjs:nodejs /app
 USER nextjs
 
-EXPOSE 3000
+ENV NODE_OPTIONS="--max-old-space-size=256"
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+  CMD wget -qO- "http://127.0.0.1:3000/" >/dev/null || exit 1
 
 CMD ["node", "apps/admin/server.js"]

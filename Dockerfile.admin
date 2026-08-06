@@ -35,7 +35,7 @@ WORKDIR /app
 
 # Preparar standalone
 RUN cp -r apps/admin/.next/standalone/* ./ || true
-RUN mkdir -p apps/admin/.next/static && cp -r apps/admin/.next/static ./apps/admin/.next/static/ 2>/dev/null || true
+RUN mkdir -p apps/admin/.next/static && cp -r apps/admin/.next/static/* ./apps/admin/.next/static/ 2>/dev/null || true
 RUN cp -r apps/admin/public ./apps/admin/public && cp -r apps/admin/public ./public 2>/dev/null || true
 
 # Podar devDeps

@@ -1,0 +1,79 @@
+# ============================================================================
+# Configuración Easypanel — TAD Driver Flutter Web
+# ============================================================================
+# Desplegar en: https://tad-driver.rewvid.easypanel.host
+# Puerto expuesto: 80 (Nginx sirve archivos estáticos)
+# Límite RAM: 512MB (Free Tier — no exceder)
+# ============================================================================
+
+version: "1.0"
+
+services:
+  tad-driver-flutter:
+    # Usa el Dockerfile en la raíz del proyecto driver-flutter
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # API Gateway — backend NestJS
+        FLUTTER_APP_API_URL: "https://tad-api.rewvid.easypanel.host/api/v1"
+        # Supabase — auth + realtime
+        FLUTTER_APP_SUPABASE_URL: "https://ltdcdhqixvbpdcitthqf.supabase.co"
+        FLUTTER_APP_SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"
+        # Config operativa
+        FLUTTER_APP_ENV: "${APP_ENV:-production}"
+        FLUTTER_APP_MAX_OFFLINE_HOURS: "48"
+        FLUTTER_APP_GPS_DEBOUNCE_MS: "300000"
+
+    # Sin persistencia de datos (todo en Supabase + localStorage del navegador)
+    # Sin volúmenes — los assets compilados van dentro del contenedor
+
+    # ============ LÍMITES ESTRICTOS (Free Tier VPS) ============
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"       # 1/2 núcleo virtual
+          memory: "512M"    # NUNCA exceder 512MB — OOM kill si se pasa
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+
+    # ============ RED ============
+    # Puerto 80 → Easypanel trae el tráfico HTTPS (Traefik termina SSL)
+    # No exponer 443 — Easypanel maneja el certificado Let's Encrypt
+    ports:
+      - "80:80"
+
+    # ============ HEALTHCHECK ============
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+    # ============ REINICIO ============
+    restart: unless-stopped
+
+# ============================================================================
+# VARIABLES DE ENTORNO REQUERIDAS
+# ============================================================================
+# Estas variables DEBEN configurarse en el panel de Easypanel:
+#
+#   SUPABASE_ANON_KEY=<anon_key_de_supabase>
+#   APP_ENV=production
+#
+# ============================================================================
+# NOTAS DE DESPLIEGUE
+# ============================================================================
+# 1. PRIMERO hacer build del artefacto web:
+#      flutter build web --release --web-renderer canvaskit
+#
+# 2. Easypanel auto-detecta la app y la despliega con:
+#      Construye la imagen → inicia contenedor → verifica health
+#
+# 3. DNS: Asegurar que tad-driver.rewvid.easypanel.host apunte al VPS
+#
+# 4. CORS: Este dominio debe estar en la allow-list del backend NestJS
+#    (ver apps/api/src/main.ts → baseOrigins array)
+# ============================================================================

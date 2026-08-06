@@ -9,7 +9,7 @@ export declare const PLATFORM_CONFIG: Record<Platform, {
     idealCutIntervalSec: [number, number];
     textDensity: 'high' | 'medium' | 'low';
 }>;
-export type ContentType = 'why-diesel' | 'attention-economy' | 'brain-ad' | 'dead-time' | 'impossible-to-ignore' | 'myth-busting' | 'explainer';
+export type ContentType = 'why-diesel' | 'attention-economy' | 'brain-ad' | 'dead-time' | 'impossible-to-ignore' | 'myth-busting' | 'explainer' | 'driver-recruit';
 export interface SceneSpec {
     /** ID único incremental (0-indexado) */
     id: number;

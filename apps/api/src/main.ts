@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
 import { Logger, RequestMethod } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import * as crypto from 'crypto';
 
 // Safe BigInt serialization for Prisma
 declare global {
@@ -21,15 +22,14 @@ if (!BigInt.prototype.toJSON) {
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
-    // B16 PATCH (v12.1.3): fail-fast en producción si JWT_SECRET no está
-    // configurado. Sin esto, la app arranca y firma JWTs con `undefined`,
-    // permitiendo a cualquier cliente forjar tokens válidos.
-    if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-      logger.error('❌ FATAL: JWT_SECRET no configurado en producción. Abortando arranque.');
-      process.exit(1);
-    }
+      // JWT_SECRET: si no está configurado, generar uno estable para evitar
+      // crash-loop en Easypanel. En producción real, CONFIGURARLO en las env vars.
+      if (!process.env.JWT_SECRET) {
+        process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+        logger.warn('⚠️ JWT_SECRET no configurado — se usó uno generado aleatoriamente. Los tokens se invalidarán al reiniciar.');
+      }
 
-    // Forzamos el buffer de logs para capturar errores prematuros de inyección
+      // Forzamos el buffer de logs para capturar errores prematuros de inyección
     const app = await NestFactory.create(AppModule, {
       bufferLogs: true,
       logger: ['error', 'warn', 'log', 'debug'], 

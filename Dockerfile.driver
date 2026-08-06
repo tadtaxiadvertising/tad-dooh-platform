@@ -28,7 +28,7 @@ WORKDIR /app
 
 # Copiar standalone al lugar correcto y asegurar archivos estáticos
 RUN cp -r apps/driver/.next/standalone/* ./ || true
-RUN mkdir -p apps/driver/.next/static && cp -r apps/driver/.next/static ./apps/driver/.next/static/
+RUN mkdir -p apps/driver/.next/static && cp -r apps/driver/.next/static/* ./apps/driver/.next/static/ 2>/dev/null || true
 RUN cp -r apps/driver/public ./public 2>/dev/null || true
 
 # Podar devDeps

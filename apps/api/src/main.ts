@@ -54,6 +54,7 @@ async function bootstrap() {
     const baseOrigins = [
       'https://tad-admin.rewvid.easypanel.host',
       'https://tad-driver.rewvid.easypanel.host',
+      'https://tad-driver-flutter.rewvid.easypanel.host',
       'https://tad-advertiser.rewvid.easypanel.host',
       'https://tad-api.rewvid.easypanel.host',
       'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',

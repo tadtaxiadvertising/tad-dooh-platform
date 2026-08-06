@@ -1,65 +1,50 @@
-# ============================================
-# TAD DOOH Dashboard - Production Monorepo Dockerfile
-# ============================================
-FROM node:20-alpine AS builder
+# Single-stage Dockerfile para tad-driver optimizado para Easypanel Free Tier
+FROM node:20-alpine
 
 WORKDIR /app
+
+# Runtime deps
+RUN apk add --no-cache openssl curl
 
 # Archivos core del monorepo
 COPY package.json ./
-
-# Copiar configuración de workspaces
 COPY packages ./packages
 COPY apps/driver ./apps/driver
 
-# Instalar TODO (para resolver las dependencias cruzadas como @tad/services)
-RUN rm -rf package-lock.json apps/driver/package-lock.json node_modules && npm install --legacy-peer-deps
+# Instalar dependencias (usa el lockfile local para consistencia)
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
-# INYECCIÓN CRÍTICA DE IDENTIDAD DRIVER
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_API_URL
-
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Build con vars del entorno de build de Easypanel
 ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build específico para driver
 WORKDIR /app/apps/driver
 RUN npm run build
 
-# ---- Runner (Production) ----
-FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=256"
-ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
+# Copiar standalone al lugar correcto y asegurar archivos estáticos
+RUN cp -r apps/driver/.next/standalone/* ./ || true
+RUN mkdir -p apps/driver/.next/static && cp -r apps/driver/.next/static ./apps/driver/.next/static/
+RUN cp -r apps/driver/public ./public 2>/dev/null || true
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Podar devDeps
+RUN npm prune --production --force
 
-# Los archivos standalone de Next.js en un monorepo se estructuran así:
-# apps/driver/server.js
-# node_modules/
-# .next/static e imágenes deben estar disponibles para el server.
-
-# Copiamos los archivos y aseguramos que el usuario nextjs sea el dueño
-COPY --from=builder --chown=nextjs:nodejs /app/apps/driver/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/driver/.next/static ./apps/driver/.next/static
-
-# FIX: El servidor standalone de Next.js sirve archivos estáticos desde
-# ./public RELATIVO al WORKDIR (/app). En monorepo, el path real es /app/apps/driver/public,
-# pero server.js lo busca en /app/public. Copiamos a ambas rutas.
-COPY --from=builder --chown=nextjs:nodejs /app/apps/driver/public ./apps/driver/public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/driver/public ./public
-
+# Usuario no-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nextjs && \
+    chown -R nextjs:nodejs /app
 USER nextjs
 
-EXPOSE 3000
+ENV NODE_OPTIONS="--max-old-space-size=256"
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+  CMD wget -qO- "http://127.0.0.1:3000/" >/dev/null || exit 1
 
 CMD ["node", "apps/driver/server.js"]

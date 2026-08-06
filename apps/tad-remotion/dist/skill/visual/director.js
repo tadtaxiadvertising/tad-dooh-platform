@@ -73,6 +73,11 @@ const VISUAL_STYLE = {
         dominantShape: 'circle',
         motionDirection: 'diagonal',
     },
+    'driver-recruit': {
+        palette: [exports.TAD_PALETTE.yellow, exports.TAD_PALETTE.primary, exports.TAD_PALETTE.bgDark],
+        dominantShape: 'card',
+        motionDirection: 'vertical',
+    },
 };
 // ─── Selección de técnica Remotion por función narrativa ─────────────────────
 function remotionTechniqueForFunction(narrativeFunction) {

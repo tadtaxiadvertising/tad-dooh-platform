@@ -9,6 +9,26 @@ interface KineticTextProps {
     revealCharByChar?: boolean;
     /** Frames de delay antes de comenzar el reveal */
     revealDelay?: number;
+    /** Cursor trail effect */
+    cursorTrail?: boolean;
+    /** Blend mode */
+    blend?: 'normal' | 'screen' | 'overlay';
+    /** Espaciado entre letras */
+    letterSpacing?: number;
+    /** Alto de línea */
+    lineHeight?: number;
+    /** Ancho máximo */
+    maxWidth?: number;
+    /** Alineación */
+    align?: 'center' | 'left' | 'right';
+    /** Vignette detrás del texto */
+    vignetteBehindText?: boolean;
+    /** Glow detrás del texto */
+    glowBehindText?: boolean;
+    /** Color del glow (fallback accentColor) */
+    glowColor?: string;
+    /** Color stack */
+    colorStack?: string[];
 }
 declare const KineticText: React.FC<KineticTextProps>;
 export { KineticText };

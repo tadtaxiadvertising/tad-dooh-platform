@@ -128,6 +128,7 @@ function generateHashtags(theme, platform) {
         'impossible-to-ignore': ['PsychologyOfAttention', 'AttentionCapture', 'DOOH2025'],
         'myth-busting': ['MitosDOOH', 'RealidadDOOH', 'PublicidadRD'],
         'explainer': ['QueEsDOOH', 'GuiaDOOH', 'DOOHSimple'],
+        'driver-recruit': ['ConductoresRD', 'TADDriver', 'GanaConTuTaxi', 'EmpleoRD', 'OportunidadLaboral'],
     };
     const specific = themeSpecific[theme] ?? [];
     return [...general, ...specific].slice(0, 15);

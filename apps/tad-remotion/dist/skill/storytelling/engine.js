@@ -149,6 +149,13 @@ Las marcas compran espacios de 30 segundos en estas pantallas.
 Los pasajeros ven contenido relevante SIN costo.
 Las marcas llegan a millones de dominicanos en su vida cotidiana.
 Es el medio más eficiente del 2024 para generar recordación.`,
+    'driver-recruit': `Convierte tu taxi en un negocio de publicidad digital.
+Gana hasta quince mil pesos cada mes sin hacer nada extra.
+Solo instalamos una pantalla en tu taxi y tú recibes ingresos.
+Además ganas quinientos pesos por cada conductor que refieras.
+Recibe pagos directos a tu cuenta de banco sin complicaciones.
+Billetera digital, GPS inteligente y atención personalizada.
+Únete a la red TAD hoy y empieza a ganar.`,
 };
 // ─── On-screen text generado para cada tema ───────────────────────────────────
 const ON_SCREEN_TEXT = {
@@ -159,6 +166,7 @@ const ON_SCREEN_TEXT = {
     'impossible-to-ignore': '3 razones. 1 lugar.',
     'myth-busting': 'Lo que NADIE te dice sobre DOOH',
     'explainer': 'DOOH para dominicanos',
+    'driver-recruit': 'Gana hasta RD$15,000/mes',
 };
 // ─── Factores de pacing por duración ─────────────────────────────────────────
 const PIXAR_SPINE_TIMING = [

@@ -1,76 +1,43 @@
-# Phase 1: Build & Generate
-FROM node:20-alpine AS builder
+# Single-stage build optimizado para Easypanel Free Tier (512MB RAM)
+FROM node:20-alpine
 
-WORKDIR /usr/src/app
+WORKDIR /app
 RUN apk add --no-cache openssl
 
-# Install ALL dependencies (for build)
-COPY package*.json ./
+# 1. Install ALL deps first (cached layer)
+COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
-# Scope npm's workspace install to the API service. The root lockfile also
-# contains frontend workspaces; leaving those enabled pulls Next.js into the
-# API image build even though the API never runs it.
+
+# Scope workspace to API only
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
     && npm ci --workspace=apps/api
 
-# Copy source and build
+# 2. Copy source and build
 COPY . .
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 RUN npm run build -w apps/api
 
-# Phase 2: Production Dependencies Only
-FROM node:20-alpine AS deps
+# 3. Prune devDependencies (but keep node_modules structure)
+RUN npm prune --omit=dev --workspace=apps/api
 
-WORKDIR /usr/src/app
-RUN apk add --no-cache openssl
-
-COPY package*.json ./
-COPY apps/api/package.json ./apps/api/
-COPY apps/api/prisma/ ./apps/api/prisma/
-COPY packages/ ./packages/
-
-# Install ONLY production dependencies
-RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
-    && npm ci --omit=dev --workspace=apps/api
-
-# Phase 3: Runtime Stage (Zero-Waste)
-FROM node:20-alpine AS runner
-
-WORKDIR /usr/src/app
-RUN apk add --no-cache openssl
-
-# SHELTER C-I2: Crear usuario no-root para ejecución
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
-
+# 4. Runtime config
 ENV NODE_ENV=production
-# SHELTER A-I2: Memory optimizada para VPS Free Tier (512MB en vez de 850MB)
-ENV NODE_OPTIONS="--max-old-space-size=512"
+ENV NODE_OPTIONS="--max-old-space-size=384"
 ENV PORT=3000
 
-# Copy minimal files from Phase 2 (prod node_modules) — con ownership correcto
-COPY --from=deps --chown=nestjs:nodejs /usr/src/app/package*.json ./
-COPY --from=deps --chown=nestjs:nodejs /usr/src/app/node_modules ./node_modules
-COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/package.json ./apps/api/
-COPY --from=deps --chown=nestjs:nodejs /usr/src/app/apps/api/node_modules ./apps/api/node_modules
-
-# Copy build output and Prisma schema from Phase 1
-COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/dist ./apps/api/dist
-COPY --from=builder --chown=nestjs:nodejs /usr/src/app/apps/api/prisma ./apps/api/prisma
-
-# Regenerar cliente Prisma para linux-musl-openssl-3.0.x en el stage runner
-# (el binario generado en builder puede no coincidir)
-RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
-
-# SHELTER: Ejecutar como usuario no-root, pero con acceso para prisma migrate
+# 5. Security: non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs && \
+    chown -R nestjs:nodejs /app
 USER nestjs
 
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
-  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
-WORKDIR /usr/src/app/apps/api
-COPY --chown=nestjs:nodejs apps/api/docker-entrypoint.sh /usr/src/app/apps/api/docker-entrypoint.sh
-ENTRYPOINT ["/usr/src/app/apps/api/docker-entrypoint.sh"]
-CMD ["node", "dist/main.js"]
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+  CMD wget -qO- "http://127.0.0.1:3000/api/health" >/dev/null || exit 1
+
+WORKDIR /app/apps/api
+COPY --chown=nestjs:nodejs apps/api/docker-entrypoint.sh docker-entrypoint.sh
+ENTRYPOINT ["/bin/sh", "/app/apps/api/docker-entrypoint.sh"]

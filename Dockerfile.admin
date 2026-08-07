@@ -51,5 +51,8 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
   CMD curl -f -s -o /dev/null "http://127.0.0.1:3000/" || exit 1
 
-# Ejecutar server.js con exec wrapper para señales (Alpine PID 1)
-CMD exec node apps/admin/server.js
+# ENTRYPOINT wrapper: señal-safe + exec en Alpine, compatible con JSON args
+COPY apps/admin/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["node", "apps/admin/server.js"]

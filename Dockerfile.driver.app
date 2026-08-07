@@ -1,5 +1,5 @@
 # ============ STAGE 1: Build Flutter Web ============
-FROM ghcr.io/cirruslabs/flutter:3.27.4 AS builder
+FROM cirruslabs/flutter:3.27.4 AS builder
 
 ARG FLUTTER_APP_API_URL=https://tad-api.rewvid.easypanel.host/api/v1
 ARG FLUTTER_APP_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co

@@ -46,8 +46,9 @@ ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
 
+# Healthcheck: usa PORT del entorno (Easypanel pasa 80) o default 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
-  CMD curl -f -s -o /dev/null "http://127.0.0.1:3000/" || exit 1
+  CMD curl -f -s -o /dev/null "http://127.0.0.1:${PORT:-3000}/" || exit 1
 
 # ENTRYPOINT wrapper: señal-safe + exec en Alpine, compatible con JSON args
 COPY --chmod=0755 apps/driver/docker-entrypoint.sh /docker-entrypoint.sh

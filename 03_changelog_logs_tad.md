@@ -1,10 +1,12 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-07-16
+> **Última Actualización**: 2026-08-08
 
 ---
 
-### 🚀 FEATURE: Sistema de Notificaciones No-Bloqueante + Motor de Sincronización GPS Consolidado (V13)
+## [RESILIENCIA-V12] - 2026-08-08
+
+### 🔥 FIX: Revenue Shield — Contradicción Cascade/RESTRICT + Referral Loop automatizado
 
 - **Módulos Implementados**:
 

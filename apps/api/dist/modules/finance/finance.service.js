@@ -140,8 +140,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
                         }
                     }
                 },
-                referrals: { select: { id: true } },
-                referredAdvertisers: { select: { id: true } }
+                referrals: { select: { id: true } }
             }
         });
         const periodStart = new Date(year, month - 1, 1);
@@ -192,8 +191,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
                 const baseCommission = 0;
                 const referrals = driver.referrals ? driver.referrals.length : 0;
                 const driverReferralBonus = referrals * business_rules_1.BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
-                const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
-                const advertiserReferralBonus = advertiserReferrals * business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
+                const advertiserReferralBonus = 0;
                 const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
                 const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
                 const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';

@@ -166,10 +166,9 @@ export class FinanceService {
             }
           }
         },
-        referrals: { select: { id: true } },
-        referredAdvertisers: { select: { id: true } }
-      }
-    });
+        referrals: { select: { id: true } }
+        }
+        });
 
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
@@ -239,9 +238,10 @@ export class FinanceService {
         const referrals = driver.referrals ? driver.referrals.length : 0;
         const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
 
-        // Calculate advertiser referral commissions
-        const advertiserReferrals = driver.referredAdvertisers ? driver.referredAdvertisers.length : 0;
-        const advertiserReferralBonus = advertiserReferrals * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
+        // --- FIX V12: Removed recursive blind advertiser referral payments ---
+        // Los bonos de anunciantes ahora se abonan directo a la Wallet en el Referral Loop (CampaignService)
+        // en tiempo real como 'OPEX_COMMISSION'. Ya no suman al sueldo base recurrente.
+        const advertiserReferralBonus = 0;
 
         const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
         const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;

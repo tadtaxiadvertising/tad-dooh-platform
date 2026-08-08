@@ -63,17 +63,17 @@ export declare class FinanceService {
         message?: undefined;
     }>;
     processPayment(driverId: string, month: number, year: number, reference: string): Promise<{
-        id: string;
         status: string;
+        id: string;
         createdAt: Date;
         driverId: string;
         activeAds: number;
-        penaltyApplied: boolean;
         amount: number;
-        paidAt: Date | null;
         month: number;
         year: number;
+        paidAt: Date | null;
         referenceNum: string | null;
+        penaltyApplied: boolean;
         penaltyPercentage: number;
         transmissionHours: number;
         gpsPoints: number;
@@ -103,16 +103,16 @@ export declare class FinanceService {
         note?: string;
         status?: string;
     }): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        amount: number;
         category: string;
-        type: string;
-        entityId: string | null;
+        amount: number;
         netAmount: number;
         taxAmount: number;
+        entityId: string | null;
         reference: string | null;
         note: string | null;
     }>;
@@ -138,16 +138,16 @@ export declare class FinanceService {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
-        id: string;
+        type: string;
         status: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        amount: number;
         category: string;
-        type: string;
-        entityId: string | null;
+        amount: number;
         netAmount: number;
         taxAmount: number;
+        entityId: string | null;
         reference: string | null;
         note: string | null;
     }[]>;

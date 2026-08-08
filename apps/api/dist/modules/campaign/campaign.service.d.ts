@@ -18,22 +18,15 @@ export declare class CampaignService {
         advertiser_id?: string;
     }): Promise<{
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -46,6 +39,13 @@ export declare class CampaignService {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -53,22 +53,15 @@ export declare class CampaignService {
     }>;
     createCampaign(dto: CreateCampaignDto, user?: AuthUser): Promise<{
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -81,6 +74,13 @@ export declare class CampaignService {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -91,8 +91,8 @@ export declare class CampaignService {
         skipped: number;
     }>;
     assignCampaignToDevice(deviceId: string, campaignId: string): Promise<{
-        campaign_id: string;
         device_id: string;
+        campaign_id: string;
         assigned_at: Date;
     }>;
     registerDirectMedia(dto: {
@@ -105,17 +105,17 @@ export declare class CampaignService {
         success: boolean;
         media: {
             id: string;
+            name: string | null;
             status: string;
             createdAt: Date;
-            name: string | null;
-            filename: string | null;
+            campaign_id: string | null;
             url: string | null;
-            fileSize: bigint | null;
-            qrUrl: string | null;
+            filename: string | null;
             originalFilename: string | null;
             mime_type: string | null;
             mimeType: string | null;
             size: bigint | null;
+            fileSize: bigint | null;
             durationSeconds: number | null;
             width: number | null;
             height: number | null;
@@ -124,7 +124,7 @@ export declare class CampaignService {
             hash: string | null;
             hashMd5: string | null;
             hashSha256: string | null;
-            campaign_id: string | null;
+            qrUrl: string | null;
         };
     }>;
     addMediaAsset(campaignId: string, dto: AddMediaAssetDto): Promise<{
@@ -133,12 +133,12 @@ export declare class CampaignService {
         campaignId: string;
         version: number;
         type: string;
-        filename: string;
         url: string;
+        filename: string;
         fileSize: number;
+        qrUrl: string | null;
         checksum: string;
         duration: number | null;
-        qrUrl: string | null;
         processingStatus: string;
         validationError: string | null;
         weight: number;
@@ -146,12 +146,12 @@ export declare class CampaignService {
     getAllCampaigns(): Promise<({
         media: {
             id: string;
+            name: string;
             status: string;
             createdAt: Date;
-            name: string;
-            filename: string;
+            campaign_id: string;
             url: string;
-            qrUrl: string;
+            filename: string;
             originalFilename: string;
             mime_type: string;
             mimeType: string;
@@ -163,7 +163,7 @@ export declare class CampaignService {
             hash: string;
             hashMd5: string;
             hashSha256: string;
-            campaign_id: string;
+            qrUrl: string;
         }[];
         mediaAssets: {
             id: string;
@@ -171,31 +171,24 @@ export declare class CampaignService {
             campaignId: string;
             version: number;
             type: string;
-            filename: string;
             url: string;
+            filename: string;
             fileSize: number;
+            qrUrl: string;
             checksum: string;
             duration: number;
-            qrUrl: string;
         }[];
     } & {
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -208,6 +201,13 @@ export declare class CampaignService {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -216,12 +216,12 @@ export declare class CampaignService {
     getCampaignById(id: string): Promise<{
         media: {
             id: string;
+            name: string;
             status: string;
             createdAt: Date;
-            name: string;
-            filename: string;
+            campaign_id: string;
             url: string;
-            qrUrl: string;
+            filename: string;
             originalFilename: string;
             mime_type: string;
             mimeType: string;
@@ -233,7 +233,7 @@ export declare class CampaignService {
             hash: string;
             hashMd5: string;
             hashSha256: string;
-            campaign_id: string;
+            qrUrl: string;
         }[];
         mediaAssets: {
             id: string;
@@ -241,31 +241,24 @@ export declare class CampaignService {
             campaignId: string;
             version: number;
             type: string;
-            filename: string;
             url: string;
+            filename: string;
             fileSize: number;
+            qrUrl: string;
             checksum: string;
             duration: number;
-            qrUrl: string;
         }[];
     } & {
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -278,6 +271,13 @@ export declare class CampaignService {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -296,17 +296,17 @@ export declare class CampaignService {
     }>;
     linkMediaToCampaign(campaignId: string, mediaId: string): Promise<{
         id: string;
+        name: string | null;
         status: string;
         createdAt: Date;
-        name: string | null;
-        filename: string | null;
+        campaign_id: string | null;
         url: string | null;
-        fileSize: bigint | null;
-        qrUrl: string | null;
+        filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
         size: bigint | null;
+        fileSize: bigint | null;
         durationSeconds: number | null;
         width: number | null;
         height: number | null;
@@ -315,7 +315,7 @@ export declare class CampaignService {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        campaign_id: string | null;
+        qrUrl: string | null;
     }>;
     getOptimalDevicesForCampaign(campaignCity: string, limit: number): Promise<({
         driver: {
@@ -326,15 +326,11 @@ export declare class CampaignService {
         };
     } & {
         id: string;
-        taxiNumber: string | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        isSimulated: boolean;
-        name: string | null;
-        fleet: string | null;
         deviceId: string;
+        name: string | null;
+        taxiNumber: string | null;
         city: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -345,6 +341,9 @@ export declare class CampaignService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -354,6 +353,7 @@ export declare class CampaignService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     })[]>;
     simulateImpact(budgetRD: number, city: string): Promise<{
@@ -372,8 +372,8 @@ export declare class CampaignService {
             createdAt: Date;
             updatedAt: Date;
             budget: number;
-            expectedScreens: number;
             brandName: string;
+            expectedScreens: number;
             fileMetadata: import("@prisma/client/runtime/library").JsonValue | null;
         };
     }>;

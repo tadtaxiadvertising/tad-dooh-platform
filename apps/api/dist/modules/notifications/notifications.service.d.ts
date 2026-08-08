@@ -14,32 +14,32 @@ export declare class NotificationsService {
     }): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }>;
     findAll(): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }[]>;
     getUnreadCount(): Promise<number>;
     markAsRead(id: string): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }>;
     markAllAsRead(): Promise<import(".prisma/client").Prisma.BatchPayload>;
@@ -47,11 +47,11 @@ export declare class NotificationsService {
     executePushDelivery(driverId: string, message: string): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }>;
     sendDriverNotification(driverId: string, type: string, payload: Record<string, unknown>): Promise<void>;

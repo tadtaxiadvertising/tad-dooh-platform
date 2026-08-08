@@ -69,16 +69,17 @@ export class AdvertisersController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
   async create(@Body() body: {
-    companyName: string;
-    contactName: string;
-    email: string;
-    phone?: string;
-    password?: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  referralCode?: string;
   }) {
-    if (!body.companyName || !body.contactName || !body.email) {
-      throw new BadRequestException('companyName, contactName, and email are required');
-    }
-    return this.advertisersService.create(body);
+  if (!body.companyName || !body.contactName || !body.email) {
+  throw new BadRequestException('companyName, contactName, and email are required');
+  }
+  return this.advertisersService.create(body);
   }
 
   /**

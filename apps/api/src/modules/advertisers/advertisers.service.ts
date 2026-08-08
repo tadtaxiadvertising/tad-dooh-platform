@@ -71,28 +71,41 @@ export class AdvertisersService {
   }
 
   async create(data: {
-    companyName: string;
-    contactName: string;
-    email: string;
-    phone?: string;
-    password?: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  referralCode?: string;
   }) {
-    let hashedPassword: string | null = null;
-    if (data.password) {
-      // FIX B-2: Usar constante BCRYPT_ROUNDS
-      hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    }
+  let hashedPassword: string | null = null;
+  if (data.password) {
+  hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+  }
 
-    return this.prisma.advertiser.create({
-      data: {
-        companyName: data.companyName,
-        contactName: data.contactName,
-        email: data.email,
-        phone: data.phone,
-        password: hashedPassword,
-        status: BUSINESS_RULES.STATUS.ADVERTISER.INITIAL,
-      },
-    });
+  let referredByDriverId: string | null = null;
+  if (data.referralCode) {
+  const driver = await this.prisma.driver.findUnique({
+  where: { referralCode: data.referralCode },
+  select: { id: true },
+  });
+  if (driver) {
+  referredByDriverId = driver.id;
+  this.logger.log(`🔗 Advertiser ${data.companyName} referred by Driver ${driver.id}`);
+  }
+  }
+
+  return this.prisma.advertiser.create({
+  data: {
+  companyName: data.companyName,
+  contactName: data.contactName,
+  email: data.email,
+  phone: data.phone,
+  password: hashedPassword,
+  status: BUSINESS_RULES.STATUS.ADVERTISER.INITIAL,
+  referredBy: referredByDriverId,
+  },
+  });
   }
 
   // FIX A-3: DTO explícito — solo permite actualizar campos seguros. Previene mass assignment.

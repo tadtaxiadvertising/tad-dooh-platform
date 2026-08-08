@@ -21,7 +21,6 @@ export declare class MediaService {
         status: string;
         createdAt: Date;
         campaign_id: string | null;
-        url: string | null;
         filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
@@ -31,6 +30,7 @@ export declare class MediaService {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;
@@ -72,7 +72,6 @@ export declare class MediaService {
         status: string;
         createdAt: Date;
         campaign_id: string | null;
-        url: string | null;
         filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
@@ -82,6 +81,7 @@ export declare class MediaService {
         width: number | null;
         height: number | null;
         storageKey: string | null;
+        url: string | null;
         cdnUrl: string | null;
         hash: string | null;
         hashMd5: string | null;

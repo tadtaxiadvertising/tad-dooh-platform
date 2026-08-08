@@ -64,6 +64,17 @@ let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
         if (data.password) {
             hashedPassword = await bcrypt.hash(data.password, business_rules_1.BCRYPT_ROUNDS);
         }
+        let referredByDriverId = null;
+        if (data.referralCode) {
+            const driver = await this.prisma.driver.findUnique({
+                where: { referralCode: data.referralCode },
+                select: { id: true },
+            });
+            if (driver) {
+                referredByDriverId = driver.id;
+                this.logger.log(`🔗 Advertiser ${data.companyName} referred by Driver ${driver.id}`);
+            }
+        }
         return this.prisma.advertiser.create({
             data: {
                 companyName: data.companyName,
@@ -72,6 +83,7 @@ let AdvertisersService = AdvertisersService_1 = class AdvertisersService {
                 phone: data.phone,
                 password: hashedPassword,
                 status: business_rules_1.BUSINESS_RULES.STATUS.ADVERTISER.INITIAL,
+                referredBy: referredByDriverId,
             },
         });
     }

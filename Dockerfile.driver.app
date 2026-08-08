@@ -20,7 +20,6 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3004
-COPY --from=builder /app/apps/driver/next.config.mjs ./
 COPY --from=builder /app/apps/driver/public ./apps/driver/public
 COPY --from=builder /app/apps/driver/.next/standalone ./
 COPY --from=builder /app/apps/driver/.next/static ./apps/driver/.next/static

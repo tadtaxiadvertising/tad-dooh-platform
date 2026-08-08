@@ -68,20 +68,10 @@ const nextConfig: NextConfig = {
   // Importante: NO reescribir /api/proxy/* hacia el backend.
   // Esa ruta la atiende pages/api/proxy/[...path].ts para preservar
   // fallback, auth forwarding y diagnóstico (_proxy_health).
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-      {
-        source: '/dashboard',
-        destination: '/admin',
-        permanent: false,
-      }
-    ];
-  },
+  // NOTA: No definir redirect de '/' aquí. El middleware de la app
+  // driver redirige '/' -> '/driver/login' (y a '/driver/dashboard'
+  // si ya hay sesión DRIVER). Los redirects de next.config se ejecutan
+  // ANTES que el middleware y rompen el flujo del portal driver.
 };
 
 export default withSentryConfig(withPWA(nextConfig), {

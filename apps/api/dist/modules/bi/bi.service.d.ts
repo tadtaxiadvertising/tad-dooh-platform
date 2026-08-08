@@ -18,9 +18,9 @@ export declare class BiService {
         };
     } & {
         id: string;
+        deviceId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        deviceId: string | null;
         driverId: string;
         period: string;
         subscriptionStatus: string;

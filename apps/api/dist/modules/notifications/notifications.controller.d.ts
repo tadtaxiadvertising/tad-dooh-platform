@@ -5,11 +5,11 @@ export declare class NotificationsController {
     findAll(): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }[]>;
     getUnreadCount(): Promise<number>;
@@ -17,11 +17,11 @@ export declare class NotificationsController {
     markAsRead(id: string): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }>;
     createTestAlert(body: {
@@ -32,11 +32,11 @@ export declare class NotificationsController {
     }): Promise<{
         id: string;
         createdAt: Date;
-        category: string;
         message: string;
+        category: string;
         type: string;
-        entityId: string | null;
         title: string;
+        entityId: string | null;
         read: boolean;
     }>;
 }

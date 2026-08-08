@@ -62,11 +62,11 @@ export declare class FinanceController {
         id: string;
         status: string;
         createdAt: Date;
-        activeAds: number;
-        amount: number;
         driverId: string;
-        paidAt: Date | null;
+        activeAds: number;
         penaltyApplied: boolean;
+        amount: number;
+        paidAt: Date | null;
         month: number;
         year: number;
         referenceNum: string | null;
@@ -120,13 +120,13 @@ export declare class FinanceController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        category: string;
         amount: number;
+        category: string;
         type: string;
-        reference: string | null;
+        entityId: string | null;
         netAmount: number;
         taxAmount: number;
-        entityId: string | null;
+        reference: string | null;
         note: string | null;
     }>;
     getSummary(): Promise<{
@@ -155,13 +155,13 @@ export declare class FinanceController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        category: string;
         amount: number;
+        category: string;
         type: string;
-        reference: string | null;
+        entityId: string | null;
         netAmount: number;
         taxAmount: number;
-        entityId: string | null;
+        reference: string | null;
         note: string | null;
     }[]>;
     emailCampaignReport(id: string, body: {

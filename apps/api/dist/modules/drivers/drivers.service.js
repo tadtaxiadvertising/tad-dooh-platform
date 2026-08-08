@@ -222,7 +222,14 @@ let DriversService = DriversService_1 = class DriversService {
         };
     }
     async login(phone, pass) {
-        const user = await this.prisma.driver.findUnique({ where: { phone } });
+        let user;
+        try {
+            user = await this.prisma.driver.findUnique({ where: { phone } });
+        }
+        catch (err) {
+            this.logger.error(`[DRIVER_LOGIN] DB lookup failed for phone ${phone}: ${err instanceof Error ? err.message : String(err)}`);
+            throw new common_1.UnauthorizedException('No se pudo validar las credenciales');
+        }
         if (!user) {
             throw new common_1.UnauthorizedException('Chofer no encontrado con este teléfono');
         }

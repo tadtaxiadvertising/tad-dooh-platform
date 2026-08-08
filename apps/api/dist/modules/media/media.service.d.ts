@@ -17,12 +17,12 @@ export declare class MediaService {
     registerBypassedMedia(data: any): Promise<{
         fileSize: number;
         id: string;
+        name: string | null;
         status: string;
         createdAt: Date;
-        name: string | null;
-        filename: string | null;
+        campaign_id: string | null;
         url: string | null;
-        qrUrl: string | null;
+        filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -35,7 +35,7 @@ export declare class MediaService {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        campaign_id: string | null;
+        qrUrl: string | null;
     }>;
     registerFileMock(dto: {
         originalname: string;
@@ -68,12 +68,12 @@ export declare class MediaService {
     }): Promise<{
         fileSize: number;
         id: string;
+        name: string | null;
         status: string;
         createdAt: Date;
-        name: string | null;
-        filename: string | null;
+        campaign_id: string | null;
         url: string | null;
-        qrUrl: string | null;
+        filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -86,7 +86,7 @@ export declare class MediaService {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        campaign_id: string | null;
+        qrUrl: string | null;
     }>;
     deleteFile(id: string): Promise<{
         success: boolean;

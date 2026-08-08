@@ -12,13 +12,13 @@ export declare class CampaignController {
     constructor(campaignService: CampaignService, prisma: PrismaService, mediaService: MediaService, videoGenerator: VideoGeneratorService);
     getAdvertiserHub(): Promise<{
         id: string;
-        companyName: string;
         instagram: string;
+        pedidosYaUrl: string;
+        uberEatsUrl: string;
         websiteUrl: string;
         whatsapp: string;
         category: string;
-        pedidosYaUrl: string;
-        uberEatsUrl: string;
+        companyName: string;
     }[]>;
     getAdvertiserProfile(id: string): Promise<{
         whatsapp: string;
@@ -34,22 +34,15 @@ export declare class CampaignController {
     }>;
     updateCampaign(id: string, dto: any, req: any): Promise<{
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -62,6 +55,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -69,22 +69,15 @@ export declare class CampaignController {
     }>;
     createCampaign(dto: CreateCampaignDto, req: any): Promise<{
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -97,6 +90,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -106,17 +106,17 @@ export declare class CampaignController {
         success: boolean;
         media: {
             id: string;
+            name: string | null;
             status: string;
             createdAt: Date;
-            name: string | null;
-            filename: string | null;
+            campaign_id: string | null;
             url: string | null;
-            fileSize: bigint | null;
-            qrUrl: string | null;
+            filename: string | null;
             originalFilename: string | null;
             mime_type: string | null;
             mimeType: string | null;
             size: bigint | null;
+            fileSize: bigint | null;
             durationSeconds: number | null;
             width: number | null;
             height: number | null;
@@ -125,7 +125,7 @@ export declare class CampaignController {
             hash: string | null;
             hashMd5: string | null;
             hashSha256: string | null;
-            campaign_id: string | null;
+            qrUrl: string | null;
         };
     }>;
     simulateBudget(body: {
@@ -155,12 +155,12 @@ export declare class CampaignController {
         campaignId: string;
         version: number;
         type: string;
-        filename: string;
         url: string;
+        filename: string;
         fileSize: number;
+        qrUrl: string | null;
         checksum: string;
         duration: number | null;
-        qrUrl: string | null;
         processingStatus: string;
         validationError: string | null;
         weight: number;
@@ -168,12 +168,12 @@ export declare class CampaignController {
     getAllCampaigns(req: any): Promise<({
         media: {
             id: string;
+            name: string;
             status: string;
             createdAt: Date;
-            name: string;
-            filename: string;
+            campaign_id: string;
             url: string;
-            qrUrl: string;
+            filename: string;
             originalFilename: string;
             mime_type: string;
             mimeType: string;
@@ -185,7 +185,7 @@ export declare class CampaignController {
             hash: string;
             hashMd5: string;
             hashSha256: string;
-            campaign_id: string;
+            qrUrl: string;
         }[];
         mediaAssets: {
             id: string;
@@ -193,31 +193,24 @@ export declare class CampaignController {
             campaignId: string;
             version: number;
             type: string;
-            filename: string;
             url: string;
+            filename: string;
             fileSize: number;
+            qrUrl: string;
             checksum: string;
             duration: number;
-            qrUrl: string;
         }[];
     } & {
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -230,6 +223,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -267,6 +267,8 @@ export declare class CampaignController {
         campaigns: {
             id: string;
             name: string;
+            advertiser: string;
+            targetAll: boolean;
             media: {
                 id: string;
                 name: string;
@@ -274,12 +276,10 @@ export declare class CampaignController {
                 mimeType: string;
                 hashMd5: string;
             }[];
-            advertiser: string;
-            targetAll: boolean;
             mediaAssets: {
                 id: string;
-                filename: string;
                 url: string;
+                filename: string;
             }[];
         }[];
         message?: undefined;
@@ -294,22 +294,15 @@ export declare class CampaignController {
         }[];
     } & {
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -322,6 +315,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -329,17 +329,17 @@ export declare class CampaignController {
     }>;
     linkMediaToCampaign(campaignId: string, mediaId: string): Promise<{
         id: string;
+        name: string | null;
         status: string;
         createdAt: Date;
-        name: string | null;
-        filename: string | null;
+        campaign_id: string | null;
         url: string | null;
-        fileSize: bigint | null;
-        qrUrl: string | null;
+        filename: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
         size: bigint | null;
+        fileSize: bigint | null;
         durationSeconds: number | null;
         width: number | null;
         height: number | null;
@@ -348,29 +348,22 @@ export declare class CampaignController {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        campaign_id: string | null;
+        qrUrl: string | null;
     }>;
     unlinkMediaFromCampaign(campaignId: string, mediaId: string): Promise<{
         success: boolean;
     }>;
     deleteCampaign(id: string, req: any): Promise<{
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -383,6 +376,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;
@@ -402,20 +402,20 @@ export declare class CampaignController {
             createdAt: Date;
             updatedAt: Date;
             budget: number;
-            expectedScreens: number;
             brandName: string;
+            expectedScreens: number;
             fileMetadata: import("@prisma/client/runtime/library").JsonValue | null;
         };
     }>;
     getCampaignById(id: string, req: any): Promise<{
         media: {
             id: string;
+            name: string;
             status: string;
             createdAt: Date;
-            name: string;
-            filename: string;
+            campaign_id: string;
             url: string;
-            qrUrl: string;
+            filename: string;
             originalFilename: string;
             mime_type: string;
             mimeType: string;
@@ -427,7 +427,7 @@ export declare class CampaignController {
             hash: string;
             hashMd5: string;
             hashSha256: string;
-            campaign_id: string;
+            qrUrl: string;
         }[];
         mediaAssets: {
             id: string;
@@ -435,31 +435,24 @@ export declare class CampaignController {
             campaignId: string;
             version: number;
             type: string;
-            filename: string;
             url: string;
+            filename: string;
             fileSize: number;
+            qrUrl: string;
             checksum: string;
             duration: number;
-            qrUrl: string;
         }[];
     } & {
         id: string;
+        name: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        startDate: Date;
         advertiser: string;
         advertiserId: string | null;
-        facebook: string | null;
-        instagram: string | null;
-        websiteUrl: string | null;
-        whatsapp: string | null;
-        category: string | null;
-        pedidosYaUrl: string | null;
-        uberEatsUrl: string | null;
         description: string | null;
         active: boolean;
-        startDate: Date;
         endDate: Date;
         version: number;
         isGlobal: boolean;
@@ -472,6 +465,13 @@ export declare class CampaignController {
         budget: number;
         targetUrl: string | null;
         createdById: string | null;
+        facebook: string | null;
+        instagram: string | null;
+        pedidosYaUrl: string | null;
+        uberEatsUrl: string | null;
+        websiteUrl: string | null;
+        whatsapp: string | null;
+        category: string | null;
         hasSeenTutorial: boolean;
         scheduleDays: string | null;
         scheduleHours: string | null;

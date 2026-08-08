@@ -22,15 +22,11 @@ export declare class DeviceService {
     }>;
     registerDevice(dto: RegisterDeviceDto): Promise<{
         id: string;
-        taxiNumber: string | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        isSimulated: boolean;
-        name: string | null;
-        fleet: string | null;
         deviceId: string;
+        name: string | null;
+        taxiNumber: string | null;
         city: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -41,6 +37,9 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -50,6 +49,7 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getPendingDevices(): Promise<{
@@ -60,15 +60,11 @@ export declare class DeviceService {
     }[]>;
     approveDevice(deviceId: string): Promise<{
         id: string;
-        taxiNumber: string | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        isSimulated: boolean;
-        name: string | null;
-        fleet: string | null;
         deviceId: string;
+        name: string | null;
+        taxiNumber: string | null;
         city: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -79,6 +75,9 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -88,19 +87,16 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     rejectDevice(deviceId: string): Promise<{
         id: string;
-        taxiNumber: string | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        isSimulated: boolean;
-        name: string | null;
-        fleet: string | null;
         deviceId: string;
+        name: string | null;
+        taxiNumber: string | null;
         city: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -111,6 +107,9 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -120,6 +119,7 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getFleetStatusSummary(): Promise<{
@@ -153,8 +153,8 @@ export declare class DeviceService {
     private checkSubscriptionStatus;
     recordPlayback(dto: PlaybackConfirmationDto): Promise<{
         id: string;
-        isSimulated: boolean;
         deviceId: string;
+        isSimulated: boolean;
         eventType: string;
         videoId: string;
         lat: number | null;
@@ -225,9 +225,9 @@ export declare class DeviceService {
     acknowledgeCommand(commandId: string, result: any): Promise<{
         result: string | null;
         id: string;
+        deviceId: string;
         status: string;
         createdAt: Date;
-        deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;

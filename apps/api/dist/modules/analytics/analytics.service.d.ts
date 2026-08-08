@@ -11,18 +11,18 @@ export declare class AnalyticsService {
     clearCache(): void;
     ingestEvent(dto: IngestEventDto): Promise<{
         id: string;
-        isSimulated: boolean;
-        campaignId: string | null;
         deviceId: string;
+        isSimulated: boolean;
         eventType: string;
         lat: number | null;
         lng: number | null;
         timestamp: Date;
-        processed: boolean;
+        campaignId: string | null;
         mediaId: string | null;
         eventData: string | null;
         occurredAt: Date;
         receivedAt: Date;
+        processed: boolean;
     }>;
     ingestBatchEvents(dtos: IngestEventDto[]): Promise<{
         count: number;
@@ -63,15 +63,11 @@ export declare class AnalyticsService {
         speed?: number;
     }): Promise<{
         id: string;
-        taxiNumber: string | null;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        isSimulated: boolean;
-        name: string | null;
-        fleet: string | null;
         deviceId: string;
+        name: string | null;
+        taxiNumber: string | null;
         city: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -82,6 +78,9 @@ export declare class AnalyticsService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -91,6 +90,7 @@ export declare class AnalyticsService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getWeeklyCampaignMetrics(campaignId: string): Promise<{

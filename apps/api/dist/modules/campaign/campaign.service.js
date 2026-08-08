@@ -131,6 +131,53 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 reason: 'campaign_updated',
                 campaignId: id
             }).catch(() => { });
+            try {
+                const adv = await this.prisma.advertiser.findUnique({
+                    where: { id: campaign.advertiserId },
+                    select: {
+                        referredBy: true,
+                        _count: { select: { campaigns: { where: { status: 'ACTIVE' } } } },
+                    },
+                });
+                if (adv && adv.referredBy && adv._count.campaigns === 1) {
+                    const driverId = adv.referredBy;
+                    const existingComm = await this.prisma.commission.findFirst({
+                        where: { driverId, sourceType: 'ADVERTISER_SALE' },
+                    });
+                    if (!existingComm) {
+                        this.logger.log(`💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`);
+                        await this.prisma.commission.create({
+                            data: {
+                                driverId,
+                                amount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                                sourceType: 'ADVERTISER_SALE',
+                                status: 'APPROVED',
+                            },
+                        });
+                        await this.prisma.financialTransaction.create({
+                            data: {
+                                type: 'OUTGOING',
+                                category: 'OPEX_COMMISSION',
+                                amount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                                netAmount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                                taxAmount: 0,
+                                entityId: driverId,
+                                reference: `REF-BONUS-${campaign.id.substring(0, 8)}`,
+                                note: 'Bono de Referido por 1ra campaña activa de anunciante asociado.',
+                                status: 'COMPLETED',
+                            },
+                        });
+                        await this.prisma.wallet.upsert({
+                            where: { driverId },
+                            update: { availableBalance: { increment: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD } },
+                            create: { driverId, availableBalance: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD },
+                        });
+                    }
+                }
+            }
+            catch (err) {
+                this.logger.error(`❌ [REFERRAL_LOOP] Failed to process referral payout: ${err instanceof Error ? err.message : String(err)}`);
+            }
         }
         return campaign;
     }

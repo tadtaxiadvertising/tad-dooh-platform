@@ -16,9 +16,9 @@ export declare class MonitoringController {
         reason?: undefined;
     }>;
     getFleetStatus(): Promise<{
+        status: import(".prisma/client").$Enums.SystemStatus;
         deviceId: string;
         taxiNumber: string;
-        status: import(".prisma/client").$Enums.SystemStatus;
         lastLat: number;
         lastLng: number;
         isOnline: boolean;
@@ -31,9 +31,9 @@ export declare class MonitoringController {
         targetImpressions: number;
         metrics: {
             id: bigint;
+            createdAt: Date;
             deviceId: string | null;
             city: string | null;
-            createdAt: Date;
             campaignId: string;
             date: Date;
             totalImpressions: number;

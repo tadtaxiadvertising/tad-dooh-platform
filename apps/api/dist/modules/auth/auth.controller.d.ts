@@ -27,9 +27,6 @@ export declare class AuthController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         facebook: string | null;
         instagram: string | null;
         pedidosYaUrl: string | null;
@@ -37,6 +34,9 @@ export declare class AuthController {
         websiteUrl: string | null;
         whatsapp: string | null;
         category: string | null;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -44,10 +44,10 @@ export declare class AuthController {
     } | {
         role: string;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
+        taxiNumber: string | null;
         isSimulated: boolean;
         fullName: string;
         cedula: string | null;
@@ -95,9 +95,6 @@ export declare class AuthController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
-        referredBy: string | null;
-        password: string | null;
         facebook: string | null;
         instagram: string | null;
         pedidosYaUrl: string | null;
@@ -105,6 +102,9 @@ export declare class AuthController {
         websiteUrl: string | null;
         whatsapp: string | null;
         category: string | null;
+        phone: string | null;
+        referredBy: string | null;
+        password: string | null;
         companyName: string;
         contactName: string;
         email: string;
@@ -112,10 +112,10 @@ export declare class AuthController {
     } | {
         role: string;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
+        taxiNumber: string | null;
         isSimulated: boolean;
         fullName: string;
         cedula: string | null;

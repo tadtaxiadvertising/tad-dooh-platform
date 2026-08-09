@@ -24,14 +24,15 @@ export declare class AdvertisersService {
         };
     } & {
         id: string;
-        email: string;
-        password: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        companyName: string;
-        contactName: string;
         phone: string | null;
         status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        referredBy: string | null;
+        password: string | null;
+        companyName: string;
+        contactName: string;
+        email: string;
         facebook: string | null;
         instagram: string | null;
         productsData: string | null;
@@ -40,7 +41,6 @@ export declare class AdvertisersService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        referredBy: string | null;
     })[]>;
     findOne(id: string): Promise<{
         campaigns: ({
@@ -50,20 +50,20 @@ export declare class AdvertisersService {
                 deviceId: string | null;
                 city: string | null;
                 campaignId: string;
-                date: Date;
                 totalImpressions: number;
                 totalCompletions: number;
                 totalErrors: number;
                 uniqueDevices: number;
                 avgCompletionRate: number | null;
+                date: Date;
             }[];
             media: {
-                url: string | null;
                 id: string;
-                name: string | null;
-                createdAt: Date;
                 status: string;
+                createdAt: Date;
+                name: string | null;
                 filename: string | null;
+                url: string | null;
                 fileSize: bigint | null;
                 qrUrl: string | null;
                 originalFilename: string | null;
@@ -82,22 +82,22 @@ export declare class AdvertisersService {
             }[];
             targetDrivers: {
                 id: string;
-                password: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                phone: string;
-                status: import(".prisma/client").$Enums.SystemStatus;
-                referredBy: string | null;
                 fullName: string;
                 cedula: string | null;
+                phone: string;
                 licensePlate: string | null;
                 taxiPlate: string | null;
                 taxiNumber: string | null;
                 subscriptionPaid: boolean;
                 subscriptionEnd: Date | null;
+                status: import(".prisma/client").$Enums.SystemStatus;
                 onboardingStatus: string;
                 onboardedAt: Date;
                 blockedAt: Date | null;
+                createdAt: Date;
+                updatedAt: Date;
+                referredBy: string | null;
+                password: string | null;
                 level: string;
                 consecutiveMonthsUnderGoal: number;
                 identidadVehicular: import("@prisma/client/runtime/library").JsonValue | null;
@@ -114,11 +114,11 @@ export declare class AdvertisersService {
             }[];
         } & {
             id: string;
-            name: string;
+            status: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             advertiser: string;
-            status: string;
             facebook: string | null;
             instagram: string | null;
             websiteUrl: string | null;
@@ -149,14 +149,15 @@ export declare class AdvertisersService {
         })[];
     } & {
         id: string;
-        email: string;
-        password: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        companyName: string;
-        contactName: string;
         phone: string | null;
         status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        referredBy: string | null;
+        password: string | null;
+        companyName: string;
+        contactName: string;
+        email: string;
         facebook: string | null;
         instagram: string | null;
         productsData: string | null;
@@ -165,7 +166,6 @@ export declare class AdvertisersService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        referredBy: string | null;
     }>;
     create(data: {
         companyName: string;
@@ -176,14 +176,15 @@ export declare class AdvertisersService {
         referralCode?: string;
     }): Promise<{
         id: string;
-        email: string;
-        password: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        companyName: string;
-        contactName: string;
         phone: string | null;
         status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        referredBy: string | null;
+        password: string | null;
+        companyName: string;
+        contactName: string;
+        email: string;
         facebook: string | null;
         instagram: string | null;
         productsData: string | null;
@@ -192,18 +193,18 @@ export declare class AdvertisersService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        referredBy: string | null;
     }>;
     update(id: string, data: UpdateAdvertiserDto): Promise<{
         id: string;
-        email: string;
-        password: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        companyName: string;
-        contactName: string;
         phone: string | null;
         status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        referredBy: string | null;
+        password: string | null;
+        companyName: string;
+        contactName: string;
+        email: string;
         facebook: string | null;
         instagram: string | null;
         productsData: string | null;
@@ -212,18 +213,18 @@ export declare class AdvertisersService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        referredBy: string | null;
     }>;
     remove(id: string): Promise<{
         id: string;
-        email: string;
-        password: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        companyName: string;
-        contactName: string;
         phone: string | null;
         status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        referredBy: string | null;
+        password: string | null;
+        companyName: string;
+        contactName: string;
+        email: string;
         facebook: string | null;
         instagram: string | null;
         productsData: string | null;
@@ -232,7 +233,6 @@ export declare class AdvertisersService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        referredBy: string | null;
     }>;
     getPortalData(id: string): Promise<{
         brand: {

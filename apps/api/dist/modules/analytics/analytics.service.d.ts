@@ -10,14 +10,14 @@ export declare class AnalyticsService {
     constructor(prisma: PrismaService, notifications: NotificationsService);
     clearCache(): void;
     ingestEvent(dto: IngestEventDto): Promise<{
+        timestamp: Date;
         id: string;
         isSimulated: boolean;
         deviceId: string;
-        timestamp: Date;
         campaignId: string | null;
+        eventType: string;
         lat: number | null;
         lng: number | null;
-        eventType: string;
         mediaId: string | null;
         eventData: string | null;
         occurredAt: Date;
@@ -63,12 +63,12 @@ export declare class AnalyticsService {
         speed?: number;
     }): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;

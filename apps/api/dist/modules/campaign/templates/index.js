@@ -1,7 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemotionVideo = void 0;
-const react_1 = require("react");
+const react_1 = __importDefault(require("react"));
 const remotion_1 = require("remotion");
 const dynamic_ad_1 = require("./dynamic-ad");
 const remotion_2 = require("remotion");

@@ -13,12 +13,12 @@ export declare class DeviceAdminController {
     }[]>;
     approveDevice(deviceId: string): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -45,12 +45,12 @@ export declare class DeviceAdminController {
     }>;
     rejectDevice(deviceId: string): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -78,11 +78,11 @@ export declare class DeviceAdminController {
     getDeviceCampaigns(paramId: string): Promise<{
         assigned_at: Date;
         id: string;
-        name: string;
+        status: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         advertiser: string;
-        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -121,12 +121,12 @@ export declare class DeviceAdminController {
         city?: string;
     }): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -159,22 +159,22 @@ export declare class DeviceAdminController {
     }): Promise<{
         driver: {
             id: string;
-            password: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            phone: string;
-            status: import(".prisma/client").$Enums.SystemStatus;
-            referredBy: string | null;
             fullName: string;
             cedula: string | null;
+            phone: string;
             licensePlate: string | null;
             taxiPlate: string | null;
             taxiNumber: string | null;
             subscriptionPaid: boolean;
             subscriptionEnd: Date | null;
+            status: import(".prisma/client").$Enums.SystemStatus;
             onboardingStatus: string;
             onboardedAt: Date;
             blockedAt: Date | null;
+            createdAt: Date;
+            updatedAt: Date;
+            referredBy: string | null;
+            password: string | null;
             level: string;
             consecutiveMonthsUnderGoal: number;
             identidadVehicular: import("@prisma/client/runtime/library").JsonValue | null;
@@ -191,12 +191,12 @@ export declare class DeviceAdminController {
         };
     } & {
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -291,12 +291,12 @@ export declare class DeviceAdminController {
         message: string;
         device: {
             id: string;
-            name: string | null;
+            taxiNumber: string | null;
+            status: import(".prisma/client").$Enums.SystemStatus;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.SystemStatus;
-            taxiNumber: string | null;
             isSimulated: boolean;
+            name: string | null;
             deviceId: string;
             city: string | null;
             lastSync: Date | null;
@@ -328,15 +328,15 @@ export declare class DeviceAdminController {
     }): Promise<{
         success: boolean;
         command: {
-            result: string | null;
             id: string;
-            createdAt: Date;
+            result: string | null;
             status: string;
+            createdAt: Date;
             deviceId: string;
+            expiresAt: Date | null;
             commandType: string;
             commandParams: string | null;
             executedAt: Date | null;
-            expiresAt: Date | null;
         };
     }>;
     broadcastCommand(body: {

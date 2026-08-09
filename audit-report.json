@@ -1,0 +1,38 @@
+[
+  {
+    "name": "admin",
+    "url": "https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/",
+    "consoleErrors": [
+      "[TAD_REALTIME][ADMIN] Suscripción Broadcast rechazada o cerrada {status: CLOSED, error: undefined, channel: fleet_tracking_live}"
+    ],
+    "networkFailures": [],
+    "exceptions": [],
+    "status": 200
+  },
+  {
+    "name": "advertiser",
+    "url": "https://proyecto-ia-tad-advertiser.rewvid.easypanel.host/",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "exceptions": [],
+    "status": 200
+  },
+  {
+    "name": "driver",
+    "url": "https://proyecto-ia-tad-driver.rewvid.easypanel.host/",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "exceptions": [],
+    "status": 200
+  },
+  {
+    "name": "player",
+    "url": "https://proyecto-ia-tad-player.rewvid.easypanel.host/",
+    "consoleErrors": [
+      "[TAD Player] No deviceId found. Provide via URL param: ?deviceId=XXX"
+    ],
+    "networkFailures": [],
+    "exceptions": [],
+    "status": 200
+  }
+]

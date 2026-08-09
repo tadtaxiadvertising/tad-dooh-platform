@@ -32,12 +32,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             },
         });
         try {
-            const supabase = this.supabaseService.getClient();
-            await supabase.channel('system_alerts').send({
-                type: 'broadcast',
-                event: 'NEW_ALERT',
-                payload: notification,
-            });
+            await this.supabaseService.broadcastEvent('system_alerts', 'NEW_ALERT', notification);
         }
         catch (err) {
             this.logger.error('Error broadcasting alert:', err);
@@ -85,12 +80,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         const channel = `driver_notifications_${driverId}`;
         this.logger.log(`📣 [NOTIFY] ${type} -> ${channel}`);
         try {
-            const supabase = this.supabaseService.getClient();
-            await supabase.channel(channel).send({
-                type: 'broadcast',
-                event: type,
-                payload,
-            });
+            await this.supabaseService.broadcastEvent(channel, type, payload);
         }
         catch (err) {
             this.logger.error(`[NOTIFY] Error enviando ${type} a ${driverId}: ${err.message}`);

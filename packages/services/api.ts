@@ -95,10 +95,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isLoginRequest = originalRequest?.url?.includes('/auth/login');
 
     // Only retry on 401 and only once (prevent infinite loops)
     if (
       error.response?.status === 401 &&
+      !isLoginRequest &&
       !originalRequest._isRetry &&
       typeof window !== 'undefined'
     ) {

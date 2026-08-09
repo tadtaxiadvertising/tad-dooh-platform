@@ -19,5 +19,11 @@ export declare class SupabaseService {
         buckets?: import("@supabase/storage-js").Bucket;
     }[]>;
     getClient(): SupabaseClient<any, "public", "public", any, any>;
-    broadcastEvent(channelName: string, eventName: string, payload: any): Promise<import("@supabase/supabase-js").RealtimeChannelSendResponse>;
+    broadcastEvent(channelName: string, eventName: string, payload: any): Promise<{
+        success: true;
+    } | {
+        success: false;
+        status: number;
+        error: string;
+    }>;
 }

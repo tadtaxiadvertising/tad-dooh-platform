@@ -33,13 +33,12 @@ export declare class CampaignController {
         productsData: string;
     }>;
     updateCampaign(id: string, dto: any, req: any): Promise<{
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -52,6 +51,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;
@@ -68,13 +68,12 @@ export declare class CampaignController {
         frequencyCap: number;
     }>;
     createCampaign(dto: CreateCampaignDto, req: any): Promise<{
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -87,6 +86,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;
@@ -105,12 +105,12 @@ export declare class CampaignController {
     registerMedia(dto: any, req: any): Promise<{
         success: boolean;
         media: {
-            status: string;
-            name: string | null;
-            id: string;
-            createdAt: Date;
-            filename: string | null;
             url: string | null;
+            id: string;
+            name: string | null;
+            createdAt: Date;
+            status: string;
+            filename: string | null;
             fileSize: bigint | null;
             qrUrl: string | null;
             originalFilename: string | null;
@@ -150,13 +150,13 @@ export declare class CampaignController {
         assetId: string;
     }>;
     addMediaAsset(id: string, dto: AddMediaAssetDto, req: any): Promise<{
-        type: string;
+        url: string;
         id: string;
         createdAt: Date;
+        type: string;
         version: number;
         campaignId: string;
         filename: string;
-        url: string;
         fileSize: number;
         checksum: string;
         duration: number | null;
@@ -167,12 +167,12 @@ export declare class CampaignController {
     }>;
     getAllCampaigns(req: any): Promise<({
         media: {
-            status: string;
-            name: string;
-            id: string;
-            createdAt: Date;
-            filename: string;
             url: string;
+            id: string;
+            name: string;
+            createdAt: Date;
+            status: string;
+            filename: string;
             qrUrl: string;
             originalFilename: string;
             mime_type: string;
@@ -188,26 +188,25 @@ export declare class CampaignController {
             campaign_id: string;
         }[];
         mediaAssets: {
-            type: string;
+            url: string;
             id: string;
             createdAt: Date;
+            type: string;
             version: number;
             campaignId: string;
             filename: string;
-            url: string;
             fileSize: number;
             checksum: string;
             duration: number;
             qrUrl: string;
         }[];
     } & {
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -220,6 +219,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;
@@ -265,21 +265,21 @@ export declare class CampaignController {
         driverName: string;
         totalCampaigns: number;
         campaigns: {
-            name: string;
             id: string;
+            name: string;
             advertiser: string;
             targetAll: boolean;
             media: {
-                name: string;
-                id: string;
                 url: string;
+                id: string;
+                name: string;
                 mimeType: string;
                 hashMd5: string;
             }[];
             mediaAssets: {
+                url: string;
                 id: string;
                 filename: string;
-                url: string;
             }[];
         }[];
         message?: undefined;
@@ -293,13 +293,12 @@ export declare class CampaignController {
             fullName: string;
         }[];
     } & {
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -312,6 +311,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;
@@ -328,12 +328,12 @@ export declare class CampaignController {
         frequencyCap: number;
     }>;
     linkMediaToCampaign(campaignId: string, mediaId: string): Promise<{
-        status: string;
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        filename: string | null;
         url: string | null;
+        id: string;
+        name: string | null;
+        createdAt: Date;
+        status: string;
+        filename: string | null;
         fileSize: bigint | null;
         qrUrl: string | null;
         originalFilename: string | null;
@@ -354,13 +354,12 @@ export declare class CampaignController {
         success: boolean;
     }>;
     deleteCampaign(id: string, req: any): Promise<{
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -373,6 +372,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;
@@ -397,10 +397,10 @@ export declare class CampaignController {
     createIntent(createCampaignIntentDto: any): Promise<{
         success: boolean;
         data: {
-            status: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            status: string;
             budget: number;
             brandName: string;
             expectedScreens: number;
@@ -409,12 +409,12 @@ export declare class CampaignController {
     }>;
     getCampaignById(id: string, req: any): Promise<{
         media: {
-            status: string;
-            name: string;
-            id: string;
-            createdAt: Date;
-            filename: string;
             url: string;
+            id: string;
+            name: string;
+            createdAt: Date;
+            status: string;
+            filename: string;
             qrUrl: string;
             originalFilename: string;
             mime_type: string;
@@ -430,26 +430,25 @@ export declare class CampaignController {
             campaign_id: string;
         }[];
         mediaAssets: {
-            type: string;
+            url: string;
             id: string;
             createdAt: Date;
+            type: string;
             version: number;
             campaignId: string;
             filename: string;
-            url: string;
             fileSize: number;
             checksum: string;
             duration: number;
             qrUrl: string;
         }[];
     } & {
-        status: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        version: number;
-        advertiser: string;
         updatedAt: Date;
+        advertiser: string;
+        status: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -462,6 +461,7 @@ export declare class CampaignController {
         active: boolean;
         startDate: Date;
         endDate: Date;
+        version: number;
         isGlobal: boolean;
         targetAll: boolean;
         targetCities: string;

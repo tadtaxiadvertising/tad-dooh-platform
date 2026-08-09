@@ -1,6 +1,21 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-08-08
+> **Última Actualización**: 2026-08-09
+
+---
+
+## [PLAYER-V12-STABILIZATION] - 2026-08-09
+
+### 🟢 VERIFICACIÓN: Estabilización y Cumplimiento del Reproductor PWA (FullyKiosk / Tablet)
+
+- **Objetivo**: Validar contratos Backend ➔ Player PWA y asegurar offline-first + kill-switch + WAKE_UP_CALL en flujo real.
+- **Alcance Auditado**:
+ - **WAKE_UP_CALL (`fleet_sync`)**: listener en `apps/player/src/sync-manager.ts` filtra por `targets` antes de disparar sync y aplica debounce de 5s (`WAKE_UP_DEBOUNCE_MS`).
+ - **Rutas API validadas**: `POST /device/sync`, `POST /device/heartbeat`, `POST /telemetry/playback-batch`; DTOs alineados con backend (`SyncDeviceDto`, `BulkSyncDto`, `PlaybackConfirmationDto` shape).
+ - **Offline 48h + Self-Destruct**: JWT `OFFLINE_LICENSE` persistido en `localStorage`, validador expiración offline con KillSwitch `OFFLINE_LICENSE_EXPIRED` cuando no hay red.
+ - **FullyKiosk Bridge**: detección de API en `localhost:1312`, lock/unlock kiosk y comandos soportados.
+ - **Build**: `npm run build --workspace apps/player` exitoso (0 errores TS, 53 módulos, 26.77 KB JS + 1.52 KB SW).
+- **Conclusión**: El servicio está operativo y cumple reglas de negocio actuales (anti-OOM, 15 slots, kill-switch 402, offline-first).
 
 ---
 

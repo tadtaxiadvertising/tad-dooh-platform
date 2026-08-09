@@ -21,10 +21,15 @@ export class AuthService {
     this.logger.log(`🔐 Intentando login para: ${dto.email}`);
     
     try {
-      const supabase = this.supabaseService.getClient();
+      const anonClient = this.supabaseService.getAnonClient();
 
-      // 1. Intentar login en Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
+      if (!anonClient) {
+        this.logger.error('❌ SUPABASE_ANON_KEY no configurada — no se puede autenticar contra Supabase.');
+        throw new Error('Autenticación no disponible: falta SUPABASE_ANON_KEY en la configuración del servidor.');
+      }
+
+      // 1. Intentar login en Supabase (debe usar la clave pública/anon, GoTrue rechaza service_role)
+      const { data, error } = await anonClient.auth.signInWithPassword({
         email: dto.email,
         password: dto.password,
       });
@@ -90,7 +95,7 @@ export class AuthService {
 
       // 3. Inyectar Custom Claims en app_metadata (Fire & Forget, don't block login if it fails)
       this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
-      supabase.auth.admin.updateUserById(userId, {
+      this.supabaseService.getClient().auth.admin.updateUserById(userId, {
         app_metadata: { role, entityId },
       }).then(({ error: updateError }) => {
         if (updateError) {

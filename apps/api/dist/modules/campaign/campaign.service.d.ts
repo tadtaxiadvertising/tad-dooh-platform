@@ -19,10 +19,10 @@ export declare class CampaignService {
     }): Promise<{
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -54,10 +54,10 @@ export declare class CampaignService {
     createCampaign(dto: CreateCampaignDto, user?: AuthUser): Promise<{
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -129,9 +129,9 @@ export declare class CampaignService {
     }>;
     addMediaAsset(campaignId: string, dto: AddMediaAssetDto): Promise<{
         type: string;
-        version: number;
         id: string;
         createdAt: Date;
+        version: number;
         campaignId: string;
         filename: string;
         url: string;
@@ -167,9 +167,9 @@ export declare class CampaignService {
         }[];
         mediaAssets: {
             type: string;
-            version: number;
             id: string;
             createdAt: Date;
+            version: number;
             campaignId: string;
             filename: string;
             url: string;
@@ -181,10 +181,10 @@ export declare class CampaignService {
     } & {
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -237,9 +237,9 @@ export declare class CampaignService {
         }[];
         mediaAssets: {
             type: string;
-            version: number;
             id: string;
             createdAt: Date;
+            version: number;
             campaignId: string;
             filename: string;
             url: string;
@@ -251,10 +251,10 @@ export declare class CampaignService {
     } & {
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -328,12 +328,13 @@ export declare class CampaignService {
         status: import(".prisma/client").$Enums.SystemStatus;
         name: string | null;
         id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -344,6 +345,7 @@ export declare class CampaignService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -352,8 +354,6 @@ export declare class CampaignService {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     })[]>;
     simulateImpact(budgetRD: number, city: string): Promise<{

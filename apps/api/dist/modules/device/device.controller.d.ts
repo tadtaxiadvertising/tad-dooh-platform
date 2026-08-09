@@ -97,13 +97,13 @@ export declare class DeviceController {
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
         status: string;
-        result: string | null;
         id: string;
         createdAt: Date;
+        expiresAt: Date | null;
+        result: string | null;
         deviceId: string;
         commandType: string;
         commandParams: string | null;
-        expiresAt: Date | null;
         executedAt: Date | null;
     }>;
 }

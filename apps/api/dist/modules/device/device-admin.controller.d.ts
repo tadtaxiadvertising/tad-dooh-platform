@@ -15,12 +15,13 @@ export declare class DeviceAdminController {
         status: import(".prisma/client").$Enums.SystemStatus;
         name: string | null;
         id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -31,6 +32,7 @@ export declare class DeviceAdminController {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -39,20 +41,19 @@ export declare class DeviceAdminController {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     rejectDevice(deviceId: string): Promise<{
         status: import(".prisma/client").$Enums.SystemStatus;
         name: string | null;
         id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -63,6 +64,7 @@ export declare class DeviceAdminController {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -71,18 +73,16 @@ export declare class DeviceAdminController {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getDeviceCampaigns(paramId: string): Promise<{
         assigned_at: Date;
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -123,12 +123,13 @@ export declare class DeviceAdminController {
         status: import(".prisma/client").$Enums.SystemStatus;
         name: string | null;
         id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -139,6 +140,7 @@ export declare class DeviceAdminController {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -147,8 +149,6 @@ export declare class DeviceAdminController {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     updateDevice(id: string, data: {
@@ -160,13 +160,13 @@ export declare class DeviceAdminController {
         driver: {
             status: import(".prisma/client").$Enums.SystemStatus;
             id: string;
-            phone: string;
             createdAt: Date;
+            phone: string;
             updatedAt: Date;
             referredBy: string | null;
             password: string | null;
-            taxiNumber: string | null;
             isSimulated: boolean;
+            taxiNumber: string | null;
             fullName: string;
             cedula: string | null;
             licensePlate: string | null;
@@ -193,12 +193,13 @@ export declare class DeviceAdminController {
         status: import(".prisma/client").$Enums.SystemStatus;
         name: string | null;
         id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -209,6 +210,7 @@ export declare class DeviceAdminController {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -217,8 +219,6 @@ export declare class DeviceAdminController {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     deleteDevice(deviceId: string): Promise<{
@@ -293,12 +293,13 @@ export declare class DeviceAdminController {
             status: import(".prisma/client").$Enums.SystemStatus;
             name: string | null;
             id: string;
+            driverId: string | null;
             createdAt: Date;
             updatedAt: Date;
-            fleet: string | null;
             deviceId: string;
-            taxiNumber: string | null;
             city: string | null;
+            isSimulated: boolean;
+            taxiNumber: string | null;
             lastSync: Date | null;
             lastHeartbeat: Date | null;
             batteryLevel: number | null;
@@ -309,6 +310,7 @@ export declare class DeviceAdminController {
             storageTotal: bigint | null;
             appVersion: string | null;
             authToken: string | null;
+            fleet: string | null;
             lastSeen: Date | null;
             storageFree: string | null;
             lastPlayback: Date | null;
@@ -317,8 +319,6 @@ export declare class DeviceAdminController {
             lastSyncAt: Date | null;
             lastOnline: Date | null;
             lastSyncSuccess: boolean | null;
-            driverId: string | null;
-            isSimulated: boolean;
             connectivityStatus: string;
         };
     }>;
@@ -329,13 +329,13 @@ export declare class DeviceAdminController {
         success: boolean;
         command: {
             status: string;
-            result: string | null;
             id: string;
             createdAt: Date;
+            expiresAt: Date | null;
+            result: string | null;
             deviceId: string;
             commandType: string;
             commandParams: string | null;
-            expiresAt: Date | null;
             executedAt: Date | null;
         };
     }>;

@@ -53,6 +53,8 @@ import { HealthController } from './health/health.controller';
           JWT_SECRET: zod.string().default('tad-secret-2026'),
           SUPABASE_URL: zod.string().url(),
           SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
+          SUPABASE_ANON_KEY: zod.string().optional(),
+          SUPABASE_PUBLISHABLE_KEY: zod.string().optional(),
           SUPABASE_JWT_SECRET: zod.string().optional(),
           PORT: zod.string().regex(/^\d+$/).default('3000'),
           NODE_ENV: zod.string().default('production'),

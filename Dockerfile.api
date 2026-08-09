@@ -20,7 +20,8 @@ RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 RUN npm run build -w apps/api
 
 # 3. Prune devDependencies (but keep node_modules structure)
-RUN npm prune --omit=dev --workspace=apps/api
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm prune --omit=dev --workspace=apps/api
 
 # 4. Runtime config
 ENV NODE_ENV=production

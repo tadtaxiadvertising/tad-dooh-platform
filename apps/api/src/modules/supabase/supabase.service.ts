@@ -7,6 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export class SupabaseService {
   private readonly logger = new Logger(SupabaseService.name);
   private supabase: SupabaseClient;
+  private anonSupabase: SupabaseClient | undefined;
 
   constructor(private readonly configService: ConfigService) {
     // 1. Leemos estrictamente usando ConfigService, que asegura la prioridad de inyección
@@ -33,6 +34,27 @@ export class SupabaseService {
       this.logger.error(`Error fatal instanciando cliente Supabase: ${error.message}`);
       throw error;
     }
+
+    // 4. Cliente con clave pública (anon/publishable) para operaciones de login.
+    //    GoTrue rechaza signInWithPassword cuando el request va firmado con la
+    //    service_role key, por lo que el sign-in debe usar la clave anon.
+    const anonKey = this.configService.get<string>('SUPABASE_ANON_KEY')
+      || this.configService.get<string>('SUPABASE_PUBLISHABLE_KEY');
+
+    if (!anonKey) {
+      this.logger.warn('⚠️ SUPABASE_ANON_KEY no configurada — el login por password fallará.');
+    } else {
+      try {
+        this.anonSupabase = createClient(url, anonKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Error instanciando cliente anon de Supabase: ${error.message}`);
+      }
+    }
   }
 
   // Genera una URL pública para el visualizador del Dashboard
@@ -58,6 +80,10 @@ export class SupabaseService {
 
   getClient() {
     return this.supabase;
+  }
+
+  getAnonClient() {
+    return this.anonSupabase;
   }
 
   /**

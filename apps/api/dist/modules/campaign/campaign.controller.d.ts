@@ -35,10 +35,10 @@ export declare class CampaignController {
     updateCampaign(id: string, dto: any, req: any): Promise<{
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -70,10 +70,10 @@ export declare class CampaignController {
     createCampaign(dto: CreateCampaignDto, req: any): Promise<{
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -151,9 +151,9 @@ export declare class CampaignController {
     }>;
     addMediaAsset(id: string, dto: AddMediaAssetDto, req: any): Promise<{
         type: string;
-        version: number;
         id: string;
         createdAt: Date;
+        version: number;
         campaignId: string;
         filename: string;
         url: string;
@@ -189,9 +189,9 @@ export declare class CampaignController {
         }[];
         mediaAssets: {
             type: string;
-            version: number;
             id: string;
             createdAt: Date;
+            version: number;
             campaignId: string;
             filename: string;
             url: string;
@@ -203,10 +203,10 @@ export declare class CampaignController {
     } & {
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -266,8 +266,8 @@ export declare class CampaignController {
         totalCampaigns: number;
         campaigns: {
             name: string;
-            advertiser: string;
             id: string;
+            advertiser: string;
             targetAll: boolean;
             media: {
                 name: string;
@@ -295,10 +295,10 @@ export declare class CampaignController {
     } & {
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -356,10 +356,10 @@ export declare class CampaignController {
     deleteCampaign(id: string, req: any): Promise<{
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;
@@ -431,9 +431,9 @@ export declare class CampaignController {
         }[];
         mediaAssets: {
             type: string;
-            version: number;
             id: string;
             createdAt: Date;
+            version: number;
             campaignId: string;
             filename: string;
             url: string;
@@ -445,10 +445,10 @@ export declare class CampaignController {
     } & {
         status: string;
         name: string;
-        version: number;
-        advertiser: string;
         id: string;
         createdAt: Date;
+        version: number;
+        advertiser: string;
         updatedAt: Date;
         facebook: string | null;
         instagram: string | null;

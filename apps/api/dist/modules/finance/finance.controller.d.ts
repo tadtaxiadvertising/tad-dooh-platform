@@ -61,13 +61,13 @@ export declare class FinanceController {
     }): Promise<{
         status: string;
         id: string;
-        createdAt: Date;
         driverId: string;
-        activeAds: number;
+        createdAt: Date;
         amount: number;
+        activeAds: number;
+        paidAt: Date | null;
         month: number;
         year: number;
-        paidAt: Date | null;
         referenceNum: string | null;
         penaltyApplied: boolean;
         penaltyPercentage: number;
@@ -122,10 +122,10 @@ export declare class FinanceController {
         createdAt: Date;
         updatedAt: Date;
         category: string;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
         entityId: string | null;
+        netAmount: number;
         reference: string | null;
         note: string | null;
     }>;
@@ -157,10 +157,10 @@ export declare class FinanceController {
         createdAt: Date;
         updatedAt: Date;
         category: string;
-        amount: number;
-        netAmount: number;
         taxAmount: number;
+        amount: number;
         entityId: string | null;
+        netAmount: number;
         reference: string | null;
         note: string | null;
     }[]>;

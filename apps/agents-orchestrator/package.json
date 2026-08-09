@@ -1,0 +1,31 @@
+{
+  "name": "@tad/agents",
+  "version": "1.0.0",
+  "description": "Autonomous AI Agents Orchestrator for TAD DOOH Platform",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@tad/database": "workspace:*",
+    "@tad/services": "workspace:*",
+    "@tad/logging": "workspace:*",
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.13.6",
+    "zod": "^3.25.30",
+    "uuid": "^9.0.1",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1"
+  }
+}

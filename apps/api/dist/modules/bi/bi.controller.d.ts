@@ -27,10 +27,10 @@ export declare class BiController {
         };
     } & {
         id: string;
-        driverId: string;
         createdAt: Date;
         updatedAt: Date;
         deviceId: string | null;
+        driverId: string;
         period: string;
         subscriptionStatus: string;
         subscriptionDueDate: Date | null;

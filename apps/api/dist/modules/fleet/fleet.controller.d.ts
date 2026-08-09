@@ -16,9 +16,13 @@ export declare class FleetController {
         is_online: boolean;
         driver_name: string;
         last_playback: Date;
+        driver: {
+            id: string;
+            fullName: string;
+        };
+        taxiNumber: string;
         deviceId: string;
         city: string;
-        taxiNumber: string;
         lastHeartbeat: Date;
         batteryLevel: number;
         storageUsed: bigint;
@@ -29,10 +33,6 @@ export declare class FleetController {
         storageFree: string;
         lastPlayback: Date;
         playerStatus: string;
-        driver: {
-            id: string;
-            fullName: string;
-        };
     }[]>;
     getFleetStats(): Promise<{
         total: number;
@@ -129,8 +129,8 @@ export declare class FleetController {
         speed: number;
     }[]>;
     getOfflineDevices(): Promise<{
-        deviceId: string;
         taxiNumber: string;
+        deviceId: string;
         lastSeen: Date;
     }[]>;
     getFleetFinance(): Promise<{
@@ -163,15 +163,15 @@ export declare class FleetController {
         type: string;
         params?: any;
     }): Promise<{
-        status: string;
+        result: string | null;
         id: string;
         createdAt: Date;
-        expiresAt: Date | null;
-        result: string | null;
+        status: string;
         deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
         type: string;
@@ -208,10 +208,10 @@ export declare class FleetController {
         linked_driver?: undefined;
     }>;
     getDeviceRecentPath(deviceId: string): Promise<{
-        timestamp: Date;
         latitude: number;
         longitude: number;
         speed: number;
+        timestamp: Date;
     }[]>;
     getTrackingData(): Promise<{
         id: string;

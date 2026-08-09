@@ -21,16 +21,15 @@ export declare class DeviceService {
         usage_percentage: number;
     }>;
     registerDevice(dto: RegisterDeviceDto): Promise<{
-        status: import(".prisma/client").$Enums.SystemStatus;
-        name: string | null;
         id: string;
-        driverId: string | null;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        taxiNumber: string | null;
+        isSimulated: boolean;
         deviceId: string;
         city: string | null;
-        isSimulated: boolean;
-        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -50,6 +49,7 @@ export declare class DeviceService {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
+        driverId: string | null;
         connectivityStatus: string;
     }>;
     getPendingDevices(): Promise<{
@@ -59,16 +59,15 @@ export declare class DeviceService {
         lastSeen: Date;
     }[]>;
     approveDevice(deviceId: string): Promise<{
-        status: import(".prisma/client").$Enums.SystemStatus;
-        name: string | null;
         id: string;
-        driverId: string | null;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        taxiNumber: string | null;
+        isSimulated: boolean;
         deviceId: string;
         city: string | null;
-        isSimulated: boolean;
-        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -88,19 +87,19 @@ export declare class DeviceService {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
+        driverId: string | null;
         connectivityStatus: string;
     }>;
     rejectDevice(deviceId: string): Promise<{
-        status: import(".prisma/client").$Enums.SystemStatus;
-        name: string | null;
         id: string;
-        driverId: string | null;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        taxiNumber: string | null;
+        isSimulated: boolean;
         deviceId: string;
         city: string | null;
-        isSimulated: boolean;
-        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -120,6 +119,7 @@ export declare class DeviceService {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
+        driverId: string | null;
         connectivityStatus: string;
     }>;
     getFleetStatusSummary(): Promise<{
@@ -153,13 +153,13 @@ export declare class DeviceService {
     private checkSubscriptionStatus;
     recordPlayback(dto: PlaybackConfirmationDto): Promise<{
         id: string;
+        isSimulated: boolean;
         deviceId: string;
-        eventType: string;
-        videoId: string;
+        timestamp: Date;
         lat: number | null;
         lng: number | null;
-        timestamp: Date;
-        isSimulated: boolean;
+        eventType: string;
+        videoId: string;
         verified: boolean;
     }>;
     syncDeviceCampaigns(dto: SyncDeviceDto): Promise<{
@@ -223,15 +223,15 @@ export declare class DeviceService {
         reason?: undefined;
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
-        status: string;
+        result: string | null;
         id: string;
         createdAt: Date;
-        expiresAt: Date | null;
-        result: string | null;
+        status: string;
         deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     processBulkSync(dto: BulkSyncDto): Promise<{
         success: boolean;

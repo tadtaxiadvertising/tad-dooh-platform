@@ -16,12 +16,12 @@ export declare class MediaService {
     }>;
     registerBypassedMedia(data: any): Promise<{
         fileSize: number;
-        status: string;
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        filename: string | null;
         url: string | null;
+        id: string;
+        name: string | null;
+        createdAt: Date;
+        status: string;
+        filename: string | null;
         qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
@@ -67,12 +67,12 @@ export declare class MediaService {
         qrUrl?: string;
     }): Promise<{
         fileSize: number;
-        status: string;
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        filename: string | null;
         url: string | null;
+        id: string;
+        name: string | null;
+        createdAt: Date;
+        status: string;
+        filename: string | null;
         qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;

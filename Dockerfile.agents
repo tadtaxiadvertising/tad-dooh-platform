@@ -1,0 +1,68 @@
+# TAD Autonomous Agents Orchestrator - Dockerfile
+# Multi-stage build for minimal production image
+
+# Phase 1: Build & Generate
+FROM node:20-alpine AS builder
+
+WORKDIR /usr/src/app
+RUN apk add --no-cache openssl
+
+# Copy package files and packages for workspace install
+COPY package*.json ./
+COPY apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
+COPY packages/ ./packages/
+
+# Scope npm's workspace install to the agents service only
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/agents-orchestrator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm ci --workspace=apps/agents-orchestrator
+
+# Copy source and build
+COPY . .
+RUN npm run build -w apps/agents-orchestrator
+
+# Phase 2: Production Dependencies Only
+FROM node:20-alpine AS deps
+
+WORKDIR /usr/src/app
+RUN apk add --no-cache openssl
+
+COPY package*.json ./
+COPY apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
+COPY packages/ ./packages/
+
+# Install ONLY production dependencies
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/agents-orchestrator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm ci --omit=dev --workspace=apps/agents-orchestrator
+
+# Phase 3: Runtime Stage (Zero-Waste)
+FROM node:20-alpine AS runner
+
+WORKDIR /usr/src/app
+RUN apk add --no-cache openssl
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+ENV NODE_ENV=production
+# Memory optimized for VPS Free Tier (512MB limit per Easypanel config)
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
+# Copy minimal files from Phase 2 (prod node_modules) with correct ownership
+COPY --from=deps --chown=nodejs:nodejs /usr/src/app/package*.json ./
+COPY --from=deps --chown=nodejs:nodejs /usr/src/app/node_modules ./node_modules
+COPY --from=deps --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
+COPY --from=deps --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/node_modules ./apps/agents-orchestrator/node_modules
+
+# Copy build output from Phase 1
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/dist ./apps/agents-orchestrator/dist
+
+# Run as non-root user
+USER nodejs
+
+# Health check - orchestrator doesn't expose HTTP, so we check process
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD pgrep -f "apps/agents-orchestrator/dist/main.js" >/dev/null || exit 1
+
+WORKDIR /usr/src/app/apps/agents-orchestrator
+CMD ["node", "dist/main.js"]

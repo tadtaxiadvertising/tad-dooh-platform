@@ -69,13 +69,9 @@ export class SupabaseService {
     
     const channel = this.supabase.channel(channelName);
     
-    return channel.send({
-      type: 'broadcast',
-      event: eventName,
-      payload: {
-        ...payload,
-        timestamp: new Date().toISOString()
-      },
+    return channel.httpSend(eventName, {
+      ...payload,
+      timestamp: new Date().toISOString()
     });
   }
 }

@@ -18,14 +18,14 @@ export declare class TelemetryService {
         verified?: boolean;
         clientTimestamp?: string;
     }): Promise<{
+        timestamp: Date;
         id: string;
         isSimulated: boolean;
         deviceId: string;
-        timestamp: Date;
-        lat: number | null;
-        lng: number | null;
         eventType: string;
         videoId: string;
+        lat: number | null;
+        lng: number | null;
         verified: boolean;
     } | {
         success: boolean;

@@ -52,7 +52,6 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 COPY --from=deps --chown=nodejs:nodejs /usr/src/app/package*.json ./
 COPY --from=deps --chown=nodejs:nodejs /usr/src/app/node_modules ./node_modules
 COPY --from=deps --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
-COPY --from=deps --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/node_modules ./apps/agents-orchestrator/node_modules
 
 # Copy build output from Phase 1
 COPY --from=builder --chown=nodejs:nodejs /usr/src/app/apps/agents-orchestrator/dist ./apps/agents-orchestrator/dist

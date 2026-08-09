@@ -25,22 +25,22 @@ export declare class MonitoringController {
         lastSeen: Date;
     }[]>;
     getCampaignsStatus(): Promise<{
-        id: string;
         name: string;
+        id: string;
         advertiser: string;
         targetImpressions: number;
         metrics: {
             id: bigint;
             createdAt: Date;
-            deviceId: string | null;
-            city: string | null;
             campaignId: string;
-            date: Date;
             totalImpressions: number;
             totalCompletions: number;
             totalErrors: number;
             uniqueDevices: number;
             avgCompletionRate: number | null;
+            deviceId: string | null;
+            date: Date;
+            city: string | null;
         }[];
     }[]>;
 }

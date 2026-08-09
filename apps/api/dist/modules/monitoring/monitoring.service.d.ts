@@ -38,36 +38,36 @@ export declare class MonitoringService {
         };
         devices: {
             status: import(".prisma/client").$Enums.SystemStatus;
-            driver: {
-                fullName: string;
-                phone: string;
-                subscriptionPaid: boolean;
-            };
             deviceId: string;
             taxiNumber: string;
             lastLat: number;
             lastLng: number;
             isOnline: boolean;
             lastSeen: Date;
+            driver: {
+                phone: string;
+                fullName: string;
+                subscriptionPaid: boolean;
+            };
         }[];
     }>;
     getActiveCampaignsStatus(): Promise<{
-        id: string;
         name: string;
+        id: string;
         advertiser: string;
         targetImpressions: number;
         metrics: {
             id: bigint;
             createdAt: Date;
-            deviceId: string | null;
-            city: string | null;
             campaignId: string;
-            date: Date;
             totalImpressions: number;
             totalCompletions: number;
             totalErrors: number;
             uniqueDevices: number;
             avgCompletionRate: number | null;
+            deviceId: string | null;
+            date: Date;
+            city: string | null;
         }[];
     }[]>;
     checkOfflineDevices(): Promise<void>;

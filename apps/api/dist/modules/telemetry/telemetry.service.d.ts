@@ -20,12 +20,12 @@ export declare class TelemetryService {
     }): Promise<{
         id: string;
         deviceId: string;
-        isSimulated: boolean;
         eventType: string;
         videoId: string;
         lat: number | null;
         lng: number | null;
         timestamp: Date;
+        isSimulated: boolean;
         verified: boolean;
     } | {
         success: boolean;

@@ -110,11 +110,22 @@ export class DriversController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  async login(@Body() body: { phone: string; password?: string }) {
-    if (!body.phone || !body.password) {
-      throw new BadRequestException('El número de teléfono y contraseña son obligatorios');
+  async login(
+    @Body()
+    body: {
+      phone?: string;
+      email?: string;
+      cedula?: string;
+      password?: string;
+    },
+  ) {
+    const phone = body.phone || body.email || body.cedula;
+    if (!phone || !body.password) {
+      throw new BadRequestException(
+        'Debe enviar phone, email o cédula junto a la contraseña.',
+      );
     }
-    return this.driversService.login(body.phone, body.password);
+    return this.driversService.login(phone, body.password);
   }
 
   /**

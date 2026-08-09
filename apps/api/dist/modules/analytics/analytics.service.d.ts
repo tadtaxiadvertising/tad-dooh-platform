@@ -11,13 +11,13 @@ export declare class AnalyticsService {
     clearCache(): void;
     ingestEvent(dto: IngestEventDto): Promise<{
         id: string;
-        deviceId: string;
-        isSimulated: boolean;
         campaignId: string | null;
+        deviceId: string;
         eventType: string;
         lat: number | null;
         lng: number | null;
         timestamp: Date;
+        isSimulated: boolean;
         mediaId: string | null;
         eventData: string | null;
         occurredAt: Date;
@@ -62,15 +62,16 @@ export declare class AnalyticsService {
         lng: number;
         speed?: number;
     }): Promise<{
-        id: string;
-        name: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
+        name: string | null;
+        id: string;
+        driverId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        fleet: string | null;
         deviceId: string;
-        taxiNumber: string | null;
         city: string | null;
+        isSimulated: boolean;
+        taxiNumber: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
         batteryLevel: number | null;
@@ -81,6 +82,7 @@ export declare class AnalyticsService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
+        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -89,8 +91,6 @@ export declare class AnalyticsService {
         lastSyncAt: Date | null;
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
-        driverId: string | null;
-        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getWeeklyCampaignMetrics(campaignId: string): Promise<{

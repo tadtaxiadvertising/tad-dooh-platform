@@ -65,10 +65,11 @@ let DriversController = DriversController_1 = class DriversController {
         });
     }
     async login(body) {
-        if (!body.phone || !body.password) {
-            throw new common_1.BadRequestException('El número de teléfono y contraseña son obligatorios');
+        const phone = body.phone || body.email || body.cedula;
+        if (!phone || !body.password) {
+            throw new common_1.BadRequestException('Debe enviar phone, email o cédula junto a la contraseña.');
         }
-        return this.driversService.login(body.phone, body.password);
+        return this.driversService.login(phone, body.password);
     }
     async getEarnings(id) {
         return this.driversService.calculateMonthlyEarnings(id);

@@ -9,12 +9,12 @@ export declare class MediaController {
     }>;
     registerBypassed(body: any): Promise<{
         fileSize: number;
-        url: string | null;
         id: string;
-        name: string | null;
-        createdAt: Date;
         status: string;
+        createdAt: Date;
+        name: string | null;
         filename: string | null;
+        url: string | null;
         qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
@@ -69,12 +69,12 @@ export declare class MediaController {
         qrUrl: string;
     }): Promise<{
         fileSize: number;
-        url: string | null;
         id: string;
-        name: string | null;
-        createdAt: Date;
         status: string;
+        createdAt: Date;
+        name: string | null;
         filename: string | null;
+        url: string | null;
         qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;

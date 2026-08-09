@@ -97,15 +97,15 @@ export declare class FleetService {
         }[];
     }>;
     sendCommand(deviceId: string, type: string, params?: Record<string, unknown>): Promise<{
-        result: string | null;
         id: string;
-        createdAt: Date;
+        result: string | null;
         status: string;
+        createdAt: Date;
         deviceId: string;
+        expiresAt: Date | null;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
-        expiresAt: Date | null;
     }>;
     registerDeviceByAdmin(placa: string, nombreChofer: string, providedDeviceId?: string): Promise<{
         success: boolean;
@@ -211,10 +211,10 @@ export declare class FleetService {
         subscription_status: string;
     }[]>;
     getDeviceRecentPath(deviceId: string): Promise<{
+        timestamp: Date;
         latitude: number;
         longitude: number;
         speed: number;
-        timestamp: Date;
     }[]>;
     ingestTelemetryBatch(data: TrackBatchDto): Promise<{
         count: number;

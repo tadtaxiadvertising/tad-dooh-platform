@@ -22,12 +22,12 @@ export declare class DeviceService {
     }>;
     registerDevice(dto: RegisterDeviceDto): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -60,12 +60,12 @@ export declare class DeviceService {
     }[]>;
     approveDevice(deviceId: string): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -92,12 +92,12 @@ export declare class DeviceService {
     }>;
     rejectDevice(deviceId: string): Promise<{
         id: string;
-        name: string | null;
+        taxiNumber: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
         isSimulated: boolean;
+        name: string | null;
         deviceId: string;
         city: string | null;
         lastSync: Date | null;
@@ -152,14 +152,14 @@ export declare class DeviceService {
     }>;
     private checkSubscriptionStatus;
     recordPlayback(dto: PlaybackConfirmationDto): Promise<{
+        timestamp: Date;
         id: string;
         isSimulated: boolean;
         deviceId: string;
-        timestamp: Date;
-        lat: number | null;
-        lng: number | null;
         eventType: string;
         videoId: string;
+        lat: number | null;
+        lng: number | null;
         verified: boolean;
     }>;
     syncDeviceCampaigns(dto: SyncDeviceDto): Promise<{
@@ -223,15 +223,15 @@ export declare class DeviceService {
         reason?: undefined;
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
-        result: string | null;
         id: string;
-        createdAt: Date;
+        result: string | null;
         status: string;
+        createdAt: Date;
         deviceId: string;
+        expiresAt: Date | null;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
-        expiresAt: Date | null;
     }>;
     processBulkSync(dto: BulkSyncDto): Promise<{
         success: boolean;

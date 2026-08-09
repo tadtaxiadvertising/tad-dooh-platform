@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+import type { GoogleSpreadsheet } from 'google-spreadsheet' with { "resolution-mode": "import" };
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
@@ -37,6 +37,7 @@ export class SheetsService implements OnModuleInit {
 
   private async connectToGoogleSheets() {
     try {
+      const { GoogleSpreadsheet } = await import('google-spreadsheet');
       let creds = this.loadCredentialsFromEnv();
 
       if (!creds) {

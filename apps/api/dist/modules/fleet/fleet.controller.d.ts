@@ -163,15 +163,15 @@ export declare class FleetController {
         type: string;
         params?: any;
     }): Promise<{
-        result: string | null;
         id: string;
-        createdAt: Date;
+        result: string | null;
         status: string;
+        createdAt: Date;
         deviceId: string;
+        expiresAt: Date | null;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
-        expiresAt: Date | null;
     }>;
     broadcastFleetCommand(body: {
         type: string;
@@ -208,10 +208,10 @@ export declare class FleetController {
         linked_driver?: undefined;
     }>;
     getDeviceRecentPath(deviceId: string): Promise<{
+        timestamp: Date;
         latitude: number;
         longitude: number;
         speed: number;
-        timestamp: Date;
     }[]>;
     getTrackingData(): Promise<{
         id: string;

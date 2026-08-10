@@ -120,10 +120,15 @@
 
 Usa el `Dockerfile.driver` de la raíz del monorepo; no uses `apps/driver/Dockerfile`.
 Configura como variables del servicio: `NODE_ENV=production`,
-`NEXT_TELEMETRY_DISABLED=1`, `NODE_OPTIONS=--max_old_space_size=256` y
+`NEXT_TELEMETRY_DISABLED=1`, `NODE_OPTIONS=--max-old-space-size=256` y
 `NEXT_PUBLIC_API_URL=https://tad-api.rewvid.easypanel.host/api/v1`,
-`INTERNAL_BACKEND_URL=http://tad-api:3000` y
+`BACKEND_INTERNAL_URL=http://tad-api:3000` y
 `CORS_ORIGIN=https://tad-driver.rewvid.easypanel.host`.
+
+`NEXT_PUBLIC_API_URL` must use the unified `tad-api` hostname (the former
+`proyecto-ia-tad-api` hostname is retired). The API service must also have
+`SUPABASE_JWT_SECRET` or `JWT_SECRET` configured: the driver login signs its
+own JWT and deliberately refuses to use a hardcoded fallback.
 
 Después de reconstruir y reiniciar, verifica la URL pública
 `https://tad-driver.rewvid.easypanel.host`, el registro de `sw.js` sin 302 y

@@ -20,13 +20,22 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 // - BACKEND_INTERNAL_URL = http://api:3000  (red interna EasyPanel - PRIORIDAD)
 // - NEXT_PUBLIC_API_URL puede ser https://host/api o https://host/api/v1 → extraemos solo el host
 // - Fallback hardcodeado como última instancia
-const rawBackendUrl = (
+const CANONICAL_PUBLIC_BACKEND = 'https://tad-api.rewvid.easypanel.host';
+const LEGACY_PUBLIC_BACKEND = 'https://proyecto-ia-tad-api.rewvid.easypanel.host';
+
+const configuredBackendUrl = (
   process.env.INTERNAL_BACKEND_URL
   || process.env.BACKEND_INTERNAL_URL
   || process.env.BACKEND_URL
   || process.env.NEXT_PUBLIC_API_URL
-  || 'https://tad-api.rewvid.easypanel.host'
-);
+  || CANONICAL_PUBLIC_BACKEND
+).trim();
+
+// Keep an old EasyPanel variable from silently routing login/telemetry to the
+// retired API service. The explicit internal URL still has precedence.
+const rawBackendUrl = configuredBackendUrl.startsWith(LEGACY_PUBLIC_BACKEND)
+  ? `${CANONICAL_PUBLIC_BACKEND}${configuredBackendUrl.slice(LEGACY_PUBLIC_BACKEND.length)}`
+  : configuredBackendUrl;
 
 // Strip any trailing /api, /api/v1, or / to get a clean base
 const BACKEND_BASE = rawBackendUrl
@@ -179,7 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             errorMessage.includes('EAI_AGAIN');
       
       if (isNetworkError && (BACKEND_BASE.includes('api:3000') || BACKEND_BASE.includes('localhost'))) {
-        const publicFallback = 'https://tad-api.rewvid.easypanel.host/api/v1';
+        const publicFallback = `${CANONICAL_PUBLIC_BACKEND}/api/v1`;
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         console.warn(`[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage} -> ${fallbackUrl}`);
         

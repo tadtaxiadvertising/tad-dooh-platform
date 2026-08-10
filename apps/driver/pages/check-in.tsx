@@ -191,7 +191,7 @@ export default function CheckIn() {
       setGatewayState({ ...state });
     });
 
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tad-api.rewvid.easypanel.host/api/v1';
     startTadTracking(id, apiBaseUrl);
 
     return () => {

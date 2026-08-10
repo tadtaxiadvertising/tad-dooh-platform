@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const BACKEND_BASE = (
   process.env.BACKEND_INTERNAL_URL || 
-  'https://proyecto-ia-tad-api.rewvid.easypanel.host'
+  'https://tad-api.rewvid.easypanel.host'
 ).replace(/\/$/, '');
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -40,4 +40,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
-

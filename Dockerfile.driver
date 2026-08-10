@@ -22,9 +22,11 @@ COPY apps/driver ./apps/driver
 RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Build con vars del entorno
+ARG NEXT_PUBLIC_API_URL="https://tad-api.rewvid.easypanel.host/api/v1"
 ENV NEXT_PUBLIC_PORTAL_TYPE=DRIVER
 ENV NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 

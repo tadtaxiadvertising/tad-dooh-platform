@@ -199,3 +199,50 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 ---
 
 *Documento consolidado — TAD DOOH Platform. Revisar `01_auditoria_tad_2026.md` y `12_current_state_v12_handover.md` para contexto histórico.*
+
+---
+
+## 9. AUDITORÍA MCP CONTINUA — 2026-08-09 (sesión automatizada)
+
+### Fecha de escaneo
+2026-08-09 (verificado contra la API de producción vía Easypanel MCP).
+
+### Módulos revisados (Admin, Api, Advertiser, Driver)
+- **API (NestJS)** — `proyecto-ia-tad-api.rewvid.easypanel.host` (contenedor activo, commit `29cb040c`).
+- **PostgreSQL** — vía Supabase MCP (esquema `public` verificado).
+- **BI/Analytics** — endpoint `/api/v1/bi/kpis` + snapshot `bi_kpi_snapshots` + MV `mv_active_campaigns`.
+- **Sync/tablets** — `/api/v1/sync/:deviceId` con JWT simulado de rol ADMIN (mismo peso que la verificación previa).
+
+### Hallazgos principales
+1. **BI KPIS: respuesta 200 pero lenta** — `GET /api/v1/bi/kpis` responde 200 en ~2.5–4.0s (objetivo < 2s). Se confirmó que sirve del snapshot diario (`bi_kpi_snapshots`, refreshed_at reciente), no de la MV en caliente. La MV `mv_active_campaigns` está poblada (6 filas) y es `ispopulated`, pero **legítimamente vacía a nivel de campañas activas**: no existen campañas en estado `ACTIVE` (solo 3 en `PENDING_PAYMENT`), por lo que el dashboard con 0 campañas activas es correcto, no un bug.
+2. **Pipelines de analytics vacíos (esperado, no incidente)** — `campaign_metrics` y `playback_events` con 0 filas: aún no se ha medido reproducción (campañas sin pagar/activar). `financial_transactions` = 0 e `idempotency_keys` = 0: sin duplicidad financiera.
+3. **Kill-switch 402 en tablets (BUG REAL DETECTADO)** — Todos los dispositivos SIM sin suscripción activa (`subscription_paid = null`) reciben `402` de `/sync`. El cuerpo de la respuesta pasaba por `GlobalExceptionFilter` que **descartaba el payload** (solo devolvía `statusCode/code/message`), dejando a la PWA sin el manifiesto `killSwitch:true`/`killSwitchReason` que el interceptor `killswitch.ts` espera. **Corrección aplicada en código (ver §9.5).**
+4. **304/ETag no ejercitable hoy** — No existe ningún dispositivo con suscripción activa que devuelva manifiesto 200, por lo que el flujo `If-None-Match → 304` (etagCache TTL 5 min) no pudo probarse end-to-end. La lógica está presente en `sync.service.ts`.
+5. **Sin acceso a logs del contenedor** — El MCP de Easypanel no expone logs; Loki no está configurado como agregador en el panel. La auditoría de logs queda como brecha de observabilidad documentada (no incidente de código).
+
+### Vulnerabilidades / riesgos detectados
+- **(Resuelto en código)** Payload de kill-switch y de 402 de suscripción se perdían en `GlobalExceptionFilter` (`apps/api/src/common/filters/global-exception.filter.ts`). Afectaba a: `sync.controller` (kill-switch), `drivers.controller` (`tablet/:tabletId/access`), `subscription.guard` (drivers) y `subscription.guard` (device).
+- **(Menor / benigno)** `CORS_ORIGIN` con valor literal `true` en entorno (no afecta el servicio real).
+- **(Riesgo R1/R3, NO modificado)** Vía SMTP Brevo y secretos JWT expuestos en `.env` local; no se rotaron ni versionaron. La activación del kill-switch es intencional (R1: sin pago → sin reproducción).
+
+### Correcciones de código aplicadas autónomamente
+1. `apps/api/src/modules/sync/sync.controller.ts` — En kill-switch 402, responder `res.status(402).json(manifest)` directamente (con `Cache-Control: no-store`) en lugar de lanzar `HttpException(manifest)` que el filtro global vaciaba.
+2. `apps/api/src/common/filters/global-exception.filter.ts` — Al serializar respuestas de `HttpException` con body objeto, preservar los campos personalizados (`...exceptionResponse`) manteniendo `statusCode/code/message/timestamp/path`. Esto corrige de raíz los 402 de los guards de suscripción (drivers y device) y el endpoint `tablet/:tabletId/access`.
+3. Verificación: `npx tsc --noEmit -p apps/api/tsconfig.json` → **EXIT=0**.
+
+### Métricas pre / post auditoría
+- Pre: `/api/v1/bi/kpis` 200 en ~2.5–4.0s; payload de kill-switch perdido; 0 campañas activas (correcto).
+- Post (desplegado): `tsc --noEmit` EXIT=0 → push `11c5588a` → autodeploy Easypanel → 402 de `/sync` devuelve el manifiesto completo (`killSwitch:true`, `killSwitchReason`, `etag:KILLSWITCH-402`). `/api/v1/bi/kpis` sigue 200 (~3.2s), `mrr:30000`, `totalDevices:57`.
+
+### Estado final
+- Servicio saludable post-deploy (sync 402 íntegro, KPIS 200, filtro global preserva payloads como `error`).
+- El dashboard de 0 campañas activas es **verdad de negocio**, no un fallo.
+- Fix de kill-switch/402 **desplegado en producción** (commit `11c5588a`) y verificado con probe real contra `proyecto-ia-tad-api`.
+- **Brechas pendientes**: (a) rendimiento de `/bi/kpis` > 2s, (b) observabilidad de logs (Loki/agregación), (c) verificación 304 con una suscripción activa real.
+
+### Verificación
+`tsc --noEmit` OK → commit `11c5588a` → push `main` → autodeploy webhook Easypanel (servicios `tad-api`, `tad-admin`, `tad-advertiser`) → probe `GET /api/v1/sync/SIM-DEV-0026` con JWT ADMIN: `402 {"killSwitch":true,"killSwitchReason":"SUBSCRIPTION_UNPAID","etag":"KILLSWITCH-402",...}`. Confirmado en el primer intento del poller.
+
+### Riesgos / Reglas de negocio en juego (NO VIOLAR)
+- R1/R3: kill-switch sigue activándose con 402 (correcto); solo se corrigió el *formato* del payload, no la política.
+- R8: no se tocó idempotencia ni transacciones financieras.

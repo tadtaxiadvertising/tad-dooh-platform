@@ -283,20 +283,21 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 | advertiser-dashboard | ✅ | dashboard renderiza |
 | advertiser-http-4xx | ❌→🔧 | `403 /api/proxy/fleet/summary` |
 
-### 🔧 Bug encontrado y corregido (código, no desplegado)
+### 🔧 Bug encontrado y corregido (commit `dcbfd6e0`, desplegado)
 - **Síntoma**: el dashboard advertiser carga el gadget "Fleet Health" (batería/nodos) y recibe **403** en `/fleet/summary`.
 - **Causa raíz**: `packages/ui/components/Layout.tsx:375-377` montaba `<FleetHealthStatus>` (SWR → `GET /fleet/summary`) para `role === 'ADMIN' **|| role === 'ADVERTISER'`; pero `fleet.controller.ts` es `@Roles(UserRole.ADMIN)` a nivel de clase, así que `summary` **no** es accesible para advertisers → 403 en cada carga + error de consola.
-- **Fix (working tree)**: `Layout.tsx` → `{role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}`. El gadget de salud de flota es exclusivo de admin; el advertiser deja de intentar un endpoint que no puede (y no debe) consumir. Tipo compatible, `tsc` no reporta errores nuevos.
-- **Pendiente**: push + redeploy de `tad-advertiser` (y `tad-admin` que también usa el layout compartido) para que el 403 desaparezca.
+- **Fix**: `Layout.tsx` → `{role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}`. El gadget de salud de flota es exclusivo de admin; el advertiser deja de intentar un endpoint que no puede (y no debe) consumir. Tipo compatible, `tsc` no reporta errores nuevos.
+- **Deploy**: commit `dcbfd6e0` pusheado a `main`; redeploy manual vía EasyPanel (`deployAppService`, forceRebuild) de `tad-advertiser` y `tad-admin`. Ambos servicios confirman commit `dcbfd6e0`.
 
 ### Métricas pre / post
 - **Pre**: 4 checks E2E OK + 2 hallazgos (aviso Realtime admin, 403 advertiser). Todos los servicios responden.
-- **Post (esperado tras deploy)**: advertiser sin 403 en `/fleet/summary`; admin sin cambio (sigue mostrando el gadget porque es ADMIN).
+- **Post (verificado tras deploy)**: `advertiser-http-4xx-5xx` ✅ **OK** (403 eliminado); admin sin cambio (sigue mostrando el gadget porque es ADMIN).
 
 ### Estado final
-- Los 4 servicios están **en línea y operativos** tras el fix de Dockerfiles (`84f7adf9`).
+- Los 4 servicios están **en línea y operativos**; admin y advertiser desplegados con el commit de fix `dcbfd6e0`.
 - Login verificado end-to-end para **admin** y **advertiser** (las credenciales documentadas en el repo estaban obsoletas).
-- Hallazgos documentados: (a) aviso Realtime `fleet_tracking_live` con JWT de sesión, (b) **403 `/fleet/summary` en advertiser corregido en código** pendiente de deploy, (c) brechas previas sin cambio (KPIS >2s, tipos `next`, observabilidad logs).
+- Hallazgos documentados: (a) aviso Realtime `fleet_tracking_live` con JWT de sesión (no bloqueante, polling 30s), (b) **403 `/fleet/summary` en advertiser corregido y verificado en producción**, (c) brechas previas sin cambio (KPIS >2s, tipos `next`, observabilidad logs).
 
 ### Verificación
-`npx playwright test audit-prod --config=playwright.config.ts --project=cross-admin-desktop --workers=1` → 3 passed; `audit-prod-results.md` generado. `tsc` advertiser: solo TS2614 preexistentes (no del fix).
+- 1ª ejecución (pre-deploy): `advertiser-http-4xx-5xx` ❌ (403 `/fleet/summary`).
+- Re-ejecución post-deploy `npx playwright test audit-prod --config=playwright.config.ts --project=cross-admin-desktop --workers=1` → **3 passed** (1.0m); `audit-prod-results.md` con `advertiser-http-4xx-5xx` ✅ OK. `tsc` advertiser: solo TS2614 preexistentes (no del fix).

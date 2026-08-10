@@ -37,6 +37,7 @@ import { SystemSettingsModule } from './modules/system-settings/system-settings.
 
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { KYCModule } from './modules/kyc/kyc.module';
+import { SocialAgentModule } from './modules/social-agent/social-agent.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -109,6 +110,7 @@ import { HealthController } from './health/health.controller';
     SimulationModule,
     OnboardingModule,
     KYCModule,
+    SocialAgentModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

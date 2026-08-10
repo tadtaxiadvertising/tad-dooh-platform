@@ -782,3 +782,31 @@ model IdempotencyKey {
   @@index([expiresAt]) // For TTL cleanup CRON
   @@map("idempotency_keys")
 }
+
+/// Social Agent: borradores de contenido generados por IA para Meta (IG/FB).
+model SocialPostDraft {
+  id           String   @id @default(cuid())
+  platform     String
+  copy         String
+  mediaUrl     String   @map("media_url")
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  scheduledFor DateTime @map("scheduled_for")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("social_post_drafts")
+}
+
+/// Social Agent: log de interacciones entrantes procesadas por el bot (Meta Messenger/IG DM).
+model SocialInteractionLog {
+  id          String   @id @default(cuid())
+  platform    String // IG, FB
+  threadId    String   @map("thread_id")
+  senderId    String   @map("sender_id")
+  message     String
+  botResponse String   @map("bot_response")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("social_interaction_logs")
+}

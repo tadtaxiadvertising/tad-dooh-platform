@@ -102,7 +102,7 @@
 |----------|---------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxx.supabase.co` | URL de Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJh...` | Anon Key (auth) |
-| `NEXT_PUBLIC_API_URL` | `https://tad-api.easypanel.host/api` | URL pública del backend |
+| `NEXT_PUBLIC_API_URL` | `https://tad-api.rewvid.easypanel.host/api/v1` | URL pública del backend |
 
 ### Runtime
 
@@ -121,9 +121,9 @@
 Usa el `Dockerfile.driver` de la raíz del monorepo; no uses `apps/driver/Dockerfile`.
 Configura como variables del servicio: `NODE_ENV=production`,
 `NEXT_TELEMETRY_DISABLED=1`, `NODE_OPTIONS=--max_old_space_size=256` y
-`NEXT_PUBLIC_API_URL` con la ruta interna correcta del API Gateway (por ejemplo,
-`http://api:3000`, según la red del proyecto). Mantén `BACKEND_INTERNAL_URL`
-como destino runtime del proxy cuando esté disponible.
+`NEXT_PUBLIC_API_URL=https://tad-api.rewvid.easypanel.host/api/v1`,
+`INTERNAL_BACKEND_URL=http://tad-api:3000` y
+`CORS_ORIGIN=https://tad-driver.rewvid.easypanel.host`.
 
 Después de reconstruir y reiniciar, verifica la URL pública
 `https://tad-driver.rewvid.easypanel.host`, el registro de `sw.js` sin 302 y

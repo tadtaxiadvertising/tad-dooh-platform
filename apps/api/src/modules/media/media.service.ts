@@ -26,6 +26,27 @@ export class MediaService {
     return crypto.createHash('md5').update(buffer).digest('hex');
   }
 
+  /**
+   * REGLA DE SEGURIDAD 07: Valida que el tipo MIME y la extensión estén permitidos.
+   * Solo MP4 (H.264), JPG y PNG son aceptados como piezas publicitarias.
+   */
+  private validateMediaFile(fileName: string, mimeType?: string) {
+    const fileExt = extname(fileName).toLowerCase();
+    const allowedExt = BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === fileExt);
+    const allowedMime = !mimeType || BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.some((allowed) => allowed === mimeType);
+
+    if (!allowedExt) {
+      throw new BadRequestException(
+        `Extensión no permitida: ${fileExt || '(sin extensión)'}. Solo se aceptan ${BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}.`
+      );
+    }
+    if (!allowedMime) {
+      throw new BadRequestException(
+        `Tipo MIME no permitido: ${mimeType}. Solo se aceptan MP4 (H.264), JPG o PNG.`
+      );
+    }
+  }
+
 
   /**
    * REGLA DE SEGURIDAD 07: Signed URL — El video NO pasa por NestJS RAM
@@ -34,6 +55,8 @@ export class MediaService {
    */
   async generateUploadUrl(fileName: string, fileType: string) {
     try {
+      this.validateMediaFile(fileName, fileType);
+
       // 0. Auto-create bucket if missing (Ensure we don't proceed if this fails silently)
       const { error: bucketError } = await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(err => ({ error: err }));
       if (bucketError && bucketError.message !== 'The resource already exists') {
@@ -80,6 +103,8 @@ export class MediaService {
     if (data.size && Number(data.size) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
       throw new BadRequestException(`El archivo registro excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
     }
+
+    this.validateMediaFile(data.filename, data.contentType);
 
     try {
       const cdnPrefix = this.config.get('CDN_URL_PREFIX');

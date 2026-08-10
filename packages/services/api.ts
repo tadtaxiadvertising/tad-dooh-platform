@@ -83,6 +83,24 @@ api.interceptors.request.use(async (config) => {
 });
 
 // ============================================
+// Idempotency-Key Auto-Interceptor
+// ============================================
+// REGLA DE NEGOCIO 08: Todo POST/PUT/PATCH debe enviar un Idempotency-Key.
+// Se genera automáticamente por request (a menos que el llamador ya lo haya
+// definido), lo que evita pagos/transacciones duplicadas ante retries.
+api.interceptors.request.use((config) => {
+  if (config.method && ['post', 'put', 'patch'].includes(config.method.toLowerCase())) {
+    if (!config.headers['Idempotency-Key'] && !config.headers['idempotency-key']) {
+      const key = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : `op-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+      config.headers['Idempotency-Key'] = key;
+    }
+  }
+  return config;
+});
+
+// ============================================
 // 401 Auto-Retry Interceptor (Token Refresh Safety Net)
 // ============================================
 //

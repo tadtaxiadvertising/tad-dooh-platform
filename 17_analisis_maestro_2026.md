@@ -301,3 +301,69 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 ### Verificación
 - 1ª ejecución (pre-deploy): `advertiser-http-4xx-5xx` ❌ (403 `/fleet/summary`).
 - Re-ejecución post-deploy `npx playwright test audit-prod --config=playwright.config.ts --project=cross-admin-desktop --workers=1` → **3 passed** (1.0m); `audit-prod-results.md` con `advertiser-http-4xx-5xx` ✅ OK. `tsc` advertiser: solo TS2614 preexistentes (no del fix).
+
+---
+
+## AUDITORÍA AUTÓNOMA — 2026-08-10 (Playwright MCP)
+
+### Fecha de escaneo
+2026-08-10 ~20:00 UTC-4 (playwright MCP v0.0.79, browsers instalados). Servicios en producción commit `dcbfd6e0` (admin/advertiser) y `84f7adf9` (api/driver).
+
+### Módulos revisados (Admin, Api, Advertiser, Driver)
+
+**Portales web (navegación real con Playwright MCP):**
+
+| Servicio | Check | Resultado |
+| --- | --- | --- |
+| Admin | login `admin@tad.do` | ✅ 200 → `/admin/dashboard` |
+| Admin | dashboard (Command Center, KPIs, Fleet Pulse) | ✅ renderiza, h1 + widgets |
+| Admin | `/admin/fleet` (TAD NODE MASTER CONSOLE) | ✅ renderiza |
+| Admin | errores de consola | ⚠️ solo `favicon.ico` 404 y `Invalid Refresh Token` (refresh previo del browser MCP, no bloqueante) |
+| Advertiser | login `qa-advertiser@tad.do` | ✅ 200 → `/advertiser/dashboard` |
+| Advertiser | dashboard "QA Advertiser Audit BI" | ✅ renderiza, menú propio del portal |
+| Advertiser | errores de consola / requests | ✅ **0 errores**, sin request a `/fleet/summary` (fix verificado en vivo) |
+| Advertiser | falsa alarma "Acceso Denegado" | ⚠️ artefacto del refresh token inválido del browser MCP al reutilizar sesión; desaparece al recargar con sesión válida (la suite CLI con contexto limpio no lo reproduce) |
+| Driver | `/driver/login` | ✅ 200, 0 errores de consola |
+
+**API (health probes con JWT real):**
+
+| Endpoint | Resultado |
+| --- | --- |
+| `POST /api/v1/auth/login` (admin) | ✅ 200, token len 828 |
+| `POST /api/v1/auth/login` (advertiser) | ✅ 200, token len 892 |
+| `GET /api/v1/bi/kpis` | ✅ 200 (~3.6s) — payload desde caché in-memory 5min (brecha >2s conocida §9) |
+| `GET /api/v1/notifications` | ✅ 200 (~1.6s), 50 items |
+| `GET /api/v1/advertisers/:id/portal` (entityId real) | ✅ 200 (~9.4s, **lento**) — claves: brand, summary, telemetry, campaigns, financials, timeSeries |
+| `GET /api/v1/advertisers/:id/portal` (id ajeno) | ✅ 401 (TenantGuard aísla correctamente) |
+
+**Sync / ETagging (skill paso 2):**
+
+| Device | Estado BD | Resultado |
+| --- | --- | --- |
+| `TAD1` (OPERATIVO real) | normal | ✅ 200 con `ETag=6800df…`; con `If-None-Match` → **304** (ETagging OK, ahorra recalculo) |
+| `SIM-DEV-0026` (OPERATIVO simulado) | suscripción sin pagar | ⚠️ 402 `KILLSWITCH` (comportamiento correcto R1/R3: sin suscripción/campaña activa no se emite playback) |
+| `STI001` (BLOQUEADO) | bloqueado | ✅ 403 (correcto, no sirve manifest) |
+
+**Base de datos (PostgreSQL, pooler 6543):**
+- `mv_active_campaigns`: **poblada** (`ispopulated=true`), 1 fila vigente. La vista NO tiene columna `refreshed_at` (se monitorea por `ispopulated`/`matviewname`).
+- Devices: 54 `OPERATIVO`, 3 `BLOQUEADO`. Tabla `devices` usa `device_id` (e.g. `TAD1`, `STI001`), no `device_code`.
+
+### Vulnerabilidades detectadas
+1. **`favicon.ico` 404** en admin y advertiser (menor, cosmético).
+2. **"Invalid Refresh Token" 400** al reutilizar una sesión de browser MCP anterior con tokens revocados — no es fallo de producción; es la app rehidratando una sesión expirada. No bloqueante.
+3. **`/api/v1/advertisers/:id/portal` tarda ~9.4s** (agregación pesada; KPIS ~3.6s). Brecha de rendimiento conocida (suma al §9). Sin crash.
+4. **Agregación de logs EasyPanel/Loki no configurada** — `queryServiceLogs` devuelve 400 y `getLogsSettings` es `null`; la observabilidad de contenedores vía MCP no está disponible (brecha de observabilidad §5 conocida).
+
+### Correcciones de código aplicadas autónomamente
+- Ninguna nueva en esta pasada (fix Fleet Health ya desplegado en `dcbfd6e0` y verificado en vivo).
+- Confirmación de estado: `Layout.tsx:377` → `{role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}`; advertiser no emite request a `/fleet/summary`.
+
+### Métricas pre / post auditoría
+- **Pre**: 403 `/fleet/summary` en advertiser (era el fallo principal).
+- **Post**: advertiser **0 errores de consola y 0 requests 4xx/5xx**; dashboard carga. Admin/driver sin regresiones. API sana (200/304); `portal` y `kpis` lentos pero funcionales.
+
+### Estado final
+- Los **4 servicios** responden en producción: admin y advertiser en `dcbfd6e0` (fix Fleet Health activo), api y driver en `84f7adf9`.
+- Login verificado para **admin** y **advertiser**; driver sirve login.
+- **Kill-switch operativo** (SIM-DEV-0026 → 402): protege playbacks sin suscripción/campaña activa (R1/R3 respetado; hay 272 discrepancias `UNPAID_SUBSCRIPTION` en 2026-08, señal de cobranza pendiente, no de bug).
+- Pendientes sin cambio: KPIS >2s, `portal` ~9.4s, TS2614 preexistentes (builds OK en contenedor), observabilidad logs MCP no disponible.

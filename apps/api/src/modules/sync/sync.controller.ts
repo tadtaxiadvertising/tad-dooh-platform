@@ -49,7 +49,8 @@ export class SyncController {
 
     if ((manifest as Record<string, unknown>).killSwitch === true) {
       res.setHeader('Cache-Control', 'no-store');
-      throw new HttpException(manifest, HttpStatus.PAYMENT_REQUIRED);
+      res.status(HttpStatus.PAYMENT_REQUIRED).json(manifest);
+      return;
     }
 
     const etag = (manifest as Record<string, unknown>).etag as string || '';

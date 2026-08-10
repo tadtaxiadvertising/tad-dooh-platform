@@ -46,10 +46,15 @@ export default function BillingPage() {
    async () => {
      setProcessing(true);
      try {
-       const res = await fetch('/api/payments/nexpay', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({
+      const res = await fetch('/api/payments/nexpay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `pay-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
+        },
+        body: JSON.stringify({
            accountId: ACCOUNT_ID,
            amountRD: 7080,
            method,

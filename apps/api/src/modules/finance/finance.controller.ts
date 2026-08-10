@@ -8,7 +8,8 @@ import {
   Res,
   HttpStatus,
   UseGuards,
-  Req
+  Req,
+  UseInterceptors
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { InvoiceService } from './invoice.service';
@@ -18,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { IdempotencyInterceptor } from '../../common/interceptors/idempotency.interceptor';
 
 const mediaSafeSelect = {
   id: true,
@@ -235,6 +237,7 @@ export class FinanceController {
    * FINANCIAL INTELLIGENCE: Registers a new financial transaction (Income/Expense).
    */
   @Post('transactions')
+  @UseInterceptors(IdempotencyInterceptor)
   async recordTransaction(
     @Body() data: {
       type: string;

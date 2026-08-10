@@ -25,6 +25,19 @@ export const BUSINESS_RULES = {
   MAX_VIDEO_SIZE_MB: 55,
   MAX_VIDEO_SIZE_BYTES: 57671680,
 
+  /** Tipos MIME permitidos para piezas publicitarias (video MP4 H.264 + estáticos JPG/PNG) */
+  ALLOWED_MEDIA_MIME_TYPES: [
+    'video/mp4',
+    'image/jpeg',
+    'image/png',
+  ],
+
+  /** Extensiones permitidas para piezas publicitarias */
+  ALLOWED_MEDIA_EXTENSIONS: ['.mp4', '.jpg', '.jpeg', '.png'],
+
+  /** Máximo de campañas activas simultáneas por anunciante */
+  MAX_CAMPAIGNS_PER_ADVERTISER: 15,
+
   /** Costo por campaña para el anunciante en RD$ (subtotal sin ITBIS) */
   ADVERTISER_COST_PER_CAMPAIGN_RD: 1500,
 

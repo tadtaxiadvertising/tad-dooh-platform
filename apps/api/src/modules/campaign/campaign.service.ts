@@ -199,6 +199,21 @@ export class CampaignService {
       initialStatus = 'PENDING_REVIEW';
     }
 
+    // REGLA DE NEGOCIO 04: Máximo de campañas activas simultáneas por anunciante
+    if (assignedAdvertiserId) {
+      const activeCount = await this.prisma.campaign.count({
+        where: {
+          advertiserId: assignedAdvertiserId,
+          status: { in: ['ACTIVE', 'PENDING_REVIEW', 'PENDING_PAYMENT'] },
+        },
+      });
+      if (activeCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
+        throw new BadRequestException(
+          `Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`
+        );
+      }
+    }
+
     const campaign = await this.prisma.campaign.create({
       data: {
         name: dto.name,
@@ -377,6 +392,18 @@ export class CampaignService {
     if (dto.fileSize && Number(dto.fileSize) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
       this.logger.warn(`[MEDIA_REG] Archivo demasiado grande: ${dto.fileSize} > ${BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES}`);
       throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    }
+
+    // REGLA DE SEGURIDAD 07: Solo MP4/JPG/PNG como piezas publicitarias
+    const ext = (dto.fileName || '').split('.').pop()?.toLowerCase();
+    const urlExt = (dto.url || '').split('?')[0].split('.').pop()?.toLowerCase();
+    const isAllowed = (e?: string) => e ? BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === `.${e}`) : false;
+    const fileExtOk = !dto.fileName || isAllowed(ext);
+    const urlExtOk = !dto.url || isAllowed(urlExt);
+
+    if (!fileExtOk || !urlExtOk) {
+      this.logger.warn(`[MEDIA_REG] Rechazado: extensión no permitida (file=${ext}, url=${urlExt})`);
+      throw new BadRequestException(`Solo se aceptan piezas ${BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}.`);
     }
 
     try {

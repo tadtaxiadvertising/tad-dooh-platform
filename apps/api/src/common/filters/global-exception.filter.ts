@@ -21,6 +21,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         message = exceptionResponse.message || exception.message;
         code = exceptionResponse.code || this.mapStatusToCode(status, message);
+        // Preserve custom payload fields (kill-switch manifest, subscription 402
+        // reasons, etc.) so clients receive the full directive, not just status/code.
+        response.status(status).json({
+          ...exceptionResponse,
+          statusCode: status,
+          code,
+          message,
+          timestamp: new Date().toISOString(),
+          path: request.url,
+        });
+        return;
       } else {
         message = exception.message;
         code = this.mapStatusToCode(status, message);

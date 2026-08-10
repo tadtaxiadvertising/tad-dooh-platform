@@ -206,6 +206,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // The VPS may still route the retired hostname while DNS/EasyPanel is
+    // being migrated. Keep requests functional without changing the canonical
+    // configuration: retry the legacy route only when the canonical route is
+    // explicitly missing.
+    if (
+      backendResponse.status === 404 &&
+      BACKEND_BASE === CANONICAL_PUBLIC_BACKEND
+    ) {
+      const legacyUrl = `${LEGACY_PUBLIC_BACKEND}/api/v1/${pathStr}${queryString}`;
+      console.warn(`[PROXY] Canonical backend returned 404; retrying legacy route: ${legacyUrl}`);
+      fetchOptions.headers = getForwardHeaders(legacyUrl);
+      backendResponse = await fetch(legacyUrl, fetchOptions);
+    }
+
     // Verificación de seguridad para evitar "Cannot read properties of undefined (reading 'headers')"
     if (!backendResponse) {
       throw new Error('Backend response is undefined after all attempts');

@@ -91,7 +91,7 @@ async function bootstrap() {
         callback(new Error(`CORS blocked for origin: ${origin}`), false);
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret',
+      allowedHeaders: 'Content-Type, Accept, Authorization, Idempotency-Key, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret',
       credentials: true,
       optionsSuccessStatus: 204,
       preflightContinue: false,

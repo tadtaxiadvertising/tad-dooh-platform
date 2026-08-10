@@ -7,11 +7,13 @@ WORKDIR /app
 RUN apk add --no-cache openssl curl
 
 # Archivos core del monorepo (incluimos todos los workspaces para standalone)
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY packages ./packages
 COPY apps/admin ./apps/admin
 
-# Instalar dependencias
+# Instalar dependencias con lockfile (builds reproducibles). Sin el lockfile,
+# npm re-resuelve las ultimas versiones y puede fallar (ej: una dependencia
+# transitoria pide una version yanked de @typescript-eslint/scope-manager).
 RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Build con vars del entorno

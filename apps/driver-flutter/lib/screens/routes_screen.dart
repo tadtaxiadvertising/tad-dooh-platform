@@ -894,6 +894,10 @@ class _WalletTabState extends ConsumerState<WalletTab> with SingleTickerProvider
                 await dio.post(
                   '/fleet/drivers/${widget.hub.driverId}/withdrawals',
                   data: {'amount': widget.hub.balance},
+                  options: Options(headers: {
+                    'Idempotency-Key':
+                        'withdraw-${DateTime.now().microsecondsSinceEpoch}',
+                  }),
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

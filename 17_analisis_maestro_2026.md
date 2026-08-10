@@ -246,3 +246,57 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 ### Riesgos / Reglas de negocio en juego (NO VIOLAR)
 - R1/R3: kill-switch sigue activándose con 402 (correcto); solo se corrigió el *formato* del payload, no la política.
 - R8: no se tocó idempotencia ni transacciones financieras.
+
+---
+
+## 10. AUDITORÍA E2E DE PRODUCCIÓN — 2026-08-10 (Playwright CLI)
+
+> Sesión de verificación de los 4 servicios desplegados, tras el fix de Dockerfiles (`84f7adf9`) y el reset de credenciales de acceso.
+
+### Contexto de sesión
+- **Login admin**: `admin@tad.do` — password reseteada vía admin API Supabase (`kjVhrMYHmWEPSeZ0`), login verificado (rol ADMIN, token emitido).
+- **Login advertiser**: `qa-advertiser@tad.do` (la cuenta `advertiser@tad.do` **NO existe** en `auth.users` ni en `public.advertisers`) — password reseteada igualmente, login verificado (rol ADVERTISER, entityId `ec515bfe-...`).
+- **MCP Playwright**: `enabled: true` en `opencode.json` (tools se cargan al iniciar sesión; la verificación de esta sesión se ejecutó con Playwright CLI, mismo motor).
+
+### URLs verificadas (EasyPanel, proyecto `proyecto_ia`)
+| Servicio | URL pública | Dockerfile | Estado |
+| --- | --- | --- | --- |
+| API | `proyecto-ia-tad-api.rewvid.easypanel.host` | Dockerfile.api | ✅ responde (commit `84f7adf9`) |
+| Admin | `proyecto-ia-tad-dashboard.rewvid.easypanel.host` | Dockerfile.admin | ✅ 200 en `/login` y `/admin/login` |
+| Advertiser | `proyecto-ia-tad-advertiser.rewvid.easypanel.host` | Dockerfile.advertiser | ✅ 200 en `/login` |
+| Driver | `proyecto-ia-tad-driver.rewvid.easypanel.host` | Dockerfile.driver | ✅ 200, redirige `/` → `/driver/login` |
+
+### Health probes de API (con JWT ADMIN real)
+| Endpoint | Resultado |
+| --- | --- |
+| `POST /api/v1/auth/login` | ✅ 200, token emitido |
+| `GET /api/v1/bi/kpis` | ✅ 200 (~5s) — sigue lento (>2s, brecha conocida §9) |
+| `GET /api/v1/notifications` | ✅ 200 |
+
+### Suite `tests/e2e/audit-prod.spec.ts` (Playwright, 1 worker, sin mutaciones R8/R3)
+| Check | Estado | Detalle |
+| --- | --- | --- |
+| admin-login | ✅ | login OK, navegación dashboard + fleet |
+| admin-nav-* | ✅ | rutas renderizan h1 |
+| admin-js-errors | ⚠️ | `[TAD_REALTIME] Suscripción Broadcast cerrada, channel: fleet_tracking_live` — **aviso no bloqueante** (dashboard funciona por polling 30s; con service role y anon key el canal SUSCRIBE OK; se cierra solo con el JWT de sesión del navegador). |
+| advertiser-login | ✅ | login OK → redirige a `/advertiser/dashboard` (NO a `/p/`) |
+| advertiser-dashboard | ✅ | dashboard renderiza |
+| advertiser-http-4xx | ❌→🔧 | `403 /api/proxy/fleet/summary` |
+
+### 🔧 Bug encontrado y corregido (código, no desplegado)
+- **Síntoma**: el dashboard advertiser carga el gadget "Fleet Health" (batería/nodos) y recibe **403** en `/fleet/summary`.
+- **Causa raíz**: `packages/ui/components/Layout.tsx:375-377` montaba `<FleetHealthStatus>` (SWR → `GET /fleet/summary`) para `role === 'ADMIN' **|| role === 'ADVERTISER'`; pero `fleet.controller.ts` es `@Roles(UserRole.ADMIN)` a nivel de clase, así que `summary` **no** es accesible para advertisers → 403 en cada carga + error de consola.
+- **Fix (working tree)**: `Layout.tsx` → `{role === 'ADMIN' && <FleetHealthStatus hasSession={!!session} />}`. El gadget de salud de flota es exclusivo de admin; el advertiser deja de intentar un endpoint que no puede (y no debe) consumir. Tipo compatible, `tsc` no reporta errores nuevos.
+- **Pendiente**: push + redeploy de `tad-advertiser` (y `tad-admin` que también usa el layout compartido) para que el 403 desaparezca.
+
+### Métricas pre / post
+- **Pre**: 4 checks E2E OK + 2 hallazgos (aviso Realtime admin, 403 advertiser). Todos los servicios responden.
+- **Post (esperado tras deploy)**: advertiser sin 403 en `/fleet/summary`; admin sin cambio (sigue mostrando el gadget porque es ADMIN).
+
+### Estado final
+- Los 4 servicios están **en línea y operativos** tras el fix de Dockerfiles (`84f7adf9`).
+- Login verificado end-to-end para **admin** y **advertiser** (las credenciales documentadas en el repo estaban obsoletas).
+- Hallazgos documentados: (a) aviso Realtime `fleet_tracking_live` con JWT de sesión, (b) **403 `/fleet/summary` en advertiser corregido en código** pendiente de deploy, (c) brechas previas sin cambio (KPIS >2s, tipos `next`, observabilidad logs).
+
+### Verificación
+`npx playwright test audit-prod --config=playwright.config.ts --project=cross-admin-desktop --workers=1` → 3 passed; `audit-prod-results.md` generado. `tsc` advertiser: solo TS2614 preexistentes (no del fix).

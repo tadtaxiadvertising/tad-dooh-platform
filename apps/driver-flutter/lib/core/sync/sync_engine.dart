@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'sync_queue.dart';
 
@@ -79,6 +81,9 @@ class HybridSyncEngine {
     _kLog('[SyncEngine] Flushing ${buffer.length} points to $path');
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('tad_driver_token');
+      final deviceId = prefs.getString('tad_driver_device_id') ?? _deviceId;
       final res = await _dio.post(
         path,
         data: {
@@ -87,7 +92,11 @@ class HybridSyncEngine {
           'points': buffer.map((p) => p.toJson()).toList(),
         },
         options: Options(
-          headers: _deviceId != null ? {'X-Device-Id': _deviceId} : null,
+          headers: {
+            if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            if (deviceId != null) 'X-Device-Id': deviceId,
+            'Idempotency-Key': 'gps-${DateTime.now().microsecondsSinceEpoch}',
+          },
         ),
       );
       _kLog('[SyncEngine] Batch sync success: ${res.statusCode}');

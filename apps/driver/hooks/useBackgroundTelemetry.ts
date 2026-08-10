@@ -178,7 +178,9 @@ function triggerKillSwitch(opts: {
   const { setLock, setConnectionStatus, stopTracking } = opts;
   try {
     localStorage.removeItem('tad_driver_user');
+    localStorage.removeItem('tad_driver_token');
     localStorage.removeItem('TAD_DRIVER_JWT');
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.dispatchEvent(new CustomEvent('TAD_FORCE_LOGOUT', { detail: { reason: 'SUBSCRIPTION_UNPAID' } }));
   } catch {/* localStorage bloqueado */}
   if (stopTracking) stopTracking();
@@ -233,9 +235,15 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   const postTrackBatch = useCallback(async (
     apiBase: string, driverId: string, deviceId: string, points: TelemetryCoord[]
   ) => {
+    const token = localStorage.getItem('tad_driver_token') ||
+      localStorage.getItem('TAD_DRIVER_JWT');
     return fetch(`${apiBase}/fleet/track-batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': crypto.randomUUID(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       credentials: 'include',
       body: JSON.stringify(buildPayload(driverId, deviceId, points)),
       signal: AbortSignal.timeout(15_000),

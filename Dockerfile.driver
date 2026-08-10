@@ -42,7 +42,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     chown -R nextjs:nodejs /app
 USER nextjs
 
-ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"
+ENV NODE_OPTIONS="--max-old-space-size=256 --expose-gc"
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 

@@ -30,9 +30,20 @@ final dioProvider = Provider((ref) {
     headers: {'Content-Type': 'application/json'},
   ));
 
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(kPrefToken);
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      handler.next(options);
+    },
+  ));
+
   dio.interceptors.add(KillSwitchInterceptor(
     onKillSwitch: () {
-      debugPrint('INTERCEPTOR: KillSwitch (402) suppressed for development');
+      ref.read(killSwitchProvider).activate('Suscripción vencida');
     },
     onUnauthorized: () {
       ref.read(authHelpersProvider).clearAuth();

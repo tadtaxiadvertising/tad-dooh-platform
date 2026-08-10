@@ -8,7 +8,7 @@ class ApiConstants {
 
     String url;
     if (kReleaseMode) {
-      url = prodUrl ?? 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1/';
+      url = prodUrl ?? 'https://tad-api.rewvid.easypanel.host/api/v1/';
     } else {
       // Priorizar .env, luego 10.0.2.2 (emulador), luego localhost
       url = devUrl ?? 'http://10.0.2.2:3000/api/v1/';

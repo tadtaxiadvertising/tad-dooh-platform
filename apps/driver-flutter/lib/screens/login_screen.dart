@@ -154,9 +154,12 @@ Future<void> persistLogin(LoginResult result, {String? phone, String? password})
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(kPrefToken, result.accessToken);
   await prefs.setString(kPrefHub, jsonEncode(result.hub.toJson()));
+  if (result.hub.deviceId != null && result.hub.deviceId!.isNotEmpty) {
+    await prefs.setString('tad_driver_device_id', result.hub.deviceId!);
+  }
   await prefs.setString(
     kPrefTokenExp,
-    DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+    DateTime.now().add(const Duration(hours: 48)).toIso8601String(),
   );
   // Cache creds for silent re-login on 401
   if (phone != null) await prefs.setString(kPrefPhone, phone);

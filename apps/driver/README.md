@@ -110,9 +110,25 @@
 |----------|---------|-------------|
 | `NEXT_PUBLIC_PORTAL_TYPE` | `DRIVER` | Identidad del portal. Inyectada en Dockerfile |
 | `BACKEND_INTERNAL_URL` | `http://api:3000` | URL interna Docker |
-| `NODE_OPTIONS` | `--max-old-space-size=1024` | Heap limit |
+| `NODE_OPTIONS` | `--max-old-space-size=256 --expose-gc` | Heap limit aligned with Easypanel (512 MB service limit) |
 | `NEXT_TELEMETRY_DISABLED` | `1` | No telemetría Vercel |
 | `PORT` | `3000` | Puerto interno |
+
+---
+
+## Despliegue manual en Easypanel
+
+Usa el `Dockerfile.driver` de la raíz del monorepo; no uses `apps/driver/Dockerfile`.
+Configura como variables del servicio: `NODE_ENV=production`,
+`NEXT_TELEMETRY_DISABLED=1`, `NODE_OPTIONS=--max_old_space_size=256` y
+`NEXT_PUBLIC_API_URL` con la ruta interna correcta del API Gateway (por ejemplo,
+`http://api:3000`, según la red del proyecto). Mantén `BACKEND_INTERNAL_URL`
+como destino runtime del proxy cuando esté disponible.
+
+Después de reconstruir y reiniciar, verifica la URL pública
+`https://tad-driver.rewvid.easypanel.host`, el registro de `sw.js` sin 302 y
+un `POST /api/proxy/fleet/track-batch`. No consideres el despliegue confirmado
+hasta revisar los logs y comprobar que el consumo permanece bajo 512 MB.
 
 ---
 

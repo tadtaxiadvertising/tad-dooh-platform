@@ -65,9 +65,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_hub.driverId.isEmpty) return;
 
     final engine = ref.read(syncEngineProvider);
-    // Note: HybridSyncEngine should be configured with the driverId from the hub.
-    // In a real refactor, the syncEngineProvider could be a family or we can set the id here.
-    
+    engine.setIdentity(
+      driverId: _hub.driverId,
+      deviceId: _hub.deviceId,
+    );
     GPSService.I.attachSyncEngine(engine);
     GPSService.I.startTracking();
   }

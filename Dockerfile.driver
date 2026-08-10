@@ -7,7 +7,12 @@ WORKDIR /app
 RUN apk add --no-cache openssl curl
 
 # Archivos core del monorepo
+<<<<<<< HEAD
 COPY package.json package-lock.json ./
+=======
+COPY package.json ./
+COPY package-lock.json ./
+>>>>>>> b53757be (fix(driver): bind telemetry identity and retry offline batches)
 COPY packages ./packages
 COPY apps/driver ./apps/driver
 

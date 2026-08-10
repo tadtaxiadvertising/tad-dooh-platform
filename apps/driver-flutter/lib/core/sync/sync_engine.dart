@@ -39,8 +39,8 @@ class HybridSyncEngine {
         _driverId = driverId;
 
   final Dio _dio;
-  final String? _deviceId;
-  final String? _driverId;
+  String? _deviceId;
+  String? _driverId;
   final Duration batchInterval;
   final Duration activeStreamDuration;
 
@@ -50,6 +50,13 @@ class HybridSyncEngine {
   bool _activeMode = false;
 
   bool get isActiveMode => _activeMode;
+
+  /// Set the identity returned by the authenticated hub response.
+  /// The provider is created before login, so identity cannot be constructor-only.
+  void setIdentity({required String driverId, String? deviceId}) {
+    _driverId = driverId;
+    _deviceId = deviceId;
+  }
 
   void start() {
     _batchTimer?.cancel();
@@ -73,12 +80,15 @@ class HybridSyncEngine {
   /// Called by the batch timer, when 60 points accumulate, or on
   /// manual sync request from the UI.
   Future<void> flushBatch() async {
-    if (_pending.isEmpty) return;
+    final queued = await OfflineQueue.instance.drainAll();
+    if (_pending.isEmpty && queued.isEmpty) return;
     final buffer = List<GpsPoint>.from(_pending);
     _pending.clear();
+    final batches = <List<GpsPoint>>[...queued, if (buffer.isNotEmpty) buffer];
+    final points = batches.expand<GpsPoint>((batch) => batch).toList();
 
     final path = '/fleet/track-batch';
-    _kLog('[SyncEngine] Flushing ${buffer.length} points to $path');
+    _kLog('[SyncEngine] Flushing ${points.length} points to $path');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -89,7 +99,7 @@ class HybridSyncEngine {
         data: {
           'driverId': _driverId ?? '',
           'deviceId': _deviceId ?? '',
-          'points': buffer.map((p) => p.toJson()).toList(),
+          'points': points.map((p) => p.toJson()).toList(),
         },
         options: Options(
           headers: {
@@ -106,7 +116,9 @@ class HybridSyncEngine {
           e.type == DioExceptionType.connectionTimeout ||
           e.response == null) {
         _kLog('[SyncEngine] Connection failed. Enqueueing offline.');
-        await OfflineQueue.instance.enqueueGpsBatch(buffer);
+        for (final batch in batches) {
+          await OfflineQueue.instance.enqueueGpsBatch(batch);
+        }
       }
     } catch (e) {
       _kLog('[SyncEngine] Unexpected sync error: $e');

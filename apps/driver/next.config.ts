@@ -72,6 +72,15 @@ const nextConfig: NextConfig = {
   // driver redirige '/' -> '/driver/login' (y a '/driver/dashboard'
   // si ya hay sesión DRIVER). Los redirects de next.config se ejecutan
   // ANTES que el middleware y rompen el flujo del portal driver.
+  async redirects() {
+    return [
+      {
+        source: '/p/advertiser/:path*',
+        destination: 'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(withPWA(nextConfig), {

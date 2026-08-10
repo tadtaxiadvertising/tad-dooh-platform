@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
@@ -99,6 +99,40 @@ export class PortalRequestsService {
     // BUG FIX: Trigger content deployment on APPROVAL
     // ===========================================================
     if (updateData.status === 'APPROVED') {
+      // ===========================================================
+      // REGLA DE SEGURIDAD 07 + R4: Valida media y límites ANTES de cualquier efecto colateral.
+      // Si falla, la solicitud NO se aprueba (el error corta la actualización).
+      // ===========================================================
+      if (request.type === 'CAMPAIGN_CREATE' && request.data) {
+        const cData = JSON.parse(request.data);
+
+        if (cData.mediaUrl) {
+          this.validateMediaUrl(cData.mediaUrl);
+        }
+
+        // R4: Máximo de campañas activas simultáneas por anunciante
+        if (request.advertiserId) {
+          const activeCount = await this.prisma.campaign.count({
+            where: {
+              advertiserId: request.advertiserId,
+              status: { in: ['ACTIVE', 'PENDING_REVIEW', 'PENDING_PAYMENT'] },
+            },
+          });
+          if (activeCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
+            throw new BadRequestException(
+              `Límite alcanzado: este anunciante ya tiene ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}).`
+            );
+          }
+        }
+      }
+
+      if (request.type === 'CONTENT_UPDATE' && request.data) {
+        const mediaData = JSON.parse(request.data);
+        if (mediaData?.url) {
+          this.validateMediaUrl(mediaData.url);
+        }
+      }
+
       try {
         this.logger.log(`[APPROVAL_FLOW] Processing approval for request ${id}, type: ${request.type}`);
 
@@ -317,5 +351,20 @@ export class PortalRequestsService {
     return (this.prisma as any).portalRequest.delete({
       where: { id },
     });
+  }
+
+  /**
+   * REGLA DE SEGURIDAD 07: Solo URL de piezas MP4 (H.264), JPG o PNG.
+   * Ignora query strings y hashes de CDN (p.ej. ".mp4?token=x").
+   */
+  private validateMediaUrl(url: string) {
+    const cleanPath = url.split('?')[0].split('#')[0];
+    const ext = cleanPath.split('.').pop()?.toLowerCase() || '';
+    const isAllowed = BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === `.${ext}`);
+    if (!isAllowed) {
+      throw new BadRequestException(
+        `URL de pieza no válida: debe terminar en ${BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}. Recibido: ${cleanPath}`
+      );
+    }
   }
 }

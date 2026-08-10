@@ -63,7 +63,8 @@ export default function AdvertiserCampaigns() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session?.user?.id) return;
+    const entityId = session?.user?.app_metadata?.entityId || session?.user?.id;
+    if (!entityId) return;
 
     setSubmitting(true);
     try {
@@ -73,7 +74,7 @@ export default function AdvertiserCampaigns() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          advertiserId: session.user.id,
+          advertiserId: entityId,
           type: 'CAMPAIGN_CREATE',
           title: `NUEVA CAMPAÑA: ${formData.name}`,
           description: formData.description,

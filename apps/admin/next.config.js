@@ -6,6 +6,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/p/advertiser/:path*',
+        destination: 'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
+        permanent: false,
+      },
+      {
         source: '/',
         destination: '/admin/dashboard/realtime',
         permanent: false,

@@ -306,7 +306,7 @@ export default function AdvertisersPage() {
                     <Zap className="w-3.5 h-3.5" /> Configurar
                   </button>
                   <a
-                    href={`/p/advertiser/${advertiser.id}`}
+                    href="https://proyecto-ia-tad-advertiser.rewvid.easypanel.host/login"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-tad-yellow/10 border border-tad-yellow/20 hover:bg-tad-yellow hover:text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-tad-yellow"

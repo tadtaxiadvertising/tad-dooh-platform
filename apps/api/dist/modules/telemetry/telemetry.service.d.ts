@@ -21,11 +21,11 @@ export declare class TelemetryService {
         id: string;
         deviceId: string;
         isSimulated: boolean;
-        timestamp: Date;
         eventType: string;
         videoId: string;
         lat: number | null;
         lng: number | null;
+        timestamp: Date;
         verified: boolean;
     } | {
         success: boolean;

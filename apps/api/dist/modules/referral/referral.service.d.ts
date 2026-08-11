@@ -24,8 +24,8 @@ export declare class ReferralService {
         id: string;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
-        referredBy: string;
         fullName: string;
+        referredBy: string;
         referredByDriver: {
             fullName: string;
         };

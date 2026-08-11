@@ -16,11 +16,6 @@ export declare class FleetController {
         is_online: boolean;
         driver_name: string;
         last_playback: Date;
-        fleet: string;
-        driver: {
-            id: string;
-            fullName: string;
-        };
         deviceId: string;
         taxiNumber: string;
         city: string;
@@ -29,10 +24,15 @@ export declare class FleetController {
         storageUsed: bigint;
         storageTotal: bigint;
         appVersion: string;
+        fleet: string;
         lastSeen: Date;
         storageFree: string;
         lastPlayback: Date;
         playerStatus: string;
+        driver: {
+            id: string;
+            fullName: string;
+        };
     }[]>;
     getFleetStats(): Promise<{
         total: number;
@@ -165,9 +165,9 @@ export declare class FleetController {
     }): Promise<{
         result: string | null;
         id: string;
+        deviceId: string;
         status: string;
         createdAt: Date;
-        deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;

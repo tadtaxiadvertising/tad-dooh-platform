@@ -9,6 +9,7 @@ export declare class MediaService {
     private supabase;
     constructor(config: ConfigService, prisma: PrismaService, supabaseService: SupabaseService);
     generateHash(buffer: Buffer): any;
+    private validateMediaFile;
     generateUploadUrl(fileName: string, fileType: string): Promise<{
         uploadUrl: any;
         path: string;

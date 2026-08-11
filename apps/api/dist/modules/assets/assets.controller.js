@@ -16,6 +16,7 @@ exports.AssetsController = void 0;
 const common_1 = require("@nestjs/common");
 const assets_service_1 = require("./assets.service");
 const public_decorator_1 = require("../auth/decorators/public.decorator");
+const device_token_guard_1 = require("../device/guards/device-token.guard");
 let AssetsController = class AssetsController {
     constructor(assetsService) {
         this.assetsService = assetsService;
@@ -29,6 +30,7 @@ let AssetsController = class AssetsController {
 };
 exports.AssetsController = AssetsController;
 __decorate([
+    (0, common_1.UseGuards)(device_token_guard_1.DeviceTokenGuard),
     (0, common_1.Get)('manifest'),
     __param(0, (0, common_1.Query)('device_id')),
     __metadata("design:type", Function),

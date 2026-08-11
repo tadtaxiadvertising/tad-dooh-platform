@@ -21,14 +21,14 @@ export declare class DeviceService {
         usage_percentage: number;
     }>;
     registerDevice(dto: RegisterDeviceDto): Promise<{
+        fleet: string | null;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        isSimulated: boolean;
         name: string | null;
         deviceId: string;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -40,7 +40,6 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -50,6 +49,7 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getPendingDevices(): Promise<{
@@ -59,14 +59,14 @@ export declare class DeviceService {
         lastSeen: Date;
     }[]>;
     approveDevice(deviceId: string): Promise<{
+        fleet: string | null;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        isSimulated: boolean;
         name: string | null;
         deviceId: string;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -78,7 +78,6 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -88,17 +87,18 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     rejectDevice(deviceId: string): Promise<{
+        fleet: string | null;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        isSimulated: boolean;
         name: string | null;
         deviceId: string;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -110,7 +110,6 @@ export declare class DeviceService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -120,6 +119,7 @@ export declare class DeviceService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getFleetStatusSummary(): Promise<{
@@ -152,10 +152,10 @@ export declare class DeviceService {
     }>;
     private checkSubscriptionStatus;
     recordPlayback(dto: PlaybackConfirmationDto): Promise<{
-        timestamp: Date;
         id: string;
-        isSimulated: boolean;
         deviceId: string;
+        isSimulated: boolean;
+        timestamp: Date;
         eventType: string;
         videoId: string;
         lat: number | null;
@@ -223,15 +223,15 @@ export declare class DeviceService {
         reason?: undefined;
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
-        id: string;
         result: string | null;
+        id: string;
         status: string;
         createdAt: Date;
         deviceId: string;
-        expiresAt: Date | null;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;
+        expiresAt: Date | null;
     }>;
     processBulkSync(dto: BulkSyncDto): Promise<{
         success: boolean;

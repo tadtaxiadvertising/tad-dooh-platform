@@ -23,4 +23,5 @@ export declare class PortalRequestsService {
         adminNotes?: string;
     }): Promise<any>;
     remove(id: string): Promise<any>;
+    private validateMediaUrl;
 }

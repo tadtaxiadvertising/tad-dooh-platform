@@ -40,8 +40,26 @@ let AssetsService = AssetsService_1 = class AssetsService {
     }
     async getAssetManifest(deviceId) {
         const now = new Date();
+        const device = await this.prisma.device.findUnique({
+            where: { deviceId },
+            select: {
+                id: true,
+                city: true,
+                campaigns: {
+                    select: { campaignId: true },
+                },
+            },
+        });
+        if (!device) {
+            return { manifest: {}, version: 0 };
+        }
+        const assignedCampaignIds = device.campaigns.map((dc) => dc.campaignId);
+        if (assignedCampaignIds.length === 0) {
+            return { manifest: {}, version: 0 };
+        }
         const activeCampaigns = await this.prisma.campaign.findMany({
             where: {
+                id: { in: assignedCampaignIds },
                 active: true,
                 startDate: { lte: now },
                 endDate: { gte: now },

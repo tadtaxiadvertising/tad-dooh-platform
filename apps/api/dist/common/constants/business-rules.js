@@ -9,6 +9,13 @@ exports.BUSINESS_RULES = {
     MAX_CAMPAIGNS_PER_DRIVER: 15,
     MAX_VIDEO_SIZE_MB: 55,
     MAX_VIDEO_SIZE_BYTES: 57671680,
+    ALLOWED_MEDIA_MIME_TYPES: [
+        'video/mp4',
+        'image/jpeg',
+        'image/png',
+    ],
+    ALLOWED_MEDIA_EXTENSIONS: ['.mp4', '.jpg', '.jpeg', '.png'],
+    MAX_CAMPAIGNS_PER_ADVERTISER: 15,
     ADVERTISER_COST_PER_CAMPAIGN_RD: 1500,
     ITBIS_RATE: 0.18,
     JWT_EXPIRY: '7d',

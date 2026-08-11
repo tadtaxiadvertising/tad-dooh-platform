@@ -4,24 +4,24 @@ export declare class NotificationsController {
     constructor(notificationsService: NotificationsService);
     findAll(): Promise<{
         id: string;
-        title: string;
         createdAt: Date;
         category: string;
         type: string;
-        entityId: string | null;
+        title: string;
         message: string;
+        entityId: string | null;
         read: boolean;
     }[]>;
     getUnreadCount(): Promise<number>;
     markAllAsRead(): Promise<import(".prisma/client").Prisma.BatchPayload>;
     markAsRead(id: string): Promise<{
         id: string;
-        title: string;
         createdAt: Date;
         category: string;
         type: string;
-        entityId: string | null;
+        title: string;
         message: string;
+        entityId: string | null;
         read: boolean;
     }>;
     createTestAlert(body: {
@@ -31,12 +31,12 @@ export declare class NotificationsController {
         category: any;
     }): Promise<{
         id: string;
-        title: string;
         createdAt: Date;
         category: string;
         type: string;
-        entityId: string | null;
+        title: string;
         message: string;
+        entityId: string | null;
         read: boolean;
     }>;
 }

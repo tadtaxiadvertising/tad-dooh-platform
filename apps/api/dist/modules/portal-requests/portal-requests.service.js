@@ -87,6 +87,29 @@ let PortalRequestsService = PortalRequestsService_1 = class PortalRequestsServic
             data: updateData,
         });
         if (updateData.status === 'APPROVED') {
+            if (request.type === 'CAMPAIGN_CREATE' && request.data) {
+                const cData = JSON.parse(request.data);
+                if (cData.mediaUrl) {
+                    this.validateMediaUrl(cData.mediaUrl);
+                }
+                if (request.advertiserId) {
+                    const activeCount = await this.prisma.campaign.count({
+                        where: {
+                            advertiserId: request.advertiserId,
+                            status: { in: ['ACTIVE', 'PENDING_REVIEW', 'PENDING_PAYMENT'] },
+                        },
+                    });
+                    if (activeCount >= business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
+                        throw new common_1.BadRequestException(`Límite alcanzado: este anunciante ya tiene ${activeCount} campañas activas (máx. ${business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}).`);
+                    }
+                }
+            }
+            if (request.type === 'CONTENT_UPDATE' && request.data) {
+                const mediaData = JSON.parse(request.data);
+                if (mediaData?.url) {
+                    this.validateMediaUrl(mediaData.url);
+                }
+            }
             try {
                 this.logger.log(`[APPROVAL_FLOW] Processing approval for request ${id}, type: ${request.type}`);
                 let targetCampaignId = request.campaignId;
@@ -274,6 +297,14 @@ let PortalRequestsService = PortalRequestsService_1 = class PortalRequestsServic
         return this.prisma.portalRequest.delete({
             where: { id },
         });
+    }
+    validateMediaUrl(url) {
+        const cleanPath = url.split('?')[0].split('#')[0];
+        const ext = cleanPath.split('.').pop()?.toLowerCase() || '';
+        const isAllowed = business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === `.${ext}`);
+        if (!isAllowed) {
+            throw new common_1.BadRequestException(`URL de pieza no válida: debe terminar en ${business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}. Recibido: ${cleanPath}`);
+        }
     }
 };
 exports.PortalRequestsService = PortalRequestsService;

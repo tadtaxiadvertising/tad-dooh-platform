@@ -20,6 +20,7 @@ const whatsapp_service_1 = require("../notifications/whatsapp.service");
 const email_service_1 = require("../notifications/email.service");
 const prisma_service_1 = require("../prisma/prisma.service");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const idempotency_interceptor_1 = require("../../common/interceptors/idempotency.interceptor");
 const mediaSafeSelect = {
     id: true,
     name: true,
@@ -309,6 +310,7 @@ __decorate([
 ], FinanceController.prototype, "exportSingleCampaign", null);
 __decorate([
     (0, common_1.Post)('transactions'),
+    (0, common_1.UseInterceptors)(idempotency_interceptor_1.IdempotencyInterceptor),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

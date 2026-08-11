@@ -13,6 +13,11 @@ import { AuthUser } from '../auth.types';
  * Flujo de validación (Híbrido):
  * 1. Validación LOCAL usando SUPABASE_JWT_SECRET o JWT_SECRET (< 1ms).
  * 2. Si falla, validamos contra la red de Supabase (> 200ms).
+ *
+ * Auth opcional en @Public(): si la petición trae un Bearer válido se puebla
+ * `req.user` para que endpoints públicos puedan distinguir admins (p. ej.
+ * POST /drivers); si no trae token o es inválido, la ruta sigue siendo pública
+ * y `req.user` queda undefined. Nunca se lanza error en modo público.
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -52,14 +57,32 @@ export class SupabaseAuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (isPublic) return true;
+    if (isPublic) {
+      // Ruta pública: auth opcional. Se intenta poblar req.user, nunca se falla.
+      await this.resolveRequestUser(context, false);
+      return true;
+    }
 
+    await this.resolveRequestUser(context, true);
+    return true;
+  }
+
+  /**
+   * Valida el Bearer token y puebla `request.user`.
+   * - strict=true (rutas protegidas): lanza UnauthorizedException ante cualquier fallo.
+   * - strict=false (rutas @Public()): nunca lanza; si el token no es válido,
+   *   simplemente deja `request.user` sin poblar.
+   */
+  private async resolveRequestUser(context: ExecutionContext, strict: boolean): Promise<void> {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization || request.headers.Authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      this.logger.warn(`❌ [AUTH] Petición sin Header Authorization válido: ${request.url}`);
-      throw new UnauthorizedException('Token de acceso no válido o ausente.');
+      if (strict) {
+        this.logger.warn(`❌ [AUTH] Petición sin Header Authorization válido: ${request.url}`);
+        throw new UnauthorizedException('Token de acceso no válido o ausente.');
+      }
+      return;
     }
 
     const token = authHeader.split(' ')[1];
@@ -68,7 +91,7 @@ export class SupabaseAuthGuard implements CanActivate {
     const cached = SupabaseAuthGuard.sessionCache.get(token);
     if (cached && cached.expiry > Date.now()) {
       request.user = cached.user;
-      return true;
+      return;
     }
 
     const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
@@ -105,7 +128,7 @@ export class SupabaseAuthGuard implements CanActivate {
             });
 
             this.logger.verbose(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
-            return true;
+            return;
           }
         }
       } catch (err: unknown) {
@@ -113,16 +136,19 @@ export class SupabaseAuthGuard implements CanActivate {
         const errName = err instanceof Error ? err.name : '';
         
         if (errName === 'TokenExpiredError') {
-          this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
-          throw new UnauthorizedException('Tu sesión ha expirado.');
-        }
-
-        // If it's a configuration issue with the secret/algorithm, we log it more clearly
-        const isAlgError = errorMessage.toLowerCase().includes('algorithm');
-        if (isAlgError) {
-          this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+          if (strict) {
+            this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
+            throw new UnauthorizedException('Tu sesión ha expirado.');
+          }
+          // En modo público seguimos a Estrategia 2 (Red) por si Supabase renueva/acepta.
         } else {
-          this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+          // If it's a configuration issue with the secret/algorithm, we log it more clearly
+          const isAlgError = errorMessage.toLowerCase().includes('algorithm');
+          if (isAlgError) {
+            this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+          } else {
+            this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+          }
         }
       }
     }
@@ -167,7 +193,7 @@ export class SupabaseAuthGuard implements CanActivate {
           // Log a nivel verbose para que no inunde la consola en producción por cada request
           this.logger.verbose(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
         }
-        return true;
+        return;
       }
       
       if (error) {
@@ -189,10 +215,12 @@ export class SupabaseAuthGuard implements CanActivate {
           role: decoded.app_metadata?.role || decoded.role || 'GUEST',
           entityId: decoded.app_metadata?.entityId || null,
         };
-        return true;
+        return;
       }
     }
 
-    throw new UnauthorizedException('Sesión inválida.');
+    if (strict) {
+      throw new UnauthorizedException('Sesión inválida.');
+    }
   }
 }

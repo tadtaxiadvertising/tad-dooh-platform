@@ -14,6 +14,7 @@ const campaign_module_1 = require("../campaign/campaign.module");
 const finance_module_1 = require("../finance/finance.module");
 const device_admin_controller_1 = require("./device-admin.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
+const device_token_guard_1 = require("./guards/device-token.guard");
 let DeviceModule = class DeviceModule {
 };
 exports.DeviceModule = DeviceModule;
@@ -21,8 +22,8 @@ exports.DeviceModule = DeviceModule = __decorate([
     (0, common_1.Module)({
         imports: [campaign_module_1.CampaignModule, finance_module_1.FinanceModule, prisma_module_1.PrismaModule],
         controllers: [device_controller_1.DeviceController, device_admin_controller_1.DeviceAdminController],
-        providers: [device_service_1.DeviceService],
-        exports: [device_service_1.DeviceService],
+        providers: [device_service_1.DeviceService, device_token_guard_1.DeviceTokenGuard],
+        exports: [device_service_1.DeviceService, device_token_guard_1.DeviceTokenGuard],
     })
 ], DeviceModule);
 //# sourceMappingURL=device.module.js.map

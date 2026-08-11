@@ -26,6 +26,15 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
             if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
                 message = exceptionResponse.message || exception.message;
                 code = exceptionResponse.code || this.mapStatusToCode(status, message);
+                response.status(status).json({
+                    ...exceptionResponse,
+                    statusCode: status,
+                    code,
+                    message,
+                    timestamp: new Date().toISOString(),
+                    path: request.url,
+                });
+                return;
             }
             else {
                 message = exception.message;

@@ -47,7 +47,8 @@ let SyncController = class SyncController {
         const manifest = await this.syncService.getDeviceManifest(deviceId);
         if (manifest.killSwitch === true) {
             res.setHeader('Cache-Control', 'no-store');
-            throw new common_1.HttpException(manifest, common_1.HttpStatus.PAYMENT_REQUIRED);
+            res.status(common_1.HttpStatus.PAYMENT_REQUIRED).json(manifest);
+            return;
         }
         const etag = manifest.etag || '';
         this.cacheEtag(deviceId, etag);

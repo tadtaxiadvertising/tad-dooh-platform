@@ -234,6 +234,17 @@ let CampaignService = CampaignService_1 = class CampaignService {
             }
             initialStatus = 'PENDING_REVIEW';
         }
+        if (assignedAdvertiserId) {
+            const activeCount = await this.prisma.campaign.count({
+                where: {
+                    advertiserId: assignedAdvertiserId,
+                    status: { in: ['ACTIVE', 'PENDING_REVIEW', 'PENDING_PAYMENT'] },
+                },
+            });
+            if (activeCount >= business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
+                throw new common_1.BadRequestException(`Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`);
+            }
+        }
         const campaign = await this.prisma.campaign.create({
             data: {
                 name: dto.name,
@@ -366,6 +377,15 @@ let CampaignService = CampaignService_1 = class CampaignService {
         if (dto.fileSize && Number(dto.fileSize) > business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
             this.logger.warn(`[MEDIA_REG] Archivo demasiado grande: ${dto.fileSize} > ${business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES}`);
             throw new common_1.BadRequestException(`El archivo excede el límite permitido de ${business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+        }
+        const ext = (dto.fileName || '').split('.').pop()?.toLowerCase();
+        const urlExt = (dto.url || '').split('?')[0].split('.').pop()?.toLowerCase();
+        const isAllowed = (e) => e ? business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === `.${e}`) : false;
+        const fileExtOk = !dto.fileName || isAllowed(ext);
+        const urlExtOk = !dto.url || isAllowed(urlExt);
+        if (!fileExtOk || !urlExtOk) {
+            this.logger.warn(`[MEDIA_REG] Rechazado: extensión no permitida (file=${ext}, url=${urlExt})`);
+            throw new common_1.BadRequestException(`Solo se aceptan piezas ${business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}.`);
         }
         try {
             const media = await this.prisma.media.create({

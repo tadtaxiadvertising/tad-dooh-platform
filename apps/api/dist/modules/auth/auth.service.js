@@ -61,8 +61,12 @@ let AuthService = AuthService_1 = class AuthService {
     async login(dto) {
         this.logger.log(`🔐 Intentando login para: ${dto.email}`);
         try {
-            const supabase = this.supabaseService.getClient();
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const anonClient = this.supabaseService.getAnonClient();
+            if (!anonClient) {
+                this.logger.error('❌ SUPABASE_ANON_KEY no configurada — no se puede autenticar contra Supabase.');
+                throw new Error('Autenticación no disponible: falta SUPABASE_ANON_KEY en la configuración del servidor.');
+            }
+            const { data, error } = await anonClient.auth.signInWithPassword({
                 email: dto.email,
                 password: dto.password,
             });
@@ -118,7 +122,7 @@ let AuthService = AuthService_1 = class AuthService {
                 throw new common_1.ForbiddenException('Tu cuenta no tiene un rol asignado en la plataforma.');
             }
             this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
-            supabase.auth.admin.updateUserById(userId, {
+            this.supabaseService.getClient().auth.admin.updateUserById(userId, {
                 app_metadata: { role, entityId },
             }).then(({ error: updateError }) => {
                 if (updateError) {

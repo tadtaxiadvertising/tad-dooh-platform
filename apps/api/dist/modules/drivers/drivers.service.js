@@ -217,7 +217,8 @@ let DriversService = DriversService_1 = class DriversService {
         const hashedPassword = await bcrypt.hash(plainPassword, business_rules_1.BCRYPT_ROUNDS);
         const sanitizedCedula = data.cedula?.trim() || null;
         const sanitizedTaxiPlate = (data.taxiPlate || data.licensePlate)?.trim() || null;
-        const driver = await this.prisma.driver.create({
+        const driver = await this.prisma.driver
+            .create({
             data: {
                 fullName: data.fullName,
                 cedula: sanitizedCedula,
@@ -237,6 +238,16 @@ let DriversService = DriversService_1 = class DriversService {
                 onboardingStatus: data.contractAccepted ? business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
             },
             include: { devices: true },
+        })
+            .catch((err) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.error(`[DRIVER_CREATE] Fallo creando driver phone=${data.phone}: ${msg}`);
+            if (typeof err === 'object' && err !== null && 'code' in err && err.code === 'P2002') {
+                const meta = err.meta;
+                const target = meta?.target || 'campo único';
+                throw new common_1.BadRequestException(`Ya existe un conductor con ese valor (${target}). Verifica teléfono/cédula/placa.`);
+            }
+            throw new common_1.HttpException(`No se pudo crear el conductor: ${msg}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         });
         if (data.deviceId) {
             try {

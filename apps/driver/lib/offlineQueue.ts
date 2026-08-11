@@ -175,6 +175,13 @@ export const syncOfflineQueue = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     console.log('Network connected, syncing offline queue...');
-    void syncOfflineQueue();
+    void (async () => {
+      const result = await syncOfflineQueue();
+      // Reload solo si había acciones pendientes: refresca el hub con el
+      // estado del backend sin abortar el sync en vuelo (el PUT ya terminó).
+      if (result.processed > 0) {
+        window.location.reload();
+      }
+    })();
   });
 }

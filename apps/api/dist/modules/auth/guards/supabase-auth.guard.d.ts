@@ -13,4 +13,5 @@ export declare class SupabaseAuthGuard implements CanActivate {
     private readonly CACHE_TTL_MS;
     constructor(reflector: Reflector, supabaseService: SupabaseService, configService: ConfigService);
     canActivate(context: ExecutionContext): Promise<boolean>;
+    private resolveRequestUser;
 }

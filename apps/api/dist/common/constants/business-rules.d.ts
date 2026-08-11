@@ -6,6 +6,9 @@ export declare const BUSINESS_RULES: {
     readonly MAX_CAMPAIGNS_PER_DRIVER: 15;
     readonly MAX_VIDEO_SIZE_MB: 55;
     readonly MAX_VIDEO_SIZE_BYTES: 57671680;
+    readonly ALLOWED_MEDIA_MIME_TYPES: readonly ["video/mp4", "image/jpeg", "image/png"];
+    readonly ALLOWED_MEDIA_EXTENSIONS: readonly [".mp4", ".jpg", ".jpeg", ".png"];
+    readonly MAX_CAMPAIGNS_PER_ADVERTISER: 15;
     readonly ADVERTISER_COST_PER_CAMPAIGN_RD: 1500;
     readonly ITBIS_RATE: 0.18;
     readonly JWT_EXPIRY: "7d";

@@ -17,12 +17,12 @@ export declare class CampaignService {
         target_all?: boolean;
         advertiser_id?: string;
     }): Promise<{
+        advertiser: string;
+        advertiserId: string | null;
         id: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        advertiser: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -30,7 +30,7 @@ export declare class CampaignService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        advertiserId: string | null;
+        name: string;
         description: string | null;
         active: boolean;
         startDate: Date;
@@ -52,12 +52,12 @@ export declare class CampaignService {
         frequencyCap: number;
     }>;
     createCampaign(dto: CreateCampaignDto, user?: AuthUser): Promise<{
+        advertiser: string;
+        advertiserId: string | null;
         id: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        advertiser: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -65,7 +65,7 @@ export declare class CampaignService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        advertiserId: string | null;
+        name: string;
         description: string | null;
         active: boolean;
         startDate: Date;
@@ -128,11 +128,11 @@ export declare class CampaignService {
         };
     }>;
     addMediaAsset(campaignId: string, dto: AddMediaAssetDto): Promise<{
+        campaignId: string;
         id: string;
         createdAt: Date;
         version: number;
         type: string;
-        campaignId: string;
         filename: string;
         url: string;
         fileSize: number;
@@ -166,11 +166,11 @@ export declare class CampaignService {
             campaign_id: string;
         }[];
         mediaAssets: {
+            campaignId: string;
             id: string;
             createdAt: Date;
             version: number;
             type: string;
-            campaignId: string;
             filename: string;
             url: string;
             fileSize: number;
@@ -179,12 +179,12 @@ export declare class CampaignService {
             qrUrl: string;
         }[];
     } & {
+        advertiser: string;
+        advertiserId: string | null;
         id: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        advertiser: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -192,7 +192,7 @@ export declare class CampaignService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        advertiserId: string | null;
+        name: string;
         description: string | null;
         active: boolean;
         startDate: Date;
@@ -236,11 +236,11 @@ export declare class CampaignService {
             campaign_id: string;
         }[];
         mediaAssets: {
+            campaignId: string;
             id: string;
             createdAt: Date;
             version: number;
             type: string;
-            campaignId: string;
             filename: string;
             url: string;
             fileSize: number;
@@ -249,12 +249,12 @@ export declare class CampaignService {
             qrUrl: string;
         }[];
     } & {
+        advertiser: string;
+        advertiserId: string | null;
         id: string;
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        advertiser: string;
         facebook: string | null;
         instagram: string | null;
         websiteUrl: string | null;
@@ -262,7 +262,7 @@ export declare class CampaignService {
         category: string | null;
         pedidosYaUrl: string | null;
         uberEatsUrl: string | null;
-        advertiserId: string | null;
+        name: string;
         description: string | null;
         active: boolean;
         startDate: Date;
@@ -325,14 +325,14 @@ export declare class CampaignService {
             campaigns: number;
         };
     } & {
+        fleet: string | null;
         id: string;
-        taxiNumber: string | null;
         status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
         updatedAt: Date;
-        isSimulated: boolean;
         name: string | null;
         deviceId: string;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -344,7 +344,6 @@ export declare class CampaignService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -354,6 +353,7 @@ export declare class CampaignService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     })[]>;
     simulateImpact(budgetRD: number, city: string): Promise<{
@@ -372,8 +372,8 @@ export declare class CampaignService {
             createdAt: Date;
             updatedAt: Date;
             budget: number;
-            brandName: string;
             expectedScreens: number;
+            brandName: string;
             fileMetadata: import("@prisma/client/runtime/library").JsonValue | null;
         };
     }>;

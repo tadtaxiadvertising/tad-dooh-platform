@@ -37,6 +37,24 @@ let SupabaseService = SupabaseService_1 = class SupabaseService {
             this.logger.error(`Error fatal instanciando cliente Supabase: ${error.message}`);
             throw error;
         }
+        const anonKey = this.configService.get('SUPABASE_ANON_KEY')
+            || this.configService.get('SUPABASE_PUBLISHABLE_KEY');
+        if (!anonKey) {
+            this.logger.warn('⚠️ SUPABASE_ANON_KEY no configurada — el login por password fallará.');
+        }
+        else {
+            try {
+                this.anonSupabase = (0, supabase_js_1.createClient)(url, anonKey, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false,
+                    },
+                });
+            }
+            catch (error) {
+                this.logger.error(`Error instanciando cliente anon de Supabase: ${error.message}`);
+            }
+        }
     }
     getPublicUrl(path, bucket = 'campaign-videos') {
         const { data } = this.supabase.storage.from(bucket).getPublicUrl(path);
@@ -56,6 +74,9 @@ let SupabaseService = SupabaseService_1 = class SupabaseService {
     }
     getClient() {
         return this.supabase;
+    }
+    getAnonClient() {
+        return this.anonSupabase;
     }
     async broadcastEvent(channelName, eventName, payload) {
         this.logger.log(`[REALTIME] Broadcasting ${eventName} to channel: ${channelName}`);

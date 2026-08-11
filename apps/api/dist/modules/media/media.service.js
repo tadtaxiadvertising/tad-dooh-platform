@@ -30,8 +30,20 @@ let MediaService = MediaService_1 = class MediaService {
         const crypto = require('crypto');
         return crypto.createHash('md5').update(buffer).digest('hex');
     }
+    validateMediaFile(fileName, mimeType) {
+        const fileExt = (0, path_1.extname)(fileName).toLowerCase();
+        const allowedExt = business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === fileExt);
+        const allowedMime = !mimeType || business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.some((allowed) => allowed === mimeType);
+        if (!allowedExt) {
+            throw new common_1.BadRequestException(`Extensión no permitida: ${fileExt || '(sin extensión)'}. Solo se aceptan ${business_rules_1.BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}.`);
+        }
+        if (!allowedMime) {
+            throw new common_1.BadRequestException(`Tipo MIME no permitido: ${mimeType}. Solo se aceptan MP4 (H.264), JPG o PNG.`);
+        }
+    }
     async generateUploadUrl(fileName, fileType) {
         try {
+            this.validateMediaFile(fileName, fileType);
             const { error: bucketError } = await this.supabase.storage.createBucket('ads-videos', { public: true }).catch(err => ({ error: err }));
             if (bucketError && bucketError.message !== 'The resource already exists') {
                 this.logger.warn(`Potential issue creating bucket ads-videos: ${bucketError.message}`);
@@ -66,6 +78,7 @@ let MediaService = MediaService_1 = class MediaService {
         if (data.size && Number(data.size) > business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
             throw new common_1.BadRequestException(`El archivo registro excede el límite permitido de ${business_rules_1.BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
         }
+        this.validateMediaFile(data.filename, data.contentType);
         try {
             const cdnPrefix = this.config.get('CDN_URL_PREFIX');
             let finalCdnUrl = data.publicUrl;

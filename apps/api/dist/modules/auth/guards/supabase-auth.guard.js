@@ -76,19 +76,28 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
             context.getHandler(),
             context.getClass(),
         ]);
-        if (isPublic)
+        if (isPublic) {
+            await this.resolveRequestUser(context, false);
             return true;
+        }
+        await this.resolveRequestUser(context, true);
+        return true;
+    }
+    async resolveRequestUser(context, strict) {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers.authorization || request.headers.Authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            this.logger.warn(`❌ [AUTH] Petición sin Header Authorization válido: ${request.url}`);
-            throw new common_1.UnauthorizedException('Token de acceso no válido o ausente.');
+            if (strict) {
+                this.logger.warn(`❌ [AUTH] Petición sin Header Authorization válido: ${request.url}`);
+                throw new common_1.UnauthorizedException('Token de acceso no válido o ausente.');
+            }
+            return;
         }
         const token = authHeader.split(' ')[1];
         const cached = SupabaseAuthGuard_1.sessionCache.get(token);
         if (cached && cached.expiry > Date.now()) {
             request.user = cached.user;
-            return true;
+            return;
         }
         const jwtSecret = this.configService.get('SUPABASE_JWT_SECRET') || this.configService.get('JWT_SECRET');
         if (jwtSecret) {
@@ -115,7 +124,7 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
                             expiry: Date.now() + this.CACHE_TTL_MS
                         });
                         this.logger.verbose(`✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`);
-                        return true;
+                        return;
                     }
                 }
             }
@@ -123,15 +132,19 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
                 const errorMessage = err instanceof Error ? err.message : String(err);
                 const errName = err instanceof Error ? err.name : '';
                 if (errName === 'TokenExpiredError') {
-                    this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
-                    throw new common_1.UnauthorizedException('Tu sesión ha expirado.');
-                }
-                const isAlgError = errorMessage.toLowerCase().includes('algorithm');
-                if (isAlgError) {
-                    this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+                    if (strict) {
+                        this.logger.warn(`🛑 [AUTH] TOKEN EXPIRADO: ${errorMessage}`);
+                        throw new common_1.UnauthorizedException('Tu sesión ha expirado.');
+                    }
                 }
                 else {
-                    this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+                    const isAlgError = errorMessage.toLowerCase().includes('algorithm');
+                    if (isAlgError) {
+                        this.logger.verbose(`[AUTH] Estrategia 1 falló (Algoritmo incompatible o Secret mal configurado: ${errorMessage}). Intentando Estrategia 2...`);
+                    }
+                    else {
+                        this.logger.verbose(`[AUTH] Estrategia 1 falló (${errorMessage}). Intentando Estrategia 2 (Red)...`);
+                    }
                 }
             }
         }
@@ -165,7 +178,7 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
                 else {
                     this.logger.verbose(`✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`);
                 }
-                return true;
+                return;
             }
             if (error) {
                 this.logger.warn(`❌ [AUTH] ESTRATEGIA 2 RECHAZÓ TOKEN: ${error.message}`);
@@ -185,10 +198,12 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
                     role: decoded.app_metadata?.role || decoded.role || 'GUEST',
                     entityId: decoded.app_metadata?.entityId || null,
                 };
-                return true;
+                return;
             }
         }
-        throw new common_1.UnauthorizedException('Sesión inválida.');
+        if (strict) {
+            throw new common_1.UnauthorizedException('Sesión inválida.');
+        }
     }
 };
 exports.SupabaseAuthGuard = SupabaseAuthGuard;

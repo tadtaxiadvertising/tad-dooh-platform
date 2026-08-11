@@ -620,31 +620,23 @@ let FleetService = class FleetService {
             logger.warn(`⚠️ Telemetry batch with 0 points from driver [${data?.driverId ?? 'unknown'}]`);
             return { count: 0 };
         }
-        const [driver, device] = await Promise.all([
-            this.prisma.driver.findUnique({
-                where: { id: data.driverId },
-                select: { id: true, subscriptionPaid: true, status: true, fullName: true },
-            }),
-            this.prisma.device.findUnique({
-                where: { deviceId: data.deviceId },
-                select: { id: true, deviceId: true },
-            }),
-        ]);
-        if (!driver) {
-            logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
-            throw new common_1.HttpException('Driver Not Found', common_1.HttpStatus.NOT_FOUND);
-        }
+        const device = await this.prisma.device.findUnique({
+            where: { deviceId: data.deviceId },
+            select: { id: true, deviceId: true, status: true, driverId: true },
+        });
         if (!device) {
-            logger.log(`📱 Auto-registering device [${data.deviceId}] as PENDING — awaiting admin approval.`);
-            await this.prisma.device.create({
-                data: {
-                    deviceId: data.deviceId,
-                    status: business_rules_1.BUSINESS_RULES.STATUS.DEVICE.INITIAL,
-                    lastSeen: new Date(),
-                    isOnline: true,
-                    driverId: driver.id,
-                },
-            });
+            throw new common_1.HttpException('Device Not Found — track-batch rejected for unknown device', common_1.HttpStatus.NOT_FOUND);
+        }
+        if (device.status !== business_rules_1.BUSINESS_RULES.STATUS.DEVICE.ACTIVE) {
+            throw new common_1.HttpException(`Device Not Operative — track-batch rejected (status: ${device.status})`, common_1.HttpStatus.FORBIDDEN);
+        }
+        const driverLookupId = device.driverId || data.driverId;
+        const driver = await this.prisma.driver.findUnique({
+            where: { id: driverLookupId },
+            select: { id: true, subscriptionPaid: true, status: true, fullName: true },
+        });
+        if (!driver) {
+            throw new common_1.HttpException('Driver Not Found', common_1.HttpStatus.NOT_FOUND);
         }
         if (driver.status !== business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ACTIVE || !driver.subscriptionPaid) {
             logger.warn(`🚫 Telemetry Rejected (402): Driver [${driver.fullName}] is delinquent or inactive.`);

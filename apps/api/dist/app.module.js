@@ -82,6 +82,7 @@ const referral_module_1 = require("./modules/referral/referral.module");
 const system_settings_module_1 = require("./modules/system-settings/system-settings.module");
 const onboarding_module_1 = require("./modules/onboarding/onboarding.module");
 const kyc_module_1 = require("./modules/kyc/kyc.module");
+const social_agent_module_1 = require("./modules/social-agent/social-agent.module");
 const health_controller_1 = require("./health/health.controller");
 let AppModule = AppModule_1 = class AppModule {
     constructor(authService) {
@@ -110,6 +111,8 @@ exports.AppModule = AppModule = AppModule_1 = __decorate([
                         JWT_SECRET: zod.string().default('tad-secret-2026'),
                         SUPABASE_URL: zod.string().url(),
                         SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
+                        SUPABASE_ANON_KEY: zod.string().optional(),
+                        SUPABASE_PUBLISHABLE_KEY: zod.string().optional(),
                         SUPABASE_JWT_SECRET: zod.string().optional(),
                         PORT: zod.string().regex(/^\d+$/).default('3000'),
                         NODE_ENV: zod.string().default('production'),
@@ -157,6 +160,7 @@ exports.AppModule = AppModule = AppModule_1 = __decorate([
             simulation_module_1.SimulationModule,
             onboarding_module_1.OnboardingModule,
             kyc_module_1.KYCModule,
+            social_agent_module_1.SocialAgentModule,
         ],
         controllers: [app_controller_1.AppController, health_controller_1.HealthController],
         providers: [

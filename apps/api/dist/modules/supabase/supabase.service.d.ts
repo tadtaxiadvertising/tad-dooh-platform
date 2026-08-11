@@ -4,6 +4,7 @@ export declare class SupabaseService {
     private readonly configService;
     private readonly logger;
     private supabase;
+    private anonSupabase;
     constructor(configService: ConfigService);
     getPublicUrl(path: string, bucket?: string): string;
     listMediaFiles(bucket?: string): Promise<{
@@ -19,6 +20,7 @@ export declare class SupabaseService {
         buckets?: import("@supabase/storage-js").Bucket;
     }[]>;
     getClient(): SupabaseClient<any, "public", "public", any, any>;
+    getAnonClient(): SupabaseClient<any, "public", "public", any, any>;
     broadcastEvent(channelName: string, eventName: string, payload: any): Promise<{
         success: true;
     } | {

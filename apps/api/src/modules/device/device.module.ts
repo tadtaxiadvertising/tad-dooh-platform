@@ -5,11 +5,12 @@ import { CampaignModule } from '../campaign/campaign.module';
 import { FinanceModule } from '../finance/finance.module';
 import { DeviceAdminController } from './device-admin.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { DeviceTokenGuard } from './guards/device-token.guard';
 
 @Module({
   imports: [CampaignModule, FinanceModule, PrismaModule],
   controllers: [DeviceController, DeviceAdminController],
-  providers: [DeviceService],
-  exports: [DeviceService],
+  providers: [DeviceService, DeviceTokenGuard],
+  exports: [DeviceService, DeviceTokenGuard],
 })
 export class DeviceModule {}

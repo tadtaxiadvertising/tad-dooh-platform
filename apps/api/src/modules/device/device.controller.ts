@@ -5,8 +5,8 @@ import { RegisterDeviceDto } from './dto/register-device.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
 import { Public } from '../auth/decorators/public.decorator';
-import { SubscriptionGuard as DriversSubscriptionGuard } from '../drivers/guards/subscription.guard';
 import { SubscriptionGuard } from './guards/subscription.guard';
+import { DeviceTokenGuard } from './guards/device-token.guard';
 import { SyncDeviceDto } from './dto/sync-device.dto';
 import { BulkSyncDto } from './dto/bulk-sync.dto';
 
@@ -38,7 +38,8 @@ export class DeviceController {
   }
 
   // REVENUE SHIELD: Subscription guard on content sync endpoints
-  @UseGuards(SubscriptionGuard)
+  // SEC-03: DeviceTokenGuard validates X-Device-Token and enforces OPERATIVO status
+  @UseGuards(DeviceTokenGuard, SubscriptionGuard)
   @Post('sync')
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
@@ -46,7 +47,7 @@ export class DeviceController {
     return this.deviceService.syncDeviceCampaigns(dto);
   }
 
-  @UseGuards(SubscriptionGuard)
+  @UseGuards(DeviceTokenGuard, SubscriptionGuard)
   @Post('bulk-sync')
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)

@@ -34,42 +34,65 @@ export class AssetsService {
   }
 
   async getAssetManifest(deviceId: string) {
-    const now = new Date();
+      const now = new Date();
 
-    // Logic to generate checksum list, filter per device, optimize payload size
-    // Grab all active campaigns with media Assets
-    const activeCampaigns = await this.prisma.campaign.findMany({
-      where: {
-        active: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
-      include: {
-        mediaAssets: { select: mediaAssetSafeSelect },
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      }
-    });
+      // SEC-04: Only return assets for campaigns explicitly assigned to this device.
+      // Previously, all active campaigns' assets were exposed to any device.
+      const device = await this.prisma.device.findUnique({
+        where: { deviceId },
+        select: {
+          id: true,
+          city: true,
+          campaigns: {
+            select: { campaign_id: true },
+          },
+        },
+      });
 
-    const manifest = {};
-    for (const campaign of activeCampaigns) {
-      for (const asset of campaign.mediaAssets) {
-        manifest[asset.id] = {
-          url: asset.url,
-          checksum: asset.checksum,
-          size: asset.fileSize,
-          type: asset.type,
-          filename: asset.filename
-        };
+      if (!device) {
+        return { manifest: {}, version: 0 };
       }
+
+      const assignedCampaignIds = device.campaigns.map((dc) => dc.campaign_id);
+
+      if (assignedCampaignIds.length === 0) {
+        return { manifest: {}, version: 0 };
+      }
+
+      // Fetch only the active campaigns that are assigned to this device
+      const activeCampaigns = await this.prisma.campaign.findMany({
+        where: {
+          id: { in: assignedCampaignIds },
+          active: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+        include: {
+          mediaAssets: { select: mediaAssetSafeSelect },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        }
+      });
+
+      const manifest = {};
+      for (const campaign of activeCampaigns) {
+        for (const asset of campaign.mediaAssets) {
+          manifest[asset.id] = {
+            url: asset.url,
+            checksum: asset.checksum,
+            size: asset.fileSize,
+            type: asset.type,
+            filename: asset.filename
+          };
+        }
+      }
+
+      return {
+        manifest,
+        version: activeCampaigns.length > 0 ? activeCampaigns[0].updatedAt.getTime() : 0
+      };
     }
-
-    return {
-      manifest,
-      version: activeCampaigns.length > 0 ? activeCampaigns[0].updatedAt.getTime() : 0
-    };
-  }
 
   async handleAssetWebhook(payload: any) {
     this.logger.log(`📥 Webhook recibido: ${JSON.stringify(payload)}`);

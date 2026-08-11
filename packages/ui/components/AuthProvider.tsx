@@ -88,26 +88,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let activeSession: Session | null = supabaseSession;
 
       if (!activeSession) {
-        // Try each portal's token in priority order based on current path
-        const portals: [string, string][] = [];
-
-        if (currentPath.startsWith('/advertiser')) {
-          portals.push(['tad_advertiser_token', 'tad_advertiser_user']);
-          portals.push(['tad_admin_token', 'tad_admin_user']);
-        } else if (currentPath.startsWith('/driver')) {
-          portals.push(['tad_driver_token', 'tad_driver_user']);
-          portals.push(['tad_admin_token', 'tad_admin_user']);
+        // Browse only tokens for the current portal family. Mixing scope
+        // across portals (e.g. admin token on a /driver route) is the
+        // cross-portal session pollution vector: once the cookie is synced,
+        // every subsequent request inherits the higher-privilege session.
+        if (currentPath.startsWith('/driver')) {
+          const s = buildSessionFromLocalToken('tad_driver_token', 'tad_driver_user');
+          if (s) activeSession = s;
+        } else if (currentPath.startsWith('/advertiser')) {
+          const s = buildSessionFromLocalToken('tad_advertiser_token', 'tad_advertiser_user');
+          if (s) activeSession = s;
+        } else if (currentPath.startsWith('/admin')) {
+          const s = buildSessionFromLocalToken('tad_admin_token', 'tad_admin_user');
+          if (s) activeSession = s;
         } else {
-          portals.push(['tad_admin_token', 'tad_admin_user']);
-          portals.push(['tad_advertiser_token', 'tad_advertiser_user']);
-          portals.push(['tad_driver_token', 'tad_driver_user']);
-        }
-
-        for (const [tokenKey, userKey] of portals) {
-          const s = buildSessionFromLocalToken(tokenKey, userKey);
-          if (s) {
-            activeSession = s;
-            break;
+          const portals: [string, string][] = [
+            ['tad_admin_token', 'tad_admin_user'],
+            ['tad_advertiser_token', 'tad_advertiser_user'],
+            ['tad_driver_token', 'tad_driver_user'],
+          ];
+          for (const [tokenKey, userKey] of portals) {
+            const s = buildSessionFromLocalToken(tokenKey, userKey);
+            if (s) {
+              activeSession = s;
+              break;
+            }
           }
         }
       }
@@ -147,8 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(sbSession);
           // Redirect from login pages to role-specific dashboards
           const userRole = sbSession.user?.app_metadata?.role
-            || sbSession.user?.user_metadata?.role
-            || 'ADMIN';
+          || sbSession.user?.user_metadata?.role
+          || 'GUEST';
           if (currentPath === '/login' || currentPath === '/admin/login') {
             router.replace('/admin');
           } else if (currentPath === '/advertiser/login') {

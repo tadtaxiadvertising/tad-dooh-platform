@@ -740,37 +740,37 @@ export class FleetService {
       return { count: 0 };
     }
 
-    // 1. Validar existencia del conductor Y del dispositivo (evita 500 por P2025)
-    const [driver, device] = await Promise.all([
-      this.prisma.driver.findUnique({
-        where: { id: data.driverId },
-        select: { id: true, subscriptionPaid: true, status: true, fullName: true },
-      }),
-      this.prisma.device.findUnique({
-        where: { deviceId: data.deviceId },
-        select: { id: true, deviceId: true },
-      }),
-    ]);
+    // 1. Validar que el dispositivo exista y esté OPERATIVO.
+    //    SEC-02: rechazar cualquier telemetría de dispositivos
+    //    desconocidos o en estado no-operativo. Ya no hacemos
+    //    auto-registro de devices desde este endpoint.
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId: data.deviceId },
+      select: { id: true, deviceId: true, status: true, driverId: true },
+    });
 
-    if (!driver) {
-      logger.warn(`⚠️ Telemetry Rejected: Driver [${data.driverId}] not found.`);
-      throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
+    if (!device) {
+      throw new HttpException('Device Not Found — track-batch rejected for unknown device', HttpStatus.NOT_FOUND);
     }
 
-    // Auto-register unknown devices as PENDING (awaiting admin approval).
-    // This mirrors deviceHeartbeat's behavior for unknown devices and prevents
-    // the 404 that blocks ALL telemetry from an unregistered tablet.
-    if (!device) {
-      logger.log(`📱 Auto-registering device [${data.deviceId}] as PENDING — awaiting admin approval.`);
-      await this.prisma.device.create({
-        data: {
-          deviceId: data.deviceId,
-          status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
-          lastSeen: new Date(),
-          isOnline: true,
-          driverId: driver.id,
-        },
-      });
+    if (device.status !== BUSINESS_RULES.STATUS.DEVICE.ACTIVE) {
+      throw new HttpException(
+        `Device Not Operative — track-batch rejected (status: ${device.status})`,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // 2. Derivar conductor: priorizar el driver vinculado al hardware
+    //    para limitar el uso del driverId que envía el cliente.
+    const driverLookupId = device.driverId || data.driverId;
+
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverLookupId },
+      select: { id: true, subscriptionPaid: true, status: true, fullName: true },
+    });
+
+    if (!driver) {
+      throw new HttpException('Driver Not Found', HttpStatus.NOT_FOUND);
     }
 
     // 2. Regla de Negocio #3: Kill-Switch si la suscripción no está al día

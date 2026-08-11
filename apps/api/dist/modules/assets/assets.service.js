@@ -46,14 +46,14 @@ let AssetsService = AssetsService_1 = class AssetsService {
                 id: true,
                 city: true,
                 campaigns: {
-                    select: { campaignId: true },
+                    select: { campaign_id: true },
                 },
             },
         });
         if (!device) {
             return { manifest: {}, version: 0 };
         }
-        const assignedCampaignIds = device.campaigns.map((dc) => dc.campaignId);
+        const assignedCampaignIds = device.campaigns.map((dc) => dc.campaign_id);
         if (assignedCampaignIds.length === 0) {
             return { manifest: {}, version: 0 };
         }

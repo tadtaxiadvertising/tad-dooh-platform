@@ -5,10 +5,10 @@ export declare class NotificationsController {
     findAll(): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }[]>;
@@ -17,10 +17,10 @@ export declare class NotificationsController {
     markAsRead(id: string): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }>;
@@ -32,10 +32,10 @@ export declare class NotificationsController {
     }): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }>;

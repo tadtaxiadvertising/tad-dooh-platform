@@ -14,20 +14,20 @@ export declare class NotificationsService {
     }): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }>;
     findAll(): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }[]>;
@@ -35,10 +35,10 @@ export declare class NotificationsService {
     markAsRead(id: string): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }>;
@@ -47,10 +47,10 @@ export declare class NotificationsService {
     executePushDelivery(driverId: string, message: string): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
         category: string;
         type: string;
         title: string;
-        message: string;
         entityId: string | null;
         read: boolean;
     }>;

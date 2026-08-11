@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
 import { Logger, RequestMethod } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
 import * as crypto from 'crypto';
 
 // Safe BigInt serialization for Prisma
@@ -97,8 +98,9 @@ async function bootstrap() {
       preflightContinue: false,
     });
 
-    // Register Global Exception Filter for standard error handling
-    app.useGlobalFilters(new GlobalExceptionFilter());
+    // Prisma filter first: catches PrismaClient* errors (P2002 → 409, etc.);
+    // GlobalExceptionFilter catches everything else.
+    app.useGlobalFilters(new PrismaClientExceptionFilter(), new GlobalExceptionFilter());
 
     const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0');

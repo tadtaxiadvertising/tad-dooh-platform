@@ -111,3 +111,11 @@ out/
 *.hprof.txt
 TAD/java-1.8.0-openjdk*
 NUL
+
+# Playwright E2E (tests/e2e)
+e2e-report.md
+playwright-report/
+test-results/
+tests/e2e/.auth/
+tests/e2e/v12/.auth/
+tests/e2e/playwright-report/

@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -261,27 +261,40 @@ export class DriversService {
     const sanitizedCedula = data.cedula?.trim() || null;
     const sanitizedTaxiPlate = (data.taxiPlate || data.licensePlate)?.trim() || null;
 
-    const driver = await this.prisma.driver.create({
-      data: {
-        fullName: data.fullName,
-        cedula: sanitizedCedula,
-        phone: data.phone,
-        taxiPlate: sanitizedTaxiPlate,
-        licensePlate: data.licensePlate,
-        subscriptionPaid: data.subscriptionPaid ?? false,
-        subscriptionEnd: data.subscriptionEnd,
-        password: hashedPassword,
-        insuranceAccepted: false, // Deprecated — TAD no longer offers insurance
-        insuranceAcceptedAt: null,
-        contractAccepted: data.contractAccepted ?? false,
-        contractAcceptedAt: data.contractAccepted ? new Date() : null,
-        agreementVersion: data.agreementVersion ?? '2.0',
-        referredBy: data.referredBy || null,
-        status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
-        onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
-      },
-      include: { devices: true },
-    });
+    const driver = await this.prisma.driver
+      .create({
+        data: {
+          fullName: data.fullName,
+          cedula: sanitizedCedula,
+          phone: data.phone,
+          taxiPlate: sanitizedTaxiPlate,
+          licensePlate: data.licensePlate,
+          subscriptionPaid: data.subscriptionPaid ?? false,
+          subscriptionEnd: data.subscriptionEnd,
+          password: hashedPassword,
+          insuranceAccepted: false, // Deprecated — TAD no longer offers insurance
+          insuranceAcceptedAt: null,
+          contractAccepted: data.contractAccepted ?? false,
+          contractAcceptedAt: data.contractAccepted ? new Date() : null,
+          agreementVersion: data.agreementVersion ?? '2.0',
+          referredBy: data.referredBy || null,
+          status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+          onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
+        },
+        include: { devices: true },
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`[DRIVER_CREATE] Fallo creando driver phone=${data.phone}: ${msg}`);
+        if (typeof err === 'object' && err !== null && 'code' in err && (err as Record<string, unknown>).code === 'P2002') {
+          const meta = (err as Record<string, unknown>).meta as Record<string, unknown> | undefined; const target = meta?.target || 'campo único';
+          throw new BadRequestException(`Ya existe un conductor con ese valor (${target}). Verifica teléfono/cédula/placa.`);
+        }
+        throw new HttpException(
+          `No se pudo crear el conductor: ${msg}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      });
 
     if (data.deviceId) {
       // FIX M-5: Loguear errores silenciados en lugar de descartarlos

@@ -23,6 +23,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
     deviceId: '',
     subscriptionPaid: false,
     deviceFound: null as boolean | null,
+    contractAccepted: false,
   });
 
   const checkDevice = async (id: string) => {
@@ -68,6 +69,7 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
         deviceId: '',
         subscriptionPaid: false,
         deviceFound: null,
+        contractAccepted: false,
       });
     } catch (err: unknown) {
       console.error('Error creating driver:', err);
@@ -201,12 +203,30 @@ const DriverModal = React.memo(function DriverModal({ isOpen, onClose, onSuccess
                 {formData.deviceFound === true && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500 animate-in zoom-in" />}
                 {formData.deviceFound === false && <AlertTriangle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500 animate-in zoom-in" />}
               </div>
-              {formData.deviceFound === false && (
-                <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">Dispositivo no localizado en el cluster.</p>
-              )}
-            </div>
+                {formData.deviceFound === false && (
+                  <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">Dispositivo no localizado en el cluster.</p>
+                )}
+              </div>
 
-            {/* Subscription Toggle */}
+              {/* Contract Acceptance - required when creating drivers as non-admin */}
+              <div className="flex items-center gap-3 pt-2">
+                <label htmlFor="contractAccepted" className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    id="contractAccepted"
+                    type="checkbox"
+                    checked={formData.contractAccepted}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, contractAccepted: e.target.checked }))
+                    }
+                    className="w-4 h-4 rounded border-white/20 bg-zinc-900 text-[#fad400] focus:ring-[#fad400]"
+                  />
+                  <span className="text-xs text-zinc-300 font-medium leading-tight">
+                    El conductor acepta el contrato de servicio TAD
+                  </span>
+                </label>
+              </div>
+
+              {/* Subscription Toggle */}
             <div className="flex items-center gap-3 pt-6">
               <button
                 type="button"

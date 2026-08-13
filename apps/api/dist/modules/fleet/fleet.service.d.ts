@@ -20,8 +20,12 @@ export declare class FleetService {
         is_online: boolean;
         driver_name: string;
         last_playback: Date;
-        deviceId: string;
+        driver: {
+            id: string;
+            fullName: string;
+        };
         taxiNumber: string;
+        deviceId: string;
         city: string;
         lastHeartbeat: Date;
         batteryLevel: number;
@@ -33,10 +37,6 @@ export declare class FleetService {
         storageFree: string;
         lastPlayback: Date;
         playerStatus: string;
-        driver: {
-            id: string;
-            fullName: string;
-        };
     }[]>;
     getFleetStats(): Promise<{
         total: number;
@@ -66,8 +66,8 @@ export declare class FleetService {
         speed: number;
     }[]>;
     getOfflineDevices(): Promise<{
-        deviceId: string;
         taxiNumber: string;
+        deviceId: string;
         lastSeen: Date;
     }[]>;
     getFleetFinance(): Promise<{
@@ -99,9 +99,9 @@ export declare class FleetService {
     sendCommand(deviceId: string, type: string, params?: Record<string, unknown>): Promise<{
         result: string | null;
         id: string;
-        deviceId: string;
-        status: string;
         createdAt: Date;
+        status: string;
+        deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;

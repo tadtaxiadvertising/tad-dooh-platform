@@ -98,9 +98,9 @@ export declare class DeviceController {
     acknowledgeCommand(commandId: string, result: any): Promise<{
         result: string | null;
         id: string;
-        deviceId: string;
-        status: string;
         createdAt: Date;
+        status: string;
+        deviceId: string;
         commandType: string;
         commandParams: string | null;
         executedAt: Date | null;

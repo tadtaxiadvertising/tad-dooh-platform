@@ -22,10 +22,10 @@ export declare class ReferralController {
     }>;
     getNetwork(): Promise<{
         id: string;
-        status: import(".prisma/client").$Enums.SystemStatus;
         createdAt: Date;
-        fullName: string;
+        status: import(".prisma/client").$Enums.SystemStatus;
         referredBy: string;
+        fullName: string;
         referredByDriver: {
             fullName: string;
         };

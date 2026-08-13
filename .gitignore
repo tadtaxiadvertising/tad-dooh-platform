@@ -1,4 +1,3 @@
-```
 # Dependencies
 node_modules/
 
@@ -102,7 +101,7 @@ zig*/
 # Backup files
 *~
 \#*\#
-```
+
 # Build artifacts
 dist/
 out/
@@ -119,3 +118,16 @@ test-results/
 tests/e2e/.auth/
 tests/e2e/v12/.auth/
 tests/e2e/playwright-report/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Playwright MCP state
+.playwright-mcp/
+
+# Scratch test media
+scratch/
+
+# TMP diagnostic scripts
+dev-check-tmp.js
+mv-check-tmp.js

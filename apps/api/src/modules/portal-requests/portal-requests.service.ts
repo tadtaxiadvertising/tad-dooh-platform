@@ -264,19 +264,45 @@ export class PortalRequestsService {
                 data: { campaign_id: targetCampaignId }
               }).catch(() => {});
             } else if (mediaData?.url) {
-              // Create a new MediaAsset from the portal submission
-              await this.prisma.mediaAsset.create({
-                data: {
-                  campaignId: targetCampaignId,
-                  type: mediaData.type || 'VIDEO',
-                  filename: mediaData.filename || 'portal-upload.mp4',
-                  url: mediaData.url,
-                  fileSize: Math.round(Number(mediaData.fileSize || 0)),
-                  checksum: mediaData.checksum || mediaData.hashMd5 || 'portal-upload',
-                  duration: Math.round(Number(mediaData.duration || 30)),
-                  version: 1,
+              // FIX FINDING-004: Deduplicar antes de crear MediaAsset. Si el archivo ya fue
+              // registrado como Media (v2) en register-bypassed (mismo hashMd5/storageKey o url),
+              // NO crear un segundo registro: solo enlazarlo a la campaña.
+              const checksum = mediaData.checksum || mediaData.hashMd5 || 'portal-upload';
+              const existingMedia = await this.prisma.media.findFirst({
+                where: {
+                  OR: [
+                    { hashMd5: checksum },
+                    { url: mediaData.url },
+                  ],
+                },
+              }).catch(() => null);
+
+              if (existingMedia) {
+                if (existingMedia.campaign_id !== targetCampaignId) {
+                  await this.prisma.media.update({
+                    where: { id: existingMedia.id },
+                    data: { campaign_id: targetCampaignId }
+                  }).catch(() => {});
                 }
-              }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+                this.logger.log(
+                  `[APPROVAL_FLOW] Media duplicado detectado (checksum/url ya registrado). ` +
+                  `Enlazado a campaña, saltando creación de MediaAsset para ${mediaData.filename}. mediaId=${existingMedia.id}`
+                );
+              } else {
+                // Create a new MediaAsset from the portal submission
+                await this.prisma.mediaAsset.create({
+                  data: {
+                    campaignId: targetCampaignId,
+                    type: mediaData.type || 'VIDEO',
+                    filename: mediaData.filename || 'portal-upload.mp4',
+                    url: mediaData.url,
+                    fileSize: Math.round(Number(mediaData.fileSize || 0)),
+                    checksum,
+                    duration: Math.round(Number(mediaData.duration || 30)),
+                    version: 1,
+                  }
+                }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+              }
             }
           }
 

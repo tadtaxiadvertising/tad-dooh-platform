@@ -367,3 +367,41 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 - Login verificado para **admin** y **advertiser**; driver sirve login.
 - **Kill-switch operativo** (SIM-DEV-0026 → 402): protege playbacks sin suscripción/campaña activa (R1/R3 respetado; hay 272 discrepancias `UNPAID_SUBSCRIPTION` en 2026-08, señal de cobranza pendiente, no de bug).
 - Pendientes sin cambio: KPIS >2s, `portal` ~9.4s, TS2614 preexistentes (builds OK en contenedor), observabilidad logs MCP no disponible.
+
+---
+
+## AUDITORÍA AUTÓNOMA — 2026-08-13 (compuerta tsc + health probes)
+
+### Fecha de escaneo
+2026-08-13 (orquestación autónoma). Fuente de activación: health probes + compuerta `tsc --noEmit` (logs EasyPanel/Loki no disponibles: `queryServiceLogs` → 400, `getLogsSettings` null).
+
+### Health probes de API (sin token, solo disponibilidad)
+| Endpoint | Resultado |
+| --- | --- |
+| `GET /api/health` | ✅ 200 |
+| `GET /api/bi/kpis` | ❌ 404 — ruta real es `/api/v1/bi/kpis` |
+| `GET /api/v1/bi/kpis` | ✅ 401 esperado (auth requerida; se registra, no se corrige) |
+
+### Compuerta de compilación (snapshot pre-corrección `9cc9fa5d`)
+| Workspace | Pre | Post |
+| --- | --- | --- |
+| `apps/api` | ✅ 0 | ✅ 0 |
+| `apps/admin` | ✅ 0 | ✅ 0 |
+| `apps/advertiser` | ✅ 0 | ✅ 0 |
+| `apps/player` | ✅ 0 | ✅ 0 |
+| `apps/driver` | ❌ 2 errores | ✅ 0 |
+
+### 🔧 Bug encontrado y corregido (commit `ffc94d23`)
+- **Síntoma**: `apps/driver` fallaba con **TS2709** `Cannot use namespace 'LucideIcon' as a type` en `apps/driver/components/bi/BiKpiCard.tsx:10` y `packages/ui/components/StatusSemaphore.tsx:26`.
+- **Causa raíz**: `apps/driver/types/lucide-react.d.ts` (añadido en `033141ec` como "fix tipos driver/player") contenía la **declaración ambiental vacía** `declare module 'lucide-react';`. Esta declaración tiene prioridad sobre el paquete real en el programa del driver, convirtiendo `LucideIcon` en un símbolo sin tipos (namespace) y rompiendo su uso como tipo. Los probes aislados compilaban porque no formaban parte del programa (quedaban fuera de los globs de `include`); el diagnóstico erróneo inicial apuntaba a un conflicto de versiones (`lucide-react@0.475.0` root vs `@0.479.0` anidado en `packages/ui/node_modules`) y a `baseUrl`/`typeRoots`, descartados por bisect controlado.
+- **Fix**: eliminar el shim. El paquete real exporta `type LucideIcon` correctamente; los 5 workspaces compilan limpio (`tsc --noEmit` EXIT=0 en api, admin, advertiser, player, driver).
+- **Nota**: el paquete local `node_modules/next@15.2.6` estaba corrupto (622 archivos faltantes, incluido `types.d.ts`); se restauró desde tarball oficial (`npm pack next@15.2.6`) — solo afectaba la compuerta local, producción Docker reinstala desde lockfile.
+
+### Métricas pre / post auditoría
+- **Pre**: driver 2 errores TS2709; next local corrupto.
+- **Post**: **todos los workspaces EXIT=0**; snapshot `9cc9fa5d` + fix `ffc94d23` en `main`.
+
+### Estado final
+- Driver compila limpio; sin regresiones en api/admin/advertiser/player.
+- Producción NO requirió redeploy (el shim no se desplegó corrupto; el fix tipográfico es local a la compuerta).
+- Pendientes sin cambio: KPIS >2s, `portal` ~9.4s, observabilidad logs MCP no disponible, `queryServiceLogs` 400.

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "enabled": true
+    },
+    "git": {
+      "type": "local",
+      "command": ["npx", "-y", "@cyanheads/git-mcp-server@latest"],
+      "enabled": true,
+      "environment": {
+        "MCP_TRANSPORT_TYPE": "stdio",
+        "GIT_BASE_DIR": "C:/tad-dooh-platform",
+        "GIT_AUTHOR_NAME": "tad-commits",
+        "GIT_AUTHOR_EMAIL": "tad.taxiadvertising@gmail.com",
+        "GIT_SIGN_COMMITS": "false"
+      }
+    },
+    "filesystem": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "C:/tad-dooh-platform"],
+      "enabled": true
+    },
+    "n8n-mcp": {
+      "type": "remote",
+      "url": "https://proyecto-ia-n8n.rewvid.easypanel.host/mcp-server/http",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:N8N_MCP_TOKEN}"
+      }
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp",
+      "enabled": true
+    }
+  }
+}

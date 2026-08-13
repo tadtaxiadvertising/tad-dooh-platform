@@ -60,16 +60,16 @@ export declare class FinanceController {
         reference: string;
     }): Promise<{
         id: string;
-        status: string;
         createdAt: Date;
-        driverId: string;
+        status: string;
         activeAds: number;
-        penaltyApplied: boolean;
+        driverId: string;
         amount: number;
         paidAt: Date | null;
         month: number;
         year: number;
         referenceNum: string | null;
+        penaltyApplied: boolean;
         penaltyPercentage: number;
         transmissionHours: number;
         gpsPoints: number;
@@ -116,17 +116,17 @@ export declare class FinanceController {
         note?: string;
         status?: string;
     }): Promise<{
+        entityId: string | null;
         id: string;
-        status: string;
         createdAt: Date;
         updatedAt: Date;
-        amount: number;
+        status: string;
         category: string;
         type: string;
-        entityId: string | null;
+        amount: number;
+        reference: string | null;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
         note: string | null;
     }>;
     getSummary(): Promise<{
@@ -151,17 +151,17 @@ export declare class FinanceController {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
+        entityId: string | null;
         id: string;
-        status: string;
         createdAt: Date;
         updatedAt: Date;
-        amount: number;
+        status: string;
         category: string;
         type: string;
-        entityId: string | null;
+        amount: number;
+        reference: string | null;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
         note: string | null;
     }[]>;
     emailCampaignReport(id: string, body: {

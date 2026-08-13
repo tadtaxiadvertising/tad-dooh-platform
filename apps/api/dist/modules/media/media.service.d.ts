@@ -9,7 +9,6 @@ export declare class MediaService {
     private supabase;
     constructor(config: ConfigService, prisma: PrismaService, supabaseService: SupabaseService);
     generateHash(buffer: Buffer): any;
-    private validateMediaFile;
     generateUploadUrl(fileName: string, fileType: string): Promise<{
         uploadUrl: any;
         path: string;
@@ -17,13 +16,13 @@ export declare class MediaService {
     }>;
     registerBypassedMedia(data: any): Promise<{
         fileSize: number;
+        url: string | null;
         id: string;
         name: string | null;
-        status: string;
         createdAt: Date;
-        campaign_id: string | null;
-        url: string | null;
+        status: string;
         filename: string | null;
+        qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -36,7 +35,7 @@ export declare class MediaService {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        qrUrl: string | null;
+        campaign_id: string | null;
     }>;
     registerFileMock(dto: {
         originalname: string;
@@ -68,13 +67,13 @@ export declare class MediaService {
         qrUrl?: string;
     }): Promise<{
         fileSize: number;
+        url: string | null;
         id: string;
         name: string | null;
-        status: string;
         createdAt: Date;
-        campaign_id: string | null;
-        url: string | null;
+        status: string;
         filename: string | null;
+        qrUrl: string | null;
         originalFilename: string | null;
         mime_type: string | null;
         mimeType: string | null;
@@ -87,7 +86,7 @@ export declare class MediaService {
         hash: string | null;
         hashMd5: string | null;
         hashSha256: string | null;
-        qrUrl: string | null;
+        campaign_id: string | null;
     }>;
     deleteFile(id: string): Promise<{
         success: boolean;

@@ -21,8 +21,8 @@ export declare class BiController {
     }>;
     getReconciliation(period: string): Promise<({
         driver: {
-            fullName: string;
             phone: string;
+            fullName: string;
             taxiPlate: string;
         };
     } & {
@@ -31,8 +31,8 @@ export declare class BiController {
         createdAt: Date;
         updatedAt: Date;
         driverId: string;
-        period: string;
         subscriptionStatus: string;
+        period: string;
         subscriptionDueDate: Date | null;
         subscriptionAmount: number;
         totalPlaybacks: number;

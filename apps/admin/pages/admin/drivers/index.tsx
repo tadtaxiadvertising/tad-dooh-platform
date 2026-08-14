@@ -430,7 +430,11 @@ export default function DriversPage() {
                           <AntigravityButton
                             actionName={driver.status === 'OPERATIVO' ? 'lock_driver' : 'unlock_driver'}
                             onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
-                            confirmMessage={driver.status === 'OPERATIVO' ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se inhibirá su hardware.` : undefined}
+                            confirmMessage={
+                              driver.status === 'OPERATIVO'
+                                ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se suspenderá su suscripción y hardware.`
+                                : `¿HABILITAR SOCIO ${driver.fullName}? Se reactivará su suscripción y hardware.`
+                            }
                             className={clsx(
                               "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
                               driver.status === 'OPERATIVO'

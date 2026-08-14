@@ -40,10 +40,10 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
   const { executeAction, isPending } = useTADAction();
   const [isConfirming, setIsConfirming] = React.useState(false);
 
-  // Auto-reset confirmation state after 4 seconds of inactivity
+  // Auto-reset confirmation state after 10 seconds of inactivity
   React.useEffect(() => {
     if (isConfirming) {
-      const timer = setTimeout(() => setIsConfirming(false), 4000);
+      const timer = setTimeout(() => setIsConfirming(false), 10000);
       return () => clearTimeout(timer);
     }
   }, [isConfirming]);
@@ -105,6 +105,8 @@ export const AntigravityButton: React.FC<AntigravityButtonProps> = ({
       type="button"
       onClick={handleClick}
       disabled={isPending || disabled || !onAsyncClick}
+      title={isConfirming ? '¿ESTÁS SEGURO? CONFIRMA para ejecutar' : props.title}
+      aria-label={isConfirming ? '¿ESTÁS SEGURO? Confirma para ejecutar' : (props['aria-label'] || props.title)}
       className={cn(
         'group relative z-[100] !pointer-events-auto',
         'inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-[1.25rem] font-black uppercase tracking-[0.15em] text-[10px]',

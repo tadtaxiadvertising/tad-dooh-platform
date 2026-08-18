@@ -62,6 +62,7 @@ const ADVERTISER_NAVIGATION = [
     items: [
       { name: 'Dashboard', href: '/advertiser/dashboard', icon: LayoutDashboard },
       { name: 'Campañas', href: '/advertiser/campaigns', icon: Target },
+      { name: 'Solicitudes', href: '/advertiser/requests', icon: ClipboardList },
       { name: 'Medios', href: '/advertiser/media', icon: ImageIcon },
     ],
   },

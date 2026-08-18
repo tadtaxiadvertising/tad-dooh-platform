@@ -3,7 +3,7 @@ import { useAuth } from '@tad/ui';
 import {
   Plus, Search, Filter, MoreHorizontal,
   Edit2, Trash2, Calendar,
-  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2
+  Clock, AlertCircle, FileVideo, Sparkles, Wand2, Loader2, QrCode, ExternalLink, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -39,6 +39,19 @@ export default function AdvertiserCampaigns() {
     brandColor: '#fad400',
     primaryText: '',
     secondaryText: ''
+  });
+
+  // States for QR Hub Editor
+  const [showQrHub, setShowQrHub] = useState(false);
+  const [qrCampaign, setQrCampaign] = useState<any>(null);
+  const [qrSaving, setQrSaving] = useState(false);
+  const [qrData, setQrData] = useState({
+    whatsapp: '',
+    instagram: '',
+    facebook: '',
+    websiteUrl: '',
+    pedidosYaUrl: '',
+    uberEatsUrl: '',
   });
 
   useEffect(() => {
@@ -129,6 +142,45 @@ export default function AdvertiserCampaigns() {
       alert('❌ Error de Renderizado: ' + err.message);
     } finally {
       setRendering(false);
+    }
+  };
+
+  const openQrHub = (campaign: any) => {
+    setQrCampaign(campaign);
+    setQrData({
+      whatsapp: campaign.whatsapp || '',
+      instagram: campaign.instagram || '',
+      facebook: campaign.facebook || '',
+      websiteUrl: campaign.websiteUrl || '',
+      pedidosYaUrl: campaign.pedidosYaUrl || '',
+      uberEatsUrl: campaign.uberEatsUrl || '',
+    });
+    setShowQrHub(true);
+  };
+
+  const handleSaveQrHub = async () => {
+    if (!qrCampaign || !session?.access_token) return;
+    setQrSaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/proxy/campaigns/${qrCampaign.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(qrData),
+      });
+      if (!res.ok) throw new Error('No se pudieron guardar los enlaces');
+      // Update local state
+      setCampaigns((prev) =>
+        prev.map((c) => (c.id === qrCampaign.id ? { ...c, ...qrData } : c))
+      );
+      setShowQrHub(false);
+      setQrCampaign(null);
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setQrSaving(false);
     }
   };
 
@@ -473,6 +525,13 @@ export default function AdvertiserCampaigns() {
                             <Wand2 className="w-4 h-4" />
                          </button>
                          */}
+                    <button
+                      onClick={() => openQrHub(campaign)}
+                      className="p-3 bg-zinc-800/50 hover:bg-[#fad400] hover:text-black rounded-xl transition-all"
+                      title="Editar QR Hub"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </button>
                     <button className="p-3 bg-zinc-800/50 hover:bg-[#fad400] hover:text-black rounded-xl transition-all">
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -494,6 +553,116 @@ export default function AdvertiserCampaigns() {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {/* Modal - QR Hub Editor */}
+      {showQrHub && qrCampaign && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl overflow-y-auto">
+          <div className="bg-zinc-900 border border-[#fad400]/10 rounded-[3rem] w-full max-w-lg p-10 space-y-8 shadow-3xl relative my-auto">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <QrCode className="w-5 h-5 text-[#fad400]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#fad400]">QR Hub</span>
+              </div>
+              <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none mb-1">
+                Enlaces de <span className="text-[#fad400]">Conversión</span>
+              </h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Configura los enlaces que verá el pasajero al escanear el QR de: {qrCampaign.name}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">WhatsApp de Ventas</label>
+                <input
+                  type="tel"
+                  value={qrData.whatsapp}
+                  onChange={(e) => setQrData({ ...qrData, whatsapp: e.target.value })}
+                  placeholder="Ej: 8091234567"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Instagram</label>
+                <input
+                  type="text"
+                  value={qrData.instagram}
+                  onChange={(e) => setQrData({ ...qrData, instagram: e.target.value })}
+                  placeholder="Ej: @tuempresa"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Facebook</label>
+                <input
+                  type="url"
+                  value={qrData.facebook}
+                  onChange={(e) => setQrData({ ...qrData, facebook: e.target.value })}
+                  placeholder="https://facebook.com/tuempresa"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Sitio Web</label>
+                <input
+                  type="url"
+                  value={qrData.websiteUrl}
+                  onChange={(e) => setQrData({ ...qrData, websiteUrl: e.target.value })}
+                  placeholder="https://tusitio.com"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">PedidosYa</label>
+                  <input
+                    type="url"
+                    value={qrData.pedidosYaUrl}
+                    onChange={(e) => setQrData({ ...qrData, pedidosYaUrl: e.target.value })}
+                    placeholder="https://pedidosya.com/..."
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-4">Uber Eats</label>
+                  <input
+                    type="url"
+                    value={qrData.uberEatsUrl}
+                    onChange={(e) => setQrData({ ...qrData, uberEatsUrl: e.target.value })}
+                    placeholder="https://ubereats.com/..."
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-800 outline-none focus:border-[#fad400] transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => { setShowQrHub(false); setQrCampaign(null); }}
+                className="flex-1 py-4 bg-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all border border-white/5"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveQrHub}
+                disabled={qrSaving}
+                className="flex-1 py-4 bg-[#fad400] text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-[#fad400]/10 disabled:opacity-30 flex items-center justify-center gap-2"
+              >
+                {qrSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {qrSaving ? 'Guardando...' : 'Guardar Enlaces'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AdvertiserLayout>

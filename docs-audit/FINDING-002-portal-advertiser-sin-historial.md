@@ -3,6 +3,7 @@
 **Severidad:** BAJA / UX (el backend funciona correctamente; el portal pierde visibilidad)
 **Fecha:** 2026-08-10
 **Flujo probado:** portal advertiser → "Nueva Solicitud" → admin aprueba en "Solicitudes"
+**Estado:** ✅ RESUELTO (2026-08-18, commit `397f482e`)
 
 ## Síntoma
 Tras aprobar una petición desde `/admin/advertisers/requests`, el portal del
@@ -41,3 +42,24 @@ refetch ni sección de historial. El admin escribe `adminNotes` en
   el estado y `adminNotes` del admin.
 - Refrescar la lista al volver a la pestaña (o tras la aprobación), para que no
   muestre estado obsoleto.
+
+---
+
+## ✅ Resolución (2026-08-18)
+
+**Commit:** `397f482e` — feat: FINDING-002 y FINDING-005
+
+### Cambios implementados
+
+1. **Nueva página `/advertiser/requests`** (`apps/advertiser/pages/advertiser/requests.tsx`):
+   - Lista expandible de todas las solicitudes del anunciante.
+   - Cada solicitud muestra: título, tipo, estado (Pendiente/Aprobada/Rechazada con badges de color), fecha.
+   - Al expandir: descripción + **respuesta del admin (`adminNotes`)** visible.
+   - Modal "Nueva Solicitud" con tipo, asunto y detalle, enviado vía proxy API.
+
+2. **Sidebar actualizado** (`packages/ui/components/Layout.tsx:65`):
+   - "Solicitudes" agregado al grupo Marketing Hub del nav del advertiser.
+
+### Verificación
+- tsc EXIT 0 en admin, advertiser, driver.
+- Push a `origin/main`, auto-deploy triggered.

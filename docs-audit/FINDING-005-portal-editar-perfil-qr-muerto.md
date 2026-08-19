@@ -3,6 +3,7 @@
 **Severidad:** BAJA-MEDIA (funcionalidad de QR hub prometida en UI pero no implementada)
 **Fecha:** 2026-08-10
 **Ruta probada:** portal advertiser `/p/advertiser/[id]` → pestaña "Métricas" → "Editar Perfil QR"
+**Estado:** ✅ RESUELTO (2026-08-18, commit `397f482e`)
 
 ## Síntoma
 El botón **"Editar Perfil QR"** (tarjeta "Brand Profile") se renderiza como botón
@@ -32,3 +33,21 @@ El `button` **no tiene `onClick`** (ni handler asociado). Es un botón muerto.
    con los valores actuales de la campaña) que actualice los enlaces del QR hub.
 2. Si el editor no está en alcance, eliminar el botón o deshabilitarlo con título
    "Próximamente" para no generar expectativa.
+
+---
+
+## ✅ Resolución (2026-08-18)
+
+**Commit:** `397f482e` — feat: FINDING-002 y FINDING-005
+
+### Cambios implementados
+
+1. **Editor QR Hub en Campañas** (`apps/advertiser/pages/advertiser/campaigns/index.tsx`):
+   - Nuevo botón `QrCode` en cada tarjeta de campaña → abre modal de edición.
+   - 6 campos editables: WhatsApp, Instagram, Facebook, Sitio Web, PedidosYa, Uber Eats.
+   - Guarda via `PATCH /campaigns/:id` (endpoint existente con RLS de anunciante).
+   - Actualiza estado local sin recargar la página.
+
+### Verificación
+- tsc EXIT 0 en admin, advertiser, driver.
+- Push a `origin/main`, auto-deploy triggered.

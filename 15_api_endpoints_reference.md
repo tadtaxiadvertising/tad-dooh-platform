@@ -1,7 +1,7 @@
 # 🌐 15 — API ENDPOINTS REFERENCE COMPLETE
 
-> **Versión**: 15.0.0 (NestJS v12.1.2)
-> **Última Actualización**: 2026-06-05
+> **Versión**: 15.1.0 (NestJS v12.1.2 — Social Agent + KYC Modules Added)
+> **Última Actualización**: 2026-08-19
 > **Base URL**: `https://tad-api.rewvid.easypanel.host/api/v1`
 > **Audiencia**: Frontend Developers, Mobile Gateway, QA, Integration Partners
 
@@ -516,6 +516,56 @@
 
 ---
 
+## 25b. SOCIAL AGENT MODULE (`/api/v1/social-agent`)
+
+> **⚠️ NEW MODULE (v12.3):** Meta Messenger/Instagram DM integration with AI-powered content generation.
+
+### `SocialAgentController` — Meta Webhook & Content Management
+
+| Method | Route | Auth | Description | Request Body/Params |
+| --- | --- | --- | --- | --- |
+| `GET` | `/social-agent/webhooks/meta` | `@Public` | Meta webhook verification (hub.challenge) | `hub.mode`, `hub.verify_token`, `hub.challenge` |
+| `POST` | `/social-agent/webhooks/meta` | `@Public` | Receive Meta webhook callbacks (Messenger/IG DM) | Meta payload |
+| `GET` | `/social-agent/drafts` | ADMIN | List pending post drafts for approval | — |
+| `POST` | `/social-agent/approve/:id` | ADMIN | Approve draft → publish to Meta | `id` |
+| `POST` | `/social-agent/reject/:id` | ADMIN | Reject draft (set status REJECTED) | `id` |
+| `POST` | `/social-agent/trigger-cron` | ADMIN | Manually trigger daily content generation | — |
+
+**Flow:**
+1. Meta sends webhook → `handleWebhook()` processes message
+2. Social Agent generates content via AI → stores in `SocialPostDraft` (status: PENDING)
+3. Admin reviews drafts via `GET /social-agent/drafts`
+4. Admin approves → `POST /social-agent/approve/:id` → publishes to Meta
+
+**Dependencies:** Requires `META_VERIFY_TOKEN` env var for webhook verification.
+
+---
+
+## 25c. KYC MODULE (`/api/v1/kyc`)
+
+> **⚠️ NEW MODULE (v12.3):** Driver document verification (cédula, licencia, seguro). Runs in MOCK mode without `KYC_API_KEY`.
+> **⚠️ ROUTES NOT WIRED:** `createKYCEndpoints()` factory exists in `kyc.service.ts` but is never called. KYCModule is registered in `app.module.ts` but has no NestJS controller — HTTP routes are **not yet active**. Service is available for programmatic use only.
+
+### `KYCService` — Document Verification
+
+| Method | Route | Auth | Description | Request Body |
+| --- | --- | --- | --- | --- |
+| `POST` | `/kyc/submit` | JWT | Submit driver document for verification | `{ driverId, documentType, documentNumber, fileHash?, metadata? }` |
+| `GET` | `/kyc/pending` | ADMIN | List drivers with pending KYC review | — |
+| `POST` | `/kyc/:id/approve` | ADMIN | Approve KYC documents | `id` (driverId) |
+| `POST` | `/kyc/:id/reject` | ADMIN | Reject KYC documents with reason | `id` + `{ reason }` |
+| `GET` | `/kyc/:id/status` | JWT | Get KYC status for a driver | `id` (driverId) |
+
+**Document Types:** `CEDULA` (11 digits), `LICENCIA`, `PASAPORTE`, `SEGURO`
+
+**Modes:**
+- **MOCK** (default): Stores in `Driver.identidadVehicular` JSON field, marks as `PENDING_REVIEW`
+- **PRODUCTION** (with `KYC_API_KEY`): Integrates with Onfido/Persona for automated verification
+
+**Integration:** KYC approval sets `Driver.onboardingStatus = "COMPLETED"` and updates `identidadVehicular.kyc_status = "APPROVED"`.
+
+---
+
 ## 26. SUMMARY TABLE — ALL ENDPOINTS
 
 | Module | Route Prefix | # Endpoints | Auth Level |
@@ -546,7 +596,9 @@
 | **Telemetry** | `/telemetry` | 3 | Public + JWT |
 | **Health** | `/health` | 3 | Public |
 | **App Root** | `/` | 4 | Public |
-| **TOTAL** | — | **~141** | — |
+| **Social Agent** | `/social-agent` | 6 | Public + ADMIN |
+| **KYC** | `/kyc` | 5 (not wired) | JWT + ADMIN |
+| **TOTAL** | — | **~151** | — |
 
 ---
 

@@ -1,4 +1,4 @@
-# Single-stage Remotion worker optimizado para Easypanel Free Tier (512MB RAM)
+# Single-stage Remotion worker optimizado para Easypanel (1024MB RAM disponible)
 FROM node:20-bullseye-slim
 
 WORKDIR /app
@@ -33,7 +33,7 @@ RUN node -e "try{require('@remotion/renderer').ensureBrowser().then(()=>console.
 RUN npm prune --production --force
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=384"
+ENV NODE_OPTIONS="--max-old-space-size=896"
 ENV PORT=8000
 ENV REMOTION_CONCURRENCY=1
 ENV REMOTION_BROWSER=chromium

@@ -543,10 +543,9 @@
 
 ## 25c. KYC MODULE (`/api/v1/kyc`)
 
-> **⚠️ NEW MODULE (v12.3):** Driver document verification (cédula, licencia, seguro). Runs in MOCK mode without `KYC_API_KEY`.
-> **⚠️ ROUTES NOT WIRED:** `createKYCEndpoints()` factory exists in `kyc.service.ts` but is never called. KYCModule is registered in `app.module.ts` but has no NestJS controller — HTTP routes are **not yet active**. Service is available for programmatic use only.
+> **v12.3:** Driver document verification (cédula, licencia, seguro). Runs in MOCK mode without `KYC_API_KEY`.
 
-### `KYCService` — Document Verification
+### `KYCController` — Document Verification Routes
 
 | Method | Route | Auth | Description | Request Body |
 | --- | --- | --- | --- | --- |
@@ -597,7 +596,7 @@
 | **Health** | `/health` | 3 | Public |
 | **App Root** | `/` | 4 | Public |
 | **Social Agent** | `/social-agent` | 6 | Public + ADMIN |
-| **KYC** | `/kyc` | 5 (not wired) | JWT + ADMIN |
+| **KYC** | `/kyc` | 5 | JWT + ADMIN |
 | **TOTAL** | — | **~151** | — |
 
 ---

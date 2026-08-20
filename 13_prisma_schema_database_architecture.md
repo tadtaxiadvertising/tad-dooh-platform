@@ -1,7 +1,7 @@
 # 🗄️ 13 — PRISMA SCHEMA REFERENCE & DATABASE ARCHITECTURE
 
-> **Versión**: 13.1.0 (v12.2.5 — Comprehensive Audit Edition)
-> **Última Actualización**: 2026-06-05
+> **Versión**: 13.2.0 (v12.3.0 — Social Agent Models Added)
+> **Última Actualización**: 2026-08-19
 > **Audiencia**: Backend Developers, DBA, Arquitectos
 > **Fuente de Verdad**: `apps/api/prisma/schema.prisma`
 > **Complementos**: `apps/api/prisma/views.sql`, `apps/api/prisma/migrations/`
@@ -32,7 +32,7 @@ datasource db {
 
 ---
 
-## 2. MODELOS DEL SCHEMA (36 Modelos + 1 Enum = 37 Declaraciones)
+## 2. MODELOS DEL SCHEMA (38 Modelos + 1 Enum = 39 Declaraciones)
 
 ### 2.0 Enum: SystemStatus — Estado Operativo del Sistema
 
@@ -84,6 +84,8 @@ datasource db {
 | 34 | `SystemError` | `system_errors` | 2.8 |
 | 35 | `CampaignIntent` | `campaign_intents` | 2.8 |
 | 36 | `IdempotencyKey` | `idempotency_keys` | 2.8 |
+| 37 | `SocialPostDraft` | `social_post_drafts` | 2.9 |
+| 38 | `SocialInteractionLog` | `social_interaction_logs` | 2.9 |
 
 ### 2.1 Core Entities
 
@@ -926,6 +928,52 @@ amount = base × (1 - penaltyPercentage)
 
 ---
 
+### 2.9 Social Agent (Meta Integration)
+
+#### `SocialPostDraft` — Borradores de Posts para Redes Sociales
+| Campo | Tipo | Descripción |
+| --- | --- | --- |
+| `id` | `String @cuid` | PK |
+| `platform` | `String` | `"IG" | "FB"` — Plataforma destino |
+| `copy` | `String` | Texto del post |
+| `mediaUrl` | `String` | URL del archivo multimedia |
+| `status` | `String` | `"PENDING" | "APPROVED" | "REJECTED"` (default: `"PENDING"`) |
+| `scheduledFor` | `DateTime` | Fecha programada de publicación |
+| `createdAt` | `DateTime` | Timestamp de creación |
+| `updatedAt` | `DateTime` | Timestamp de última actualización |
+
+**Índices:**
+```prisma
+@@index([status])
+@@map("social_post_drafts")
+```
+
+**Uso:** Borradores generados por el Social Agent (bot Meta) que requieren aprobación manual del admin antes de publicar. Flujo: `PENDING` → Admin aprueba (`POST /social-agent/approve/:id`) → `APPROVED` → Publicación en IG/FB.
+
+---
+
+#### `SocialInteractionLog` — Log de Interacciones Bot (Meta Messenger/IG DM)
+| Campo | Tipo | Descripción |
+| --- | --- | --- |
+| `id` | `String @cuid` | PK |
+| `platform` | `String` | `"IG" | "FB"` — Plataforma origen |
+| `threadId` | `String` | ID del hilo de conversación |
+| `senderId` | `String` | ID del usuario que envió el mensaje |
+| `message` | `String` | Mensaje recibido del usuario |
+| `botResponse` | `String` | Respuesta generada por el bot |
+| `createdAt` | `DateTime` | Timestamp de la interacción |
+
+**Índices:**
+```prisma
+@@map("social_interaction_logs")
+```
+
+**Uso:** Registro de todas las interacciones del bot de redes sociales (Meta Messenger e Instagram DM). El Social Agent recibe mensajes, genera respuestas, y las almacena aquí para auditoría y análisis de calidad.
+
+**Integración:** El módulo `social-agent` en NestJS recibe webhooks de Meta (`POST /social-agent/webhooks/meta`), genera contenido con IA, y lo almacena en `SocialPostDraft` para aprobación.
+
+---
+
 ## 3. RELACIONES CLAVE (Diagrama Conceptual)
 
 ```
@@ -966,6 +1014,8 @@ FinancialTransaction (ledger independiente)
 IdempotencyKey (infraestructura)
 SystemError (observabilidad)
 SystemSetting (configuración dinámica)
+SocialPostDraft (social-agent: borradores para Meta)
+SocialInteractionLog (social-agent: log de interacciones bot)
 ```
 
 ---

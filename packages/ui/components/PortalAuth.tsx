@@ -1,13 +1,14 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@tad/services';
-import { LogIn, AlertCircle, Eye, EyeOff, Lock, ArrowRight, CheckCircle, X, Mail, ServerCrash } from 'lucide-react';
+import { LogIn, AlertCircle, Eye, EyeOff, Lock, ArrowRight, CheckCircle, X, Mail, ServerCrash, Building2, User, Phone } from 'lucide-react';
 import clsx from 'clsx';
 import Head from 'next/head';
 import { toast } from 'sonner';
 
 import {
   LoginSchema,
+  PublicCredentialsSchema,
   RecoverySchema,
   PortalConfig,
   getAuthCircuitBreaker,
@@ -16,13 +17,31 @@ import {
   clearRateLimit,
 } from '@tad/services';
 
-type AuthView = 'login' | 'forgot' | 'forgot-sent';
+type AuthView = 'login' | 'register' | 'forgot' | 'forgot-sent';
+
+/** Optional credential-login against the TAD API (NestJS JWT) instead of direct Supabase. */
+export interface PortalApiLogin {
+  /** Proxy path, e.g. '/api/proxy/advertisers/login' */
+  endpoint: string;
+}
+
+/** Optional self-registration view ("Registrar Empresa") rendered via a sliding toggle. */
+export interface PortalRegistration {
+  /** Proxy path, e.g. '/api/proxy/advertisers' */
+  endpoint: string;
+  /** Referral code captured from the entry URL (?ref=) — attached to the payload when present */
+  referralCode?: string | null;
+  /** Called after a 201 Created response */
+  onCreated?: (created: unknown) => void;
+}
 
 interface PortalAuthProps {
   config: PortalConfig;
+  apiLogin?: PortalApiLogin;
+  registration?: PortalRegistration;
 }
 
-export function PortalAuth({ config }: PortalAuthProps) {
+export function PortalAuth({ config, apiLogin, registration }: PortalAuthProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,6 +51,11 @@ export function PortalAuth({ config }: PortalAuthProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [view, setView] = useState<AuthView>('login');
+
+  // Registration fields
+  const [companyName, setCompanyName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [phone, setPhone] = useState('');
 
   // Resiliency States
   const [isOffline, setIsOffline] = useState(false);
@@ -60,23 +84,75 @@ export function PortalAuth({ config }: PortalAuthProps) {
     }
   };
 
+  /** Persist session for portals that authenticate via the TAD API (NestJS JWT). */
+  const persistApiSession = (payload: any, fallbackEmail: string) => {
+    const accessToken = payload?.access_token || payload?.token;
+    if (!accessToken) throw new Error('El servidor no devolvió un token de acceso válido.');
+
+    const user = {
+      id: payload.advertiserId || payload.driverId || payload.entityId || payload.user?.id || '',
+      email: payload.email || payload.user?.email || fallbackEmail,
+      role: payload.role || payload.user?.role || config.role,
+      entityId: payload.entityId || payload.advertiserId || payload.user?.entityId || null,
+    };
+
+    const isSecure = window.location.protocol === 'https:';
+    document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+    localStorage.setItem(config.tokenKey, accessToken);
+    localStorage.setItem(config.userKey, JSON.stringify(user));
+
+    return user;
+  };
+
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (lockedMs > 0) return;
 
     setError('');
 
-    // Zod Validation
-    const result = LoginSchema.safeParse({ email, password });
+    // Zod Validation — API-managed portals accept any email domain (public registration)
+    const result = (apiLogin ? PublicCredentialsSchema : LoginSchema).safeParse({ email, password });
     if (!result.success) {
       setError(result.error.errors[0].message);
       return;
     }
 
     setLoading(true);
-    const circuitBreaker = getAuthCircuitBreaker();
 
     try {
+      if (apiLogin) {
+        // ── API MODE — NestJS JWT (works for self-registered accounts) ──
+        const res = await fetch(apiLogin.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: result.data.email, password: result.data.password }),
+        });
+
+        const text = await res.text().catch(() => '');
+        let payload: any = {};
+        try { payload = JSON.parse(text); } catch { /* noop */ }
+
+        if (!res.ok) {
+          throw new Error(payload?.message || 'Credenciales incorrectas.');
+        }
+
+        persistApiSession(payload, result.data.email);
+        clearRateLimit(result.data.email);
+
+        if (typeof window !== 'undefined' && (window as any).umami) {
+          (window as any).umami.track('auth_login_attempt', { status: 'success', portal: config.role });
+        }
+
+        toast.success('Acceso autorizado', { description: `Bienvenido al ${config.name}` });
+        // Full page navigation: AuthProvider resolves its session once on mount,
+        // so a client-side push would leave the dashboard with a stale null session.
+        window.location.assign(config.dashboardPath);
+        return;
+      }
+
+      // ── SUPABASE MODE ──
+      const circuitBreaker = getAuthCircuitBreaker();
+
       // Execute through Circuit Breaker to prevent Silent Fails
       const { data, error: authError } = await circuitBreaker.execute(() =>
         supabase.auth.signInWithPassword({
@@ -141,6 +217,76 @@ export function PortalAuth({ config }: PortalAuthProps) {
       if (typeof window !== 'undefined' && (window as any).umami) {
         (window as any).umami.track('auth_login_attempt', { status: 'error', portal: config.role });
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!registration) return;
+
+    setError('');
+
+    if (!companyName.trim() || !contactName.trim()) {
+      setError('El nombre de la empresa y el contacto son obligatorios.');
+      return;
+    }
+
+    // Public registration accepts any email domain (businesses use their own)
+    const result = (apiLogin ? PublicCredentialsSchema : LoginSchema).safeParse({ email, password });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // REGLA DE REFERIDOS: adjuntar referralCode capturado de la URL de entrada (?ref=)
+      const referralCode = registration.referralCode?.trim() || undefined;
+
+      const res = await fetch(registration.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName.trim(),
+          contactName: contactName.trim(),
+          email: result.data.email,
+          password: result.data.password,
+          phone: phone.trim() || undefined,
+          ...(referralCode ? { referralCode } : {}),
+        }),
+      });
+
+      const text = await res.text().catch(() => '');
+      let payload: any = {};
+      try { payload = JSON.parse(text); } catch { /* noop */ }
+
+      if (!res.ok) {
+        throw new Error(payload?.message || 'No se pudo completar el registro.');
+      }
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tad_adv_referral_code');
+      }
+
+      if (typeof window !== 'undefined' && (window as any).umami) {
+        (window as any).umami.track('advertiser_registered', { portal: config.role, referred: Boolean(referralCode) });
+      }
+
+      registration.onCreated?.(payload);
+
+      toast.success('Empresa registrada', { description: 'Inicia sesión para continuar con tu bienvenida.' });
+      setCompanyName('');
+      setContactName('');
+      setPhone('');
+      setEmail(result.data.email);
+      setPassword('');
+      setView('login');
+
+    } catch (err: any) {
+      setError(err.message || 'Error al registrar la empresa.');
     } finally {
       setLoading(false);
     }
@@ -246,6 +392,43 @@ export function PortalAuth({ config }: PortalAuthProps) {
             </div>
           )}
 
+          {/* ─── SLIDING MODE SELECTOR ─── */}
+          {registration && (
+            <div className="relative flex bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-md p-1 mb-4" role="tablist" aria-label="Modo de acceso">
+              <div
+                aria-hidden="true"
+                className={clsx(
+                  'absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-[5px] bg-[#FFD400] transition-transform duration-300 ease-out',
+                  view === 'register' ? 'translate-x-full' : 'translate-x-0'
+                )}
+              />
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view !== 'register'}
+                onClick={() => switchView('login')}
+                className={clsx(
+                  'relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-[5px] transition-colors duration-300',
+                  view !== 'register' ? 'text-black' : 'text-[#8a8f98] hover:text-[#f7f8f8]'
+                )}
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === 'register'}
+                onClick={() => switchView('register')}
+                className={clsx(
+                  'relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-[5px] transition-colors duration-300',
+                  view === 'register' ? 'text-black' : 'text-[#8a8f98] hover:text-[#f7f8f8]'
+                )}
+              >
+                Registrar Empresa
+              </button>
+            </div>
+          )}
+
           {/* ─── LOGIN VIEW ─── */}
           {view === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -328,6 +511,158 @@ export function PortalAuth({ config }: PortalAuthProps) {
                   <>
                     <LogIn className="w-3.5 h-3.5" />
                     <span>Iniciar sesión</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* ─── REGISTER VIEW ─── */}
+          {view === 'register' && registration && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <div className="text-center mb-1">
+                <h2 className="text-base font-semibold text-[#f7f8f8] mb-1">Registrar Empresa</h2>
+                <p className="text-[12px] text-[#8a8f98] leading-relaxed">
+                  Crea tu cuenta y lanza tu primera campaña DOOH en minutos.
+                </p>
+              </div>
+
+              {error && <ErrorBanner message={error} onClose={() => setError('')} />}
+
+              {registration.referralCode ? (
+                <div className="flex items-center gap-2 p-2 bg-[#FFD400]/10 border border-[#FFD400]/25 rounded-md text-[11px] text-[#FFD400]">
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Código de referido aplicado: <strong>{registration.referralCode}</strong></span>
+                </div>
+              ) : null}
+
+              <div>
+                <label htmlFor="register-company" className="block text-[12px] font-medium text-[#8a8f98] mb-1.5">
+                  Empresa
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-2.5 flex items-center text-[#62666d] pointer-events-none">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    id="register-company"
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Mi Empresa S.R.L."
+                    required
+                    maxLength={120}
+                    className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md pl-9 pr-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="register-contact" className="block text-[12px] font-medium text-[#8a8f98] mb-1.5">
+                  Nombre de contacto
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-2.5 flex items-center text-[#62666d] pointer-events-none">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    id="register-contact"
+                    type="text"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="Juan Pérez"
+                    required
+                    maxLength={120}
+                    className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md pl-9 pr-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="register-email" className="block text-[12px] font-medium text-[#8a8f98] mb-1.5">
+                  Correo
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-2.5 flex items-center text-[#62666d] pointer-events-none">
+                    <Mail className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    id="register-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="empresa@correo.com"
+                    required
+                    className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md pl-9 pr-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="register-phone" className="block text-[12px] font-medium text-[#8a8f98] mb-1.5">
+                  Teléfono <span className="text-[#62666d]">(opcional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-2.5 flex items-center text-[#62666d] pointer-events-none">
+                    <Phone className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    id="register-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="809-555-5555"
+                    maxLength={20}
+                    className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md pl-9 pr-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="register-password" className="block text-[12px] font-medium text-[#8a8f98] mb-1.5">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    id="register-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyUp={handleKeyUp}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md px-3 py-2.5 pr-10 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute inset-y-0 right-2.5 flex items-center text-[#62666d] hover:text-[#8a8f98] transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                {capsLock && (
+                  <p className="text-amber-400 text-[11px] mt-1.5">Bloqueo de mayúsculas activado</p>
+                )}
+              </div>
+
+              <button
+                id="register-submit"
+                type="submit"
+                disabled={loading || lockedMs > 0}
+                className="w-full bg-[#FFD400] text-black font-semibold text-[13px] py-2.5 rounded-md transition-all hover:bg-[#ffdd33] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-1"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-transparent rounded-full animate-spin" />
+                    <span>Registrando...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Crear cuenta empresarial</span>
                   </>
                 )}
               </button>

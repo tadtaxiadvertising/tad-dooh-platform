@@ -13,28 +13,57 @@ export function MetricsGrid({ data }: MetricsGridProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6 mb-8">
       {metrics.map((m) => {
         const Icon = m.icon;
         return (
-          <div
+          <section
             key={m.label}
-            className="stitched-card group relative space-y-2 overflow-hidden rounded-[2rem] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-white/10"
+            aria-label={m.label}
+            className="group relative overflow-hidden rounded-3xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12]"
           >
-            <div className="absolute -bottom-4 -right-4 opacity-5 transition-opacity duration-500 group-hover:opacity-[0.14]">
-              <Icon className="h-28 w-28" style={{ color: m.color }} />
+            {/* Watermark */}
+            <div
+              className="pointer-events-none absolute -bottom-5 -right-5 opacity-[0.04] transition-opacity duration-500 group-hover:opacity-[0.1]"
+              aria-hidden="true"
+            >
+              <Icon className="h-32 w-32" style={{ color: m.color }} />
             </div>
-            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-transform duration-300 group-hover:scale-105">
-              <Icon
-                className="animate-float h-5 w-5"
-                style={{ color: m.color, filter: `drop-shadow(0 0 8px ${m.color}66)` }}
-              />
+
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">{m.label}</p>
+              <span
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-black/30"
+                aria-hidden="true"
+              >
+                <Icon
+                  className="animate-float h-4 w-4"
+                  style={{ color: m.color, filter: `drop-shadow(0 0 8px ${m.color}55)` }}
+                />
+              </span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">{m.label}</p>
-            <h3 className="text-3xl font-black tracking-tight text-white" style={{ textShadow: `0 0 26px ${m.color}30` }}>
+
+            <p
+              className="mt-3 font-mono font-black leading-none tracking-tighter text-white"
+              style={{
+                fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+                textShadow: `0 0 28px ${m.color}26`,
+              }}
+            >
               {m.value}
-            </h3>
-          </div>
+            </p>
+
+            {/* Hairline de acento */}
+            <div className="mt-4 flex gap-1" aria-hidden="true">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-1 flex-1 rounded-full transition-colors duration-300"
+                  style={{ backgroundColor: i === 0 ? m.color : 'rgba(255,255,255,0.06)' }}
+                />
+              ))}
+            </div>
+          </section>
         );
       })}
     </div>

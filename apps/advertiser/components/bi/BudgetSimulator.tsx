@@ -3,22 +3,34 @@ import { Zap } from 'lucide-react';
 
 export function BudgetSimulator() {
   return (
-    <div className="stitched-card space-y-6 rounded-[2rem] p-8 transition-all duration-300 hover:border-white/10">
+    <section
+      aria-label="Budget Simulator"
+      className="space-y-5 rounded-3xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent p-6 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.12]"
+    >
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <Zap className="animate-float h-4 w-4 text-[#FFD400] drop-shadow-[0_0_8px_rgba(255,212,0,0.5)]" />
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-black/30">
+          <Zap
+            className="animate-float h-4 w-4 text-[#FFD400]"
+            style={{ filter: 'drop-shadow(0 0 8px rgba(255,212,0,0.5))' }}
+          />
+        </span>
+        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-300">Budget Simulator</h3>
+      </div>
+
+      <div className="rounded-2xl border border-white/[0.15] bg-black/20 p-5">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-neutral-500">Recommended Screens</p>
+        <p className="font-mono text-4xl font-black leading-none tracking-tighter text-white">—</p>
+      </div>
+
+      <div className="w-full" aria-hidden="true">
+        <div className="h-3 w-full overflow-hidden rounded-sm border border-neutral-800 bg-neutral-900">
+          <div className="h-full w-0 bg-[#FFD400] transition-all duration-700 ease-out" />
         </div>
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">
-          Budget Simulator
-        </h3>
       </div>
-      <div className="rounded-2xl border border-white/5 bg-black/30 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Recommended Screens</p>
-        <p className="text-3xl font-black text-white drop-shadow-[0_0_18px_rgba(255,212,0,0.15)]">—</p>
-      </div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+
+      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
         Budget simulation module pending implementation
       </p>
-    </div>
+    </section>
   );
 }

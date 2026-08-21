@@ -155,7 +155,9 @@ export class SupabaseAuthGuard implements CanActivate {
 
     // --- ESTRATEGIA 2: Validación vía Supabase SDK (Red) ---
     try {
-      const supabase = this.supabaseService.getClient();
+      // Use anon/publishable client for getUser() — service role key may be
+      // in sb_secret_ format which GoTrue rejects as "Unregistered API key".
+      const supabase = this.supabaseService.getAnonClient() || this.supabaseService.getClient();
       const { data, error } = await supabase.auth.getUser(token);
 
       if (!error && data.user) {

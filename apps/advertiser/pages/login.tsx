@@ -176,7 +176,7 @@ export default function AdvertiserLoginPage() {
               </div>
 
               <div className="text-right">
-                <a href="#" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">¿Olvidaste tu contraseña?</a>
+                <a href="/advertiser/forgot-password" className="text-xs font-medium text-white transition-colors hover:text-[#eab308]">¿Olvidaste tu contraseña?</a>
               </div>
 
               {error ? <p className="text-xs text-red-400">{error}</p> : null}
@@ -195,6 +195,15 @@ export default function AdvertiserLoginPage() {
                 <span>Verified Access</span>
               </div>
             </form>
+
+            <div className="mt-6 pt-6 border-t border-white/5 text-center">
+              <p className="text-sm text-gray-400">
+                ¿Primera vez en TAD?{' '}
+                <a href="/advertiser/onboarding" className="font-semibold text-[#eab308] hover:text-[#fad400] transition-colors">
+                  Regístrate aquí
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </main>

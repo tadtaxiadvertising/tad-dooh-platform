@@ -99,16 +99,21 @@ export default function AdvertiserDashboard() {
         </div>
 
         <div className="flex gap-4">
-          <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm">
-            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#F4F4F5]/40">Status</span>
-            <span className="flex items-center gap-1.5 text-sm font-black text-white">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+          <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm">
+            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Status</span>
+            <span className="flex items-center gap-2 text-sm font-black tracking-tight text-white">
+              <span className="relative inline-flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+              </span>
               SECURE_NODE
             </span>
           </div>
-          <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-[#FFD400]/25">
-            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#F4F4F5]/40">Live Campaigns</span>
-            <span className="text-sm font-black text-[#FFD400] drop-shadow-[0_0_12px_rgba(255,212,0,0.35)]">{data?.stats?.activeCampaigns || 0}</span>
+          <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm transition-colors duration-300 hover:border-[#FFD400]/25">
+            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Live Campaigns</span>
+            <span className="font-mono text-xl font-black leading-none text-[#FFD400]" style={{ textShadow: '0 0 14px rgba(255,212,0,0.35)' }}>
+              {data?.stats?.activeCampaigns || 0}
+            </span>
           </div>
         </div>
       </section>
@@ -123,12 +128,15 @@ export default function AdvertiserDashboard() {
         <div className="lg:col-span-2">
           <BudgetSimulator />
 
-          <div className="stitched-card mt-6 rounded-2xl p-6 transition-all duration-300 hover:border-white/10">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-black/40">
-                <Zap className="animate-float h-4 w-4 text-[#FFD400] drop-shadow-[0_0_8px_rgba(255,212,0,0.5)]" />
-              </div>
-              <h4 className="text-sm font-bold uppercase tracking-wider text-white">Despliegue Instantáneo</h4>
+          <div className="mt-6 space-y-5 rounded-3xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent p-6 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.12]">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-black/30">
+                <Zap
+                  className="animate-float h-4 w-4 text-[#FFD400]"
+                  style={{ filter: 'drop-shadow(0 0 8px rgba(255,212,0,0.5))' }}
+                />
+              </span>
+              <h4 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-300">Despliegue Instantáneo</h4>
             </div>
             <p className="text-xs text-[#F4F4F5]/50 leading-relaxed italic">
               "Nuestro motor de sincronización garantiza que cualquier expansión de pantallas se refleje en su inventario activo en menos de 5 minutos una vez aprobado el pago."
@@ -139,21 +147,6 @@ export default function AdvertiserDashboard() {
         {/* Module 3: Billing & Finance */}
         <div className="lg:col-span-3">
           <BillingPortal data={data?.financials} />
-
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-white/10">
-              <span className="mb-1 block text-[10px] font-bold uppercase text-[#F4F4F5]/40">Último Pago / Factura</span>
-              <span className="text-sm font-bold text-white">
-                {data?.financials?.latestInvoice?.date || 'Sin registros'}
-              </span>
-            </div>
-            <div className="rounded-xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-white/10">
-              <span className="mb-1 block text-[10px] font-bold uppercase text-[#F4F4F5]/40">Referencia</span>
-              <span className="truncate text-sm font-bold text-white">
-                {data?.financials?.latestInvoice?.id || 'TAD-RNC-000'}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </AdvertiserLayout>

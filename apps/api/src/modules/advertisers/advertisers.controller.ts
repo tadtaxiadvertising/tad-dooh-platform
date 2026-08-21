@@ -64,22 +64,37 @@ export class AdvertisersController {
 
   /**
    * Registro de nuevo anunciante — Rate limited: 3 registros/min
+   *
+   * R9 — RBAC ESTRICTO: el rol ADVERTISER es implícito para toda cuenta creada
+   * aquí (resuelto por tabla en login). Cualquier intento de inyectar campos
+   * privilegiados (role, status, referredBy, metadata) se RECHAZA con 400.
    */
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
-  async create(@Body() body: {
-  companyName: string;
-  contactName: string;
-  email: string;
-  phone?: string;
-  password?: string;
-  referralCode?: string;
-  }) {
-  if (!body.companyName || !body.contactName || !body.email) {
-  throw new BadRequestException('companyName, contactName, and email are required');
-  }
-  return this.advertisersService.create(body);
+  async create(@Body() body: Record<string, unknown>) {
+    const FORBIDDEN_FIELDS = ['role', 'isAdmin', 'status', 'referredBy', 'app_metadata', 'user_metadata'];
+    const injected = FORBIDDEN_FIELDS.filter((field) => body?.[field] !== undefined);
+    if (injected.length > 0) {
+      throw new BadRequestException(`Intento de inyección de campos privilegiados bloqueado: ${injected.join(', ')}`);
+    }
+
+    const companyName = body?.companyName;
+    const contactName = body?.contactName;
+    const email = body?.email;
+    if (!companyName || !contactName || !email) {
+      throw new BadRequestException('companyName, contactName, and email are required');
+    }
+
+    // Whitelist explícita — nunca se reenvía el payload crudo
+    return this.advertisersService.create({
+      companyName: String(companyName),
+      contactName: String(contactName),
+      email: String(email),
+      phone: body?.phone !== undefined ? String(body.phone) : undefined,
+      password: typeof body?.password === 'string' ? body.password : undefined,
+      referralCode: typeof body?.referralCode === 'string' ? body.referralCode : undefined,
+    });
   }
 
   /**

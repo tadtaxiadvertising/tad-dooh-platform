@@ -3,6 +3,7 @@ import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { MetricsGrid } from '@/components/bi/MetricsGrid';
 import { BudgetSimulator } from '@/components/bi/BudgetSimulator';
 import { BillingPortal } from '@/components/bi/BillingPortal';
+import OnboardingWizard, { getOnboardingKey } from '@/components/advertiser/OnboardingWizard';
 import {
   ShieldCheck,
   Zap,
@@ -17,9 +18,24 @@ export const getServerSideProps: GetServerSideProps = async () => ({ props: {} }
 export default function AdvertiserDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
   const { session } = useAuth();
 
   const entityId = session?.user?.app_metadata?.entityId;
+
+  // Wizard de bienvenida: se muestra solo si tad_adv_onboarded_${id} no existe
+  useEffect(() => {
+    if (!entityId) return;
+    try {
+      setShowWizard(window.localStorage.getItem(getOnboardingKey(entityId)) !== '1');
+    } catch {
+      setShowWizard(false);
+    }
+  }, [entityId]);
+
+  const wizardOverlay = entityId && showWizard ? (
+    <OnboardingWizard advertiserId={entityId} onComplete={() => setShowWizard(false)} />
+  ) : null;
 
   useEffect(() => {
     if (!entityId) return;
@@ -42,6 +58,7 @@ export default function AdvertiserDashboard() {
   if (loading && entityId) {
     return (
       <AdvertiserLayout title="Cargando..." subtitle="Procesando Datos">
+        {wizardOverlay}
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <div className="w-12 h-12 border-4 border-[#FFD700]/20 border-t-[#FFD700] rounded-full animate-spin" />
           <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Sincronizando con Fleet Engine...</p>
@@ -63,6 +80,7 @@ export default function AdvertiserDashboard() {
 
   return (
     <AdvertiserLayout title="Advertiser BI v6.0" subtitle="Intelligence Dashboard">
+      {wizardOverlay}
       <Toaster theme="dark" position="top-right" richColors />
 
       {/* Hero Section */}

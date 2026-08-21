@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PortalAuth } from '@tad/ui';
 import { PORTAL_CONFIGS } from '@tad/services';
+import CityMapBackdrop from '../../components/advertiser/CityMapBackdrop';
 
 /**
  * Captura del parámetro ?ref= (referralCode) en la URL de entrada del portal.
@@ -61,6 +62,14 @@ export default function AdvertiserLoginPage() {
         referralCode,
         onCreated: () => clearReferralCode(),
       }}
+      background={
+        <>
+          <CityMapBackdrop position="fixed" />
+          <footer className="fixed bottom-4 left-0 right-0 z-10 text-center text-[11px] font-medium tracking-wide text-white/30">
+            TAD Taxi Advertising S.R.L. · Red DOOH República Dominicana
+          </footer>
+        </>
+      }
     />
   );
 }

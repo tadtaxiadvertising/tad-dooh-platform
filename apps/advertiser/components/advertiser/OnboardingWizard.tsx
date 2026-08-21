@@ -10,8 +10,8 @@ import {
   Loader2,
   AlertTriangle,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react';
+import CityMapBackdrop from './CityMapBackdrop';
 
 /**
  * Wizard de bienvenida de 3 pasos para nuevos anunciantes.
@@ -104,56 +104,74 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
   };
 
   const steps = ['Ciudad', 'Presupuesto', 'Proyección'];
+  const fillPct = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop glassmorphism */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" aria-hidden="true" />
+      {/* Backdrop: oscuridad + ciudad viva */}
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-lg" aria-hidden="true" />
+      <CityMapBackdrop />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        initial={{ opacity: 0, scale: 0.94, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
+        transition={{ type: 'spring', stiffness: 260, damping: 26 }}
         role="dialog"
         aria-modal="true"
         aria-label="Bienvenida a TAD Advertiser"
-        className="relative w-full max-w-lg rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] overflow-hidden"
+        className="stitched-card relative w-full max-w-lg rounded-[28px] overflow-hidden"
       >
-        {/* Glow decorativo TAD Yellow */}
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-[#FFD400]/15 blur-[90px]" aria-hidden="true" />
+        {/* Orbes ambientales dentro de la tarjeta */}
+        <div className="pointer-events-none absolute -top-28 left-1/2 h-56 w-80 -translate-x-1/2 rounded-full bg-[#FFD400]/[0.13] blur-[90px]" aria-hidden="true" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 h-56 w-56 rounded-full bg-blue-500/[0.07] blur-[100px]" aria-hidden="true" />
 
         <div className="relative px-7 py-8 sm:px-9">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-4 w-4 text-[#FFD400]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/50">Bienvenida TAD</span>
+          {/* Header — insignia TAD con halo */}
+          <div className="mb-5 flex flex-col items-center text-center">
+            <div className="animate-float mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_44px_rgba(255,212,0,0.18)]">
+              <span className="text-2xl font-black tracking-tight text-[#FFD400] drop-shadow-[0_0_12px_rgba(255,212,0,0.5)]">T</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Bienvenida TAD</span>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-white uppercase italic">
+              Configura tu <span className="text-[#FFD400]">primera campaña</span>
+            </h2>
           </div>
-          <h2 className="text-2xl font-black tracking-tight text-white uppercase italic mb-5">
-            Configura tu <span className="text-[#FFD400]">primera campaña</span>
-          </h2>
 
           {/* Progress */}
           <div className="mb-7 flex items-center gap-2">
             {steps.map((label, i) => (
               <React.Fragment key={label}>
                 <div className="flex items-center gap-1.5">
-                  <div
-                    className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-black transition-colors ${
+                  <motion.div
+                    animate={
+                      i === step
+                        ? { boxShadow: ['0 0 0 0 rgba(255,212,0,0.4)', '0 0 0 6px rgba(255,212,0,0)', '0 0 0 0 rgba(255,212,0,0)'] }
+                        : { boxShadow: '0 0 0 0 rgba(255,212,0,0)' }
+                    }
+                    transition={i === step ? { duration: 1.8, repeat: Infinity } : { duration: 0.2 }}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black transition-colors ${
                       i < step
                         ? 'border-[#FFD400] bg-[#FFD400] text-black'
                         : i === step
-                          ? 'border-[#FFD400] text-[#FFD400]'
-                          : 'border-white/15 text-white/30'
+                          ? 'border-[#FFD400] bg-[#FFD400]/10 text-[#FFD400]'
+                          : 'border-white/15 bg-transparent text-white/30'
                     }`}
                   >
                     {i < step ? <Check className="h-3 w-3" /> : i + 1}
-                  </div>
+                  </motion.div>
                   <span className={`hidden text-[10px] font-bold uppercase tracking-wider sm:block ${i <= step ? 'text-white/70' : 'text-white/30'}`}>
                     {label}
                   </span>
                 </div>
                 {i < steps.length - 1 && (
-                  <div className={`h-px flex-1 ${i < step ? 'bg-[#FFD400]/60' : 'bg-white/10'}`} />
+                  <div className="relative h-px flex-1 overflow-visible bg-white/10">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-[#FFD400] shadow-[0_0_8px_rgba(255,212,0,0.6)]"
+                      initial={false}
+                      animate={{ width: i < step ? '100%' : '0%' }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    />
+                  </div>
                 )}
               </React.Fragment>
             ))}
@@ -162,7 +180,7 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
           <AnimatePresence mode="wait">
             {/* ─── PASO 1: Ciudad objetivo ─── */}
             {step === 0 && (
-              <motion.div key="step-city" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
+              <motion.div key="step-city" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
                 <p className="mb-4 text-sm text-white/60">¿En qué ciudad quieres impactar a tus clientes?</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {CITIES.map((c) => (
@@ -171,19 +189,24 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                       type="button"
                       onClick={() => setCity(c)}
                       aria-pressed={city === c}
-                      className={`group flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${
+                      className={`group relative flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 ${
                         city === c
-                          ? 'border-[#FFD400]/70 bg-[#FFD400]/10 shadow-[0_0_24px_rgba(255,212,0,0.12)]'
-                          : 'border-white/10 bg-white/[0.03] hover:border-white/25'
+                          ? 'border-[#FFD400]/70 bg-[#FFD400]/10 shadow-[0_0_32px_rgba(255,212,0,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                          : 'border-white/10 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:border-white/25 hover:bg-white/[0.05]'
                       }`}
                     >
-                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${city === c ? 'bg-[#FFD400] text-black' : 'bg-white/5 text-white/60 group-hover:text-white'}`}>
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${city === c ? 'bg-[#FFD400] text-black shadow-[0_0_18px_rgba(255,212,0,0.4)]' : 'bg-white/5 text-white/60 group-hover:text-white'}`}>
                         <MapPin className="h-5 w-5" />
                       </span>
                       <span>
-                        <span className={`block text-sm font-bold ${city === c ? 'text-[#FFD400]' : 'text-white'}`}>{c}</span>
+                        <span className={`block text-sm font-black ${city === c ? 'text-[#FFD400]' : 'text-white'}`}>{c}</span>
                         <span className="block text-[11px] text-white/40">Flota activa DOOH</span>
                       </span>
+                      {city === c && (
+                        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFD400] text-black">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -191,7 +214,7 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                   type="button"
                   disabled={!city}
                   onClick={() => setStep(1)}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3 text-sm font-black text-black transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3.5 text-sm font-black uppercase tracking-wide text-black shadow-[0_0_30px_rgba(255,212,0,0.22)] transition-all hover:scale-[1.015] hover:shadow-[0_0_44px_rgba(255,212,0,0.35)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                 >
                   Continuar
                   <ArrowRight className="h-4 w-4" />
@@ -201,15 +224,23 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
 
             {/* ─── PASO 2: Slider de presupuesto ─── */}
             {step === 1 && (
-              <motion.div key="step-budget" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
+              <motion.div key="step-budget" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
                 <p className="mb-4 text-sm text-white/60">
                   Define tu inversión mensual en <span className="font-bold text-white">{city}</span>.
                 </p>
 
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur-sm">
-                  <div className="mb-4 text-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">Presupuesto mensual</span>
-                    <p className="text-4xl font-black tracking-tight text-[#FFD400]">{formatRD(budget)}</p>
+                <div className="rounded-2xl border border-white/5 bg-black/30 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm">
+                  <div className="mb-5 text-center">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Presupuesto mensual</span>
+                    <motion.p
+                      key={budget}
+                      initial={{ scale: 0.97, opacity: 0.7 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.18 }}
+                      className="text-5xl font-black tracking-tight text-[#FFD400] drop-shadow-[0_0_20px_rgba(255,212,0,0.25)]"
+                    >
+                      {formatRD(budget)}
+                    </motion.p>
                   </div>
 
                   <input
@@ -220,9 +251,10 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                     value={budget}
                     onChange={(e) => setBudget(Number(e.target.value))}
                     aria-label="Presupuesto mensual en pesos dominicanos"
-                    className="w-full accent-[#FFD400]"
+                    className="tad-range"
+                    style={{ '--fill': `${fillPct}%` } as React.CSSProperties}
                   />
-                  <div className="mt-1 flex justify-between text-[10px] font-bold text-white/30">
+                  <div className="mt-2 flex justify-between text-[10px] font-bold text-white/30">
                     <span>{formatRD(BUDGET_MIN)}</span>
                     <span>{formatRD(BUDGET_MAX)}</span>
                   </div>
@@ -245,7 +277,7 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                 </div>
 
                 {simError ? (
-                  <p className="mt-3 flex items-center gap-1.5 text-xs text-red-400">
+                  <p className="animate-fade-in mt-3 flex items-center gap-1.5 text-xs text-red-400">
                     <AlertTriangle className="h-3.5 w-3.5" /> {simError}
                   </p>
                 ) : null}
@@ -254,7 +286,7 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                   type="button"
                   disabled={simulating || (!simulation && !simError)}
                   onClick={() => setStep(2)}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3 text-sm font-black text-black transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3.5 text-sm font-black uppercase tracking-wide text-black shadow-[0_0_30px_rgba(255,212,0,0.22)] transition-all hover:scale-[1.015] hover:shadow-[0_0_44px_rgba(255,212,0,0.35)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                 >
                   Ver proyección
                   <ArrowRight className="h-4 w-4" />
@@ -271,28 +303,27 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
 
             {/* ─── PASO 3: Proyecciones ─── */}
             {step === 2 && (
-              <motion.div key="step-projection" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
+              <motion.div key="step-projection" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
                 <p className="mb-4 text-sm text-white/60">
                   Proyección estimada con {formatRD(budget)} en <span className="font-bold text-white">{simulation?.city || city}</span>:
                 </p>
 
                 {simulation ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center backdrop-blur-sm">
-                      <Eye className="mx-auto mb-2 h-5 w-5 text-[#FFD400]" />
-                      <p className="text-xl font-black text-white">{formatNum(simulation.uniqueReach)}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Alcance único</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center backdrop-blur-sm">
-                      <Zap className="mx-auto mb-2 h-5 w-5 text-[#FFD400]" />
-                      <p className="text-xl font-black text-white">{formatNum(simulation.totalImpressions)}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Impresiones</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center backdrop-blur-sm">
-                      <MonitorSmartphone className="mx-auto mb-2 h-5 w-5 text-[#FFD400]" />
-                      <p className="text-xl font-black text-white">{formatNum(simulation.recommendedScreens)}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Pantallas</p>
-                    </div>
+                    {[
+                      { icon: Eye, value: formatNum(simulation.uniqueReach), label: 'Alcance único' },
+                      { icon: Zap, value: formatNum(simulation.totalImpressions), label: 'Impresiones' },
+                      { icon: MonitorSmartphone, value: formatNum(simulation.recommendedScreens), label: 'Pantallas' },
+                    ].map(({ icon: Icon, value, label }) => (
+                      <div
+                        key={label}
+                        className="group rounded-2xl border border-white/5 bg-white/[0.04] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FFD400]/30 hover:bg-white/[0.06] hover:shadow-[0_0_28px_rgba(255,212,0,0.1)]"
+                      >
+                        <Icon className="animate-float mx-auto mb-2 h-5 w-5 text-[#FFD400] drop-shadow-[0_0_8px_rgba(255,212,0,0.45)]" />
+                        <p className="text-2xl font-black tracking-tight text-white sm:text-3xl">{value}</p>
+                        <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-white/40">{label}</p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-center text-xs text-red-300">
@@ -305,7 +336,7 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
                   type="button"
                   disabled={!simulation}
                   onClick={completeOnboarding}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3 text-sm font-black text-black shadow-[0_0_30px_rgba(255,212,0,0.25)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFD400] to-[#ffdd33] py-3.5 text-sm font-black uppercase tracking-wide text-black shadow-[0_0_36px_rgba(255,212,0,0.3)] transition-all hover:scale-[1.015] hover:shadow-[0_0_52px_rgba(255,212,0,0.45)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                 >
                   <Building2 className="h-4 w-4" />
                   Comenzar a anunciar
@@ -320,6 +351,11 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Marca inferior */}
+          <div className="mt-7 border-t border-white/5 pt-4 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-white/25">TAD Node OS · Ecosystem Revision 04</p>
+          </div>
         </div>
       </motion.div>
     </div>

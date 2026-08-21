@@ -39,9 +39,11 @@ interface PortalAuthProps {
   config: PortalConfig;
   apiLogin?: PortalApiLogin;
   registration?: PortalRegistration;
+  /** Capa ambiental del portal (p.ej. malla urbana TAD). Sustituye al glow por defecto. */
+  background?: React.ReactNode;
 }
 
-export function PortalAuth({ config, apiLogin, registration }: PortalAuthProps) {
+export function PortalAuth({ config, apiLogin, registration, background }: PortalAuthProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -350,13 +352,15 @@ export function PortalAuth({ config, apiLogin, registration }: PortalAuthProps) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      {/* Single subtle ambient glow */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[140px] rounded-full opacity-[0.05]"
-          style={{ backgroundColor: config.accentColor }}
-        />
-      </div>
+      {background || (
+        /* Single subtle ambient glow — default */
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[140px] rounded-full opacity-[0.05]"
+            style={{ backgroundColor: config.accentColor }}
+          />
+        </div>
+      )}
 
       {/* Compact centered container */}
       <div className={clsx(

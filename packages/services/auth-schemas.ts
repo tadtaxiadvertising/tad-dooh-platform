@@ -73,6 +73,27 @@ export const LoginSchema = z.object({
 });
 
 /**
+ * Public Credentials Schema — for portals with open self-registration
+ * (e.g. Advertiser). Accepts ANY valid email domain: businesses register
+ * with their own corporate addresses, so the internal-domain whitelist
+ * does NOT apply here. Injection guards remain active.
+ */
+export const PublicCredentialsSchema = z.object({
+  email: z
+    .string()
+    .email('Formato de correo electrónico no válido.')
+    .min(5, 'El correo debe tener al menos 5 caracteres.')
+    .max(254, 'El correo es demasiado largo.')
+    .transform((email) => email.toLowerCase().trim())
+    .and(noSqlInjection),
+  password: z
+    .string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres.')
+    .max(128, 'La contraseña es demasiado larga.')
+    .and(noSqlInjection),
+});
+
+/**
  * Password Recovery Schema
  */
 export const RecoverySchema = z.object({

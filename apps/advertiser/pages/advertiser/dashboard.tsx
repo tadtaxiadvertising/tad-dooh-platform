@@ -99,13 +99,16 @@ export default function AdvertiserDashboard() {
         </div>
 
         <div className="flex gap-4">
-          <div className="bg-[#18181B] p-4 rounded-2xl border border-[#F4F4F5]/5 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase tracking-widest mb-1">Status</span>
-            <span className="text-sm font-black text-white">SECURE_NODE</span>
+          <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm">
+            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#F4F4F5]/40">Status</span>
+            <span className="flex items-center gap-1.5 text-sm font-black text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+              SECURE_NODE
+            </span>
           </div>
-          <div className="bg-[#18181B] p-4 rounded-2xl border border-[#F4F4F5]/5 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase tracking-widest mb-1">Live Campaigns</span>
-            <span className="text-sm font-black text-[#FFD700]">{data?.stats?.activeCampaigns || 0}</span>
+          <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-[#FFD400]/25">
+            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#F4F4F5]/40">Live Campaigns</span>
+            <span className="text-sm font-black text-[#FFD400] drop-shadow-[0_0_12px_rgba(255,212,0,0.35)]">{data?.stats?.activeCampaigns || 0}</span>
           </div>
         </div>
       </section>
@@ -120,10 +123,12 @@ export default function AdvertiserDashboard() {
         <div className="lg:col-span-2">
           <BudgetSimulator />
 
-          <div className="mt-6 p-6 bg-gradient-to-br from-[#18181B] to-[#09090B] rounded-2xl border border-[#F4F4F5]/5">
-            <div className="flex items-center gap-3 mb-4">
-              <Zap className="text-[#fad400]" size={20} />
-              <h4 className="font-bold text-white uppercase text-sm tracking-wider">Despliegue Instantáneo</h4>
+          <div className="stitched-card mt-6 rounded-2xl p-6 transition-all duration-300 hover:border-white/10">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-black/40">
+                <Zap className="animate-float h-4 w-4 text-[#FFD400] drop-shadow-[0_0_8px_rgba(255,212,0,0.5)]" />
+              </div>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-white">Despliegue Instantáneo</h4>
             </div>
             <p className="text-xs text-[#F4F4F5]/50 leading-relaxed italic">
               "Nuestro motor de sincronización garantiza que cualquier expansión de pantallas se refleje en su inventario activo en menos de 5 minutos una vez aprobado el pago."
@@ -136,15 +141,15 @@ export default function AdvertiserDashboard() {
           <BillingPortal data={data?.financials} />
 
           <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="p-4 bg-[#18181B]/40 rounded-xl border border-[#F4F4F5]/5">
-              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Último Pago / Factura</span>
+            <div className="rounded-xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-white/10">
+              <span className="mb-1 block text-[10px] font-bold uppercase text-[#F4F4F5]/40">Último Pago / Factura</span>
               <span className="text-sm font-bold text-white">
                 {data?.financials?.latestInvoice?.date || 'Sin registros'}
               </span>
             </div>
-            <div className="p-4 bg-[#18181B]/40 rounded-xl border border-[#F4F4F5]/5">
-              <span className="text-[10px] font-bold text-[#F4F4F5]/40 uppercase block mb-1">Referencia</span>
-              <span className="text-sm font-bold text-white truncate">
+            <div className="rounded-xl border border-white/5 bg-zinc-900/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition-colors hover:border-white/10">
+              <span className="mb-1 block text-[10px] font-bold uppercase text-[#F4F4F5]/40">Referencia</span>
+              <span className="truncate text-sm font-bold text-white">
                 {data?.financials?.latestInvoice?.id || 'TAD-RNC-000'}
               </span>
             </div>

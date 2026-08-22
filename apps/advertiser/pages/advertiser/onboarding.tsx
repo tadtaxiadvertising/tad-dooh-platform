@@ -1,199 +1,271 @@
-// apps/advertiser/pages/advertiser/onboarding.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
-import EducationCards from '../../components/advertiser/EducationCards';
-import AccountStep from '../../components/advertiser/AccountStep';
-import CampaignStep from '../../components/advertiser/CampaignStep';
-import UploadStep from '../../components/advertiser/UploadStep';
-import { toast, Toaster } from 'react-hot-toast';
+import { useRouter } from 'next/router';
+import clsx from 'clsx';
+import { ChevronLeft, CheckCircle2, Zap, ArrowRight } from 'lucide-react';
+import BenefitsStep from '../../components/advertiser/BenefitsStep';
+import SimulatorStep, { SimulatorConfig } from '../../components/advertiser/SimulatorStep';
+import CommitmentStep, {
+  CommitmentAgreements,
+  CommitmentForm,
+} from '../../components/advertiser/CommitmentStep';
+import { estimateCampaign } from '../../components/advertiser/simulatorPricing';
+import { captureReferralCode, clearReferralCode } from '../../components/advertiser/referral';
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+type OnboardingStep = 1 | 2 | 3 | 4;
+
+const EMPTY_FORM: CommitmentForm = {
+  rnc: '',
+  repName: '',
+  companyName: '',
+  email: '',
+  phone: '',
+  password: '',
+};
+
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export default function AdvertiserOnboarding() {
-  const [step, setStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    companyName: '',
-    email: '',
-    phone: '',
-    password: '',
-    expectedScreens: 1,
-    budget: 1500,
-    targetCity: 'Santo Domingo',
-    file: null as File | null
+  const router = useRouter();
+  const [step, setStep] = useState<OnboardingStep>(1);
+  const [mounted, setMounted] = useState(false);
+
+  const [simulator, setSimulator] = useState<SimulatorConfig>({
+    screens: 25,
+    weeks: 4,
+    frequencySeconds: 120,
+  });
+  const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
+  const [agreements, setAgreements] = useState<CommitmentAgreements>({
+    representative: false,
+    terms: false,
   });
 
-  const nextStep = () => setStep(s => s + 1);
-  const prevStep = () => setStep(s => Math.max(0, s - 1));
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleFinalSubmit = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    setMounted(true);
+    captureReferralCode();
+  }, []);
+
+  const estimate = estimateCampaign(simulator);
+
+  const nextStep = () => setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
+  const prevStep = () => {
+    setError('');
+    setStep((s) => Math.max(s - 1, 1) as OnboardingStep);
+  };
+
+  const validateCommitment = (): string => {
+    if (
+      !form.rnc.trim() ||
+      !form.repName.trim() ||
+      !form.companyName.trim() ||
+      !form.email.trim() ||
+      !form.phone.trim() ||
+      !form.password
+    ) {
+      return 'Todos los campos son obligatorios';
+    }
+    if (!EMAIL_RE.test(form.email.trim())) {
+      return 'Ingresa un correo corporativo válido';
+    }
+    if (form.password.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres';
+    }
+    if (!agreements.representative || !agreements.terms) {
+      return 'Debes confirmar ambas casillas para continuar';
+    }
+    return '';
+  };
+
+  const handleSubmit = async () => {
+    const validationError = validateCommitment();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
     try {
-      // 1. En un flujo real aquí subiríamos el video a Supabase Storage
-      // Pero por ahora simulamos el éxito y enviamos metadata
-      const fileMetadata = formData.file ? {
-        name: formData.file.name,
-        size: formData.file.size,
-        type: formData.file.type
-      } : null;
-
-      const response = await fetch('/api/proxy/onboarding/advertiser', {
+      const res = await fetch('/api/proxy/onboarding/advertiser', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          fileMetadata,
-          file: undefined // No enviamos el binario por JSON
-        })
+          name: form.repName.trim(),
+          companyName: form.companyName.trim(),
+          rnc: form.rnc.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          password: form.password,
+          budget: estimate.total,
+          expectedScreens: simulator.screens,
+          targetCity: 'Santo Domingo',
+          campaignWeeks: simulator.weeks,
+          frequencySeconds: simulator.frequencySeconds,
+          referralCode: captureReferralCode() || undefined,
+        }),
       });
+      const data = await res.json().catch(() => ({}));
+      const serverMessage = Array.isArray(data?.message) ? data.message[0] : data?.message;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error en el registro');
+      if (!res.ok) {
+        throw new Error(serverMessage || 'No pudimos registrar tu campaña. Intenta de nuevo.');
       }
 
-      setStep(4); // Success Step
-      toast.success('¡Registro completado con éxito!');
-    } catch (error: any) {
-      toast.error(error.message || 'Ocurrió un error inesperado');
+      clearReferralCode();
+      setTimeout(() => setStep(4), 600);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const TOTAL_STEPS = 4;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-[#fad400] selection:text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-black to-[#121212] flex flex-col items-center relative overflow-x-hidden font-sans selection:bg-[#FDCB01] selection:text-black">
       <Head>
-        <title>Onboarding | TAD Anunciantes</title>
+        <title>Onboarding | TAD Ad — Anunciantes</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="description"
+          content="Lanza tu marca en las pantallas HD de la red de taxis TAD. Simula tu campaña y asegura tu cobertura geolocalizada."
+        />
       </Head>
 
-      <Toaster position="top-right" />
-
-      {/* Decorative background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#fad400]/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[35vh] bg-[#FDCB01]/[0.05] blur-[130px] rounded-full" />
+        <div className="absolute bottom-0 right-0 w-[50vw] h-[50vh] bg-blue-600/[0.04] blur-[110px] rounded-full" />
       </div>
 
-      <main className="relative z-10 container mx-auto px-4 py-12 md:py-20 flex flex-col items-center min-h-screen">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+      <div className="w-full max-w-lg sm:max-w-2xl px-4 pt-4 pb-2 flex items-center justify-between relative z-10">
+        <button
+          onClick={() => (step > 1 ? prevStep() : router.push('/advertiser/login'))}
+          aria-label="Atrás"
+          className="w-11 h-11 grid place-items-center rounded-xl bg-white/[0.04] border border-white/10 text-[#AAAAAA] hover:text-white hover:bg-white/10 active:scale-90 transition-all"
         >
-          <div className="inline-flex items-center gap-2 bg-slate-900/50 border border-slate-800 px-4 py-2 rounded-full mb-6 backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-[#fad400]" />
-            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-slate-400">Plataforma DOOH v12</span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4">
-            POTENCIA TU <span className="text-[#fad400]">MARCA</span>
-          </h1>
-          <p className="text-slate-400 max-w-xl mx-auto text-lg leading-relaxed">
-            Únete a la red publicitaria más dinámica de la República Dominicana en pocos pasos.
-          </p>
-        </motion.div>
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-        {/* Wizard Progress */}
-        {step > 0 && step < 4 && (
-          <div className="w-full max-w-md mb-12 flex justify-between items-center relative">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-900 -z-10" />
+        <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4].map((i) => (
             <div
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#fad400] transition-all duration-500 -z-10"
-              style={{ width: `${((step - 1) / 2) * 100}%` }}
+              key={i}
+              className={clsx(
+                'h-1 rounded-full transition-all duration-500',
+                step >= i
+                  ? 'bg-[#FDCB01] w-8 shadow-[0_0_12px_rgba(253,203,1,0.45)]'
+                  : 'bg-white/10 w-4',
+              )}
             />
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 border-2 ${step >= i ? 'bg-[#fad400] text-slate-950 border-[#fad400]' : 'bg-slate-950 text-slate-600 border-slate-800'
-                  }`}
-              >
-                {i}
+          ))}
+        </div>
+
+        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest tabular-nums">
+          {step}/{TOTAL_STEPS}
+        </span>
+      </div>
+
+      <div
+        className={clsx(
+          'flex-1 w-full max-w-lg sm:max-w-2xl px-4 pb-10 flex flex-col transition-all duration-700 relative z-10',
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6',
+        )}
+      >
+        {step === 1 && <BenefitsStep onNext={nextStep} />}
+
+        {step === 2 && (
+          <SimulatorStep
+            config={simulator}
+            onChange={(patch) => setSimulator((prev) => ({ ...prev, ...patch }))}
+            onNext={nextStep}
+          />
+        )}
+
+        {step === 3 && (
+          <CommitmentStep
+            form={form}
+            onFormChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+            agreements={agreements}
+            onAgreementsChange={(patch) => setAgreements((prev) => ({ ...prev, ...patch }))}
+            campaignSummary={{
+              screens: simulator.screens,
+              weeks: simulator.weeks,
+              budget: estimate.total,
+            }}
+            onSubmit={handleSubmit}
+            onPrev={prevStep}
+            isLoading={loading}
+            error={error}
+          />
+        )}
+
+        {step === 4 && (
+          <div className="animate-zoom-in flex-1 flex flex-col items-center justify-center text-center py-10">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 w-28 h-28 border-2 border-[#FDCB01]/25 rounded-full animate-ping" />
+              <div className="absolute inset-0 w-28 h-28 border border-[#FDCB01]/15 rounded-full scale-125" />
+              <div className="w-28 h-28 bg-[#FDCB01]/10 rounded-full grid place-items-center">
+                <CheckCircle2 className="w-14 h-14 text-[#FDCB01]" />
               </div>
-            ))}
+            </div>
+
+            <h1 className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-tight mb-3">
+              Tu campaña<br />está asegurada
+            </h1>
+            <p className="text-sm text-[#AAAAAA] max-w-[320px] leading-relaxed mb-8">
+              Registramos tu intención con éxito. Un consultor TAD activará tu plan y coordinará la
+              puesta en vía de tus pantallas.
+            </p>
+
+            <div className="w-full bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10 text-left space-y-2 mb-8">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40">
+                  Resumen de registro
+                </span>
+                <span className="bg-[#FDCB01]/10 text-[#FDCB01] text-[9px] px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                  Pendiente de pago
+                </span>
+              </div>
+              <p className="text-white font-bold text-lg">{form.companyName}</p>
+              <p className="text-xs text-[#AAAAAA]">
+                {simulator.screens} pantallas · {simulator.weeks} semanas ·{' '}
+                {estimate.impressions.toLocaleString()} impactos estimados
+              </p>
+              <div className="mt-3 pt-3 border-t border-white/[0.06] flex justify-between items-center">
+                <span className="text-xs text-[#AAAAAA]">Presupuesto estimado:</span>
+                <span className="text-xl font-black text-white tabular-nums">
+                  RD$ {estimate.total.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06]">
+                <Zap className="w-3 h-3 text-[#FDCB01]" />
+                <span className="text-[9px] font-black text-white uppercase tracking-widest">
+                  Red DOOH · Flota Dominicana
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push('/advertiser/login')}
+              className="w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
+            >
+              <span>Ir a iniciar sesión</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
         )}
 
-        <div className="w-full flex-1 flex flex-col justify-center">
-          <AnimatePresence mode="wait">
-            {step === 0 && (
-              <EducationCards key="edu" onNext={nextStep} />
-            )}
-            {step === 1 && (
-              <AccountStep
-                key="acc"
-                formData={formData}
-                setFormData={setFormData}
-                onNext={nextStep}
-                onPrev={prevStep}
-              />
-            )}
-            {step === 2 && (
-              <CampaignStep
-                key="camp"
-                formData={formData}
-                setFormData={setFormData}
-                onNext={nextStep}
-                onPrev={prevStep}
-              />
-            )}
-            {step === 3 && (
-              <UploadStep
-                key="upload"
-                formData={formData}
-                setFormData={setFormData}
-                onSubmit={handleFinalSubmit}
-                onPrev={prevStep}
-                isLoading={isLoading}
-              />
-            )}
-            {step === 4 && (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-2xl mx-auto bg-slate-900/60 backdrop-blur-3xl border border-slate-800 p-12 rounded-[3rem] shadow-2xl text-center space-y-8"
-              >
-                <div className="bg-green-500/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
-                  <CheckCircle2 className="w-12 h-12 text-green-500" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="text-4xl font-black text-white">¡ESTÁS DENTRO!</h2>
-                  <p className="text-slate-400">Tu intención de campaña ha sido registrada correctamente.</p>
-                </div>
-
-                <div className="bg-slate-950/50 p-6 rounded-3xl border border-slate-800 text-left">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Resumen de Registro</span>
-                    <span className="bg-[#fad400]/10 text-[#fad400] text-[10px] px-2 py-1 rounded-full font-bold">PENDIENTE DE PAGO</span>
-                  </div>
-                  <p className="text-white font-bold text-xl">{formData.companyName}</p>
-                  <p className="text-slate-400 text-sm">{formData.expectedScreens} Pantallas Activas</p>
-                  <div className="mt-6 pt-6 border-t border-slate-900 flex justify-between items-center">
-                    <span className="text-slate-500 text-sm">Total a Invertir:</span>
-                    <span className="text-2xl font-black text-white">RD$ {formData.budget.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <p className="text-slate-500 text-xs italic">
-                  * Un consultor TAD te contactará vía WhatsApp para finalizar los detalles del pago y activación.
-                </p>
-
-                <button
-                  onClick={() => window.location.href = '/advertiser/login'}
-                  className="w-full bg-white text-slate-950 font-black py-5 rounded-2xl hover:bg-slate-100 transition-all shadow-xl"
-                >
-                  ACCEDER AL PORTAL
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="pt-6 text-center">
+          <p className="text-[8px] text-white/20 font-bold uppercase tracking-[0.5em]">
+            TAD Technologies © 2026
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

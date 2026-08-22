@@ -44,6 +44,13 @@ export const BUSINESS_RULES = {
   /** Tasa de ITBIS aplicable (18%) */
   ITBIS_RATE: 0.18,
 
+  /**
+   * Duración fija del slot publicitario en segundos.
+   * Regla de negocio: cada anuncio se reproduce exactamente cada 30 segundos.
+   * El manifiesto de sync y el player deben forzar este valor.
+   */
+  AD_SLOT_DURATION_SECONDS: 30,
+
   // ==========================================
   // CONFIGURACIÓN DE SEGURIDAD
   // ==========================================

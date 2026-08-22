@@ -29,6 +29,8 @@ import {
 } from './DriverWalletCard';
 import { GrowthCenter } from './GrowthCenter';
 import { PulseDot } from './dashboard-utils';
+import { AdvertiserModal } from '../AdvertiserModal';
+import { Store } from 'lucide-react';
 import type { WalletState } from './DriverWalletCard';
 import type { DriverHubData } from '../../hooks/useDriverHub';
 
@@ -149,12 +151,14 @@ function HomeTab({
   walletState,
   connectionStatus,
   readinessCard,
+  onOpenAdvertiserDrive,
 }: {
   hubData: DriverHubData | null;
   isLocalMode: boolean;
   walletState: WalletState | null;
   connectionStatus: ConnectionStatus;
   readinessCard?: React.ReactNode;
+  onOpenAdvertiserDrive: () => void;
 }) {
   const serviceBannerConfig =
     connectionStatus === 'offline'
@@ -211,6 +215,27 @@ function HomeTab({
         }}
       />
 
+      {/* Anunciantes Drive CTA */}
+      <button
+        type="button"
+        onClick={onOpenAdvertiserDrive}
+        className="w-full text-left rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/40"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center shrink-0">
+            <Store className="w-6 h-6 text-black" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Anunciantes Drive</p>
+            <h3 className="mt-1 text-base font-black text-white leading-tight">Registra un negocio y sus pantallas</h3>
+            <p className="mt-1 text-xs text-neutral-400">Campaña por mes · Rotación exacta cada 30s</p>
+          </div>
+          <span className="shrink-0 w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black">
+            +
+          </span>
+        </div>
+      </button>
+
       {/* Earnings Ledger */}
       <EarningsLedger
         current={walletState?.total ?? 0}
@@ -243,6 +268,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
   onSincronizar,
 }) => {
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
+  const [showAdvertiserDrive, setShowAdvertiserDrive] = useState(false);
 
   return (
     <>
@@ -263,6 +289,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
             isLocalMode={isLocalMode}
             walletState={walletState}
             readinessCard={readinessCard}
+            onOpenAdvertiserDrive={() => setShowAdvertiserDrive(true)}
           />
         )}
 
@@ -336,6 +363,12 @@ export const DriverShell: React.FC<DriverShellProps> = ({
 
       {/* Onboarding Modal */}
       {onboardingModal}
+
+      {/* Anunciantes Drive Modal */}
+      <AdvertiserModal
+        isOpen={showAdvertiserDrive}
+        onClose={() => setShowAdvertiserDrive(false)}
+      />
     </>
   );
 };

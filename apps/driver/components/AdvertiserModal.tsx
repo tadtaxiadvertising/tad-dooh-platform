@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, User, Mail, Phone, Upload, CheckCircle2, UserCheck } from 'lucide-react';
+import { X, Building2, Mail, Upload, CheckCircle2, UserCheck, MonitorSmartphone, CalendarRange, Minus, Plus, Radio } from 'lucide-react';
 import { createAdvertiser, updateAdvertiser, getDrivers } from "@tad/services";
+
+const SCREEN_PRESETS = [1, 2, 3, 4, 5];
+const CAMPAIGN_MONTH_OPTIONS = [1, 3, 6, 12];
 
 interface AdvertiserModalProps {
   isOpen: boolean;
@@ -15,6 +18,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     contactName: initialData?.contactName || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
+    password: '',
     whatsapp: initialData?.whatsapp || '',
     instagram: initialData?.instagram || '',
     facebook: initialData?.facebook || '',
@@ -26,6 +30,27 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     status: initialData?.status || 'ACTIVE',
     referredBy: initialData?.referredBy || ''
   });
+
+  const [screensCount, setScreensCount] = useState<number>(
+    Number.isFinite(initialData?.screensCount) && initialData.screensCount > 0 ? initialData.screensCount : 1
+  );
+  const [campaignMonths, setCampaignMonths] = useState<number>(
+    Number.isFinite(initialData?.campaignMonths) && initialData.campaignMonths > 0 ? initialData.campaignMonths : 1
+  );
+
+  const isCustomScreens = screensCount > SCREEN_PRESETS.length;
+
+  const setScreensPreset = (value: number) => {
+    setScreensCount(value);
+  };
+
+  const activateCustomScreens = () => {
+    setScreensCount(Math.max(SCREEN_PRESETS.length + 1, screensCount));
+  };
+
+  const stepCustomScreens = (delta: number) => {
+    setScreensCount((prev) => Math.max(SCREEN_PRESETS.length + 1, prev + delta));
+  };
 
   const [drivers, setDrivers] = useState<any[]>([]);
 
@@ -51,36 +76,44 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const resetForm = () => {
+    setFormData({
+      companyName: '', contactName: '', email: '', phone: '',
+      password: '',
+      whatsapp: '', instagram: '', facebook: '', websiteUrl: '',
+      pedidosYaUrl: '', uberEatsUrl: '',
+      category: 'General',
+      productsData: '[]',
+      status: 'ACTIVE',
+      referredBy: ''
+    });
+    setScreensCount(1);
+    setCampaignMonths(1);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
+      const payload = { ...formData, screensCount, campaignMonths };
       if (initialData?.id) {
-        await updateAdvertiser(initialData.id, formData);
+        await updateAdvertiser(initialData.id, payload);
       } else {
-        await createAdvertiser(formData);
+        await createAdvertiser(payload);
       }
 
       setSuccess(true);
       if (onSuccess) onSuccess();
-      
+
       setTimeout(() => {
         setSuccess(false);
         if (!initialData) {
-          setFormData({ 
-            companyName: '', contactName: '', email: '', phone: '', 
-            whatsapp: '', instagram: '', facebook: '', websiteUrl: '', 
-            pedidosYaUrl: '', uberEatsUrl: '',
-            category: 'General',
-            productsData: '[]',
-            status: 'ACTIVE',
-            referredBy: ''
-          });
+          resetForm();
         }
         onClose();
       }, 2000);
-      
+
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Error al guardar el servidor.');
@@ -96,12 +129,12 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
 
       {/* Modal Container */}
       <div className="relative w-full max-w-2xl bg-zinc-950 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
-        
+
         {/* Header */}
         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02] shrink-0">
           <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-tad-yellow" />
-            {initialData ? 'Editar Perfil QR' : 'Nuevo Anunciante'}
+            <Building2 className="w-8 h-8 text-emerald-500" />
+            {initialData ? 'Editar Anunciante' : 'Anunciantes Drive'}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl text-zinc-500 hover:text-white" title="Cerrar"><X className="w-6 h-6" /></button>
         </div>
@@ -116,45 +149,43 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-[10px] font-black">{error}</div>}
+              {error && <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 text-[10px] font-black">{error}</div>}
 
               {/* basic info */}
               <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-4">
-                <p className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">01. Identidad</p>
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">01. Identidad</p>
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label htmlFor="companyName" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Empresa</label>
-                      <input id="companyName" name="companyName" value={formData.companyName} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      <input id="companyName" name="companyName" value={formData.companyName} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
                    </div>
                    <div className="space-y-1">
                       <label htmlFor="contactName" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contacto</label>
-                      <input id="contactName" name="contactName" value={formData.contactName} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      <input id="contactName" name="contactName" value={formData.contactName} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
                    </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label htmlFor="email" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Email</label>
-                      <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
                    </div>
-                   <div className="space-y-1">
-                      <label htmlFor="password" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contraseña (Acceso Portal)</label>
-                      <input id="password" type="password" name="password" placeholder={initialData ? "Dejar vacío para no cambiar" : "Contraseña"} value={(formData as any).password || ''} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
-                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label htmlFor="phone" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Teléfono</label>
-                      <input id="phone" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      <input id="phone" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
                    </div>
                 </div>
                 <div className="space-y-1">
+                   <label htmlFor="password" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contraseña (Acceso Portal)</label>
+                   <input id="password" type="password" name="password" placeholder={initialData ? "Dejar vacío para no cambiar" : "Contraseña"} value={formData.password} onChange={handleChange} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
+                </div>
+                <div className="space-y-1">
                    <label htmlFor="category" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Categoría / Segmento</label>
-                   <select 
-                     id="category" 
-                     name="category" 
-                     value={formData.category} 
-                     onChange={handleChange} 
-                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none"
+                   <select
+                     id="category"
+                     name="category"
+                     value={formData.category}
+                     onChange={handleChange}
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none focus:border-emerald-500 outline-none transition-all"
                    >
                      <option value="General">General / Otros</option>
                      <option value="Gastronomía">Gastronomía & Restaurantes</option>
@@ -166,14 +197,14 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                 </div>
                 <div className="space-y-1">
                    <label htmlFor="referredBy" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                      <UserCheck className="w-3 h-3 text-tad-yellow" /> Referido por (TAD DRIVER)
+                      <UserCheck className="w-3 h-3 text-emerald-500" /> Referido por (TAD DRIVER)
                    </label>
-                   <select 
-                     id="referredBy" 
-                     name="referredBy" 
-                     value={formData.referredBy} 
-                     onChange={handleChange} 
-                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none"
+                   <select
+                     id="referredBy"
+                     name="referredBy"
+                     value={formData.referredBy}
+                     onChange={handleChange}
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none focus:border-emerald-500 outline-none transition-all"
                    >
                      <option value="">-- Sin Referido / Directo --</option>
                      {drivers.map(d => (
@@ -183,51 +214,164 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
                 </div>
               </div>
 
+              {/* Screens + Monthly Plan */}
+              <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-6">
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">02. Flota de Pantallas</p>
+
+                <div role="radiogroup" aria-label="Cantidad de pantallas" className="grid grid-cols-6 gap-2">
+                  {SCREEN_PRESETS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={!isCustomScreens && screensCount === n}
+                      onClick={() => setScreensPreset(n)}
+                      className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl border transition-all ${
+                        !isCustomScreens && screensCount === n
+                          ? 'bg-emerald-500 border-emerald-500 text-black'
+                          : 'bg-black border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                      }`}
+                    >
+                      <MonitorSmartphone className={`w-4 h-4 ${!isCustomScreens && screensCount === n ? 'text-black' : 'text-emerald-500'}`} />
+                      <span className="text-lg font-black leading-none">{n}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={isCustomScreens}
+                    onClick={activateCustomScreens}
+                    className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl border transition-all ${
+                      isCustomScreens
+                        ? 'bg-emerald-500 border-emerald-500 text-black'
+                        : 'bg-black border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    <span className="text-sm font-black leading-none">6+</span>
+                    <span className={`text-[8px] font-black uppercase tracking-widest ${isCustomScreens ? 'text-black' : 'text-emerald-500'}`}>Más</span>
+                  </button>
+                </div>
+
+                {isCustomScreens && (
+                  <div className="animate-in fade-in duration-300">
+                    <label htmlFor="screensCountInput" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">
+                      Cantidad exacta de pantallas
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => stepCustomScreens(-1)}
+                        aria-label="Quitar pantalla"
+                        className="p-3 rounded-xl bg-black border border-white/10 text-emerald-500 hover:border-emerald-500/40 transition-all"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </button>
+                      <input
+                        id="screensCountInput"
+                        type="number"
+                        min={SCREEN_PRESETS.length + 1}
+                        max={999}
+                        value={screensCount}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (Number.isFinite(v)) setScreensCount(Math.max(SCREEN_PRESETS.length + 1, Math.min(999, v)));
+                        }}
+                        className="flex-1 text-center bg-black border border-white/10 rounded-xl px-4 py-3 text-2xl font-black text-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => stepCustomScreens(1)}
+                        aria-label="Agregar pantalla"
+                        className="p-3 rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 transition-all"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Duration plan — fixed monthly (red reserved exclusively for this block) */}
+                <div className="rounded-3xl border border-red-500/40 bg-red-500/[0.06] p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.25em] flex items-center gap-2">
+                      <CalendarRange className="w-4 h-4" /> Duración de Campaña
+                    </p>
+                    <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[9px] font-black uppercase tracking-[0.2em]">
+                      Por Mes
+                    </span>
+                  </div>
+                  <div role="radiogroup" aria-label="Meses de campaña" className="grid grid-cols-4 gap-2">
+                    {CAMPAIGN_MONTH_OPTIONS.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        role="radio"
+                        aria-checked={campaignMonths === m}
+                        onClick={() => setCampaignMonths(m)}
+                        className={`py-3 rounded-2xl border text-sm font-black transition-all ${
+                          campaignMonths === m
+                            ? 'bg-white border-white text-black'
+                            : 'bg-black border-white/10 text-zinc-300 hover:border-white/40'
+                        }`}
+                      >
+                        {m} {m === 1 ? 'Mes' : 'Meses'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Radio className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
+                      Reproducción fija: cada anuncio rota exactamente cada 30 segundos
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Social Channels */}
               <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-4">
-                <p className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">02. Canales QR</p>
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">03. Canales QR</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label htmlFor="whatsapp" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">WhatsApp</label>
-                    <input id="whatsapp" type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleChange} placeholder="Ej: 18092201111" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                    <input id="whatsapp" type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleChange} placeholder="Ej: 18092201111" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-all" />
                   </div>
                   <div className="space-y-1">
                     <label htmlFor="instagram" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Instagram</label>
-                    <input id="instagram" name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@username" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                    <input id="instagram" name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@username" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all" />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="websiteUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Sitio Web</label>
-                  <input id="websiteUrl" name="websiteUrl" value={formData.websiteUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                  <input id="websiteUrl" name="websiteUrl" value={formData.websiteUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-all" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label htmlFor="pedidosYaUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pedidos Ya (URL)</label>
-                    <input id="pedidosYaUrl" name="pedidosYaUrl" value={formData.pedidosYaUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                    <input id="pedidosYaUrl" name="pedidosYaUrl" value={formData.pedidosYaUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-all" />
                   </div>
                   <div className="space-y-1">
                     <label htmlFor="uberEatsUrl" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Uber Eats (URL)</label>
-                    <input id="uberEatsUrl" name="uberEatsUrl" value={formData.uberEatsUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono" />
+                    <input id="uberEatsUrl" name="uberEatsUrl" value={formData.uberEatsUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-all" />
                   </div>
                 </div>
               </div>
 
               {/* Products JSON */}
               <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-2">
-                <p className="text-[10px] font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">03. Productos (JSON)</p>
-                <textarea 
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">04. Productos (JSON)</p>
+                <textarea
                   id="productsData"
-                  name="productsData" 
-                  value={formData.productsData} 
-                  onChange={handleChange} 
+                  name="productsData"
+                  value={formData.productsData}
+                  onChange={handleChange}
                   rows={4}
-                  className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white font-mono"
+                  className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white font-mono focus:border-emerald-500 outline-none transition-all"
                   placeholder='[{"name": "X", "price": 0, "img": ""}]'
                 />
               </div>
 
               <div className="pt-4">
-                <button type="submit" disabled={loading} className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-black uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all">
+                <button type="submit" disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-black font-black uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all">
                   {loading ? 'Guardando...' : <><Upload className="w-5 h-5" /> {initialData ? 'Actualizar Perfil' : 'Crear Cuenta'}</>}
                 </button>
               </div>
@@ -238,7 +382,3 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
     </div>
   );
 };
-
-
-
-

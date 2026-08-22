@@ -9,6 +9,7 @@ import '../core/network/api_constants.dart';
 import '../core/sync/sync_engine.dart';
 import '../widgets/kill_switch_overlay.dart';
 import '../widgets/dashboard_widgets.dart';
+import '../features/advertiser_drive/advertiser_drive_screen.dart';
 import '../core/di/providers.dart';
 import 'login_screen.dart' show clearLogin;
 import 'onboarding_screen.dart';
@@ -380,6 +381,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               color: TadColors.tadWarning,
               tooltip: 'Gestionar billetera y retiros',
               onTap: () => setState(() => _tab = _Tab.wallet),
+            ),
+            QuickActionTile(
+              icon: Icons.storefront,
+              label: 'Anunciantes',
+              color: TadColors.tadGreen,
+              tooltip: 'Registrar anunciante y sus pantallas',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdvertiserDriveScreen()),
+              ),
             ),
           ],
         ),

@@ -7,6 +7,7 @@
   --color-tad-surface: rgba(255, 255, 255, 0.05);
   --color-tad-accent: #FFD400;
   --color-tad-accent-hover: #e6be00;
+  --color-tad-gold: #FDCB01;
   --color-tad-text: #f0f0f0;
   --color-tad-text-muted: #a0a0a0;
 
@@ -178,4 +179,83 @@
     0 0 0 2px rgba(255, 212, 0, 0.55),
     0 0 18px rgba(255, 212, 0, 0.45);
   cursor: pointer;
+}
+
+/* ── TAD-Ad Onboarding — sliders tricolor (Oro / Púrpura / Azul) ── */
+.tad-slider {
+  --slider-color: #fdcb01;
+  --slider-glow: rgba(253, 203, 1, 0.45);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color) 0%,
+    var(--slider-color) var(--fill, 50%),
+    rgba(255, 255, 255, 0.08) var(--fill, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.tad-range-purple {
+  --slider-color: #a78bfa;
+  --slider-glow: rgba(167, 139, 250, 0.45);
+}
+
+.tad-range-blue {
+  --slider-color: #60a5fa;
+  --slider-glow: rgba(96, 165, 250, 0.45);
+}
+
+.tad-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--slider-color);
+  border: 3px solid #000;
+  box-shadow:
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tad-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.tad-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--slider-color);
+  border: 3px solid #000;
+  box-shadow:
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow);
+  cursor: pointer;
+}
+
+/* ── TAD-Ad Wizard — transiciones de paso sin librerías ── */
+@keyframes step-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-step-in {
+  animation: step-in-right 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes zoom-in-soft {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-zoom-in {
+  animation: zoom-in-soft 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

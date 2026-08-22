@@ -156,8 +156,8 @@ export default function DriverOnboarding() {
             <div className="space-y-3 flex-1">
               {[
                 { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu pantalla (hasta 15 anuncios simultáneos).', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { icon: <Users className="w-5 h-5" />, title: 'Referidos de Negocios', desc: 'Gana RD$500 adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-                { icon: <Car className="w-5 h-5" />, title: 'Invitar Compañeros', desc: 'Gana un bono de RD$500 por cada compañero taxista que refieras cuando instale su pantalla.', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                { icon: <Users className="w-5 h-5" />, title: 'Referidos de Negocios', desc: 'Gana RD$500 adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.', color: 'text-emerald-300', bg: 'bg-emerald-500/10' },
+                { icon: <Car className="w-5 h-5" />, title: 'Invitar Compañeros', desc: 'Gana un bono de RD$500 por cada compañero taxista que refieras cuando instale su pantalla.', color: 'text-green-400', bg: 'bg-green-500/10' },
               ].map((b, i) => (
                 <div
                   key={i}
@@ -243,7 +243,7 @@ export default function DriverOnboarding() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">2. Negocios Recomendados (0 - 10)</span>
-                  <span className="text-sm font-black text-purple-400">{referredAdvertisers} {referredAdvertisers === 1 ? 'negocio' : 'negocios'}</span>
+                  <span className="text-sm font-black text-emerald-400">{referredAdvertisers} {referredAdvertisers === 1 ? 'negocio' : 'negocios'}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -259,7 +259,7 @@ export default function DriverOnboarding() {
                     max="10"
                     value={referredAdvertisers}
                     onChange={(e) => setReferredAdvertisers(parseInt(e.target.value))}
-                    className="flex-1 accent-purple-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 accent-emerald-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                   />
                   <button
                     type="button"
@@ -276,7 +276,7 @@ export default function DriverOnboarding() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">3. Compañeros Taxistas Invitados (0 - 10)</span>
-                  <span className="text-sm font-black text-blue-400">{referredDrivers} {referredDrivers === 1 ? 'compañero' : 'compañeros'}</span>
+                  <span className="text-sm font-black text-green-400">{referredDrivers} {referredDrivers === 1 ? 'compañero' : 'compañeros'}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -292,7 +292,7 @@ export default function DriverOnboarding() {
                     max="10"
                     value={referredDrivers}
                     onChange={(e) => setReferredDrivers(parseInt(e.target.value))}
-                    className="flex-1 accent-blue-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 accent-green-400 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                   />
                   <button
                     type="button"

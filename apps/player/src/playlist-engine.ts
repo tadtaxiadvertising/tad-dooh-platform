@@ -9,6 +9,10 @@ import env from './config';
 
 const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
+// Business rule: each ad occupies an exact 30-second slot
+// (mirrors BUSINESS_RULES.AD_SLOT_DURATION_SECONDS in apps/api)
+const AD_SLOT_DURATION_MS = 30_000;
+
 export class PlaylistEngine {
  private playlist: MediaAsset[] = [];
  private activePlaylist: MediaAsset[] = [];
@@ -187,7 +191,8 @@ export class PlaylistEngine {
 
   const asset = this.activePlaylist[this.currentIndex];
   this.setStatus('playing');
-  this.startWatchdog(asset.duration * 1000 + 5000); // duration + 5s buffer
+  // Fixed 30s slot: transition even if the video is longer
+  this.startWatchdog(Math.min(asset.duration * 1000 + 5000, AD_SLOT_DURATION_MS));
 
   // Generate QR URL for the current campaign
   const qrUrl = this.generateQrUrl(asset);
@@ -333,12 +338,12 @@ export class PlaylistEngine {
   }, timeoutMs);
  }
 
- private resetWatchdog(): void {
-  if (this.watchdogTimer && this.activePlaylist.length > 0) {
-   const asset = this.activePlaylist[this.currentIndex];
-   this.startWatchdog(asset.duration * 1000 + 5000);
+  private resetWatchdog(): void {
+   if (this.watchdogTimer && this.activePlaylist.length > 0) {
+    const asset = this.activePlaylist[this.currentIndex];
+    this.startWatchdog(Math.min(asset.duration * 1000 + 5000, AD_SLOT_DURATION_MS));
+   }
   }
- }
 
  private clearWatchdog(): void {
   if (this.watchdogTimer) {

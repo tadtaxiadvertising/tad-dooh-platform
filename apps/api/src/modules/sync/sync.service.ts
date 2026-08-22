@@ -222,7 +222,8 @@ export class SyncService {
             url: m.cdnUrl || m.url || '',
             checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
             hashMd5: m.hashMd5 || m.hash || m.checksum || null,
-            duration: m.duration || m.durationSeconds || 30,
+            // Regla de negocio: cada anuncio ocupa un slot fijo de 30s
+            duration: BUSINESS_RULES.AD_SLOT_DURATION_SECONDS,
             version: new Date(c.updatedAt || new Date()).getTime(),
             priority: c.priority || 5
           });

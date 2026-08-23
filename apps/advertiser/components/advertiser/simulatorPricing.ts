@@ -8,6 +8,7 @@ export interface CampaignConfig {
   screens: number;
   months: number;
   frequencySeconds: number;
+  includeProduction: boolean;
 }
 
 export interface CampaignEstimate {
@@ -26,12 +27,12 @@ export function estimateImpressions(config: CampaignConfig): number {
 
 export function estimateCampaign(config: CampaignConfig): CampaignEstimate {
   const screensCost = config.screens * config.months * SCREEN_MONTHLY_RATE;
-  const frequencyUplift = 0;
-  const total = Math.round(screensCost + PRODUCTION_FEE);
+  const productionFee = config.includeProduction ? PRODUCTION_FEE : 0;
+  const total = Math.round(screensCost + productionFee);
   return {
     screensCost,
-    frequencyUplift,
-    productionFee: PRODUCTION_FEE,
+    frequencyUplift: 0,
+    productionFee,
     total,
     impressions: estimateImpressions(config),
   };

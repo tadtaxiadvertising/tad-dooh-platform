@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowRight, Calculator, TrendingUp, RotateCcw } from 'lucide-react';
+import { ArrowRight, Calculator, TrendingUp, RotateCcw, Check } from 'lucide-react';
 import { estimateCampaign, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from './simulatorPricing';
 
 export interface SimulatorConfig {
   screens: number;
   months: number;
   frequencySeconds: number;
+  includeProduction: boolean;
 }
 
 interface SimulatorStepProps {
@@ -40,7 +41,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
   return (
     <div className="animate-step-in flex flex-col flex-1">
       <div className="text-center pt-6 pb-6">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#22C55E]/[0.08] border border-[#22C55E]/25 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#22C55E] mb-5">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#FDCB01] mb-5">
           <Calculator className="w-3 h-3" />
           Simulador en vivo · 2 de 4
         </div>
@@ -48,7 +49,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
           Simula tu impacto<br />y presupuesto
         </h1>
         <p className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-[#AAAAAA]">
-          <TrendingUp className="w-3 h-3 text-[#22C55E]" />
+          <TrendingUp className="w-3 h-3 text-[#FDCB01]" />
           El anunciante promedio de la red invierte RD$45,000+ por campaña
         </p>
       </div>
@@ -60,7 +61,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               1. Número de pantallas (taxis)
               <span className="text-white/25 normal-case">(1 - 100)</span>
             </span>
-            <span className="text-base font-black tabular-nums shrink-0 text-[#22C55E]">
+            <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
               {config.screens} taxis
             </span>
           </div>
@@ -73,7 +74,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
                 onClick={() => handleScreenSelect(n)}
                 className={`w-12 h-12 rounded-xl font-black text-lg transition-all select-none flex items-center justify-center ${
                   config.screens === n
-                    ? 'bg-[#22C55E] text-black shadow-[0_0_20px_rgba(34,197,94,0.35)] border border-[#22C55E]/30'
+                    ? 'bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30'
                     : 'bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20'
                 }`}
               >
@@ -96,7 +97,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
             </div>
           </div>
 
-          <p className="text-[10px] text-[#22C55E]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-[10px] text-[#FDCB01]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
             <RotateCcw className="w-3 h-3" />
             Rotación exacta cada 30 segundos
           </p>
@@ -132,7 +133,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               step={1}
               value={config.months}
               onChange={(e) => handleMonthsChange(Number(e.target.value))}
-              className="tad-slider tad-range-green flex-1 min-h-[32px]"
+              className="tad-slider tad-range-yellow flex-1 min-h-[32px]"
               style={{ '--fill': `${((config.months - 1) / 11) * 100}%` } as React.CSSProperties}
               aria-label="Duración de la campaña en meses"
             />
@@ -145,6 +146,30 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               +
             </button>
           </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-end gap-3 mb-3">
+            <span className="text-[10px] font-black text-[#AAAAAA] uppercase tracking-wider leading-snug">
+              3. Producción creativa
+              <span className="text-white/25 normal-case">(opcional)</span>
+            </span>
+            <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
+              {config.includeProduction ? 'Incluida' : 'No incluida'}
+            </span>
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer group/check p-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors">
+            <input
+              type="checkbox"
+              checked={config.includeProduction}
+              onChange={(e) => onChange({ includeProduction: e.target.checked } as Partial<SimulatorConfig>)}
+              className="mt-0.5 w-5 h-5 shrink-0 accent-[#FDCB01]"
+            />
+            <span className="text-[11px] text-[#AAAAAA] leading-relaxed group-hover/check:text-white/80 transition-colors">
+              Incluir producción creativa profesional <span className="text-[#FDCB01] font-bold">(RD$ {PRODUCTION_FEE.toLocaleString()})</span>
+            </span>
+          </label>
         </div>
 
         <div className="bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10">
@@ -161,7 +186,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#22C55E] mb-1">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
                 Impactos est.
               </p>
               <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
@@ -177,15 +202,17 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
                 RD${estimate.screensCost.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span>Producción creativa:</span>
-              <span className="text-white font-bold tabular-nums shrink-0">
-                RD${estimate.productionFee.toLocaleString()}
-              </span>
-            </div>
+            {config.includeProduction && (
+              <div className="flex justify-between gap-4">
+                <span>Producción creativa:</span>
+                <span className="text-white font-bold tabular-nums shrink-0">
+                  RD${estimate.productionFee.toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
 
-          <p className="mt-4 pt-4 border-t border-white/[0.06] text-[10px] font-bold leading-relaxed text-[#22C55E]/90">
+          <p className="mt-4 pt-4 border-t border-white/[0.06] text-[10px] font-bold leading-relaxed text-[#FDCB01]/90">
             * Disponibilidad limitada de pantallas en rutas clave. Resérvalo ahora.
           </p>
         </div>
@@ -194,7 +221,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
       <div className="pt-6 mt-auto">
         <button
           onClick={onNext}
-          className="w-full min-h-[52px] bg-[#22C55E] hover:bg-[#16A34A] text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(34,197,94,0.28)] flex items-center justify-center gap-3"
+          className="w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
         >
           <span>Asegurar este plan</span>
           <ArrowRight className="w-5 h-5" />

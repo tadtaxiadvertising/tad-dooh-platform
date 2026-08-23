@@ -34,6 +34,7 @@ export default function AdvertiserOnboarding() {
     screens: 1,
     months: 1,
     frequencySeconds: 30,
+    includeProduction: true,
   });
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({
@@ -105,6 +106,7 @@ export default function AdvertiserOnboarding() {
           targetCity: 'Santo Domingo',
           campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
+          includeProduction: simulator.includeProduction,
           referralCode: captureReferralCode() || undefined,
         }),
       });

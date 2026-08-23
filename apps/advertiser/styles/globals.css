@@ -216,6 +216,11 @@
   --slider-glow: rgba(34, 197, 94, 0.45);
 }
 
+.tad-range-yellow {
+  --slider-color: #FDCB01;
+  --slider-glow: rgba(253, 203, 1, 0.45);
+}
+
 .tad-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;

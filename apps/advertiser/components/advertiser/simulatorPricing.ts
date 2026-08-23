@@ -1,11 +1,12 @@
-export const SCREEN_WEEKLY_RATE = 300;
+export const SCREEN_MONTHLY_RATE = 2500;
 export const PRODUCTION_FEE = 2500;
 export const DAILY_ACTIVE_HOURS = 10;
 export const ATTENTION_RATE = 0.4;
+export const FIXED_FREQUENCY_SECONDS = 30;
 
 export interface CampaignConfig {
   screens: number;
-  weeks: number;
+  months: number;
   frequencySeconds: number;
 }
 
@@ -17,21 +18,16 @@ export interface CampaignEstimate {
   impressions: number;
 }
 
-export function frequencyMultiplier(intervalSeconds: number): number {
-  return 1 + ((300 - intervalSeconds) / 270) * 0.5;
-}
-
 export function estimateImpressions(config: CampaignConfig): number {
-  const playsPerHour = 3600 / config.frequencySeconds;
+  const playsPerHour = 3600 / FIXED_FREQUENCY_SECONDS;
   const dailyPerScreen = playsPerHour * DAILY_ACTIVE_HOURS * ATTENTION_RATE;
-  return Math.round(config.screens * config.weeks * 7 * dailyPerScreen);
+  return Math.round(config.screens * config.months * 30 * dailyPerScreen);
 }
 
 export function estimateCampaign(config: CampaignConfig): CampaignEstimate {
-  const screensCost = config.screens * config.weeks * SCREEN_WEEKLY_RATE;
-  const multiplier = frequencyMultiplier(config.frequencySeconds);
-  const frequencyUplift = Math.round(screensCost * (multiplier - 1));
-  const total = Math.round(screensCost * multiplier + PRODUCTION_FEE);
+  const screensCost = config.screens * config.months * SCREEN_MONTHLY_RATE;
+  const frequencyUplift = 0;
+  const total = Math.round(screensCost + PRODUCTION_FEE);
   return {
     screensCost,
     frequencyUplift,

@@ -31,9 +31,9 @@ export default function AdvertiserOnboarding() {
   const [mounted, setMounted] = useState(false);
 
   const [simulator, setSimulator] = useState<SimulatorConfig>({
-    screens: 25,
-    weeks: 4,
-    frequencySeconds: 120,
+    screens: 1,
+    months: 1,
+    frequencySeconds: 30,
   });
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({
@@ -103,7 +103,7 @@ export default function AdvertiserOnboarding() {
           budget: estimate.total,
           expectedScreens: simulator.screens,
           targetCity: 'Santo Domingo',
-          campaignWeeks: simulator.weeks,
+          campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
           referralCode: captureReferralCode() || undefined,
         }),
@@ -139,7 +139,7 @@ export default function AdvertiserOnboarding() {
 
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[35vh] bg-[#FDCB01]/[0.05] blur-[130px] rounded-full" />
-        <div className="absolute bottom-0 right-0 w-[50vw] h-[50vh] bg-blue-600/[0.04] blur-[110px] rounded-full" />
+        <div className="absolute bottom-0 right-0 w-[50vw] h-[50vh] bg-[#22C55E]/[0.04] blur-[110px] rounded-full" />
       </div>
 
       <div className="w-full max-w-lg sm:max-w-2xl px-4 pt-4 pb-2 flex items-center justify-between relative z-10">
@@ -194,7 +194,7 @@ export default function AdvertiserOnboarding() {
             onAgreementsChange={(patch) => setAgreements((prev) => ({ ...prev, ...patch }))}
             campaignSummary={{
               screens: simulator.screens,
-              weeks: simulator.weeks,
+              months: simulator.months,
               budget: estimate.total,
             }}
             onSubmit={handleSubmit}
@@ -233,7 +233,7 @@ export default function AdvertiserOnboarding() {
               </div>
               <p className="text-white font-bold text-lg">{form.companyName}</p>
               <p className="text-xs text-[#AAAAAA]">
-                {simulator.screens} pantallas · {simulator.weeks} semanas ·{' '}
+                {simulator.screens} pantallas · {simulator.months} mes{simulator.months > 1 ? 'es' : ''} ·{' '}
                 {estimate.impressions.toLocaleString()} impactos estimados
               </p>
               <div className="mt-3 pt-3 border-t border-white/[0.06] flex justify-between items-center">

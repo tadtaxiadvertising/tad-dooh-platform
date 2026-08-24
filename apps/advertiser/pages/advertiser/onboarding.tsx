@@ -35,8 +35,6 @@ export default function AdvertiserOnboarding() {
     months: 1,
     frequencySeconds: 30,
     includeProduction: true,
-    invitedDrivers: 0,
-    referredBusinesses: 0,
   });
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({
@@ -109,8 +107,6 @@ export default function AdvertiserOnboarding() {
           campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
           includeProduction: simulator.includeProduction,
-          invitedDrivers: simulator.invitedDrivers,
-          referredBusinesses: simulator.referredBusinesses,
           referralCode: captureReferralCode() || undefined,
         }),
       });

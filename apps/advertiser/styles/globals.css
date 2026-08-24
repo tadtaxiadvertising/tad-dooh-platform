@@ -181,169 +181,316 @@
   cursor: pointer;
 }
 
-/* ── TAD-Ad Onboarding — fluid premium sliders ── */
+/* ── Premium Fluid Slider System ── */
 .tad-slider {
   --slider-color: #FDCB01;
-  --slider-glow: rgba(253, 203, 1, 0.5);
-  --slider-track: rgba(255, 255, 255, 0.06);
+  --slider-color-dim: rgba(253, 203, 1, 0.35);
+  --slider-glow: rgba(253, 203, 1, 0.6);
+  --slider-track-bg: rgba(255, 255, 255, 0.05);
+  --slider-track-border: rgba(255, 255, 255, 0.08);
+  
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 10px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--slider-track-bg);
+  border: 1px solid var(--slider-track-border);
+  outline: none;
+  cursor: grab;
+  transition: 
+    height 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.tad-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
   border-radius: 9999px;
   background: linear-gradient(
     to right,
     var(--slider-color) 0%,
-    var(--slider-color) var(--fill, 50%),
-    var(--slider-track) var(--fill, 50%),
-    var(--slider-track) 100%
+    var(--slider-color) var(--fill, 0%),
+    var(--slider-track-bg) var(--fill, 0%),
+    var(--slider-track-bg) 100%
   );
-  outline: none;
-  cursor: grab;
-  transition: height 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.tad-slider::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color) 0%,
+    var(--slider-color) var(--fill, 0%),
+    var(--slider-track-bg) var(--fill, 0%),
+    var(--slider-track-bg) 100%
+  );
+  border: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .tad-slider:hover {
-  height: 12px;
+  height: 8px;
+  border-color: var(--slider-color-dim);
+  box-shadow: 0 0 0 1px var(--slider-color-dim);
+}
+
+.tad-slider:hover::-webkit-slider-runnable-track {
+  height: 8px;
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 12px var(--slider-color-dim);
+}
+
+.tad-slider:hover::-moz-range-track {
+  height: 8px;
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 12px var(--slider-color-dim);
 }
 
 .tad-slider:active {
   cursor: grabbing;
-  height: 14px;
+  height: 10px;
+  border-color: var(--slider-color);
+  box-shadow: 0 0 0 2px var(--slider-glow);
+}
+
+.tad-slider:active::-webkit-slider-runnable-track {
+  height: 10px;
+}
+
+.tad-slider:active::-moz-range-track {
+  height: 10px;
+}
+
+.tad-slider:focus-visible {
+  outline: none;
+  border-color: var(--slider-color);
+  box-shadow: 0 0 0 3px var(--slider-glow);
 }
 
 .tad-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 9999px;
-  background: var(--slider-color);
-  border: 4px solid #000;
-  box-shadow:
-    0 0 0 3px var(--slider-glow),
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    0 0 24px var(--slider-glow);
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 50%),
+    var(--slider-color);
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 0 0 4px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  transition: 
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s ease,
+    width 0.15s ease,
+    height 0.15s ease;
   margin-top: -9px;
+  z-index: 2;
 }
 
 .tad-slider:hover::-webkit-slider-thumb {
-  transform: scale(1.15);
-  box-shadow:
-    0 0 0 4px var(--slider-glow),
-    0 6px 20px rgba(0, 0, 0, 0.5),
-    0 0 32px var(--slider-glow);
+  transform: scale(1.12);
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  box-shadow: 
+    0 0 0 5px rgba(0, 0, 0, 0.15),
+    0 6px 24px rgba(0, 0, 0, 0.55),
+    0 0 0 3px var(--slider-glow),
+    0 0 28px var(--slider-glow),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.25),
+    inset 0 3px 6px rgba(255, 255, 255, 0.35);
 }
 
 .tad-slider:active::-webkit-slider-thumb {
-  transform: scale(1.25);
+  transform: scale(1.2);
+  width: 30px;
+  height: 30px;
+  margin-top: -12px;
+  box-shadow: 
+    0 0 0 6px rgba(0, 0, 0, 0.15),
+    0 8px 28px rgba(0, 0, 0, 0.6),
+    0 0 0 4px var(--slider-glow),
+    0 0 36px var(--slider-glow),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 4px 8px rgba(255, 255, 255, 0.4);
 }
 
 .tad-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 9999px;
-  background: var(--slider-color);
-  border: 4px solid #000;
-  box-shadow:
-    0 0 0 3px var(--slider-glow),
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    0 0 24px var(--slider-glow);
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 50%),
+    var(--slider-color);
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 0 0 4px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3);
   cursor: grab;
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: 
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s ease;
 }
 
 .tad-slider::-moz-range-thumb:hover {
-  transform: scale(1.15);
-}
-
-.tad-slider::-moz-range-track {
-  width: 100%;
-  height: 10px;
-  border-radius: 9999px;
-  background: transparent;
-  border: none;
+  transform: scale(1.12);
+  box-shadow: 
+    0 0 0 5px rgba(0, 0, 0, 0.15),
+    0 6px 24px rgba(0, 0, 0, 0.55),
+    0 0 0 3px var(--slider-glow),
+    0 0 28px var(--slider-glow);
 }
 
 .tad-range-purple {
   --slider-color: #a78bfa;
-  --slider-glow: rgba(167, 139, 250, 0.55);
-  --slider-track: rgba(167, 139, 250, 0.12);
+  --slider-color-dim: rgba(167, 139, 250, 0.35);
+  --slider-glow: rgba(167, 139, 250, 0.65);
+  --slider-track-bg: rgba(167, 139, 250, 0.06);
+  --slider-track-border: rgba(167, 139, 250, 0.1);
 }
 
 .tad-range-blue {
   --slider-color: #60a5fa;
-  --slider-glow: rgba(96, 165, 250, 0.55);
-  --slider-track: rgba(96, 165, 250, 0.12);
+  --slider-color-dim: rgba(96, 165, 250, 0.35);
+  --slider-glow: rgba(96, 165, 250, 0.65);
+  --slider-track-bg: rgba(96, 165, 250, 0.06);
+  --slider-track-border: rgba(96, 165, 250, 0.1);
 }
 
 .tad-range-green {
   --slider-color: #22C55E;
-  --slider-glow: rgba(34, 197, 94, 0.55);
-  --slider-track: rgba(34, 197, 94, 0.12);
+  --slider-color-dim: rgba(34, 197, 94, 0.35);
+  --slider-glow: rgba(34, 197, 94, 0.65);
+  --slider-track-bg: rgba(34, 197, 94, 0.06);
+  --slider-track-border: rgba(34, 197, 94, 0.1);
 }
 
 .tad-range-yellow {
   --slider-color: #FDCB01;
-  --slider-glow: rgba(253, 203, 1, 0.5);
-  --slider-track: rgba(253, 203, 1, 0.1);
+  --slider-color-dim: rgba(253, 203, 1, 0.35);
+  --slider-glow: rgba(253, 203, 1, 0.6);
+  --slider-track-bg: rgba(253, 203, 1, 0.06);
+  --slider-track-border: rgba(253, 203, 1, 0.1);
 }
 
 .tad-range-orange {
   --slider-color: #FF8C00;
-  --slider-glow: rgba(255, 140, 0, 0.55);
-  --slider-track: rgba(255, 140, 0, 0.12);
+  --slider-color-dim: rgba(255, 140, 0, 0.35);
+  --slider-glow: rgba(255, 140, 0, 0.65);
+  --slider-track-bg: rgba(255, 140, 0, 0.06);
+  --slider-track-border: rgba(255, 140, 0, 0.1);
 }
 
-/* Smooth fill animation for programmatic changes */
 @keyframes slider-fill {
   from { background-size: 0% 100%; }
   to { background-size: var(--fill, 50%) 100%; }
 }
 
-.tad-slider.animate-fill {
-  animation: slider-fill 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+.tad-slider.animate-fill::-webkit-slider-runnable-track {
+  animation: slider-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   background-image: linear-gradient(
     to right,
     var(--slider-color) 0%,
     var(--slider-color) var(--fill, 0%),
-    var(--slider-track) var(--fill, 0%),
-    var(--slider-track) 100%
+    var(--slider-track-bg) var(--fill, 0%),
+    var(--slider-track-bg) 100%
   );
 }
 
-/* Stepper buttons */
+.tad-slider.animate-fill::-moz-range-track {
+  animation: slider-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  background-image: linear-gradient(
+    to right,
+    var(--slider-color) 0%,
+    var(--slider-color) var(--fill, 0%),
+    var(--slider-track-bg) var(--fill, 0%),
+    var(--slider-track-bg) 100%
+  );
+}
+
+/* Stepper buttons - premium */
 .tad-stepper {
   width: 44px;
   height: 44px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  background: 
+    linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1.25rem;
-  color: white;
+  font-size: 1.35rem;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.tad-stepper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--slider-color, #FDCB01) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .tad-stepper:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: 
+    linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%);
   border-color: rgba(255, 255, 255, 0.15);
-  transform: scale(1.05);
+  transform: scale(1.06);
+  color: var(--slider-color, #FDCB01);
+}
+
+.tad-stepper:hover::before {
+  opacity: 0.15;
 }
 
 .tad-stepper:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .tad-stepper:focus-visible {
-  outline: 2px solid var(--slider-color);
+  outline: 2px solid var(--slider-color, #FDCB01);
   outline-offset: 2px;
+}
+
+.tad-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tad-slider-track-wrapper {
+  flex: 1;
+  position: relative;
+  height: 36px;
+  display: flex;
+  align-items: center;
 }
 
 /* ── TAD-Ad Wizard — transiciones de paso sin librerías ── */

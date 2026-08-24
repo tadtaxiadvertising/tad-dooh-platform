@@ -127,6 +127,71 @@ body {
   height: var(--bar-h, 0%);
 }
 
+/* ── Slider color variants ── */
+.tad-slider {
+  --slider-color: #FDCB01;
+  --slider-glow: rgba(253, 203, 1, 0.45);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color) 0%,
+    var(--slider-color) var(--fill, 50%),
+    rgba(255, 255, 255, 0.08) var(--fill, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.tad-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--slider-color);
+  border: 3px solid #000;
+  box-shadow:
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tad-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.tad-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--slider-color);
+  border: 3px solid #000;
+  box-shadow:
+    0 0 0 2px var(--slider-glow),
+    0 0 20px var(--slider-glow);
+  cursor: pointer;
+}
+
+.tad-range-green {
+  --slider-color: #22C55E;
+  --slider-glow: rgba(34, 197, 94, 0.45);
+}
+
+.tad-range-red {
+  --slider-color: #E51636;
+  --slider-glow: rgba(229, 22, 54, 0.45);
+}
+
+.tad-range-yellow {
+  --slider-color: #FDCB01;
+  --slider-glow: rgba(253, 203, 1, 0.45);
+}
+
 /* Animation delay utilities — replaces inline style={{ animationDelay }} */
 .delay-0   { animation-delay: 0ms; }
 .delay-50  { animation-delay: 50ms; }

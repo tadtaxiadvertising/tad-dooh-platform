@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { ArrowRight, Calculator, TrendingUp, RotateCcw, Check, Users, Store } from 'lucide-react';
-import { estimateCampaign, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS, REFERRAL_DRIVER_BONUS, REFERRAL_BUSINESS_BONUS } from './simulatorPricing';
+import { estimateCampaign, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from './simulatorPricing';
 
 export interface SimulatorConfig {
   screens: number;
   months: number;
   frequencySeconds: number;
   includeProduction: boolean;
-  invitedDrivers: number;
-  referredBusinesses: number;
 }
 
 interface SimulatorStepProps {
@@ -18,99 +16,6 @@ interface SimulatorStepProps {
 }
 
 const SCREEN_PRESETS = [1, 2, 3, 4, 5];
-
-function StepperButton({
-  onClick,
-  children,
-  ariaLabel,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-  ariaLabel: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
-    >
-      {children}
-    </button>
-  );
-}
-
-function SliderField({
-  label,
-  min,
-  max,
-  value,
-  onChange,
-  color = 'yellow',
-  icon: Icon,
-  ariaLabel,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  value: number;
-  onChange: (value: number) => void;
-  color?: 'yellow' | 'green' | 'red';
-  icon?: React.ElementType;
-  ariaLabel: string;
-}) {
-  const colorMap = {
-    yellow: 'tad-range-yellow',
-    green: 'tad-range-green',
-    red: 'tad-range-red',
-  };
-  const iconMap = {
-    yellow: <Users className="w-3 h-3" />,
-    green: <RotateCcw className="w-3 h-3" />,
-    red: <Store className="w-3 h-3" />,
-  };
-  const sliderColorClass = colorMap[color];
-  const pct = ((value - min) / (max - min)) * 100;
-
-  return (
-    <div>
-      <div className="flex justify-between items-end gap-3 mb-3">
-        <span className="text-[10px] font-black text-[#AAAAAA] uppercase tracking-wider leading-snug">
-          {label}
-          <span className="text-white/25 normal-case">({min} - {max})</span>
-        </span>
-        <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
-          {value}
-        </span>
-      </div>
-      <div className="flex items-center gap-3">
-        <StepperButton
-          ariaLabel={`Reducir ${label}`}
-          onClick={() => onChange(Math.max(min, value - 1))}
-        >
-          −
-        </StepperButton>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={1}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px]`}
-          style={{ '--fill': `${Math.min(100, Math.max(0, pct))}%` } as React.CSSProperties}
-          aria-label={ariaLabel}
-        />
-        <StepperButton
-          ariaLabel={`Aumentar ${label}`}
-          onClick={() => onChange(Math.min(max, value + 1))}
-        >
-          +
-        </StepperButton>
-      </div>
-    </div>
-  );
-}
 
 export default function SimulatorStep({ config, onChange, onNext }: SimulatorStepProps) {
   const [customScreens, setCustomScreens] = useState(6);
@@ -213,12 +118,14 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
           </div>
 
           <div className="flex items-center gap-3">
-            <StepperButton
-              ariaLabel="Reducir meses"
+            <button
+              type="button"
               onClick={() => handleMonthsChange(Math.max(1, config.months - 1))}
+              aria-label="Reducir meses"
+              className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
             >
               −
-            </StepperButton>
+            </button>
             <input
               type="range"
               min={1}
@@ -230,12 +137,14 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               style={{ '--fill': `${((config.months - 1) / 11) * 100}%` } as React.CSSProperties}
               aria-label="Duración de la campaña en meses"
             />
-            <StepperButton
-              ariaLabel="Aumentar meses"
+            <button
+              type="button"
               onClick={() => handleMonthsChange(Math.min(12, config.months + 1))}
+              aria-label="Aumentar meses"
+              className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
             >
               +
-            </StepperButton>
+            </button>
           </div>
         </div>
 
@@ -261,40 +170,6 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               Incluir producción creativa profesional <span className="text-[#FDCB01] font-bold">(RD$ {PRODUCTION_FEE.toLocaleString()})</span>
             </span>
           </label>
-        </div>
-
-        <div>
-          <SliderField
-            label="4. Compañeros Taxistas Invitados"
-            min={0}
-            max={100}
-            value={config.invitedDrivers}
-            onChange={(v) => onChange({ invitedDrivers: v })}
-            color="green"
-            icon={Users}
-            ariaLabel="Compañeros taxistas invitados"
-          />
-          <p className="mt-2 text-[10px] text-[#22C55E]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <Users className="w-3 h-3" />
-            Bonificación RD$ {REFERRAL_DRIVER_BONUS.toLocaleString()} c/u · Descuento en tu factura
-          </p>
-        </div>
-
-        <div>
-          <SliderField
-            label="5. Negocios Recomendados"
-            min={0}
-            max={100}
-            value={config.referredBusinesses}
-            onChange={(v) => onChange({ referredBusinesses: v })}
-            color="red"
-            icon={Store}
-            ariaLabel="Negocios recomendados"
-          />
-          <p className="mt-2 text-[10px] text-[#E51636]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <Store className="w-3 h-3" />
-            Bonificación RD$ {REFERRAL_BUSINESS_BONUS.toLocaleString()} c/u · Descuento en tu factura
-          </p>
         </div>
 
         <div className="bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10">
@@ -332,22 +207,6 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
                 <span>Producción creativa:</span>
                 <span className="text-white font-bold tabular-nums shrink-0">
                   RD${estimate.productionFee.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {config.invitedDrivers > 0 && (
-              <div className="flex justify-between gap-4 text-[#22C55E]">
-                <span>Bonificación taxistas ({config.invitedDrivers} × RD${REFERRAL_DRIVER_BONUS.toLocaleString()}):</span>
-                <span className="font-bold tabular-nums shrink-0">
-                  -RD${estimate.referralDriverBonus.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {config.referredBusinesses > 0 && (
-              <div className="flex justify-between gap-4 text-[#E51636]">
-                <span>Bonificación negocios ({config.referredBusinesses} × RD${REFERRAL_BUSINESS_BONUS.toLocaleString()}):</span>
-                <span className="font-bold tabular-nums shrink-0">
-                  -RD${estimate.referralBusinessBonus.toLocaleString()}
                 </span>
               </div>
             )}

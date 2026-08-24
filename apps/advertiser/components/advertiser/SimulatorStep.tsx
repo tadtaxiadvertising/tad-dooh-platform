@@ -122,7 +122,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               type="button"
               onClick={() => handleMonthsChange(Math.max(1, config.months - 1))}
               aria-label="Reducir meses"
-              className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+              className="tad-stepper"
             >
               −
             </button>
@@ -133,7 +133,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               step={1}
               value={config.months}
               onChange={(e) => handleMonthsChange(Number(e.target.value))}
-              className="tad-slider tad-range-yellow flex-1 min-h-[32px]"
+              className="tad-slider tad-range-yellow flex-1 min-h-[32px] animate-fill"
               style={{ '--fill': `${((config.months - 1) / 11) * 100}%` } as React.CSSProperties}
               aria-label="Duración de la campaña en meses"
             />
@@ -141,7 +141,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               type="button"
               onClick={() => handleMonthsChange(Math.min(12, config.months + 1))}
               aria-label="Aumentar meses"
-              className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
+              className="tad-stepper"
             >
               +
             </button>

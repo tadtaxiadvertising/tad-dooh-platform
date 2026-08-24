@@ -89,27 +89,6 @@ export default function DriverOnboarding() {
 
   const TOTAL_STEPS = 4;
 
-  function StepperButton({
-    onClick,
-    children,
-    ariaLabel,
-  }: {
-    onClick: () => void;
-    children: React.ReactNode;
-    ariaLabel: string;
-  }) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={ariaLabel}
-        className="w-11 h-11 shrink-0 rounded-xl bg-white/[0.04] border border-white/10 grid place-items-center font-black text-lg text-white hover:bg-white/10 active:scale-95 transition-all select-none"
-      >
-        {children}
-      </button>
-    );
-  }
-
   function SliderField({
     label,
     min,
@@ -126,7 +105,7 @@ export default function DriverOnboarding() {
     max: number;
     value: number;
     onChange: (value: number) => void;
-    color?: 'yellow' | 'green' | 'red';
+    color?: 'yellow' | 'green' | 'orange';
     icon?: React.ElementType;
     ariaLabel: string;
     bonusText?: React.ReactNode;
@@ -134,10 +113,11 @@ export default function DriverOnboarding() {
     const colorMap = {
       yellow: 'tad-range-yellow',
       green: 'tad-range-green',
-      red: 'tad-range-red',
+      orange: 'tad-range-orange',
     };
     const sliderColorClass = colorMap[color];
     const pct = ((value - min) / (max - min)) * 100;
+    const bonusColor = color === 'green' ? '#22C55E' : color === 'orange' ? '#FF8C00' : '#FDCB01';
 
     return (
       <div>
@@ -151,12 +131,14 @@ export default function DriverOnboarding() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <StepperButton
-            ariaLabel={`Reducir ${label}`}
+          <button
+            type="button"
+            aria-label={`Reducir ${label}`}
             onClick={() => onChange(Math.max(min, value - 1))}
+            className="tad-stepper"
           >
             −
-          </StepperButton>
+          </button>
           <input
             type="range"
             min={min}
@@ -164,19 +146,21 @@ export default function DriverOnboarding() {
             step={1}
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
-            className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px}`}
+            className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px] animate-fill`}
             style={{ '--fill': `${Math.min(100, Math.max(0, pct))}%` } as React.CSSProperties}
             aria-label={ariaLabel}
           />
-          <StepperButton
-            ariaLabel={`Aumentar ${label}`}
+          <button
+            type="button"
+            aria-label={`Aumentar ${label}`}
             onClick={() => onChange(Math.min(max, value + 1))}
+            className="tad-stepper"
           >
             +
-          </StepperButton>
+          </button>
         </div>
         {bonusText && (
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: color === 'green' ? '#22C55E' : color === 'red' ? '#E51636' : '#FDCB01' }}>
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: bonusColor }}>
             {Icon && <Icon className="w-3 h-3" />}
             {bonusText}
           </p>
@@ -255,7 +239,7 @@ export default function DriverOnboarding() {
             <div className="space-y-3 flex-1">
               {[
                 { icon: <DollarSign className="w-5 h-5" />, title: 'Pagos por Campaña', desc: 'Recibe RD$500 mensuales por cada anuncio activo en tu pantalla (hasta 15 anuncios simultáneos).', color: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10' },
-                { icon: <Store className="w-5 h-5" />, title: 'Referidos de Negocios', desc: 'Gana RD$1,000 adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.', color: 'text-[#E51636]', bg: 'bg-[#E51636]/10' },
+                { icon: <Store className="w-5 h-5" />, title: 'Referidos de Negocios', desc: 'Gana RD$1,000 adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.', color: 'text-[#FF8C00]', bg: 'bg-[#FF8C00]/10' },
                 { icon: <Users className="w-5 h-5" />, title: 'Invitar Compañeros', desc: 'Gana un bono de RD$500 por cada compañero taxista que refieras cuando instale su pantalla.', color: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10' },
               ].map((b, i) => (
                 <div
@@ -312,28 +296,32 @@ export default function DriverOnboarding() {
                   <span className="text-sm font-black text-[#FDCB01]">{campaigns} {campaigns === 1 ? 'anuncio' : 'anuncios'}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <StepperButton
-                    ariaLabel="Reducir anuncios"
+                  <button
+                    type="button"
+                    aria-label="Reducir anuncios"
                     onClick={() => setCampaigns(c => Math.max(1, c - 1))}
+                    className="tad-stepper"
                   >
                     −
-                  </StepperButton>
+                  </button>
                   <input
                     type="range"
                     min="1"
                     max="15"
                     value={campaigns}
                     onChange={(e) => setCampaigns(parseInt(e.target.value))}
-                    className="tad-slider tad-range-yellow flex-1 min-h-[32px]"
+                    className="tad-slider tad-range-yellow flex-1 min-h-[32px] animate-fill"
                     style={{ '--fill': `${((campaigns - 1) / 14) * 100}%` } as React.CSSProperties}
                     aria-label="Anuncios en tu pantalla"
                   />
-                  <StepperButton
-                    ariaLabel="Aumentar anuncios"
+                  <button
+                    type="button"
+                    aria-label="Aumentar anuncios"
                     onClick={() => setCampaigns(c => Math.min(15, c + 1))}
+                    className="tad-stepper"
                   >
                     +
-                  </StepperButton>
+                  </button>
                 </div>
                 <p className="text-[10px] text-[#FDCB01]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <RotateCcw className="w-3 h-3" />
@@ -348,7 +336,7 @@ export default function DriverOnboarding() {
                 max={100}
                 value={referredAdvertisers}
                 onChange={setReferredAdvertisers}
-                color="red"
+                color="orange"
                 icon={Store}
                 ariaLabel="Negocios recomendados"
                 bonusText={`Bonificación RD$ ${REFERRAL_BUSINESS_BONUS.toLocaleString()} c/u · Descuento en tu factura`}

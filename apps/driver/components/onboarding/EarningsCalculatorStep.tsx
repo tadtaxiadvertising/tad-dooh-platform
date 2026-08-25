@@ -88,7 +88,7 @@ function SliderField({
           step={1}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px] animate-fill`}
+          className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px]`}
           style={{ '--fill': `${Math.min(100, Math.max(0, pct))}%` } as React.CSSProperties}
           aria-label={ariaLabel}
         />

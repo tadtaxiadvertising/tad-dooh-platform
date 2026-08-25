@@ -291,12 +291,6 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-
-/* Stepper buttons - premium */
-.tad-stepper {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
   background: 
     linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);

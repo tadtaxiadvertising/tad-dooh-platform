@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, BadgeCheck, AlertCircle, Loader2, Eye, EyeOff, 
-  FileText, User, Building2, Mail, Phone, Lock, CheckCircle2, Key, Shield, UserCheck, ArrowRight
+  FileText, User, Building2, Mail, Phone, Lock, CheckCircle2, ChevronDown, Shield, UserCheck, Database, ArrowRight
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -163,7 +163,7 @@ El Anunciante indemniza a TAD por reclamaciones terceros por contenido ilegal.`,
   },
   {
     id: 'data_processing',
-    icon: Key,
+    icon: Database,
     title: 'Tratamiento de Datos',
     description: 'Autorizo el tratamiento de mis datos personales y corporativos según Ley 172-13 y RGPD.',
     fullText: `AUTORIZACIÓN DE TRATAMIENTO DE DATOS PERSONALES Y CORPORATIVOS
@@ -580,11 +580,12 @@ function LegalDocumentCard({
             <motion.button
               type="button"
               onClick={onToggleExpand}
-              className="flex-shrink-0 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-[#FDCB01]"
+              className="flex-shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300 hover:text-[#FDCB01] border border-white/10"
               whileTap={{ scale: 0.9 }}
               animate={{ rotate: isExpanded ? 180 : 0 }}
+              style={{ zIndex: 10 }}
             >
-              <Key className="w-4 h-4" />
+              <ChevronDown className="w-5 h-5" />
             </motion.button>
           </div>
 

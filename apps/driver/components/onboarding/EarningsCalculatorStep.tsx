@@ -204,7 +204,7 @@ export default function EarningsCalculatorStep({
           color="orange"
           icon={TrendingUp}
           ariaLabel="Negocios recomendados"
-          bonusText={`Bonificación RD$ ${REFERRAL_BUSINESS_BONUS.toLocaleString()} c/u · Descuento en tu factura`}
+          bonusText={`Bonificación RD$ ${REFERRAL_BUSINESS_BONUS.toLocaleString()} c/u por negocios recomendados`}
         />
 
         {/* Driver Referral Slider */}

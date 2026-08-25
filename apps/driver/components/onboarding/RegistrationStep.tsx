@@ -4,7 +4,7 @@ import { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Car, Phone, Shield, Eye, EyeOff, BadgeCheck, 
-  FileText, Building, UserCheck, Key, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft
+  FileText, Building, UserCheck, ChevronDown, CreditCard, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -146,7 +146,7 @@ La membresía de RD$6,000/año se factura al activar la pantalla y se renueva an
   },
   {
     id: 'membership',
-    icon: Key,
+    icon: CreditCard,
     title: 'Membresía Anual RD$6,000',
     description: 'Confirmo entender la inversión de activación: RD$6,000/año por Starter Kit + Seguro.',
     fullText: `DETALLE DE INVERSIÓN DE ACTIVACIÓN - MEMBRESÍA FLOTA TAD
@@ -524,11 +524,12 @@ function LegalDocumentCard({
             <motion.button
               type="button"
               onClick={onToggleExpand}
-              className="flex-shrink-0 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-[#FDCB01]"
+              className="flex-shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300 hover:text-[#FDCB01] border border-white/10"
               whileTap={{ scale: 0.9 }}
               animate={{ rotate: isExpanded ? 180 : 0 }}
+              style={{ zIndex: 10 }}
             >
-              <Key className="w-4 h-4" />
+              <ChevronDown className="w-5 h-5" />
             </motion.button>
           </div>
 

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { RotateCcw, Calculator, ArrowRight, TrendingUp, BadgeCheck, Wifi, Clock, ShieldCheck } from 'lucide-react';
 
 const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 1000;
+const REFERRAL_BUSINESS_BONUS = 500;
 
 interface EarningsCalculatorStepProps {
   onNext: () => void;

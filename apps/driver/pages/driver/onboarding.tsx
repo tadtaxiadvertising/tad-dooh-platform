@@ -13,7 +13,7 @@ import SuccessStep from '@/components/onboarding/SuccessStep';
 type OnboardingStep = 1 | 2 | 3 | 4;
 
 const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 1000;
+const REFERRAL_BUSINESS_BONUS = 500;
 
 export default function DriverOnboarding() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function DriverOnboarding() {
   const [referredAdvertisers, setReferredAdvertisers] = useState(0);
   const [referredDrivers, setReferredDrivers] = useState(0);
 
-  // Total projected earnings: campaign pay (RD$500 each) + advertiser referral (RD$1,000 each) + driver referral (RD$500 each)
+  // Total projected earnings: campaign pay (RD$500 each) + advertiser referral (RD$500 each) + driver referral (RD$500 each)
   const projectedEarnings = (campaigns * 500) + (referredAdvertisers * REFERRAL_BUSINESS_BONUS) + (referredDrivers * REFERRAL_DRIVER_BONUS);
 
   // Registration fields

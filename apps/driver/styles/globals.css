@@ -128,90 +128,66 @@ body {
 }
 
 /* ── Premium Fluid Slider System ── */
-/* Base slider - uses custom properties for theming */
+/* Base slider - unified track, dynamic fill via --fill CSS variable */
 .tad-slider {
   --slider-color: #FDCB01;
-  --slider-color-dim: rgba(253, 203, 1, 0.35);
-  --slider-glow: rgba(253, 203, 1, 0.6);
-  --slider-track-bg: rgba(255, 255, 255, 0.05);
-  --slider-track-border: rgba(255, 255, 255, 0.08);
+  --slider-track-bg: #1A1A1A;
+  --slider-track-border: transparent;
   
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border-radius: 9999px;
-  background: var(--slider-track-bg);
-  border: 1px solid var(--slider-track-border);
+  background: 
+    linear-gradient(
+      to right,
+      var(--slider-color) 0%,
+      var(--slider-color) var(--fill, 0%),
+      var(--slider-track-bg) var(--fill, 0%),
+      var(--slider-track-bg) 100%
+    );
+  border: none;
   outline: none;
   cursor: grab;
-  transition: 
-    height 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+  transition: height 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   z-index: 1;
 }
 
-/* Filled portion - rendered via ::before pseudo on a wrapper would be better,
-   but for native input we use background-image with CSS custom property */
-.tad-slider::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 6px;
-  border-radius: 9999px;
-  background: linear-gradient(
-    to right,
-    var(--slider-color) 0%,
-    var(--slider-color) var(--fill, 0%),
-    var(--slider-track-bg) var(--fill, 0%),
-    var(--slider-track-bg) 100%
-  );
-  border: none;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
+/* Firefox track */
 .tad-slider::-moz-range-track {
   width: 100%;
   height: 6px;
   border-radius: 9999px;
-  background: linear-gradient(
-    to right,
-    var(--slider-color) 0%,
-    var(--slider-color) var(--fill, 0%),
-    var(--slider-track-bg) var(--fill, 0%),
-    var(--slider-track-bg) 100%
-  );
+  background: 
+    linear-gradient(
+      to right,
+      var(--slider-color) 0%,
+      var(--slider-color) var(--fill, 0%),
+      var(--slider-track-bg) var(--fill, 0%),
+      var(--slider-track-bg) 100%
+    );
   border: none;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-/* Hover states - track expands slightly */
+/* Hover - subtle track expansion */
 .tad-slider:hover {
   height: 8px;
-  border-color: var(--slider-color-dim);
-  box-shadow: 0 0 0 1px var(--slider-color-dim);
 }
 
 .tad-slider:hover::-webkit-slider-runnable-track {
   height: 8px;
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.4),
-    0 0 12px var(--slider-color-dim);
 }
 
 .tad-slider:hover::-moz-range-track {
   height: 8px;
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.4),
-    0 0 12px var(--slider-color-dim);
 }
 
-/* Active/dragging state */
+/* Active/dragging */
 .tad-slider:active {
   cursor: grabbing;
   height: 10px;
-  border-color: var(--slider-color);
-  box-shadow: 0 0 0 2px var(--slider-glow);
 }
 
 .tad-slider:active::-webkit-slider-runnable-track {
@@ -222,155 +198,99 @@ body {
   height: 10px;
 }
 
-/* Focus visible for accessibility */
+/* Focus visible */
 .tad-slider:focus-visible {
   outline: none;
-  border-color: var(--slider-color);
-  box-shadow: 0 0 0 3px var(--slider-glow);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--slider-color) 40%, transparent);
 }
 
-/* Thumb - premium glassmorphism style */
+/* Thumb - clean solid circle, subtle shadow, no expansive glow */
 .tad-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 9999px;
-  background: 
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 50%),
-    var(--slider-color);
-  border: 2px solid rgba(0, 0, 0, 0.3);
+  background: var(--slider-color);
+  border: none;
   box-shadow: 
-    0 0 0 4px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.5),
-    0 0 0 2px var(--slider-glow),
-    0 0 20px var(--slider-glow),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.1);
   transition: 
-    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s ease,
-    width 0.15s ease,
-    height 0.15s ease;
-  margin-top: -9px; /* centers on 6px track */
+    transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.12s ease,
+    width 0.12s ease,
+    height 0.12s ease;
+  margin-top: -7px; /* centers on 6px track */
   z-index: 2;
 }
 
 .tad-slider:hover::-webkit-slider-thumb {
-  transform: scale(1.12);
-  width: 28px;
-  height: 28px;
-  margin-top: -11px;
+  transform: scale(1.15);
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
   box-shadow: 
-    0 0 0 5px rgba(0, 0, 0, 0.15),
-    0 6px 24px rgba(0, 0, 0, 0.55),
-    0 0 0 3px var(--slider-glow),
-    0 0 28px var(--slider-glow),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.25),
-    inset 0 3px 6px rgba(255, 255, 255, 0.35);
+    0 4px 14px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.15);
 }
 
 .tad-slider:active::-webkit-slider-thumb {
-  transform: scale(1.2);
-  width: 30px;
-  height: 30px;
-  margin-top: -12px;
+  transform: scale(1.1);
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
   box-shadow: 
-    0 0 0 6px rgba(0, 0, 0, 0.15),
-    0 8px 28px rgba(0, 0, 0, 0.6),
-    0 0 0 4px var(--slider-glow),
-    0 0 36px var(--slider-glow),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.3),
-    inset 0 4px 8px rgba(255, 255, 255, 0.4);
+    0 2px 10px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(0, 0, 0, 0.3),
+    0 0 0 4px rgba(255, 255, 255, 0.1);
 }
 
 /* Firefox thumb */
 .tad-slider::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 9999px;
-  background: 
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 50%),
-    var(--slider-color);
-  border: 2px solid rgba(0, 0, 0, 0.3);
+  background: var(--slider-color);
+  border: none;
   box-shadow: 
-    0 0 0 4px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.5),
-    0 0 0 2px var(--slider-glow),
-    0 0 20px var(--slider-glow),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.1);
   cursor: grab;
   transition: 
-    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s ease;
+    transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.12s ease;
 }
 
 .tad-slider::-moz-range-thumb:hover {
-  transform: scale(1.12);
+  transform: scale(1.15);
   box-shadow: 
-    0 0 0 5px rgba(0, 0, 0, 0.15),
-    0 6px 24px rgba(0, 0, 0, 0.55),
-    0 0 0 3px var(--slider-glow),
-    0 0 28px var(--slider-glow);
+    0 4px 14px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.15);
 }
 
-/* Color variants */
+/* Color variants - unified track bg, only color changes */
 .tad-range-green {
   --slider-color: #22C55E;
-  --slider-color-dim: rgba(34, 197, 94, 0.35);
-  --slider-glow: rgba(34, 197, 94, 0.65);
-  --slider-track-bg: rgba(34, 197, 94, 0.06);
-  --slider-track-border: rgba(34, 197, 94, 0.1);
 }
 
 .tad-range-orange {
   --slider-color: #FF8C00;
-  --slider-color-dim: rgba(255, 140, 0, 0.35);
-  --slider-glow: rgba(255, 140, 0, 0.65);
-  --slider-track-bg: rgba(255, 140, 0, 0.06);
-  --slider-track-border: rgba(255, 140, 0, 0.1);
 }
 
 .tad-range-yellow {
   --slider-color: #FDCB01;
-  --slider-color-dim: rgba(253, 203, 1, 0.35);
-  --slider-glow: rgba(253, 203, 1, 0.6);
-  --slider-track-bg: rgba(253, 203, 1, 0.06);
-  --slider-track-border: rgba(253, 203, 1, 0.1);
 }
 
-/* Smooth fill animation for programmatic changes */
-@keyframes slider-fill {
-  from { 
-    background-size: 0% 100%; 
-  }
-  to { 
-    background-size: var(--fill, 50%) 100%; 
-  }
-}
-
-.tad-slider.animate-fill::-webkit-slider-runnable-track {
-  animation: slider-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  background-image: linear-gradient(
-    to right,
-    var(--slider-color) 0%,
-    var(--slider-color) var(--fill, 0%),
-    var(--slider-track-bg) var(--fill, 0%),
-    var(--slider-track-bg) 100%
-  );
-}
-
-.tad-slider.animate-fill::-moz-range-track {
-  animation: slider-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  background-image: linear-gradient(
-    to right,
-    var(--slider-color) 0%,
-    var(--slider-color) var(--fill, 0%),
-    var(--slider-track-bg) var(--fill, 0%),
-    var(--slider-track-bg) 100%
-  );
-}
+/* Stepper buttons - premium */
+.tad-stepper {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
 
 /* Stepper buttons - premium */
 .tad-stepper {

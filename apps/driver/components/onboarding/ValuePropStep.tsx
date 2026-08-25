@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { DollarSign, Store, Users, Sparkles, ArrowRight } from 'lucide-react';
 
 const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 1000;
+const REFERRAL_BUSINESS_BONUS = 500;
 
 interface ValuePropStepProps {
   onNext: () => void;
@@ -106,46 +106,6 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
             </motion.div>
           );
         })}
-
-        {/* Highlighted Referral Card - R6 Formula */}
-        <motion.div
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FF8C00]/10 via-[#FDCB01]/5 to-[#FF8C00]/10 border border-[#FF8C00]/30 p-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FF8C00]/5 via-transparent to-[#FDCB01]/5" />
-          <div className="relative flex items-start gap-4">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-[#FF8C00]/20 border border-[#FF8C00]/30 text-[#FF8C00]">
-              <Store className="w-5 h-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-                Programa de Referidos - Negocios Locales
-                <motion.span
-                  className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-[#FF8C00] text-black rounded"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.9, type: 'spring', stiffness: 260, damping: 20 }}
-                >
-                  R6
-                </motion.span>
-              </h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                Refiere un negocio local y gana <span className="font-bold text-[#FF8C00]">RD$1,000</span> cuando contrate publicidad.
-                <br />
-                <span className="text-[#FDCB00] font-bold">Fórmula R6:</span> RD$500 base + RD$500 por activación exitosa = <span className="font-black text-white">RD$1,000 totales</span> por referido convertido.
-              </p>
-            </div>
-            <motion.div
-              className="shrink-0 text-right"
-              whileHover={{ scale: 1.1 }}
-            >
-              <p className="text-2xl font-black text-[#FF8C00]">RD$1,000</p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500">por referido</p>
-            </motion.div>
-          </div>
-        </motion.div>
       </motion.div>
 
       {/* CTA */}

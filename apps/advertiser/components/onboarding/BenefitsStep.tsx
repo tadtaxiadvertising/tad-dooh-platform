@@ -160,55 +160,6 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
           );
         })}
 
-        {/* Highlighted Referral Card - R6 Formula for Advertisers */}
-        <motion.div
-          className="relative overflow-hidden rounded-xl p-6 stitched-card bg-gradient-to-r from-[#FF8C00]/10 via-[#FDCB01]/5 to-[#FF8C00]/10 border-[#FF8C00]/30"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FF8C00]/5 via-transparent to-[#FDCB01]/5" />
-          <div className="relative flex flex-col h-full">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-[#FF8C00]/20 border border-[#FF8C00]/30 text-[#FF8C00]">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-                  Programa de Referidos - Negocios Locales
-                  <motion.span
-                    className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-[#FF8C00] text-black rounded"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 1.1, type: 'spring', stiffness: 260, damping: 20 }}
-                  >
-                    R6
-                  </motion.span>
-                </h3>
-                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                  Refiere negocios locales a TAD y gana <span className="font-bold text-[#FF8C00]">RD$1,000</span> por cada uno que contrate publicidad.
-                  <br />
-                  <span className="text-[#FDCB01] font-bold">Fórmula R6:</span> RD$500 base + RD$500 activación = <span className="font-black text-white">RD$1,000</span> por referido.
-                </p>
-              </div>
-            </div>
-            <motion.div
-              className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between"
-              whileHover={{ scale: 1.02 }}
-            >
-              <div>
-                <p className="text-2xl font-black text-[#FF8C00]">RD$1,000</p>
-                <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500">por referido convertido</p>
-              </div>
-              <motion.div
-                className="px-4 py-2 bg-[#FF8C00]/20 border border-[#FF8C00]/30 rounded-full text-[#FF8C00] text-[10px] font-black uppercase tracking-wider"
-                whileTap={{ scale: 0.95 }}
-              >
-                Ver detalles
-              </motion.div>
-            </motion.div>
-          </div>
-        </motion.div>
       </motion.div>
 
       {/* CTA */}

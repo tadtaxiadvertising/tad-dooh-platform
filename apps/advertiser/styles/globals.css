@@ -347,21 +347,16 @@
   width: 44px;
   height: 44px;
   border-radius: 14px;
-    var(--slider-color) var(--fill, 0%),
-    var(--slider-track-bg) var(--fill, 0%),
-    var(--slider-track-bg) 100%
-  );
-}
-
-/* Stepper buttons - premium */
-.tad-stepper {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
   background: 
     linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.35rem;
+  color: #fff;
+  cursor: pointer;
   align-items: center;
   justify-content: center;
   font-weight: 900;

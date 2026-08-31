@@ -37,7 +37,7 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         this.checkOfflineDevices().catch(err => this.logger.error(`❌ Startup connectivity scan failed: ${err.message}`));
     }
     async processGpsBatch(batch) {
-        const { deviceId, driverId } = batch;
+        const { deviceId } = batch;
         const points = batch.points || batch.locations || [];
         this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
         try {
@@ -45,8 +45,8 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
                 where: { deviceId },
                 include: { driver: true }
             });
-            const resolvedDriverId = driverId || device?.driverId;
-            if (!resolvedDriverId) {
+            const resolvedDriverId = device?.driverId ?? null;
+            if (!resolvedDriverId || !device) {
                 this.logger.warn(`⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`);
                 return { status: 'ignored', reason: 'no_driver_linked' };
             }
@@ -71,7 +71,6 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
                         lastSeen: new Date(),
                         lastSyncAt: new Date(),
                         lastSyncSuccess: true,
-                        status: business_rules_1.BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
                         connectivityStatus: 'ONLINE',
                     },
                 });

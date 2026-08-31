@@ -242,9 +242,6 @@ let DeviceService = DeviceService_1 = class DeviceService {
             }
             else {
                 this.logger.warn(`⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
-                this.financeService.notifyMorosidad(dto.device_id).catch(e => {
-                    this.logger.error(`Failed to trigger morosidad notification for ${dto.device_id}: ${e.message}`);
-                });
             }
         }
         this.prisma.deviceHeartbeat.create({

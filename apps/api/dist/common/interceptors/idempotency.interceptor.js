@@ -68,6 +68,13 @@ let IdempotencyInterceptor = IdempotencyInterceptor_1 = class IdempotencyInterce
                         isLocked: false,
                     }
                 });
+            }), (0, operators_1.catchError)(async (err) => {
+                try {
+                    await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+                }
+                catch (e) {
+                }
+                return (0, rxjs_1.throwError)(() => err);
             }));
         }
         return next.handle();

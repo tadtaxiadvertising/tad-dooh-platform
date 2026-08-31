@@ -99,7 +99,7 @@ let SyncService = SyncService_1 = class SyncService {
         }
         const driver = device.driver;
         const isDriverActive = driver && driver.status === business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ACTIVE;
-        const isDriverPaid = (driver && driver.subscriptionPaid);
+        const isDriverPaid = !!(driver && driver.subscriptionPaid === true && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date()));
         let hasValidSubscription = isDriverPaid;
         if (!hasValidSubscription) {
             const sub = await this.prisma.subscription.findFirst({

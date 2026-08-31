@@ -16,6 +16,11 @@ export declare class FinanceService {
     notifyMorosidad(deviceId: string): Promise<{
         success: boolean;
         notified: boolean;
+        duplicate: boolean;
+    } | {
+        success: boolean;
+        notified: boolean;
+        duplicate?: undefined;
     }>;
     checkHighDelinquency(targetDate?: Date): Promise<void>;
     calculateMonthlyPayroll(month: number, year: number): Promise<({
@@ -62,14 +67,14 @@ export declare class FinanceService {
         count: number;
         message?: undefined;
     }>;
-    processPayment(driverId: string, month: number, year: number, reference: string): Promise<{
+    processPayment(driverId: string, month: number, year: number, _clientReference: string): Promise<{
         id: string;
-        createdAt: Date;
         status: string;
+        createdAt: Date;
         driverId: string;
-        amount: number;
         activeAds: number;
         paidAt: Date | null;
+        amount: number;
         month: number;
         year: number;
         referenceNum: string | null;
@@ -103,17 +108,17 @@ export declare class FinanceService {
         note?: string;
         status?: string;
     }): Promise<{
-        category: string;
         id: string;
-        type: string;
-        entityId: string | null;
-        createdAt: Date;
         status: string;
+        createdAt: Date;
         updatedAt: Date;
+        reference: string | null;
         amount: number;
+        category: string;
+        type: string;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
+        entityId: string | null;
         note: string | null;
     }>;
     getFinancialSummary(): Promise<{
@@ -138,17 +143,17 @@ export declare class FinanceService {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
-        category: string;
         id: string;
-        type: string;
-        entityId: string | null;
-        createdAt: Date;
         status: string;
+        createdAt: Date;
         updatedAt: Date;
+        reference: string | null;
         amount: number;
+        category: string;
+        type: string;
         netAmount: number;
         taxAmount: number;
-        reference: string | null;
+        entityId: string | null;
         note: string | null;
     }[]>;
     private generateInvoiceTemplate;

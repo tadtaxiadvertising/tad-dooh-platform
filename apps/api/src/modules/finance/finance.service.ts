@@ -7,6 +7,7 @@ import { EmailService } from '../notifications/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
+import * as crypto from 'crypto';
 
 const mediaSafeSelect = {
   id: true,
@@ -48,15 +49,20 @@ export class FinanceService {
    */
   async onModuleInit() {
     this.logger.log('🔄 [RECOVERY] Checking for missed automated tasks...');
-    await this.checkHighDelinquency();
+    // Nota: checkHighDelinquency se ejecuta SOLO vía cron de las 3AM.
+    // No se ejecuta en cada boot: disparaba envíos duplicados y transacciones
+    // REGLA-402 repetidas al reiniciar el contenedor (A1/M23).
   }
 
   /**
    * Proceso de Notificación Automática por Morosidad (Regla 402)
+   *
+   * DEDUP (A1/M23): una sola notificación + un solo registro de ledger por
+   * dispositivo y día. La referencia `REGLA-402-YYYY-MM-DD-<device>` es @unique
+   * en BD; el registro en el ledger actúa como candado antes de enviar WhatsApp,
+   * de modo que heartbeats concurrentes del mismo device no dupliquen envíos.
    */
   async notifyMorosidad(deviceId: string) {
-    this.logger.warn(`🚨 [FINANCE_ALERT] Triggering Morosidad Protocol for Device: ${deviceId}`);
-
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
       include: { driver: true }
@@ -64,14 +70,52 @@ export class FinanceService {
 
     if (!device) return;
 
-    // 1. Generar la Factura SOS (PDF)
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const reference = `REGLA-402-${dateKey}-${deviceId.substring(0, 8)}`;
+
+    // 0. Dedup gate: si ya existe un registro para este device hoy, salir.
+    const existingTx = await this.prisma.financialTransaction.findUnique({ where: { reference } });
+    if (existingTx) {
+      this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado.`);
+      return { success: false, notified: false, duplicate: true };
+    }
+
+    // 1. Registrar el intento de cobro en el Ledger ANTES de notificar
+    //    (la referencia @unique impide dobles envíos concurrentes — P2002).
+    const amount = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+    const taxAmount = (amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
+    const netAmount = amount - taxAmount;
+
+    try {
+      await this.prisma.financialTransaction.create({
+        data: {
+          type: 'INCOMING',
+          category: 'SUSCRIPCION',
+          status: 'PENDING',
+          amount,
+          taxAmount,
+          netAmount,
+          entityId: device.driver?.id,
+          reference,
+          note: `Factura de morosidad generada automáticamente por Kill-Switch.`
+        }
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado concurrente.`);
+        return { success: false, notified: false, duplicate: true };
+      }
+      throw e;
+    }
+
+    // 2. Generar la Factura SOS (PDF)
     const pdfBuffer = await this.invoiceService.generateDebtInvoicePDF({
       deviceId: device.deviceId,
       chofer: device.driver?.fullName || 'Socio TAD',
       placa: device.taxiNumber
     });
 
-    // 2. Real Notifications (WhatsApp only as Driver lacks email field in current schema)
+    // 3. Real Notifications (WhatsApp only as Driver lacks email field in current schema)
     const driverPhone = device.driver?.phone;
     const driverName = device.driver?.fullName || 'Socio TAD';
 
@@ -79,25 +123,6 @@ export class FinanceService {
       await this.whatsappService.sendDelinquencyAlert(driverPhone, driverName, device.deviceId);
       this.logger.log(`📱 [WHATSAPP_SENT] Alerta de Morosidad enviada a: ${driverPhone}`);
     }
-
-    // 3. Registrar el intento de cobro en el Ledger
-    const amount = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-    const taxAmount = (amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
-    const netAmount = amount - taxAmount;
-
-    await this.prisma.financialTransaction.create({
-      data: {
-        type: 'INCOMING',
-        category: 'SUSCRIPCION',
-        status: 'PENDING',
-        amount,
-        taxAmount,
-        netAmount,
-        entityId: device.driver?.id,
-        reference: `REGLA-402-${deviceId.substring(0, 8)}`,
-        note: `Factura de morosidad generada automáticamente por Kill-Switch.`
-      }
-    });
 
     return { success: true, notified: !!driverPhone };
   }
@@ -342,8 +367,12 @@ export class FinanceService {
 
   /**
    * Processes a payment for a driver and records it in the database.
+   *
+   * FASE 2 (Item 7): transacción atómica (upsert payroll + ledger) + referencia
+   * interna `PAY-YYMM-UUID8` generada por el servidor (no controlada por el cliente).
+   * El endpoint expuesto aplica IdempotencyInterceptor (Idempotency-Key).
    */
-  async processPayment(driverId: string, month: number, year: number, reference: string) {
+  async processPayment(driverId: string, month: number, year: number, _clientReference: string) {
     this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
 
     // Re-calculate to get current amount due and metrics
@@ -354,56 +383,76 @@ export class FinanceService {
       throw new Error('Driver not found for payroll calculation');
     }
 
-    // 1. Record the payroll payment (Detailed record)
-    const payrollRecord = await this.prisma.payrollPayment.upsert({
-      where: {
-        driverId_month_year: { driverId, month, year }
-      },
-      update: {
+    // Referencia interna generada por el servidor: PAY-<YYMM>-<uuid8>
+    const reference = `PAY-${String(year).slice(2)}${String(month).padStart(2, '0')}-${crypto.randomUUID().slice(0, 8)}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      // Guard de negocio: si el periodo ya fue liquidado, no pagar dos veces
+      const existing = await tx.payrollPayment.findUnique({
+        where: { driverId_month_year: { driverId, month, year } }
+      });
+      if (existing?.status === 'PAID') {
+        this.logger.warn(`⏭️ [PAYROLL] Periodo ${month}/${year} de ${driverId} ya fue liquidado. Evitando doble pago.`);
+        return existing;
+      }
+
+      // 1. Record the payroll payment (Detailed record)
+      const payrollRecord = await tx.payrollPayment.upsert({
+        where: {
+          driverId_month_year: { driverId, month, year }
+        },
+        update: {
+          amount: driverEntry.totalAmount,
+          referenceNum: reference,
+          status: 'PAID',
+          paidAt: new Date(),
+          activeAds: driverEntry.activeAds,
+          gpsPoints: driverEntry.gpsPoints
+        },
+        create: {
+          driverId,
+          month,
+          year,
+          amount: driverEntry.totalAmount,
+          referenceNum: reference,
+          status: 'PAID',
+          paidAt: new Date(),
+          activeAds: driverEntry.activeAds,
+          gpsPoints: driverEntry.gpsPoints
+        }
+      });
+
+      // 2. Record in the Financial Ledger (Unified truth)
+      await tx.financialTransaction.create({
+        data: {
+          type: 'OUTGOING',
+          category: 'OPEX_DRIVER_PAYOUT',
+          amount: driverEntry.totalAmount,
+          netAmount: driverEntry.totalAmount,
+          taxAmount: 0,
+          entityId: driverId,
+          reference,
+          note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
+          status: 'COMPLETED'
+        }
+      });
+
+      return payrollRecord;
+    }).then(async (payrollRecord) => {
+      // 3. Notification unificada al conductor (post-commit, fire-and-forget)
+      await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
         amount: driverEntry.totalAmount,
-        referenceNum: reference,
-        status: 'PAID',
-        paidAt: new Date(),
-        activeAds: driverEntry.activeAds,
-        gpsPoints: driverEntry.gpsPoints
-      },
-      create: {
-        driverId,
+        currency: driverEntry.currency,
         month,
         year,
-        amount: driverEntry.totalAmount,
-        referenceNum: reference,
-        status: 'PAID',
-        paidAt: new Date(),
         activeAds: driverEntry.activeAds,
-        gpsPoints: driverEntry.gpsPoints
-      }
+        paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
+      }).catch((err) =>
+        this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`),
+      );
+
+      return payrollRecord;
     });
-
-    // 2. Record in the Financial Ledger (Unified truth)
-    await this.recordTransaction({
-      type: 'OUTGOING',
-      category: 'OPEX_DRIVER_PAYOUT',
-      amount: driverEntry.totalAmount,
-      entityId: driverId,
-      reference: reference || `PAY-${driverId.substring(0, 4)}-${month}-${year}`,
-      note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
-      status: 'COMPLETED'
-    });
-
-    // 3. Notification unificada al conductor
-        await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
-      amount: driverEntry.totalAmount,
-      currency: driverEntry.currency,
-      month,
-      year,
-      activeAds: driverEntry.activeAds,
-      paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
-    }).catch((err) =>
-      this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`),
-    );
-
-    return payrollRecord;
   }
 
   /**
@@ -428,7 +477,7 @@ export class FinanceService {
     this.logger.log('🔍 [OPTIMIZACIÓN] Pre-calculando impresiones totales...');
     const impressionCountsRaw = await this.prisma.playbackEvent.groupBy({
       by: ['videoId'],
-      where: { eventType: 'play_confirm' },
+      where: { eventType: 'play_confirm', verified: true },
       _count: { _all: true }
     });
 
@@ -482,7 +531,8 @@ export class FinanceService {
     const impressions = await this.prisma.playbackEvent.count({
       where: {
         videoId: { in: campaign.media.map(m => m.id) },
-        eventType: 'play_confirm'
+        eventType: 'play_confirm',
+        verified: true
       }
     });
 
@@ -563,7 +613,7 @@ export class FinanceService {
     if (!campaign) return 'Campaña no encontrada';
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm', verified: true }
     });
 
     let monthlyBase = 0;

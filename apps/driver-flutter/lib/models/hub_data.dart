@@ -71,7 +71,7 @@ class DriverHubData {
   final bool bankAccountConfigured;
 
   factory DriverHubData.fromJson(Map<String, dynamic> json) {
-    return DriverHubData(
+    final hub = DriverHubData(
       driverId: (json['driverId'] ?? '').toString(),
       driverName: (json['driverName'] ?? 'Conductor').toString(),
       level: (json['level'] ?? 'BRONZE').toString(),
@@ -92,8 +92,9 @@ class DriverHubData {
       activeAds: (_toNum(json['activeAds']) ?? 0).toInt(),
       activeSlots: (_toNum(json['activeSlots']) ?? 0).toInt(),
       maxSlots: (_toNum(json['maxSlots']) ?? 15).toInt(),
-      subscriptionPaid: true, // FORCED ACTIVE
-      subscriptionStatus: 'ACTIVE', // FORCED ACTIVE
+      subscriptionPaid: json['subscriptionPaid'] == true,
+      subscriptionStatus: json['subscriptionStatus']?.toString() ??
+          (json['subscriptionPaid'] == true ? 'ACTIVE' : 'PENDING'),
       deviceId: json['deviceId']?.toString(),
       gpsPoints: (_toNum(json['gpsPoints']) ?? 0).toInt(),
       adsPlayed: (_toNum(json['adsPlayed']) ?? 0).toInt(),
@@ -101,11 +102,16 @@ class DriverHubData {
       lastPayment: json['lastPayment'] != null
           ? LastPayment.fromJson(json['lastPayment'] as Map<String, dynamic>)
           : null,
-      contractAccepted: true, // FORCED ACTIVE
+      contractAccepted: json['contractAccepted'] == true,
       agreementVersion: json['agreementVersion']?.toString(),
-      onboardingStatus: 'READY', // FORCED ACTIVE
-      bankAccountConfigured: true, // FORCED ACTIVE
+      onboardingStatus: (json['onboardingStatus'] ?? 'UNKNOWN').toString(),
+      bankAccountConfigured: json['bankAccountConfigured'] == true,
     );
+    debugPrint('[Hub] server flags: subscriptionPaid=${json["subscriptionPaid"]}, '
+        'contractAccepted=${json["contractAccepted"]}, '
+        'onboardingStatus=${json["onboardingStatus"]}, '
+        'bankAccountConfigured=${json["bankAccountConfigured"]}');
+    return hub;
   }
 
   Map<String, dynamic> toJson() => {

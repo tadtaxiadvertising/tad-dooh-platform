@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { getAdvertiserHub } from "@tad/services";
+import type { Advertiser } from '@tad/types';
 import {
   ShoppingBag,
   Utensils,
@@ -23,17 +24,6 @@ import clsx from 'clsx';
 import type { GetServerSideProps } from 'next';
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
-
-interface Advertiser {
-  id: string;
-  companyName: string;
-  category: string;
-  whatsapp?: string;
-  instagram?: string;
-  websiteUrl?: string;
-  pedidosYaUrl?: string;
-  uberEatsUrl?: string;
-}
 
 const CATEGORY_ICONS: Record<string, any> = {
   'Gastronomía': Utensils,

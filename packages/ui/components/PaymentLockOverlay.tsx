@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { Lock, CreditCard, AlertTriangle, ExternalLink } from 'lucide-react';
 import { usePaymentStore } from "@tad/store";

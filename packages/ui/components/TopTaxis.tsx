@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useState } from 'react';
 import { getTopTaxis } from "@tad/services";
 import { Trophy, Tablet, Zap, ExternalLink } from 'lucide-react';

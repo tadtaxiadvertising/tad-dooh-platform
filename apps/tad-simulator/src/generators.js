@@ -24,7 +24,7 @@ const API_URLS = {
 
 const VIDEO_IDS = ['VID-001', 'VID-002', 'VID-003', 'VID-004', 'VID-005'];
 
-function generateGPSPoint(deviceId: string) {
+function generateGPSPoint(deviceId) {
   return {
     driverId: `SIM-${deviceId}`,
     lat: 18.47 + Math.random() * 0.06,
@@ -34,7 +34,7 @@ function generateGPSPoint(deviceId: string) {
   };
 }
 
-function generatePlaybackEvent(deviceId: string) {
+function generatePlaybackEvent(deviceId) {
   return {
     deviceId,
     videoId: VIDEO_IDS[Math.floor(Math.random() * VIDEO_IDS.length)],
@@ -46,7 +46,7 @@ function generatePlaybackEvent(deviceId: string) {
   };
 }
 
-function generateHeartbeat(deviceId: string) {
+function generateHeartbeat(deviceId) {
   return {
     deviceId,
     battery: Math.floor(Math.random() * 81) + 20,

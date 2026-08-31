@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, Info, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import useSWR from 'swr';

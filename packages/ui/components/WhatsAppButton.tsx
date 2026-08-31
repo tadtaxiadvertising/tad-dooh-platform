@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import clsx from 'clsx';

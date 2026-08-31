@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase, type PortalConfig } from '@tad/services';

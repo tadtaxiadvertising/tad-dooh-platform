@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { useTADAction } from '../hooks/useTADAction';
 import { Loader2, AlertTriangle } from 'lucide-react';

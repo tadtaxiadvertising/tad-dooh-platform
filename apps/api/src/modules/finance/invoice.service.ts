@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 const pdfmake = require('pdfmake');
 
 @Injectable()
@@ -69,7 +70,7 @@ export class InvoiceService implements OnModuleInit {
             widths: ['*', 'auto', 'auto', 'auto'],
             body: [
               [{ text: 'Concepto Pago', bold: true, fillColor: '#eeeeee' }, { text: 'Impactos', bold: true, fillColor: '#eeeeee' }, { text: 'Tarifa (RD$)', bold: true, fillColor: '#eeeeee' }, { text: 'Total', bold: true, fillColor: '#eeeeee' }],
-              ['Anuncios Transitados (Aprobados PWA)', driverData.anuncios || '0', '1.25', `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`],
+              ['Anuncios Transitados (Aprobados PWA)', driverData.anuncios || '0', BUSINESS_RULES.DRIVER_RATE_PER_AD_PLAY_RD.toFixed(2), `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`],
               ['Penalización (Offline)', '0', '0.00', '0.00'],
               ['Suscripción Plataforma TAD', '1', '-6,000.00 (Anual)', '0.00'], // Assuming paid
               [{ text: 'TOTAL A PAGAR', bold: true, colSpan: 3, alignment: 'right' }, {}, {}, { text: `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`, bold: true }]

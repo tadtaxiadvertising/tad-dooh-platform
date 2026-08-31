@@ -246,18 +246,23 @@ export class FleetService {
    * Replaces all simulated/hardcoded finance calculations.
    */
   async getFleetFinance() {
-    const RATE_PER_AD = 1.25; // RD$ per 30s ad play
+    // M15: tarifa centralizada en BUSINESS_RULES (antes 1.25 hardcodeado aquí).
+    const RATE_PER_AD = BUSINESS_RULES.DRIVER_RATE_PER_AD_PLAY_RD;
 
     // Get current month boundaries
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    // Count real playback events per device for this month
+    // M15: contar solo playbacks VERIFICADOS de tipo play_confirm.
+    // Antes contaba todos los eventos del dispositivo (play_start + play_confirm)
+    // sin filtrar verified → impresiones infladas/inyectadas pagaban nómina.
     const playbackCounts = await this.prisma.playbackEvent.groupBy({
       by: ['deviceId'],
       _count: { id: true },
       where: {
+        eventType: 'play_confirm',
+        verified: true,
         timestamp: {
           gte: startOfMonth,
           lte: endOfMonth,

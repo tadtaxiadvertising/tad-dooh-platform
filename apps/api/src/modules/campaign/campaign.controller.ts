@@ -299,17 +299,24 @@ export class CampaignController {
 
   // 2. Reporte de Cobertura — Pantallas que reciben esta campaña
   @Get(':campaignId/devices')
-  async getCampaignDevices(@Param('campaignId') campaignId: string) {
+  async getCampaignDevices(@Param('campaignId') campaignId: string, @Req() req: any) {
     console.log(`[CAMPAIGN_DEBUG] Fetching devices for campaign: ${campaignId}`);
     // First, get the campaign to check if it's global
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { targetAll: true, isGlobal: true, targetCity: true, name: true }
+      select: { targetAll: true, isGlobal: true, targetCity: true, name: true, advertiserId: true }
     });
 
     if (!campaign) {
       console.warn(`[CAMPAIGN_DEBUG] Campaign ${campaignId} NOT FOUND`);
       return [];
+    }
+
+    // M7: un advertiser solo puede ver dispositivos de sus PROPIAS campañas.
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
+    if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos para ver los dispositivos de esta campaña');
     }
     console.log(`[CAMPAIGN_DEBUG] Campaign: ${campaign.name}, targetAll: ${campaign.targetAll}, isGlobal: ${campaign.isGlobal}`);
 
@@ -455,9 +462,12 @@ export class CampaignController {
   @Post(':id/link-media')
   async linkMediaToCampaign(
     @Param('id') campaignId: string,
-    @Body('mediaId') mediaId: string
+    @Body('mediaId') mediaId: string,
+    @Req() req: any
   ) {
     if (!mediaId) throw new NotFoundException('mediaId is required');
+    // M7: validar ownership antes de linkear media a la campaña.
+    await this.assertCampaignOwnership(req, campaignId);
     return this.campaignService.linkMediaToCampaign(campaignId, mediaId);
   }
 
@@ -465,9 +475,12 @@ export class CampaignController {
   @Post(':id/unlink-media')
   async unlinkMediaFromCampaign(
     @Param('id') campaignId: string,
-    @Body('mediaId') mediaId: string
+    @Body('mediaId') mediaId: string,
+    @Req() req: any
   ) {
     if (!mediaId) throw new NotFoundException('mediaId is required');
+    // M7: validar ownership antes de desvincular media de la campaña.
+    await this.assertCampaignOwnership(req, campaignId);
     let success = false;
 
     // Attempt to unlink from Media (v2)
@@ -592,5 +605,20 @@ export class CampaignController {
     }
 
     return campaign;
+  }
+
+  // M7: valida que un ADVERTISER sea dueño de la campaña antes de operar sobre ella.
+  private async assertCampaignOwnership(req: any, campaignId: string): Promise<void> {
+    const role = req.user?.role;
+    const entityId = req.user?.entityId;
+    if (role !== 'ADVERTISER') return; // ADMIN puede operar sobre cualquier campaña
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { advertiserId: true },
+    });
+    if (!campaign) throw new NotFoundException('Campaña no encontrada');
+    if (campaign.advertiserId !== entityId) {
+      throw new ForbiddenException('No tienes permisos sobre esta campaña');
+    }
   }
 }

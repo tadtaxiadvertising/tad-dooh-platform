@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Put, Request, HttpCode, HttpStatus } from 
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { OAuthExchangeDto } from './dto/oauth-exchange.dto';
 import { Public } from './decorators/public.decorator';
 
 @ApiTags('auth')
@@ -15,6 +16,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Admin login – returns JWT token' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('oauth/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Exchange a Supabase access_token (issued by Google OAuth) for a portal session',
+  })
+  async oauthExchange(@Body() dto: OAuthExchangeDto) {
+    return this.authService.exchangeOAuth(dto);
   }
 
   @Get('profile')

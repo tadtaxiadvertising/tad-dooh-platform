@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, ForbiddenException, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS, BUSINESS_RULES, JWT_EXPIRY } from '../../common/constants/business-rules';
 import * as jwt from 'jsonwebtoken';
+import { OAuthExchangeDto, OAuthPortalRole } from './dto/oauth-exchange.dto';
 
 @Injectable()
 export class AuthService {
@@ -198,6 +199,115 @@ export class AuthService {
 
   async seedAdminUser() {
     this.logger.log('🔐 Seeding users must be done via Supabase Dashboard');
+  }
+
+  /**
+   * Exchange a Supabase access_token (issued by Google OAuth) for a portal session.
+   *
+   * Flow:
+   *   1. Validate the Supabase JWT signature locally (no network call).
+   *   2. Look up the user's role in the local DB (Admin → User table, Advertiser → Advertiser table).
+   *   3. If the user exists and their role matches `intended_role`, inject
+   *      app_metadata.role / app_metadata.entityId into Supabase so subsequent
+   *      JWT validations carry the right claims (idempotent).
+   *   4. Return a portal-shaped session payload matching /auth/login.
+   *
+   * SECURITY: This endpoint only ATTESTS the role — it cannot grant it.
+   * If the user has no row in the corresponding table, the call is rejected
+   * with 403 even if Google says the email is valid. This prevents account
+   * squatting via OAuth.
+   */
+  async exchangeOAuth(dto: OAuthExchangeDto) {
+    this.logger.log(`🔐 OAuth exchange attempt → role=${dto.intended_role}`);
+
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new HttpException(
+        'Server JWT secret not configured.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    let payload: any;
+    try {
+      payload = jwt.verify(dto.access_token, jwtSecret, { algorithms: ['HS256'] });
+    } catch (err: any) {
+      this.logger.warn(`🚫 Invalid Supabase token presented to /oauth/exchange: ${err.message}`);
+      throw new UnauthorizedException('Token de Supabase inválido o expirado.');
+    }
+
+    const email: string | undefined = payload?.email;
+    const userId: string | undefined = payload?.sub;
+    if (!email || !userId) {
+      throw new BadRequestException('El token de Supabase no contiene email/sub.');
+    }
+
+    this.logger.debug(`🔍 OAuth token verified for ${email}`);
+
+    let resolvedRole: string | null = null;
+    let entityId: string | null = null;
+    let profile: any = null;
+
+    if (dto.intended_role === OAuthPortalRole.ADMIN) {
+      const adminUser = await this.prisma.user.findUnique({ where: { email } });
+      if (adminUser) {
+        resolvedRole = adminUser.role || 'ADMIN';
+        profile = { ...adminUser, role: resolvedRole };
+      }
+    } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {
+      const advertiser = await this.prisma.advertiser.findUnique({ where: { email } });
+      if (advertiser) {
+        resolvedRole = 'ADVERTISER';
+        entityId = advertiser.id;
+        profile = { ...advertiser, role: resolvedRole };
+      }
+    }
+
+    if (!resolvedRole || !profile) {
+      this.logger.warn(`🚫 OAuth user has no matching ${dto.intended_role} account: ${email}`);
+      throw new ForbiddenException(
+        `Tu cuenta de Google (${email}) no está autorizada para acceder al portal ${dto.intended_role}. Contacta al administrador.`,
+      );
+    }
+
+    if (
+      payload?.app_metadata?.role !== resolvedRole ||
+      payload?.app_metadata?.entityId !== entityId
+    ) {
+      this.supabaseService
+        .getClient()
+        .auth.admin.updateUserById(userId, {
+          app_metadata: { role: resolvedRole, entityId },
+        })
+        .then(({ error: updateError }) => {
+          if (updateError) {
+            this.logger.warn(
+              `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
+            );
+          }
+        })
+        .catch((e) => {
+          this.logger.warn(`⚠️ Exception refreshing app_metadata for ${email}: ${e.message}`);
+        });
+    }
+
+    this.logger.log(`✅ OAuth exchange success: ${email} → ${resolvedRole} | Entity: ${entityId || 'N/A'}`);
+
+    return {
+      access_token: dto.access_token,
+      refresh_token: dto.refresh_token || '',
+      user: {
+        id: userId,
+        email,
+        role: resolvedRole,
+        entityId,
+        name:
+          (profile as any).fullName ||
+          (profile as any).contactName ||
+          (profile as any).name ||
+          email,
+      },
+    };
   }
 
   async generatePairingToken(driverId: string) {

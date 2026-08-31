@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import CityMapBackdrop from '../../components/advertiser/CityMapBackdrop';
 import { captureReferralCode, clearReferralCode } from '../../components/advertiser/referral';
+import { GoogleSignInButton } from '@tad/ui';
+import { PORTAL_CONFIGS } from '@tad/services';
 
 export { captureReferralCode, clearReferralCode };
 
@@ -235,6 +237,18 @@ export default function AdvertiserLoginPage() {
 
                 {view === 'login' && (
                   <>
+                    {/* ─── OAuth Divider + Google Sign-In ─── */}
+                    <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+                      <div className="flex-1 h-px bg-white/10" />
+                      <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">o</span>
+                      <div className="flex-1 h-px bg-white/10" />
+                    </div>
+
+                    <GoogleSignInButton
+                      config={PORTAL_CONFIGS.ADVERTISER}
+                      disabled={loading}
+                    />
+
                     <p className="mt-4 text-center text-[11px] text-[#AAAAAA] leading-relaxed">
                       Cada día sin presencia en la calle es alcance que captura tu competencia.
                     </p>

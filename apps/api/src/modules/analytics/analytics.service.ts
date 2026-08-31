@@ -387,19 +387,31 @@ export class AnalyticsService {
       where.videoId = { in: videoIds };
     }
 
-    const locations = await this.prisma.playbackEvent.findMany({
-      where,
-      select: {
-        lat: true,
-        lng: true,
-      },
-      take: 10000 // Increased sample size (Optimized for 8GB RAM)
-    });
+    // A16: heatmap agregado por celda geográfica en SQL (bucket ~0.002° ≈ 200m)
+    // en lugar de cargar 10.000 playbacks en RAM. Solo playbacks VERIFICADOS.
+    // Multiplicamos por 1e6 para redondear con precisión entera (evita drift de centroide).
+    const bucketRaw = await this.prisma.$queryRaw<{ lat: number; lng: number; cnt: number }[]>`
+      SELECT
+        (ROUND(lat * 500) / 500)  AS lat,
+        (ROUND(lng * 500) / 500)  AS lng,
+        COUNT(*)::int             AS cnt
+      FROM playback_events
+      WHERE
+        event_type = 'play_confirm'
+        AND verified = true
+        AND timestamp >= ${where.timestamp.gte}
+        AND lat IS NOT NULL
+        AND lng IS NOT NULL
+        ${where.videoId ? Prisma.sql`AND video_id IN (${Prisma.join(where.videoId.in)})` : Prisma.empty}
+      GROUP BY 1, 2
+      ORDER BY cnt DESC
+      LIMIT 2000
+    `;
 
-    return locations.map(loc => ({
-      lat: loc.lat,
-      lng: loc.lng,
-      weight: 1.0 // Intensity
+    return bucketRaw.map(b => ({
+      lat: b.lat,
+      lng: b.lng,
+      weight: b.cnt,
     }));
   }
 

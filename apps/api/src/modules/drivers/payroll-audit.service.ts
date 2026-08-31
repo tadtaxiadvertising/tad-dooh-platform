@@ -21,16 +21,23 @@ export class PayrollAuditService {
       where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE }
     });
 
+    // A19: precargar el último payrollPayment por driver en UNA query (kill N+1).
+    // Antes un findFirst dentro del loop = 1 query por chofer activo.
+    const latestPayments = await this.prisma.payrollPayment.findMany({
+      where: { driverId: { in: drivers.map(d => d.id) } },
+      orderBy: { createdAt: 'desc' },
+      select: { driverId: true, transmissionHours: true },
+    });
+    const latestByDriver = new Map<string, { transmissionHours: number }>();
+    for (const p of latestPayments) {
+      if (!latestByDriver.has(p.driverId)) latestByDriver.set(p.driverId, p); // primer registro = más reciente
+    }
+
     for (const driver of drivers) {
       const levelKey = (driver.level || 'BASE') as keyof typeof BUSINESS_RULES.LEVELS;
       const levelConfig = BUSINESS_RULES.LEVELS[levelKey];
-      
-      // Obtener el último pago registrado (que debería contener las horas del mes que acaba de cerrar)
-      const lastPayment = await this.prisma.payrollPayment.findFirst({
-        where: { driverId: driver.id },
-        orderBy: { createdAt: 'desc' },
-      });
 
+      const lastPayment = latestByDriver.get(driver.id);
       if (!lastPayment) continue;
 
       const underGoal = lastPayment.transmissionHours < levelConfig.hours;

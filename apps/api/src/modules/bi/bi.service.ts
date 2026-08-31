@@ -1,6 +1,7 @@
 import { Injectable, Logger, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BiKpiResponse, TaxiDrillDownResponse, SemaphoreColor } from './interfaces/bi-kpi.interface';
+import { BUSINESS_RULES } from '../../common/constants/business-rules';
 
 @Injectable()
 export class BiService {
@@ -268,10 +269,12 @@ export class BiService {
     this.logger.log(`🧬 Auditing ${drivers.length} drivers for period ${period}...`);
 
     // AGREGACIÓN SQL #1: impresiones por device en el período (una sola query)
+    // Solo playbacks VERIFICADOS (play_confirm) — evita inyectar impresiones falsas en la conciliación.
     const impressionsRaw = await this.prisma.playbackEvent.groupBy({
       by: ['deviceId'],
       where: {
-        eventType: { in: ['play_confirm', 'END'] },
+        eventType: 'play_confirm',
+        verified: true,
         timestamp: { gte: periodStart, lte: periodEnd },
       },
       _count: { _all: true },
@@ -303,7 +306,7 @@ export class BiService {
 
         const payrollDue  = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
         const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
-        const revenueContracted = 1500;
+        const revenueContracted = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
 
         let discrepancyType = 'OK';
         let hasDiscrepancy  = false;

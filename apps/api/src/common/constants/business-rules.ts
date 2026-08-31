@@ -9,6 +9,9 @@ export const BUSINESS_RULES = {
   /** RD$ que gana el conductor por cada campaña activa en su tablet al mes */
   DRIVER_RATE_PER_CAMPAIGN_RD: 500,
 
+  /** RD$ por cada playback verificado (30s ad play). M15: tarifa única centralizada. */
+  DRIVER_RATE_PER_AD_PLAY_RD: 1.25,
+
   /** RD$ de comisión por cada conductor activo referido */
   DRIVER_REFERRAL_BONUS_RD: 500,
 

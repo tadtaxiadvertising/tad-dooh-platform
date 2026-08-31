@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
@@ -31,6 +31,7 @@ export class DeviceController {
   }
 
   @Post('playback')
+  @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async playback(@Body() dto: PlaybackConfirmationDto) {
     await this.deviceService.recordPlayback(dto);
@@ -60,12 +61,20 @@ export class DeviceController {
     return this.deviceService.getDeviceSlots(deviceId);
   }
 
+  @UseGuards(DeviceTokenGuard)
   @Post('command/:id/ack')
   @HttpCode(HttpStatus.OK)
   async acknowledgeCommand(
     @Param('id') commandId: string,
-    @Body() result: any
+    @Body() result: any,
+    @Req() req: any
   ) {
+    // M9: validar que el comando pertenezca al dispositivo autenticado (X-Device-Token).
+    // Antes cualquier tercero podía marcar comandos ajenos como EXECUTED.
+    const command = await this.deviceService.getCommandForDevice(commandId, req.authenticatedDeviceId);
+    if (!command) {
+      throw new ForbiddenException('No tienes permisos para confirmar este comando');
+    }
     return this.deviceService.acknowledgeCommand(commandId, result);
   }
 }

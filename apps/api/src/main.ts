@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
-import { Logger, RequestMethod } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
 
@@ -113,6 +113,19 @@ async function bootstrap() {
     // Prisma filter first: catches PrismaClient* errors (P2002 → 409, etc.);
     // GlobalExceptionFilter catches everything else.
     app.useGlobalFilters(new PrismaClientExceptionFilter(), new GlobalExceptionFilter());
+
+    // M20: ValidationPipe global con whitelist para prevenir mass-assignment.
+    // whitelist: true descarta campos no declarados en DTOs.
+    // forbidNonWhitelisted: false para no romper requests legacy (solo descarta silenciosamente).
+    // transform: true convierte payloads a instancias de clase DTO.
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: false,
+        transform: true,
+        disableErrorMessages: process.env.NODE_ENV === 'production',
+      })
+    );
 
     const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0');

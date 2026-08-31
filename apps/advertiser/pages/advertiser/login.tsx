@@ -41,7 +41,7 @@ function persistSession(payload: Record<string, unknown>, fallbackEmail: string)
 
   const isSecure = window.location.protocol === 'https:';
   document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
-  localStorage.setItem('tad_advertiser_token', String(accessToken));
+  // A7: NO guardar refresh token en localStorage. Access token en memoria via context.
   localStorage.setItem('tad_advertiser_user', JSON.stringify(user));
 }
 

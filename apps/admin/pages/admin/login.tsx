@@ -66,8 +66,9 @@ export default function AdminLoginPage() {
         throw new Error('Respuesta de autenticación inválida (sin token).');
       }
 
+      // A7: NO guardar refresh token en localStorage (seguridad).
+      // Access token en cookie (credentials: include) + memoria (React context).
       localStorage.setItem('tad_admin_token', data.access_token);
-      localStorage.setItem('tad_admin_refresh_token', data.refresh_token ?? '');
       localStorage.setItem('tad_admin_user', JSON.stringify(tokenPayload));
 
       (window as any).__tad_user = tokenPayload;

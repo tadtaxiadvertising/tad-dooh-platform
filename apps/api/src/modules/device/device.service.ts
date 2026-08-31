@@ -480,6 +480,20 @@ export class DeviceService {
     });
   }
 
+  // M9: verifica que el comando (referenciado por su UUID) pertenezca al dispositivo
+  // autenticado (deviceId hardware). deviceCommand.deviceId guarda la UUID del device.
+  async getCommandForDevice(commandId: string, hardwareDeviceId: string) {
+    const device = await this.prisma.device.findUnique({
+      where: { deviceId: hardwareDeviceId },
+      select: { id: true },
+    });
+    if (!device) return null;
+    return this.prisma.deviceCommand.findFirst({
+      where: { id: commandId, deviceId: device.id },
+      select: { id: true },
+    });
+  }
+
   async processBulkSync(dto: BulkSyncDto) {
     this.logger.log(`🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`);
 

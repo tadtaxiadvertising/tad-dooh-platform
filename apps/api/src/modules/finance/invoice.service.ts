@@ -38,7 +38,7 @@ export class InvoiceService implements OnModuleInit {
               bold: true,
             },
             {
-              text: `Factura N°: TAD-${Math.floor(Math.random() * 100000)}\nFecha: ${new Date().toLocaleDateString()}`,
+              text: `Factura N°: TAD-${new Date().getFullYear()}-${this.refId(driverData)}\nFecha: ${new Date().toLocaleDateString()}`,
               alignment: 'right',
               fontSize: 10,
               color: '#666'
@@ -314,5 +314,23 @@ export class InvoiceService implements OnModuleInit {
     };
     const pdfDoc = pdfmake.createPdf(docDefinition);
     return await pdfDoc.getBuffer();
+  }
+
+  // B6: número de factura auditable y sin colisiones (timestamp + hash corto del socio),
+  // en lugar del antiguo Math.random()*100000.
+  private refId(driverData: any): string {
+    const seed =
+      driverData.deviceId ||
+      driverData.placa ||
+      driverData.chofer ||
+      driverData.nombre ||
+      String(Date.now());
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) {
+      h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    }
+    const base = 36;
+    const stamp = Date.now().toString(36).toUpperCase().slice(-6);
+    return `${stamp}${('0000' + (h % 100000).toString()).slice(-5)}`;
   }
 }

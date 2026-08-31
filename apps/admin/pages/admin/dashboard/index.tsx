@@ -322,7 +322,6 @@ export default function Home() {
           </div>
 
           {/* ⚡ Fleet Pulse Terminal */}
-          <FleetPulseTerminal />
         </div>
 
         {/* Intelligence Sidebar */}
@@ -445,67 +444,6 @@ function PremiumInfoCard({ icon, title, label, description, progress, primary, u
             primary ? 'bg-tad-yellow text-tad-yellow' : 'bg-blue-500 text-blue-500'
           )} style={{ width: `${progress}%` }} />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function FleetPulseTerminal() {
-  const [logs, setLogs] = useState<{ id: string; msg: string; time: string; type: 'success' | 'warn' | 'info' | 'error' }[]>([]);
-
-  useEffect(() => {
-    const prefixes = ['STI', 'SDQ', 'POP'];
-    const generateLog = () => {
-      const id = `${prefixes[Math.floor(Math.random() * prefixes.length)]}-${Math.floor(Math.random() * 90) + 10}`;
-      const types: ('success' | 'warn' | 'info' | 'error')[] = ['success', 'success', 'success', 'info', 'warn', 'success', 'error'];
-      const type = types[Math.floor(Math.random() * types.length)];
-
-      let msg = `Device ${id} -> Telemetry synced [OK]`;
-      if (type === 'warn') msg = `Device ${id} -> Latency spike detected (120ms)`;
-      if (type === 'info') msg = `Device ${id} -> Media assets validating`;
-      if (type === 'error') msg = `Device ${id} -> Thermal warning (72°C)`;
-
-      const newLog = {
-        id: Math.random().toString(),
-        msg,
-        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        type
-      };
-      setLogs(prev => [newLog, ...prev].slice(0, 5));
-    };
-
-    const timer = setInterval(generateLog, 3000);
-    generateLog();
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="bg-[#050505] border border-white/5 rounded-[2.5rem] p-8 font-mono overflow-hidden relative group shadow-2xl">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_#10b981]" />
-          <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Fleet Pulse Terminal</h4>
-        </div>
-        <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Live Stream</span>
-      </div>
-
-      <div className="space-y-3 relative">
-        {logs.map((log, i) => (
-          <div key={log.id} className="flex gap-4 text-[11px] animate-in slide-in-from-left-4 fade-in duration-300" style={{ opacity: 1 - (i * 0.15) }}>
-            <span className="text-zinc-600 shrink-0">[{log.time}]</span>
-            <span className={clsx(
-              "font-bold tracking-wide",
-              log.type === 'success' ? 'text-emerald-400' :
-                log.type === 'warn' ? 'text-yellow-400' :
-                  log.type === 'error' ? 'text-rose-500' :
-                    'text-blue-400'
-            )}>
-              {log.msg}
-            </span>
-          </div>
-        ))}
       </div>
     </div>
   );

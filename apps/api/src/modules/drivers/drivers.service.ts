@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
 import { PayrollAuditService } from './payroll-audit.service';
 
@@ -11,6 +12,16 @@ export interface AuthUser {
   email: string;
   role: string;
   entityId?: string;
+}
+
+// A9: generá una password temporal aleatoria y segura (12+ chars) entregada una sola vez.
+function generateTemporaryPassword(): string {
+  // 3 bloques de 4 bytes → 18 caracteres base64url, sin necesidad de separadores largos.
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = randomBytes(15);
+  let out = '';
+  for (let i = 0; i < 15; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
 }
 
 @Injectable()
@@ -253,7 +264,10 @@ export class DriversService {
     agreementVersion?: string;
     referredBy?: string;
   }) {
-    const plainPassword = data.password?.trim() || `Tad-${data.phone.replace(/\D/g, '')}!`;
+    const plainPassword =
+      data.password?.trim() ||
+      // A9: password aleatoria (NO derivada del teléfono), entregada una sola vez.
+      generateTemporaryPassword();
     // FIX B-2: Usar constante BCRYPT_ROUNDS en lugar de magic number
     const hashedPassword = await bcrypt.hash(plainPassword, BCRYPT_ROUNDS);
 

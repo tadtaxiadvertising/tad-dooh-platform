@@ -37,22 +37,31 @@ export class IdempotencyInterceptor implements NestInterceptor {
       });
 
       if (existing) {
-        // If locked, another request is currently processing this key — reject
-        if (existing.isLocked) {
+        // M3: registrar vencido (expiresAt pasado) → descartar y re-procesar,
+        // en vez de devolver una respuesta cacheada de una operación expirada.
+        if (existing.expiresAt && existing.expiresAt.getTime() <= Date.now()) {
+          this.logger.warn(`Idempotency key ${idempotencyKey} expiró (${existing.expiresAt.toISOString()}). Descartando y re-procesando.`);
+          try {
+            await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+          } catch (e) {
+            // ignore: key pudo haber sido eliminada por un request concurrente
+          }
+        } else if (existing.isLocked) {
+          // If locked, another request is currently processing this key — reject
           this.logger.warn(`Idempotency key ${idempotencyKey} is currently being processed by another request.`);
           throw new BadRequestException({
             code: 'IDEMPOTENCY_KEY_IN_PROGRESS',
             message: 'This operation is currently being processed. Please retry in a few seconds.',
           });
-        }
-
-        // Already completed — return cached response
-        this.logger.log(`Idempotency key ${idempotencyKey} already processed. Returning cached response.`);
-        try {
-          return of(JSON.parse(existing.response));
-        } catch {
-          // If response is not valid JSON, return a generic success
-          return of({ success: true, idempotent: true });
+        } else {
+          // Already completed and still valid — return cached response
+          this.logger.log(`Idempotency key ${idempotencyKey} already processed. Returning cached response.`);
+          try {
+            return of(JSON.parse(existing.response!));
+          } catch {
+            // If response is not valid JSON, return a generic success
+            return of({ success: true, idempotent: true });
+          }
         }
       }
 

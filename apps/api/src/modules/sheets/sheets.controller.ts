@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Res, Param, Logger } from '@nestjs/common';
 import { SheetsService } from './sheets.service';
 import { InvoiceService } from '../finance/invoice.service';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 import { Response } from 'express';
 
 @Controller('sheets')
@@ -16,8 +16,8 @@ export class SheetsController {
   /**
    * TAD-SRE: Disparador manual de sincronización masiva a la DB secundaria.
    */
-  @Public()
   @Post('sync')
+  @Roles(UserRole.ADMIN)
   async syncAll() {
     return this.sheetsService.syncAllTables();
   }
@@ -25,8 +25,8 @@ export class SheetsController {
   /**
    * TAD-SRE: Fallback Report - Obtiene los datos del Dashboard directo desde Google Sheets.
    */
-  @Public()
   @Get('report')
+  @Roles(UserRole.ADMIN)
   async getReport() {
     const data = await this.sheetsService.getSecondaryDBData();
     if (!data) return { error: 'Service Unavailable or Sheet Empty' };
@@ -37,6 +37,7 @@ export class SheetsController {
    * TAD-SRE: Genera y descarga el PDF técnico de liquidación basado en la telemetría.
    */
   @Get('invoice/:driverId')
+  @Roles(UserRole.ADMIN)
   async downloadInvoice(@Param('driverId') driverId: string, @Res() res: Response) {
       this.logger.log(`Solicitud de factura PDF para: ${driverId}`);
       

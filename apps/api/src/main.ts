@@ -4,7 +4,6 @@ import { PrismaService } from './modules/prisma/prisma.service';
 import { Logger, RequestMethod } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
-import * as crypto from 'crypto';
 
 // Safe BigInt serialization for Prisma
 declare global {
@@ -23,11 +22,22 @@ if (!BigInt.prototype.toJSON) {
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
-      // JWT_SECRET: si no está configurado, generar uno estable para evitar
-      // crash-loop en Easypanel. En producción real, CONFIGURARLO en las env vars.
+      // JWT_SECRET: crash-early en producción si falta (los tokens firmados con
+      // un secreto volátil se invalidaban en cada reinicio). La config histórica
+      // de EasyPanel solo define SUPABASE_JWT_SECRET; si falta JWT_SECRET se hereda
+      // de él para no invalidar los tokens vigentes. En desarrollo se usa un
+      // secreto local ESTABLE (nunca aleatorio) para no invalidar sesiones.
       if (!process.env.JWT_SECRET) {
-        process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
-        logger.warn('⚠️ JWT_SECRET no configurado — se usó uno generado aleatoriamente. Los tokens se invalidarán al reiniciar.');
+        if (process.env.SUPABASE_JWT_SECRET) {
+          process.env.JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
+          logger.warn('⚠️ JWT_SECRET no definido — heredado de SUPABASE_JWT_SECRET (mantiene tokens válidos).');
+        } else if (process.env.NODE_ENV === 'production') {
+          logger.error('❌ JWT_SECRET/SUPABASE_JWT_SECRET no configurados — Abortando arranque. Configúrelos en EasyPanel Secrets.');
+          process.exit(1);
+        } else {
+          process.env.JWT_SECRET = 'dev-local-insecure-secret';
+          logger.warn('⚠️ JWT_SECRET no configurado en desarrollo — usando secreto local estable (NO usar en producción).');
+        }
       }
 
       // Forzamos el buffer de logs para capturar errores prematuros de inyección
@@ -51,7 +61,9 @@ async function bootstrap() {
     });
     
     // SHELTER C-I1: CORS restringido a dominios TAD conocidos
-    const envOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : [];
+    // Valor "true" es una trampa de EasyPanel: split(',') produciría ["true"].
+    const rawCorsOrigin = process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== 'true' ? process.env.CORS_ORIGIN : '';
+    const envOrigins = rawCorsOrigin ? rawCorsOrigin.split(',').map(o => o.trim()) : [];
     const baseOrigins = [
       'https://tad-admin.rewvid.easypanel.host',
       'https://tad-driver.rewvid.easypanel.host',

@@ -23,7 +23,6 @@ export class MonitoringController {
   /**
    * Endpoint para el dashboard administrativo que solicita el estado de la flota.
    */
-  @Public()
   @Get('fleet-status')
   @Roles(UserRole.ADMIN)
   async getFleetStatus() {

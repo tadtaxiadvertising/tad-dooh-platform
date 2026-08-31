@@ -4,6 +4,8 @@ import { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Shield, Mail, Lock, EyeOff, Eye } from 'lucide-react';
+import { GoogleSignInButton } from '@tad/ui';
+import { PORTAL_CONFIGS } from '@tad/services';
 
 type LoginResponse = {
   access_token: string;
@@ -189,6 +191,18 @@ export default function AdminLoginPage() {
                 <Shield className="h-4 w-4" aria-hidden="true" />
                 {submitting ? 'Verificando...' : 'Iniciar sesión'}
               </button>
+
+              {/* ─── OAuth Divider + Google Sign-In ─── */}
+              <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">o</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <GoogleSignInButton
+                config={PORTAL_CONFIGS.ADMIN}
+                disabled={submitting}
+              />
 
               <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-400">
                 <Shield className="h-3.5 w-3.5" aria-hidden="true" />

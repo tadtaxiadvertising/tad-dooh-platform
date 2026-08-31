@@ -51,7 +51,7 @@ import { HealthController } from './health/health.controller';
         const schema = zod.object({
           DATABASE_URL: zod.string().url().optional(),
           DIRECT_URL: zod.string().url().optional(),
-          JWT_SECRET: zod.string().default('tad-secret-2026'),
+          JWT_SECRET: zod.string().optional(),
           SUPABASE_URL: zod.string().url(),
           SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
           SUPABASE_ANON_KEY: zod.string().optional(),
@@ -70,8 +70,19 @@ import { HealthController } from './health/health.controller';
           throw new Error('Configuración de entorno inválida. Revisar variables en Easypanel.');
         }
         const data = result.data || config;
-        
+
+        // REGLA SRE: secreto JWT obligatorio — nunca arrancar con fallback
+        // invisible que perjudique la firma de tokens (SHELTER de seguridad).
+        // La config histórica de EasyPanel solo define SUPABASE_JWT_SECRET;
+        // se hereda a JWT_SECRET para no invalidar los tokens vigentes.
+        if (!data.JWT_SECRET && !data.SUPABASE_JWT_SECRET && process.env.NODE_ENV !== 'test') {
+          throw new Error('JWT_SECRET/SUPABASE_JWT_SECRET no configurados. Revisar EasyPanel Secrets.');
+        }
+
         // REGLA SRE: Sincronización de secretos para evitar 401 en EasyPanel
+        if (!data.JWT_SECRET && data.SUPABASE_JWT_SECRET) {
+          data.JWT_SECRET = data.SUPABASE_JWT_SECRET;
+        }
         if (!data.SUPABASE_JWT_SECRET && data.JWT_SECRET) {
           data.SUPABASE_JWT_SECRET = data.JWT_SECRET;
         }

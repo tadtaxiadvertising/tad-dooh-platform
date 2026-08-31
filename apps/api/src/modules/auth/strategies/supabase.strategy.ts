@@ -24,6 +24,12 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
       console.warn('🚨 ALERTA ARQUITECTO: El SUPABASE_JWT_SECRET parece ser una llave de gestión (sb_secret_). No funcionará para validar tokens de usuario. Reemplázalo con el "JWT Secret" de Settings > API de Supabase.');
     }
 
+    // Crash-early: nunca verificar JWT con un secreto hardcodeado.
+    const jwtSecret = secret || configService.get<string>('JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('SUPABASE_JWT_SECRET / JWT_SECRET no configurado (EasyPanel Secrets).');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: any) => {
@@ -35,7 +41,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: secret || configService.get<string>('JWT_SECRET') || 'tad-default-secret-change-me',
+      secretOrKey: jwtSecret,
     });
   }
 

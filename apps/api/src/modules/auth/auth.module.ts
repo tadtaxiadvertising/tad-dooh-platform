@@ -12,15 +12,22 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: (config: ConfigService) => {
         // Prefer SUPABASE_JWT_SECRET for local validation (no network call).
-        // Fallback to JWT_SECRET for backward compatibility.
-        secret:
+        // CRASH-EARLY: ningún fallback hardcodeado para firmar tokens.
+        const secret =
           config.get<string>('SUPABASE_JWT_SECRET') ||
-          config.get<string>('JWT_SECRET') ||
-          'tad-default-secret-change-me-in-production',
-        signOptions: { expiresIn: '7d' },
-      }),
+          config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error(
+            'Secret JWT no configurado: defina SUPABASE_JWT_SECRET o JWT_SECRET (EasyPanel Secrets).',
+          );
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: '7d' },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

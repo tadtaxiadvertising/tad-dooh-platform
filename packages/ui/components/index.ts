@@ -13,3 +13,4 @@ export * from './PortalAuth';
 export * from './ErrorBoundary';
 export * from './AuthCallback';
 export * from './UpdatePassword';
+export * from './GoogleSignInButton';

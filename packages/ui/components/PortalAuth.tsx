@@ -17,6 +17,8 @@ import {
   clearRateLimit,
 } from '@tad/services';
 
+import { GoogleSignInButton } from './GoogleSignInButton';
+
 type AuthView = 'login' | 'register' | 'forgot' | 'forgot-sent';
 
 /** Optional credential-login against the TAD API (NestJS JWT) instead of direct Supabase. */
@@ -518,6 +520,22 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
                   </>
                 )}
               </button>
+
+              {/* ─── OAUTH DIVIDER + GOOGLE SIGN-IN ─── */}
+              {config.role !== 'DRIVER' && (
+                <>
+                  <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                    <span className="text-[10px] uppercase tracking-widest text-[#62666d] font-semibold">o</span>
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                  </div>
+
+                  <GoogleSignInButton
+                    config={config}
+                    disabled={loading || lockedMs > 0}
+                  />
+                </>
+              )}
             </form>
           )}
 

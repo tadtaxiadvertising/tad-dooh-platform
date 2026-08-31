@@ -221,6 +221,10 @@ let FinanceService = FinanceService_1 = class FinanceService {
         drivers.forEach(d => {
             d.devices?.forEach(dev => deviceToDriverMap.set(dev.deviceId, d.id));
         });
+        const payrollRecords = await this.prisma.payrollPayment.findMany({
+            where: { month, year }
+        });
+        const payrollByDriver = new Map(payrollRecords.map(p => [p.driverId, p]));
         playbackEventsRaw.forEach(evt => {
             const driverId = deviceToDriverMap.get(evt.deviceId);
             const campaignId = mediaToCampaignMap.get(evt.videoId);
@@ -243,9 +247,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
                 const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
                 const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
                 const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
-                const paymentRecord = await this.prisma.payrollPayment.findUnique({
-                    where: { driverId_month_year: { driverId: driver.id, month, year } }
-                });
+                const paymentRecord = payrollByDriver.get(driver.id);
                 return {
                     driverId: driver.id,
                     driverName: driver.fullName || 'TAD DRIVER',

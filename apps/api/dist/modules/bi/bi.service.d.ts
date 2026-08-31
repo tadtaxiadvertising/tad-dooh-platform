@@ -10,32 +10,39 @@ export declare class BiService {
         period: string;
         total: number;
     }>;
-    getReconciliationReport(period: string): Promise<({
-        driver: {
-            phone: string;
-            fullName: string;
-            taxiPlate: string;
-        };
-    } & {
-        deviceId: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        driverId: string;
-        subscriptionStatus: string;
+    getReconciliationReport(period: string, page?: number, pageSize?: number): Promise<{
         period: string;
-        subscriptionDueDate: Date | null;
-        subscriptionAmount: number;
-        totalPlaybacks: number;
-        activeCampaigns: number;
-        revenueContracted: number;
-        revenueReceived: number;
-        payrollDue: number;
-        payrollPaid: number;
-        hasDiscrepancy: boolean;
-        discrepancyType: string;
-        discrepancyAmount: number;
-    })[]>;
+        data: ({
+            driver: {
+                phone: string;
+                fullName: string;
+                taxiPlate: string;
+            };
+        } & {
+            deviceId: string | null;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            driverId: string;
+            subscriptionStatus: string;
+            period: string;
+            subscriptionDueDate: Date | null;
+            subscriptionAmount: number;
+            totalPlaybacks: number;
+            activeCampaigns: number;
+            revenueContracted: number;
+            revenueReceived: number;
+            payrollDue: number;
+            payrollPaid: number;
+            hasDiscrepancy: boolean;
+            discrepancyType: string;
+            discrepancyAmount: number;
+        })[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+    }>;
     getFleetHealth(take?: number): Promise<{
         id: string;
         deviceId: string;

@@ -19,31 +19,38 @@ export declare class BiController {
         period: string;
         total: number;
     }>;
-    getReconciliation(period: string): Promise<({
-        driver: {
-            phone: string;
-            fullName: string;
-            taxiPlate: string;
-        };
-    } & {
-        deviceId: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        driverId: string;
-        subscriptionStatus: string;
+    getReconciliation(period: string, page?: string, pageSize?: string): Promise<{
         period: string;
-        subscriptionDueDate: Date | null;
-        subscriptionAmount: number;
-        totalPlaybacks: number;
-        activeCampaigns: number;
-        revenueContracted: number;
-        revenueReceived: number;
-        payrollDue: number;
-        payrollPaid: number;
-        hasDiscrepancy: boolean;
-        discrepancyType: string;
-        discrepancyAmount: number;
-    })[]>;
+        data: ({
+            driver: {
+                phone: string;
+                fullName: string;
+                taxiPlate: string;
+            };
+        } & {
+            deviceId: string | null;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            driverId: string;
+            subscriptionStatus: string;
+            period: string;
+            subscriptionDueDate: Date | null;
+            subscriptionAmount: number;
+            totalPlaybacks: number;
+            activeCampaigns: number;
+            revenueContracted: number;
+            revenueReceived: number;
+            payrollDue: number;
+            payrollPaid: number;
+            hasDiscrepancy: boolean;
+            discrepancyType: string;
+            discrepancyAmount: number;
+        })[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+    }>;
     getHotspots(): Promise<number[][]>;
 }

@@ -234,31 +234,34 @@ let BiService = BiService_1 = class BiService {
             }
         });
         this.logger.log(`🧬 Auditing ${drivers.length} drivers for period ${period}...`);
+        const impressionsRaw = await this.prisma.playbackEvent.groupBy({
+            by: ['deviceId'],
+            where: {
+                eventType: { in: ['play_confirm', 'END'] },
+                timestamp: { gte: periodStart, lte: periodEnd },
+            },
+            _count: { _all: true },
+        });
+        const impressionsByDevice = new Map(impressionsRaw.map(i => [i.deviceId, i._count._all]));
+        const revenueAgg = await this.prisma.financialTransaction.aggregate({
+            where: {
+                type: 'INCOMING',
+                status: 'COMPLETED',
+                category: 'PUBLICIDAD',
+                createdAt: { gte: periodStart, lte: periodEnd },
+            },
+            _sum: { amount: true },
+        });
+        const revenueReceived = Number(revenueAgg._sum?.amount ?? 0);
         const results = [];
         for (let i = 0; i < drivers.length; i += 5) {
             const chunk = drivers.slice(i, i + 5);
             const chunkResults = await Promise.all(chunk.map(async (driver) => {
                 const device = driver.devices[0];
                 const subscription = driver.subscriptions[0];
-                const deliveredImpressions = device ? await this.prisma.playbackEvent.count({
-                    where: {
-                        deviceId: device.deviceId,
-                        eventType: { in: ['play_confirm', 'END'] },
-                        timestamp: { gte: periodStart, lte: periodEnd }
-                    }
-                }) : 0;
-                const revenueAgg = await this.prisma.financialTransaction.aggregate({
-                    where: {
-                        type: 'INCOMING',
-                        status: 'COMPLETED',
-                        category: 'PUBLICIDAD',
-                        createdAt: { gte: periodStart, lte: periodEnd }
-                    },
-                    _sum: { amount: true }
-                });
+                const deliveredImpressions = device ? (impressionsByDevice.get(device.deviceId) || 0) : 0;
                 const payrollDue = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
                 const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
-                const revenueReceived = Number(revenueAgg._sum?.amount ?? 0);
                 const revenueContracted = 1500;
                 let discrepancyType = 'OK';
                 let hasDiscrepancy = false;
@@ -306,20 +309,35 @@ let BiService = BiService_1 = class BiService {
         }
         return { period, total: results.length };
     }
-    async getReconciliationReport(period) {
-        return this.prisma.reconciliationReport.findMany({
-            where: { period },
-            include: {
-                driver: {
-                    select: {
-                        fullName: true,
-                        phone: true,
-                        taxiPlate: true
+    async getReconciliationReport(period, page = 1, pageSize = 100) {
+        const safePage = Math.max(1, Math.floor(page));
+        const safeSize = Math.min(Math.max(1, Math.floor(pageSize)), 500);
+        const [total, rows] = await Promise.all([
+            this.prisma.reconciliationReport.count({ where: { period } }),
+            this.prisma.reconciliationReport.findMany({
+                where: { period },
+                include: {
+                    driver: {
+                        select: {
+                            fullName: true,
+                            phone: true,
+                            taxiPlate: true
+                        }
                     }
-                }
-            },
-            orderBy: { hasDiscrepancy: 'desc' }
-        });
+                },
+                orderBy: { hasDiscrepancy: 'desc' },
+                skip: (safePage - 1) * safeSize,
+                take: safeSize,
+            }),
+        ]);
+        return {
+            period,
+            data: rows,
+            total,
+            page: safePage,
+            pageSize: safeSize,
+            totalPages: Math.ceil(total / safeSize),
+        };
     }
     async getFleetHealth(take = 500) {
         const safeTake = Math.min(Math.max(1, Math.floor(take)), 500);
@@ -339,8 +357,13 @@ let BiService = BiService_1 = class BiService {
     }
     async getHotspots() {
         const locations = await this.prisma.driverLocation.findMany({
-            take: 1000, orderBy: { timestamp: 'desc' },
-            select: { latitude: true, longitude: true }
+            where: {
+                latitude: { not: 0, gte: -85, lte: 85 },
+                longitude: { not: 0, gte: -180, lte: 180 },
+            },
+            take: 2000,
+            orderBy: { timestamp: 'desc' },
+            select: { latitude: true, longitude: true },
         });
         return locations.map(l => [l.latitude, l.longitude, 0.5]);
     }

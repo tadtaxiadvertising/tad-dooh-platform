@@ -263,6 +263,24 @@ app.get('/', (req, res) => {
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
+// Health probe (usado por HEALTHCHECK y por el dashboard de contenedores)
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'tad-remotion', uptime: Math.round(process.uptime()) });
+});
+
+// Auth por Bearer token en las APIs de render/AI.
+// Si REMOTION_API_TOKEN no está configurado, el servicio corre abierto (dev).
+const REMOTION_API_TOKEN = process.env.REMOTION_API_TOKEN;
+if (REMOTION_API_TOKEN) {
+  app.use('/api', (req, res, next) => {
+    const auth = req.headers.authorization || '';
+    if (auth !== `Bearer ${REMOTION_API_TOKEN}`) {
+      return res.status(401).json({ error: 'Unauthorized: missing or invalid REMOTION_API_TOKEN' });
+    }
+    next();
+  });
+}
+
 app.post('/api/render', async (req, res) => {
   try {
     const { campaignId, props } = req.body;

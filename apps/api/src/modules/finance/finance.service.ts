@@ -237,6 +237,12 @@ export class FinanceService {
       d.devices?.forEach(dev => deviceToDriverMap.set(dev.deviceId, d.id));
     });
 
+    // FASE 3 (Item 11): precargar los payroll del período en UNA query (kill N+1)
+    const payrollRecords = await this.prisma.payrollPayment.findMany({
+      where: { month, year }
+    });
+    const payrollByDriver = new Map(payrollRecords.map(p => [p.driverId, p]));
+
     playbackEventsRaw.forEach(evt => {
       const driverId = deviceToDriverMap.get(evt.deviceId);
       const campaignId = mediaToCampaignMap.get(evt.videoId);
@@ -274,10 +280,8 @@ export class FinanceService {
         // Enhanced: Get the actual taxi number from the assigned devices or driver record
         const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
 
-        // Check if already paid
-        const paymentRecord = await this.prisma.payrollPayment.findUnique({
-          where: { driverId_month_year: { driverId: driver.id, month, year } }
-        });
+        // Check if already paid (pre-cargado, sin query por driver)
+        const paymentRecord = payrollByDriver.get(driver.id);
 
         return {
           driverId: driver.id,

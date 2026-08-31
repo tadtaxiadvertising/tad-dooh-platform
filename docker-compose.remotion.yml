@@ -8,6 +8,12 @@ services:
       PORT: 8000
       NODE_ENV: production
       REMOTION_CONCURRENCY: 1
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
     # Bind solo en localhost; Caddy consume por red interna
     ports:
       - "127.0.0.1:8000:8000"

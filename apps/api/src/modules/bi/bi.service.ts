@@ -247,7 +247,9 @@ export class BiService {
 
   /**
    * RECONCILIATION - Audit loop (SRE Optimized)
-   * Process drivers in small chunks to prevent OOM on 512MB RAM.
+   * FASE 3 (Item 11): las impresiones y los ingresos se agregan en UNA query
+   * SQL (groupBy) y se reutilizan para todos los drivers. Se elimina el N+1
+   * de counts por driver y el aggregate repetido de revenue.
    */
   async generateReconciliationReport(period: string) {
     const [year, month] = period.split('-').map(Number);
@@ -264,7 +266,30 @@ export class BiService {
     });
 
     this.logger.log(`🧬 Auditing ${drivers.length} drivers for period ${period}...`);
-    
+
+    // AGREGACIÓN SQL #1: impresiones por device en el período (una sola query)
+    const impressionsRaw = await this.prisma.playbackEvent.groupBy({
+      by: ['deviceId'],
+      where: {
+        eventType: { in: ['play_confirm', 'END'] },
+        timestamp: { gte: periodStart, lte: periodEnd },
+      },
+      _count: { _all: true },
+    });
+    const impressionsByDevice = new Map(impressionsRaw.map(i => [i.deviceId, i._count._all]));
+
+    // AGREGACIÓN SQL #2: ingresos de publicidad del período (una sola query)
+    const revenueAgg = await this.prisma.financialTransaction.aggregate({
+      where: {
+        type: 'INCOMING',
+        status: 'COMPLETED',
+        category: 'PUBLICIDAD',
+        createdAt: { gte: periodStart, lte: periodEnd },
+      },
+      _sum: { amount: true },
+    });
+    const revenueReceived = Number(revenueAgg._sum?.amount ?? 0);
+
     const results = [];
     // Sequential Batching: 5 drivers at a time to stay under RAM limits
     for (let i = 0; i < drivers.length; i += 5) {
@@ -273,29 +298,12 @@ export class BiService {
         const device       = driver.devices[0];
         const subscription = driver.subscriptions[0];
 
-        // Optimized count query
-        const deliveredImpressions = device ? await this.prisma.playbackEvent.count({
-          where: { 
-            deviceId: device.deviceId, 
-            eventType: { in: ['play_confirm', 'END'] }, 
-            timestamp: { gte: periodStart, lte: periodEnd } 
-          }
-        }) : 0;
-
-        const revenueAgg = await this.prisma.financialTransaction.aggregate({
-          where: { 
-            type: 'INCOMING', 
-            status: 'COMPLETED', 
-            category: 'PUBLICIDAD', 
-            createdAt: { gte: periodStart, lte: periodEnd } 
-          },
-          _sum: { amount: true }
-        });
+        // Lookup O(1) precomputed (sin query por driver)
+        const deliveredImpressions = device ? (impressionsByDevice.get(device.deviceId) || 0) : 0;
 
         const payrollDue  = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
         const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
-        const revenueReceived = Number(revenueAgg._sum?.amount ?? 0);
-        const revenueContracted = 1500; 
+        const revenueContracted = 1500;
 
         let discrepancyType = 'OK';
         let hasDiscrepancy  = false;
@@ -345,20 +353,41 @@ export class BiService {
     return { period, total: results.length };
   }
 
-  async getReconciliationReport(period: string) {
-    return this.prisma.reconciliationReport.findMany({
-      where: { period },
-      include: {
-        driver: {
-          select: {
-            fullName: true,
-            phone: true,
-            taxiPlate: true
+  /**
+   * Get reconciliation report with cursor-free pagination (FASE 3, Item 11).
+   * Back-compatible: sin parámetros devuelve página 1 con límite por defecto.
+   */
+  async getReconciliationReport(period: string, page: number = 1, pageSize: number = 100) {
+    const safePage = Math.max(1, Math.floor(page));
+    const safeSize = Math.min(Math.max(1, Math.floor(pageSize)), 500);
+
+    const [total, rows] = await Promise.all([
+      this.prisma.reconciliationReport.count({ where: { period } }),
+      this.prisma.reconciliationReport.findMany({
+        where: { period },
+        include: {
+          driver: {
+            select: {
+              fullName: true,
+              phone: true,
+              taxiPlate: true
+            }
           }
-        }
-      },
-      orderBy: { hasDiscrepancy: 'desc' }
-    });
+        },
+        orderBy: { hasDiscrepancy: 'desc' },
+        skip: (safePage - 1) * safeSize,
+        take: safeSize,
+      }),
+    ]);
+
+    return {
+      period,
+      data: rows,
+      total,
+      page: safePage,
+      pageSize: safeSize,
+      totalPages: Math.ceil(total / safeSize),
+    };
   }
 
   /**
@@ -385,9 +414,17 @@ export class BiService {
   }
 
   async getHotspots() {
+    // FASE 3 (Item 11): límites reales de coordenadas (filter en SQL) + cap fijo.
+    // Se descartan filas con lat/lng nulos, cero o fuera de rango geográfico válido,
+    // evitando que puntos basura descoloquen el mapa del heatmap.
     const locations = await this.prisma.driverLocation.findMany({
-      take: 1000, orderBy: { timestamp: 'desc' },
-      select: { latitude: true, longitude: true }
+      where: {
+        latitude: { not: 0, gte: -85, lte: 85 },
+        longitude: { not: 0, gte: -180, lte: 180 },
+      },
+      take: 2000,
+      orderBy: { timestamp: 'desc' },
+      select: { latitude: true, longitude: true },
     });
     return locations.map(l => [l.latitude, l.longitude, 0.5]);
   }

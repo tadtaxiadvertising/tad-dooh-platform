@@ -37,8 +37,10 @@ let BiController = class BiController {
         }
         return this.biService.generateReconciliationReport(dto.period);
     }
-    async getReconciliation(period) {
-        return this.biService.getReconciliationReport(period);
+    async getReconciliation(period, page, pageSize) {
+        const p = page && !isNaN(Number(page)) ? Number(page) : 1;
+        const ps = pageSize && !isNaN(Number(pageSize)) ? Number(pageSize) : 100;
+        return this.biService.getReconciliationReport(period, p, ps);
     }
     async getHotspots() {
         return this.biService.getHotspots();
@@ -74,8 +76,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('reconciliation/:period'),
     __param(0, (0, common_1.Param)('period')),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('pageSize')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], BiController.prototype, "getReconciliation", null);
 __decorate([

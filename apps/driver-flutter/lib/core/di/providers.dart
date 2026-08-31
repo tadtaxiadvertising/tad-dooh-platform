@@ -32,7 +32,8 @@ final dioProvider = Provider((ref) {
 
   dio.interceptors.add(KillSwitchInterceptor(
     onKillSwitch: () {
-      debugPrint('INTERCEPTOR: KillSwitch (402) suppressed for development');
+      debugPrint('INTERCEPTOR: KillSwitch (402) activado');
+      ref.read(killSwitchProvider).activate('Suscripción vencida — realice el pago para continuar');
     },
     onUnauthorized: () {
       ref.read(authHelpersProvider).clearAuth();

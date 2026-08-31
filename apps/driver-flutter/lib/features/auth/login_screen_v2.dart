@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/di/providers.dart';
-import '../../core/network/api_constants.dart';
 import '../../theme/tad_theme.dart';
-import '../../models/hub_data.dart';
+import '../../screens/login_screen.dart' as legacy show apiLogin, persistLogin, ApiException;
 
-/// Login screen con bypass para desarrollo.
+/// Login screen. Requiere credenciales reales (sin bypass) y respeta el
+/// kill-switch: 402 bloquea el acceso mediante suscripción vencida.
 class LoginScreenV2 extends StatefulWidget {
   const LoginScreenV2({super.key});
 
@@ -63,8 +62,8 @@ class _LoginScreenV2State extends State<LoginScreenV2> {
                   style: TextStyle(
                       color: TadColors.tadTextPrimary, fontSize: 28, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              const Text('Modo Desarrollo (Bypass Activo)',
-                  style: TextStyle(color: TadColors.tadYellow, fontSize: 13, fontWeight: FontWeight.bold)),
+              const Text('Introduce tus credenciales',
+                  style: TextStyle(color: TadColors.tadTextSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 36),
               _label('Teléfono'),
               const SizedBox(height: 8),
@@ -122,7 +121,7 @@ class _LoginScreenV2State extends State<LoginScreenV2> {
                       ? const SizedBox(
                           width: 22, height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2, color: TadColors.black))
-                      : const Text('ENTRAR (BYPASS)',
+                      : const Text('ENTRAR',
                           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: 1.2)),
                 ),
               ),
@@ -162,19 +161,36 @@ class _LoginScreenV2State extends State<LoginScreenV2> {
   Future<void> _doLogin() async {
     setState(() { _loading = true; _error = null; });
 
-    // BYPASS TOTAL PARA DESARROLLO
-    await Future.delayed(const Duration(milliseconds: 500));
-    final hub = const DriverHubData(
-      driverId: 'dev-driver',
-      driverName: 'Dev Arismendy',
-      subscriptionStatus: 'ACTIVE',
-      contractAccepted: true,
-      bankAccountConfigured: true,
-      subscriptionPaid: true,
-    );
-    
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/dashboard', arguments: hub);
+    final rawPhone = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final password = _passwordCtrl.text;
+
+    if (rawPhone.isEmpty || password.isEmpty) {
+      if (mounted) {
+        setState(() { _loading = false; _error = 'Ingresa teléfono y contraseña'; });
+      }
+      return;
+    }
+
+    try {
+      final result = await legacy.apiLogin(rawPhone, password);
+      await legacy.persistLogin(result, phone: rawPhone, password: password);
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/dashboard', arguments: result.hub);
+    } on legacy.ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = switch (e.statusCode) {
+          401 => 'Credenciales inválidas',
+          402 => 'Suscripción vencida — contacte a TAD',
+          403 => 'Cuenta suspendida',
+          _ => e.message,
+        };
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = 'Error de conexión — intente de nuevo'; });
     }
   }
 }

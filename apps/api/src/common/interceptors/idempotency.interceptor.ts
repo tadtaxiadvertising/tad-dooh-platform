@@ -1,6 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, BadRequestException, Logger } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { PrismaService } from '../../modules/prisma/prisma.service';
 
 /**
@@ -78,6 +78,17 @@ export class IdempotencyInterceptor implements NestInterceptor {
               isLocked: false,
             }
           });
+        }),
+        catchError(async (err) => {
+          // FASE 2 (Item 7): liberar el lock si el handler falló (p. ej. validaciones
+          // o rollback de $transaction). Sin esto la key quedaría "locked" 24h y el
+          // cliente no podría reintentar pese a que nada se persistió.
+          try {
+            await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+          } catch (e) {
+            // ignore: key pudo no existir o ya fue eliminada
+          }
+          return throwError(() => err);
         }),
       );
     }

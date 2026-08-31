@@ -35,8 +35,14 @@ export class BiController {
   }
 
   @Get('reconciliation/:period')
-  async getReconciliation(@Param('period') period: string) {
-    return this.biService.getReconciliationReport(period);
+  async getReconciliation(
+    @Param('period') period: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    const p = page && !isNaN(Number(page)) ? Number(page) : 1;
+    const ps = pageSize && !isNaN(Number(pageSize)) ? Number(pageSize) : 100;
+    return this.biService.getReconciliationReport(period, p, ps);
   }
 
   @Get('hotspots')

@@ -44,21 +44,24 @@ export class MonitoringService {
    * Agrupa los registros en DriverLocation y actualiza el estado del dispositivo.
    */
   async processGpsBatch(batch: GpsBatchDto) {
-    const { deviceId, driverId } = batch;
+    const { deviceId } = batch;
     const points = batch.points || batch.locations || [];
 
     this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
 
     try {
-      // 1. Resolver el Driver ID ligado al dispositivo si el recibido es dudoso
+      // 1. Resolver el Driver ID ligado al dispositivo (fuente de verdad).
+      // FASE 2 (Item 8, A5): se ignora el driverId enviado por el cliente para
+      // evitar spoofing (atribuir puntos GPS a otro chofer) y se omite el
+      // status OPERATIVO: un device BLOQUEADO no debe reactivarse por GPS.
       const device = await this.prisma.device.findUnique({
         where: { deviceId },
         include: { driver: true }
       });
 
-      const resolvedDriverId = driverId || device?.driverId;
+      const resolvedDriverId = device?.driverId ?? null;
 
-      if (!resolvedDriverId) {
+      if (!resolvedDriverId || !device) {
         this.logger.warn(`⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`);
         return { status: 'ignored', reason: 'no_driver_linked' };
       }
@@ -88,7 +91,6 @@ export class MonitoringService {
             lastSeen: new Date(),
             lastSyncAt: new Date(),
             lastSyncSuccess: true,
-            status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
             connectivityStatus: 'ONLINE',
           },
         });

@@ -174,12 +174,15 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 });
                 if (adv && adv.referredBy && adv._count.campaigns === 1) {
                     const driverId = adv.referredBy;
-                    const existingComm = await this.prisma.commission.findFirst({
-                        where: { driverId, sourceType: 'ADVERTISER_SALE' },
-                    });
-                    if (!existingComm) {
+                    const bonusReference = `REF-BONUS-${campaign.id.substring(0, 8)}`;
+                    await this.prisma.$transaction(async (tx) => {
+                        const existingComm = await tx.commission.findFirst({
+                            where: { driverId, sourceType: 'ADVERTISER_SALE' },
+                        });
+                        if (existingComm)
+                            return;
                         this.logger.log(`💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`);
-                        await this.prisma.commission.create({
+                        await tx.commission.create({
                             data: {
                                 driverId,
                                 amount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
@@ -187,25 +190,27 @@ let CampaignService = CampaignService_1 = class CampaignService {
                                 status: 'APPROVED',
                             },
                         });
-                        await this.prisma.financialTransaction.create({
-                            data: {
+                        await tx.financialTransaction.upsert({
+                            where: { reference: bonusReference },
+                            update: {},
+                            create: {
                                 type: 'OUTGOING',
                                 category: 'OPEX_COMMISSION',
                                 amount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
                                 netAmount: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
                                 taxAmount: 0,
                                 entityId: driverId,
-                                reference: `REF-BONUS-${campaign.id.substring(0, 8)}`,
+                                reference: bonusReference,
                                 note: 'Bono de Referido por 1ra campaña activa de anunciante asociado.',
                                 status: 'COMPLETED',
                             },
                         });
-                        await this.prisma.wallet.upsert({
+                        await tx.wallet.upsert({
                             where: { driverId },
                             update: { availableBalance: { increment: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD } },
                             create: { driverId, availableBalance: business_rules_1.BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD },
                         });
-                    }
+                    });
                 }
             }
             catch (err) {
@@ -294,13 +299,11 @@ let CampaignService = CampaignService_1 = class CampaignService {
                     { deviceId: { in: idOrHwIds } }
                 ]
             },
-            select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
+            select: { id: true, deviceId: true }
         });
         if (devices.length === 0 && idOrHwIds.length > 0) {
             this.logger.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
         }
-        const availableDevices = devices.filter(d => d._count.campaigns < business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
-        const skippedCount = devices.length - availableDevices.length;
         return await this.prisma.$transaction(async (tx) => {
             await tx.playlistItem.deleteMany({ where: { campaignId } });
             await tx.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
@@ -308,13 +311,22 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 where: { id: campaignId },
                 data: { updatedAt: new Date() }
             });
-            if (availableDevices.length === 0)
+            const eligible = [];
+            for (const d of devices) {
+                await tx.$executeRaw `SELECT pg_advisory_xact_lock(hashtext(${'dc:' + d.id})::bigint)`;
+                const currentCount = await tx.deviceCampaign.count({ where: { device_id: d.id } });
+                if (currentCount < business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+                    eligible.push(d);
+                }
+            }
+            const skippedCount = devices.length - eligible.length;
+            if (eligible.length === 0)
                 return { count: 0, skipped: skippedCount };
-            const dataV1 = availableDevices.map(d => ({ campaignId, deviceId: d.deviceId }));
-            const dataV2 = availableDevices.map(d => ({ campaign_id: campaignId, device_id: d.id }));
+            const dataV1 = eligible.map(d => ({ campaignId, deviceId: d.deviceId }));
+            const dataV2 = eligible.map(d => ({ campaign_id: campaignId, device_id: d.id }));
             await tx.playlistItem.createMany({ data: dataV1 });
             await tx.deviceCampaign.createMany({ data: dataV2 });
-            const commands = availableDevices.map(d => ({
+            const commands = eligible.map(d => ({
                 deviceId: d.id,
                 commandType: 'FORCE_SYNC',
                 commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId, deviceId: d.deviceId }),
@@ -325,17 +337,19 @@ let CampaignService = CampaignService_1 = class CampaignService {
             this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
                 reason: 'campaign_assigned',
                 campaignId,
-                targets: availableDevices.map(d => d.deviceId)
+                targets: eligible.map(d => d.deviceId)
             }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
-            if (availableDevices.length > 0) {
-                await Promise.all(availableDevices.map(async (device) => {
-                    const bound = await this.prisma.device.findUnique({
-                        where: { deviceId: device.deviceId },
-                        select: { driverId: true },
-                    });
-                    if (!bound?.driverId)
+            if (eligible.length > 0) {
+                const boundDrivers = await tx.device.findMany({
+                    where: { deviceId: { in: eligible.map(d => d.deviceId) } },
+                    select: { deviceId: true, driverId: true }
+                });
+                const driverByDevice = new Map(boundDrivers.map(b => [b.deviceId, b.driverId]));
+                await Promise.all(eligible.map(async (device) => {
+                    const bound = driverByDevice.get(device.deviceId);
+                    if (!bound)
                         return;
-                    void this.notificationsService.sendDriverNotification(bound.driverId, 'CAMPAIGN_ASSIGNED', {
+                    void this.notificationsService.sendDriverNotification(bound, 'CAMPAIGN_ASSIGNED', {
                         campaignId,
                         deviceId: device.deviceId,
                         assignedAt: new Date().toISOString(),
@@ -343,18 +357,21 @@ let CampaignService = CampaignService_1 = class CampaignService {
                 }));
             }
             this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
-            return { count: availableDevices.length, skipped: skippedCount };
+            return { count: eligible.length, skipped: skippedCount };
         });
     }
     async assignCampaignToDevice(deviceId, campaignId) {
-        const currentCount = await this.prisma.deviceCampaign.count({
-            where: { device_id: deviceId }
-        });
-        if (currentCount >= business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
-            throw new common_1.BadRequestException(`Este taxi ya tiene los ${business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
-        }
-        return await this.prisma.deviceCampaign.create({
-            data: { device_id: deviceId, campaign_id: campaignId }
+        return await this.prisma.$transaction(async (tx) => {
+            await tx.$executeRaw `SELECT pg_advisory_xact_lock(hashtext(${'dc:' + deviceId})::bigint)`;
+            const currentCount = await tx.deviceCampaign.count({
+                where: { device_id: deviceId }
+            });
+            if (currentCount >= business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+                throw new common_1.BadRequestException(`Este taxi ya tiene los ${business_rules_1.BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
+            }
+            return tx.deviceCampaign.create({
+                data: { device_id: deviceId, campaign_id: campaignId }
+            });
         });
     }
     async registerDirectMedia(dto, user) {

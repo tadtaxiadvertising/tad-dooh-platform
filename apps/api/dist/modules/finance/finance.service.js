@@ -1,10 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -20,6 +53,7 @@ const email_service_1 = require("../notifications/email.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const schedule_1 = require("@nestjs/schedule");
 const business_rules_1 = require("../../common/constants/business-rules");
+const crypto = __importStar(require("crypto"));
 const mediaSafeSelect = {
     id: true,
     name: true,
@@ -56,16 +90,46 @@ let FinanceService = FinanceService_1 = class FinanceService {
     }
     async onModuleInit() {
         this.logger.log('🔄 [RECOVERY] Checking for missed automated tasks...');
-        await this.checkHighDelinquency();
     }
     async notifyMorosidad(deviceId) {
-        this.logger.warn(`🚨 [FINANCE_ALERT] Triggering Morosidad Protocol for Device: ${deviceId}`);
         const device = await this.prisma.device.findUnique({
             where: { deviceId },
             include: { driver: true }
         });
         if (!device)
             return;
+        const dateKey = new Date().toISOString().slice(0, 10);
+        const reference = `REGLA-402-${dateKey}-${deviceId.substring(0, 8)}`;
+        const existingTx = await this.prisma.financialTransaction.findUnique({ where: { reference } });
+        if (existingTx) {
+            this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado.`);
+            return { success: false, notified: false, duplicate: true };
+        }
+        const amount = business_rules_1.BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+        const taxAmount = (amount / (1 + business_rules_1.BUSINESS_RULES.ITBIS_RATE)) * business_rules_1.BUSINESS_RULES.ITBIS_RATE;
+        const netAmount = amount - taxAmount;
+        try {
+            await this.prisma.financialTransaction.create({
+                data: {
+                    type: 'INCOMING',
+                    category: 'SUSCRIPCION',
+                    status: 'PENDING',
+                    amount,
+                    taxAmount,
+                    netAmount,
+                    entityId: device.driver?.id,
+                    reference,
+                    note: `Factura de morosidad generada automáticamente por Kill-Switch.`
+                }
+            });
+        }
+        catch (e) {
+            if (e?.code === 'P2002') {
+                this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado concurrente.`);
+                return { success: false, notified: false, duplicate: true };
+            }
+            throw e;
+        }
         const pdfBuffer = await this.invoiceService.generateDebtInvoicePDF({
             deviceId: device.deviceId,
             chofer: device.driver?.fullName || 'Socio TAD',
@@ -77,22 +141,6 @@ let FinanceService = FinanceService_1 = class FinanceService {
             await this.whatsappService.sendDelinquencyAlert(driverPhone, driverName, device.deviceId);
             this.logger.log(`📱 [WHATSAPP_SENT] Alerta de Morosidad enviada a: ${driverPhone}`);
         }
-        const amount = business_rules_1.BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-        const taxAmount = (amount / (1 + business_rules_1.BUSINESS_RULES.ITBIS_RATE)) * business_rules_1.BUSINESS_RULES.ITBIS_RATE;
-        const netAmount = amount - taxAmount;
-        await this.prisma.financialTransaction.create({
-            data: {
-                type: 'INCOMING',
-                category: 'SUSCRIPCION',
-                status: 'PENDING',
-                amount,
-                taxAmount,
-                netAmount,
-                entityId: device.driver?.id,
-                reference: `REGLA-402-${deviceId.substring(0, 8)}`,
-                note: `Factura de morosidad generada automáticamente por Kill-Switch.`
-            }
-        });
         return { success: true, notified: !!driverPhone };
     }
     async checkHighDelinquency(targetDate = new Date()) {
@@ -173,6 +221,10 @@ let FinanceService = FinanceService_1 = class FinanceService {
         drivers.forEach(d => {
             d.devices?.forEach(dev => deviceToDriverMap.set(dev.deviceId, d.id));
         });
+        const payrollRecords = await this.prisma.payrollPayment.findMany({
+            where: { month, year }
+        });
+        const payrollByDriver = new Map(payrollRecords.map(p => [p.driverId, p]));
         playbackEventsRaw.forEach(evt => {
             const driverId = deviceToDriverMap.get(evt.deviceId);
             const campaignId = mediaToCampaignMap.get(evt.videoId);
@@ -195,9 +247,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
                 const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
                 const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
                 const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
-                const paymentRecord = await this.prisma.payrollPayment.findUnique({
-                    where: { driverId_month_year: { driverId: driver.id, month, year } }
-                });
+                const paymentRecord = payrollByDriver.get(driver.id);
                 return {
                     driverId: driver.id,
                     driverName: driver.fullName || 'TAD DRIVER',
@@ -270,55 +320,71 @@ let FinanceService = FinanceService_1 = class FinanceService {
         this.logger.log(`✅ Bulk billing completed: ${count} drivers credited.`);
         return { success: true, count };
     }
-    async processPayment(driverId, month, year, reference) {
+    async processPayment(driverId, month, year, _clientReference) {
         this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
         const payrollData = await this.calculateMonthlyPayroll(month, year);
         const driverEntry = payrollData.find(p => p.driverId === driverId);
         if (!driverEntry) {
             throw new Error('Driver not found for payroll calculation');
         }
-        const payrollRecord = await this.prisma.payrollPayment.upsert({
-            where: {
-                driverId_month_year: { driverId, month, year }
-            },
-            update: {
+        const reference = `PAY-${String(year).slice(2)}${String(month).padStart(2, '0')}-${crypto.randomUUID().slice(0, 8)}`;
+        return this.prisma.$transaction(async (tx) => {
+            const existing = await tx.payrollPayment.findUnique({
+                where: { driverId_month_year: { driverId, month, year } }
+            });
+            if (existing?.status === 'PAID') {
+                this.logger.warn(`⏭️ [PAYROLL] Periodo ${month}/${year} de ${driverId} ya fue liquidado. Evitando doble pago.`);
+                return existing;
+            }
+            const payrollRecord = await tx.payrollPayment.upsert({
+                where: {
+                    driverId_month_year: { driverId, month, year }
+                },
+                update: {
+                    amount: driverEntry.totalAmount,
+                    referenceNum: reference,
+                    status: 'PAID',
+                    paidAt: new Date(),
+                    activeAds: driverEntry.activeAds,
+                    gpsPoints: driverEntry.gpsPoints
+                },
+                create: {
+                    driverId,
+                    month,
+                    year,
+                    amount: driverEntry.totalAmount,
+                    referenceNum: reference,
+                    status: 'PAID',
+                    paidAt: new Date(),
+                    activeAds: driverEntry.activeAds,
+                    gpsPoints: driverEntry.gpsPoints
+                }
+            });
+            await tx.financialTransaction.create({
+                data: {
+                    type: 'OUTGOING',
+                    category: 'OPEX_DRIVER_PAYOUT',
+                    amount: driverEntry.totalAmount,
+                    netAmount: driverEntry.totalAmount,
+                    taxAmount: 0,
+                    entityId: driverId,
+                    reference,
+                    note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
+                    status: 'COMPLETED'
+                }
+            });
+            return payrollRecord;
+        }).then(async (payrollRecord) => {
+            await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
                 amount: driverEntry.totalAmount,
-                referenceNum: reference,
-                status: 'PAID',
-                paidAt: new Date(),
-                activeAds: driverEntry.activeAds,
-                gpsPoints: driverEntry.gpsPoints
-            },
-            create: {
-                driverId,
+                currency: driverEntry.currency,
                 month,
                 year,
-                amount: driverEntry.totalAmount,
-                referenceNum: reference,
-                status: 'PAID',
-                paidAt: new Date(),
                 activeAds: driverEntry.activeAds,
-                gpsPoints: driverEntry.gpsPoints
-            }
+                paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
+            }).catch((err) => this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`));
+            return payrollRecord;
         });
-        await this.recordTransaction({
-            type: 'OUTGOING',
-            category: 'OPEX_DRIVER_PAYOUT',
-            amount: driverEntry.totalAmount,
-            entityId: driverId,
-            reference: reference || `PAY-${driverId.substring(0, 4)}-${month}-${year}`,
-            note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
-            status: 'COMPLETED'
-        });
-        await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
-            amount: driverEntry.totalAmount,
-            currency: driverEntry.currency,
-            month,
-            year,
-            activeAds: driverEntry.activeAds,
-            paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
-        }).catch((err) => this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`));
-        return payrollRecord;
     }
     async getCampaignBillingReport() {
         this.logger.log('Generating campaign billing report');
@@ -336,7 +402,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
         this.logger.log('🔍 [OPTIMIZACIÓN] Pre-calculando impresiones totales...');
         const impressionCountsRaw = await this.prisma.playbackEvent.groupBy({
             by: ['videoId'],
-            where: { eventType: 'play_confirm' },
+            where: { eventType: 'play_confirm', verified: true },
             _count: { _all: true }
         });
         const impressionMap = new Map(impressionCountsRaw.map(i => [i.videoId, i._count._all]));
@@ -376,7 +442,8 @@ let FinanceService = FinanceService_1 = class FinanceService {
         const impressions = await this.prisma.playbackEvent.count({
             where: {
                 videoId: { in: campaign.media.map(m => m.id) },
-                eventType: 'play_confirm'
+                eventType: 'play_confirm',
+                verified: true
             }
         });
         let monthlyBase = 0;
@@ -439,7 +506,7 @@ let FinanceService = FinanceService_1 = class FinanceService {
         if (!campaign)
             return 'Campaña no encontrada';
         const impressions = await this.prisma.playbackEvent.count({
-            where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+            where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm', verified: true }
         });
         let monthlyBase = 0;
         campaign.media.forEach(m => {

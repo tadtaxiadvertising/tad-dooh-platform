@@ -2,7 +2,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { SupabaseService } from '../supabase/supabase.service';
@@ -33,7 +32,14 @@ export class MediaService {
   private validateMediaFile(fileName: string, mimeType?: string) {
     const fileExt = extname(fileName).toLowerCase();
     const allowedExt = BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === fileExt);
-    const allowedMime = !mimeType || BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.some((allowed) => allowed === mimeType);
+
+    // B8: MIME obligatorio — no puede pasar en blanco (antes `!mimeType ||` lo permitía).
+    if (!mimeType) {
+      throw new BadRequestException(
+        'El tipo MIME es obligatorio. Solo se aceptan MP4 (H.264), JPG o PNG.'
+      );
+    }
+    const allowedMime = BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.some((allowed) => allowed === mimeType);
 
     if (!allowedExt) {
       throw new BadRequestException(
@@ -106,6 +112,28 @@ export class MediaService {
 
     this.validateMediaFile(data.filename, data.contentType);
 
+    // B8: validar que publicUrl sea una URL absoluta http(s) apuntando a nuestro
+    // storage (Supabase) o al CDN configurado — no URLs arbitrarias.
+    try {
+      const parsed = new URL(data.publicUrl);
+      if (!/^https?:$/.test(parsed.protocol)) {
+        throw new BadRequestException('publicUrl inválida: solo se aceptan URLs http/https');
+      }
+      const supabaseUrl = this.config.get('SUPABASE_URL') as string | undefined;
+      const cdnPrefix = this.config.get('CDN_URL_PREFIX') as string | undefined;
+      const allowedHosts = [supabaseUrl, cdnPrefix]
+        .filter((h): h is string => Boolean(h))
+        .map(h => new URL(h).host);
+      if (allowedHosts.length > 0 && !allowedHosts.includes(parsed.host)) {
+        throw new BadRequestException(
+          `publicUrl debe apuntar al storage de TAD (${allowedHosts.join(', ')}) — se recibió ${parsed.host}`
+        );
+      }
+    } catch (e: any) {
+      if (e instanceof BadRequestException) throw e;
+      throw new BadRequestException(`publicUrl inválida: ${e.message}`);
+    }
+
     try {
       const cdnPrefix = this.config.get('CDN_URL_PREFIX');
       let finalCdnUrl = data.publicUrl;
@@ -138,45 +166,6 @@ export class MediaService {
     } catch(dbError: any) {
       this.logger.error("Database Insert Error on bypass: ", dbError);
       throw new BadRequestException(`Error guardando metadata: ${dbError.message}`);
-    }
-  }
-
-  async registerFileMock(dto: { originalname: string; mimetype: string; size: number }) {
-    if (dto.size > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
-      throw new BadRequestException(`El mock excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
-    }
-
-    const fileExt = extname(dto.originalname);
-    const fileId = uuidv4();
-    const fileName = `videos/mock-${fileId}${fileExt}`;
-    // Provide a valid default video URL to make it "100% funcional" for visual testing
-    const cdnUrl = `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4#mock-${fileId}`;
-
-    try {
-      const media = await this.prisma.media.create({
-        data: {
-          id: fileId,
-          filename: fileName,
-          originalFilename: dto.originalname,
-          mimeType: dto.mimetype,
-          fileSize: BigInt(dto.size),
-          storageKey: fileName,
-          cdnUrl: cdnUrl,
-          status: 'READY',
-          hashMd5: 'pending',
-          hashSha256: 'pending',
-        }
-      });
-
-      return {
-        id: media.id,
-        url: media.cdnUrl,
-        size: Number(media.fileSize),
-        mime: media.mimeType,
-      };
-    } catch (dbError: any) {
-      this.logger.error(`DB Error saving mock media: ${dbError.message}`);
-      throw new BadRequestException('Failed to save mock metadata to database');
     }
   }
 
@@ -260,8 +249,8 @@ export class MediaService {
       const media = await this.prisma.media.findUnique({ where: { id } });
       if (!media) throw new BadRequestException('Media no encontrada');
       
-      // Eliminar de Supabase Storage si no es un mock
-      if (media.storageKey && !media.storageKey.startsWith('videos/mock-')) {
+      // Eliminar de Supabase Storage
+      if (media.storageKey) {
         await this.supabase.storage
           .from('campaign-videos')
           .remove([media.storageKey])

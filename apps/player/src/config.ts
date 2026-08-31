@@ -11,7 +11,7 @@ const env = {
   HEARTBEAT_INTERVAL_MS: Number(import.meta.env.VITE_HEARTBEAT_INTERVAL_MS) || 300_000, // 5 min
   SYNC_INTERVAL_MS: Number(import.meta.env.VITE_SYNC_INTERVAL_MS) || 300_000,
   INTERMISSION_DURATION_MS: Number(import.meta.env.VITE_INTERMISSION_DURATION_MS) || 5_000,
-  PLAYBACK_FLUSH_INTERVAL_MS: Number(import.meta.env.VITE_PLAYBACK_FLUSH_INTERVAL_MS) || 30_000,
+  PLAYBACK_FLUSH_INTERVAL_MS: Number(import.meta.env.VITE_PLAYBACK_FLUSH_INTERVAL_MS) || 300_000, // 5 min por defecto (audit R2: 30s generaba flooding de telemetría)
   PLAYBACK_QUEUE_MAX_SIZE: Number(import.meta.env.VITE_PLAYBACK_QUEUE_MAX_SIZE) || 50,
   MAX_VIDEO_SIZE_BYTES: 57_671_680, // 55 MB — matches BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES
 };

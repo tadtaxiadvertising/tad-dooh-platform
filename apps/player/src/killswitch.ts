@@ -16,13 +16,16 @@ export class KillSwitchEnforcer {
   }
 
   init(): void {
-    // Check cached killSwitch on load
+    // C5/R3: No auto-levantar por TTL local. Antes, un flag con timestamp
+    // >24h se borraba aquí → evasión del kill-switch tras 24h offline.
+    // Ahora el bloqueo persiste hasta que el SERVIDOR confirme la liberación
+    // (killSwitch:false / blocked:false en device/sync o /sync/:id).
     const cached = localStorage.getItem('TAD_KILLSWITCH_ACTIVE');
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (data && Date.now() - data.timestamp < 86_400_000) {
-          this.activate(data.reason || 'SUBSCRIPTION_UNPAID');
+        if (data && data.reason) {
+          this.activate(data.reason);
         } else {
           localStorage.removeItem('TAD_KILLSWITCH_ACTIVE');
         }
@@ -75,9 +78,10 @@ export class KillSwitchEnforcer {
         if (typeof url === 'string' && (url.includes('/device/sync') || url.includes('/sync/'))) {
           const cloned = response.clone();
           cloned.json().then(data => {
-            if (data.killSwitch === true) {
-              this.activate(data.killSwitchReason || 'UNKNOWN');
-            } else if (this.active) {
+            const blocked = data.killSwitch === true || data.blocked === true;
+            if (blocked) {
+              this.activate(data.killSwitchReason || data.reason || 'UNKNOWN');
+            } else if (data.killSwitch === false || data.blocked === false) {
               this.deactivate();
             }
           }).catch(() => {});

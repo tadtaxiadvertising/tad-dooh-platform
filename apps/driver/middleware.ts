@@ -57,6 +57,6 @@ export const config = {
   matcher: [
     // Excluir PWA Service Worker, Workbox assets, y recursos estáticos públicos
     // para evitar redirects que rompan el registro del SW (SecurityError).
-    '/((?!api|_next/static|_next/image|_next/data|favicon\\.svg|manifest\\.json|sw\\.js|workbox-.*\\.js|icons/).*)',
+    '/((?!api|_next/static|_next/image|_next/data|favicon\\.svg|manifest\\.json|sw\\.js|service-worker\\.js|workbox-.*\\.js|icons/).*)',
   ],
 };

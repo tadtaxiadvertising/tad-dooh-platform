@@ -303,7 +303,6 @@
 | `POST` | `/media/register-bypassed` | JWT | Register media after direct upload to Supabase | `{ filename, storageKey, publicUrl }` |
 | `GET` | `/media` | JWT | List all media files | — |
 | `GET` | `/media/:id/status` | JWT | Get media processing status | `id` |
-| `POST` | `/media/register-mock` | JWT | Register mock media (testing) | `{ filename, mimetype, size }` |
 | `DELETE` | `/media/:id` | JWT | Delete media (standard HTTP DELETE) | `id` |
 | `POST` | `/media/:id/delete` | JWT | Delete media (POST fallback for legacy tablets) | `id` |
 | `POST` | `/media/:id` | JWT | Delete media (POST fallback) | `id` |

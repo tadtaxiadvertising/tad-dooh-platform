@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'sync_queue.dart';
 
@@ -45,6 +48,7 @@ class HybridSyncEngine {
   final List<GpsPoint> _pending = [];
   Timer? _batchTimer;
   Timer? _activeModeTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _activeMode = false;
 
   bool get isActiveMode => _activeMode;
@@ -52,12 +56,30 @@ class HybridSyncEngine {
   void start() {
     _batchTimer?.cancel();
     _batchTimer = Timer.periodic(batchInterval, (_) => flushBatch());
+
+    // M6: Al reconectar (online), descargar inmediatamente tanto el buffer
+    // en memoria como los batches pendientes persistidos en la cola offline.
+    _connectivitySub?.cancel();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (results.contains(ConnectivityResult.wifi) ||
+          results.contains(ConnectivityResult.mobile) ||
+          results.contains(ConnectivityResult.ethernet)) {
+        _kLog('[SyncEngine] Network reconnected — flushing immediate sync');
+        flushBatch();
+        _flushOfflineQueue();
+      }
+    });
+
+    // Hidrata la cola persistida y reintenta su envío al arrancar.
+    _flushOfflineQueue();
     _startRealtimeListener();
   }
 
   void stop() {
     _batchTimer?.cancel();
     _activeModeTimer?.cancel();
+    _connectivitySub?.cancel();
+    _connectivitySub = null;
     _stopRealtimeListener();
   }
 
@@ -67,17 +89,22 @@ class HybridSyncEngine {
     if (_pending.length >= 60) flushBatch();
   }
 
-  /// Flush buffered GPS points to the backend immediately.
-  /// Called by the batch timer, when 60 points accumulate, or on
-  /// manual sync request from the UI.
-  Future<void> flushBatch() async {
-    if (_pending.isEmpty) return;
-    final buffer = List<GpsPoint>.from(_pending);
-    _pending.clear();
+  /// Reenvía los batches GPS que quedaron persistidos offline durante períodos
+  /// sin conectividad (proceso matado o red caída).
+  Future<void> _flushOfflineQueue() async {
+    try {
+      final queued = await OfflineQueue.instance.drainAll();
+      for (final batch in queued) {
+        await _sendBatch(batch);
+      }
+    } catch (e) {
+      _kLog('[SyncEngine] Offline queue flush failed: $e');
+    }
+  }
 
+  Future<void> _sendBatch(List<GpsPoint> buffer) async {
+    if (buffer.isEmpty) return;
     final path = '/fleet/track-batch';
-    _kLog('[SyncEngine] Flushing ${buffer.length} points to $path');
-
     try {
       final res = await _dio.post(
         path,
@@ -102,6 +129,16 @@ class HybridSyncEngine {
     } catch (e) {
       _kLog('[SyncEngine] Unexpected sync error: $e');
     }
+  }
+
+  /// Flush buffered GPS points to the backend immediately.
+  /// Called by the batch timer, when 60 points accumulate, or on
+  /// manual sync request from the UI.
+  Future<void> flushBatch() async {
+    if (_pending.isEmpty) return;
+    final buffer = List<GpsPoint>.from(_pending);
+    _pending.clear();
+    await _sendBatch(buffer);
   }
 
   // ── Supabase realtime placeholder ───────────────────────────────────────

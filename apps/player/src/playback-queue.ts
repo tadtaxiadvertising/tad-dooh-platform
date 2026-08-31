@@ -22,6 +22,14 @@ export class PlaybackQueue {
   init(deviceId: string): void {
     this.deviceId = deviceId;
     this.startFlushLoop();
+    // Flush immediato al recuperar conectividad (item M4/R2): en 3G la red
+    // cae/revive con frecuencia y no debemos esperar el timer largo antes
+    // de entregar los Proofs of Play pendientes.
+    window.addEventListener('online', () => {
+      this.flushQueue().catch(err => {
+        console.error('[PlaybackQueue] Flush on reconnect error:', err);
+      });
+    });
   }
 
   destroy(): void {
@@ -85,8 +93,12 @@ export class PlaybackQueue {
 
       const response = await fetch(`${env.API_URL}/telemetry/playback-batch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Id': this.deviceId,
+        },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15_000),
       });
 
       if (response.ok) {

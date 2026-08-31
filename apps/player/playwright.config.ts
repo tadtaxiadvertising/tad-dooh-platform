@@ -9,7 +9,7 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
-const BASE_URL = process.env.PLAYER_BASE_URL || 'http://localhost:5173';
+const BASE_URL = process.env.PLAYER_BASE_URL || 'http://localhost:3006';
 
 export default defineConfig({
   // Directorio raíz con todos los spec files

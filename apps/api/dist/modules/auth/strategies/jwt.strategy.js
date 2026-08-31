@@ -17,6 +17,10 @@ const config_1 = require("@nestjs/config");
 const supabase_service_1 = require("../../supabase/supabase.service");
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor(configService, supabaseService) {
+        const jwtSecret = configService.get('JWT_SECRET');
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET no configurado (EasyPanel Secrets).');
+        }
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromExtractors([
                 (request) => {
@@ -28,7 +32,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
                 },
             ]),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_SECRET') || 'tad-default-secret-change-me-in-production',
+            secretOrKey: jwtSecret,
             passReqToCallback: true,
         });
         this.supabaseService = supabaseService;

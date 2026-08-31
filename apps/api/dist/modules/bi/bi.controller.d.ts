@@ -26,8 +26,8 @@ export declare class BiController {
             taxiPlate: string;
         };
     } & {
-        id: string;
         deviceId: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         driverId: string;

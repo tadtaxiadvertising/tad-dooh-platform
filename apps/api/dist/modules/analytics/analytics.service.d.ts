@@ -10,13 +10,13 @@ export declare class AnalyticsService {
     constructor(prisma: PrismaService, notifications: NotificationsService);
     clearCache(): void;
     ingestEvent(dto: IngestEventDto): Promise<{
+        deviceId: string;
+        lat: number | null;
+        lng: number | null;
         id: string;
         isSimulated: boolean;
         campaignId: string | null;
-        deviceId: string;
         timestamp: Date;
-        lat: number | null;
-        lng: number | null;
         eventType: string;
         mediaId: string | null;
         eventData: string | null;
@@ -62,18 +62,18 @@ export declare class AnalyticsService {
         lng: number;
         speed?: number;
     }): Promise<{
-        id: string;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
-        isSimulated: boolean;
+        fleet: string | null;
         deviceId: string;
+        batteryLevel: number | null;
+        name: string | null;
+        id: string;
+        createdAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
-        batteryLevel: number | null;
         lastLat: number | null;
         lastLng: number | null;
         isOnline: boolean;
@@ -81,7 +81,6 @@ export declare class AnalyticsService {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -91,6 +90,7 @@ export declare class AnalyticsService {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     getWeeklyCampaignMetrics(campaignId: string): Promise<{

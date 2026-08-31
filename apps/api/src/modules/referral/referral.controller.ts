@@ -1,6 +1,8 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ReferralService } from './referral.service';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
+@Roles(UserRole.ADMIN)
 @Controller('referral')
 export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}

@@ -91,7 +91,13 @@ let AnalyticsController = class AnalyticsController {
         const finalAdvertiserId = req.user?.role === roles_decorator_1.UserRole.ADVERTISER ? req.user.entityId : advertiserId;
         return this.analyticsService.getPlaybackHeatmap(finalAdvertiserId);
     }
-    async getWeeklyCampaignAnalytics(campaignId) {
+    async getWeeklyCampaignAnalytics(campaignId, req) {
+        if (req.user?.role === roles_decorator_1.UserRole.ADVERTISER) {
+            const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+            if (!campaign || campaign.advertiserId !== req.user.entityId) {
+                throw new common_1.ForbiddenException('No tienes permiso para ver las analíticas de esta campaña');
+            }
+        }
         return this.analyticsService.getWeeklyCampaignMetrics(campaignId);
     }
     async downloadWeeklyPdf(id, res) {
@@ -115,6 +121,7 @@ let AnalyticsController = class AnalyticsController {
 exports.AnalyticsController = AnalyticsController;
 __decorate([
     (0, common_1.Post)('campaign/:id/share-whatsapp'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -159,6 +166,7 @@ __decorate([
 ], AnalyticsController.prototype, "getCampaignAnalytics", null);
 __decorate([
     (0, common_1.Get)('device/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -223,13 +231,16 @@ __decorate([
 ], AnalyticsController.prototype, "getHeatmap", null);
 __decorate([
     (0, common_1.Get)('campaign/:id/weekly'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.ADVERTISER),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_2.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "getWeeklyCampaignAnalytics", null);
 __decorate([
     (0, common_1.Get)('campaign/:id/weekly/pdf'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),

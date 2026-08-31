@@ -51,10 +51,25 @@ let AdvertisersController = class AdvertisersController {
         return adv;
     }
     async create(body) {
-        if (!body.companyName || !body.contactName || !body.email) {
+        const FORBIDDEN_FIELDS = ['role', 'isAdmin', 'status', 'referredBy', 'app_metadata', 'user_metadata'];
+        const injected = FORBIDDEN_FIELDS.filter((field) => body?.[field] !== undefined);
+        if (injected.length > 0) {
+            throw new common_1.BadRequestException(`Intento de inyección de campos privilegiados bloqueado: ${injected.join(', ')}`);
+        }
+        const companyName = body?.companyName;
+        const contactName = body?.contactName;
+        const email = body?.email;
+        if (!companyName || !contactName || !email) {
             throw new common_1.BadRequestException('companyName, contactName, and email are required');
         }
-        return this.advertisersService.create(body);
+        return this.advertisersService.create({
+            companyName: String(companyName),
+            contactName: String(contactName),
+            email: String(email),
+            phone: body?.phone !== undefined ? String(body.phone) : undefined,
+            password: typeof body?.password === 'string' ? body.password : undefined,
+            referralCode: typeof body?.referralCode === 'string' ? body.referralCode : undefined,
+        });
     }
     async update(id, body) {
         return this.advertisersService.update(id, body);

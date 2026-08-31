@@ -2,6 +2,7 @@ import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException, L
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
 const KIOSK_COMMAND_TYPES = [
   'FORCE_SYNC',
@@ -19,6 +20,7 @@ const KIOSK_COMMAND_TYPES = [
   'DISABLE_MOTION',
 ];
 
+@Roles(UserRole.ADMIN)
 @Controller('devices')
 export class DeviceAdminController {
   private readonly logger = new Logger(DeviceAdminController.name);

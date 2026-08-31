@@ -52,7 +52,7 @@ export declare class AnalyticsController {
         lng: number;
         weight: number;
     }[]>;
-    getWeeklyCampaignAnalytics(campaignId: string): Promise<{
+    getWeeklyCampaignAnalytics(campaignId: string, req: any): Promise<{
         day: string;
         impressions: number;
         scans: number;

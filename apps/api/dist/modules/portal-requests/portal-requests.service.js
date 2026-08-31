@@ -222,18 +222,39 @@ let PortalRequestsService = PortalRequestsService_1 = class PortalRequestsServic
                             }).catch(() => { });
                         }
                         else if (mediaData?.url) {
-                            await this.prisma.mediaAsset.create({
-                                data: {
-                                    campaignId: targetCampaignId,
-                                    type: mediaData.type || 'VIDEO',
-                                    filename: mediaData.filename || 'portal-upload.mp4',
-                                    url: mediaData.url,
-                                    fileSize: Math.round(Number(mediaData.fileSize || 0)),
-                                    checksum: mediaData.checksum || mediaData.hashMd5 || 'portal-upload',
-                                    duration: Math.round(Number(mediaData.duration || 30)),
-                                    version: 1,
+                            const checksum = mediaData.checksum || mediaData.hashMd5 || 'portal-upload';
+                            const existingMedia = await this.prisma.media.findFirst({
+                                where: {
+                                    OR: [
+                                        { hashMd5: checksum },
+                                        { url: mediaData.url },
+                                    ],
+                                },
+                            }).catch(() => null);
+                            if (existingMedia) {
+                                if (existingMedia.campaign_id !== targetCampaignId) {
+                                    await this.prisma.media.update({
+                                        where: { id: existingMedia.id },
+                                        data: { campaign_id: targetCampaignId }
+                                    }).catch(() => { });
                                 }
-                            }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+                                this.logger.log(`[APPROVAL_FLOW] Media duplicado detectado (checksum/url ya registrado). ` +
+                                    `Enlazado a campaña, saltando creación de MediaAsset para ${mediaData.filename}. mediaId=${existingMedia.id}`);
+                            }
+                            else {
+                                await this.prisma.mediaAsset.create({
+                                    data: {
+                                        campaignId: targetCampaignId,
+                                        type: mediaData.type || 'VIDEO',
+                                        filename: mediaData.filename || 'portal-upload.mp4',
+                                        url: mediaData.url,
+                                        fileSize: Math.round(Number(mediaData.fileSize || 0)),
+                                        checksum,
+                                        duration: Math.round(Number(mediaData.duration || 30)),
+                                        version: 1,
+                                    }
+                                }).catch(e => this.logger.warn(`[APPROVAL_FLOW] MediaAsset create failed: ${e.message}`));
+                            }
                         }
                     }
                     const campaign = await this.prisma.campaign.findUnique({

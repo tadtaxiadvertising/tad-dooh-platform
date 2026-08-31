@@ -18,6 +18,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const device_service_1 = require("./device.service");
 const business_rules_1 = require("../../common/constants/business-rules");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const KIOSK_COMMAND_TYPES = [
     'FORCE_SYNC',
     'SCREEN_ON',
@@ -388,6 +389,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DeviceAdminController.prototype, "broadcastCommand", null);
 exports.DeviceAdminController = DeviceAdminController = DeviceAdminController_1 = __decorate([
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     (0, common_1.Controller)('devices'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         device_service_1.DeviceService])

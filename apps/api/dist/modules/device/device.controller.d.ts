@@ -96,14 +96,14 @@ export declare class DeviceController {
         usage_percentage: number;
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
-        result: string | null;
+        deviceId: string;
         id: string;
         createdAt: Date;
+        result: string | null;
         status: string;
-        deviceId: string;
         commandType: string;
         commandParams: string | null;
-        executedAt: Date | null;
         expiresAt: Date | null;
+        executedAt: Date | null;
     }>;
 }

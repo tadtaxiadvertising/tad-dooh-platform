@@ -11,6 +11,7 @@ export declare const BUSINESS_RULES: {
     readonly MAX_CAMPAIGNS_PER_ADVERTISER: 15;
     readonly ADVERTISER_COST_PER_CAMPAIGN_RD: 1500;
     readonly ITBIS_RATE: 0.18;
+    readonly AD_SLOT_DURATION_SECONDS: 30;
     readonly JWT_EXPIRY: "7d";
     readonly BCRYPT_ROUNDS: 10;
     readonly STATUS: {

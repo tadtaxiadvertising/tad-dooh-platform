@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReferralController = void 0;
 const common_1 = require("@nestjs/common");
 const referral_service_1 = require("./referral.service");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let ReferralController = class ReferralController {
     constructor(referralService) {
         this.referralService = referralService;
@@ -50,6 +51,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ReferralController.prototype, "getNetwork", null);
 exports.ReferralController = ReferralController = __decorate([
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     (0, common_1.Controller)('referral'),
     __metadata("design:paramtypes", [referral_service_1.ReferralService])
 ], ReferralController);

@@ -108,7 +108,7 @@ exports.AppModule = AppModule = AppModule_1 = __decorate([
                     const schema = zod.object({
                         DATABASE_URL: zod.string().url().optional(),
                         DIRECT_URL: zod.string().url().optional(),
-                        JWT_SECRET: zod.string().default('tad-secret-2026'),
+                        JWT_SECRET: zod.string().optional(),
                         SUPABASE_URL: zod.string().url(),
                         SUPABASE_SERVICE_ROLE_KEY: zod.string().min(10),
                         SUPABASE_ANON_KEY: zod.string().optional(),
@@ -126,6 +126,12 @@ exports.AppModule = AppModule = AppModule_1 = __decorate([
                         throw new Error('Configuración de entorno inválida. Revisar variables en Easypanel.');
                     }
                     const data = result.data || config;
+                    if (!data.JWT_SECRET && !data.SUPABASE_JWT_SECRET && process.env.NODE_ENV !== 'test') {
+                        throw new Error('JWT_SECRET/SUPABASE_JWT_SECRET no configurados. Revisar EasyPanel Secrets.');
+                    }
+                    if (!data.JWT_SECRET && data.SUPABASE_JWT_SECRET) {
+                        data.JWT_SECRET = data.SUPABASE_JWT_SECRET;
+                    }
                     if (!data.SUPABASE_JWT_SECRET && data.JWT_SECRET) {
                         data.SUPABASE_JWT_SECRET = data.JWT_SECRET;
                     }

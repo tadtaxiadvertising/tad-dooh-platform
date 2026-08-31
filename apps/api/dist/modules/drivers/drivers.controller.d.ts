@@ -21,36 +21,19 @@ export declare class DriversController {
         unpaid: number;
     }>;
     findOne(id: string): Promise<{
-        subscriptions: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: string;
-            isSimulated: boolean;
-            startDate: Date;
-            deviceId: string | null;
-            driverId: string;
-            dueDate: Date;
-            plan: string;
-            amount: number;
-            validUntil: Date;
-            paidAt: Date | null;
-            paymentMethod: string | null;
-            notes: string | null;
-        }[];
         devices: {
-            id: string;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.SystemStatus;
-            taxiNumber: string | null;
-            isSimulated: boolean;
+            fleet: string | null;
             deviceId: string;
+            batteryLevel: number | null;
+            name: string | null;
+            id: string;
+            createdAt: Date;
+            status: import(".prisma/client").$Enums.SystemStatus;
+            updatedAt: Date;
+            taxiNumber: string | null;
             city: string | null;
             lastSync: Date | null;
             lastHeartbeat: Date | null;
-            batteryLevel: number | null;
             lastLat: number | null;
             lastLng: number | null;
             isOnline: boolean;
@@ -58,7 +41,6 @@ export declare class DriversController {
             storageTotal: bigint | null;
             appVersion: string | null;
             authToken: string | null;
-            fleet: string | null;
             lastSeen: Date | null;
             storageFree: string | null;
             lastPlayback: Date | null;
@@ -68,21 +50,40 @@ export declare class DriversController {
             lastOnline: Date | null;
             lastSyncSuccess: boolean | null;
             driverId: string | null;
+            isSimulated: boolean;
             connectivityStatus: string;
+        }[];
+        subscriptions: {
+            deviceId: string | null;
+            id: string;
+            createdAt: Date;
+            startDate: Date;
+            status: string;
+            updatedAt: Date;
+            driverId: string;
+            isSimulated: boolean;
+            amount: number;
+            paidAt: Date | null;
+            dueDate: Date;
+            plan: string;
+            validUntil: Date;
+            paymentMethod: string | null;
+            notes: string | null;
         }[];
     } & {
         id: string;
-        password: string | null;
         createdAt: Date;
-        updatedAt: Date;
-        phone: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
+        phone: string;
         referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
         onboardingStatus: string;
@@ -97,7 +98,6 @@ export declare class DriversController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -118,18 +118,18 @@ export declare class DriversController {
     }, req?: any): Promise<{
         generatedPassword: string;
         devices: {
-            id: string;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.SystemStatus;
-            taxiNumber: string | null;
-            isSimulated: boolean;
+            fleet: string | null;
             deviceId: string;
+            batteryLevel: number | null;
+            name: string | null;
+            id: string;
+            createdAt: Date;
+            status: import(".prisma/client").$Enums.SystemStatus;
+            updatedAt: Date;
+            taxiNumber: string | null;
             city: string | null;
             lastSync: Date | null;
             lastHeartbeat: Date | null;
-            batteryLevel: number | null;
             lastLat: number | null;
             lastLng: number | null;
             isOnline: boolean;
@@ -137,7 +137,6 @@ export declare class DriversController {
             storageTotal: bigint | null;
             appVersion: string | null;
             authToken: string | null;
-            fleet: string | null;
             lastSeen: Date | null;
             storageFree: string | null;
             lastPlayback: Date | null;
@@ -147,20 +146,22 @@ export declare class DriversController {
             lastOnline: Date | null;
             lastSyncSuccess: boolean | null;
             driverId: string | null;
+            isSimulated: boolean;
             connectivityStatus: string;
         }[];
         id: string;
-        password: string | null;
         createdAt: Date;
-        updatedAt: Date;
-        phone: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
+        phone: string;
         referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
         onboardingStatus: string;
@@ -175,7 +176,6 @@ export declare class DriversController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -220,17 +220,18 @@ export declare class DriversController {
         endDate?: string;
     }): Promise<{
         id: string;
-        password: string | null;
         createdAt: Date;
-        updatedAt: Date;
-        phone: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
+        phone: string;
         referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
         onboardingStatus: string;
@@ -245,7 +246,6 @@ export declare class DriversController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -254,17 +254,18 @@ export declare class DriversController {
         version: string;
     }, req: Request): Promise<{
         id: string;
-        password: string | null;
         createdAt: Date;
-        updatedAt: Date;
-        phone: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
+        phone: string;
         referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
         onboardingStatus: string;
@@ -279,7 +280,6 @@ export declare class DriversController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -287,18 +287,18 @@ export declare class DriversController {
     assignDevice(id: string, body: {
         deviceId: string;
     }): Promise<{
-        id: string;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
-        isSimulated: boolean;
+        fleet: string | null;
         deviceId: string;
+        batteryLevel: number | null;
+        name: string | null;
+        id: string;
+        createdAt: Date;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
-        batteryLevel: number | null;
         lastLat: number | null;
         lastLng: number | null;
         isOnline: boolean;
@@ -306,7 +306,6 @@ export declare class DriversController {
         storageTotal: bigint | null;
         appVersion: string | null;
         authToken: string | null;
-        fleet: string | null;
         lastSeen: Date | null;
         storageFree: string | null;
         lastPlayback: Date | null;
@@ -316,6 +315,7 @@ export declare class DriversController {
         lastOnline: Date | null;
         lastSyncSuccess: boolean | null;
         driverId: string | null;
+        isSimulated: boolean;
         connectivityStatus: string;
     }>;
     unlinkDevice(id: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
@@ -549,17 +549,18 @@ export declare class DriversController {
     }>;
     remove(id: string): Promise<{
         id: string;
-        password: string | null;
         createdAt: Date;
-        updatedAt: Date;
-        phone: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        updatedAt: Date;
+        taxiNumber: string | null;
+        isSimulated: boolean;
+        phone: string;
         referredBy: string | null;
+        password: string | null;
         fullName: string;
         cedula: string | null;
         licensePlate: string | null;
         taxiPlate: string | null;
-        taxiNumber: string | null;
         subscriptionPaid: boolean;
         subscriptionEnd: Date | null;
         onboardingStatus: string;
@@ -574,7 +575,6 @@ export declare class DriversController {
         contractAccepted: boolean;
         contractAcceptedAt: Date | null;
         agreementVersion: string | null;
-        isSimulated: boolean;
         walletBalance: number;
         referralCode: string | null;
         bankAccount: import("@prisma/client/runtime/library").JsonValue | null;
@@ -582,7 +582,7 @@ export declare class DriversController {
     linkActiveAd(id: string, campaignId: string): Promise<{
         id: string;
         status: string;
-        campaignId: string;
         driverId: string;
+        campaignId: string;
     }>;
 }

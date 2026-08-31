@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let NotificationsController = class NotificationsController {
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
@@ -74,6 +75,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "createTestAlert", null);
 exports.NotificationsController = NotificationsController = __decorate([
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     (0, common_1.Controller)('notifications'),
     __metadata("design:paramtypes", [notifications_service_1.NotificationsService])
 ], NotificationsController);

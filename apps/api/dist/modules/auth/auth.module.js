@@ -24,12 +24,17 @@ exports.AuthModule = AuthModule = __decorate([
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (config) => ({
-                    secret: config.get('SUPABASE_JWT_SECRET') ||
-                        config.get('JWT_SECRET') ||
-                        'tad-default-secret-change-me-in-production',
-                    signOptions: { expiresIn: '7d' },
-                }),
+                useFactory: (config) => {
+                    const secret = config.get('SUPABASE_JWT_SECRET') ||
+                        config.get('JWT_SECRET');
+                    if (!secret) {
+                        throw new Error('Secret JWT no configurado: defina SUPABASE_JWT_SECRET o JWT_SECRET (EasyPanel Secrets).');
+                    }
+                    return {
+                        secret,
+                        signOptions: { expiresIn: '7d' },
+                    };
+                },
             }),
         ],
         controllers: [auth_controller_1.AuthController],

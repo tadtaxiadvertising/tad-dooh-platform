@@ -17,7 +17,7 @@ exports.SheetsController = void 0;
 const common_1 = require("@nestjs/common");
 const sheets_service_1 = require("./sheets.service");
 const invoice_service_1 = require("../finance/invoice.service");
-const public_decorator_1 = require("../auth/decorators/public.decorator");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let SheetsController = SheetsController_1 = class SheetsController {
     constructor(sheetsService, invoiceService) {
         this.sheetsService = sheetsService;
@@ -63,21 +63,22 @@ let SheetsController = SheetsController_1 = class SheetsController {
 };
 exports.SheetsController = SheetsController;
 __decorate([
-    (0, public_decorator_1.Public)(),
     (0, common_1.Post)('sync'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SheetsController.prototype, "syncAll", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
     (0, common_1.Get)('report'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SheetsController.prototype, "getReport", null);
 __decorate([
     (0, common_1.Get)('invoice/:driverId'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('driverId')),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),

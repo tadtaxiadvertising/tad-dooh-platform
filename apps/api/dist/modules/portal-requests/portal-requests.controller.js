@@ -16,6 +16,7 @@ exports.PortalRequestsController = void 0;
 const common_1 = require("@nestjs/common");
 const portal_requests_service_1 = require("./portal-requests.service");
 const public_decorator_1 = require("../auth/decorators/public.decorator");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let PortalRequestsController = class PortalRequestsController {
     constructor(portalRequestsService) {
         this.portalRequestsService = portalRequestsService;
@@ -53,6 +54,7 @@ __decorate([
 ], PortalRequestsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -75,6 +77,7 @@ __decorate([
 ], PortalRequestsController.prototype, "findByDriver", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -82,6 +85,7 @@ __decorate([
 ], PortalRequestsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -90,6 +94,7 @@ __decorate([
 ], PortalRequestsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

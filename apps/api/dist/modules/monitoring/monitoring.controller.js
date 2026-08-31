@@ -45,7 +45,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], MonitoringController.prototype, "saveGpsBatch", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
     (0, common_1.Get)('fleet-status'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     __metadata("design:type", Function),

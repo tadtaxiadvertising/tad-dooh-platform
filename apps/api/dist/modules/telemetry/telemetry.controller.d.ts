@@ -22,12 +22,12 @@ export declare class TelemetryController {
         lng?: number;
         clientTimestamp?: string;
     }, tabletKey?: string): Promise<{
-        id: string;
-        isSimulated: boolean;
         deviceId: string;
-        timestamp: Date;
         lat: number | null;
         lng: number | null;
+        id: string;
+        isSimulated: boolean;
+        timestamp: Date;
         eventType: string;
         videoId: string;
         verified: boolean;

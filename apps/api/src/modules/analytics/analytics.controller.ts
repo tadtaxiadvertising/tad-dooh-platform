@@ -19,6 +19,7 @@ export class AnalyticsController {
   ) {}
 
   @Post('campaign/:id/share-whatsapp')
+  @Roles(UserRole.ADMIN)
   async shareReportByWhatsApp(
     @Param('id') id: string,
     @Body() body: { phone: string; advertiserName: string; campaignName: string; reportUrl: string }
@@ -81,6 +82,7 @@ export class AnalyticsController {
   }
 
   @Get('device/:id')
+  @Roles(UserRole.ADMIN)
   async getDeviceAnalytics(@Param('id') deviceId: string) {
     return this.analyticsService.getDeviceAnalytics(deviceId);
   }
@@ -141,11 +143,19 @@ export class AnalyticsController {
   }
 
   @Get('campaign/:id/weekly')
-  async getWeeklyCampaignAnalytics(@Param('id') campaignId: string) {
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  async getWeeklyCampaignAnalytics(@Param('id') campaignId: string, @Req() req: any) {
+    if (req.user?.role === UserRole.ADVERTISER) {
+      const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+      if (!campaign || campaign.advertiserId !== req.user.entityId) {
+        throw new ForbiddenException('No tienes permiso para ver las analíticas de esta campaña');
+      }
+    }
     return this.analyticsService.getWeeklyCampaignMetrics(campaignId);
   }
 
   @Get('campaign/:id/weekly/pdf')
+  @Roles(UserRole.ADMIN)
   async downloadWeeklyPdf(@Param('id') id: string, @Res() res: Response) {
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
     if (!campaign) return res.status(404).send('Campaña no encontrada');

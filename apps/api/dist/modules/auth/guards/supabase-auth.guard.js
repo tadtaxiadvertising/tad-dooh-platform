@@ -149,7 +149,7 @@ let SupabaseAuthGuard = SupabaseAuthGuard_1 = class SupabaseAuthGuard {
             }
         }
         try {
-            const supabase = this.supabaseService.getClient();
+            const supabase = this.supabaseService.getAnonClient() || this.supabaseService.getClient();
             const { data, error } = await supabase.auth.getUser(token);
             if (!error && data.user) {
                 const decoded = jwt.decode(token);

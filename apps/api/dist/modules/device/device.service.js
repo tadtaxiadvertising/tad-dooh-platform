@@ -49,6 +49,7 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const business_rules_1 = require("../../common/constants/business-rules");
 const campaign_service_1 = require("../campaign/campaign.service");
 const finance_service_1 = require("../finance/finance.service");
+const env_util_1 = require("../../utils/env.util");
 const jwt = __importStar(require("jsonwebtoken"));
 const MAX_SLOTS_PER_DEVICE = 15;
 let DeviceService = DeviceService_1 = class DeviceService {
@@ -57,7 +58,7 @@ let DeviceService = DeviceService_1 = class DeviceService {
         this.campaignService = campaignService;
         this.financeService = financeService;
         this.logger = new common_1.Logger(DeviceService_1.name);
-        this.JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+        this.JWT_SECRET = (0, env_util_1.requireEnv)('JWT_SECRET');
     }
     async getDeviceSlots(deviceId) {
         try {

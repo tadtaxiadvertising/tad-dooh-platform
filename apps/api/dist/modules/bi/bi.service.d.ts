@@ -17,8 +17,8 @@ export declare class BiService {
             taxiPlate: string;
         };
     } & {
-        id: string;
         deviceId: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         driverId: string;

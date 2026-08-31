@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaController = void 0;
 const common_1 = require("@nestjs/common");
 const media_service_1 = require("./media.service");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let MediaController = class MediaController {
     constructor(mediaService) {
         this.mediaService = mediaService;
@@ -126,6 +127,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], MediaController.prototype, "updateMedia", null);
 exports.MediaController = MediaController = __decorate([
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
     (0, common_1.Controller)('media'),
     __metadata("design:paramtypes", [media_service_1.MediaService])
 ], MediaController);

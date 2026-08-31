@@ -50,6 +50,7 @@ const notifications_service_1 = require("../notifications/notifications.service"
 const jwt = __importStar(require("jsonwebtoken"));
 const crypto = __importStar(require("crypto"));
 const business_rules_1 = require("../../common/constants/business-rules");
+const env_util_1 = require("../../utils/env.util");
 const mediaAssetSafeSelect = {
     id: true,
     campaignId: true,
@@ -69,7 +70,7 @@ let SyncService = SyncService_1 = class SyncService {
         this.prisma = prisma;
         this.notifications = notifications;
         this.logger = new common_1.Logger(SyncService_1.name);
-        this.JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+        this.JWT_SECRET = (0, env_util_1.requireEnv)('JWT_SECRET');
     }
     async getDeviceManifest(deviceId) {
         const device = await this.prisma.device.findUnique({
@@ -205,7 +206,7 @@ let SyncService = SyncService_1 = class SyncService {
                         url: m.cdnUrl || m.url || '',
                         checksum: m.hashMd5 || m.hash || m.checksum || 'no-checksum',
                         hashMd5: m.hashMd5 || m.hash || m.checksum || null,
-                        duration: m.duration || m.durationSeconds || 30,
+                        duration: business_rules_1.BUSINESS_RULES.AD_SLOT_DURATION_SECONDS,
                         version: new Date(c.updatedAt || new Date()).getTime(),
                         priority: c.priority || 5
                     });

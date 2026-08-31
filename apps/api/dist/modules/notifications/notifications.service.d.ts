@@ -12,47 +12,47 @@ export declare class NotificationsService {
         category: 'SYSTEM' | 'DEVICE' | 'CAMPAIGN' | 'FINANCE';
         entityId?: string;
     }): Promise<{
-        entityId: string | null;
-        id: string;
-        createdAt: Date;
         category: string;
-        type: string;
-        message: string;
+        id: string;
         title: string;
+        message: string;
+        type: string;
         read: boolean;
+        entityId: string | null;
+        createdAt: Date;
     }>;
     findAll(): Promise<{
-        entityId: string | null;
-        id: string;
-        createdAt: Date;
         category: string;
-        type: string;
-        message: string;
+        id: string;
         title: string;
+        message: string;
+        type: string;
         read: boolean;
+        entityId: string | null;
+        createdAt: Date;
     }[]>;
     getUnreadCount(): Promise<number>;
     markAsRead(id: string): Promise<{
-        entityId: string | null;
-        id: string;
-        createdAt: Date;
         category: string;
-        type: string;
-        message: string;
+        id: string;
         title: string;
+        message: string;
+        type: string;
         read: boolean;
+        entityId: string | null;
+        createdAt: Date;
     }>;
     markAllAsRead(): Promise<import(".prisma/client").Prisma.BatchPayload>;
     sendPush(driverId: string, message: string): Promise<void>;
     executePushDelivery(driverId: string, message: string): Promise<{
-        entityId: string | null;
-        id: string;
-        createdAt: Date;
         category: string;
-        type: string;
-        message: string;
+        id: string;
         title: string;
+        message: string;
+        type: string;
         read: boolean;
+        entityId: string | null;
+        createdAt: Date;
     }>;
     sendDriverNotification(driverId: string, type: string, payload: Record<string, unknown>): Promise<void>;
 }

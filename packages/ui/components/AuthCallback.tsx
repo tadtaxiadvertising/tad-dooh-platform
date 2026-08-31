@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { ShieldCheck, Loader2, AlertTriangle } from 'lucide-react';

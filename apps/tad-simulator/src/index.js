@@ -31,7 +31,7 @@ function logStats() {
   );
 }
 
-async function sendGPSBatch(deviceId: string) {
+async function sendGPSBatch(deviceId) {
   const point = generateGPSPoint(deviceId);
   try {
     const start = Date.now();
@@ -47,7 +47,7 @@ async function sendGPSBatch(deviceId: string) {
   }
 }
 
-async function sendPlayback(deviceId: string) {
+async function sendPlayback(deviceId) {
   const event = generatePlaybackEvent(deviceId);
   try {
     const start = Date.now();
@@ -62,7 +62,7 @@ async function sendPlayback(deviceId: string) {
   }
 }
 
-async function sendHeartbeat(deviceId: string) {
+async function sendHeartbeat(deviceId) {
   const hb = generateHeartbeat(deviceId);
   try {
     await axios.post(API_URLS.heartbeat, hb, {
@@ -75,13 +75,13 @@ async function sendHeartbeat(deviceId: string) {
   }
 }
 
-function trackLatency(ms: number) {
+function trackLatency(ms) {
   totalLatency += ms;
   latencySamples++;
 }
 
 // Run all devices in parallel per interval with p-limit
-async function withConcurrency<T>(items: T[], fn: (item: T) => Promise<void>) {
+async function withConcurrency(items, fn) {
   const queue = [...items];
   const workers = Array.from({ length: MAX_CONCURRENT }, async () => {
     while (queue.length > 0) {

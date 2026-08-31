@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/p/advertiser/:path*",
+        destination: "https://proyecto-ia-tad-advertiser.rewvid.easypanel.host",
+        permanent: false,
+      },
       { source: "/", destination: "/login", permanent: false },
       { source: "/dashboard", destination: "/admin", permanent: false },
       { source: "/campaigns/:path*", destination: "/admin/campaigns/:path*", permanent: false },

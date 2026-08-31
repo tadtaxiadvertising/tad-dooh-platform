@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import type { GetServerSideProps } from 'next';
 import { getAdvertiserHub } from "@tad/services";
+import type { Advertiser } from '@tad/types';
 import {
   ShoppingBag,
   Utensils,
@@ -17,17 +18,6 @@ import {
   Activity
 } from 'lucide-react';
 import clsx from 'clsx';
-
-interface Advertiser {
-  id: string;
-  companyName: string;
-  category: string;
-  whatsapp?: string;
-  instagram?: string;
-  websiteUrl?: string;
-  pedidosYaUrl?: string;
-  uberEatsUrl?: string;
-}
 
 const CATEGORY_ICONS: Record<string, any> = {
   'Gastronomía': Utensils,

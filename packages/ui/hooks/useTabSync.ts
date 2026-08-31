@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 import { subscribeToSync, TabSyncEvent } from '../lib/sync-channel';
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@tad/types": ["./packages/types/index.ts"],
+      "@tad/types/*": ["./packages/types/*"],
+      "@tad/ui": ["./packages/ui/index.ts"],
+      "@tad/ui/*": ["./packages/ui/*"],
+      "@tad/services": ["./packages/services/index.ts"],
+      "@tad/services/*": ["./packages/services/*"],
+      "@tad/store": ["./packages/store/index.ts"],
+      "@tad/store/*": ["./packages/store/*"],
+      "@tad/logging": ["./packages/logging/index.ts"],
+      "@tad/logging/*": ["./packages/logging/*"]
+    }
+  }
+}

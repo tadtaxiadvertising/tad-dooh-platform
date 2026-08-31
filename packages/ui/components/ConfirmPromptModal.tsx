@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { AntigravityButton } from './AntigravityButton';
 import { X, AlertCircle } from 'lucide-react';

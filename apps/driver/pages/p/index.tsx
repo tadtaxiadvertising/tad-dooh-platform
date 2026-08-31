@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import type { GetServerSideProps } from 'next';
 import { getAdvertiserHub } from "@tad/services";
+import type { Advertiser } from '@tad/types';
 import {
   ShoppingBag,
   Utensils,
@@ -19,17 +20,6 @@ import {
 import clsx from 'clsx';
 
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
-
-interface Advertiser {
-  id: string;
-  companyName: string;
-  category: string;
-  whatsapp?: string;
-  instagram?: string;
-  websiteUrl?: string;
-  pedidosYaUrl?: string;
-  uberEatsUrl?: string;
-}
 
 const CATEGORY_ICONS: Record<string, any> = {
   'Gastronomía': Utensils,

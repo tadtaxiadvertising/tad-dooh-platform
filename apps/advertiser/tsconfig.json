@@ -1,35 +1,32 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
     "incremental": true,
-    "module": "esnext",
-    "esModuleInterop": true,
-    "ignoreDeprecations": "5.0",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "jsx": "preserve",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
+    "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@tad/types": ["../../packages/types/index.ts"],
+      "@tad/types/*": ["../../packages/types/*"],
+      "@tad/services": ["../../packages/services/index.ts"],
+      "@tad/services/*": ["../../packages/services/*"],
+      "@tad/ui": ["../../packages/ui/index.ts"],
+      "@tad/ui/*": ["../../packages/ui/*"],
+      "@tad/store": ["../../packages/store/index.ts"],
+      "@tad/store/*": ["../../packages/store/*"],
+      "@tad/logging": ["../../packages/logging/index.ts"],
+      "@tad/logging/*": ["../../packages/logging/*"]
     },
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "strictNullChecks": true
+    ]
   },
   "include": [
     "next-env.d.ts",

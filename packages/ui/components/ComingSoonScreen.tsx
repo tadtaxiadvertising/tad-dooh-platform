@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { Construction, ArrowLeft, Sparkles } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';

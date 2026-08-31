@@ -6,7 +6,8 @@ const prisma = new PrismaClient();
 // Business constants matching the service layer
 const RATE_PER_AD_DRIVER = 500; // RD$ per active campaign per driver/month
 const COST_PER_AD_ADVERTISER = 1500; // RD$ per campaign per advertiser
-const DEFAULT_PASSWORD = 'Tad2026!';
+// SEC: password de seed desde env; el valor por defecto jamás se loguea.
+const DEFAULT_PASSWORD = process.env.SEED_PASSWORD || 'ChangeMe-Seed-2026!';
 
 async function main() {
   console.log('=== TAD DOOH Platform — Full Ecosystem Seed ===\n');
@@ -31,7 +32,7 @@ async function main() {
     });
     advertisers.push(record);
   }
-  console.log(`   ✓ ${advertisers.length} advertisers ready (login: email / ${DEFAULT_PASSWORD})`);
+  console.log(`   ✓ ${advertisers.length} advertisers ready (login: email / password de SEED_PASSWORD)`);
 
   // ── Step 2: Drivers ───────────────────────────────────────
   console.log('2/7  Creating 10 drivers...');
@@ -315,7 +316,7 @@ async function main() {
   console.log(`  Campaigns:    ${campaignRecords.length} active`);
   console.log(`  Requests:     4 pending (2 campaign + 2 payout)`);
   console.log(`  Payroll:      5 paid records (last month)`);
-  console.log(`\n  Default password for all: ${DEFAULT_PASSWORD}`);
+  console.log(`\n  Default password for all: password de SEED_PASSWORD (env, no logueado)`);
   console.log(`  Driver projected earnings: RD$${campaignRecords.length * RATE_PER_AD_DRIVER}/month per driver`);
   console.log(`  Advertiser cost: RD$${COST_PER_AD_ADVERTISER}/campaign\n`);
 }

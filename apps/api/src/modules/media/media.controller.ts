@@ -14,7 +14,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
+@Roles(UserRole.ADMIN)
 @Controller('media')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}

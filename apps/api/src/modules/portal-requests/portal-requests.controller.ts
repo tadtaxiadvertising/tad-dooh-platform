@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { PortalRequestsService } from './portal-requests.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
 @Controller('portal-requests')
 export class PortalRequestsController {
@@ -13,6 +14,7 @@ export class PortalRequestsController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   async findAll() {
     return this.portalRequestsService.findAll();
   }
@@ -30,16 +32,19 @@ export class PortalRequestsController {
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN)
   async findOne(@Param('id') id: string) {
     return this.portalRequestsService.findOne(id);
   }
 
   @Put(':id')
+  @Roles(UserRole.ADMIN)
   async update(@Param('id') id: string, @Body() body: any) {
     return this.portalRequestsService.update(id, body);
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   async delete(@Param('id') id: string) {
     return this.portalRequestsService.remove(id);
   }

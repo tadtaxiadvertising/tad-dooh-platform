@@ -9,6 +9,7 @@ import { BulkSyncDto } from './dto/bulk-sync.dto';
 import { CampaignService } from '../campaign/campaign.service';
 import { FinanceService } from '../finance/finance.service';
 import { throttledMap } from '../../utils/throttler.util';
+import { requireEnv } from '../../utils/env.util';
 import * as jwt from 'jsonwebtoken';
 
 const MAX_SLOTS_PER_DEVICE = 15;
@@ -16,7 +17,7 @@ const MAX_SLOTS_PER_DEVICE = 15;
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+  private readonly JWT_SECRET = requireEnv('JWT_SECRET');
 
   constructor(
     private readonly prisma: PrismaService,

@@ -405,3 +405,31 @@ npm run deploy:migrate        # = prisma db push --accept-data-loss --skip-gener
 - Driver compila limpio; sin regresiones en api/admin/advertiser/player.
 - Producción NO requirió redeploy (el shim no se desplegó corrupto; el fix tipográfico es local a la compuerta).
 - Pendientes sin cambio: KPIS >2s, `portal` ~9.4s, observabilidad logs MCP no disponible, `queryServiceLogs` 400.
+
+## AUDITORÍA AUTÓNOMA — 2026-08-30
+
+### Fecha de escaneo
+2026-08-30. Auditoría whitebox completa del monorepo (sin mutaciones). Método: pipeline `agent-autonomous-verification` + 5 subagentes de dominio.
+
+### Módulos revisados
+Admin, Api, Advertiser, Driver, Player, Driver-Android, Driver-Flutter, Remotion, Simulator, `packages/*`, Dockerfiles, scripts, CI.
+
+### Vulnerabilidades detectadas (177 brutos; ver `docs-audit/INFORME_FALLAS_INTEGRAL_2026-08-30.md`)
+- **R3 KILL-SWITCH ROTO**: bypasses en Flutter (`hub_data.dart:95` FORCED ACTIVE, `providers.dart:35` 402 suprimido, `login_screen_v2.dart:125` BYPASS); killswitch local 24h vs grace 1h; `sync.service.ts:83` ignora `subscriptionEnd`; `gps-batch` reactiva OPERATIVO.
+- **R8 ROTO**: `payroll/pay` sin Idempotency ni `$transaction`; playback-batch público con `verified:true`; `emailInvoice` global sin filtro verified; bonus de referidos fuera de tx.
+- **Credenciales en git**: `prisma-cloud-test.js`/`test_db.py` con password real Supabase → ROTAR YA.
+- **RBAC**: device-admin, fleet-status, gps-batch, media, notifications, sheets/report sin `@Roles`/públicos.
+- **Secrets hardcodeados**: JWT fallbacks (`tad-default-secret-2026`, etc.), passwords en `fix-admin.ts`/`fix-adv.ts`/`simulate-data.ts`.
+- **OOM 512MB**: payroll/reconciliación en RAM, heatmap `take:10000`; `JWT_SECRET` volátil por boot; `notifyMorosidad` heartbeat-loop P2002.
+- **Infra**: auto-deploy webhook viola deploy manual; `.dockerignore` no excluye `.env`; heap 1024MB en copias; Remotion sin Chromium/health; `db push --accept-data-loss`.
+
+### Correcciones de código aplicadas autónomamente
+NINGUNA. Audita solo (R3/R8 prohíben mutaciones de pago/playback sin Idempotency-Key; no se autorizó remediación). `docs-audit/INFORME_FALLAS_INTEGRAL_2026-08-30.md` contiene fix por hallazgo.
+
+### Métricas pre / post auditoría
+- Pre: desconocidas (sin instrumentación de defectos centralizada).
+- Post: 177 hallazgos documentados (24 CRÍTICAS, 64 ALTA, 62 MEDIA, 27 BAJA).
+
+### Estado final
+- Compilación: `tsc --noEmit` EXIT=0 en api/driver/admin/advertiser; `apps/tad-simulator` TS corrupto (runtime usa `index.js`).
+- Pendientes: remediación según Fase 0-5 del informe (rotar credenciales → RBAC → finanzas/R3-R4 → SRE → offline → higiene monorepo).

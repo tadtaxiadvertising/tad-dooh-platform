@@ -4,6 +4,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
+import { requireEnv } from '../../utils/env.util';
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -23,13 +24,28 @@ const mediaAssetSafeSelect = {
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+  private readonly JWT_SECRET = requireEnv('JWT_SECRET');
 
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService
   ) { }
 
+  /**
+   * Obtiene el manifiesto de sincronización para una tablet.
+   *
+   * Genera el DeviceManifest que incluye:
+   * - Playlist de campañas activas (máx 15 slots, ordenadas por prioridad)
+   * - URLs de media reescritas a Cloudflare CDN (media.tad.do)
+   * - License Token JWT (OFFLINE_LICENSE 24h) para reproducción offline
+   * - ETag para validación HTTP 304 (caché 5 min)
+   * - Kill-Switch directive si suscripción no pagada (KILLSWITCH_GRACE 1h)
+   * - Schedules de campañas (días/horas permitidos)
+   *
+   * @param deviceId - ID único del dispositivo (ej: TAD-XXXX)
+   * @returns DeviceManifest con playlist, licenseToken, etag, killSwitch flags
+   * @throws HttpException 404 si device no existe, 403 si device no está OPERATIVO
+   */
   async getDeviceManifest(deviceId: string) {
     // 1. Validar hardware primero (Device)
     const device = await this.prisma.device.findUnique({
@@ -250,6 +266,14 @@ export class SyncService {
     const etag = crypto.createHash('md5').update(manifestContent).digest('hex');
 
     // 4. Generar License Token (Kill-Switch)
+    //
+    // TOKEN TYPES & TTLs:
+    // - OFFLINE_LICENSE (type): 24h TTL — Normal operation, subscription PAID
+    //   Allows tablet to play content offline for 24 hours before requiring re-sync.
+    // - KILLSWITCH_GRACE (type): 1h TTL — Subscription UNPAID (Kill-Switch active)
+    //   Reduced TTL limits offline evasion window. Tablet receives empty playlist
+    //   with killSwitch=true. After 1h, tablet must re-sync (will still get 402).
+    //   See VULN #1 PATCH above for context.
     // El dispositivo solo puede reproducir contenido offline SI tiene este token válido.
     const licenseToken = jwt.sign(
       {

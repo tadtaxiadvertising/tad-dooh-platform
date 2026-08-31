@@ -99,7 +99,8 @@ export class DriversController {
       taxiPlate: sanitize(body.taxiPlate),
       licensePlate: sanitize(body.licensePlate),
       deviceId: sanitize(body.deviceId),
-      subscriptionEnd: body.subscriptionEnd ? new Date(body.subscriptionEnd) : undefined,
+      subscriptionPaid: isAdmin ? body.subscriptionPaid : false,
+      subscriptionEnd: isAdmin && body.subscriptionEnd ? new Date(body.subscriptionEnd) : undefined,
       password: body.password,
     });
   }

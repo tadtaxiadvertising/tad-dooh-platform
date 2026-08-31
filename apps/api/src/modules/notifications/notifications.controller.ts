@@ -1,6 +1,8 @@
 import { Controller, Get, Put, Param, Post, Body } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { Roles, UserRole } from '../auth/decorators/roles.decorator';
 
+@Roles(UserRole.ADMIN)
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

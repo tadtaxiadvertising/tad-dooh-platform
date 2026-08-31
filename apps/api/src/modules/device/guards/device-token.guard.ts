@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { BUSINESS_RULES } from '../../../common/constants/business-rules';
+import { requireEnv } from '../../../utils/env.util';
 
 /**
  * SEC-03: Device Token Guard
@@ -16,7 +17,7 @@ import { BUSINESS_RULES } from '../../../common/constants/business-rules';
  */
 @Injectable()
 export class DeviceTokenGuard implements CanActivate {
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'tad-default-secret-2026';
+  private readonly JWT_SECRET = requireEnv('JWT_SECRET');
 
   constructor(private readonly prisma: PrismaService) {}
 

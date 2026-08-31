@@ -168,6 +168,21 @@ async function clearOfflineCoords(): Promise<void> {
   } catch {/* graceful */}
 }
 
+// A2: elimina SOLO las claves específicas (ts) de la cola offline,
+// preservando cualquier item nuevo añadido concurrentemente durante el sync.
+async function removeOfflineCoordsByKeys(keys: number[]): Promise<void> {
+  if (keys.length === 0) return;
+  try {
+    const db = await openDB();
+    const tx = db.transaction('telemetry', 'readwrite');
+    const store = tx.objectStore('telemetry');
+    return new Promise<void>((resolve) => {
+      keys.forEach(k => store.delete(k));
+      resolve();
+    });
+  } catch {/* graceful */}
+}
+
 // ─── Kill-Switch ──────────────────────────────────────────────────────────────
 
 function triggerKillSwitch(opts: {
@@ -258,6 +273,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
 
     while (remainingQueue.length > 0) {
       const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
+      // A2: guardar las claves (ts) de los items procesados para eliminarlos
+      // SOLO a ellos, preservando items nuevos añadidos concurrentemente.
+      const processedKeys = chunk.map(c => c.ts);
 
       try {
         const res = await postTrackBatch(apiBase, driverId, deviceId, chunk);
@@ -272,7 +290,8 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
 
       processed += chunk.length;
       remainingQueue = remainingQueue.slice(chunk.length);
-      await writeOfflineCoords(remainingQueue);
+      // A2: solo elimina las claves procesadas, no sobrescribe toda la cola.
+      await removeOfflineCoordsByKeys(processedKeys);
       setOfflineCount(remainingQueue.length);
 
       // Non-blocking: yield a la UI thread entre chunks
@@ -325,7 +344,11 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
     try {
       const apiBase = resolveApiBase();
       const userRaw = localStorage.getItem('tad_driver_user');
-      const user = userRaw ? JSON.parse(userRaw) : null;
+      let user = null;
+      // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync loop.
+      if (userRaw) {
+        try { user = JSON.parse(userRaw); } catch { user = null; }
+      }
       const driverId = user?.entityId || 'unknown';
       const deviceId = localStorage.getItem('TAD_DEVICE_ID') || 'unknown';
 
@@ -558,7 +581,11 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   // ─── syncPending (manual trigger) ─────────────────────────────────────────
   const syncPending = useCallback(async () => {
     const userRaw = localStorage.getItem('tad_driver_user');
-    const user = userRaw ? JSON.parse(userRaw) : null;
+    let user = null;
+    // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync manual.
+    if (userRaw) {
+      try { user = JSON.parse(userRaw); } catch { user = null; }
+    }
     const driverId = user?.entityId || 'unknown';
     const deviceId = localStorage.getItem('TAD_DEVICE_ID') || 'unknown';
     const apiBase = resolveApiBase();

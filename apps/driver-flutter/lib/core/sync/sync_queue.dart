@@ -9,6 +9,13 @@ class GpsPoint {
     required this.ts,
   });
 
+  factory GpsPoint.fromJson(Map<String, dynamic> json) => GpsPoint(
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        speedMps: (json['speed'] as num?)?.toDouble(),
+        ts: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int),
+      );
+
   final double lat;
   final double lng;
   final double? speedMps;
@@ -22,23 +29,70 @@ class GpsPoint {
       };
 }
 
-/// Cola offline simple en memoria (se persiste en SharedPreferences/Isar en producción).
+/// Cola offline persistida en SharedPreferences (M5): si el proceso es
+/// matado (kill por el OS, pérdida de la app), los batches GPS pendientes
+/// sobreviven y se reenvían al reconectar con POST /fleet/track-batch.
 class OfflineQueue {
   OfflineQueue._();
   static final OfflineQueue instance = OfflineQueue._();
 
-  final List<List<GpsPoint>> _gpsQueue = [];
+  static const _kPrefKey = 'tad_driver_offline_gps_queue';
 
-  Future<void> enqueueGpsBatch(List<GpsPoint> batch) async {
-    _gpsQueue.add(batch);
+  final List<List<GpsPoint>> _gpsQueue = [];
+  bool _hydrated = false;
+
+  Future<void> _ensureHydrated() async {
+    if (_hydrated) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kPrefKey);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = (jsonDecode(raw) as List<dynamic>);
+        for (final batch in decoded) {
+          _gpsQueue.add(
+            (batch as List<dynamic>)
+                .map((p) => GpsPoint.fromJson(p as Map<String, dynamic>))
+                .toList(),
+          );
+        }
+      } catch (_) {
+        await prefs.remove(_kPrefKey);
+      }
+    }
+    _hydrated = true;
   }
 
-  List<List<GpsPoint>> drainAll() {
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(
+      _gpsQueue
+          .map((b) => b.map((p) => p.toJson()).toList())
+          .toList(),
+    );
+    await prefs.setString(_kPrefKey, encoded);
+  }
+
+  Future<void> enqueueGpsBatch(List<GpsPoint> batch) async {
+    await _ensureHydrated();
+    _gpsQueue.add(batch);
+    await _persist();
+  }
+
+  Future<List<List<GpsPoint>>> drainAll() async {
+    await _ensureHydrated();
     final result = List<List<GpsPoint>>.from(_gpsQueue);
     _gpsQueue.clear();
+    await _persist();
     return result;
   }
 
-  bool get isEmpty => _gpsQueue.isEmpty;
-  int get pendingBatches => _gpsQueue.length;
+  Future<bool> get isEmpty async {
+    await _ensureHydrated();
+    return _gpsQueue.isEmpty;
+  }
+
+  Future<int> get pendingBatches async {
+    await _ensureHydrated();
+    return _gpsQueue.length;
+  }
 }

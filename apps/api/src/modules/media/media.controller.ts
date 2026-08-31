@@ -51,18 +51,6 @@ export class MediaController {
     return this.mediaService.getMediaStatus(id);
   }
 
-  @Post('register-mock')
-  async registerMockMedia(@Body() dto: { filename: string; mimetype: string; size: number; }) {
-    if (!dto.filename || !dto.mimetype || !dto.size) {
-      throw new BadRequestException('filename, mimetype, and size are required');
-    }
-    return this.mediaService.registerFileMock({
-      originalname: dto.filename,
-      mimetype: dto.mimetype,
-      size: dto.size
-    });
-  }
-
   // ✅ Método HTTP estándar — Axios / fetch DELETE
   @Delete(':id')
   async deleteMedia(@Param('id') id: string) {

@@ -6,6 +6,11 @@ const DB_NAME = 'tad_player_download_queue';
 const DB_VERSION = 1;
 const STORE = 'tasks';
 
+// Enforce the same per-asset cap as BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES (55MB).
+// Oversized media is aborted with an explicit status instead of silently
+// filling the tablet's disk (audit finding A3).
+const MAX_VIDEO_SIZE_BYTES = 57_671_680;
+
 /** @type {IDBDatabase | null} */
 let database = null;
 
@@ -236,7 +241,16 @@ async function handleDownloadAssets(message) {
           throw new Error('HTTP ' + response.status);
         }
 
-        await response.blob();
+        const expectedSize = Number(response.headers.get('content-length') || 0);
+        if (expectedSize > MAX_VIDEO_SIZE_BYTES) {
+          throw new Error('Asset exceeds MAX_VIDEO_SIZE_BYTES (' + expectedSize + ' bytes)');
+        }
+
+        const blob = await response.blob();
+        if (blob.size > MAX_VIDEO_SIZE_BYTES) {
+          throw new Error('Asset exceeds MAX_VIDEO_SIZE_BYTES (' + blob.size + ' bytes)');
+        }
+
         await updateTaskStatus(task.id, 'done');
       } catch (error) {
         await updateTaskStatus(task.id, 'error');

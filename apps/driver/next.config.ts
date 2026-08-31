@@ -5,7 +5,12 @@ import withPWAInit from "@ducanh2912/next-pwa";
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true,
+  // El SW v12 manual (public/service-worker.js) es el canónico: trae
+  // trimCache LRU, BackgroundSync de telemetría y offline navigation fallback.
+  // Se registra desde packages/services/mobile-gateway.ts. Si workbox también
+  // se auto-registra (register:true) compite por el scope '/' y los caches se
+  // borran entre sí. Lo dejamos build-only: genera sw.js sin registrarlo.
+  register: false,
   cacheOnFrontEndNav: false,
   reloadOnOnline: false,
   buildExcludes: [

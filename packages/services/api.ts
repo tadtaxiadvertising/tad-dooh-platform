@@ -370,8 +370,6 @@ export const uploadCampaignMedia = async (campaignId: string, file: File) => {
   return uploadedData;
 };
 
-export const registerMockMedia = (data: { filename: string; mimetype: string; size: number }) =>
-  api.post('/media/register-mock', data).then(res => res.data);
 export const deleteMedia = (id: string) => api.delete(`/media/${id}`).then(res => res.data);
 
 // Analytics

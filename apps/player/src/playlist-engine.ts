@@ -13,6 +13,9 @@ const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 // (mirrors BUSINESS_RULES.AD_SLOT_DURATION_SECONDS in apps/api)
 const AD_SLOT_DURATION_MS = 30_000;
 
+// C4: Nº máximo de errores de reproducción consecutivos antes de ceder a fallback idle.
+const MAX_CONSECUTIVE_ERRORS = 5;
+
 export class PlaylistEngine {
  private playlist: MediaAsset[] = [];
  private activePlaylist: MediaAsset[] = [];
@@ -23,6 +26,10 @@ export class PlaylistEngine {
  private cacheManager: CacheManager;
  private status: PlayerStatus = 'idle';
  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+ private intermissionTimer: ReturnType<typeof setTimeout> | null = null;
+ private isTransitioning: boolean = false;
+ private errorBackoffMs: number = 2000;
+ private consecutiveErrors: number = 0;
  private deviceId: string = '';
  private onStatusChange?: (status: PlayerStatus) => void;
  private _scheduleCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -191,6 +198,9 @@ export class PlaylistEngine {
 
   const asset = this.activePlaylist[this.currentIndex];
   this.setStatus('playing');
+  // C4: un intento de reproducción exitoso resetea el backoff de errores.
+  this.consecutiveErrors = 0;
+  this.errorBackoffMs = 2000;
   // Fixed 30s slot: transition even if the video is longer
   this.startWatchdog(Math.min(asset.duration * 1000 + 5000, AD_SLOT_DURATION_MS));
 
@@ -229,25 +239,39 @@ export class PlaylistEngine {
   });
  }
 
- private handleTransition(): void {
-  if (this.activePlaylist.length === 0) return;
+  private handleTransition(): void {
+   if (this.activePlaylist.length === 0) return;
 
-  const currentAsset = this.activePlaylist[this.currentIndex];
+   // A1: guard anti-race — si el watchdog y el evento `ended` se disparan juntos
+   // (video que termina justo cuando expira el slot fijo), evita que currentIndex
+   // avance dos veces y se salte un asset.
+   if (this.isTransitioning) return;
+   this.isTransitioning = true;
+   try {
+    this.clearWatchdog();
+    this.doTransition();
+   } finally {
+    this.isTransitioning = false;
+   }
+  }
 
-  // Track playback completion (PoP — Proof of Play)
-  this.playbackQueue.saveToQueue({
-   device_id: this.deviceId,
-   video_id: currentAsset.id,
-   timestamp: Date.now(),
-   event_type: 'play_confirm',
-  }).catch(() => { /* non-critical */ });
+  private doTransition(): void {
+   const currentAsset = this.activePlaylist[this.currentIndex];
 
-  // Advance index (wraps around the active playlist)
-  this.currentIndex = (this.currentIndex + 1) % this.activePlaylist.length;
+   // Track playback completion (PoP — Proof of Play)
+   this.playbackQueue.saveToQueue({
+    device_id: this.deviceId,
+    video_id: currentAsset.id,
+    timestamp: Date.now(),
+    event_type: 'play_confirm',
+   }).catch(() => { /* non-critical */ });
 
-  // Show intermission screen (5s transition with QR)
-  this.showIntermission(currentAsset);
- }
+   // Advance index (wraps around the active playlist)
+   this.currentIndex = (this.currentIndex + 1) % this.activePlaylist.length;
+
+   // Show intermission screen (5s transition with QR)
+   this.showIntermission(currentAsset);
+  }
 
  private showIntermission(_previousAsset: MediaAsset): void {
   this.setStatus('intermission');
@@ -277,7 +301,10 @@ export class PlaylistEngine {
   }
 
   // Auto-advance after intermission duration
-  setTimeout(() => {
+  // A1: guardar el timer para cancelarlo si ocurre otra transición antes.
+  if (this.intermissionTimer) clearTimeout(this.intermissionTimer);
+  this.intermissionTimer = setTimeout(() => {
+   this.intermissionTimer = null;
    if (this.intermissionScreen) {
     this.intermissionScreen.style.display = 'none';
    }
@@ -311,11 +338,25 @@ export class PlaylistEngine {
 
  private onPlaybackError(): void {
   console.error('[PlaylistEngine] Playback error on asset:', this.activePlaylist[this.currentIndex]?.filename);
+
+  // C4: reintento limitado con backoff. Antes reintentaba cada 2s SIN límite,
+  // quemando red/CPU en un loop infinito cuando TODOS los assets fallaban
+  // (p. ej. CDN inalcanzable y cache vacía). Tras N fallos consecutivos entra
+  // en fallback idle y espera el próximo ciclo de schedule.
+  this.consecutiveErrors += 1;
+  if (this.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+   console.warn(`[PlaylistEngine] ${this.consecutiveErrors} errores consecutivos — entrando en fallback idle.`);
+   this.consecutiveErrors = 0;
+   this.showFallback();
+   return;
+  }
   this.setStatus('error');
 
-  // Skip to next asset after a brief pause
+  // Skip to next asset with exponential backoff (2s → 4s → 8s … cap 60s)
   this.currentIndex = (this.currentIndex + 1) % this.activePlaylist.length;
-  setTimeout(() => void this.playNext(), 2000);
+  const delay = Math.min(this.errorBackoffMs, 60_000);
+  this.errorBackoffMs = this.errorBackoffMs * 2;
+  setTimeout(() => void this.playNext(), delay);
  }
 
  private showFallback(): void {
@@ -349,6 +390,11 @@ export class PlaylistEngine {
   if (this.watchdogTimer) {
    clearTimeout(this.watchdogTimer);
    this.watchdogTimer = null;
+  }
+  // A1: cancelar también el timer de intermisión pendiente
+  if (this.intermissionTimer) {
+   clearTimeout(this.intermissionTimer);
+   this.intermissionTimer = null;
   }
  }
 

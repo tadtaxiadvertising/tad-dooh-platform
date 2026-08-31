@@ -546,15 +546,20 @@ export class CampaignController {
       throw new ForbiddenException('No tienes permisos para eliminar esta campaña');
     }
 
-    // Delete related records first
-    await this.prisma.mediaAsset.deleteMany({ where: { campaignId: id } });
-    await this.prisma.video.deleteMany({ where: { campaignId: id } });
-    await this.prisma.deviceCampaign.deleteMany({ where: { campaign_id: id } });
-    await this.prisma.playlistItem.deleteMany({ where: { campaignId: id } });
-    await this.prisma.playlist.deleteMany({ where: { campaignId: id } });
-    await this.prisma.campaignMetric.deleteMany({ where: { campaignId: id } });
-    await this.prisma.media.updateMany({ where: { campaign_id: id }, data: { campaign_id: null } });
-    return this.prisma.campaign.delete({ where: { id } });
+    // M6: borrado atómico — envolver TODOS los deletes en una $transaction.
+    // Antes cada deleteMany corría por separado: un fallo a mitad de camino
+    // dejaba registros huérfanos referenciando una campaña inexistente.
+    return this.prisma.$transaction(async (tx) => {
+      // Delete related records first
+      await tx.mediaAsset.deleteMany({ where: { campaignId: id } });
+      await tx.video.deleteMany({ where: { campaignId: id } });
+      await tx.deviceCampaign.deleteMany({ where: { campaign_id: id } });
+      await tx.playlistItem.deleteMany({ where: { campaignId: id } });
+      await tx.playlist.deleteMany({ where: { campaignId: id } });
+      await tx.campaignMetric.deleteMany({ where: { campaignId: id } });
+      await tx.media.updateMany({ where: { campaign_id: id }, data: { campaign_id: null } });
+      return tx.campaign.delete({ where: { id } });
+    });
   }
 
   @Get('reports/summary')

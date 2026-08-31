@@ -9,7 +9,8 @@ import {
   HttpStatus,
   UseGuards,
   Req,
-  UseInterceptors
+  UseInterceptors,
+  InternalServerErrorException
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { InvoiceService } from './invoice.service';
@@ -129,12 +130,14 @@ export class FinanceController {
       const results = await this.financeService.calculateMonthlyPayroll(m, y);
       return results;
     } catch (error) {
-      console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', error);
-      return {
-        error: 'Error al calcular la nómina',
-        message: error.message,
-        timestamp: new Date().toISOString()
-      };
+      // M5: responder con 5xx real (antes devolvía HTTP 200 con {error}),
+      // para que el cliente no confunda un fallo con un resultado vacío.
+      console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', (error as Error)?.stack);
+      throw new InternalServerErrorException({
+        code: 'PAYROLL_CALC_FAILED',
+        message: 'Error al calcular la nómina',
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 

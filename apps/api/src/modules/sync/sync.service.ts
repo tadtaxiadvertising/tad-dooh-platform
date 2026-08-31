@@ -81,7 +81,11 @@ export class SyncService {
     // Si no hay driver, permitimos solo campañas GLOBALES (no segmentadas)
     // Esto es vital para el primer encendido (Out-of-the-box experience)
     const isDriverActive = driver && driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE;
-    const isDriverPaid = (driver && driver.subscriptionPaid);
+    // FASE 2 (Item 8, A10/M22): una suscripción "pagada" SOLO es válida si además
+    // no ha vencido (subscriptionEnd en el futuro O null = legada sin expiración).
+    // Antes solo se miraba subscriptionPaid: un driver con membresía vencida seguía
+    // recibiendo manifiesto normal (kill-switch nunca efectivo).
+    const isDriverPaid = !!(driver && driver.subscriptionPaid === true && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date()));
 
     let hasValidSubscription = isDriverPaid;
 

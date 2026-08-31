@@ -239,10 +239,9 @@ export class DeviceService {
       } else {
         // Expired or unpaid — log but DON'T block (per TAD policy)
         this.logger.warn(`⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
-        // SRE: Fire-and-forget morosidad notification — does NOT block tablet response
-        this.financeService.notifyMorosidad(dto.device_id).catch(e => {
-          this.logger.error(`Failed to trigger morosidad notification for ${dto.device_id}: ${e.message}`);
-        });
+        // FASE 2 (Item 10, A1/M23): NO se dispara notifyMorosidad desde el heartbeat.
+        // Cada tablet envía heartbeat cada ~15s → el protocolo 402 se ejecutaba en loop.
+        // La gestión de morosidad vive SOLO en el cron diario de las 3AM (finance.service).
       }
     }
 

@@ -58,7 +58,7 @@ let FinanceController = class FinanceController {
         if (!campaign)
             return res.status(404).send('Campaña no encontrada');
         const impressions = await this.prisma.playbackEvent.count({
-            where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+            where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm', verified: true }
         });
         const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
             totalImpressions: impressions,
@@ -171,7 +171,7 @@ let FinanceController = class FinanceController {
         if (!campaign)
             return { success: false, message: 'Campaña no encontrada' };
         const impressions = await this.prisma.playbackEvent.count({
-            where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm' },
+            where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm', verified: true },
         });
         const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
             totalImpressions: impressions,
@@ -187,7 +187,11 @@ let FinanceController = class FinanceController {
         const invoiceId = `INV-${campaignId.slice(0, 8).toUpperCase()}`;
         const baseAmount = body.amount || 3000;
         const impressions = await this.prisma.playbackEvent.count({
-            where: { eventType: 'play_confirm' },
+            where: {
+                videoId: { in: campaign.media.map((m) => m.id) },
+                eventType: 'play_confirm',
+                verified: true,
+            },
         });
         const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
             totalImpressions: impressions,
@@ -251,6 +255,7 @@ __decorate([
 ], FinanceController.prototype, "getPayroll", null);
 __decorate([
     (0, common_1.Post)('payroll/pay'),
+    (0, common_1.UseInterceptors)(idempotency_interceptor_1.IdempotencyInterceptor),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -265,6 +270,7 @@ __decorate([
 ], FinanceController.prototype, "sendWhatsAppPaymentConfirm", null);
 __decorate([
     (0, common_1.Post)('payroll/trigger'),
+    (0, common_1.UseInterceptors)(idempotency_interceptor_1.IdempotencyInterceptor),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

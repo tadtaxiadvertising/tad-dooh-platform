@@ -66,7 +66,7 @@ export class FinanceController {
     if (!campaign) return res.status(404).send('Campaña no encontrada');
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm' }
+      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm', verified: true }
     });
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
@@ -142,6 +142,7 @@ export class FinanceController {
    * Processes a payment for a specific driver.
    */
   @Post('payroll/pay')
+  @UseInterceptors(IdempotencyInterceptor)
   async processPayment(
     @Body() data: { driverId: string; month: number; year: number; reference: string }
   ) {
@@ -169,6 +170,7 @@ export class FinanceController {
    * Triggers the bulk generation of monthly payroll for ALL drivers.
    */
   @Post('payroll/trigger')
+  @UseInterceptors(IdempotencyInterceptor)
   async triggerMonthlyBilling(
     @Body() data: { month?: number; year?: number }
   ) {
@@ -297,7 +299,7 @@ export class FinanceController {
     if (!campaign) return { success: false, message: 'Campaña no encontrada' };
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm' },
+      where: { videoId: { in: campaign.media.map((m) => m.id) }, eventType: 'play_confirm', verified: true },
     });
 
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
@@ -334,7 +336,11 @@ export class FinanceController {
 
     // Generate proof-of-play PDF to attach
     const impressions = await this.prisma.playbackEvent.count({
-      where: { eventType: 'play_confirm' },
+      where: {
+        videoId: { in: campaign.media.map((m) => m.id) },
+        eventType: 'play_confirm',
+        verified: true,
+      },
     });
     const pdf = await this.invoiceService.generateCampaignProofOfPlayPDF(campaign, {
       totalImpressions: impressions,

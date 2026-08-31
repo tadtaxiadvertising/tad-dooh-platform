@@ -131,15 +131,21 @@ export class CampaignService {
 
     if (adv && adv.referredBy && adv._count.campaigns === 1) {
     const driverId = adv.referredBy;
+    const bonusReference = `REF-BONUS-${campaign.id.substring(0, 8)}`;
 
-    const existingComm = await this.prisma.commission.findFirst({
-    where: { driverId, sourceType: 'ADVERTISER_SALE' },
-    });
+    // FASE 2 (Item 7): bonus atómico e idempotente — commission + ledger + wallet
+    // dentro de una sola transacción, con upsert por reference @unique (no P2002,
+    // no doble abono si updateCampaign se ejecuta concurrentemente).
+    await this.prisma.$transaction(async (tx) => {
+      const existingComm = await tx.commission.findFirst({
+      where: { driverId, sourceType: 'ADVERTISER_SALE' },
+      });
 
-    if (!existingComm) {
+    if (existingComm) return;
+
     this.logger.log(`💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`);
 
-    await this.prisma.commission.create({
+    await tx.commission.create({
     data: {
     driverId,
     amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
@@ -148,26 +154,28 @@ export class CampaignService {
     },
     });
 
-    await this.prisma.financialTransaction.create({
-    data: {
+    await tx.financialTransaction.upsert({
+    where: { reference: bonusReference },
+    update: {},
+    create: {
     type: 'OUTGOING',
     category: 'OPEX_COMMISSION',
     amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
     netAmount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
     taxAmount: 0,
     entityId: driverId,
-    reference: `REF-BONUS-${campaign.id.substring(0, 8)}`,
+    reference: bonusReference,
     note: 'Bono de Referido por 1ra campaña activa de anunciante asociado.',
     status: 'COMPLETED',
     },
     });
 
-    await this.prisma.wallet.upsert({
+    await tx.wallet.upsert({
     where: { driverId },
     update: { availableBalance: { increment: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD } },
     create: { driverId, availableBalance: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD },
     });
-    }
+    });
     }
     } catch (err) {
     this.logger.error(`❌ [REFERRAL_LOOP] Failed to process referral payout: ${err instanceof Error ? err.message : String(err)}`);
@@ -272,18 +280,16 @@ export class CampaignService {
           { deviceId: { in: idOrHwIds } }
         ]
       },
-      select: { id: true, deviceId: true, _count: { select: { campaigns: true } } }
+      select: { id: true, deviceId: true }
     });
 
     if (devices.length === 0 && idOrHwIds.length > 0) {
       this.logger.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
     }
 
-    // 2. Identify available devices (respecting the limit)
-    const availableDevices = devices.filter(d => d._count.campaigns < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
-    const skippedCount = devices.length - availableDevices.length;
-
-    // 3. TRANSACTIONAL UPDATE: Clean old and insert new
+    // 2. TRANSACTIONAL UPDATE: Clean old, re-check slot limit inside the tx
+    // FASE 2 (Item 9): el filtro "14/15 slots" ya NO se lee fuera de la transacción
+    // (_count con TOCTOU). Cada device se revalida bajo pg_advisory_xact_lock.
     return await this.prisma.$transaction(async (tx) => {
       // Clear all existing assignments for this campaign
       await tx.playlistItem.deleteMany({ where: { campaignId } });
@@ -295,18 +301,29 @@ export class CampaignService {
         data: { updatedAt: new Date() }
       });
 
-      if (availableDevices.length === 0) return { count: 0, skipped: skippedCount };
+      // Re-count slots por device DENTRO de la tx (Revenue Protector R4)
+      const eligible: { id: string; deviceId: string }[] = [];
+      for (const d of devices) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'dc:' + d.id})::bigint)`;
+        const currentCount = await tx.deviceCampaign.count({ where: { device_id: d.id } });
+        if (currentCount < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+          eligible.push(d);
+        }
+      }
+
+      const skippedCount = devices.length - eligible.length;
+      if (eligible.length === 0) return { count: 0, skipped: skippedCount };
 
       // Create new assignments (V1 Legacy & V2 Core)
-      const dataV1 = availableDevices.map(d => ({ campaignId, deviceId: d.deviceId }));
-      const dataV2 = availableDevices.map(d => ({ campaign_id: campaignId, device_id: d.id }));
+      const dataV1 = eligible.map(d => ({ campaignId, deviceId: d.deviceId }));
+      const dataV2 = eligible.map(d => ({ campaign_id: campaignId, device_id: d.id }));
 
       await tx.playlistItem.createMany({ data: dataV1 });
       await tx.deviceCampaign.createMany({ data: dataV2 });
 
       // Create FORCE_SYNC commands to wake tablets and trigger instant sync
       // We send to UUID (id) because DeviceCommand relation uses UUID
-      const commands = availableDevices.map(d => ({
+      const commands = eligible.map(d => ({
         deviceId: d.id,
         commandType: 'FORCE_SYNC',
         commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId, deviceId: d.deviceId }),
@@ -319,19 +336,21 @@ export class CampaignService {
       this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
       reason: 'campaign_assigned',
       campaignId,
-      targets: availableDevices.map(d => d.deviceId)
+      targets: eligible.map(d => d.deviceId)
       }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
 
-      if (availableDevices.length > 0) {
-        // Notificar driver-specific si se pudo resolver el dueño del dispositivo.
+      if (eligible.length > 0) {
+        // Notificar driver-specific: UNA query batcheada (fix N+1, A4)
+        const boundDrivers = await tx.device.findMany({
+          where: { deviceId: { in: eligible.map(d => d.deviceId) } },
+          select: { deviceId: true, driverId: true }
+        });
+        const driverByDevice = new Map(boundDrivers.map(b => [b.deviceId, b.driverId]));
         await Promise.all(
-          availableDevices.map(async (device) => {
-            const bound = await this.prisma.device.findUnique({
-              where: { deviceId: device.deviceId },
-              select: { driverId: true },
-            });
-            if (!bound?.driverId) return;
-            void this.notificationsService.sendDriverNotification(bound.driverId, 'CAMPAIGN_ASSIGNED', {
+          eligible.map(async (device) => {
+            const bound = driverByDevice.get(device.deviceId);
+            if (!bound) return;
+            void this.notificationsService.sendDriverNotification(bound, 'CAMPAIGN_ASSIGNED', {
               campaignId,
               deviceId: device.deviceId,
               assignedAt: new Date().toISOString(),
@@ -345,22 +364,28 @@ export class CampaignService {
       // SRE Optimization: Refresh view so heartbeats get the new state immediately
       this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
 
-      return { count: availableDevices.length, skipped: skippedCount };
+      return { count: eligible.length, skipped: skippedCount };
     });
   }
 
   // Revenue Protector: Enforce 15-slot limit on single assignment
+  // FASE 2 (Item 9): el count se valida DENTRO de la transacción bajo
+  // pg_advisory_xact_lock(device) — elimina el TOCTOU del count previo.
   async assignCampaignToDevice(deviceId: string, campaignId: string) {
-    const currentCount = await this.prisma.deviceCampaign.count({
-      where: { device_id: deviceId }
-    });
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'dc:' + deviceId})::bigint)`;
 
-    if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
-      throw new BadRequestException(`Este taxi ya tiene los ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
-    }
+      const currentCount = await tx.deviceCampaign.count({
+        where: { device_id: deviceId }
+      });
 
-    return await this.prisma.deviceCampaign.create({
-      data: { device_id: deviceId, campaign_id: campaignId }
+      if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
+        throw new BadRequestException(`Este taxi ya tiene los ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
+      }
+
+      return tx.deviceCampaign.create({
+        data: { device_id: deviceId, campaign_id: campaignId }
+      });
     });
   }
 

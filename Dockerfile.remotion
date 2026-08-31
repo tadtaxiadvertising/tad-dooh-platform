@@ -42,6 +42,6 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD wget -qO- "http://127.0.0.1:8000/api/render" >/dev/null || exit 1
+  CMD curl -fsS "http://127.0.0.1:8000/health" >/dev/null || exit 1
 
 CMD ["node", "apps/tad-remotion/dist/index.js"]

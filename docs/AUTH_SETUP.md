@@ -3,6 +3,31 @@
 > Quick reference for enabling "Continuar con Google" on the Admin and
 > Advertiser portals. Driver portal keeps phone + password.
 
+## Status (as of 2026-08-31)
+
+✅ **Google OAuth provider is ACTIVE on Supabase `ltdcdhqixvbpdcitthqf`** (TAD DOOH project).
+
+Configuration applied via Supabase Management API:
+```
+external_google_enabled           = true
+external_google_client_id         = 1088475135252-dobrj948sbu6noaal49eo81c040q1ub9.apps.googleusercontent.com
+external_google_secret            = *** (GOCSPX-... stored hashed server-side)
+external_google_email_optional    = false
+```
+
+To re-verify or rotate the secret:
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  https://api.supabase.com/v1/projects/ltdcdhqixvbpdcitthqf/config/auth \
+  -d '{"external_google_enabled": true, ...}'
+```
+
+Then check via Dashboard > Authentication > Providers > Google — the toggle should be ON with the Client ID populated.
+
+---
+
 ## Overview
 
 ```

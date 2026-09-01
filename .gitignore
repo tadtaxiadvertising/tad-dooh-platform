@@ -131,3 +131,4 @@ scratch/
 # TMP diagnostic scripts
 dev-check-tmp.js
 mv-check-tmp.js
+.hermes/desktop-attachments/

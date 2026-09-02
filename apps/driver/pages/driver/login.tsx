@@ -5,6 +5,8 @@ import Link from 'next/link';
 import axios from 'axios';
 import { Phone, Lock, Eye, EyeOff, AlertCircle, X, CheckCircle, ArrowRight, LogIn } from 'lucide-react';
 import { ErrorBoundary } from '@tad/ui';
+import { GoogleSignInButton } from '@tad/ui';
+import { PORTAL_CONFIGS } from '@tad/services';
 
 export default function DriverLoginPage() {
   const router = useRouter();
@@ -171,6 +173,19 @@ export default function DriverLoginPage() {
                 </>
               )}
             </button>
+
+            {/* ─── OAuth Divider + Google Sign-In ─── */}
+            <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">o</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            <GoogleSignInButton
+              config={PORTAL_CONFIGS.DRIVER}
+              disabled={loading}
+            />
+
           </form>
           <p className="text-center text-sm text-zinc-400 mt-5">
             ¿Quieres unirte a la red TAD?{' '}

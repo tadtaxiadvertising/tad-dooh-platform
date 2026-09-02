@@ -7,7 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { AuthUser } from '../auth/auth.types';
-import { calculateImpact, ImpactOutput } from '../../libs/impact-calculator';
+import { calculateImpact, ImpactOutput } from '@tad/impact-calculator';
 
 const mediaAssetSafeSelect = {
   id: true,

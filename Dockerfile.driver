@@ -8,6 +8,7 @@ RUN apk add --no-cache openssl curl
 
 # Archivos core del monorepo
 COPY package.json package-lock.json ./
+COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/driver ./apps/driver
 

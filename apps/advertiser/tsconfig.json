@@ -44,10 +44,10 @@
         "../../packages/logging/*"
       ],
       "@tad/impact-calculator": [
-        "../../packages/impact-calculator/index.ts"
+        "../../apps/api/src/libs/impact-calculator/index.ts"
       ],
       "@tad/impact-calculator/*": [
-        "../../packages/impact-calculator/*"
+        "../../apps/api/src/libs/impact-calculator/*"
       ]
     },
     "plugins": [

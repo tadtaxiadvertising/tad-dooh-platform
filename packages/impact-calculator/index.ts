@@ -1,0 +1,311 @@
+/**
+ * TAD DOOH — Calculadora de Impacto Central
+ *
+ * Única fuente de verdad para TODOS los simuladores (frontend + backend).
+ * Cada output incluye: valor, intervalo de confianza, fuentes usadas, status de calibración.
+ *
+ * Fórmula probabilística (sin caja negra):
+ *
+ * 1) PLAYS_POR_HORA = 3600 / rotationSeconds
+ * 2) PLAYS_DÍA_PANTALLA = playsPorHora × dailyActiveHours
+ * 3) IMPRESIONES_BRUTAS_DÍA_PANTALLA = playsDía × attentionRate
+ * 4) IMPRESIONES_BRUTAS_MES_PANTALLA = impresionesBrutasDía × 30
+ *
+ * 5) VIAJES_CON_PASAJERO_MES_PANTALLA = dailyActiveHours × 30 × occupancyRate × tripsPorHora
+ *    donde tripsPorHora ≈ 2-3 (velocidad urbana + paradas). Usamos 2.5 default.
+ *
+ * 6) PASAJEROS_TOTALES_MES_PANTALLA = viajesConPasajero × passengersPerTrip
+ *
+ * 7) FRECUENCIA_ESTIMADA = IMPRESIONES_BRUTAS_MES / PASAJEROS_TOTALES_MES
+ *    (cada pasajero ve múltiplos spots en su viaje)
+ *
+ * 8) ALCANCE_ÚNICO_MES_PANTALLA = PASAJEROS_TOTALES_MES / monthlyTaxiUsePerCapita
+ *    (cada persona usa taxi varias veces al mes → desduplicamos)
+ *
+ * 9) IMPRESIONES_TOTALES_CAMPAÑA = IMPRESIONES_BRUTAS_MES_PANTALLA × pantallas × meses
+ * 10) ALCANCE_TOTAL_CAMPAÑA = ALCANCE_ÚNICO_MES_PANTALLA × pantallas × meses
+ */
+
+import { SOURCES, getSource, isCalibrationStatus, ImpactSource } from './sources';
+
+export type CalculationMode = 'conservative' | 'expected' | 'optimistic';
+
+export interface ImpactInput {
+  screens: number;
+  months: number;
+  frequencySeconds: number;
+  includeProduction: boolean;
+  /** Permite forzar modo de cálculo para testing/scenarios */
+  mode?: CalculationMode;
+}
+
+export interface ImpactOutput {
+  /** Costos */
+  screensCost: number;
+  productionFee: number;
+  totalCost: number;
+
+  /** Métricas de impacto (punto central + rango) */
+  impressionsPerScreenPerMonth: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+  totalImpressions: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+  uniqueReachPerScreenPerMonth: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+  totalUniqueReach: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+  frequencyOTS: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+
+  /** CPM calculado en cada escenario */
+  cpm: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+  costPerReach: {
+    min: number;
+    expected: number;
+    max: number;
+  };
+
+  /** Auditoría */
+  sourcesUsed: ImpactSource[];
+  calibrationStatus: ReturnType<typeof isCalibrationStatus>;
+  /** Warnings si hay fuentes vencidas o sin datos propios */
+  warnings: string[];
+  /** Metadatos del cálculo */
+  calculatedAt: string;
+  mode: CalculationMode;
+}
+
+/** Valor único (point) o rango [min, expected, max] */
+type Val = number | [number, number, number];
+
+function toRange(val: Val, mode: CalculationMode): { min: number; expected: number; max: number } {
+  if (typeof val === 'number') {
+    return { min: val, expected: val, max: val };
+  }
+  const [min, expected, max] = val;
+  switch (mode) {
+    case 'conservative':
+      return { min, expected: min, max: expected };
+    case 'optimistic':
+      return { min: expected, expected: max, max };
+    default:
+      return { min, expected, max };
+  }
+}
+
+/** Extrae el valor numérico para un modo específico */
+function pick(val: Val, mode: CalculationMode): number {
+  if (typeof val === 'number') return val;
+  const [min, expected, max] = val;
+  switch (mode) {
+    case 'conservative':
+      return min;
+    case 'optimistic':
+      return max;
+    default:
+      return expected;
+  }
+}
+
+/** Fuente por variable (para obtener el rango correcto) */
+function sourceValue(id: string): Val {
+  const s = getSource(id);
+  if (!s) throw new Error(`Source not found: ${id}`);
+  return s.value;
+}
+
+/** Cálculo principal — pura matemática, sin side effects */
+export function calculateImpact(input: ImpactInput): ImpactOutput {
+  const mode = input.mode ?? 'expected';
+  const { screens, months, frequencySeconds, includeProduction } = input;
+
+  // --- Constantes desde fuentes ---
+  const rotationSeconds = sourceValue('rotation-seconds') as number; // 30
+  const dailyActiveHoursRange = sourceValue('daily-active-hours') as [number, number, number];
+  const attentionRateRange = sourceValue('attention-rate') as [number, number, number];
+  const occupancyRateRange = sourceValue('taxi-occupancy-rate') as [number, number, number];
+  const passengersPerTripRange = sourceValue('passengers-per-trip') as [number, number, number];
+  const taxiUseFrequencyRange = sourceValue('taxi-use-frequency-monthly') as [number, number, number];
+  const screenMonthlyRate = sourceValue('screen-monthly-rate-rd') as number;
+  const productionFee = sourceValue('creative-production-fee') as number;
+
+  // Trips por hora operativa (asumido: 2.5 viajes/hora en ciudad)
+  const TRIPS_PER_HOUR = 2.5;
+
+  // Helper para modo
+  const pickR = (val: Val) => pick(val, mode);
+
+  // --- PASO 1: Impresiones brutas por pantalla/mes ---
+  const playsPerHour = 3600 / rotationSeconds; // 120
+  const dailyActiveHours = pickR(dailyActiveHoursRange);
+  const attentionRate = pickR(attentionRateRange);
+
+  const dailyPlaysPerScreen = playsPerHour * dailyActiveHours; // 120 × 10 = 1200
+  const dailyGrossImpressionsPerScreen = dailyPlaysPerScreen * attentionRate; // 1200 × 0.45 = 540
+  const monthlyGrossImpressionsPerScreen = dailyGrossImpressionsPerScreen * 30; // 16,200
+
+  // Rango completo
+  const minDailyHours = dailyActiveHoursRange[0];
+  const maxDailyHours = dailyActiveHoursRange[2];
+  const minAttention = attentionRateRange[0];
+  const maxAttention = attentionRateRange[2];
+
+  const minMonthlyGross = (3600 / rotationSeconds) * minDailyHours * minAttention * 30;
+  const expectedMonthlyGross = monthlyGrossImpressionsPerScreen;
+  const maxMonthlyGross = (3600 / rotationSeconds) * maxDailyHours * maxAttention * 30;
+
+  // --- PASO 2: Pasajeros totales por pantalla/mes ---
+  const occupancyRate = pickR(occupancyRateRange);
+  const passengersPerTrip = pickR(passengersPerTripRange);
+  const taxiUseFreq = pickR(taxiUseFrequencyRange);
+
+  const monthlyTripsWithPax = dailyActiveHours * 30 * occupancyRate * TRIPS_PER_HOUR;
+  const monthlyTotalPassengers = monthlyTripsWithPax * passengersPerTrip;
+
+  // Rangos
+  const minOccupancy = occupancyRateRange[0];
+  const maxOccupancy = occupancyRateRange[2];
+  const minPaxTrip = passengersPerTripRange[0];
+  const maxPaxTrip = passengersPerTripRange[2];
+  const minFreq = taxiUseFrequencyRange[0];
+  const maxFreq = taxiUseFrequencyRange[2];
+
+  const minMonthlyTrips = minDailyHours * 30 * minOccupancy * TRIPS_PER_HOUR;
+  const maxMonthlyTrips = maxDailyHours * 30 * maxOccupancy * TRIPS_PER_HOUR;
+
+  const minMonthlyPassengers = minMonthlyTrips * minPaxTrip;
+  const expectedMonthlyPassengers = monthlyTotalPassengers;
+  const maxMonthlyPassengers = maxMonthlyTrips * maxPaxTrip;
+
+  // --- PASO 3: Frecuencia OTS (Over-The-Shoulder) ---
+  const expectedFrequency = expectedMonthlyGross / expectedMonthlyPassengers;
+  const minFrequency = minMonthlyGross / maxMonthlyPassengers; // conservador: menos imps, más pax
+  const maxFrequency = maxMonthlyGross / minMonthlyPassengers; // optimista: más imps, menos pax
+
+  // --- PASO 4: Alcance único (desduplicado por frecuencia de uso) ---
+  const expectedReach = expectedMonthlyPassengers / taxiUseFreq;
+  const minReach = minMonthlyPassengers / maxFreq;
+  const maxReach = maxMonthlyPassengers / minFreq;
+
+  // --- PASO 5: Escalar a campaña ---
+  const campaignMultiplier = screens * months;
+
+  const totalImpressionsMin = Math.round(minMonthlyGross * campaignMultiplier);
+  const totalImpressionsExpected = Math.round(expectedMonthlyGross * campaignMultiplier);
+  const totalImpressionsMax = Math.round(maxMonthlyGross * campaignMultiplier);
+
+  const totalReachMin = Math.round(minReach * campaignMultiplier);
+  const totalReachExpected = Math.round(expectedReach * campaignMultiplier);
+  const totalReachMax = Math.round(maxReach * campaignMultiplier);
+
+  // --- PASO 6: Costos y CPM ---
+  const screensCost = screens * months * screenMonthlyRate;
+  const prodFee = includeProduction ? productionFee : 0;
+  const totalCost = screensCost + prodFee;
+
+  const cpmMin = totalImpressionsMin > 0 ? Math.round((totalCost / totalImpressionsMin) * 1000) : 0;
+  const cpmExpected = totalImpressionsExpected > 0 ? Math.round((totalCost / totalImpressionsExpected) * 1000) : 0;
+  const cpmMax = totalImpressionsMax > 0 ? Math.round((totalCost / totalImpressionsMax) * 1000) : 0;
+
+  const cprMin = totalReachMin > 0 ? Math.round(totalCost / totalReachMin) : 0;
+  const cprExpected = totalReachExpected > 0 ? Math.round(totalCost / totalReachExpected) : 0;
+  const cprMax = totalReachMax > 0 ? Math.round(totalCost / totalReachMax) : 0;
+
+  // --- Auditoría ---
+  const sourcesUsed = [
+    getSource('rotation-seconds'),
+    getSource('daily-active-hours'),
+    getSource('attention-rate'),
+    getSource('taxi-occupancy-rate'),
+    getSource('passengers-per-trip'),
+    getSource('taxi-use-frequency-monthly'),
+    getSource('screen-monthly-rate-rd'),
+    getSource('creative-production-fee'),
+  ].filter((s): s is ImpactSource => Boolean(s));
+
+  const calibration = isCalibrationStatus();
+  const warnings: string[] = [];
+  if (!calibration.hasOwnData) {
+    warnings.push('Cálculo basado en benchmarks internacionales (sin datos operativos RD propios). Incertidumbre alta: ~±40-60%.');
+  }
+  if (calibration.staleSourcesCount > 0) {
+    warnings.push(`${calibration.staleSourcesCount} fuente(s) vencida(s) — revisar sources.ts`);
+  }
+  sourcesUsed.forEach((s) => {
+    if (s.stale) warnings.push(`Fuente vencida: ${s.id} (${s.studyName})`);
+  });
+
+  return {
+    screensCost,
+    productionFee: prodFee,
+    totalCost,
+    impressionsPerScreenPerMonth: { min: Math.round(minMonthlyGross), expected: Math.round(expectedMonthlyGross), max: Math.round(maxMonthlyGross) },
+    totalImpressions: { min: totalImpressionsMin, expected: totalImpressionsExpected, max: totalImpressionsMax },
+    uniqueReachPerScreenPerMonth: { min: Math.round(minReach), expected: Math.round(expectedReach), max: Math.round(maxReach) },
+    totalUniqueReach: { min: totalReachMin, expected: totalReachExpected, max: totalReachMax },
+    frequencyOTS: { min: Number(minFrequency.toFixed(1)), expected: Number(expectedFrequency.toFixed(1)), max: Number(maxFrequency.toFixed(1)) },
+    cpm: { min: cpmMin, expected: cpmExpected, max: cpmMax },
+    costPerReach: { min: cprMin, expected: cprExpected, max: cprMax },
+    sourcesUsed,
+    calibrationStatus: calibration,
+    warnings,
+    calculatedAt: new Date().toISOString(),
+    mode,
+  };
+}
+
+/** Wrapper simplificado para compatibilidad con código legacy (point-only) */
+export function calculateImpactLegacy(
+  screens: number,
+  months: number,
+  frequencySeconds: number,
+  includeProduction: boolean
+): {
+  totalCost: number;
+  impressions: number;
+  screensCost: number;
+  productionFee: number;
+} {
+  const full = calculateImpact({ screens, months, frequencySeconds, includeProduction, mode: 'expected' });
+  return {
+    totalCost: full.totalCost,
+    impressions: full.totalImpressions.expected,
+    screensCost: full.screensCost,
+    productionFee: full.productionFee,
+  };
+}
+
+/** Helper para UI: devuelve string legible "X (Y–Z)" */
+export function formatRange(r: { min: number; expected: number; max: number }): string {
+  if (r.min === r.expected && r.expected === r.max) {
+    return r.expected.toLocaleString('es-DO');
+  }
+  return `${r.expected.toLocaleString('es-DO')} (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+}
+
+/** Helper para UI: CPM string */
+export function formatCPM(r: { min: number; expected: number; max: number }): string {
+  if (r.min === r.expected && r.expected === r.max) {
+    return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM`;
+  }
+  return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+}

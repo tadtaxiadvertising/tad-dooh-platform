@@ -197,14 +197,18 @@ export function calculateImpact(input: ImpactInput): ImpactOutput {
   const maxMonthlyPassengers = maxMonthlyTrips * maxPaxTrip;
 
   // --- PASO 3: Frecuencia OTS (Over-The-Shoulder) ---
-  const expectedFrequency = expectedMonthlyGross / expectedMonthlyPassengers;
-  const minFrequency = minMonthlyGross / maxMonthlyPassengers; // conservador: menos imps, más pax
-  const maxFrequency = maxMonthlyGross / minMonthlyPassengers; // optimista: más imps, menos pax
+  // Cada viaje en taxi = 1 oportunidad de ver la pantalla.
+  // Frecuencia OTS = viajes de taxi per cápita / mes → cuántas veces una misma
+  // persona es expuesta en el mes. Uso directo de la fuente `taxi-use-frequency-monthly`.
+  const expectedFrequency = taxiUseFreq;
+  const minFrequency = minFreq;
+  const maxFrequency = maxFreq;
 
   // --- PASO 4: Alcance único (desduplicado por frecuencia de uso) ---
-  const expectedReach = expectedMonthlyPassengers / taxiUseFreq;
-  const minReach = minMonthlyPassengers / maxFreq;
-  const maxReach = maxMonthlyPassengers / minFreq;
+  // Personas únicas = pasajeros totales / exposiciones por persona.
+  const expectedReach = expectedMonthlyPassengers / expectedFrequency;
+  const minReach = minMonthlyPassengers / maxFrequency; // conservador: menos pax, más frecuencia → menos únicos
+  const maxReach = maxMonthlyPassengers / minFrequency; // optimista: más pax, menos frecuencia → más únicos
 
   // --- PASO 5: Escalar a campaña ---
   const campaignMultiplier = screens * months;
@@ -222,13 +226,16 @@ export function calculateImpact(input: ImpactInput): ImpactOutput {
   const prodFee = includeProduction ? productionFee : 0;
   const totalCost = screensCost + prodFee;
 
-  const cpmMin = totalImpressionsMin > 0 ? Math.round((totalCost / totalImpressionsMin) * 1000) : 0;
-  const cpmExpected = totalImpressionsExpected > 0 ? Math.round((totalCost / totalImpressionsExpected) * 1000) : 0;
-  const cpmMax = totalImpressionsMax > 0 ? Math.round((totalCost / totalImpressionsMax) * 1000) : 0;
+  // CPM: menos impresiones = CPM más alto. Ordenar min ≤ expected ≤ max.
+  const cpmAt = (imps: number) =>
+    imps > 0 ? Math.round((totalCost / imps) * 1000) : Math.round(totalCost * 1000);
+  const cpmLow = cpmAt(totalImpressionsMax); // más imps → CPM más bajo
+  const cpmExp = cpmAt(totalImpressionsExpected);
+  const cpmHigh = cpmAt(totalImpressionsMin); // menos imps → CPM más alto
 
-  const cprMin = totalReachMin > 0 ? Math.round(totalCost / totalReachMin) : 0;
-  const cprExpected = totalReachExpected > 0 ? Math.round(totalCost / totalReachExpected) : 0;
-  const cprMax = totalReachMax > 0 ? Math.round(totalCost / totalReachMax) : 0;
+  const cprLow = totalReachMax > 0 ? Math.round(totalCost / totalReachMax) : totalCost;
+  const cprExp = totalReachExpected > 0 ? Math.round(totalCost / totalReachExpected) : totalCost;
+  const cprHigh = totalReachMin > 0 ? Math.round(totalCost / totalReachMin) : totalCost;
 
   // --- Auditoría ---
   const sourcesUsed = [
@@ -263,8 +270,8 @@ export function calculateImpact(input: ImpactInput): ImpactOutput {
     uniqueReachPerScreenPerMonth: { min: Math.round(minReach), expected: Math.round(expectedReach), max: Math.round(maxReach) },
     totalUniqueReach: { min: totalReachMin, expected: totalReachExpected, max: totalReachMax },
     frequencyOTS: { min: Number(minFrequency.toFixed(1)), expected: Number(expectedFrequency.toFixed(1)), max: Number(maxFrequency.toFixed(1)) },
-    cpm: { min: cpmMin, expected: cpmExpected, max: cpmMax },
-    costPerReach: { min: cprMin, expected: cprExpected, max: cprMax },
+    cpm: { min: cpmLow, expected: cpmExp, max: cpmHigh },
+    costPerReach: { min: cprLow, expected: cprExp, max: cprHigh },
     sourcesUsed,
     calibrationStatus: calibration,
     warnings,

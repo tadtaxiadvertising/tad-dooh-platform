@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { GetServerSideProps } from 'next';
 import { AdvertiserLayout } from '../../components/layout/AdvertiserLayout';
-import { simulateImpact } from '../../utils/simulations';
+import { simulateImpactDetailed } from '../../utils/simulations';
 import { BarChart3, Users, Monitor, MapPin, TrendingUp, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
@@ -13,8 +13,8 @@ export default function CampaignPlanner() {
   const [city, setCity] = useState('Santo Domingo');
 
   const simulation = useMemo(() => {
-    return simulateImpact(budget, city, city === 'Santo Domingo' ? 120 : 45);
-  }, [budget, city]);
+      return simulateImpactDetailed(budget, city, city === 'Santo Domingo' ? 120 : 45);
+    }, [budget, city]);
 
   return (
     <AdvertiserLayout title="Planificador" subtitle="Simula el alcance de tu marca">
@@ -91,10 +91,20 @@ export default function CampaignPlanner() {
               <div>
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Impactos Estimados</p>
                 <h3 className="text-5xl font-black tracking-tighter text-white">
-                  {simulation.estimatedImpacts.toLocaleString()}
-                </h3>
-                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">Visualizaciones potenciales / mes</p>
-              </div>
+                                  {simulation.estimatedImpacts.toLocaleString()}
+                                </h3>
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2">Visualizaciones potenciales / mes</p>
+                                <p className="text-[9px] text-zinc-500 tabular-nums mt-1">
+                                  rango: {simulation.estimatedImpactsRange.min.toLocaleString()} – {simulation.estimatedImpactsRange.max.toLocaleString()}
+                                </p>
+                                <div className="flex items-start gap-1.5 mt-3 bg-[#fad400]/10 border border-[#fad400]/20 rounded-lg px-2.5 py-1.5">
+                                  <Info className="w-3 h-3 shrink-0 mt-0.5 text-[#fad400]" />
+                                  <span className="text-[8px] leading-snug text-zinc-400">
+                                    <span className="font-black text-zinc-300 uppercase tracking-wider">{simulation.calibrationLabel}</span>
+                                    <span className="block text-zinc-500">Fuente: IAB DOOH + Geopath 2024</span>
+                                  </span>
+                                </div>
+                              </div>
             </div>
 
             <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[200px]">

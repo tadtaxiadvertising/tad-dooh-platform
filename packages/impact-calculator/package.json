@@ -1,8 +1,0 @@
-{
-  "name": "@tad/impact-calculator",
-  "version": "0.1.0",
-  "description": "Single source of truth for TAD DOOH impact estimation. Every formula, every constant, every citation lives here.",
-  "private": true,
-  "main": "./index.ts",
-  "types": "./index.ts"
-}

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { ArrowRight, Calculator, TrendingUp, RotateCcw, Users, Store, Check, Target, Minus, Plus } from 'lucide-react';
-import { estimateCampaign, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from '../../components/advertiser/simulatorPricing';
+import { ArrowRight, Calculator, TrendingUp, RotateCcw, Users, Store, Check, Target, Minus, Plus, Info } from 'lucide-react';
+import { estimateCampaign, estimateCampaignDetailed, formatRange, getCalibrationBadge, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from '../../components/advertiser/simulatorPricing';
 
 export interface SimulatorConfig {
   screens: number;
@@ -26,6 +26,8 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
   const isCustomScreens = config.screens > 5;
 
   const estimate = estimateCampaign(config);
+  const detailed = estimateCampaignDetailed(config);
+  const calibration = getCalibrationBadge();
 
   const handleScreenSelect = (n: number) => {
     onChange({ screens: n, frequencySeconds: FIXED_FREQUENCY_SECONDS });
@@ -272,10 +274,36 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
                 Impactos est.
               </p>
               <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
-                {estimate.impressions.toLocaleString()}
-              </span>
-            </div>
-          </motion.div>
+                              {estimate.impressions.toLocaleString()}
+                            </span>
+                            <motion.p
+                              className="text-[9px] text-white/40 tabular-nums mt-0.5"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.9, duration: 0.4 }}
+                            >
+                              {formatRange(detailed.totalImpressions)}
+                            </motion.p>
+                          </div>
+                        </motion.div>
+
+                        {/* Badge de fuente / calibración */}
+                        <motion.div
+                          className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2"
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.05, duration: 0.4 }}
+                        >
+                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
+                          <div className="text-[9px] leading-snug text-[#AAAAAA]">
+                            <span className="font-black text-[#FDCB01] uppercase tracking-wider">
+                              {calibration.label}
+                            </span>
+                            <span className="block text-white/45 mt-0.5">
+                              Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024 · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
+                            </span>
+                          </div>
+                        </motion.div>
 
           <motion.div
             className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]"

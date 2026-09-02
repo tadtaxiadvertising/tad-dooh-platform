@@ -13,13 +13,18 @@
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "rootDir": "src",
-        "types": ["node"]
+        "strictNullChecks": false,
+        "noImplicitAny": false,
+        "strictBindCallApply": false,
+        "forceConsistentCasingInFileNames": false,
+        "noFallthroughCasesInSwitch": false,
+        "rootDir": "src",
+            "types": ["node"],
+            "baseUrl": ".",
+            "paths": {
+              "@tad/impact-calculator": ["../../packages/impact-calculator/index.ts"],
+              "@tad/impact-calculator/*": ["../../packages/impact-calculator/*"]
+            }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]

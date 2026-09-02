@@ -1,9 +1,9 @@
-export const SCREEN_MONTHLY_RATE = 2500;
-export const PRODUCTION_FEE = 2500;
-export const DAILY_ACTIVE_HOURS = 10;
-export const ATTENTION_RATE = 0.4;
-export const FIXED_FREQUENCY_SECONDS = 30;
+import { calculateImpactLegacy, calculateImpact, ImpactInput, ImpactOutput } from '@tad/impact-calculator';
 
+/**
+ * @deprecated Legacy interface — mantener compatibilidad mientras migramos UI
+ * Usar `calculateImpact` + `ImpactOutput` para nuevos componentes.
+ */
 export interface CampaignConfig {
   screens: number;
   months: number;
@@ -19,21 +19,93 @@ export interface CampaignEstimate {
   impressions: number;
 }
 
-export function estimateImpressions(config: CampaignConfig): number {
-  const playsPerHour = 3600 / FIXED_FREQUENCY_SECONDS;
-  const dailyPerScreen = playsPerHour * DAILY_ACTIVE_HOURS * ATTENTION_RATE;
-  return Math.round(config.screens * config.months * 30 * dailyPerScreen);
+/** Constantes de compatibilidad (para no romper imports existentes) */
+export const SCREEN_MONTHLY_RATE = 2500;
+export const PRODUCTION_FEE = 2500;
+export const DAILY_ACTIVE_HOURS = 10;
+export const ATTENTION_RATE = 0.4;
+export const FIXED_FREQUENCY_SECONDS = 30;
+
+/**
+ * Wrapper legacy — mantiene API antigua para SimulatorStep.tsx
+ * Devuelve solo los campos que el componente espera.
+ */
+export function estimateCampaign(config: CampaignConfig): CampaignEstimate {
+  const legacy = calculateImpactLegacy(
+    config.screens,
+    config.months,
+    config.frequencySeconds,
+    config.includeProduction
+  );
+  return {
+    screensCost: legacy.screensCost,
+    frequencyUplift: 0,
+    productionFee: legacy.productionFee,
+    total: legacy.totalCost,
+    impressions: legacy.impressions,
+  };
 }
 
-export function estimateCampaign(config: CampaignConfig): CampaignEstimate {
-  const screensCost = config.screens * config.months * SCREEN_MONTHLY_RATE;
-  const productionFee = config.includeProduction ? PRODUCTION_FEE : 0;
-  const total = Math.round(screensCost + productionFee);
+/**
+ * NUEVA API recomendada — devuelve rango completo + fuentes + warnings
+ * Usar en componentes nuevos o al migrar SimulatorStep.
+ */
+export function estimateCampaignDetailed(config: CampaignConfig): ImpactOutput {
+  return calculateImpact({
+    screens: config.screens,
+    months: config.months,
+    frequencySeconds: config.frequencySeconds,
+    includeProduction: config.includeProduction,
+    mode: 'expected',
+  });
+}
+
+/**
+ * Helper para UI: formatea rango "X (Y–Z)"
+ */
+export function formatRange(
+  r: { min: number; expected: number; max: number }
+): string {
+  if (r.min === r.expected && r.expected === r.max) {
+    return r.expected.toLocaleString('es-DO');
+  }
+  return `${r.expected.toLocaleString('es-DO')} (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+}
+
+/**
+ * Helper para UI: CPM string
+ */
+export function formatCPM(
+  r: { min: number; expected: number; max: number }
+): string {
+  if (r.min === r.expected && r.expected === r.max) {
+    return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM`;
+  }
+  return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+}
+
+/**
+ * Helper para UI: badge de fuente principal
+ */
+export function getPrimarySource(): { label: string; tier: 'A' | 'B' | 'C' | 'D'; url?: string } {
   return {
-    screensCost,
-    frequencyUplift: 0,
-    productionFee,
-    total,
-    impressions: estimateImpressions(config),
+    label: 'IAB DOOH Guidelines + Geopath 2024',
+    tier: 'B',
+    url: 'https://iabtechlab.com/standards/digital-out-of-home-measurement-guidelines/',
+  };
+}
+
+/**
+ * Helper para UI: status de calibración
+ */
+export function getCalibrationBadge(): {
+  label: string;
+  color: 'red' | 'amber' | 'green';
+  description: string;
+} {
+  return {
+    label: 'Benchmark internacional (sin datos RD propios)',
+    color: 'amber',
+    description: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
   };
 }

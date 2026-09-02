@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowRight, Calculator, TrendingUp, RotateCcw, Check, Users, Store } from 'lucide-react';
-import { estimateCampaign, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from './simulatorPricing';
+import { ArrowRight, Calculator, TrendingUp, RotateCcw, Check, Users, Store, Info } from 'lucide-react';
+import { estimateCampaign, estimateCampaignDetailed, formatRange, getCalibrationBadge, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from './simulatorPricing';
 
 export interface SimulatorConfig {
   screens: number;
@@ -22,6 +22,8 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
   const isCustomScreens = config.screens > 5;
 
   const estimate = estimateCampaign(config);
+  const detailed = estimateCampaignDetailed(config);
+  const calibration = getCalibrationBadge();
 
   const handleScreenSelect = (n: number) => {
     onChange({ screens: n, frequencySeconds: FIXED_FREQUENCY_SECONDS });
@@ -186,14 +188,30 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
-                Impactos est.
-              </p>
-              <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
-                {estimate.impressions.toLocaleString()}
-              </span>
-            </div>
-          </div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
+                            Impactos est.
+                          </p>
+                          <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
+                            {estimate.impressions.toLocaleString()}
+                          </span>
+                          <p className="text-[9px] text-white/40 tabular-nums mt-0.5">
+                            {formatRange(detailed.totalImpressions)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Badge de fuente / calibración */}
+                      <div className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2">
+                        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
+                        <div className="text-[9px] leading-snug text-[#AAAAAA]">
+                          <span className="font-black text-[#FDCB01] uppercase tracking-wider">
+                            {calibration.label}
+                          </span>
+                          <span className="block text-white/45 mt-0.5">
+                            Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024 · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
+                          </span>
+                        </div>
+                      </div>
 
           <div className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]">
             <div className="flex justify-between gap-4">

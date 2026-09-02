@@ -7,6 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 import { BUSINESS_RULES } from '../../common/constants/business-rules';
 import { AuthUser } from '../auth/auth.types';
+import { calculateImpact, ImpactOutput } from '../../libs/impact-calculator';
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -821,44 +822,72 @@ export class CampaignService {
   }
 
   /**
-   * TAD-ADVERTISER: Simulador de Presupuesto
-   *
-   * Lógica v10.1.0:
-   * - Alcance Único (uniqueReach): 2,000 personas por pantalla/mes.
-   * - Impresiones Totales (totalImpressions): uniqueReach × 2 (frecuencia mínima por viaje).
-   * - Factor de Densidad: 2-3 pasajeros promedio por viaje (documentado, no multiplicado aquí).
-   */
-  async simulateImpact(budgetRD: number, city: string) {
-    const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500
-    const uniqueReachPerScreen = 2000; // Personas alcanzadas por pantalla/mes
-    const viewFrequency = 2; // Visualizaciones mínimas por pasajero por viaje
+     * TAD-ADVERTISER: Simulador de Presupuesto — v2.0 con fuentes auditables
+     *
+     * Reemplaza lógica hardcodeada v10.1.0 por @tad/impact-calculator.
+     * Cada output incluye rango, fuentes, warnings y status de calibración.
+     */
+    async simulateImpact(budgetRD: number, city: string): Promise<{
+      budget: number;
+      city: string;
+      recommendedScreens: number;
+      uniqueReach: number;
+      totalImpressions: number;
+      onlineScreensInZone: number;
+      // NUEVOS campos con transparencia
+      uniqueReachRange: { min: number; expected: number; max: number };
+      totalImpressionsRange: { min: number; expected: number; max: number };
+      frequencyOTS: { min: number; expected: number; max: number };
+      cpm: { min: number; expected: number; max: number };
+      warnings: string[];
+      calibrationLabel: string;
+      calibrationDescription: string;
+      sourceLabel: string;
+    }> {
+      const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500 (legacy)
 
-    // Contar pantallas disponibles en la zona
-    const onlineScreensCount = await this.prisma.device.count({
-      where: {
-        city: city === 'Global' ? undefined : city,
-        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-        connectivityStatus: 'ONLINE',
-      },
-    });
+      // Contar pantallas disponibles en la zona
+      const onlineScreensCount = await this.prisma.device.count({
+        where: {
+          city: city === 'Global' ? undefined : city,
+          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
+          connectivityStatus: 'ONLINE',
+        },
+      });
 
-    const recommendedScreens = Math.min(
-      onlineScreensCount,
-      Math.floor(budgetRD / costPerScreen),
-    );
+      const recommendedScreens = Math.min(
+        onlineScreensCount,
+        Math.floor(budgetRD / costPerScreen),
+      );
 
-    const uniqueReach = recommendedScreens * uniqueReachPerScreen;
-    const totalImpressions = uniqueReach * viewFrequency;
+      // Delegar cálculo completo al módulo único de verdad
+      const detailed: ImpactOutput = calculateImpact({
+        screens: recommendedScreens,
+        months: 1, // asume 1 mes por defecto
+        frequencySeconds: 30,
+        includeProduction: false,
+        mode: 'expected',
+      });
 
-    return {
-      budget: budgetRD,
-      city,
-      recommendedScreens,
-      uniqueReach,
-      totalImpressions,
-      onlineScreensInZone: onlineScreensCount,
-    };
-  }
+      // Mapear a respuesta compatible + campos extendidos
+      return {
+        budget: budgetRD,
+        city,
+        recommendedScreens,
+        uniqueReach: detailed.totalUniqueReach.expected,
+        totalImpressions: detailed.totalImpressions.expected,
+        onlineScreensInZone: onlineScreensCount,
+        // NUEVOS campos extendidos
+        uniqueReachRange: detailed.totalUniqueReach,
+        totalImpressionsRange: detailed.totalImpressions,
+        frequencyOTS: detailed.frequencyOTS,
+        cpm: detailed.cpm,
+        warnings: detailed.warnings,
+        calibrationLabel: 'Benchmark internacional (sin datos RD propios)',
+        calibrationDescription: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
+        sourceLabel: 'IAB DOOH Guidelines + Geopath 2024',
+      };
+    }
 
   async createIntent(dto: any) {
     try {

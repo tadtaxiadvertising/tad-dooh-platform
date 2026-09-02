@@ -309,3 +309,25 @@ export function formatCPM(r: { min: number; expected: number; max: number }): st
   }
   return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
 }
+
+/** Helper para UI: badge de fuente principal */
+export function getPrimarySource(): { label: string; tier: 'A' | 'B' | 'C' | 'D'; url?: string } {
+  return {
+    label: 'IAB DOOH Guidelines + Geopath 2024',
+    tier: 'B',
+    url: 'https://iabtechlab.com/standards/digital-out-of-home-measurement-guidelines/',
+  };
+}
+
+/** Helper para UI: status de calibración */
+export function getCalibrationBadge(): {
+  label: string;
+  color: 'red' | 'amber' | 'green';
+  description: string;
+} {
+  return {
+    label: 'Benchmark internacional (sin datos RD propios)',
+    color: 'amber',
+    description: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
+  };
+}

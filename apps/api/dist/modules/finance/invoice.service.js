@@ -9,6 +9,7 @@ var InvoiceService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvoiceService = void 0;
 const common_1 = require("@nestjs/common");
+const business_rules_1 = require("../../common/constants/business-rules");
 const pdfmake = require('pdfmake');
 let InvoiceService = InvoiceService_1 = class InvoiceService {
     constructor() {
@@ -38,7 +39,7 @@ let InvoiceService = InvoiceService_1 = class InvoiceService {
                             bold: true,
                         },
                         {
-                            text: `Factura N°: TAD-${Math.floor(Math.random() * 100000)}\nFecha: ${new Date().toLocaleDateString()}`,
+                            text: `Factura N°: TAD-${new Date().getFullYear()}-${this.refId(driverData)}\nFecha: ${new Date().toLocaleDateString()}`,
                             alignment: 'right',
                             fontSize: 10,
                             color: '#666'
@@ -69,7 +70,7 @@ let InvoiceService = InvoiceService_1 = class InvoiceService {
                         widths: ['*', 'auto', 'auto', 'auto'],
                         body: [
                             [{ text: 'Concepto Pago', bold: true, fillColor: '#eeeeee' }, { text: 'Impactos', bold: true, fillColor: '#eeeeee' }, { text: 'Tarifa (RD$)', bold: true, fillColor: '#eeeeee' }, { text: 'Total', bold: true, fillColor: '#eeeeee' }],
-                            ['Anuncios Transitados (Aprobados PWA)', driverData.anuncios || '0', '1.25', `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`],
+                            ['Anuncios Transitados (Aprobados PWA)', driverData.anuncios || '0', business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_AD_PLAY_RD.toFixed(2), `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`],
                             ['Penalización (Offline)', '0', '0.00', '0.00'],
                             ['Suscripción Plataforma TAD', '1', '-6,000.00 (Anual)', '0.00'],
                             [{ text: 'TOTAL A PAGAR', bold: true, colSpan: 3, alignment: 'right' }, {}, {}, { text: `RD$ ${(parseFloat(driverData.ingreso || '0')).toFixed(2)}`, bold: true }]
@@ -288,6 +289,20 @@ let InvoiceService = InvoiceService_1 = class InvoiceService {
         };
         const pdfDoc = pdfmake.createPdf(docDefinition);
         return await pdfDoc.getBuffer();
+    }
+    refId(driverData) {
+        const seed = driverData.deviceId ||
+            driverData.placa ||
+            driverData.chofer ||
+            driverData.nombre ||
+            String(Date.now());
+        let h = 0;
+        for (let i = 0; i < seed.length; i++) {
+            h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+        }
+        const base = 36;
+        const stamp = Date.now().toString(36).toUpperCase().slice(-6);
+        return `${stamp}${('0000' + (h % 100000).toString()).slice(-5)}`;
     }
 };
 exports.InvoiceService = InvoiceService;

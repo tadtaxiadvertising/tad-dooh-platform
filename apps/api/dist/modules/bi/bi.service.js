@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BiService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const business_rules_1 = require("../../common/constants/business-rules");
 let BiService = BiService_1 = class BiService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -237,7 +238,8 @@ let BiService = BiService_1 = class BiService {
         const impressionsRaw = await this.prisma.playbackEvent.groupBy({
             by: ['deviceId'],
             where: {
-                eventType: { in: ['play_confirm', 'END'] },
+                eventType: 'play_confirm',
+                verified: true,
                 timestamp: { gte: periodStart, lte: periodEnd },
             },
             _count: { _all: true },
@@ -262,7 +264,7 @@ let BiService = BiService_1 = class BiService {
                 const deliveredImpressions = device ? (impressionsByDevice.get(device.deviceId) || 0) : 0;
                 const payrollDue = driver.payrollPayments.reduce((a, p) => a + p.amount, 0);
                 const payrollPaid = driver.payrollPayments.filter(p => p.status === 'PAID').reduce((a, p) => a + p.amount, 0);
-                const revenueContracted = 1500;
+                const revenueContracted = business_rules_1.BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
                 let discrepancyType = 'OK';
                 let hasDiscrepancy = false;
                 if (subscription?.status !== 'ACTIVE') {

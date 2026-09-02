@@ -48,27 +48,23 @@ export declare class FinanceController {
         error: boolean;
         paidAt?: undefined;
         reference?: undefined;
-    })[] | {
-        error: string;
-        message: any;
-        timestamp: string;
-    }>;
+    })[]>;
     processPayment(data: {
         driverId: string;
         month: number;
         year: number;
         reference: string;
     }): Promise<{
-        id: string;
         status: string;
+        id: string;
         createdAt: Date;
         driverId: string;
         activeAds: number;
-        paidAt: Date | null;
         amount: number;
         month: number;
         year: number;
         referenceNum: string | null;
+        paidAt: Date | null;
         penaltyApplied: boolean;
         penaltyPercentage: number;
         transmissionHours: number;
@@ -116,17 +112,17 @@ export declare class FinanceController {
         note?: string;
         status?: string;
     }): Promise<{
-        id: string;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        reference: string | null;
-        amount: number;
         category: string;
         type: string;
+        status: string;
+        id: string;
+        entityId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        amount: number;
+        reference: string | null;
         netAmount: number;
         taxAmount: number;
-        entityId: string | null;
         note: string | null;
     }>;
     getSummary(): Promise<{
@@ -151,17 +147,17 @@ export declare class FinanceController {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
-        id: string;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
-        reference: string | null;
-        amount: number;
         category: string;
         type: string;
+        status: string;
+        id: string;
+        entityId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        amount: number;
+        reference: string | null;
         netAmount: number;
         taxAmount: number;
-        entityId: string | null;
         note: string | null;
     }[]>;
     emailCampaignReport(id: string, body: {

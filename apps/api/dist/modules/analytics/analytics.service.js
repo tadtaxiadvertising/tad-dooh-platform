@@ -325,18 +325,27 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
             where.videoId = { in: videoIds };
         }
-        const locations = await this.prisma.playbackEvent.findMany({
-            where,
-            select: {
-                lat: true,
-                lng: true,
-            },
-            take: 10000
-        });
-        return locations.map(loc => ({
-            lat: loc.lat,
-            lng: loc.lng,
-            weight: 1.0
+        const bucketRaw = await this.prisma.$queryRaw `
+      SELECT
+        (ROUND(lat * 500) / 500)  AS lat,
+        (ROUND(lng * 500) / 500)  AS lng,
+        COUNT(*)::int             AS cnt
+      FROM playback_events
+      WHERE
+        event_type = 'play_confirm'
+        AND verified = true
+        AND timestamp >= ${where.timestamp.gte}
+        AND lat IS NOT NULL
+        AND lng IS NOT NULL
+        ${where.videoId ? client_1.Prisma.sql `AND video_id IN (${client_1.Prisma.join(where.videoId.in)})` : client_1.Prisma.empty}
+      GROUP BY 1, 2
+      ORDER BY cnt DESC
+      LIMIT 2000
+    `;
+        return bucketRaw.map(b => ({
+            lat: b.lat,
+            lng: b.lng,
+            weight: b.cnt,
         }));
     }
     async registerQrScan(campaignId, deviceId) {

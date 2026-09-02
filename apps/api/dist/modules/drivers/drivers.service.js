@@ -49,8 +49,17 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const config_1 = require("@nestjs/config");
 const bcrypt = __importStar(require("bcrypt"));
 const jwt = __importStar(require("jsonwebtoken"));
+const crypto_1 = require("crypto");
 const business_rules_1 = require("../../common/constants/business-rules");
 const payroll_audit_service_1 = require("./payroll-audit.service");
+function generateTemporaryPassword() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const bytes = (0, crypto_1.randomBytes)(15);
+    let out = '';
+    for (let i = 0; i < 15; i++)
+        out += alphabet[bytes[i] % alphabet.length];
+    return out;
+}
 let DriversService = DriversService_1 = class DriversService {
     constructor(prisma, configService, payrollAudit) {
         this.prisma = prisma;
@@ -213,7 +222,8 @@ let DriversService = DriversService_1 = class DriversService {
         });
     }
     async create(data) {
-        const plainPassword = data.password?.trim() || `Tad-${data.phone.replace(/\D/g, '')}!`;
+        const plainPassword = data.password?.trim() ||
+            generateTemporaryPassword();
         const hashedPassword = await bcrypt.hash(plainPassword, business_rules_1.BCRYPT_ROUNDS);
         const sanitizedCedula = data.cedula?.trim() || null;
         const sanitizedTaxiPlate = (data.taxiPlate || data.licensePlate)?.trim() || null;

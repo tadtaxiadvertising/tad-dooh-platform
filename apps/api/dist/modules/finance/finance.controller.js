@@ -101,12 +101,12 @@ let FinanceController = class FinanceController {
             return results;
         }
         catch (error) {
-            console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', error);
-            return {
-                error: 'Error al calcular la nómina',
-                message: error.message,
-                timestamp: new Date().toISOString()
-            };
+            console.error('CRITICAL_FINANCE_ERROR: getPayroll failed', error?.stack);
+            throw new common_1.InternalServerErrorException({
+                code: 'PAYROLL_CALC_FAILED',
+                message: 'Error al calcular la nómina',
+                timestamp: new Date().toISOString(),
+            });
         }
     }
     async processPayment(data) {

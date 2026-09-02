@@ -22,8 +22,8 @@ export declare class MonitoringService {
     }>;
     getFleetStatus(): Promise<{
         deviceId: string;
-        taxiNumber: string;
         status: import(".prisma/client").$Enums.SystemStatus;
+        taxiNumber: string;
         lastLat: number;
         lastLng: number;
         isOnline: boolean;
@@ -37,33 +37,33 @@ export declare class MonitoringService {
             healthPercentage: number;
         };
         devices: {
+            driver: {
+                phone: string;
+                fullName: string;
+                subscriptionPaid: boolean;
+            };
             deviceId: string;
-            taxiNumber: string;
             status: import(".prisma/client").$Enums.SystemStatus;
+            taxiNumber: string;
             lastLat: number;
             lastLng: number;
             isOnline: boolean;
             lastSeen: Date;
-            driver: {
-                fullName: string;
-                phone: string;
-                subscriptionPaid: boolean;
-            };
         }[];
     }>;
     getActiveCampaignsStatus(): Promise<{
-        id: string;
-        name: string;
         advertiser: string;
+        name: string;
+        id: string;
         targetImpressions: number;
         metrics: {
-            id: bigint;
             deviceId: string | null;
-            city: string | null;
+            id: bigint;
             createdAt: Date;
+            city: string | null;
             campaignId: string;
-            totalImpressions: number;
             date: Date;
+            totalImpressions: number;
             totalCompletions: number;
             totalErrors: number;
             uniqueDevices: number;

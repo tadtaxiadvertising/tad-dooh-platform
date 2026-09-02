@@ -95,15 +95,15 @@ export declare class DeviceController {
         available_slots: number;
         usage_percentage: number;
     }>;
-    acknowledgeCommand(commandId: string, result: any): Promise<{
-        result: string | null;
-        id: string;
+    acknowledgeCommand(commandId: string, result: any, req: any): Promise<{
         deviceId: string;
         status: string;
+        id: string;
         createdAt: Date;
+        result: string | null;
         commandType: string;
         commandParams: string | null;
-        executedAt: Date | null;
         expiresAt: Date | null;
+        executedAt: Date | null;
     }>;
 }

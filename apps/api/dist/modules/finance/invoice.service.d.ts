@@ -9,4 +9,5 @@ export declare class InvoiceService implements OnModuleInit {
     generateTransactionReceiptPDF(tx: any): Promise<Buffer>;
     generateWeeklyPerformancePDF(campaign: any, data: any[]): Promise<Buffer>;
     generateProformaPDF(data: any): Promise<Buffer>;
+    private refId;
 }

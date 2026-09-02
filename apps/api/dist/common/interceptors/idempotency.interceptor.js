@@ -35,19 +35,29 @@ let IdempotencyInterceptor = IdempotencyInterceptor_1 = class IdempotencyInterce
                 where: { key: idempotencyKey }
             });
             if (existing) {
-                if (existing.isLocked) {
+                if (existing.expiresAt && existing.expiresAt.getTime() <= Date.now()) {
+                    this.logger.warn(`Idempotency key ${idempotencyKey} expiró (${existing.expiresAt.toISOString()}). Descartando y re-procesando.`);
+                    try {
+                        await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+                    }
+                    catch (e) {
+                    }
+                }
+                else if (existing.isLocked) {
                     this.logger.warn(`Idempotency key ${idempotencyKey} is currently being processed by another request.`);
                     throw new common_1.BadRequestException({
                         code: 'IDEMPOTENCY_KEY_IN_PROGRESS',
                         message: 'This operation is currently being processed. Please retry in a few seconds.',
                     });
                 }
-                this.logger.log(`Idempotency key ${idempotencyKey} already processed. Returning cached response.`);
-                try {
-                    return (0, rxjs_1.of)(JSON.parse(existing.response));
-                }
-                catch {
-                    return (0, rxjs_1.of)({ success: true, idempotent: true });
+                else {
+                    this.logger.log(`Idempotency key ${idempotencyKey} already processed. Returning cached response.`);
+                    try {
+                        return (0, rxjs_1.of)(JSON.parse(existing.response));
+                    }
+                    catch {
+                        return (0, rxjs_1.of)({ success: true, idempotent: true });
+                    }
                 }
             }
             await this.prisma.idempotencyKey.create({

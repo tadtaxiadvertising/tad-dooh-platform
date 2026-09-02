@@ -50,6 +50,7 @@ const supabase_service_1 = require("../supabase/supabase.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const crypto = __importStar(require("crypto"));
 const business_rules_1 = require("../../common/constants/business-rules");
+const impact_calculator_1 = require("../../libs/impact-calculator/index.ts");
 const mediaAssetSafeSelect = {
     id: true,
     campaignId: true,
@@ -740,8 +741,6 @@ let CampaignService = CampaignService_1 = class CampaignService {
     }
     async simulateImpact(budgetRD, city) {
         const costPerScreen = business_rules_1.BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
-        const uniqueReachPerScreen = 2000;
-        const viewFrequency = 2;
         const onlineScreensCount = await this.prisma.device.count({
             where: {
                 city: city === 'Global' ? undefined : city,
@@ -750,15 +749,28 @@ let CampaignService = CampaignService_1 = class CampaignService {
             },
         });
         const recommendedScreens = Math.min(onlineScreensCount, Math.floor(budgetRD / costPerScreen));
-        const uniqueReach = recommendedScreens * uniqueReachPerScreen;
-        const totalImpressions = uniqueReach * viewFrequency;
+        const detailed = (0, impact_calculator_1.calculateImpact)({
+            screens: recommendedScreens,
+            months: 1,
+            frequencySeconds: 30,
+            includeProduction: false,
+            mode: 'expected',
+        });
         return {
             budget: budgetRD,
             city,
             recommendedScreens,
-            uniqueReach,
-            totalImpressions,
+            uniqueReach: detailed.totalUniqueReach.expected,
+            totalImpressions: detailed.totalImpressions.expected,
             onlineScreensInZone: onlineScreensCount,
+            uniqueReachRange: detailed.totalUniqueReach,
+            totalImpressionsRange: detailed.totalImpressions,
+            frequencyOTS: detailed.frequencyOTS,
+            cpm: detailed.cpm,
+            warnings: detailed.warnings,
+            calibrationLabel: 'Benchmark internacional (sin datos RD propios)',
+            calibrationDescription: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
+            sourceLabel: 'IAB DOOH Guidelines + Geopath 2024',
         };
     }
     async createIntent(dto) {

@@ -223,7 +223,7 @@ let FleetService = class FleetService {
         });
     }
     async getFleetFinance() {
-        const RATE_PER_AD = 1.25;
+        const RATE_PER_AD = business_rules_1.BUSINESS_RULES.DRIVER_RATE_PER_AD_PLAY_RD;
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -231,6 +231,8 @@ let FleetService = class FleetService {
             by: ['deviceId'],
             _count: { id: true },
             where: {
+                eventType: 'play_confirm',
+                verified: true,
                 timestamp: {
                     gte: startOfMonth,
                     lte: endOfMonth,

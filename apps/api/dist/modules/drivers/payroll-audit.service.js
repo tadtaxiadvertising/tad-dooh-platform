@@ -25,13 +25,20 @@ let PayrollAuditService = PayrollAuditService_1 = class PayrollAuditService {
         const drivers = await this.prisma.driver.findMany({
             where: { status: business_rules_1.BUSINESS_RULES.STATUS.DRIVER.ACTIVE }
         });
+        const latestPayments = await this.prisma.payrollPayment.findMany({
+            where: { driverId: { in: drivers.map(d => d.id) } },
+            orderBy: { createdAt: 'desc' },
+            select: { driverId: true, transmissionHours: true },
+        });
+        const latestByDriver = new Map();
+        for (const p of latestPayments) {
+            if (!latestByDriver.has(p.driverId))
+                latestByDriver.set(p.driverId, p);
+        }
         for (const driver of drivers) {
             const levelKey = (driver.level || 'BASE');
             const levelConfig = business_rules_1.BUSINESS_RULES.LEVELS[levelKey];
-            const lastPayment = await this.prisma.payrollPayment.findFirst({
-                where: { driverId: driver.id },
-                orderBy: { createdAt: 'desc' },
-            });
+            const lastPayment = latestByDriver.get(driver.id);
             if (!lastPayment)
                 continue;
             const underGoal = lastPayment.transmissionHours < levelConfig.hours;

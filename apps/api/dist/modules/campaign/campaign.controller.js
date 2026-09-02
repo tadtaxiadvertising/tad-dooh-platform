@@ -244,15 +244,20 @@ let CampaignController = class CampaignController {
             throw e;
         }
     }
-    async getCampaignDevices(campaignId) {
+    async getCampaignDevices(campaignId, req) {
         console.log(`[CAMPAIGN_DEBUG] Fetching devices for campaign: ${campaignId}`);
         const campaign = await this.prisma.campaign.findUnique({
             where: { id: campaignId },
-            select: { targetAll: true, isGlobal: true, targetCity: true, name: true }
+            select: { targetAll: true, isGlobal: true, targetCity: true, name: true, advertiserId: true }
         });
         if (!campaign) {
             console.warn(`[CAMPAIGN_DEBUG] Campaign ${campaignId} NOT FOUND`);
             return [];
+        }
+        const role = req.user?.role;
+        const entityId = req.user?.entityId;
+        if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
+            throw new common_1.ForbiddenException('No tienes permisos para ver los dispositivos de esta campaña');
         }
         console.log(`[CAMPAIGN_DEBUG] Campaign: ${campaign.name}, targetAll: ${campaign.targetAll}, isGlobal: ${campaign.isGlobal}`);
         if (campaign.targetAll || campaign.isGlobal) {
@@ -364,14 +369,16 @@ let CampaignController = class CampaignController {
             include: { targetDrivers: { select: { id: true, fullName: true } } }
         });
     }
-    async linkMediaToCampaign(campaignId, mediaId) {
+    async linkMediaToCampaign(campaignId, mediaId, req) {
         if (!mediaId)
             throw new common_1.NotFoundException('mediaId is required');
+        await this.assertCampaignOwnership(req, campaignId);
         return this.campaignService.linkMediaToCampaign(campaignId, mediaId);
     }
-    async unlinkMediaFromCampaign(campaignId, mediaId) {
+    async unlinkMediaFromCampaign(campaignId, mediaId, req) {
         if (!mediaId)
             throw new common_1.NotFoundException('mediaId is required');
+        await this.assertCampaignOwnership(req, campaignId);
         let success = false;
         try {
             const media = await this.prisma.media.findUnique({ where: { id: mediaId } });
@@ -438,14 +445,16 @@ let CampaignController = class CampaignController {
         if (role === 'ADVERTISER' && campaign.advertiserId !== entityId) {
             throw new common_1.ForbiddenException('No tienes permisos para eliminar esta campaña');
         }
-        await this.prisma.mediaAsset.deleteMany({ where: { campaignId: id } });
-        await this.prisma.video.deleteMany({ where: { campaignId: id } });
-        await this.prisma.deviceCampaign.deleteMany({ where: { campaign_id: id } });
-        await this.prisma.playlistItem.deleteMany({ where: { campaignId: id } });
-        await this.prisma.playlist.deleteMany({ where: { campaignId: id } });
-        await this.prisma.campaignMetric.deleteMany({ where: { campaignId: id } });
-        await this.prisma.media.updateMany({ where: { campaign_id: id }, data: { campaign_id: null } });
-        return this.prisma.campaign.delete({ where: { id } });
+        return this.prisma.$transaction(async (tx) => {
+            await tx.mediaAsset.deleteMany({ where: { campaignId: id } });
+            await tx.video.deleteMany({ where: { campaignId: id } });
+            await tx.deviceCampaign.deleteMany({ where: { campaign_id: id } });
+            await tx.playlistItem.deleteMany({ where: { campaignId: id } });
+            await tx.playlist.deleteMany({ where: { campaignId: id } });
+            await tx.campaignMetric.deleteMany({ where: { campaignId: id } });
+            await tx.media.updateMany({ where: { campaign_id: id }, data: { campaign_id: null } });
+            return tx.campaign.delete({ where: { id } });
+        });
     }
     async getReportsSummary(req) {
         const role = req.user?.role;
@@ -466,6 +475,21 @@ let CampaignController = class CampaignController {
             throw new common_1.ForbiddenException('No tienes permisos para ver esta campaña');
         }
         return campaign;
+    }
+    async assertCampaignOwnership(req, campaignId) {
+        const role = req.user?.role;
+        const entityId = req.user?.entityId;
+        if (role !== 'ADVERTISER')
+            return;
+        const campaign = await this.prisma.campaign.findUnique({
+            where: { id: campaignId },
+            select: { advertiserId: true },
+        });
+        if (!campaign)
+            throw new common_1.NotFoundException('Campaña no encontrada');
+        if (campaign.advertiserId !== entityId) {
+            throw new common_1.ForbiddenException('No tienes permisos sobre esta campaña');
+        }
     }
 };
 exports.CampaignController = CampaignController;
@@ -568,8 +592,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':campaignId/devices'),
     __param(0, (0, common_1.Param)('campaignId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CampaignController.prototype, "getCampaignDevices", null);
 __decorate([
@@ -593,16 +618,18 @@ __decorate([
     (0, common_1.Post)(':id/link-media'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('mediaId')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], CampaignController.prototype, "linkMediaToCampaign", null);
 __decorate([
     (0, common_1.Post)(':id/unlink-media'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('mediaId')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], CampaignController.prototype, "unlinkMediaFromCampaign", null);
 __decorate([

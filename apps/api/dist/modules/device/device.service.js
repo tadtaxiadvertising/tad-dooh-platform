@@ -423,6 +423,18 @@ let DeviceService = DeviceService_1 = class DeviceService {
             }
         });
     }
+    async getCommandForDevice(commandId, hardwareDeviceId) {
+        const device = await this.prisma.device.findUnique({
+            where: { deviceId: hardwareDeviceId },
+            select: { id: true },
+        });
+        if (!device)
+            return null;
+        return this.prisma.deviceCommand.findFirst({
+            where: { id: commandId, deviceId: device.id },
+            select: { id: true },
+        });
+    }
     async processBulkSync(dto) {
         this.logger.log(`🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`);
         const device = await this.prisma.device.findUnique({

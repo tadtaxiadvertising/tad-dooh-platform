@@ -49,7 +49,11 @@ let DeviceController = class DeviceController {
     async checkSlots(deviceId) {
         return this.deviceService.getDeviceSlots(deviceId);
     }
-    async acknowledgeCommand(commandId, result) {
+    async acknowledgeCommand(commandId, result, req) {
+        const command = await this.deviceService.getCommandForDevice(commandId, req.authenticatedDeviceId);
+        if (!command) {
+            throw new common_1.ForbiddenException('No tienes permisos para confirmar este comando');
+        }
         return this.deviceService.acknowledgeCommand(commandId, result);
     }
 };
@@ -73,6 +77,7 @@ __decorate([
 ], DeviceController.prototype, "heartbeat", null);
 __decorate([
     (0, common_1.Post)('playback'),
+    (0, throttler_1.Throttle)({ default: { limit: 500, ttl: 60000 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -107,12 +112,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DeviceController.prototype, "checkSlots", null);
 __decorate([
+    (0, common_1.UseGuards)(device_token_guard_1.DeviceTokenGuard),
     (0, common_1.Post)('command/:id/ack'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], DeviceController.prototype, "acknowledgeCommand", null);
 exports.DeviceController = DeviceController = __decorate([

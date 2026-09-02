@@ -57,7 +57,7 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             url = `${url}${separator}connection_limit=5`;
         }
         else if (url && url.includes('connection_limit=')) {
-            const match = url.match(/connection_limit=(\\d+)/);
+            const match = url.match(/connection_limit=(\d+)/);
             if (match && parseInt(match[1]) > 10) {
                 warnMsg = `⚠️ [SRE] connection_limit=${match[1]} detectado en DATABASE_URL. Recomendado: 5 para EasyPanel Free Tier.`;
             }

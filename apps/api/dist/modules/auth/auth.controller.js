@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("./auth.service");
 const login_dto_1 = require("./dto/login.dto");
+const oauth_exchange_dto_1 = require("./dto/oauth-exchange.dto");
 const public_decorator_1 = require("./decorators/public.decorator");
 let AuthController = class AuthController {
     constructor(authService) {
@@ -24,6 +25,9 @@ let AuthController = class AuthController {
     }
     async login(dto) {
         return this.authService.login(dto);
+    }
+    async oauthExchange(dto) {
+        return this.authService.exchangeOAuth(dto);
     }
     async getProfile(req) {
         return this.authService.getProfile(req.user.id);
@@ -49,6 +53,18 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('oauth/exchange'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Exchange a Supabase access_token (issued by Google OAuth) for a portal session',
+    }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [oauth_exchange_dto_1.OAuthExchangeDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "oauthExchange", null);
 __decorate([
     (0, common_1.Get)('profile'),
     (0, swagger_1.ApiBearerAuth)(),

@@ -28,6 +28,9 @@
 
 import { SOURCES, getSource, isCalibrationStatus, ImpactSource } from './sources';
 
+export { SOURCES, isCalibrationStatus };
+export type { ImpactSource };
+
 export type CalculationMode = 'conservative' | 'expected' | 'optimistic';
 
 export interface ImpactInput {

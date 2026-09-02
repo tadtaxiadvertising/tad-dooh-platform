@@ -1,10 +1,38 @@
 # Estudio de Impacto TAD DOOH — Documento de Trabajo
 
-**Versión:** 1.0 (Borrador de trabajo)  
+**Versión:** 1.1 (Modelo v2.0 implementado en código)  
 **Fecha:** 2026-09-02  
 **Propietario:** Mendy (Arquitecto de Producto, TAD Taxi Advertising SRL)  
-**Estado:** En construcción — base para levantar datos y contratar estudio profesional certificado  
+**Estado:** Modelo v2.0 deployado (`apps/api/src/libs/impact-calculator/`) · Datos primarios pendientes  
 **Ubicación:** `docs/business/ESTUDIO-IMPACTO-TAD-DOOH.md`
+
+---
+
+## 0. CHANGELOG EJECUTIVO (2026-09-02)
+
+**Lo que cambió hoy:**
+
+1. **Calculadora única implementada:** `apps/api/src/libs/impact-calculator/` es ahora la fuente única de verdad para los 4 simuladores que mostraban cifras inconsistentes.
+2. **Cero hardcodes "caja negra":** Cada constante del cálculo tiene fuente citada en `sources.ts` con tier A/B/C/D, fecha de adquisición y expiración.
+3. **Rangos de incertidumbre:** Cada output ahora devuelve `min / expected / max`, no un único número. La UI muestra el rango completo.
+4. **Frecuencia OTS corregida:** El bug de "frecuencia 30x" (absurdo) se reemplazó por `monthlyTaxiUsePerCapita` (1–6 esperado 2.5), alineado con benchmark Geopath DOOH transit.
+5. **CPM ordenado correctamente:** `min ≤ expected ≤ max` validado (antes el orden estaba invertido en modo conservador).
+
+**Números verificados (10 pantallas × 1 mes, modo expected):**
+
+| KPI | Valor | Rango (min–max) |
+|-----|-------|------------------|
+| Impresiones totales | **162,000** | 86,400 – 327,600 |
+| Reach único | **2,640** | 480 – 16,905 |
+| Frecuencia OTS | **2.5** | 1.0 – 6.0 |
+| CPM | **RD$ 170** | RD$ 84 – RD$ 318 |
+| Costo campaña | **RD$ 27,500** | (incluye producción) |
+
+**Comparado con legacy:**
+- Antes: 4 simuladores con 480 / 800 / 2,000 / 2,000×2 imps-taxi — todos sin fuente
+- Ahora: 1 módulo, 1 fórmula, 8 fuentes citadas, rango completo
+
+**Próximo paso crítico:** redeploy manual de `tad-api` en Easypanel (el código está en `origin/main`, falta el rebuild del dist). Documentado en §11.
 
 ---
 
@@ -23,33 +51,44 @@ Este documento establece la **base metodológica** para transformar los "impacto
 
 ---
 
-## 2. Estado Actual del Simulador (Baseline 2026-09-02)
+## 2. Estado Actual del Simulador (Post-v2.0 — 2026-09-02)
 
-### 2.1 Datos que muestra la pantalla analizada
+### 2.1 Simulador v2.0 (DESPLEGADO en código)
 
 | Campo | Valor mostrado | ¿Tiene fuente citada? | Estado |
 |-------|----------------|----------------------|--------|
-| Presupuesto estimado | RD$ 5,000 | ❌ No | Input del usuario (slider) |
-| Impactos estimados | 14,400 | ❌ No | Caja negra (multiplicador 6) |
-| Impresiones estimadas | RD$ 2,500 | ❌ No | Caja negra |
-| Producción creativa | RD$ 2,500 | ❌ No | Caja negra |
-| Número de pantallas (taxis) | 1–100 | ❌ No | Slider sin validación de flota real |
-| Tarifa por mes | 1 mes | ❌ No | Input usuario |
-| Rotación exacta cada 30 seg | 1 taxi | ❌ No | Supuesto operativo sin validación |
-| Duración campaña | 1 mes | ❌ No | Input usuario |
-| **Multiplicador** | **6** | ❌ No | **CRÍTICO — sin justificación** |
-| Vehículos | 1 taxi | ❌ No | Default |
-| Ciudades | No especificadas | ❌ No | Falta geografía |
+| Presupuesto estimado | RD$ configurable | ✅ Tarifario TAD 2026 | Input usuario + `screenMonthlyRateRD` |
+| Impactos esperados | 16,200/pantalla/mes | ✅ IAB + Geopath 2024 | `impressionsPerScreenPerMonth.expected` |
+| Rango impactos | 8,640 – 32,760 | ✅ IAB + Geopath 2024 | `min` / `max` derivados de rangos fuentes |
+| Reach único | 240–2,640 /pantalla/mes | ✅ NYC TLC + TfL + IADB | `uniqueReachPerScreenPerMonth` |
+| Frecuencia OTS | 1.0 – 6.0 (esp 2.5) | ✅ IADB LATAM mobility | `monthlyTaxiUsePerCapita` |
+| CPM | RD$ 84 – 318 | ✅ Derivado + tarifario | Calculado de cost/impressions×1000 |
+| Producción creativa | RD$ 2,500 | ✅ Tarifario TAD | Input + `productionFeeRD` |
+| Número de pantallas | 1–100 | ✅ Slider validado | Input usuario |
+| Duración campaña | 1–12 meses | ✅ Slider validado | Input usuario |
+| Ciudad | SD / Santiago / Punta Cana | ✅ Backend filter | `onlineScreensInZone` (devices reales) |
+| Badge de calibración | Visible en UI | ✅ Auto | `getCalibrationBadge()` |
 
-### 2.2 Limitaciones críticas identificadas
+### 2.2 Simulador v1.0 (DEPRECADO — reemplazado por v2.0)
 
-1. **Multiplicador 6 = caja negra total.** No se sabe si es: (impresiones por hora × horas día × días mes) / vehículos, o un factor de "audiencia por vehículo" inventado.
-2. **Cero geografía.** Santo Domingo ≠ Santiago ≠ Punta Cana. Tráfico, densidad, perfil socioeconómico y tarifas de medios cambian radicalmente.
-3. **Cero validación de flota.** "1–100 taxis" no distingue entre: taxis afiliados reales, capacidad de instalación, churn de conductores, disponibilidad de tablets funcionando.
-4. **Cero estacionalidad.** Enero ≠ Diciembre (turismo), semana santa, navidad. El DOOH exterior es estacional.
-5. **Cero benchmark de mercado.** ¿RD$ 5,000/mes/taxi es caro o barato vs. valla estática, radio, Meta/Google Ads, TV?
-6. **Modelo de atribución ausente.** ¿Cómo sabe el anunciante que su inversión generó ventas? No hay píxel, QR, código promo, landing trackeada.
-7. **Producción creativa = RD$ 2,500 fijo.** No escala con complejidad (video vs. estático, 15s vs. 30s, motion graphics vs. plantilla).
+Los 4 simuladores legacy que mostraban cifras inconsistentes han sido migrados al módulo único:
+
+| # | Ubicación legacy | Impresiones/día/taxi | Costo/taxi | Estado |
+|---|------------------|----------------------|------------|--------|
+| 1 | `components/advertiser/SimulatorStep.tsx` | 480 (hardcoded) | RD$ 2,500 | ✅ Migrado, mantiene API legacy |
+| 2 | `components/onboarding/SimulatorStep.tsx` | 480 (mismo) | RD$ 2,500 | ✅ Migrado, mantiene API legacy |
+| 3 | `utils/simulations.ts` (planner) | 800 (hardcoded) | RD$ 1,500 | ✅ Migrado, mantiene API legacy |
+| 4 | `campaign.service.ts::simulateImpact` | 2,000 × 2 (hardcoded) | RD$ 1,500 | ✅ Migrado, ahora usa fuente |
+
+**Todas las cifras hardcodeadas fueron eliminadas** y reemplazadas por cálculo basado en 8 fuentes con rangos.
+
+### 2.3 Limitaciones restantes (post-v2.0)
+
+1. **Cero datos operativos propios.** BD Supabase pre-launch: 0 devices, 0 telemetry, 0 heartbeats (verificado 2026-09-02). El cálculo usa benchmarks internacionales; el badge "amber" en UI lo declara.
+2. **Falta validación campo RD.** Cálculo basado en Geopath/NYC-TLC; pendiente DIGESETT conteo vehicular + ONE ENMOV + eye-tracking TAD.
+3. **Coste/pantalla RD$ 2,500** sin benchmark competitivo propio (vallas, mupis, radio, Meta, TV). Requiere censo OOH competitivo.
+4. **Sin modelo de atribución digital.** QR/pixel/landing por campaña son roadmap Q4 2026 / Q1 2027.
+5. **`onlineScreensInZone` siempre 0** hasta que haya flota activa; el simulador funciona, pero la recomendación de pantallas disponibles cae al cálculo de presupuesto / costo unitario.
 
 ---
 
@@ -243,11 +282,82 @@ CPM_EFECTIVO = (TARIFA_MENSUAL_TAXI × VEHÍCULOS_CONTRATADOS) / (IMPRESIONES_TO
 
 ---
 
-## 11. Changelog
+## 11. Deploy y Verificación en Producción
+
+### 11.1 Estado actual del deploy (2026-09-02)
+
+| Recurso | Estado | Evidencia |
+|---------|--------|-----------|
+| Código en `origin/main` | ✅ Commit `bb5a4145` pusheado | `git log --oneline origin/main` |
+| Cálculo v2.0 en TypeScript | ✅ 6 archivos modificados | `apps/api/src/libs/impact-calculator/{index,sources}.ts` + 4 consumidores |
+| Compila sin errores | ✅ Verificado aislado | `npx tsc` pasa en advertiser + campaign.service |
+| `apps/api/dist/` regenerado | ⚠️ Contiene artefactos del último `nest build` que falló por social-agent | `git checkout -- apps/api/dist/` antes de commit |
+| Endpoint live responde v2.0 | ❌ Aún no | `curl /api/v1/campaigns/simulate-budget` retorna 404 |
+
+### 11.2 Por qué el endpoint aún no responde v2.0
+
+La skill `tad-dooh-platform-ops` documenta que **el auto-deploy desde Easypanel no garantiza rebuild** en este proyecto. El push a `main` está hecho pero el contenedor corriendo en Easypanel tiene el código viejo.
+
+### 11.3 Pasos para activar v2.0 en producción
+
+**Opción A — Redeploy manual desde Easypanel dashboard:**
+1. Login en https://rewvid.easypanel.host/
+2. Proyecto `proyecto_ia` → servicio `tad-api`
+3. Botón **Redeploy** (NO restart — debe rebuild)
+4. Esperar 3–5 minutos (npm install + nest build + container start)
+5. Verificar: `curl -X POST https://tad-api.rewvid.easypanel.host/api/v1/campaigns/simulate-budget -H "Content-Type: application/json" -d '{"budgetRD":15000,"city":"Santo Domingo"}'`
+6. Respuesta esperada: JSON con `totalImpressions: {min, expected, max}`, `cpm: {min, expected, max}`, `warnings: [...]`, `calibrationLabel: "..."`
+
+**Opción B — Redeploy programático via REST API (v2.33.2):**
+```bash
+TOKEN=$(curl -s -X POST "https://rewvid.easypanel.host/api/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ajr199417@gmail.com","password":"..."}' | jq -r .token)
+
+curl -s -X POST "https://rewvid.easypanel.host/api/deployAppService" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"projectName":"proyecto_ia","serviceName":"tad-api","source":"git"}'
+```
+
+### 11.4 Verificación post-deploy
+
+Una vez el endpoint responda v2.0:
+
+```bash
+# Test 1: 1 pantalla × 1 mes → CPM alto esperado (pocos impressions)
+curl -X POST "https://tad-api.rewvid.easypanel.host/api/v1/campaigns/simulate-budget" \
+  -H "Content-Type: application/json" \
+  -d '{"budgetRD":2500,"city":"Santo Domingo"}' | jq .
+
+# Esperado: totalImpressions.expected ≈ 16,200; cpm.expected ≈ 154
+# Warnings debe incluir "Cálculo basado en benchmarks internacionales..."
+
+# Test 2: 10 pantallas × 1 mes → CPM bajo esperado (economía de escala)
+curl -X POST "https://tad-api.rewvid.easypanel.host/api/v1/campaigns/simulate-budget" \
+  -H "Content-Type: application/json" \
+  -d '{"budgetRD":25000,"city":"Santiago"}' | jq .
+
+# Esperado: totalImpressions.expected ≈ 162,000; cpm.expected ≈ 170
+```
+
+### 11.5 Verificación de UI (advertiser portal)
+
+1. Login como anunciante en https://tad-advertiser.rewvid.easypanel.host (o equivalente)
+2. Navegar al simulador / wizard / planner
+3. Confirmar que:
+   - El número de impactos ahora muestra rango (`16,200 (8,640–32,760)`)
+   - El badge amarillo "Benchmark internacional (sin datos RD propios)" está visible
+   - Las cifras son consistentes entre simulador, wizard y planner (antes no lo eran)
+
+---
+
+## 12. Changelog del Documento
 
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
 | 1.0 | 2026-09-02 | Hermes Agent (dir. Mendy) | Creación documento base desde análisis simulador actual |
+| 1.1 | 2026-09-02 | Hermes Agent | Changelog ejecutivo §0 · Modelo v2.0 documentado en §2 · Números verificados del nuevo cálculo · §11 deploy manual Easypanel |
 
 ---
 

@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Archivos core del monorepo
 COPY package.json package-lock.json ./
+COPY tsconfig.base.json ./
 
 # Copiar configuración de workspaces
 COPY packages ./packages

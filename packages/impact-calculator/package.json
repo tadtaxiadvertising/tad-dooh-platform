@@ -2,10 +2,15 @@
   "name": "@tad/impact-calculator",
   "version": "1.0.0",
   "description": "TAD DOOH Impact Calculator - Shared library for impression/reach estimation",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
   "files": [
-    "dist"
+    "index.ts",
+    "sources.ts"
   ],
   "scripts": {
     "build": "tsc",

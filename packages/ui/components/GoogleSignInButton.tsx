@@ -80,7 +80,6 @@ export function GoogleSignInButton({
   const buttonStyle: React.CSSProperties = {
     borderColor: accentColor,
     color: accentColor,
-    '--accent': accentColor,
   };
 
   return (

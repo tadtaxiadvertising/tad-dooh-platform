@@ -24,6 +24,10 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/driver/onboarding',
     '/advertiser/onboarding',
     '/check-in',
+    '/politica-de-privacidad',
+    '/terminos-de-servicio',
+    '/politica-de-cookies',
+    '/aviso-legal',
   ].includes(router.pathname)
     || router.pathname.startsWith('/p');
 

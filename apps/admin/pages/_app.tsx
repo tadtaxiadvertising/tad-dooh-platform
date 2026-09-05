@@ -21,7 +21,11 @@ function AppWrapper({ Component, pageProps, router }: AppProps & { queryClient: 
     '/admin/login',
     '/advertiser/login',
     '/driver/login',
-    '/check-in'
+    '/check-in',
+    '/politica-de-privacidad',
+    '/terminos-de-servicio',
+    '/politica-de-cookies',
+    '/aviso-legal',
   ].includes(router.pathname) || router.pathname.startsWith('/p');
 
   // Initialize Logger

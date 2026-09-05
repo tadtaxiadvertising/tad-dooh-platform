@@ -193,6 +193,17 @@ export default function DriverLoginPage() {
               Ir al onboarding
             </Link>
           </p>
+
+          <footer className="mt-8 text-center text-[10px] text-zinc-500">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <span>© {new Date().getFullYear()} TAD Taxi Advertising S.R.L.</span>
+              <span className="hidden sm:inline">·</span>
+              <Link href="/politica-de-privacidad" className="hover:text-yellow-400 transition-colors">Privacidad</Link>
+              <Link href="/terminos-de-servicio" className="hover:text-yellow-400 transition-colors">Términos</Link>
+              <Link href="/politica-de-cookies" className="hover:text-yellow-400 transition-colors">Cookies</Link>
+              <Link href="/aviso-legal" className="hover:text-yellow-400 transition-colors">Aviso Legal</Link>
+            </div>
+          </footer>
         </div>
       </div>
     </ErrorBoundary>

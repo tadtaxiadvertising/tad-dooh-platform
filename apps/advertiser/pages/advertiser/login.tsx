@@ -317,7 +317,14 @@ export default function AdvertiserLoginPage() {
         </div>
 
         <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[10px] font-medium tracking-wide text-white/25 px-4">
-          TAD Taxi Advertising S.R.L. · Red DOOH República Dominicana
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <span>© {new Date().getFullYear()} TAD Taxi Advertising S.R.L. · Red DOOH República Dominicana</span>
+            <span className="hidden sm:inline">·</span>
+            <a href="/politica-de-privacidad" className="hover:text-[#FDCB01] transition-colors">Privacidad</a>
+            <a href="/terminos-de-servicio" className="hover:text-[#FDCB01] transition-colors">Términos</a>
+            <a href="/politica-de-cookies" className="hover:text-[#FDCB01] transition-colors">Cookies</a>
+            <a href="/aviso-legal" className="hover:text-[#FDCB01] transition-colors">Aviso Legal</a>
+          </div>
         </footer>
       </main>
     </div>

@@ -214,7 +214,16 @@ export default function AdminLoginPage() {
         </div>
       </main>
 
-      <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[11px] text-gray-600">TAD Taxi Advertising S.R.L.</footer>
+      <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[11px] text-gray-600">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <span>© {new Date().getFullYear()} TAD Taxi Advertising S.R.L.</span>
+          <span className="hidden sm:inline">·</span>
+          <a href="/politica-de-privacidad" className="hover:text-[#eab308] transition-colors">Privacidad</a>
+          <a href="/terminos-de-servicio" className="hover:text-[#eab308] transition-colors">Términos</a>
+          <a href="/politica-de-cookies" className="hover:text-[#eab308] transition-colors">Cookies</a>
+          <a href="/aviso-legal" className="hover:text-[#eab308] transition-colors">Aviso Legal</a>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -21,6 +21,10 @@ const PUBLIC_PAGES = [
   '/driver/onboarding',
   '/advertiser/onboarding',
   '/check-in',
+  '/politica-de-privacidad',
+  '/terminos-de-servicio',
+  '/politica-de-cookies',
+  '/aviso-legal',
 ];
 
 function AppWrapper({ Component, pageProps, router }: AppProps) {

@@ -169,7 +169,7 @@ export default function PoliticaDeCookies() {
         />
       </LegalSection>
 
-      <LegalSection id="do-not-track" title="8. Señales de "No rastrear"">
+      <LegalSection id="do-not-track" title={'8. Señales de "No rastrear"'}>
         <p>
           La Plataforma honra las señales "Do Not Track" (DNT) y "Global Privacy Control" (GPC)
           que tu navegador pueda enviar. Cuando detectamos estas señales, automáticamente desactivamos

@@ -44,7 +44,7 @@ export default function PoliticaDePrivacidad() {
           items={[
             <><LegalHighlight>Actividad en la Plataforma:</LegalHighlight> páginas visitadas, acciones realizadas, tiempo de sesión, clics, consultas de búsqueda, filtros aplicados.</>,
             <><LegalHighlight>Datos de campañas publicitarias:</LegalHighlight> creatividades, presupuestos, segmentaciones, métricas de impresiones, alcance, frecuencia, rendimiento publicitario.</>,
-            <><LegalHighlight>Datos de dispositivos y vehículos:</LegalHighlight> para conductores, identificadores de tablet, ubicación GPS en tiempo real (cuando el servicio está activo),里程 recorrido, horas operativas, patrones de ruta.</>,
+            <><LegalHighlight>Datos de dispositivos y vehículos:</LegalHighlight> para conductores, identificadores de tablet, ubicación GPS en tiempo real (cuando el servicio está activo), kilómetros recorridos, horas operativas, patrones de ruta.</>,
             <><LegalHighlight>Comunicaciones:</LegalHighlight> mensajes enviados a través de la plataforma, notificaciones, tickets de soporte.</>,
           ]}
         />
@@ -114,7 +114,7 @@ export default function PoliticaDePrivacidad() {
         <h3>5.2. Entre usuarios de la plataforma</h3>
         <LegalList
           items={[
-            <>Los anunciantes ven <strong>información agregada y anónima</strong> sobre el rendimiento de sus campañas (impresiones, alcance,里程) pero nunca datos personales de conductores individuales.</>,
+            <>Los anunciantes ven <strong>información agregada y anónima</strong> sobre el rendimiento de sus campañas (impresiones, alcance, kilómetros) pero nunca datos personales de conductores individuales.</>,
             <>Los conductores ven información necesaria para sus operaciones (rutas asignadas, horarios, comisiones) pero nunca datos personales de los anunciantes.</>,
           ]}
         />

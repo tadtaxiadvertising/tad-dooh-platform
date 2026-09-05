@@ -76,7 +76,6 @@
     font-size: 0.875em;
     color: #FDCB01;
   }
-}
 
   body {
     @apply bg-[#0a0a0a] text-white antialiased;

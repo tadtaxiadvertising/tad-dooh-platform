@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Include shared @tad/ui package so Tailwind v4 JIT scans arbitrary value classes */
+@source "../../../packages/ui/**/*.{ts,tsx}";
+
 /* stylelint-disable at-rule-no-unknown */
 @theme {
   --color-tad-yellow: #FFD400;

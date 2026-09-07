@@ -6,6 +6,7 @@ import { Layout } from '@tad/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { PaymentLockOverlay } from '@tad/ui';
+import CookieBanner from '../components/CookieBanner';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
 
@@ -71,12 +72,29 @@ export default function App(props: AppProps) {
     },
   }));
 
+  // Check for cookie preferences on client mount
+  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('tad_cookie_preferences');
+      setHasShownCookieBanner(!!stored);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AntigravitySync />
       <AppWrapper {...props} queryClient={queryClient} />
       <Toaster richColors position="top-right" theme="dark" />
       <PaymentLockOverlay />
+      {typeof window !== 'undefined' && !hasShownCookieBanner && (
+        <CookieBanner
+          basePath="/advertiser"
+          onAccept={() => setHasShownCookieBanner(true)}
+          onReject={() => setHasShownCookieBanner(true)}
+        />
+      )}
     </QueryClientProvider>
   );
 }

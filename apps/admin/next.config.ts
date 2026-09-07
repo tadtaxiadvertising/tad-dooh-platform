@@ -6,7 +6,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-  || "https://tad-api.rewvid.easypanel.host";
+  || "https://tad-api.tadprod.ibusiness.com.do";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

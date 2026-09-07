@@ -81,7 +81,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/p/advertiser/:path*',
-        destination: 'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
+        destination: 'https://tad-admin.tadprod.ibusiness.com.do',
         permanent: false,
       },
     ];

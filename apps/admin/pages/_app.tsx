@@ -6,6 +6,7 @@ import { Layout } from '@tad/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { PaymentLockOverlay } from '@tad/ui';
+import CookieBanner from '../components/CookieBanner';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
 
@@ -74,6 +75,13 @@ export default function App(props: AppProps) {
       <AppWrapper {...props} queryClient={queryClient} />
       <Toaster richColors position="top-right" theme="dark" />
       <PaymentLockOverlay />
+      {typeof window !== 'undefined' && !hasShownCookieBanner && (
+        <CookieBanner
+          basePath="/admin"
+          onAccept={() => setHasShownCookieBanner(true)}
+          onReject={() => setHasShownCookieBanner(true)}
+        />
+      )}
     </QueryClientProvider>
   );
 }

@@ -122,7 +122,6 @@ EQUIPO INCLUIDO:
 
 SEGURO INCLUIDO (RD$6,000 / año):
 ✓ Cobertura total contra robo del dispositivo
-✓ Cobertura contra daños accidentales (caídas, golpes, líquidos)
 ✓ Cobertura contra fallos de fabricación
 ✓ Reemplazo express en 48 horas (zonas urbanas)
 

@@ -12,6 +12,7 @@ import { logger } from '@tad/logging';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { NotificationToast } from '@/components/Notifications/NotificationToast';
 import { NotificationCenter } from '@/components/Notifications/NotificationCenter';
+import CookieBanner from '@/components/CookieBanner';
 
 const PUBLIC_PAGES = [
   '/login',
@@ -71,12 +72,31 @@ export default function App(props: AppProps) {
   }) : undefined;
 
   if (!persister) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <AppWrapper {...props} />
-        <Toaster richColors position="top-right" theme="dark" />
-      </QueryClientProvider>
-    );
+const [hasShownCookieBanner, setHasShownCookieBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('tad_cookie_preferences');
+      setHasShownCookieBanner(!!stored);
+    }
+  }, []);
+
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister }}
+    >
+      <AppWrapper {...props} />
+      <Toaster richColors position="top-right" theme="dark" />
+      {typeof window !== 'undefined' && !hasShownCookieBanner && (
+        <CookieBanner
+          basePath="/driver"
+          onAccept={() => setHasShownCookieBanner(true)}
+          onReject={() => setHasShownCookieBanner(true)}
+        />
+      )}
+    </PersistQueryClientProvider>
+  );
   }
 
   return (

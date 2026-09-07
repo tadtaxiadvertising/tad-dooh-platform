@@ -7,20 +7,46 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ],
     "paths": {
-      "@/*": ["./*"],
-      "@tad/types": ["../../packages/types/index.ts"],
-      "@tad/types/*": ["../../packages/types/*"],
-      "@tad/ui": ["../../packages/ui/index.ts"],
-      "@tad/ui/*": ["../../packages/ui/*"],
-      "@tad/services": ["../../packages/services/index.ts"],
-      "@tad/services/*": ["../../packages/services/*"],
-      "@tad/store": ["../../packages/store/index.ts"],
-      "@tad/store/*": ["../../packages/store/*"],
-      "@tad/logging": ["../../packages/logging/index.ts"],
-      "@tad/logging/*": ["../../packages/logging/*"]
-    }
+      "@/*": [
+        "./*"
+      ],
+      "@tad/types": [
+        "../../packages/types/index.ts"
+      ],
+      "@tad/types/*": [
+        "../../packages/types/*"
+      ],
+      "@tad/ui": [
+        "../../packages/ui/index.ts"
+      ],
+      "@tad/ui/*": [
+        "../../packages/ui/*"
+      ],
+      "@tad/services": [
+        "../../packages/services/index.ts"
+      ],
+      "@tad/services/*": [
+        "../../packages/services/*"
+      ],
+      "@tad/store": [
+        "../../packages/store/index.ts"
+      ],
+      "@tad/store/*": [
+        "../../packages/store/*"
+      ],
+      "@tad/logging": [
+        "../../packages/logging/index.ts"
+      ],
+      "@tad/logging/*": [
+        "../../packages/logging/*"
+      ]
+    },
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
@@ -42,5 +68,10 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "tests/e2e", "apps", ".next"]
+  "exclude": [
+    "node_modules",
+    "tests/e2e",
+    "apps",
+    ".next"
+  ]
 }

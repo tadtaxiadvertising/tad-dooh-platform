@@ -30,7 +30,13 @@ export default function PoliticaDePrivacidad() {
       </LegalSection>
 
       <LegalSection id="datos-recopilados" title="2. Datos que recopilamos">
-        <p>Recopilamos las siguientes categorías de información personal:</p>
+        <p>Recopilamos las siguientes categorías de información personal, de acuerdo con el tipo de usuario y la aplicación que utilices:</p>
+        <p>
+          <strong>Nuestra matriz de permisos de recopilación en background detalla exactamente qué datos se coleccionan por tipo de usuario y aplicación.</strong>
+        </p>
+        <LegalCallout type="info">
+          <strong>Consulte la sección 2.5 a continuación para ver la matriz completa por tipo de usuario.</strong>
+        </LegalCallout>
         <h3>2.1. Datos de identificación</h3>
         <LegalList
           items={[
@@ -61,6 +67,55 @@ export default function PoliticaDePrivacidad() {
           items={[
             <><LegalHighlight>Para anunciantes:</LegalHighlight> información de facturación, historial de pagos, facturas emitidas, métodos de pago (procesados por proveedores certificados PCI-DSS; nunca almacenamos números completos de tarjetas).</>,
             <><LegalHighlight>Para conductores:</LegalHighlight> comisiones generadas, pagos realizados, datos bancarios para transferencias, historial de retiros.</>,
+          ]}
+        />
+        <h3>2.5. Matriz de permisos por tipo de usuario y aplicación</h3>
+        <p>
+          La siguiente matriz detalla los datos que se coleccionan en cada una de nuestras tres aplicaciones
+          (Administrador, Anunciante, Conductor), según el tipo de usuario, y para qué fines se utilizan.
+        </p>
+        <p>
+          <strong>Los datos se categorizan como:</strong>
+        </p>
+        <LegalList
+          items={[
+            <><LegalHighlight>Essencial / Strictly Necessary:</LegalHighlight> datos requeridos para la funcionalidad básica de la plataforma, autenticación y seguridad. No requiere consentimiento.</>,
+            <><LegalHighlight>Analítica / Performance:</LegalHighlight> datos recopilados para entender cómo se usa la plataforma, métricas de rendimiento y patrones de uso. Requiere consentimiento.</>,
+            <><LegalHighlight>Funcional / Preferences:</LegalHighlight> datos que habilitan funciones personalizadas, configuraciones y mejora de la experiencia de usuario. Requiere consentimiento.</>,
+            <><LegalHighlight>Administrativo / System:</LegalHighlight> datos utilizados para funciones administrativas, gestión de usuarios, configuración de la plataforma y supervisión. Aplicable a administradores.</>,
+            <><LegalHighlight>Campaña / Business:</LegalHighlight> datos relacionados con campañas publicitarias, creativos, segmentación y métricas de rendimiento. Aplicable a anunciantes.</>,
+            <><LegalHighlight>Ubicación / Telemetry:</LegalHighlight> datos GPS y de ubicación para seguimiento de dispositivos, monitoreo de flotas y optimización de rutas. Aplicable a conductores; requiere consentimiento explícito.</>,
+            <><LegalHighlight>Financiero / Billing:</LegalHighlight> datos de pagos, ganancias, historial de transacciones e información de facturación.</>,
+          ]}
+        />
+        <p>
+          <strong>Matriz resumida por tipo de usuario:</strong>
+        </p>
+        <LegalTable
+          columns={['Categoría', 'Admin', 'Anunciante', 'Conductor']}
+          data={[
+            { categoría: 'Essencial / Strictly Necessary', admin: 'Sí', anunciante: 'Sí', conductor: 'Sí' },
+            { categoría: 'Analítica / Performance', admin: 'Sí', anunciante: 'Sí', conductor: 'Sí' },
+            { categoría: 'Funcional / Preferences', admin: 'Sí', anunciante: 'Sí', conductor: 'Sí' },
+            { categoría: 'Administrativo / System', admin: 'Sí', anunciante: 'No', conductor: 'No' },
+            { categoría: 'Campaña / Business', admin: 'No', anunciante: 'Sí', conductor: 'No' },
+            { categoría: 'Ubicación / Telemetry', admin: 'No', anunciante: 'No', conductor: 'Sí' },
+            { categoría: 'Financiero / Billing', admin: 'Sí', anunciante: 'Sí', conductor: 'Sí' },
+          ]}
+        />
+        <p>
+          <strong>Propósito de cada categoría:</strong>
+        </p>
+        <LegalTable
+          columns=['Categoría', 'Propósito']
+          data={[
+            { categoría: 'Essencial / Strictly Necessary', propósito: 'Funcionalidad básica de la plataforma, autenticación y seguridad' },
+            { categoría: 'Analítica / Performance', propósito: 'Medir uso de la plataforma, identificar mejoras, monitorear salud del sistema' },
+            { categoría: 'Funcional / Preferences', propósito: 'Recordar preferencias del usuario, experiencia personalizada, guardar progreso de formularios' },
+            { categoría: 'Administrativo / System', propósito: 'Gestión de cuentas y roles de usuario (solo admin), configuración de plataforma, cumplimiento y auditoría' },
+            { categoría: 'Campaña / Business', propósito: 'Creación y gestión de campañas publicitarias, subida y generación de activos creativos, seguimiento de rendimiento de campañas, gestión de enlaces QR de conversión, procesamiento de facturación y pago para campañas' },
+            { categoría: 'Ubicación / Telemetry', propósito: 'Seguimiento de ubicación de vehículos para monitoreo de flotas, visualización en tiempo real en dashboard, optimización de exhibición de anuncios basada en cobertura geográfica, garantizar seguridad y seguridad del conductor, generar analíticas de ruta y métricas de rendimiento' },
+            { categoría: 'Financiero / Billing', propósito: 'Procesar pagos y facturación para campañas, seguir ganancias y saldos de wallet, habilitar pagos y cálculos de comisiones, mantener registros financieros compatibles con impuestos, gestionar pagos de suscripción y referidos' },
           ]}
         />
       </LegalSection>

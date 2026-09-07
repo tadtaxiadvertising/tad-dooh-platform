@@ -47,37 +47,47 @@ export default function PoliticaDeCookies() {
       </LegalSection>
 
       <LegalSection id="tipos" title="3. Tipos de cookies que utilizamos">
+        <p>
+          A continuación detallamos los tipos de cookies y tecnologías de seguimiento que utilizamos
+          en cada una de nuestras tres aplicaciones (Administrador, Anunciante, Conductor), según la
+          matriz de permisos de recopilación en background.
+        </p>
         <LegalTable
-          headers={['Tipo', 'Propósito', 'Duración', 'Proveedor']}
+          headers={['Tipo', 'Propósito', 'Duración', 'Aplicaciones', 'Proveedor']}
           rows={[
             [
               'Estrictamente necesarias',
               'Autenticación, seguridad, prevención de fraude. Sin estas, la Plataforma no funciona.',
               'Sesión / 30 días',
+              'Todas (Admin, Anunciante, Conductor)',
               'TAD (propias)',
             ],
             [
               'Funcionales',
-              'Recordar preferencias (idioma, zona horaria, tema).',
+              'Recordar preferencias (idioma, zona horaria, tema de mapa).',
               'Hasta 12 meses',
+              'Todas (Admin, Anunciante, Conductor)',
               'TAD (propias)',
             ],
             [
               'Analíticas',
               'Medir el uso de la Plataforma, identificar problemas, mejorar el rendimiento.',
               'Hasta 24 meses',
+              'Admin: dashboard metrics; Anunciante: Umami (configurado pero no activado); Conductor: Sentry error tracking',
               'PostHog, Sentry, Vercel Analytics',
             ],
             [
               'Marketing',
               'Mostrar publicidad relevante, medir campañas, remarketing.',
               'Hasta 24 meses',
+              'Admin: ninguno; Anunciante: Google Ads, Meta Pixel (documentado pero no activado); Conductor: ninguno',
               'Google Ads, Meta Pixel, LinkedIn Insight Tag',
             ],
             [
               'De terceros (OAuth)',
               'Permitir inicio de sesión con Google, GitHub, etc.',
               'Hasta 2 años',
+              'Todas (Admin, Anunciante, Conductor)',
               'Google, GitHub, Facebook',
             ],
           ]}
@@ -85,26 +95,30 @@ export default function PoliticaDeCookies() {
       </LegalSection>
 
       <LegalSection id="cookies-especificas" title="4. Cookies específicas que utilizamos">
-        <h3>4.1. Cookies propias</h3>
+        <h3>4.1. Cookies propias (por aplicación)</h3>
+        <p>
+          Las siguientes cookies propias se establecen según la aplicación que estés utilizando:
+        </p>
         <LegalTable
-          headers={['Nombre', 'Propósito', 'Duración']}
+          headers={['Nombre', 'Propósito', 'Duración', 'Aplicaciones']}
           rows={[
-            ['sb-access-token', 'Token de autenticación de Supabase.', '1 hora'],
-            ['sb-refresh-token', 'Token para renovar la sesión.', '7 días'],
-            ['tad_user_data', 'Datos básicos del usuario para la UI (ID, email, rol).', '7 días'],
-            ['tad_admin_token', 'Token de sesión para administradores.', '24 horas'],
-            ['tad_session_id', 'Identificador único de sesión para auditoría.', '24 horas'],
+            ['sb-access-token', 'Token de autenticación de Supabase (JWT).', '7 días', 'Admin, Anunciante, Conductor'],
+            ['sb-refresh-token', 'Token para renovar la sesión de Supabase.', '7 días', 'Admin, Anunciante, Conductor'],
+            ['tad_user_data', 'Datos básicos del usuario para la UI (ID, email, rol).', '7 días', 'Admin, Anunciante'],
+            ['tad_admin_token', 'Token de sesión para administradores.', '24 horas', 'Admin'],
+            ['tad_session_id', 'Identificador único de sesión para auditoría.', '24 horas', 'Admin'],
+            ['TAD_DEVICE_ID', 'Identificador único de dispositivo (Conductor).', 'Sesión', 'Conductor'],
           ]}
         />
-        <h3>4.2. Cookies de terceros</h3>
+        <h3>4.2. Cookies de terceros (por aplicación)</h3>
         <LegalTable
-          headers={['Proveedor', 'Cookies', 'Propósito', 'Privacidad']}
+          headers={['Proveedor', 'Cookies', 'Propósito', 'Aplicaciones', 'Privacidad']}
           rows={[
-            ['Supabase', 'sb-*', 'Autenticación y base de datos.', 'supabase.com/privacy'],
-            ['Cloudflare', '__cf_bm, _cfuvid', 'Seguridad y CDN.', 'cloudflare.com/privacypolicy'],
-            ['Google OAuth', 'G_AUTHUSER_H, SID, HSID', 'Inicio de sesión con Google.', 'policies.google.com/privacy'],
-            ['PostHog', 'ph_*', 'Analítica de producto.', 'posthog.com/privacy'],
-            ['Sentry', 'sentrry-*', 'Monitoreo de errores.', 'sentry.io/privacy'],
+            ['Supabase', 'sb-*', 'Autenticación y base de datos.', 'Admin, Anunciante, Conductor', 'supabase.com/privacy'],
+            ['Cloudflare', '__cf_bm, _cfuvid', 'Seguridad y CDN.', 'Admin, Anunciante, Conductor', 'cloudflare.com/privacypolicy'],
+            ['Google OAuth', 'G_AUTHUSER_H, SID, HSID', 'Inicio de sesión con Google.', 'Admin, Anunciante, Conductor', 'policies.google.com/privacy'],
+            ['PostHog', 'ph_*', 'Analítica de producto.', 'Admin: dashboard metrics; Anunciante: configurado pero no activado; Conductor: error tracking', 'posthog.com/privacy'],
+            ['Sentry', 'sentrry-*', 'Monitoreo de errores.', 'Admin, Anunciante, Conductor', 'sentry.io/privacy'],
           ]}
         />
       </LegalSection>

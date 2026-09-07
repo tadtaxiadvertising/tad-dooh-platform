@@ -4,8 +4,7 @@
     "strict": true,
     "noEmit": true,
     "incremental": true,
-    "jsx": "preserve",
-    "baseUrl": ".",
+    "target": "ES2017",
     "forceConsistentCasingInFileNames": true,
     "typeRoots": [
       "./node_modules/@types",
@@ -46,7 +45,8 @@
         "../../packages/logging/*"
       ]
     },
-    "allowJs": true
+    "allowJs": true,
+    "jsx": "preserve"
   },
   "include": [
     "next-env.d.ts",

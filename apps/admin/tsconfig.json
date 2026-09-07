@@ -4,22 +4,45 @@
     "strict": false,
     "noEmit": true,
     "incremental": true,
-    "jsx": "preserve",
     "target": "ES2017",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@tad/types": ["../../packages/types/index.ts"],
-      "@tad/types/*": ["../../packages/types/*"],
-      "@tad/services": ["../../packages/services/index.ts"],
-      "@tad/services/*": ["../../packages/services/*"],
-      "@tad/ui": ["../../packages/ui/index.ts"],
-      "@tad/ui/*": ["../../packages/ui/*"],
-      "@tad/store": ["../../packages/store/index.ts"],
-      "@tad/store/*": ["../../packages/store/*"],
-      "@tad/logging": ["../../packages/logging/index.ts"],
-      "@tad/logging/*": ["../../packages/logging/*"]
-    }
+      "@/*": [
+        "./*"
+      ],
+      "@tad/types": [
+        "../../packages/types/index.ts"
+      ],
+      "@tad/types/*": [
+        "../../packages/types/*"
+      ],
+      "@tad/services": [
+        "../../packages/services/index.ts"
+      ],
+      "@tad/services/*": [
+        "../../packages/services/*"
+      ],
+      "@tad/ui": [
+        "../../packages/ui/index.ts"
+      ],
+      "@tad/ui/*": [
+        "../../packages/ui/*"
+      ],
+      "@tad/store": [
+        "../../packages/store/index.ts"
+      ],
+      "@tad/store/*": [
+        "../../packages/store/*"
+      ],
+      "@tad/logging": [
+        "../../packages/logging/index.ts"
+      ],
+      "@tad/logging/*": [
+        "../../packages/logging/*"
+      ]
+    },
+    "allowJs": true,
+    "jsx": "preserve"
   },
   "include": [
     "next-env.d.ts",

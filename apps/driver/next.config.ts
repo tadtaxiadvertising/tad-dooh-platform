@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 import { withSentryConfig } from "@sentry/nextjs";
 import withPWAInit from "@ducanh2912/next-pwa";
 
@@ -62,13 +63,21 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  outputFileTracingRoot: require('path').join(process.cwd(), '../../'),
+  outputFileTracingRoot: path.join(process.cwd(), '../../'),
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado
     webpackBuildWorker: true,
     // Desactiva compilaciones paralelas para no saturar la CPU/RAM del VPS
     parallelServerCompiles: false,
+  },
+  // Add webpack aliases for module resolution
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, './'),
+    };
+    return config;
   },
   // Importante: NO reescribir /api/proxy/* hacia el backend.
   // Esa ruta la atiende pages/api/proxy/[...path].ts para preservar

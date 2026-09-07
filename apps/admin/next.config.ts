@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 import { withSentryConfig } from "@sentry/nextjs";
 
 // IMPORTANTE: En EasyPanel Free, las variables NEXT_PUBLIC_* deben estar
@@ -14,7 +15,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
-  outputFileTracingRoot: require("path").join(process.cwd(), "../../"),
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   experimental: {
     webpackBuildWorker: true,
     parallelServerCompiles: false,
@@ -23,6 +24,10 @@ const nextConfig: NextConfig = {
     config.infrastructureLogging = {
       ...config.infrastructureLogging,
       level: "error",
+    };
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, './'),
     };
     return config;
   },

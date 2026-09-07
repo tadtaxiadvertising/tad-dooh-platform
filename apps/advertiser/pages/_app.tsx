@@ -6,7 +6,7 @@ import { Layout } from '@tad/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { PaymentLockOverlay } from '@tad/ui';
-import CookieBanner from '../components/CookieBanner';
+import CookieBanner from '@tad/ui';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
 

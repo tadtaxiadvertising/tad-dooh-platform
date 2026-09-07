@@ -1,46 +1,27 @@
-{
-   source: '/p/advertiser/:path*',
-   destination: '/advertiser/login',
-   permanent: false,
-},
-{
-   source: '/',
-   destination: '/login',
-   permanent: false,
-},
-{
-   source: '/api/v1/:path*',
-   destination: '/api/proxy/:path*',
-   permanent: true,
-},
-],
-},
-},
-{
-   source: '/',
-   destination: '/login',
-   permanent: false,
-},
-{
-   source: '/api/v1/:path*',
-   destination: '/api/proxy/:path*',
-   permanent: true,
-},
-],
-},
-],
-},
-{
-   source: '/',
-   destination: '/login',
-   permanent: false,
-},
-{
-   source: '/api/v1/:path*',
-   destination: '/api/proxy/:path*',
-   permanent: true,
-},
-],
-},
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  transpilePackages: ['@tad/services', '@tad/store', '@tad/ui', '@tad/impact-calculator'],
+  outputFileTracingRoot: '../../',
+  async redirects() {
+    return [
+      {
+        source: '/p/advertiser/:path*',
+        destination: '/advertiser/login',
+        permanent: false,
+      },
+      {
+        source: '/',
+        destination: '/login',
+        permanent: false,
+      },
+      {
+        source: '/api/v1/:path*',
+        destination: '/api/proxy/:path*',
+        permanent: true,
+      },
+    ];
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

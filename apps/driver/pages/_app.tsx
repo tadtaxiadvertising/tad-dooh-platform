@@ -12,7 +12,7 @@ import { logger } from '@tad/logging';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { NotificationToast } from '@/components/Notifications/NotificationToast';
 import { NotificationCenter } from '@/components/Notifications/NotificationCenter';
-import CookieBanner from '@/components/CookieBanner';
+import CookieBanner from '@tad/ui';
 
 const PUBLIC_PAGES = [
   '/login',

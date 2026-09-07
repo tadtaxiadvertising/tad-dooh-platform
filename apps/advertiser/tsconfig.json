@@ -1,14 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "strict": false,
+"strict": false,
     "noEmit": true,
     "incremental": true,
-    "jsx": "preserve",
-    "moduleResolution": "node",
-    "ignoreDeprecations": "5.0",
-    "strictNullChecks": true,
-    "baseUrl": ".",
+    "target": "ES2017",
     "paths": {
       "@/*": [
         "./*"

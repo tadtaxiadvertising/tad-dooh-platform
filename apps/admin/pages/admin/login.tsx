@@ -66,6 +66,10 @@ export default function AdminLoginPage() {
         throw new Error('Respuesta de autenticación inválida (sin token).');
       }
 
+      if ((user.role ?? 'GUEST') !== 'ADMIN') {
+        throw new Error('Tu cuenta no tiene rol de administrador. Usa el portal de anunciantes o conductores.');
+      }
+
       // A7: NO guardar refresh token en localStorage (seguridad).
       // Access token en cookie (credentials: include) + memoria (React context).
       localStorage.setItem('tad_admin_token', data.access_token);

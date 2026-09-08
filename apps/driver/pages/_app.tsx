@@ -55,6 +55,22 @@ function AppWrapper({ Component, pageProps, router }: AppProps) {
   );
 }
 
+function RootProviders({ queryClient, children }: { queryClient: QueryClient; children: React.ReactNode }) {
+  const persister = typeof window !== 'undefined'
+    ? createSyncStoragePersister({ storage: window.localStorage })
+    : undefined;
+
+  if (persister) {
+    return (
+      <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+        {children}
+      </PersistQueryClientProvider>
+    );
+  }
+
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
 export default function App(props: AppProps) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -67,12 +83,7 @@ export default function App(props: AppProps) {
     },
   }));
 
-  const persister = typeof window !== 'undefined' ? createSyncStoragePersister({
-    storage: window.localStorage,
-  }) : undefined;
-
-  if (!persister) {
-const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
+  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,10 +93,7 @@ const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
   }, []);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister }}
-    >
+    <RootProviders queryClient={queryClient}>
       <AppWrapper {...props} />
       <Toaster richColors position="top-right" theme="dark" />
       {typeof window !== 'undefined' && !hasShownCookieBanner && (
@@ -95,17 +103,6 @@ const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
           onReject={() => setHasShownCookieBanner(true)}
         />
       )}
-    </PersistQueryClientProvider>
-  );
-  }
-
-  return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister }}
-    >
-      <AppWrapper {...props} />
-      <Toaster richColors position="top-right" theme="dark" />
-    </PersistQueryClientProvider>
+    </RootProviders>
   );
 }

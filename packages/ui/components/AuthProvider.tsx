@@ -94,6 +94,20 @@ function roleOfSession(session: Session | null): string {
     || 'GUEST';
 }
 
+function dashboardRouteFor(portal: string | null): string | null {
+  if (portal === 'admin') return '/admin';
+  if (portal === 'advertiser') return '/advertiser/dashboard';
+  if (portal === 'driver') return '/driver/dashboard';
+  return null;
+}
+
+function loginRouteFor(portal: 'admin' | 'advertiser' | 'driver' | null): string {
+  if (portal === 'admin') return '/admin/login';
+  if (portal === 'advertiser') return '/advertiser/login';
+  if (portal === 'driver') return '/driver/login';
+  return '/login';
+}
+
 function clearPortalTokens(): void {
   localStorage.removeItem('tad_admin_token');
   localStorage.removeItem('tad_admin_user');
@@ -167,17 +181,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // we force a portal-local signout instead. The OAuth callback is exempt:
       // AuthCallback still needs to inspect/exchange/signOut the provisional
       // session to show the branded authorization error.
-      const pathPortal = portalFromPath(currentPath);
-      const isOAuthCallback = currentPath.endsWith('/auth/callback');
+      const livePath = router.pathname;
+      const pathPortal = portalFromPath(livePath);
+      const isOAuthCallback = livePath.endsWith('/auth/callback');
       if (activeSession && pathPortal && !isOAuthCallback) {
         const sessionRole = roleOfSession(activeSession);
         if (PORTAL_BY_ROLE[sessionRole] !== pathPortal) {
-          console.warn(`🚫 [AUTH] Sesión "${sessionRole}" en ruta "${currentPath}" del portal "${pathPortal}". Cerrando sesión.`);
+          console.warn(`🚫 [AUTH] Sesión "${sessionRole}" en ruta "${livePath}" del portal "${pathPortal}". Cerrando sesión.`);
           clearPortalTokens();
           try { void supabase.auth.signOut(); } catch { /* noop */ }
           setSession(null);
           setLoading(false);
-          router.replace(pathPortal === 'admin' ? '/admin/login' : `/${pathPortal}/login`);
+          if (livePath !== loginRouteFor(pathPortal)) {
+            router.replace(loginRouteFor(pathPortal));
+          }
           return;
         }
       }
@@ -186,11 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
 
       if (!activeSession && !isPublic) {
-        let loginTarget = '/login';
-        if (currentPath.startsWith('/advertiser')) loginTarget = '/advertiser/login';
-        else if (currentPath.startsWith('/driver')) loginTarget = '/driver/login';
-        else if (currentPath.startsWith('/admin')) loginTarget = '/admin/login';
-        router.replace(loginTarget);
+        router.replace(loginRouteFor(pathPortal));
       }
     }
 
@@ -201,17 +214,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, sbSession: Session | null) => {
         if (_event === 'SIGNED_IN' && sbSession) {
+          // Guard with a LIVE path: reject a session whose role does not
+          // belong to the portal currently being served. The onAuthStateChange
+          // subscription outlives client-side navigation, so the mount-time
+          // path is stale for post-login redirects (the "entered as admin"
+          // vector). OAuth callbacks are exempt — AuthCallback decides routing.
+          const livePath = router.pathname;
+          const pathPortal = portalFromPath(livePath);
+          const isOAuthCallback = livePath.endsWith('/auth/callback');
+          const sessionRole = roleOfSession(sbSession);
+          const sessionPortal = PORTAL_BY_ROLE[sessionRole];
+
+          if (pathPortal && !isOAuthCallback && sessionPortal !== pathPortal) {
+            console.warn(`🚫 [AUTH] Sesión "${sessionRole}" en ruta "${livePath}" del portal "${pathPortal}". Cerrando sesión.`);
+            clearPortalTokens();
+            try { void supabase.auth.signOut(); } catch { /* noop */ }
+            setSession(null);
+            if (livePath !== loginRouteFor(pathPortal)) {
+              router.replace(loginRouteFor(pathPortal));
+            }
+            return;
+          }
+
           setSession(sbSession);
-          // Redirect from login pages to role-specific dashboards
-          const userRole = sbSession.user?.app_metadata?.role
-          || sbSession.user?.user_metadata?.role
-          || 'GUEST';
-          if (currentPath === '/login' || currentPath === '/admin/login') {
-            router.replace('/admin');
-          } else if (currentPath === '/advertiser/login') {
-            router.replace('/advertiser/dashboard');
-          } else if (currentPath === '/driver/login') {
-            router.replace('/driver/dashboard');
+          // Route logins only to the dashboard of the portal the session
+          // BELONGS to — never to a foreign portal on this origin.
+          const onOwnLoginPage = sessionPortal !== null && (
+            livePath === '/login' || livePath === loginRouteFor(sessionPortal)
+          );
+          if (onOwnLoginPage) {
+            const dest = dashboardRouteFor(sessionPortal);
+            if (dest) router.replace(dest);
           }
         }
 
@@ -219,11 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear ALL portal tokens — user intentionally signed out
           clearPortalTokens();
           setSession(null);
-          let loginTarget = '/login';
-          if (currentPath.startsWith('/advertiser')) loginTarget = '/advertiser/login';
-          else if (currentPath.startsWith('/driver')) loginTarget = '/driver/login';
-          else if (currentPath.startsWith('/admin')) loginTarget = '/admin/login';
-          router.replace(loginTarget);
+          router.replace(loginRouteFor(portalFromPath(router.pathname)));
         }
       });
 

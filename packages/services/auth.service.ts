@@ -118,9 +118,9 @@ export const getLocalStorageToken = (currentPath: string): string | null => {
   try {
     let localToken: string | null = null;
     if (currentPath.includes('/advertiser/')) {
-      localToken = localStorage.getItem('tad_advertiser_token') || localStorage.getItem('tad_admin_token');
+      localToken = localStorage.getItem('tad_advertiser_token');
     } else if (currentPath.includes('/driver/')) {
-      localToken = localStorage.getItem('tad_driver_token') || localStorage.getItem('tad_admin_token');
+      localToken = localStorage.getItem('tad_driver_token');
     } else {
       localToken = localStorage.getItem('tad_admin_token') ||
         localStorage.getItem('tad_advertiser_token') ||

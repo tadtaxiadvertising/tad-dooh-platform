@@ -72,7 +72,7 @@ export default function App(props: AppProps) {
   }) : undefined;
 
   if (!persister) {
-const [hasShownCookieBanner, setHasShownCookieBanner] = useState(false);
+const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

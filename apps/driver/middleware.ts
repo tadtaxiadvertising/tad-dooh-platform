@@ -46,7 +46,6 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = pathname === '/driver/onboarding' || pathname === '/driver/onboarding/';
 
   if (!isPublicRoute && (!session || decodeTokenRole(session) !== 'DRIVER')) {
-    if (session && decodeTokenRole(session) === 'ADMIN') return NextResponse.next(); // Admin can access
     return NextResponse.redirect(new URL('/driver/login', request.url));
   }
 

@@ -74,6 +74,35 @@ function buildSessionFromLocalToken(tokenKey: string, userKey: string): Session 
   }
 }
 
+const PORTAL_BY_ROLE: Record<string, 'admin' | 'advertiser' | 'driver'> = {
+  ADMIN: 'admin',
+  ADVERTISER: 'advertiser',
+  DRIVER: 'driver',
+};
+
+/** Derive the portal a route belongs to, or null for portal-less paths */
+function portalFromPath(path: string): 'admin' | 'advertiser' | 'driver' | null {
+  if (path.startsWith('/advertiser')) return 'advertiser';
+  if (path.startsWith('/driver')) return 'driver';
+  if (path.startsWith('/admin')) return 'admin';
+  return null;
+}
+
+function roleOfSession(session: Session | null): string {
+  return session?.user?.app_metadata?.role
+    || session?.user?.user_metadata?.role
+    || 'GUEST';
+}
+
+function clearPortalTokens(): void {
+  localStorage.removeItem('tad_admin_token');
+  localStorage.removeItem('tad_admin_user');
+  localStorage.removeItem('tad_advertiser_token');
+  localStorage.removeItem('tad_advertiser_user');
+  localStorage.removeItem('tad_driver_token');
+  localStorage.removeItem('tad_driver_user');
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +160,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Role/portal guard: a session whose role does not belong to the portal
+      // being rendered is foreign state (e.g. an ADMIN Supabase session left on
+      // the advertiser origin by a misrouted OAuth or a stale cache). Rendering
+      // those pages with a foreign identity is the "entering as admin" bug, so
+      // we force a portal-local signout instead. The OAuth callback is exempt:
+      // AuthCallback still needs to inspect/exchange/signOut the provisional
+      // session to show the branded authorization error.
+      const pathPortal = portalFromPath(currentPath);
+      const isOAuthCallback = currentPath.endsWith('/auth/callback');
+      if (activeSession && pathPortal && !isOAuthCallback) {
+        const sessionRole = roleOfSession(activeSession);
+        if (PORTAL_BY_ROLE[sessionRole] !== pathPortal) {
+          console.warn(`🚫 [AUTH] Sesión "${sessionRole}" en ruta "${currentPath}" del portal "${pathPortal}". Cerrando sesión.`);
+          clearPortalTokens();
+          try { void supabase.auth.signOut(); } catch { /* noop */ }
+          setSession(null);
+          setLoading(false);
+          router.replace(pathPortal === 'admin' ? '/admin/login' : `/${pathPortal}/login`);
+          return;
+        }
+      }
+
       setSession(activeSession);
       setLoading(false);
 
@@ -166,12 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (_event === 'SIGNED_OUT') {
           // Clear ALL portal tokens — user intentionally signed out
-          localStorage.removeItem('tad_admin_token');
-          localStorage.removeItem('tad_admin_user');
-          localStorage.removeItem('tad_advertiser_token');
-          localStorage.removeItem('tad_advertiser_user');
-          localStorage.removeItem('tad_driver_token');
-          localStorage.removeItem('tad_driver_user');
+          clearPortalTokens();
           setSession(null);
           let loginTarget = '/login';
           if (currentPath.startsWith('/advertiser')) loginTarget = '/advertiser/login';

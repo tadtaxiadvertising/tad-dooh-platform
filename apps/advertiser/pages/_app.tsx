@@ -73,7 +73,7 @@ export default function App(props: AppProps) {
   }));
 
   // Check for cookie preferences on client mount
-  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(false);
+  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

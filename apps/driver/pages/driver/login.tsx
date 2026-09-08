@@ -69,6 +69,7 @@ export default function DriverLoginPage() {
 
         document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
         // A7: NO guardar refresh token en localStorage. Access token en memoria via context.
+        localStorage.setItem('tad_driver_token', accessToken);
         localStorage.setItem('tad_driver_user', JSON.stringify(storedUser));
 
         if (!storedUser.contractAccepted || !storedUser.bankAccountConfigured) {

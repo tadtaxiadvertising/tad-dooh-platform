@@ -202,17 +202,28 @@ export function LegalHighlight({ children }: { children: React.ReactNode }) {
   return <strong className="font-bold text-white">{children}</strong>;
 }
 
-/** Table for structured legal data */
-export function LegalTable({ headers, rows }: { 
-  headers: string[]; 
-  rows: string[][] 
+/** Table for structured legal data. Accepts either `headers`+`rows` (grid) or `columns`+`data` (keyed rows). */
+export function LegalTable({
+  headers,
+  rows,
+  columns,
+  data,
+}: {
+  headers?: string[];
+  rows?: string[][];
+  columns?: string[];
+  data?: Record<string, string>[];
 }) {
+  const cols = columns ?? headers ?? [];
+  const normalizedRows = data
+    ? data.map((row) => cols.map((col) => row[col] ?? ''))
+    : (rows ?? []);
   return (
     <div className="my-4 overflow-x-auto rounded-lg border border-white/10">
       <table className="w-full text-sm">
         <thead className="bg-white/[0.04]">
           <tr>
-            {headers.map((h, i) => (
+            {cols.map((h, i) => (
               <th
                 key={i}
                 className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.12em] text-white/50"
@@ -223,7 +234,7 @@ export function LegalTable({ headers, rows }: {
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {rows.map((row, i) => (
+          {normalizedRows.map((row, i) => (
             <tr key={i} className="text-white/70">
               {row.map((cell, j) => (
                 <td key={j} className="px-4 py-3 text-[14px] leading-relaxed">

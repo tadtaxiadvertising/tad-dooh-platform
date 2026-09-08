@@ -13,4 +13,7 @@ export * from './PortalAuth';
 export * from './ErrorBoundary';
 export * from './GoogleSignInButton';
 export * from './LegalLayout';
-export * from './CookieBanner';
+export * from './AuthCallback';
+export * from './UpdatePassword';
+export * from './ComingSoonScreen';
+export { default as CookieBanner } from './CookieBanner';

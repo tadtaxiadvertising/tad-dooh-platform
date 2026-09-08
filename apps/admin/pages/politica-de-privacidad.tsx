@@ -1,4 +1,4 @@
-import { LegalLayout, LegalSection, LegalList, LegalCallout, LegalHighlight } from '@tad/ui';
+import { LegalLayout, LegalSection, LegalList, LegalCallout, LegalHighlight, LegalTable } from '@tad/ui';
 
 export default function PoliticaDePrivacidad() {
   return (
@@ -107,7 +107,7 @@ export default function PoliticaDePrivacidad() {
           <strong>Propósito de cada categoría:</strong>
         </p>
         <LegalTable
-          columns=['Categoría', 'Propósito']
+          columns={['Categoría', 'Propósito']}
           data={[
             { categoría: 'Essencial / Strictly Necessary', propósito: 'Funcionalidad básica de la plataforma, autenticación y seguridad' },
             { categoría: 'Analítica / Performance', propósito: 'Medir uso de la plataforma, identificar mejoras, monitorear salud del sistema' },

@@ -260,6 +260,20 @@ export class AuthService {
         resolvedRole = 'ADVERTISER';
         entityId = advertiser.id;
         profile = { ...advertiser, role: resolvedRole };
+      } else {
+        // Auto-create advertiser record for new users - they'll complete onboarding
+        const newAdvertiser = await this.prisma.advertiser.create({
+          data: {
+            email,
+            companyName: payload?.name || email.split('@')[0],
+            contactName: payload?.name || email.split('@')[0],
+            status: 'PENDING_ONBOARDING',
+          },
+        });
+        resolvedRole = 'ADVERTISER';
+        entityId = newAdvertiser.id;
+        profile = { ...newAdvertiser, role: resolvedRole };
+        this.logger.log(`✅ Auto-created advertiser for new OAuth user: ${email} (ID: ${newAdvertiser.id})`);
       }
     }
 
@@ -293,6 +307,8 @@ export class AuthService {
 
     this.logger.log(`✅ OAuth exchange success: ${email} → ${resolvedRole} | Entity: ${entityId || 'N/A'}`);
 
+    const needsOnboarding = dto.intended_role === OAuthPortalRole.ADVERTISER && profile?.status === 'PENDING_ONBOARDING';
+
     return {
       access_token: dto.access_token,
       refresh_token: dto.refresh_token || '',
@@ -307,6 +323,7 @@ export class AuthService {
           (profile as any).name ||
           email,
       },
+      needsOnboarding,
     };
   }
 

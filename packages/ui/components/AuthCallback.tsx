@@ -165,6 +165,7 @@ async function exchangeWithBackend(
     const data = await res.json();
     const token = data.access_token as string;
     const refresh = (data.refresh_token as string) || '';
+    const needsOnboarding = data.needsOnboarding === true;
     const user = data.user ?? {
       id: session.user.id,
       email: session.user.email,
@@ -189,12 +190,22 @@ async function exchangeWithBackend(
       });
     }
 
-    router.replace(nextPath);
+    // Redirect to onboarding if new advertiser, otherwise to dashboard
+    const redirectPath = needsOnboarding ? config.onboardingPath : nextPath;
+    router.replace(redirectPath);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Error desconocido.';
     console.error('[AuthCallback] OAuth exchange failed:', message);
-    // Clean any partial Supabase session
-    try { await supabase.auth.signOut(); } catch { /* noop */ }
+    // Clean any partial Supabase session IMMEDIATELY before redirect
+    try { 
+      await supabase.auth.signOut({ scope: 'global' }); 
+    } catch { /* noop */ }
+    // Clear all portal localStorage
+    ['tad_admin_token', 'tad_admin_user', 'tad_advertiser_token', 'tad_advertiser_user', 'tad_driver_token', 'tad_driver_user'].forEach(key => {
+      try { localStorage.removeItem(key); } catch {}
+    });
+    // Clear sb-access-token cookie
+    try { document.cookie = 'sb-access-token=; path=/; max-age=0; SameSite=Lax'; } catch {}
     router.replace(`${config.loginPath}?error=${encodeURIComponent(message)}`);
   }
 }

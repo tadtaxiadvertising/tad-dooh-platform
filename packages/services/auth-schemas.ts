@@ -138,6 +138,7 @@ export interface PortalConfig {
   recoveryPath: string;
   updatePasswordPath: string;
   callbackPath: string;
+  onboardingPath: string;
   accentColor: string;
   tokenKey: string;
   userKey: string;
@@ -153,6 +154,7 @@ export const PORTAL_CONFIGS: Record<PortalRole, PortalConfig> = {
     recoveryPath: '/admin/recovery',
     updatePasswordPath: '/admin/update-password',
     callbackPath: '/admin/auth/callback',
+    onboardingPath: '/admin/onboarding',
     accentColor: '#FFD400',
     tokenKey: 'tad_admin_token',
     userKey: 'tad_admin_user',
@@ -166,6 +168,7 @@ export const PORTAL_CONFIGS: Record<PortalRole, PortalConfig> = {
     recoveryPath: '/advertiser/recovery',
     updatePasswordPath: '/advertiser/update-password',
     callbackPath: '/advertiser/auth/callback',
+    onboardingPath: '/advertiser/onboarding',
     accentColor: '#FFD400',
     tokenKey: 'tad_advertiser_token',
     userKey: 'tad_advertiser_user',
@@ -179,6 +182,7 @@ export const PORTAL_CONFIGS: Record<PortalRole, PortalConfig> = {
     recoveryPath: '/driver/recovery',
     updatePasswordPath: '/driver/update-password',
     callbackPath: '/driver/auth/callback',
+    onboardingPath: '/driver/onboarding',
     accentColor: '#FFD400',
     tokenKey: 'tad_driver_token',
     userKey: 'tad_driver_user',

@@ -125,24 +125,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const currentPath = router.pathname;
-    const isPublic = PUBLIC_PATHS.includes(currentPath) || currentPath.startsWith('/p');
-
     function resolveSession(supabaseSession: Session | null) {
       let activeSession: Session | null = supabaseSession;
+
+      // ALWAYS read live path at call time — router.pathname is stale in callbacks
+      const getLivePath = () =>
+        typeof window !== 'undefined' ? window.location.pathname : '/';
+      const livePath = getLivePath();
+      const isPublic = PUBLIC_PATHS.includes(livePath) || livePath.startsWith('/p');
 
       if (!activeSession) {
         // Browse only tokens for the current portal family. Mixing scope
         // across portals (e.g. admin token on a /driver route) is the
         // cross-portal session pollution vector: once the cookie is synced,
         // every subsequent request inherits the higher-privilege session.
-        if (currentPath.startsWith('/driver')) {
+        if (livePath.startsWith('/driver')) {
           const s = buildSessionFromLocalToken('tad_driver_token', 'tad_driver_user');
           if (s) activeSession = s;
-        } else if (currentPath.startsWith('/advertiser')) {
+        } else if (livePath.startsWith('/advertiser')) {
           const s = buildSessionFromLocalToken('tad_advertiser_token', 'tad_advertiser_user');
           if (s) activeSession = s;
-        } else if (currentPath.startsWith('/admin')) {
+        } else if (livePath.startsWith('/admin')) {
           const s = buildSessionFromLocalToken('tad_admin_token', 'tad_admin_user');
           if (s) activeSession = s;
         } else {
@@ -181,7 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // we force a portal-local signout instead. The OAuth callback is exempt:
       // AuthCallback still needs to inspect/exchange/signOut the provisional
       // session to show the branded authorization error.
-      const livePath = router.pathname;
       const pathPortal = portalFromPath(livePath);
       const isOAuthCallback = livePath.endsWith('/auth/callback');
       if (activeSession && pathPortal && !isOAuthCallback) {
@@ -219,7 +221,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // subscription outlives client-side navigation, so the mount-time
           // path is stale for post-login redirects (the "entered as admin"
           // vector). OAuth callbacks are exempt — AuthCallback decides routing.
-          const livePath = router.pathname;
+          const getLivePath = () =>
+            typeof window !== 'undefined' ? window.location.pathname : '/';
+          const livePath = getLivePath();
           const pathPortal = portalFromPath(livePath);
           const isOAuthCallback = livePath.endsWith('/auth/callback');
           const sessionRole = roleOfSession(sbSession);
@@ -252,7 +256,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear ALL portal tokens — user intentionally signed out
           clearPortalTokens();
           setSession(null);
-          router.replace(loginRouteFor(portalFromPath(router.pathname)));
+          const getLivePath = () =>
+            typeof window !== 'undefined' ? window.location.pathname : '/';
+          const livePath = getLivePath();
+          router.replace(loginRouteFor(portalFromPath(livePath)));
         }
       });
 
@@ -285,6 +292,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-
-

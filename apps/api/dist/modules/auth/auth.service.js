@@ -123,15 +123,14 @@ let AuthService = AuthService_1 = class AuthService {
                 throw new common_1.ForbiddenException('Tu cuenta no tiene un rol asignado en la plataforma.');
             }
             this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
-            this.supabaseService.getClient().auth.admin.updateUserById(userId, {
+            const { error: updateError } = await this.supabaseService
+                .getClient()
+                .auth.admin.updateUserById(userId, {
                 app_metadata: { role, entityId },
-            }).then(({ error: updateError }) => {
-                if (updateError) {
-                    this.logger.error(`⚠️ Error inyectando metadata en Supabase: ${updateError.message}`);
-                }
-            }).catch(e => {
-                this.logger.error(`⚠️ Excepción inyectando metadata: ${e.message}`);
             });
+            if (updateError) {
+                this.logger.error(`⚠️ Error inyectando metadata en Supabase: ${updateError.message}`);
+            }
             this.logger.log(`✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || 'N/A'}`);
             return {
                 access_token: data.session.access_token,

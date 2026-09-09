@@ -52,7 +52,7 @@ api.interceptors.request.use(async (config) => {
 
       // 1. Intento principal: Supabase Session (Solo en rutas no públicas)
       if (!isPublicPath(currentPath)) {
-        const session = await getValidSession();
+        const session = await getValidSession(currentPath);
         if (session?.access_token) {
           config.headers.Authorization = `Bearer ${session.access_token}`;
           return config;

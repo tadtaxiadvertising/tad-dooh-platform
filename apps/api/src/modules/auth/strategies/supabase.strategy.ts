@@ -48,10 +48,10 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'jwt') {
     const appMeta = payload.app_metadata || {};
     
     return {
-      id: payload.sub,
-      email: payload.email,
-      role: appMeta.role || payload.role || 'ADMIN',
-      entityId: appMeta.entityId || null,
-    };
+          id: payload.sub,
+          email: payload.email,
+          role: appMeta.role || payload.role || 'GUEST',
+          entityId: appMeta.entityId || null,
+        };
   }
 }

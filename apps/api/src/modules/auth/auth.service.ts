@@ -90,23 +90,23 @@ export class AuthService {
       }
 
       if (role === 'GUEST') {
-        this.logger.warn(`🚫 Usuario sin rol asignado en DB: ${email}`);
-        throw new ForbiddenException('Tu cuenta no tiene un rol asignado en la plataforma.');
-      }
+              this.logger.warn(`🚫 Usuario sin rol asignado en DB: ${email}`);
+              throw new ForbiddenException('Tu cuenta no tiene un rol asignado en la plataforma.');
+            }
 
-      // 3. Inyectar Custom Claims en app_metadata (Fire & Forget, don't block login if it fails)
-      this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
-      this.supabaseService.getClient().auth.admin.updateUserById(userId, {
-        app_metadata: { role, entityId },
-      }).then(({ error: updateError }) => {
-        if (updateError) {
-          this.logger.error(`⚠️ Error inyectando metadata en Supabase: ${updateError.message}`);
-        }
-      }).catch(e => {
-        this.logger.error(`⚠️ Excepción inyectando metadata: ${e.message}`);
-      });
+            // 3. Inyectar Custom Claims en app_metadata SYNCHRONOUSLY before returning token
+            // This ensures the Supabase user record has the correct role for subsequent getUser calls
+            this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
+            const { error: updateError } = await this.supabaseService
+              .getClient()
+              .auth.admin.updateUserById(userId, {
+                app_metadata: { role, entityId },
+              });
+            if (updateError) {
+              this.logger.error(`⚠️ Error inyectando metadata en Supabase: ${updateError.message}`);
+            }
 
-      this.logger.log(`✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || 'N/A'}`);
+            this.logger.log(`✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || 'N/A'}`);
 
       return {
         access_token: data.session.access_token,

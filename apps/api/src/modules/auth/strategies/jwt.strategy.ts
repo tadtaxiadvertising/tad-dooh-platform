@@ -43,10 +43,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const appMeta = user.app_metadata || {};
 
     return {
-      id: user.id,
-      email: user.email,
-      role: appMeta.role || 'ADMIN',
-      entityId: appMeta.entityId || null,
-    };
+          id: user.id,
+          email: user.email,
+          role: appMeta.role || 'GUEST',
+          entityId: appMeta.entityId || null,
+        };
   }
 }

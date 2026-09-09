@@ -34,7 +34,7 @@ const isTokenExpiringSoon = (session: Session): boolean => {
  * FIX (2026-05-09): Added proactive refresh when the token is within 5 minutes
  * of expiry, preventing cascading 401 errors on protected API calls.
  */
-export const getValidSession = async (): Promise<Session | null> => {
+export const getValidSession = async (currentPath: string): Promise<Session | null> => {
   const now = Date.now();
 
   // Return cached session if fresh AND the token is not about to expire
@@ -54,11 +54,20 @@ export const getValidSession = async (): Promise<Session | null> => {
         let { data: { session } } = await supabase.auth.getSession();
 
         // Step 1.5: Recovery Fallback (If Supabase client is empty but we have tokens in localStorage)
+        // RESPECT PORTAL SCOPE - only use token from current portal
         if (!session && typeof window !== 'undefined') {
-          const localToken = localStorage.getItem('tad_admin_token') ||
-            localStorage.getItem('tad_advertiser_token') ||
-            localStorage.getItem('tad_driver_token');
-          const refreshToken = localStorage.getItem('tad_admin_refresh_token');
+          const getPortalToken = (path: string): string | null => {
+            if (path.includes('/advertiser/')) return localStorage.getItem('tad_advertiser_token');
+            if (path.includes('/driver/')) return localStorage.getItem('tad_driver_token');
+            return localStorage.getItem('tad_admin_token');
+          };
+          const getPortalRefresh = (path: string): string | null => {
+            if (path.includes('/advertiser/')) return localStorage.getItem('tad_advertiser_refresh_token');
+            if (path.includes('/driver/')) return localStorage.getItem('tad_driver_refresh_token');
+            return localStorage.getItem('tad_admin_refresh_token');
+          };
+          const localToken = getPortalToken(currentPath);
+          const refreshToken = getPortalRefresh(currentPath);
 
           if (localToken && refreshToken) {
             console.info('🔄 [AUTH] Recuperando sesión desde localStorage...');

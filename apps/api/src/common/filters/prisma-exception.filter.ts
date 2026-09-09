@@ -39,11 +39,12 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
       errorCode = exception.code;
 
       switch (exception.code) {
-        case "P2002":
+        case "P2002": {
           status = HttpStatus.CONFLICT;
           const target = (exception.meta?.target as string[]) || [];
           message = `Ya existe un registro con este/a: ${target.join(", ")}.`;
           break;
+        }
         case "P2003":
           status = HttpStatus.BAD_REQUEST;
           message = `Error de relación: Verifique que el ID vinculado exista (ej: ID Tablet).`;

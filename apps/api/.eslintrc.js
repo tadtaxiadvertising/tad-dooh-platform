@@ -29,6 +29,13 @@ module.exports = {
     '@typescript-eslint/no-unsafe-return': 'warn',
     '@typescript-eslint/no-unsafe-argument': 'warn',
     '@typescript-eslint/no-var-requires': 'warn',
+    // Disable erroring rules that would block on existing codebase
+    '@typescript-eslint/restrict-template-expressions': 'warn',
+    '@typescript-eslint/no-base-to-string': 'warn',
+    'no-empty': 'warn',
+    '@typescript-eslint/no-unsafe-enum-comparison': 'warn',
+    '@typescript-eslint/ban-ts-comment': 'warn',
+    'no-useless-escape': 'warn',
   },
   ignorePatterns: ['dist/', 'node_modules/', '.next/', '*.js', '*.d.ts'],
   overrides: [

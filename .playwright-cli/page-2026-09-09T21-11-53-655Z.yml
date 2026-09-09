@@ -1,0 +1,85 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e6]:
+      - navigation [ref=e8]:
+        - link [ref=e11] [cursor=pointer]:
+          - /url: https://supabase.com
+          - img "Supabase Logo" [ref=e12]
+        - link "Documentation" [ref=e14] [cursor=pointer]:
+          - /url: https://supabase.com/docs
+      - generic [ref=e20]:
+        - main [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - heading "Welcome back" [level=1] [ref=e24]
+              - heading "Sign in to your account" [level=2] [ref=e25]
+            - generic [ref=e26]:
+              - button "Continue with GitHub" [ref=e29] [cursor=pointer]
+              - button "Continue with ChatGPT" [ref=e35] [cursor=pointer]
+              - link "Continue with SSO" [ref=e41] [cursor=pointer]:
+                - /url: /dashboard/sign-in-sso
+              - generic [ref=e47]: or
+              - generic [ref=e52]:
+                - generic [ref=e54]:
+                  - generic [ref=e55]: Email
+                  - textbox "Email" [disabled] [ref=e60]:
+                    - /placeholder: you@example.com
+                    - text: tad.taxiadvertising@gmail.com
+                - generic [ref=e61]:
+                  - generic [ref=e63]:
+                    - generic [ref=e64]: Password
+                    - generic [ref=e69]:
+                      - textbox "Password" [disabled] [ref=e70]:
+                        - /placeholder: ••••••••
+                        - text: TAD.advertising2026
+                      - button "Show password" [disabled]
+                  - link "Forgot password?" [ref=e76] [cursor=pointer]:
+                    - /url: /dashboard/forgot-password?returnTo=%2Forganizations
+                - generic [ref=e78]:
+                  - button "Sign in" [disabled]
+            - generic [ref=e81]:
+              - text: Don’t have an account?
+              - link "Sign up" [ref=e82] [cursor=pointer]:
+                - /url: /dashboard/sign-up?returnTo=%2Fnew
+          - paragraph [ref=e84]:
+            - text: By continuing, you agree to Supabase’s
+            - link "Terms of Service" [ref=e85] [cursor=pointer]:
+              - /url: https://supabase.com/terms
+            - text: and
+            - link "Privacy Policy" [ref=e86] [cursor=pointer]:
+              - /url: https://supabase.com/privacy
+            - text: ", and to receive periodic emails with updates."
+        - complementary [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: “
+            - blockquote [ref=e90]: Very impressed by @supabase's growth. For new startups, they seem to have gone from "promising" to "standard" in remarkably short order.
+            - link "patrickc @patrickc" [ref=e91] [cursor=pointer]:
+              - /url: https://x.com/patrickc/status/1979157875600617913
+              - img "patrickc" [ref=e92]
+              - generic [ref=e93]: "@patrickc"
+    - region "Notifications alt+T":
+      - list:
+        - status [ref=e133]:
+          - button "Close toast" [ref=e134]
+          - generic [ref=e153]: Signing in...
+  - alert [ref=e95]
+  - generic [ref=e124]:
+    - iframe [active] [ref=e126]:
+      - generic [ref=f1e2]:
+        - generic [ref=f1e104]:
+          - generic [ref=f1e107]:
+            - heading "Click the object that is different from its column" [level=2] [ref=f1e108]
+            - paragraph
+          - 'img "Image-based CAPTCHA challenge. Please use the ''Accessibility: Retrieve Cookie'' or ''Accessibility: Text Challenge'' options if available in the challenge menu." [ref=f1e110]'
+        - generic [ref=f1e12]:
+          - alert [aria-hidden] [ref=f1e13]:
+            - generic [ref=f1e14]: Please try again. ⚠️
+          - button "Skip Challenge, page 1 of 2" [ref=f1e21] [cursor=pointer]:
+            - generic: Skip
+        - generic [ref=f1e22]:
+          - button "EN - English, Select a language" [ref=f1e24] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e25]: EN
+          - button "About hCaptcha & Accessibility Options" [active] [ref=f1e26] [cursor=pointer]
+          - button "Refresh Challenge." [ref=f1e37] [cursor=pointer]
+          - button "hCaptcha logo, opens new window with more information" [ref=f1e46] [cursor=pointer]
+    - generic [ref=e127] [cursor=pointer]

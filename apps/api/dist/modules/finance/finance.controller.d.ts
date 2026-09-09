@@ -55,11 +55,11 @@ export declare class FinanceController {
         year: number;
         reference: string;
     }): Promise<{
+        status: string;
         id: string;
         createdAt: Date;
-        status: string;
-        activeAds: number;
         driverId: string;
+        activeAds: number;
         amount: number;
         month: number;
         year: number;
@@ -112,13 +112,13 @@ export declare class FinanceController {
         note?: string;
         status?: string;
     }): Promise<{
+        category: string;
+        type: string;
+        status: string;
         id: string;
+        entityId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        status: string;
-        category: string;
-        entityId: string | null;
-        type: string;
         amount: number;
         reference: string | null;
         netAmount: number;
@@ -147,13 +147,13 @@ export declare class FinanceController {
         generatedAt: Date;
     }>;
     getLedger(): Promise<{
+        category: string;
+        type: string;
+        status: string;
         id: string;
+        entityId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        status: string;
-        category: string;
-        entityId: string | null;
-        type: string;
         amount: number;
         reference: string | null;
         netAmount: number;

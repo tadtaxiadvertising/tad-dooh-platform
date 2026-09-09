@@ -21,16 +21,16 @@ export declare class DeviceService {
         usage_percentage: number;
     }>;
     registerDevice(dto: RegisterDeviceDto): Promise<{
-        id: string;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
-        isSimulated: boolean;
         fleet: string | null;
+        isSimulated: boolean;
         deviceId: string;
         batteryLevel: number | null;
+        name: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -53,22 +53,22 @@ export declare class DeviceService {
         connectivityStatus: string;
     }>;
     getPendingDevices(): Promise<{
-        id: string;
         deviceId: string;
+        id: string;
         appVersion: string;
         lastSeen: Date;
     }[]>;
     approveDevice(deviceId: string): Promise<{
-        id: string;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
-        isSimulated: boolean;
         fleet: string | null;
+        isSimulated: boolean;
         deviceId: string;
         batteryLevel: number | null;
+        name: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -91,16 +91,16 @@ export declare class DeviceService {
         connectivityStatus: string;
     }>;
     rejectDevice(deviceId: string): Promise<{
-        id: string;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
-        taxiNumber: string | null;
-        isSimulated: boolean;
         fleet: string | null;
+        isSimulated: boolean;
         deviceId: string;
         batteryLevel: number | null;
+        name: string | null;
+        status: import(".prisma/client").$Enums.SystemStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        taxiNumber: string | null;
         city: string | null;
         lastSync: Date | null;
         lastHeartbeat: Date | null;
@@ -152,12 +152,12 @@ export declare class DeviceService {
     }>;
     private checkSubscriptionStatus;
     recordPlayback(dto: PlaybackConfirmationDto): Promise<{
-        id: string;
-        isSimulated: boolean;
         lat: number | null;
         lng: number | null;
         timestamp: Date;
+        isSimulated: boolean;
         deviceId: string;
+        id: string;
         eventType: string;
         videoId: string;
         verified: boolean;
@@ -223,11 +223,11 @@ export declare class DeviceService {
         reason?: undefined;
     }>;
     acknowledgeCommand(commandId: string, result: any): Promise<{
-        result: string | null;
+        deviceId: string;
+        status: string;
         id: string;
         createdAt: Date;
-        status: string;
-        deviceId: string;
+        result: string | null;
         commandType: string;
         commandParams: string | null;
         expiresAt: Date | null;

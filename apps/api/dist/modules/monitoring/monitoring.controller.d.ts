@@ -16,23 +16,23 @@ export declare class MonitoringController {
         reason?: undefined;
     }>;
     getFleetStatus(): Promise<{
+        deviceId: string;
         status: import(".prisma/client").$Enums.SystemStatus;
         taxiNumber: string;
-        deviceId: string;
         lastLat: number;
         lastLng: number;
         isOnline: boolean;
         lastSeen: Date;
     }[]>;
     getCampaignsStatus(): Promise<{
-        id: string;
-        name: string;
         advertiser: string;
+        name: string;
+        id: string;
         targetImpressions: number;
         metrics: {
+            deviceId: string | null;
             id: bigint;
             createdAt: Date;
-            deviceId: string | null;
             city: string | null;
             campaignId: string;
             date: Date;

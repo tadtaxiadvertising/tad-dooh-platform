@@ -21,9 +21,9 @@ export declare class ReferralService {
         pendingCommissions: number;
     }>;
     getNetwork(): Promise<{
+        status: import(".prisma/client").$Enums.SystemStatus;
         id: string;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.SystemStatus;
         referredBy: string;
         fullName: string;
         referredByDriver: {

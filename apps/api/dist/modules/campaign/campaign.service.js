@@ -50,7 +50,7 @@ const supabase_service_1 = require("../supabase/supabase.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const crypto = __importStar(require("crypto"));
 const business_rules_1 = require("../../common/constants/business-rules");
-const impact_calculator_1 = require("@tad/impact-calculator");
+const impact_calculator_1 = require("../../libs/impact-calculator/index.ts");
 const mediaAssetSafeSelect = {
     id: true,
     campaignId: true,

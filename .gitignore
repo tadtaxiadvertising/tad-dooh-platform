@@ -103,6 +103,7 @@ zig*/
 \#*\#
 
 # Build artifacts
+**/dist/
 dist/
 out/
 .next/
@@ -124,6 +125,7 @@ tests/e2e/playwright-report/
 
 # Playwright MCP state
 .playwright-mcp/
+.playwright-cli/
 
 # Scratch test media
 scratch/

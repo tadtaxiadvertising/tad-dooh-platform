@@ -4,9 +4,9 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Logger,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { UserRole } from '../decorators/roles.decorator';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { UserRole } from "../decorators/roles.decorator";
 
 /**
  * SHELTER C-A1: TenantGuard — Aislamiento de Datos por Tenant
@@ -44,10 +44,10 @@ export class TenantGuard implements CanActivate {
     if (user.entityId !== resourceId) {
       this.logger.warn(
         `🚨 [TENANT_VIOLATION] User ${user.sub || user.id} (entity: ${user.entityId}) ` +
-        `intentó acceder al recurso ${resourceId}`
+          `intentó acceder al recurso ${resourceId}`,
       );
       throw new UnauthorizedException(
-        'No tienes permiso para acceder a este recurso.'
+        "No tienes permiso para acceder a este recurso.",
       );
     }
 

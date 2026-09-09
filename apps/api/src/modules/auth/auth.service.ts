@@ -1,12 +1,24 @@
-import { Injectable, UnauthorizedException, Logger, ForbiddenException, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
-import { SupabaseService } from '../supabase/supabase.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { LoginDto } from './dto/login.dto';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { BCRYPT_ROUNDS, BUSINESS_RULES, JWT_EXPIRY } from '../../common/constants/business-rules';
-import * as jwt from 'jsonwebtoken';
-import { OAuthExchangeDto, OAuthPortalRole } from './dto/oauth-exchange.dto';
+import {
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+} from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { LoginDto } from "./dto/login.dto";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import {
+  BCRYPT_ROUNDS,
+  BUSINESS_RULES,
+  JWT_EXPIRY,
+} from "../../common/constants/business-rules";
+import * as jwt from "jsonwebtoken";
+import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
 
 @Injectable()
 export class AuthService {
@@ -20,13 +32,17 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     this.logger.log(`🔐 Intentando login para: ${dto.email}`);
-    
+
     try {
       const anonClient = this.supabaseService.getAnonClient();
 
       if (!anonClient) {
-        this.logger.error('❌ SUPABASE_ANON_KEY no configurada — no se puede autenticar contra Supabase.');
-        throw new Error('Autenticación no disponible: falta SUPABASE_ANON_KEY en la configuración del servidor.');
+        this.logger.error(
+          "❌ SUPABASE_ANON_KEY no configurada — no se puede autenticar contra Supabase.",
+        );
+        throw new Error(
+          "Autenticación no disponible: falta SUPABASE_ANON_KEY en la configuración del servidor.",
+        );
       }
 
       // 1. Intentar login en Supabase (debe usar la clave pública/anon, GoTrue rechaza service_role)
@@ -36,77 +52,88 @@ export class AuthService {
       });
 
       if (error || !data.session || !data.user) {
-        this.logger.error(`❌ Fallo Login Supabase: ${dto.email} - ${error?.message}`);
-        throw new UnauthorizedException('Credenciales inválidas');
+        this.logger.error(
+          `❌ Fallo Login Supabase: ${dto.email} - ${error?.message}`,
+        );
+        throw new UnauthorizedException("Credenciales inválidas");
       }
 
       const userId = data.user.id;
       const email = data.user.email;
 
       if (!email) {
-        throw new Error('El usuario autenticado no tiene email devuelto por Supabase');
+        throw new Error(
+          "El usuario autenticado no tiene email devuelto por Supabase",
+        );
       }
 
       // 2. Buscar rol en base de datos local
       this.logger.debug(`🔍 Buscando rol para ${email} en base de datos...`);
-      
+
       const [adminUser, advertiser, driver] = await Promise.all([
-        this.prisma.user.findUnique({ where: { email } }).catch(e => {
+        this.prisma.user.findUnique({ where: { email } }).catch((e) => {
           this.logger.error(`Error buscando adminUser: ${e.message}`);
           return null;
         }),
-        this.prisma.advertiser.findUnique({ where: { email } }).catch(e => {
+        this.prisma.advertiser.findUnique({ where: { email } }).catch((e) => {
           this.logger.error(`Error buscando advertiser: ${e.message}`);
           return null;
         }),
-        this.prisma.driver.findFirst({
-          where: {
-            OR: [
-              { phone: email.split('@')[0] },
-              { phone: email },
-            ],
-          },
-        }).catch(e => {
-          this.logger.error(`Error buscando driver: ${e.message}`);
-          return null;
-        }),
+        this.prisma.driver
+          .findFirst({
+            where: {
+              OR: [{ phone: email.split("@")[0] }, { phone: email }],
+            },
+          })
+          .catch((e) => {
+            this.logger.error(`Error buscando driver: ${e.message}`);
+            return null;
+          }),
       ]);
 
       // Determinar rol e ID de entidad
-      let role = 'GUEST';
+      let role = "GUEST";
       let entityId: string | null = null;
 
       if (adminUser) {
-        role = adminUser.role || 'ADMIN';
+        role = adminUser.role || "ADMIN";
         this.logger.debug(`Found Admin User with role: ${role}`);
       } else if (advertiser) {
-        role = 'ADVERTISER';
+        role = "ADVERTISER";
         entityId = advertiser.id;
         this.logger.debug(`Found Advertiser with ID: ${entityId}`);
       } else if (driver) {
-        role = 'DRIVER';
+        role = "DRIVER";
         entityId = driver.id;
         this.logger.debug(`Found Driver with ID: ${entityId}`);
       }
 
-      if (role === 'GUEST') {
-              this.logger.warn(`🚫 Usuario sin rol asignado en DB: ${email}`);
-              throw new ForbiddenException('Tu cuenta no tiene un rol asignado en la plataforma.');
-            }
+      if (role === "GUEST") {
+        this.logger.warn(`🚫 Usuario sin rol asignado en DB: ${email}`);
+        throw new ForbiddenException(
+          "Tu cuenta no tiene un rol asignado en la plataforma.",
+        );
+      }
 
-            // 3. Inyectar Custom Claims en app_metadata SYNCHRONOUSLY before returning token
-            // This ensures the Supabase user record has the correct role for subsequent getUser calls
-            this.logger.debug(`💉 Inyectando metadata: role=${role}, entityId=${entityId}`);
-            const { error: updateError } = await this.supabaseService
-              .getClient()
-              .auth.admin.updateUserById(userId, {
-                app_metadata: { role, entityId },
-              });
-            if (updateError) {
-              this.logger.error(`⚠️ Error inyectando metadata en Supabase: ${updateError.message}`);
-            }
+      // 3. Inyectar Custom Claims en app_metadata SYNCHRONOUSLY before returning token
+      // This ensures the Supabase user record has the correct role for subsequent getUser calls
+      this.logger.debug(
+        `💉 Inyectando metadata: role=${role}, entityId=${entityId}`,
+      );
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .auth.admin.updateUserById(userId, {
+          app_metadata: { role, entityId },
+        });
+      if (updateError) {
+        this.logger.error(
+          `⚠️ Error inyectando metadata en Supabase: ${updateError.message}`,
+        );
+      }
 
-            this.logger.log(`✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || 'N/A'}`);
+      this.logger.log(
+        `✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || "N/A"}`,
+      );
 
       return {
         access_token: data.session.access_token,
@@ -119,17 +146,23 @@ export class AuthService {
         },
       };
     } catch (error) {
-      this.logger.error(`💥 ERROR CRÍTICO EN LOGIN: ${error.message}`, error.stack);
-      if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
+      this.logger.error(
+        `💥 ERROR CRÍTICO EN LOGIN: ${error.message}`,
+        error.stack,
+      );
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       throw new HttpException(
-        { 
-          status: HttpStatus.INTERNAL_SERVER_ERROR, 
-          error: 'Error interno en el proceso de autenticación',
-          details: error.message 
-        }, 
-        HttpStatus.INTERNAL_SERVER_ERROR
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: "Error interno en el proceso de autenticación",
+          details: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -143,19 +176,25 @@ export class AuthService {
     ]);
 
     if (user) return { ...user, role: user.role };
-    if (advertiser) return { ...advertiser, role: 'ADVERTISER' };
-    if (driver) return { ...driver, role: 'DRIVER' };
+    if (advertiser) return { ...advertiser, role: "ADVERTISER" };
+    if (driver) return { ...driver, role: "DRIVER" };
 
-    return { id: userId, role: 'GUEST' };
+    return { id: userId, role: "GUEST" };
   }
 
-  async updateProfile(userId: string, data: { name?: string; password?: string; currentPassword?: string }) {
+  async updateProfile(
+    userId: string,
+    data: { name?: string; password?: string; currentPassword?: string },
+  ) {
     const supabase = this.supabaseService.getClient();
 
     // 1. Update password in Supabase if requested
     if (data.password) {
       if (!data.currentPassword) {
-        throw new HttpException('Current password is required to change password', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          "Current password is required to change password",
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Supabase requires verifying the current session/password to change the password safely,
@@ -170,7 +209,9 @@ export class AuthService {
       });
 
       if (error) {
-        this.logger.error(`Failed to update password for ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to update password for ${userId}: ${error.message}`,
+        );
         throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
       }
     }
@@ -184,13 +225,25 @@ export class AuthService {
       ]);
 
       if (user) {
-        await this.prisma.user.update({ where: { id: userId }, data: { name: data.name } });
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { name: data.name },
+        });
       } else if (advertiser) {
-        await this.prisma.advertiser.update({ where: { id: userId }, data: { contactName: data.name } });
+        await this.prisma.advertiser.update({
+          where: { id: userId },
+          data: { contactName: data.name },
+        });
       } else if (driver) {
-        await this.prisma.driver.update({ where: { id: userId }, data: { fullName: data.name } });
+        await this.prisma.driver.update({
+          where: { id: userId },
+          data: { fullName: data.name },
+        });
       } else {
-        throw new HttpException('User not found in any role table', HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          "User not found in any role table",
+          HttpStatus.NOT_FOUND,
+        );
       }
     }
 
@@ -198,7 +251,7 @@ export class AuthService {
   }
 
   async seedAdminUser() {
-    this.logger.log('🔐 Seeding users must be done via Supabase Dashboard');
+    this.logger.log("🔐 Seeding users must be done via Supabase Dashboard");
   }
 
   /**
@@ -223,23 +276,29 @@ export class AuthService {
     const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new HttpException(
-        'Server JWT secret not configured.',
+        "Server JWT secret not configured.",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
     let payload: any;
     try {
-      payload = jwt.verify(dto.access_token, jwtSecret, { algorithms: ['HS256'] });
+      payload = jwt.verify(dto.access_token, jwtSecret, {
+        algorithms: ["HS256"],
+      });
     } catch (err: any) {
-      this.logger.warn(`🚫 Invalid Supabase token presented to /oauth/exchange: ${err.message}`);
-      throw new UnauthorizedException('Token de Supabase inválido o expirado.');
+      this.logger.warn(
+        `🚫 Invalid Supabase token presented to /oauth/exchange: ${err.message}`,
+      );
+      throw new UnauthorizedException("Token de Supabase inválido o expirado.");
     }
 
     const email: string | undefined = payload?.email;
     const userId: string | undefined = payload?.sub;
     if (!email || !userId) {
-      throw new BadRequestException('El token de Supabase no contiene email/sub.');
+      throw new BadRequestException(
+        "El token de Supabase no contiene email/sub.",
+      );
     }
 
     this.logger.debug(`🔍 OAuth token verified for ${email}`);
@@ -251,13 +310,15 @@ export class AuthService {
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
       const adminUser = await this.prisma.user.findUnique({ where: { email } });
       if (adminUser) {
-        resolvedRole = adminUser.role || 'ADMIN';
+        resolvedRole = adminUser.role || "ADMIN";
         profile = { ...adminUser, role: resolvedRole };
       }
     } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {
-      const advertiser = await this.prisma.advertiser.findUnique({ where: { email } });
+      const advertiser = await this.prisma.advertiser.findUnique({
+        where: { email },
+      });
       if (advertiser) {
-        resolvedRole = 'ADVERTISER';
+        resolvedRole = "ADVERTISER";
         entityId = advertiser.id;
         profile = { ...advertiser, role: resolvedRole };
       } else {
@@ -265,20 +326,24 @@ export class AuthService {
         const newAdvertiser = await this.prisma.advertiser.create({
           data: {
             email,
-            companyName: payload?.name || email.split('@')[0],
-            contactName: payload?.name || email.split('@')[0],
-            status: 'PENDING_ONBOARDING',
+            companyName: payload?.name || email.split("@")[0],
+            contactName: payload?.name || email.split("@")[0],
+            status: "PENDING_ONBOARDING",
           },
         });
-        resolvedRole = 'ADVERTISER';
+        resolvedRole = "ADVERTISER";
         entityId = newAdvertiser.id;
         profile = { ...newAdvertiser, role: resolvedRole };
-        this.logger.log(`✅ Auto-created advertiser for new OAuth user: ${email} (ID: ${newAdvertiser.id})`);
+        this.logger.log(
+          `✅ Auto-created advertiser for new OAuth user: ${email} (ID: ${newAdvertiser.id})`,
+        );
       }
     }
 
     if (!resolvedRole || !profile) {
-      this.logger.warn(`🚫 OAuth user has no matching ${dto.intended_role} account: ${email}`);
+      this.logger.warn(
+        `🚫 OAuth user has no matching ${dto.intended_role} account: ${email}`,
+      );
       throw new ForbiddenException(
         `Tu cuenta de Google (${email}) no está autorizada para acceder al portal ${dto.intended_role}. Contacta al administrador.`,
       );
@@ -301,36 +366,38 @@ export class AuthService {
           }
         })
         .catch((e) => {
-          this.logger.warn(`⚠️ Exception refreshing app_metadata for ${email}: ${e.message}`);
+          this.logger.warn(
+            `⚠️ Exception refreshing app_metadata for ${email}: ${e.message}`,
+          );
         });
     }
 
-    this.logger.log(`✅ OAuth exchange success: ${email} → ${resolvedRole} | Entity: ${entityId || 'N/A'}`);
+    this.logger.log(
+      `✅ OAuth exchange success: ${email} → ${resolvedRole} | Entity: ${entityId || "N/A"}`,
+    );
 
-    const needsOnboarding = dto.intended_role === OAuthPortalRole.ADVERTISER && profile?.status === 'PENDING_ONBOARDING';
+    const needsOnboarding =
+      dto.intended_role === OAuthPortalRole.ADVERTISER &&
+      profile?.status === "PENDING_ONBOARDING";
 
     return {
       access_token: dto.access_token,
-      refresh_token: dto.refresh_token || '',
+      refresh_token: dto.refresh_token || "",
       user: {
         id: userId,
         email,
         role: resolvedRole,
         entityId,
-        name:
-          (profile as any).fullName ||
-          (profile as any).contactName ||
-          (profile as any).name ||
-          email,
+        name: profile.fullName || profile.contactName || profile.name || email,
       },
       needsOnboarding,
     };
   }
 
   async generatePairingToken(driverId: string) {
-    const payload = { sub: driverId, type: 'pairing' };
+    const payload = { sub: driverId, type: "pairing" };
     return {
-      token: this.jwtService.sign(payload, { expiresIn: '5m' }),
+      token: this.jwtService.sign(payload, { expiresIn: "5m" }),
       expiresIn: 300,
     };
   }
@@ -342,9 +409,14 @@ export class AuthService {
     vehicleModel?: string;
     licensePlate?: string;
   }) {
-    const existingDriver = await this.prisma.driver.findUnique({ where: { phone: data.phone } });
+    const existingDriver = await this.prisma.driver.findUnique({
+      where: { phone: data.phone },
+    });
     if (existingDriver) {
-      throw new HttpException('Ya existe un chofer con ese teléfono', HttpStatus.CONFLICT);
+      throw new HttpException(
+        "Ya existe un chofer con ese teléfono",
+        HttpStatus.CONFLICT,
+      );
     }
 
     const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
@@ -366,7 +438,7 @@ export class AuthService {
     if (!jwtSecret) {
       return {
         success: true,
-        message: 'Registro completado. Inicia sesión para continuar.',
+        message: "Registro completado. Inicia sesión para continuar.",
         driverId: driver.id,
       };
     }
@@ -375,8 +447,8 @@ export class AuthService {
       {
         sub: driver.id,
         phone: driver.phone,
-        role: 'DRIVER',
-        app_metadata: { role: 'DRIVER', entityId: driver.id },
+        role: "DRIVER",
+        app_metadata: { role: "DRIVER", entityId: driver.id },
       },
       jwtSecret,
       { expiresIn: JWT_EXPIRY },
@@ -384,7 +456,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Registro completado exitosamente.',
+      message: "Registro completado exitosamente.",
       access_token: token,
       driverId: driver.id,
     };

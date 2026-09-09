@@ -1,8 +1,8 @@
-import { Module, Global } from '@nestjs/common';
-import { NotificationsService } from './notifications.service';
-import { WhatsAppService } from './whatsapp.service';
-import { EmailService } from './email.service';
-import { NotificationsController } from './notifications.controller';
+import { Module, Global } from "@nestjs/common";
+import { NotificationsService } from "./notifications.service";
+import { WhatsAppService } from "./whatsapp.service";
+import { EmailService } from "./email.service";
+import { NotificationsController } from "./notifications.controller";
 
 // NOTE: NotificationsProcessor removed — BullMQ/Redis not yet provisioned on EasyPanel.
 // Re-add when REDIS_URL is configured: import { BullModule } from '@nestjs/bull'

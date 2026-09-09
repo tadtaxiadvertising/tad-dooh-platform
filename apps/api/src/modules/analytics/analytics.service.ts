@@ -1,14 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { NotificationsService } from '../notifications/notifications.service';
-import { createUmamiClient } from '../../utils/umami';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { Prisma } from "@prisma/client";
+import { NotificationsService } from "../notifications/notifications.service";
+import { createUmamiClient } from "../../utils/umami";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  
+
   // Minimal in-memory cache for high-frequency dashboard data
   private cache: {
     summary?: { data: AnalyticsSummary; expiry: number };
@@ -20,17 +20,17 @@ export class AnalyticsService {
 
   private deviceExistsCache = new Set<string>();
   private readonly CACHE_TTL = 30000; // 30 seconds
-  
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
    * Clears all in-memory analytics caches to ensure fresh data
    */
   clearCache() {
-    this.logger.log('🧹 Limpiando caché de analíticas...');
+    this.logger.log("🧹 Limpiando caché de analíticas...");
     this.cache = {};
     this.deviceExistsCache.clear();
   }
@@ -55,14 +55,16 @@ export class AnalyticsService {
     }
 
     // Alertas Críticas (Conexión Alertas -> Notificaciones)
-    if (['low_battery', 'sync_failed', 'storage_fail'].includes(dto.eventType)) {
-       await this.notifications.createAlert({
-         title: `Alerta Técnica: ${dto.eventType.toUpperCase()}`,
-         message: `El dispositivo ${dto.deviceId} reportó un evento crítico.`,
-         type: 'CRITICAL',
-         category: 'DEVICE',
-         entityId: dto.deviceId
-       });
+    if (
+      ["low_battery", "sync_failed", "storage_fail"].includes(dto.eventType)
+    ) {
+      await this.notifications.createAlert({
+        title: `Alerta Técnica: ${dto.eventType.toUpperCase()}`,
+        message: `El dispositivo ${dto.deviceId} reportó un evento crítico.`,
+        type: "CRITICAL",
+        category: "DEVICE",
+        entityId: dto.deviceId,
+      });
     }
 
     return this.prisma.analyticsEvent.create({
@@ -74,7 +76,7 @@ export class AnalyticsService {
         occurredAt: dto.timestamp ? new Date(dto.timestamp) : new Date(),
         lat: dto.lat,
         lng: dto.lng,
-        processed: false
+        processed: false,
       },
     });
   }
@@ -85,27 +87,31 @@ export class AnalyticsService {
     }
 
     this.logger.log(`Ingesting ${dtos.length} analytics events in batch.`);
-    const processedEvents = dtos.map(dto => ({
+    const processedEvents = dtos.map((dto) => ({
       deviceId: dto.deviceId,
       campaignId: dto.campaignId,
       eventType: dto.type || dto.eventType, // Support both formats
       timestamp: dto.timestamp ? new Date(dto.timestamp) : new Date(),
-      occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : (dto.timestamp ? new Date(dto.timestamp) : new Date()),
+      occurredAt: dto.occurredAt
+        ? new Date(dto.occurredAt)
+        : dto.timestamp
+          ? new Date(dto.timestamp)
+          : new Date(),
       lat: dto.lat,
       lng: dto.lng,
-      processed: false
+      processed: false,
     }));
 
     await this.prisma.analyticsEvent.createMany({
       data: processedEvents as any,
     });
-    
+
     return { count: processedEvents.length };
   }
 
   async getCampaignAnalytics(campaignId: string) {
     const totalEvents = await this.prisma.analyticsEvent.count({
-      where: { campaignId }
+      where: { campaignId },
     });
 
     return { campaignId, totalEvents };
@@ -113,58 +119,64 @@ export class AnalyticsService {
 
   async getDeviceAnalytics(deviceId: string) {
     const totalEvents = await this.prisma.analyticsEvent.count({
-      where: { deviceId }
+      where: { deviceId },
     });
-    
+
     return { deviceId, totalEvents };
   }
 
   async getAnalyticsSummary(advertiserId?: string) {
     const now = Date.now();
     // Use a different cache key if advertiserId is provided
-    const cacheKey = advertiserId ? `summary_${advertiserId}` : 'summary';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+    const cacheKey = advertiserId ? `summary_${advertiserId}` : "summary";
+    if (
+      (this.cache as any)[cacheKey] &&
+      (this.cache as any)[cacheKey].expiry > now
+    ) {
       return (this.cache as any)[cacheKey].data;
     }
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : null;
 
-    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] = await Promise.all([
-      this.prisma.playbackEvent.count({
-        where: { 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      }),
-      this.prisma.playbackEvent.groupBy({
-        by: ['deviceId'],
-        where: { 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        },
-        _count: { deviceId: true }
-      }),
-      this.prisma.analyticsEvent.count({
-        where: { 
-          eventType: { in: ['QR_SCAN', 'qr_scan', 'scan'] },
-          ...(advertiserId ? { campaign: { advertiserId } } : {})
-        }
-      }),
-      this.prisma.playbackEvent.count({
-        where: { 
-          timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      })
-    ]);
+    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] =
+      await Promise.all([
+        this.prisma.playbackEvent.count({
+          where: {
+            eventType: "play_confirm",
+            ...(videoIds ? { videoId: { in: videoIds } } : {}),
+          },
+        }),
+        this.prisma.playbackEvent.groupBy({
+          by: ["deviceId"],
+          where: {
+            eventType: "play_confirm",
+            ...(videoIds ? { videoId: { in: videoIds } } : {}),
+          },
+          _count: { deviceId: true },
+        }),
+        this.prisma.analyticsEvent.count({
+          where: {
+            eventType: { in: ["QR_SCAN", "qr_scan", "scan"] },
+            ...(advertiserId ? { campaign: { advertiserId } } : {}),
+          },
+        }),
+        this.prisma.playbackEvent.count({
+          where: {
+            timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            eventType: "play_confirm",
+            ...(videoIds ? { videoId: { in: videoIds } } : {}),
+          },
+        }),
+      ]);
 
-    const data = { 
-      totalImpressions, 
+    const data = {
+      totalImpressions,
       activeNodes: uniqueNodesCount.length,
       totalScans,
       ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
-      hourlyAverage: Math.round(recentImpressions / 24)
+      hourlyAverage: Math.round(recentImpressions / 24),
     };
 
     (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
@@ -175,71 +187,92 @@ export class AnalyticsService {
     const [videos, assets] = await Promise.all([
       this.prisma.video.findMany({
         where: { campaign: { advertiserId } },
-        select: { id: true }
+        select: { id: true },
       }),
       this.prisma.mediaAsset.findMany({
         where: { campaign: { advertiserId } },
-        select: { id: true }
-      })
+        select: { id: true },
+      }),
     ]);
-    return [...videos.map(v => v.id), ...assets.map(a => a.id)];
+    return [...videos.map((v) => v.id), ...assets.map((a) => a.id)];
   }
 
   async getTotalImpressions(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId ? `totalImpressions_${advertiserId}` : 'totalImpressions';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+    const cacheKey = advertiserId
+      ? `totalImpressions_${advertiserId}`
+      : "totalImpressions";
+    if (
+      (this.cache as any)[cacheKey] &&
+      (this.cache as any)[cacheKey].expiry > now
+    ) {
       return (this.cache as any)[cacheKey].data;
     }
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : null;
 
     const count = await this.prisma.playbackEvent.count({
-      where: { 
-        eventType: 'play_confirm',
-        ...(videoIds ? { videoId: { in: videoIds } } : {})
-      }
+      where: {
+        eventType: "play_confirm",
+        ...(videoIds ? { videoId: { in: videoIds } } : {}),
+      },
     });
 
-    (this.cache as any)[cacheKey] = { data: count, expiry: now + this.CACHE_TTL };
+    (this.cache as any)[cacheKey] = {
+      data: count,
+      expiry: now + this.CACHE_TTL,
+    };
     return count;
   }
 
   async getAntiFraudMetrics(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : 'antiFraud';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : "antiFraud";
+    if (
+      (this.cache as any)[cacheKey] &&
+      (this.cache as any)[cacheKey].expiry > now
+    ) {
       return (this.cache as any)[cacheKey].data;
     }
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : null;
 
     const [rawImpressions, gpsValidations] = await Promise.all([
       this.prisma.playbackEvent.count({
-        where: { 
-          eventType: 'play_confirm',
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
+        where: {
+          eventType: "play_confirm",
+          ...(videoIds ? { videoId: { in: videoIds } } : {}),
+        },
       }),
       this.prisma.playbackEvent.count({
         where: {
-          eventType: 'play_confirm',
+          eventType: "play_confirm",
           lat: { not: null },
           lng: { not: null },
-          ...(videoIds ? { videoId: { in: videoIds } } : {})
-        }
-      })
+          ...(videoIds ? { videoId: { in: videoIds } } : {}),
+        },
+      }),
     ]);
 
-    const validPercentage = rawImpressions > 0 
-      ? Math.round((gpsValidations / rawImpressions) * 100) 
-      : 0;
+    const validPercentage =
+      rawImpressions > 0
+        ? Math.round((gpsValidations / rawImpressions) * 100)
+        : 0;
 
     const data = {
       rawImpressions,
       gpsValidations,
       validPercentage,
-      status: validPercentage >= 90 ? 'EXCELENTE' : (validPercentage >= 75 ? 'ACEPTABLE' : 'ALTO RIESGO')
+      status:
+        validPercentage >= 90
+          ? "EXCELENTE"
+          : validPercentage >= 75
+            ? "ACEPTABLE"
+            : "ALTO RIESGO",
     };
 
     (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
@@ -248,31 +281,36 @@ export class AnalyticsService {
 
   async getTopTaxis(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId ? `topTaxis_${advertiserId}` : 'topTaxis';
-    if ((this.cache as any)[cacheKey] && (this.cache as any)[cacheKey].expiry > now) {
+    const cacheKey = advertiserId ? `topTaxis_${advertiserId}` : "topTaxis";
+    if (
+      (this.cache as any)[cacheKey] &&
+      (this.cache as any)[cacheKey].expiry > now
+    ) {
       return (this.cache as any)[cacheKey].data;
     }
 
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : null;
 
     const topDevices = await this.prisma.playbackEvent.groupBy({
-      by: ['deviceId'],
+      by: ["deviceId"],
       where: {
-        eventType: 'play_confirm',
-        ...(videoIds ? { videoId: { in: videoIds } } : {})
+        eventType: "play_confirm",
+        ...(videoIds ? { videoId: { in: videoIds } } : {}),
       },
       _count: {
         id: true,
       },
       orderBy: {
         _count: {
-          id: 'desc',
+          id: "desc",
         },
       },
       take: 5,
     });
 
-    const data = topDevices.map(d => ({
+    const data = topDevices.map((d) => ({
       device_id: d.deviceId,
       plays: d._count.id,
     }));
@@ -283,12 +321,14 @@ export class AnalyticsService {
 
   async getHourlyAnalytics(advertiserId?: string) {
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : [];
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : [];
 
     // Using Raw SQL for grouped aggregation on PostgreSQL
     // If videoIds is provided, we filter by it
     let results: Array<{ hour: number; plays: number }> = [];
-    
+
     if (advertiserId && videoIds.length > 0) {
       results = await this.prisma.$queryRaw`
         SELECT 
@@ -316,12 +356,12 @@ export class AnalyticsService {
     const hourlyMap = new Map<string, number>();
     for (let i = 0; i < 24; i++) {
       const h = new Date(Date.now() - i * 60 * 60 * 1000).getHours();
-      hourlyMap.set(h.toString().padStart(2, '0'), 0);
+      hourlyMap.set(h.toString().padStart(2, "0"), 0);
     }
 
     // Overlay values from Database Group By
     results.forEach((row) => {
-      const h = Number(row.hour).toString().padStart(2, '0');
+      const h = Number(row.hour).toString().padStart(2, "0");
       hourlyMap.set(h, row.plays);
     });
 
@@ -331,26 +371,28 @@ export class AnalyticsService {
   }
 
   async getRecentPlays(advertiserId?: string) {
-    const videoIds = advertiserId ? await this.getAdvertiserVideoIds(advertiserId) : null;
+    const videoIds = advertiserId
+      ? await this.getAdvertiserVideoIds(advertiserId)
+      : null;
 
     const events = await this.prisma.playbackEvent.findMany({
       where: {
-        ...(videoIds ? { videoId: { in: videoIds } } : {})
+        ...(videoIds ? { videoId: { in: videoIds } } : {}),
       },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { timestamp: "desc" },
       take: 20,
       include: {
         device: {
-          select: { taxiNumber: true }
-        }
-      }
+          select: { taxiNumber: true },
+        },
+      },
     });
-    
-    return events.map(e => ({
+
+    return events.map((e) => ({
       deviceId: e.deviceId,
       videoId: e.videoId,
       timestamp: e.timestamp,
-      taxiNumber: e.device?.taxiNumber
+      taxiNumber: e.device?.taxiNumber,
     }));
   }
 
@@ -358,16 +400,23 @@ export class AnalyticsService {
    * Heatmap of where ads are being played
    */
   async getPlaybackHeatmap(advertiserId?: string) {
-    this.logger.log(`Generating playback heatmap data${advertiserId ? ` for advertiser: ${advertiserId}` : ''}`);
-    
+    this.logger.log(
+      `Generating playback heatmap data${advertiserId ? ` for advertiser: ${advertiserId}` : ""}`,
+    );
+
     // Get last 15 days of confirmed playback events with geography
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    const where: { timestamp: { gte: Date }; lat: { not: null }; lng: { not: null }; videoId?: { in: string[] } } = {
+    const where: {
+      timestamp: { gte: Date };
+      lat: { not: null };
+      lng: { not: null };
+      videoId?: { in: string[] };
+    } = {
       timestamp: { gte: fifteenDaysAgo },
       lat: { not: null },
-      lng: { not: null }
+      lng: { not: null },
     };
 
     if (advertiserId) {
@@ -375,22 +424,24 @@ export class AnalyticsService {
       const [videos, assets] = await Promise.all([
         this.prisma.video.findMany({
           where: { campaign: { advertiserId } },
-          select: { id: true }
+          select: { id: true },
         }),
         this.prisma.mediaAsset.findMany({
           where: { campaign: { advertiserId } },
-          select: { id: true }
-        })
+          select: { id: true },
+        }),
       ]);
 
-      const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
+      const videoIds = [...videos.map((v) => v.id), ...assets.map((a) => a.id)];
       where.videoId = { in: videoIds };
     }
 
     // A16: heatmap agregado por celda geográfica en SQL (bucket ~0.002° ≈ 200m)
     // en lugar de cargar 10.000 playbacks en RAM. Solo playbacks VERIFICADOS.
     // Multiplicamos por 1e6 para redondear con precisión entera (evita drift de centroide).
-    const bucketRaw = await this.prisma.$queryRaw<{ lat: number; lng: number; cnt: number }[]>`
+    const bucketRaw = await this.prisma.$queryRaw<
+      { lat: number; lng: number; cnt: number }[]
+    >`
       SELECT
         (ROUND(lat * 500) / 500)  AS lat,
         (ROUND(lng * 500) / 500)  AS lng,
@@ -408,7 +459,7 @@ export class AnalyticsService {
       LIMIT 2000
     `;
 
-    return bucketRaw.map(b => ({
+    return bucketRaw.map((b) => ({
       lat: b.lat,
       lng: b.lng,
       weight: b.cnt,
@@ -419,7 +470,7 @@ export class AnalyticsService {
   // QR SCAN TRACKING
   // ============================================
   async registerQrScan(campaignId: string, deviceId: string): Promise<string> {
-    const DEFAULT_URL = 'https://tad.do';
+    const DEFAULT_URL = "https://tad.do";
 
     if (!campaignId || !deviceId) return DEFAULT_URL;
 
@@ -433,15 +484,17 @@ export class AnalyticsService {
       // Registro del evento QR_SCAN (fire-and-forget pattern)
       await this.prisma.analyticsEvent.create({
         data: {
-          eventType: 'QR_SCAN',
+          eventType: "QR_SCAN",
           campaignId,
           deviceId,
-          eventData: JSON.stringify({ source: 'qr_redirect' }),
+          eventData: JSON.stringify({ source: "qr_redirect" }),
           occurredAt: new Date(),
         },
       });
 
-      this.logger.log(`📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`);
+      this.logger.log(
+        `📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`,
+      );
 
       return campaign?.targetUrl || DEFAULT_URL;
     } catch (error) {
@@ -453,13 +506,20 @@ export class AnalyticsService {
   // ============================================
   // EXTERNAL MOBILE GPS GATEWAY
   // ============================================
-  async updateDeviceLocationFromMobile(data: { deviceId: string; lat: number; lng: number; speed?: number }) {
-    this.logger.log(`🛰️ Mobile GPS Update for Device: ${data.deviceId} (${data.lat}, ${data.lng})`);
+  async updateDeviceLocationFromMobile(data: {
+    deviceId: string;
+    lat: number;
+    lng: number;
+    speed?: number;
+  }) {
+    this.logger.log(
+      `🛰️ Mobile GPS Update for Device: ${data.deviceId} (${data.lat}, ${data.lng})`,
+    );
 
     // 1. Get device to check if it has a driver
     const device = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
-      select: { driverId: true }
+      select: { driverId: true },
     });
 
     const now = new Date();
@@ -473,11 +533,11 @@ export class AnalyticsService {
           latitude: data.lat,
           longitude: data.lng,
           speed: data.speed || 0,
-          timestamp: now
-        }
+          timestamp: now,
+        },
       });
     }
-    
+
     // 3. Update the device's current location and online status
     return this.prisma.device.update({
       where: { deviceId: data.deviceId },
@@ -486,7 +546,7 @@ export class AnalyticsService {
         lastLng: data.lng,
         lastSeen: now, // Updates lastSeen for Fleet tracking to register it online
         lastSync: now,
-        isOnline: true // We mark it online since the driver app is active
+        isOnline: true, // We mark it online since the driver app is active
       },
     });
   }
@@ -499,19 +559,25 @@ export class AnalyticsService {
 
     // Obtener IDs de videos ligados a la campaña (buscamos en ambas tablas v1 y v2)
     const [videos, assets] = await Promise.all([
-      this.prisma.video.findMany({ where: { campaignId }, select: { id: true } }),
-      this.prisma.mediaAsset.findMany({ where: { campaignId }, select: { id: true } })
+      this.prisma.video.findMany({
+        where: { campaignId },
+        select: { id: true },
+      }),
+      this.prisma.mediaAsset.findMany({
+        where: { campaignId },
+        select: { id: true },
+      }),
     ]);
-    const videoIds = [...videos.map(v => v.id), ...assets.map(a => a.id)];
+    const videoIds = [...videos.map((v) => v.id), ...assets.map((a) => a.id)];
 
     // 1. Obtener Impresiones (play_confirm) filtradas por esos videos
     const playEvents = await this.prisma.playbackEvent.findMany({
       where: {
         videoId: { in: videoIds },
         timestamp: { gte: sevenDaysAgo },
-        eventType: 'play_confirm'
+        eventType: "play_confirm",
       },
-      select: { timestamp: true }
+      select: { timestamp: true },
     });
 
     // 2. Obtener Escaneos QR (QR_SCAN) - Esto sí tiene campaignId en el modelo AnalyticsEvent
@@ -519,35 +585,37 @@ export class AnalyticsService {
       where: {
         campaignId,
         occurredAt: { gte: sevenDaysAgo },
-        eventType: 'QR_SCAN'
+        eventType: "QR_SCAN",
       },
-      select: { occurredAt: true }
+      select: { occurredAt: true },
     });
 
-    const dailyData: Record<string, { impressions: number; scans: number }> = {};
+    const dailyData: Record<string, { impressions: number; scans: number }> =
+      {};
     // Inicializar últimos 7 días con 0
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      dailyData[d.toLocaleDateString('es-DO')] = { impressions: 0, scans: 0 };
+      dailyData[d.toLocaleDateString("es-DO")] = { impressions: 0, scans: 0 };
     }
 
-    playEvents.forEach(e => {
-      const day = new Date(e.timestamp).toLocaleDateString('es-DO');
+    playEvents.forEach((e) => {
+      const day = new Date(e.timestamp).toLocaleDateString("es-DO");
       if (dailyData[day]) dailyData[day].impressions++;
     });
 
-    scanEvents.forEach(e => {
-      const day = new Date(e.occurredAt).toLocaleDateString('es-DO');
+    scanEvents.forEach((e) => {
+      const day = new Date(e.occurredAt).toLocaleDateString("es-DO");
       if (dailyData[day]) dailyData[day].scans++;
     });
 
     return Object.entries(dailyData)
-      .map(([day, stats]) => ({ 
-        day, 
-        impressions: stats.impressions, 
+      .map(([day, stats]) => ({
+        day,
+        impressions: stats.impressions,
         scans: stats.scans,
-        ctr: stats.impressions > 0 ? (stats.scans / stats.impressions) * 100 : 0
+        ctr:
+          stats.impressions > 0 ? (stats.scans / stats.impressions) * 100 : 0,
       }))
       .reverse(); // De más antiguo a más reciente
   }
@@ -558,7 +626,7 @@ export class AnalyticsService {
 
     const now = Date.now();
     const startAt = now - 30 * 24 * 60 * 60 * 1000; // Last 30 days
-    
+
     return umami.getWebsiteStats(websiteId, startAt, now);
   }
 }

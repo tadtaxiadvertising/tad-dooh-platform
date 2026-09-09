@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Interval } from '@nestjs/schedule';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { Interval } from "@nestjs/schedule";
 
 export interface ScenarioConfig {
   name: string;
@@ -28,7 +28,14 @@ class VirtualVehicle {
   }
 
   // Mueve el vehículo basándose en velocidad y tiempo transcurrido (simplificado)
-  move(timeDeltaSecs: number, minSpeed: number, maxSpeed: number, centerLat: number, centerLng: number, radiusKm: number) {
+  move(
+    timeDeltaSecs: number,
+    minSpeed: number,
+    maxSpeed: number,
+    centerLat: number,
+    centerLng: number,
+    radiusKm: number,
+  ) {
     // Variación aleatoria de velocidad y dirección
     this.speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
     this.heading += (Math.random() - 0.5) * 45; // Gira hasta 22.5 grados por tick
@@ -41,18 +48,29 @@ class VirtualVehicle {
     const lng1 = this.lng * (Math.PI / 180);
     const brng = this.heading * (Math.PI / 180);
 
-    let lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceKm / radiusEarthKm) +
-               Math.cos(lat1) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(brng));
-    let lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(lat1),
-               Math.cos(distanceKm / radiusEarthKm) - Math.sin(lat1) * Math.sin(lat2));
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(distanceKm / radiusEarthKm) +
+        Math.cos(lat1) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(brng),
+    );
+    const lng2 =
+      lng1 +
+      Math.atan2(
+        Math.sin(brng) * Math.sin(distanceKm / radiusEarthKm) * Math.cos(lat1),
+        Math.cos(distanceKm / radiusEarthKm) - Math.sin(lat1) * Math.sin(lat2),
+      );
 
     this.lat = lat2 * (180 / Math.PI);
     this.lng = lng2 * (180 / Math.PI);
 
     // Lógica de contención (Si se sale del radio, apuntar hacia el centro de Santiago)
-    const distFromCenter = Math.sqrt(Math.pow(this.lat - centerLat, 2) + Math.pow(this.lng - centerLng, 2)) * 111; // aprox km
+    const distFromCenter =
+      Math.sqrt(
+        Math.pow(this.lat - centerLat, 2) + Math.pow(this.lng - centerLng, 2),
+      ) * 111; // aprox km
     if (distFromCenter > radiusKm) {
-       this.heading = Math.atan2(centerLng - this.lng, centerLat - this.lat) * (180 / Math.PI);
+      this.heading =
+        Math.atan2(centerLng - this.lng, centerLat - this.lat) *
+        (180 / Math.PI);
     }
   }
 }
@@ -62,7 +80,10 @@ export class SimulationService {
   private readonly logger = new Logger(SimulationService.name);
   private isRunning = false;
   private currentScenario: ScenarioConfig | null = null;
-  private fleetState: Map<string, { vehicle: VirtualVehicle; deviceId: string }> = new Map();
+  private fleetState: Map<
+    string,
+    { vehicle: VirtualVehicle; deviceId: string }
+  > = new Map();
 
   constructor(private prisma: PrismaService) {}
 
@@ -79,33 +100,35 @@ export class SimulationService {
     this.logger.log(`Cargando escenario: ${config.name} en Santiago...`);
     this.currentScenario = config;
     await this.clearTestData(); // Limpiamos BD previa
-    
+
     // Generar Nodos
     for (let i = 0; i < config.activeNodes; i++) {
-      const deviceId = `SIM-DEV-${String(i).padStart(4, '0')}`;
+      const deviceId = `SIM-DEV-${String(i).padStart(4, "0")}`;
       const driver = await this.prisma.driver.create({
         data: {
           fullName: `Santiago Test Driver ${i}`,
-          phone: `+1809sim${String(i).padStart(4, '0')}`,
+          phone: `+1809sim${String(i).padStart(4, "0")}`,
           isSimulated: true,
-          status: 'OPERATIVO',
+          status: "OPERATIVO",
           licensePlate: `STI-TEST-${i}`,
           devices: {
             create: {
               deviceId: deviceId,
               name: `Virtual Screen ${i}`,
-              status: 'OPERATIVO',
+              status: "OPERATIVO",
               isSimulated: true,
-            }
-          }
-        }
+            },
+          },
+        },
       });
       // Inicializar estado del vehículo disperso alrededor del centro
-      const initialLat = config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
-      const initialLng = config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
+      const initialLat =
+        config.centerLat + (Math.random() - 0.5) * (config.radiusKm / 111);
+      const initialLng =
+        config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
       this.fleetState.set(driver.id, {
         vehicle: new VirtualVehicle(initialLat, initialLng),
-        deviceId: deviceId
+        deviceId: deviceId,
       });
     }
     this.isRunning = true;
@@ -122,9 +145,16 @@ export class SimulationService {
       const { vehicle, deviceId } = state;
       // Simular anomalías (Ej: 2% de probabilidad de detenerse o apagar GPS)
       const isAnomaly = Math.random() < this.currentScenario.anomalyRate;
-      
+
       if (!isAnomaly) {
-        vehicle.move(30, this.currentScenario.minSpeed, this.currentScenario.maxSpeed, this.currentScenario.centerLat, this.currentScenario.centerLng, this.currentScenario.radiusKm);
+        vehicle.move(
+          30,
+          this.currentScenario.minSpeed,
+          this.currentScenario.maxSpeed,
+          this.currentScenario.centerLat,
+          this.currentScenario.centerLng,
+          this.currentScenario.radiusKm,
+        );
       }
 
       telemetryBatch.push({
@@ -145,14 +175,16 @@ export class SimulationService {
 
   async stopSimulation() {
     this.isRunning = false;
-    this.logger.log('Simulación detenida.');
+    this.logger.log("Simulación detenida.");
     return { success: true };
   }
 
   async clearTestData() {
     this.isRunning = false;
     this.fleetState.clear();
-    await this.prisma.driverLocation.deleteMany({ where: { isSimulated: true } });
+    await this.prisma.driverLocation.deleteMany({
+      where: { isSimulated: true },
+    });
     await this.prisma.device.deleteMany({ where: { isSimulated: true } });
     await this.prisma.driver.deleteMany({ where: { isSimulated: true } });
   }

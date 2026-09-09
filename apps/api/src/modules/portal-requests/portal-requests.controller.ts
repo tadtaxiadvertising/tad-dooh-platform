@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
-import { PortalRequestsService } from './portal-requests.service';
-import { Public } from '../auth/decorators/public.decorator';
-import { Roles, UserRole } from '../auth/decorators/roles.decorator';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
+import { PortalRequestsService } from "./portal-requests.service";
+import { Public } from "../auth/decorators/public.decorator";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
-@Controller('portal-requests')
+@Controller("portal-requests")
 export class PortalRequestsController {
   constructor(private readonly portalRequestsService: PortalRequestsService) {}
 
@@ -19,33 +29,33 @@ export class PortalRequestsController {
     return this.portalRequestsService.findAll();
   }
 
-  @Get('advertiser/:advertiserId')
+  @Get("advertiser/:advertiserId")
   @Public() // Allow advertisers to see their own requests
-  async findByAdvertiser(@Param('advertiserId') advertiserId: string) {
+  async findByAdvertiser(@Param("advertiserId") advertiserId: string) {
     return this.portalRequestsService.findByAdvertiser(advertiserId);
   }
 
-  @Get('driver/:driverId')
+  @Get("driver/:driverId")
   @Public() // Allow drivers to see their own requests
-  async findByDriver(@Param('driverId') driverId: string) {
+  async findByDriver(@Param("driverId") driverId: string) {
     return this.portalRequestsService.findByDriver(driverId);
   }
 
-  @Get(':id')
+  @Get(":id")
   @Roles(UserRole.ADMIN)
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param("id") id: string) {
     return this.portalRequestsService.findOne(id);
   }
 
-  @Put(':id')
+  @Put(":id")
   @Roles(UserRole.ADMIN)
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param("id") id: string, @Body() body: any) {
     return this.portalRequestsService.update(id, body);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @Roles(UserRole.ADMIN)
-  async delete(@Param('id') id: string) {
+  async delete(@Param("id") id: string) {
     return this.portalRequestsService.remove(id);
   }
 }

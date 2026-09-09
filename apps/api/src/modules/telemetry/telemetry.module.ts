@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { TelemetryController } from './telemetry.controller';
-import { TelemetryService } from './telemetry.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { TelemetryController } from "./telemetry.controller";
+import { TelemetryService } from "./telemetry.service";
+import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
   imports: [PrismaModule],
@@ -9,4 +9,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [TelemetryService],
   exports: [TelemetryService],
 })
-export class TelemetryModule { }
+export class TelemetryModule {}

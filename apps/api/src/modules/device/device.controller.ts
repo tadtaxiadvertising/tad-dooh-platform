@@ -1,28 +1,40 @@
-import { Controller, Post, Get, Body, Query, Param, HttpCode, HttpStatus, UseGuards, Req, ForbiddenException } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
-import { DeviceService } from './device.service';
-import { RegisterDeviceDto } from './dto/register-device.dto';
-import { HeartbeatDto } from './dto/heartbeat.dto';
-import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
-import { Public } from '../auth/decorators/public.decorator';
-import { SubscriptionGuard } from './guards/subscription.guard';
-import { DeviceTokenGuard } from './guards/device-token.guard';
-import { SyncDeviceDto } from './dto/sync-device.dto';
-import { BulkSyncDto } from './dto/bulk-sync.dto';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  Param,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Req,
+  ForbiddenException,
+} from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
+import { DeviceService } from "./device.service";
+import { RegisterDeviceDto } from "./dto/register-device.dto";
+import { HeartbeatDto } from "./dto/heartbeat.dto";
+import { PlaybackConfirmationDto } from "./dto/playback-confirmation.dto";
+import { Public } from "../auth/decorators/public.decorator";
+import { SubscriptionGuard } from "./guards/subscription.guard";
+import { DeviceTokenGuard } from "./guards/device-token.guard";
+import { SyncDeviceDto } from "./dto/sync-device.dto";
+import { BulkSyncDto } from "./dto/bulk-sync.dto";
 
 @Public() // All device routes are called by tablets (no JWT)
-@Controller('device')
+@Controller("device")
 export class DeviceController {
-  constructor(private readonly deviceService: DeviceService) { }
+  constructor(private readonly deviceService: DeviceService) {}
 
-  @Post('register')
+  @Post("register")
   @HttpCode(HttpStatus.OK)
   async register(@Body() dto: RegisterDeviceDto) {
     const device = await this.deviceService.registerDevice(dto);
     return { success: true, device_id: device.deviceId };
   }
 
-  @Post('heartbeat')
+  @Post("heartbeat")
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async heartbeat(@Body() dto: HeartbeatDto) {
@@ -30,7 +42,7 @@ export class DeviceController {
     return { success: true };
   }
 
-  @Post('playback')
+  @Post("playback")
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async playback(@Body() dto: PlaybackConfirmationDto) {
@@ -41,7 +53,7 @@ export class DeviceController {
   // REVENUE SHIELD: Subscription guard on content sync endpoints
   // SEC-03: DeviceTokenGuard validates X-Device-Token and enforces OPERATIVO status
   @UseGuards(DeviceTokenGuard, SubscriptionGuard)
-  @Post('sync')
+  @Post("sync")
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {
@@ -49,31 +61,36 @@ export class DeviceController {
   }
 
   @UseGuards(DeviceTokenGuard, SubscriptionGuard)
-  @Post('bulk-sync')
+  @Post("bulk-sync")
   @Throttle({ default: { limit: 500, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async bulkSync(@Body() dto: BulkSyncDto) {
     return this.deviceService.processBulkSync(dto);
   }
 
-  @Get(':id/slots')
-  async checkSlots(@Param('id') deviceId: string) {
+  @Get(":id/slots")
+  async checkSlots(@Param("id") deviceId: string) {
     return this.deviceService.getDeviceSlots(deviceId);
   }
 
   @UseGuards(DeviceTokenGuard)
-  @Post('command/:id/ack')
+  @Post("command/:id/ack")
   @HttpCode(HttpStatus.OK)
   async acknowledgeCommand(
-    @Param('id') commandId: string,
+    @Param("id") commandId: string,
     @Body() result: any,
-    @Req() req: any
+    @Req() req: any,
   ) {
     // M9: validar que el comando pertenezca al dispositivo autenticado (X-Device-Token).
     // Antes cualquier tercero podía marcar comandos ajenos como EXECUTED.
-    const command = await this.deviceService.getCommandForDevice(commandId, req.authenticatedDeviceId);
+    const command = await this.deviceService.getCommandForDevice(
+      commandId,
+      req.authenticatedDeviceId,
+    );
     if (!command) {
-      throw new ForbiddenException('No tienes permisos para confirmar este comando');
+      throw new ForbiddenException(
+        "No tienes permisos para confirmar este comando",
+      );
     }
     return this.deviceService.acknowledgeCommand(commandId, result);
   }

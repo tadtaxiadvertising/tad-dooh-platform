@@ -1,5 +1,5 @@
-import { IsArray, IsString, IsNumber, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsArray, IsString, IsNumber, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 
 class GPSPointDto {
   @IsNumber() lat: number;
@@ -11,7 +11,7 @@ class GPSPointDto {
 export class TrackBatchDto {
   @IsString() driverId: string;
   @IsString() deviceId: string;
-  
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GPSPointDto)

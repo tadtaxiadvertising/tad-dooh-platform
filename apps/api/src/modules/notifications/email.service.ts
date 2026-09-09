@@ -1,6 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import * as nodemailer from "nodemailer";
 
 /**
  * SRE v12.1.1 — EmailService (Brevo Production)
@@ -26,18 +26,25 @@ export class EmailService implements OnModuleInit {
   }
 
   private initTransporter() {
-    const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-    const port = parseInt(process.env.SMTP_PORT || '587');
+    const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+    const port = parseInt(process.env.SMTP_PORT || "587");
     const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.SENDGRID_API_KEY;
+    const pass =
+      process.env.SMTP_PASSWORD ||
+      process.env.SMTP_PASS ||
+      process.env.SENDGRID_API_KEY;
 
     if (!user || !pass) {
-      this.logger.warn('⚠️ [SRE] SMTP_PASSWORD de Brevo NO CONFIGURADO. Emails en MODO MOCK.');
+      this.logger.warn(
+        "⚠️ [SRE] SMTP_PASSWORD de Brevo NO CONFIGURADO. Emails en MODO MOCK.",
+      );
       this.isLive = false;
       return;
     }
 
-    this.logger.log('🚀 [SRE] Brevo SMTP configurado correctamente. Modo Producción activo. ✅');
+    this.logger.log(
+      "🚀 [SRE] Brevo SMTP configurado correctamente. Modo Producción activo. ✅",
+    );
     this.isLive = true;
 
     this.transporter = nodemailer.createTransport({
@@ -49,8 +56,8 @@ export class EmailService implements OnModuleInit {
       maxConnections: 3,
       // SRE: Timeouts para evitar que un hang de Brevo bloquee el Event Loop
       connectionTimeout: 10000, // 10s para establecer conexión
-      greetingTimeout: 10000,   // 10s para el handshake SMTP
-      socketTimeout: 30000,     // 30s máximo por operación de envío
+      greetingTimeout: 10000, // 10s para el handshake SMTP
+      socketTimeout: 30000, // 30s máximo por operación de envío
     });
   }
 
@@ -72,12 +79,16 @@ export class EmailService implements OnModuleInit {
       contentType: string;
     }>;
   }): Promise<{ success: boolean; messageId?: string }> {
-    const from = process.env.SMTP_FROM || 'TAD Advertising <no-reply@tad.do>';
+    const from = process.env.SMTP_FROM || "TAD Advertising <no-reply@tad.do>";
 
-    this.logger.log(`📧 EMAIL_OUTGOING → ${options.to} | Asunto: ${options.subject}`);
+    this.logger.log(
+      `📧 EMAIL_OUTGOING → ${options.to} | Asunto: ${options.subject}`,
+    );
 
     if (!this.isLive || !this.transporter) {
-      this.logger.debug(`📧 [MOCK EMAIL] Para: ${options.to} | Asunto: ${options.subject}`);
+      this.logger.debug(
+        `📧 [MOCK EMAIL] Para: ${options.to} | Asunto: ${options.subject}`,
+      );
       return { success: true, messageId: `mock-${Date.now()}` };
     }
 
@@ -98,26 +109,30 @@ export class EmailService implements OnModuleInit {
           })),
         });
 
-        this.logger.log(`✅ Email enviado (intento ${attempt}): ${info.messageId}`);
+        this.logger.log(
+          `✅ Email enviado (intento ${attempt}): ${info.messageId}`,
+        );
         return { success: true, messageId: info.messageId };
       } catch (err) {
         lastError = err;
         this.logger.warn(
-          `⚠️ Email fallido (intento ${attempt}/${this.MAX_RETRIES}) → ${options.to}: ${err.message}`
+          `⚠️ Email fallido (intento ${attempt}/${this.MAX_RETRIES}) → ${options.to}: ${err.message}`,
         );
 
         if (attempt < this.MAX_RETRIES) {
           const delay = this.BASE_DELAY_MS * Math.pow(2, attempt - 1);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
     // ALL RETRIES EXHAUSTED — Log to system_errors
-    this.logger.error(`❌ Email FALLIDO tras ${this.MAX_RETRIES} intentos → ${options.to}: ${lastError?.message}`);
+    this.logger.error(
+      `❌ Email FALLIDO tras ${this.MAX_RETRIES} intentos → ${options.to}: ${lastError?.message}`,
+    );
     this.logSystemError(
-      'EMAIL',
-      'ERROR',
+      "EMAIL",
+      "ERROR",
       `Email fallido tras ${this.MAX_RETRIES} intentos: ${options.to} — ${options.subject}`,
       JSON.stringify({
         to: options.to,
@@ -137,7 +152,7 @@ export class EmailService implements OnModuleInit {
    * Usa esto para emails no críticos (reportes, confirmaciones).
    */
   sendEmailAsync(options: Parameters<typeof this.sendEmail>[0]): void {
-    this.sendEmail(options).catch(err => {
+    this.sendEmail(options).catch((err) => {
       this.logger.error(`[ASYNC_EMAIL] Unhandled failure: ${err.message}`);
     });
   }
@@ -154,12 +169,16 @@ export class EmailService implements OnModuleInit {
     entityId?: string,
   ): void {
     // Fire-and-forget: no bloquea el caller
-    this.prisma.systemError.create({
-      data: { source, severity, message, details, entityId },
-    }).catch(err => {
-      // Si falla el logging (tabla no existe aún), loguea a stdout como fallback
-      this.logger.error(`[SYSTEM_ERROR_LOG_FAIL] ${source}: ${message} | DB Error: ${err.message}`);
-    });
+    this.prisma.systemError
+      .create({
+        data: { source, severity, message, details, entityId },
+      })
+      .catch((err) => {
+        // Si falla el logging (tabla no existe aún), loguea a stdout como fallback
+        this.logger.error(
+          `[SYSTEM_ERROR_LOG_FAIL] ${source}: ${message} | DB Error: ${err.message}`,
+        );
+      });
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -176,16 +195,20 @@ export class EmailService implements OnModuleInit {
     pdfBuffer: Buffer,
     reportUrl?: string,
   ): Promise<{ success: boolean }> {
-    const html = this.buildCampaignReportHtml(advertiserName, campaignName, reportUrl);
+    const html = this.buildCampaignReportHtml(
+      advertiserName,
+      campaignName,
+      reportUrl,
+    );
     return this.sendEmail({
       to,
       subject: `📊 Reporte de Campaña: ${campaignName} — TAD DOOH`,
       html,
       attachments: [
         {
-          filename: `Reporte_${campaignName.replace(/\s+/g, '_')}.pdf`,
+          filename: `Reporte_${campaignName.replace(/\s+/g, "_")}.pdf`,
           content: pdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ],
     });
@@ -202,7 +225,12 @@ export class EmailService implements OnModuleInit {
     amount: number,
     pdfBuffer: Buffer,
   ): Promise<{ success: boolean }> {
-    const html = this.buildInvoiceHtml(advertiserName, campaignName, invoiceId, amount);
+    const html = this.buildInvoiceHtml(
+      advertiserName,
+      campaignName,
+      invoiceId,
+      amount,
+    );
     return this.sendEmail({
       to,
       subject: `🧾 Factura ${invoiceId} — ${campaignName} | TAD Advertising`,
@@ -211,7 +239,7 @@ export class EmailService implements OnModuleInit {
         {
           filename: `Factura_${invoiceId}.pdf`,
           content: pdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ],
     });
@@ -229,7 +257,13 @@ export class EmailService implements OnModuleInit {
   ): Promise<{ success: boolean }> {
     const html = this.buildDriverPaymentHtml(driverName, amount, month);
     const attachments = pdfBuffer
-      ? [{ filename: `Liquidacion_${driverName}_${month}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }]
+      ? [
+          {
+            filename: `Liquidacion_${driverName}_${month}.pdf`,
+            content: pdfBuffer,
+            contentType: "application/pdf",
+          },
+        ]
       : [];
 
     return this.sendEmail({
@@ -258,7 +292,7 @@ export class EmailService implements OnModuleInit {
         {
           filename: `Factura_SOS_${deviceId}.pdf`,
           content: pdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ],
     });
@@ -268,7 +302,11 @@ export class EmailService implements OnModuleInit {
   // EMAIL TEMPLATES
   // ─────────────────────────────────────────────────────────────────────
 
-  private buildCampaignReportHtml(advertiserName: string, campaignName: string, reportUrl?: string): string {
+  private buildCampaignReportHtml(
+    advertiserName: string,
+    campaignName: string,
+    reportUrl?: string,
+  ): string {
     return `
 <!DOCTYPE html>
 <html lang="es">
@@ -299,7 +337,9 @@ export class EmailService implements OnModuleInit {
                 Adjunto encontrará el reporte actualizado de rendimiento de su campaña en la red TAD DOOH de taxis de Santo Domingo.<br><br>
                 Los datos reflejan impactos verificados por telemetría GPS en tiempo real.
               </p>
-              ${reportUrl ? `
+              ${
+                reportUrl
+                  ? `
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="border-radius:12px;background:#FFD400;">
@@ -309,7 +349,9 @@ export class EmailService implements OnModuleInit {
                   </td>
                 </tr>
               </table>
-              ` : ''}
+              `
+                  : ""
+              }
             </td>
           </tr>
           <!-- Stats row -->
@@ -358,7 +400,11 @@ export class EmailService implements OnModuleInit {
   ): string {
     const itbis = amount * 0.18;
     const total = amount + itbis;
-    const formattedDate = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' });
+    const formattedDate = new Date().toLocaleDateString("es-DO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
 
     return `
 <!DOCTYPE html>
@@ -447,7 +493,11 @@ export class EmailService implements OnModuleInit {
 </html>`;
   }
 
-  private buildDriverPaymentHtml(driverName: string, amount: number, month: string): string {
+  private buildDriverPaymentHtml(
+    driverName: string,
+    amount: number,
+    month: string,
+  ): string {
     return `
 <!DOCTYPE html>
 <html lang="es">

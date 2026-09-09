@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { PortalRequestsService } from './portal-requests.service';
-import { PortalRequestsController } from './portal-requests.controller';
-import { PrismaModule } from '../prisma/prisma.module';
-import { SupabaseModule } from '../supabase/supabase.module';
+import { Module } from "@nestjs/common";
+import { PortalRequestsService } from "./portal-requests.service";
+import { PortalRequestsController } from "./portal-requests.controller";
+import { PrismaModule } from "../prisma/prisma.module";
+import { SupabaseModule } from "../supabase/supabase.module";
 
 @Module({
   imports: [PrismaModule, SupabaseModule],

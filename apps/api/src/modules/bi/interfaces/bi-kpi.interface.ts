@@ -11,7 +11,7 @@ export interface BiKpiResponse {
   syncHealthRate: number;
   discrepancyCount: number;
   recentDiscrepancies: any[];
-  
+
   // INVESTOR METRICS (v7.5)
   yieldPerScreen?: number;
   arpu?: number;
@@ -21,7 +21,7 @@ export interface BiKpiResponse {
   lastUpdate: Date;
 }
 
-export type SemaphoreColor = 'GREEN' | 'YELLOW' | 'RED';
+export type SemaphoreColor = "GREEN" | "YELLOW" | "RED";
 
 export interface TaxiDrillDownResponse {
   device: {

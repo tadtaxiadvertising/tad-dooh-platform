@@ -1,11 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, BadRequestException, Req, UnauthorizedException, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { AdvertisersService } from './advertisers.service';
-import { Public } from '../auth/decorators/public.decorator';
-import { Roles, UserRole } from '../auth/decorators/roles.decorator';
-import { TenantGuard } from '../auth/guards/tenant.guard';
-import { Throttle } from '@nestjs/throttler';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  BadRequestException,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from "@nestjs/common";
+import { AdvertisersService } from "./advertisers.service";
+import { Public } from "../auth/decorators/public.decorator";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
+import { TenantGuard } from "../auth/guards/tenant.guard";
+import { Throttle } from "@nestjs/throttler";
 
-@Controller('advertisers')
+@Controller("advertisers")
 export class AdvertisersController {
   constructor(private readonly advertisersService: AdvertisersService) {}
 
@@ -23,29 +37,29 @@ export class AdvertisersController {
    */
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @Post('login')
+  @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(@Body() body: { email: string; password?: string }) {
     if (!body.email || !body.password) {
-      throw new BadRequestException('email and password are required');
+      throw new BadRequestException("email and password are required");
     }
     return this.advertisersService.login(body.email, body.password);
   }
 
   @Public()
-  @Post('recover-password')
+  @Post("recover-password")
   async recoverPassword(@Body() body: { email: string }) {
     if (!body.email) {
-      throw new BadRequestException('Email is required for password recovery');
+      throw new BadRequestException("Email is required for password recovery");
     }
     return this.advertisersService.recoverPassword(body.email);
   }
 
   @Public()
-  @Post('reset-password')
+  @Post("reset-password")
   async resetPassword(@Body() body: { token: string; newPassword?: string }) {
     if (!body.token || !body.newPassword) {
-      throw new BadRequestException('Token and newPassword are required');
+      throw new BadRequestException("Token and newPassword are required");
     }
     return this.advertisersService.resetPassword(body.token, body.newPassword);
   }
@@ -53,12 +67,12 @@ export class AdvertisersController {
   /**
    * SHELTER C-A1: TenantGuard asegura que solo el dueño o un ADMIN puede ver el registro.
    */
-  @Get(':id')
+  @Get(":id")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   @UseGuards(TenantGuard)
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param("id") id: string) {
     const adv = await this.advertisersService.findOne(id);
-    if (!adv) throw new BadRequestException('Anunciante no encontrado');
+    if (!adv) throw new BadRequestException("Anunciante no encontrado");
     return adv;
   }
 
@@ -73,17 +87,30 @@ export class AdvertisersController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
   async create(@Body() body: Record<string, unknown>) {
-    const FORBIDDEN_FIELDS = ['role', 'isAdmin', 'status', 'referredBy', 'app_metadata', 'user_metadata'];
-    const injected = FORBIDDEN_FIELDS.filter((field) => body?.[field] !== undefined);
+    const FORBIDDEN_FIELDS = [
+      "role",
+      "isAdmin",
+      "status",
+      "referredBy",
+      "app_metadata",
+      "user_metadata",
+    ];
+    const injected = FORBIDDEN_FIELDS.filter(
+      (field) => body?.[field] !== undefined,
+    );
     if (injected.length > 0) {
-      throw new BadRequestException(`Intento de inyección de campos privilegiados bloqueado: ${injected.join(', ')}`);
+      throw new BadRequestException(
+        `Intento de inyección de campos privilegiados bloqueado: ${injected.join(", ")}`,
+      );
     }
 
     const companyName = body?.companyName;
     const contactName = body?.contactName;
     const email = body?.email;
     if (!companyName || !contactName || !email) {
-      throw new BadRequestException('companyName, contactName, and email are required');
+      throw new BadRequestException(
+        "companyName, contactName, and email are required",
+      );
     }
 
     // Whitelist explícita — nunca se reenvía el payload crudo
@@ -92,39 +119,40 @@ export class AdvertisersController {
       contactName: String(contactName),
       email: String(email),
       phone: body?.phone !== undefined ? String(body.phone) : undefined,
-      password: typeof body?.password === 'string' ? body.password : undefined,
-      referralCode: typeof body?.referralCode === 'string' ? body.referralCode : undefined,
+      password: typeof body?.password === "string" ? body.password : undefined,
+      referralCode:
+        typeof body?.referralCode === "string" ? body.referralCode : undefined,
     });
   }
 
   /**
    * SHELTER C-A1: Solo el dueño o un ADMIN puede modificar el registro.
    */
-  @Put(':id')
+  @Put(":id")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   @UseGuards(TenantGuard)
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param("id") id: string, @Body() body: any) {
     return this.advertisersService.update(id, body);
   }
 
   /**
    * Solo un ADMIN puede eliminar un anunciante.
    */
-  @Delete(':id')
+  @Delete(":id")
   @Roles(UserRole.ADMIN)
-  async delete(@Param('id') id: string) {
+  async delete(@Param("id") id: string) {
     return this.advertisersService.remove(id);
   }
 
   /**
    * Portal del anunciante — SHELTER C-A1: TenantGuard verifica propiedad del recurso.
    */
-  @Get(':id/portal')
+  @Get(":id/portal")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   @UseGuards(TenantGuard)
-  async getPortal(@Param('id') id: string) {
+  async getPortal(@Param("id") id: string) {
     const data = await this.advertisersService.getPortalData(id);
-    if (!data) throw new BadRequestException('Anunciante no encontrado');
+    if (!data) throw new BadRequestException("Anunciante no encontrado");
     return data;
   }
 
@@ -133,10 +161,10 @@ export class AdvertisersController {
    * TENANT ISOLATION: TenantGuard garantiza que solo se devuelven facturas del propietario.
    * No carga la data completa del portal — query ligero y eficiente.
    */
-  @Get(':id/invoices')
+  @Get(":id/invoices")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   @UseGuards(TenantGuard)
-  async getInvoices(@Param('id') id: string) {
+  async getInvoices(@Param("id") id: string) {
     return this.advertisersService.getInvoices(id);
   }
 }

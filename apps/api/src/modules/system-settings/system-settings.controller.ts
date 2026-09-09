@@ -1,10 +1,10 @@
-import { Controller, Get, Body, Put, UseGuards } from '@nestjs/common';
-import { SystemSettingsService } from './system-settings.service';
-import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles, UserRole } from '../auth/decorators/roles.decorator';
+import { Controller, Get, Body, Put, UseGuards } from "@nestjs/common";
+import { SystemSettingsService } from "./system-settings.service";
+import { SupabaseAuthGuard } from "../auth/guards/supabase-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
-@Controller('system-settings')
+@Controller("system-settings")
 @UseGuards(SupabaseAuthGuard, RolesGuard)
 export class SystemSettingsController {
   constructor(private readonly settingsService: SystemSettingsService) {}

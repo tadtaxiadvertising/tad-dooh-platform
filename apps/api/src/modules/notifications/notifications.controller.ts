@@ -1,9 +1,9 @@
-import { Controller, Get, Put, Param, Post, Body } from '@nestjs/common';
-import { NotificationsService } from './notifications.service';
-import { Roles, UserRole } from '../auth/decorators/roles.decorator';
+import { Controller, Get, Put, Param, Post, Body } from "@nestjs/common";
+import { NotificationsService } from "./notifications.service";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @Roles(UserRole.ADMIN)
-@Controller('notifications')
+@Controller("notifications")
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
@@ -12,28 +12,30 @@ export class NotificationsController {
     return this.notificationsService.findAll();
   }
 
-  @Get('unread-count')
+  @Get("unread-count")
   getUnreadCount() {
     return this.notificationsService.getUnreadCount();
   }
 
-  @Post('mark-all-read')
+  @Post("mark-all-read")
   markAllAsRead() {
     return this.notificationsService.markAllAsRead();
   }
 
-  @Put(':id/read')
-  markAsRead(@Param('id') id: string) {
+  @Put(":id/read")
+  markAsRead(@Param("id") id: string) {
     return this.notificationsService.markAsRead(id);
   }
 
-  @Post('test-alert')
-  async createTestAlert(@Body() body: { title: string; message: string; type: any; category: any }) {
+  @Post("test-alert")
+  async createTestAlert(
+    @Body() body: { title: string; message: string; type: any; category: any },
+  ) {
     return this.notificationsService.createAlert({
-        title: body.title || 'Alerta de Prueba',
-        message: body.message || 'Esta es un mensaje de prueba desde el sistema',
-        type: body.type || 'INFO',
-        category: body.category || 'SYSTEM',
+      title: body.title || "Alerta de Prueba",
+      message: body.message || "Esta es un mensaje de prueba desde el sistema",
+      type: body.type || "INFO",
+      category: body.category || "SYSTEM",
     });
   }
 }

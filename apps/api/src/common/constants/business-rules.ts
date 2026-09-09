@@ -29,14 +29,10 @@ export const BUSINESS_RULES = {
   MAX_VIDEO_SIZE_BYTES: 57671680,
 
   /** Tipos MIME permitidos para piezas publicitarias (video MP4 H.264 + estáticos JPG/PNG) */
-  ALLOWED_MEDIA_MIME_TYPES: [
-    'video/mp4',
-    'image/jpeg',
-    'image/png',
-  ],
+  ALLOWED_MEDIA_MIME_TYPES: ["video/mp4", "image/jpeg", "image/png"],
 
   /** Extensiones permitidas para piezas publicitarias */
-  ALLOWED_MEDIA_EXTENSIONS: ['.mp4', '.jpg', '.jpeg', '.png'],
+  ALLOWED_MEDIA_EXTENSIONS: [".mp4", ".jpg", ".jpeg", ".png"],
 
   /** Máximo de campañas activas simultáneas por anunciante */
   MAX_CAMPAIGNS_PER_ADVERTISER: 15,
@@ -57,7 +53,7 @@ export const BUSINESS_RULES = {
   // ==========================================
   // CONFIGURACIÓN DE SEGURIDAD
   // ==========================================
-  JWT_EXPIRY: '7d',
+  JWT_EXPIRY: "7d",
   BCRYPT_ROUNDS: 10,
 
   // ==========================================
@@ -65,43 +61,43 @@ export const BUSINESS_RULES = {
   // ==========================================
   STATUS: {
     DRIVER: {
-      INITIAL: 'PENDIENTE_PAGO',
-      ACTIVE: 'OPERATIVO',
+      INITIAL: "PENDIENTE_PAGO",
+      ACTIVE: "OPERATIVO",
       // @deprecated Use 'BLOCKED' (alias) en código nuevo. Se conserva
       // 'SUSPENDED' por compatibilidad — apunta al mismo string histórico.
-      SUSPENDED: 'BLOQUEADO',
-      BLOCKED: 'BLOQUEADO',
+      SUSPENDED: "BLOQUEADO",
+      BLOCKED: "BLOQUEADO",
       ONBOARDING: {
-        TOS_PENDING: 'TOS_PENDING',
-        READY: 'READY',
-      }
+        TOS_PENDING: "TOS_PENDING",
+        READY: "READY",
+      },
     },
     ADVERTISER: {
-      INITIAL: 'PENDING_REVIEW',
-      ACTIVE: 'ACTIVE',
-      SUSPENDED: 'SUSPENDED',
+      INITIAL: "PENDING_REVIEW",
+      ACTIVE: "ACTIVE",
+      SUSPENDED: "SUSPENDED",
     },
     CAMPAIGN: {
-      DRAFT: 'DRAFT',
-      PENDING: 'PENDING_REVIEW',
-      PENDING_PAYMENT: 'PENDING_PAYMENT',
-      ACTIVE: 'ACTIVE',
-      COMPLETED: 'COMPLETED',
+      DRAFT: "DRAFT",
+      PENDING: "PENDING_REVIEW",
+      PENDING_PAYMENT: "PENDING_PAYMENT",
+      ACTIVE: "ACTIVE",
+      COMPLETED: "COMPLETED",
     },
     DEVICE: {
-      ACTIVE: 'OPERATIVO',
+      ACTIVE: "OPERATIVO",
       // @deprecated Use 'BLOCKED'.
-      SUSPENDED: 'BLOQUEADO',
-      BLOCKED: 'BLOQUEADO',
-      INITIAL: 'PENDIENTE_PAGO',
-    }
+      SUSPENDED: "BLOQUEADO",
+      BLOCKED: "BLOQUEADO",
+      INITIAL: "PENDIENTE_PAGO",
+    },
   },
 
   /** Niveles de desempeño del chofer definidos según horas de transmisión */
   LEVELS: {
-    BASE: { hours: 120, label: 'BASE', priority: 1, penalty: 0.10 },
-    PLATA: { hours: 160, label: 'PLATA', priority: 2, penalty: 0 },
-    ORO: { hours: 200, label: 'ORO', priority: 3, penalty: 0 },
+    BASE: { hours: 120, label: "BASE", priority: 1, penalty: 0.1 },
+    PLATA: { hours: 160, label: "PLATA", priority: 2, penalty: 0 },
+    ORO: { hours: 200, label: "ORO", priority: 3, penalty: 0 },
   },
 
   /** Penalización se aplica tras N meses consecutivos incumpliendo la meta de horas. */
@@ -111,7 +107,7 @@ export const BUSINESS_RULES = {
   COMMAND_TTL_DAYS: 7,
 
   /** Tasa de retención por referidos (10%) */
-  REFERRAL_RETENTION_RATE: 0.10,
+  REFERRAL_RETENTION_RATE: 0.1,
 
   /**
    * Tasa de churn mensual por defecto (4.5%).
@@ -131,4 +127,4 @@ export const BCRYPT_ROUNDS = BUSINESS_RULES.BCRYPT_ROUNDS;
 export const JWT_EXPIRY = BUSINESS_RULES.JWT_EXPIRY;
 
 /** Versión actual del contrato de socio conductor */
-export const CONTRACT_VERSION = '2.0';
+export const CONTRACT_VERSION = "2.0";

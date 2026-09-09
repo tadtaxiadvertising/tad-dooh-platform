@@ -1,13 +1,13 @@
-import { CreateCampaignDto } from './dto/create-campaign.dto';
-import { AddMediaAssetDto } from './dto/add-media-asset.dto';
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseService } from '../supabase/supabase.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import * as crypto from 'crypto';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
-import { AuthUser } from '../auth/auth.types';
-import { calculateImpact, ImpactOutput } from '@tad/impact-calculator';
+import { CreateCampaignDto } from "./dto/create-campaign.dto";
+import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { SupabaseService } from "../supabase/supabase.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import * as crypto from "crypto";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { AuthUser } from "../auth/auth.types";
+import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -47,18 +47,27 @@ const mediaSafeSelect = {
 
 @Injectable()
 export class CampaignService {
- private readonly logger = new Logger(CampaignService.name);
+  private readonly logger = new Logger(CampaignService.name);
 
- constructor(
- private readonly prisma: PrismaService,
- private readonly supabaseService: SupabaseService,
- private readonly notificationsService: NotificationsService,
- ) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabaseService: SupabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
 
-  async updateCampaign(id: string, dto: Partial<CreateCampaignDto> & { target_devices?: string[]; active?: boolean; target_city?: string; target_all?: boolean; advertiser_id?: string }) {
+  async updateCampaign(
+    id: string,
+    dto: Partial<CreateCampaignDto> & {
+      target_devices?: string[];
+      active?: boolean;
+      target_city?: string;
+      target_all?: boolean;
+      advertiser_id?: string;
+    },
+  ) {
     const data: Record<string, unknown> = {};
     if (dto.name) data.name = dto.name;
     if (dto.advertiser) data.advertiser = dto.advertiser;
@@ -69,7 +78,8 @@ export class CampaignService {
     if (dto.target_all !== undefined) data.targetAll = dto.target_all;
     if (dto.target_city) data.targetCity = dto.target_city;
     if (dto.budget !== undefined) data.budget = Number(dto.budget);
-    if (dto.target_impressions !== undefined) data.targetImpressions = Number(dto.target_impressions);
+    if (dto.target_impressions !== undefined)
+      data.targetImpressions = Number(dto.target_impressions);
     if (dto.whatsapp !== undefined) data.whatsapp = dto.whatsapp;
     if (dto.instagram !== undefined) data.instagram = dto.instagram;
     if (dto.facebook !== undefined) data.facebook = dto.facebook;
@@ -87,125 +97,151 @@ export class CampaignService {
     } else {
       let devicesToSync = [];
       if (campaign.targetAll || campaign.isGlobal) {
-        devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } }));
+        devicesToSync = await this.prisma.device.findMany({
+          where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+          select: { id: true, deviceId: true },
+        });
       } else {
         // Broadcast to both v1 and v2 assignments
-        const assignmentsV2 = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: id }, select: { device_id: true } });
-        const assignmentsV1 = await this.prisma.playlistItem.findMany({ where: { campaignId: id }, include: { device: { select: { id: true } } } });
+        const assignmentsV2 = await this.prisma.deviceCampaign.findMany({
+          where: { campaign_id: id },
+          select: { device_id: true },
+        });
+        const assignmentsV1 = await this.prisma.playlistItem.findMany({
+          where: { campaignId: id },
+          include: { device: { select: { id: true } } },
+        });
 
         const uniqueDeviceIds = new Set([
-          ...assignmentsV2.map(a => a.device_id),
-          ...assignmentsV1.map(a => a.device.id)
+          ...assignmentsV2.map((a) => a.device_id),
+          ...assignmentsV1.map((a) => a.device.id),
         ]);
 
-        devicesToSync = Array.from(uniqueDeviceIds).map(id => ({ id }));
+        devicesToSync = Array.from(uniqueDeviceIds).map((id) => ({ id }));
       }
 
       if (devicesToSync.length > 0) {
         await this.prisma.deviceCommand.createMany({
-          data: devicesToSync.map(d => ({
+          data: devicesToSync.map((d) => ({
             deviceId: d.id, // Device Command needs UUID usually
-            commandType: 'FORCE_SYNC',
-            commandParams: JSON.stringify({ reason: 'campaign_updated' }),
-            status: 'PENDING',
-            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-          }))
+            commandType: "FORCE_SYNC",
+            commandParams: JSON.stringify({ reason: "campaign_updated" }),
+            status: "PENDING",
+            expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+          })),
         });
       }
     }
 
-    if (campaign.status === 'ACTIVE') {
-    await this.prisma.refreshActiveCampaignsView();
-    this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-    reason: 'campaign_updated',
-    campaignId: id
-    }).catch(() => { });
+    if (campaign.status === "ACTIVE") {
+      await this.prisma.refreshActiveCampaignsView();
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "campaign_updated",
+          campaignId: id,
+        })
+        .catch(() => {});
 
-    try {
-    const adv = await this.prisma.advertiser.findUnique({
-    where: { id: campaign.advertiserId },
-    select: {
-    referredBy: true,
-    _count: { select: { campaigns: { where: { status: 'ACTIVE' } } } },
-    },
-    });
+      try {
+        const adv = await this.prisma.advertiser.findUnique({
+          where: { id: campaign.advertiserId },
+          select: {
+            referredBy: true,
+            _count: { select: { campaigns: { where: { status: "ACTIVE" } } } },
+          },
+        });
 
-    if (adv && adv.referredBy && adv._count.campaigns === 1) {
-    const driverId = adv.referredBy;
-    const bonusReference = `REF-BONUS-${campaign.id.substring(0, 8)}`;
+        if (adv && adv.referredBy && adv._count.campaigns === 1) {
+          const driverId = adv.referredBy;
+          const bonusReference = `REF-BONUS-${campaign.id.substring(0, 8)}`;
 
-    // FASE 2 (Item 7): bonus atómico e idempotente — commission + ledger + wallet
-    // dentro de una sola transacción, con upsert por reference @unique (no P2002,
-    // no doble abono si updateCampaign se ejecuta concurrentemente).
-    await this.prisma.$transaction(async (tx) => {
-      const existingComm = await tx.commission.findFirst({
-      where: { driverId, sourceType: 'ADVERTISER_SALE' },
-      });
+          // FASE 2 (Item 7): bonus atómico e idempotente — commission + ledger + wallet
+          // dentro de una sola transacción, con upsert por reference @unique (no P2002,
+          // no doble abono si updateCampaign se ejecuta concurrentemente).
+          await this.prisma.$transaction(async (tx) => {
+            const existingComm = await tx.commission.findFirst({
+              where: { driverId, sourceType: "ADVERTISER_SALE" },
+            });
 
-    if (existingComm) return;
+            if (existingComm) return;
 
-    this.logger.log(`💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`);
+            this.logger.log(
+              `💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`,
+            );
 
-    await tx.commission.create({
-    data: {
-    driverId,
-    amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-    sourceType: 'ADVERTISER_SALE',
-    status: 'APPROVED',
-    },
-    });
+            await tx.commission.create({
+              data: {
+                driverId,
+                amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                sourceType: "ADVERTISER_SALE",
+                status: "APPROVED",
+              },
+            });
 
-    await tx.financialTransaction.upsert({
-    where: { reference: bonusReference },
-    update: {},
-    create: {
-    type: 'OUTGOING',
-    category: 'OPEX_COMMISSION',
-    amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-    netAmount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-    taxAmount: 0,
-    entityId: driverId,
-    reference: bonusReference,
-    note: 'Bono de Referido por 1ra campaña activa de anunciante asociado.',
-    status: 'COMPLETED',
-    },
-    });
+            await tx.financialTransaction.upsert({
+              where: { reference: bonusReference },
+              update: {},
+              create: {
+                type: "OUTGOING",
+                category: "OPEX_COMMISSION",
+                amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                netAmount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                taxAmount: 0,
+                entityId: driverId,
+                reference: bonusReference,
+                note: "Bono de Referido por 1ra campaña activa de anunciante asociado.",
+                status: "COMPLETED",
+              },
+            });
 
-    await tx.wallet.upsert({
-    where: { driverId },
-    update: { availableBalance: { increment: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD } },
-    create: { driverId, availableBalance: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD },
-    });
-    });
-    }
-    } catch (err) {
-    this.logger.error(`❌ [REFERRAL_LOOP] Failed to process referral payout: ${err instanceof Error ? err.message : String(err)}`);
-    }
+            await tx.wallet.upsert({
+              where: { driverId },
+              update: {
+                availableBalance: {
+                  increment: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+                },
+              },
+              create: {
+                driverId,
+                availableBalance: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+              },
+            });
+          });
+        }
+      } catch (err) {
+        this.logger.error(
+          `❌ [REFERRAL_LOOP] Failed to process referral payout: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
 
     return campaign;
-    }
+  }
 
   async createCampaign(dto: CreateCampaignDto, user?: AuthUser) {
-    const isAdmin = user?.role === 'ADMIN';
-    const isAdvertiser = user?.role === 'ADVERTISER';
+    const isAdmin = user?.role === "ADMIN";
+    const isAdvertiser = user?.role === "ADVERTISER";
     let assignedAdvertiser = dto.advertiser;
     let assignedAdvertiserId = dto.advertiser_id; // Support explicit ID from DTO
-    let initialStatus = dto.active ? 'ACTIVE' : 'DRAFT';
+    let initialStatus = dto.active ? "ACTIVE" : "DRAFT";
 
     if (isAdvertiser && user?.entityId) {
       assignedAdvertiserId = user.entityId;
       // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
-      const advertiser = await this.prisma.advertiser.findUnique({ where: { id: user.entityId } });
+      const advertiser = await this.prisma.advertiser.findUnique({
+        where: { id: user.entityId },
+      });
       assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
-      initialStatus = 'PENDING_REVIEW';
+      initialStatus = "PENDING_REVIEW";
     } else if (!isAdmin && user?.email && !assignedAdvertiserId) {
-      const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
+      const advertiser = await this.prisma.advertiser.findUnique({
+        where: { email: user.email },
+      });
       if (advertiser) {
         assignedAdvertiserId = advertiser.id;
         assignedAdvertiser = advertiser.companyName;
       }
-      initialStatus = 'PENDING_REVIEW';
+      initialStatus = "PENDING_REVIEW";
     }
 
     // REGLA DE NEGOCIO 04: Máximo de campañas activas simultáneas por anunciante
@@ -213,12 +249,12 @@ export class CampaignService {
       const activeCount = await this.prisma.campaign.count({
         where: {
           advertiserId: assignedAdvertiserId,
-          status: { in: ['ACTIVE', 'PENDING_REVIEW', 'PENDING_PAYMENT'] },
+          status: { in: ["ACTIVE", "PENDING_REVIEW", "PENDING_PAYMENT"] },
         },
       });
       if (activeCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
         throw new BadRequestException(
-          `Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`
+          `Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`,
         );
       }
     }
@@ -230,13 +266,13 @@ export class CampaignService {
         advertiserId: assignedAdvertiserId,
         startDate: new Date(dto.start_date),
         endDate: new Date(dto.end_date),
-        active: initialStatus === 'ACTIVE',
+        active: initialStatus === "ACTIVE",
         status: initialStatus,
         targetImpressions: dto.target_impressions || 0,
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : false,
-        targetCity: dto.target_city || 'Global',
-        category: dto.category || 'General',
+        targetCity: dto.target_city || "Global",
+        category: dto.category || "General",
         whatsapp: dto.whatsapp,
         instagram: dto.instagram,
         facebook: dto.facebook,
@@ -251,22 +287,29 @@ export class CampaignService {
     let devicesToAssign = dto.target_devices || [];
 
     if (devicesToAssign.length === 0 && !dto.target_all && dto.target_city) {
-      this.logger.log(`🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`);
+      this.logger.log(
+        `🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`,
+      );
       const limit = Math.floor((dto.budget || 3000) / 3000) || 10; // Estimado de pantallas según presupuesto
-      const optimalDevices = await this.getOptimalDevicesForCampaign(dto.target_city, limit);
-      devicesToAssign = optimalDevices.map(d => d.deviceId);
+      const optimalDevices = await this.getOptimalDevicesForCampaign(
+        dto.target_city,
+        limit,
+      );
+      devicesToAssign = optimalDevices.map((d) => d.deviceId);
     }
 
     if (devicesToAssign.length > 0) {
       await this.assignCampaignToDevices(campaign.id, devicesToAssign);
     }
 
-    if (campaign.status === 'ACTIVE') {
+    if (campaign.status === "ACTIVE") {
       await this.prisma.refreshActiveCampaignsView();
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'campaign_created',
-        campaignId: campaign.id
-      }).catch(() => { });
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "campaign_created",
+          campaignId: campaign.id,
+        })
+        .catch(() => {});
     }
 
     return campaign;
@@ -276,16 +319,15 @@ export class CampaignService {
     // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
       where: {
-        OR: [
-          { id: { in: idOrHwIds } },
-          { deviceId: { in: idOrHwIds } }
-        ]
+        OR: [{ id: { in: idOrHwIds } }, { deviceId: { in: idOrHwIds } }],
       },
-      select: { id: true, deviceId: true }
+      select: { id: true, deviceId: true },
     });
 
     if (devices.length === 0 && idOrHwIds.length > 0) {
-      this.logger.warn(`⚠️ No devices found for ${idOrHwIds.length} provided IDs.`);
+      this.logger.warn(
+        `⚠️ No devices found for ${idOrHwIds.length} provided IDs.`,
+      );
     }
 
     // 2. TRANSACTIONAL UPDATE: Clean old, re-check slot limit inside the tx
@@ -294,19 +336,23 @@ export class CampaignService {
     return await this.prisma.$transaction(async (tx) => {
       // Clear all existing assignments for this campaign
       await tx.playlistItem.deleteMany({ where: { campaignId } });
-      await tx.deviceCampaign.deleteMany({ where: { campaign_id: campaignId } });
+      await tx.deviceCampaign.deleteMany({
+        where: { campaign_id: campaignId },
+      });
 
       // Update the campaign's updatedAt to trigger cache invalidation
       await tx.campaign.update({
         where: { id: campaignId },
-        data: { updatedAt: new Date() }
+        data: { updatedAt: new Date() },
       });
 
       // Re-count slots por device DENTRO de la tx (Revenue Protector R4)
       const eligible: { id: string; deviceId: string }[] = [];
       for (const d of devices) {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'dc:' + d.id})::bigint)`;
-        const currentCount = await tx.deviceCampaign.count({ where: { device_id: d.id } });
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + d.id})::bigint)`;
+        const currentCount = await tx.deviceCampaign.count({
+          where: { device_id: d.id },
+        });
         if (currentCount < BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
           eligible.push(d);
         }
@@ -316,54 +362,76 @@ export class CampaignService {
       if (eligible.length === 0) return { count: 0, skipped: skippedCount };
 
       // Create new assignments (V1 Legacy & V2 Core)
-      const dataV1 = eligible.map(d => ({ campaignId, deviceId: d.deviceId }));
-      const dataV2 = eligible.map(d => ({ campaign_id: campaignId, device_id: d.id }));
+      const dataV1 = eligible.map((d) => ({
+        campaignId,
+        deviceId: d.deviceId,
+      }));
+      const dataV2 = eligible.map((d) => ({
+        campaign_id: campaignId,
+        device_id: d.id,
+      }));
 
       await tx.playlistItem.createMany({ data: dataV1 });
       await tx.deviceCampaign.createMany({ data: dataV2 });
 
       // Create FORCE_SYNC commands to wake tablets and trigger instant sync
       // We send to UUID (id) because DeviceCommand relation uses UUID
-      const commands = eligible.map(d => ({
+      const commands = eligible.map((d) => ({
         deviceId: d.id,
-        commandType: 'FORCE_SYNC',
-        commandParams: JSON.stringify({ reason: 'campaign_assigned', campaignId, deviceId: d.deviceId }),
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
+        commandType: "FORCE_SYNC",
+        commandParams: JSON.stringify({
+          reason: "campaign_assigned",
+          campaignId,
+          deviceId: d.deviceId,
+        }),
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
       }));
       await tx.deviceCommand.createMany({ data: commands });
 
       // BROADCAST REALTIME: Send WAKE_UP_CALL to fleet_sync channel
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-      reason: 'campaign_assigned',
-      campaignId,
-      targets: eligible.map(d => d.deviceId)
-      }).catch(e => this.logger.warn(`Realtime broadcast failed: ${e.message}`));
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "campaign_assigned",
+          campaignId,
+          targets: eligible.map((d) => d.deviceId),
+        })
+        .catch((e) =>
+          this.logger.warn(`Realtime broadcast failed: ${e.message}`),
+        );
 
       if (eligible.length > 0) {
         // Notificar driver-specific: UNA query batcheada (fix N+1, A4)
         const boundDrivers = await tx.device.findMany({
-          where: { deviceId: { in: eligible.map(d => d.deviceId) } },
-          select: { deviceId: true, driverId: true }
+          where: { deviceId: { in: eligible.map((d) => d.deviceId) } },
+          select: { deviceId: true, driverId: true },
         });
-        const driverByDevice = new Map(boundDrivers.map(b => [b.deviceId, b.driverId]));
+        const driverByDevice = new Map(
+          boundDrivers.map((b) => [b.deviceId, b.driverId]),
+        );
         await Promise.all(
           eligible.map(async (device) => {
             const bound = driverByDevice.get(device.deviceId);
             if (!bound) return;
-            void this.notificationsService.sendDriverNotification(bound, 'CAMPAIGN_ASSIGNED', {
-              campaignId,
-              deviceId: device.deviceId,
-              assignedAt: new Date().toISOString(),
-            }).catch((err) =>
-              this.logger.warn(`[CAMPAIGN_NOTIFY] ${device.deviceId}: ${err.message}`)
-            );
-          })
+            void this.notificationsService
+              .sendDriverNotification(bound, "CAMPAIGN_ASSIGNED", {
+                campaignId,
+                deviceId: device.deviceId,
+                assignedAt: new Date().toISOString(),
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  `[CAMPAIGN_NOTIFY] ${device.deviceId}: ${err.message}`,
+                ),
+              );
+          }),
         );
       }
 
       // SRE Optimization: Refresh view so heartbeats get the new state immediately
-      this.prisma.refreshActiveCampaignsView().catch(e => this.logger.error(`View refresh failed: ${e.message}`));
+      this.prisma
+        .refreshActiveCampaignsView()
+        .catch((e) => this.logger.error(`View refresh failed: ${e.message}`));
 
       return { count: eligible.length, skipped: skippedCount };
     });
@@ -374,18 +442,20 @@ export class CampaignService {
   // pg_advisory_xact_lock(device) — elimina el TOCTOU del count previo.
   async assignCampaignToDevice(deviceId: string, campaignId: string) {
     return await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'dc:' + deviceId})::bigint)`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + deviceId})::bigint)`;
 
       const currentCount = await tx.deviceCampaign.count({
-        where: { device_id: deviceId }
+        where: { device_id: deviceId },
       });
 
       if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
-        throw new BadRequestException(`Este taxi ya tiene los ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`);
+        throw new BadRequestException(
+          `Este taxi ya tiene los ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots de 30s ocupados.`,
+        );
       }
 
       return tx.deviceCampaign.create({
-        data: { device_id: deviceId, campaign_id: campaignId }
+        data: { device_id: deviceId, campaign_id: campaignId },
       });
     });
   }
@@ -393,43 +463,84 @@ export class CampaignService {
   /**
    * Single Source of Truth: Registra metadatos de un archivo ya subido a Supabase.
    */
-  async registerDirectMedia(dto: { brandId: string; fileName: string; url: string; fileSize?: number; storagePath: string }, user?: AuthUser) {
-    this.logger.debug(`[MEDIA_REG] Intentando registro de ${dto.fileName} (${dto.fileSize} bytes)`);
+  async registerDirectMedia(
+    dto: {
+      brandId: string;
+      fileName: string;
+      url: string;
+      fileSize?: number;
+      storagePath: string;
+    },
+    user?: AuthUser,
+  ) {
+    this.logger.debug(
+      `[MEDIA_REG] Intentando registro de ${dto.fileName} (${dto.fileSize} bytes)`,
+    );
 
     // 🛡️ REGLA DE SEGURIDAD 10.2: Validación de Propiedad
-    if (user?.role !== 'ADMIN') {
+    if (user?.role !== "ADMIN") {
       // 1. Intentamos validar por entityId (Token) - Más rápido y seguro
       if (user?.entityId) {
         if (dto.brandId && user.entityId !== dto.brandId) {
-          this.logger.warn(`[MEDIA_REG] Rechazado: Entidad no coincide. Token=${user.entityId}, DTO=${dto.brandId}`);
-          throw new BadRequestException('ID de marca no coincide con tu perfíl de anunciante');
+          this.logger.warn(
+            `[MEDIA_REG] Rechazado: Entidad no coincide. Token=${user.entityId}, DTO=${dto.brandId}`,
+          );
+          throw new BadRequestException(
+            "ID de marca no coincide con tu perfíl de anunciante",
+          );
         }
       }
       // 2. Fallback a búsqueda por Email (Base de Datos)
       else if (user?.email && dto.brandId) {
-        const advertiser = await this.prisma.advertiser.findUnique({ where: { email: user.email } });
+        const advertiser = await this.prisma.advertiser.findUnique({
+          where: { email: user.email },
+        });
         if (!advertiser || advertiser.id !== dto.brandId) {
-          this.logger.warn(`[MEDIA_REG] Rechazado: No se encontró anunciante o ID incorrecto para ${user.email}`);
-          throw new BadRequestException('No tienes permisos suficientes para esta marca');
+          this.logger.warn(
+            `[MEDIA_REG] Rechazado: No se encontró anunciante o ID incorrecto para ${user.email}`,
+          );
+          throw new BadRequestException(
+            "No tienes permisos suficientes para esta marca",
+          );
         }
       }
     }
 
-    if (dto.fileSize && Number(dto.fileSize) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
-      this.logger.warn(`[MEDIA_REG] Archivo demasiado grande: ${dto.fileSize} > ${BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES}`);
-      throw new BadRequestException(`El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`);
+    if (
+      dto.fileSize &&
+      Number(dto.fileSize) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES
+    ) {
+      this.logger.warn(
+        `[MEDIA_REG] Archivo demasiado grande: ${dto.fileSize} > ${BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES}`,
+      );
+      throw new BadRequestException(
+        `El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`,
+      );
     }
 
     // REGLA DE SEGURIDAD 07: Solo MP4/JPG/PNG como piezas publicitarias
-    const ext = (dto.fileName || '').split('.').pop()?.toLowerCase();
-    const urlExt = (dto.url || '').split('?')[0].split('.').pop()?.toLowerCase();
-    const isAllowed = (e?: string) => e ? BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some((allowed) => allowed === `.${e}`) : false;
+    const ext = (dto.fileName || "").split(".").pop()?.toLowerCase();
+    const urlExt = (dto.url || "")
+      .split("?")[0]
+      .split(".")
+      .pop()
+      ?.toLowerCase();
+    const isAllowed = (e?: string) =>
+      e
+        ? BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.some(
+            (allowed) => allowed === `.${e}`,
+          )
+        : false;
     const fileExtOk = !dto.fileName || isAllowed(ext);
     const urlExtOk = !dto.url || isAllowed(urlExt);
 
     if (!fileExtOk || !urlExtOk) {
-      this.logger.warn(`[MEDIA_REG] Rechazado: extensión no permitida (file=${ext}, url=${urlExt})`);
-      throw new BadRequestException(`Solo se aceptan piezas ${BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(', ')}.`);
+      this.logger.warn(
+        `[MEDIA_REG] Rechazado: extensión no permitida (file=${ext}, url=${urlExt})`,
+      );
+      throw new BadRequestException(
+        `Solo se aceptan piezas ${BUSINESS_RULES.ALLOWED_MEDIA_EXTENSIONS.join(", ")}.`,
+      );
     }
 
     try {
@@ -438,17 +549,21 @@ export class CampaignService {
           filename: dto.fileName,
           originalFilename: dto.fileName,
           url: dto.url,
-          fileSize: dto.fileSize ? BigInt(Math.round(Number(dto.fileSize))) : BigInt(0),
+          fileSize: dto.fileSize
+            ? BigInt(Math.round(Number(dto.fileSize)))
+            : BigInt(0),
           storageKey: dto.storagePath,
-          status: 'READY'
-        }
+          status: "READY",
+        },
       });
 
       this.logger.log(`✅ [MEDIA_REG] Media registrada con éxito: ${media.id}`);
       return { success: true, media };
     } catch (e: any) {
       this.logger.error(`❌ [MEDIA_REG] Error en base de datos: ${e.message}`);
-      throw new BadRequestException(`Error al guardar en base de datos: ${e.message}`);
+      throw new BadRequestException(
+        `Error al guardar en base de datos: ${e.message}`,
+      );
     }
   }
 
@@ -457,8 +572,13 @@ export class CampaignService {
     const deviceId = (dto as any).deviceId;
     if (deviceId) {
       const activeData = await this.getActiveSyncVideos(deviceId);
-      if (activeData.media_assets.length >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
-        throw new BadRequestException(`Pantalla llena (Límite de ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots alcanzado)`);
+      if (
+        activeData.media_assets.length >=
+        BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER
+      ) {
+        throw new BadRequestException(
+          `Pantalla llena (Límite de ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER} slots alcanzado)`,
+        );
       }
     }
 
@@ -469,7 +589,7 @@ export class CampaignService {
         filename: dto.filename,
         url: dto.url,
         fileSize: Math.round(Number(dto.fileSize || 0)),
-        checksum: dto.checksum || 'manual-upload',
+        checksum: dto.checksum || "manual-upload",
         duration: Math.round(Number(dto.duration || 30)),
         version: 1,
       },
@@ -478,60 +598,77 @@ export class CampaignService {
     // Invalidate campaign cache
     const campaign = await this.prisma.campaign.update({
       where: { id: campaignId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
     });
 
     // Create FORCE_SYNC commands for assigned devices
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = (await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true } }));
+      devicesToSync = await this.prisma.device.findMany({
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        select: { id: true },
+      });
     } else {
-      const assignments = await this.prisma.deviceCampaign.findMany({ where: { campaign_id: campaignId } });
-      devicesToSync = assignments.map(a => ({ id: a.device_id }));
+      const assignments = await this.prisma.deviceCampaign.findMany({
+        where: { campaign_id: campaignId },
+      });
+      devicesToSync = assignments.map((a) => ({ id: a.device_id }));
     }
 
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
-        data: devicesToSync.map(d => ({
+        data: devicesToSync.map((d) => ({
           deviceId: d.id,
-          commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_asset_added', campaignId, assetId: asset.id }),
-          status: 'PENDING',
-          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-        }))
+          commandType: "FORCE_SYNC",
+          commandParams: JSON.stringify({
+            reason: "media_asset_added",
+            campaignId,
+            assetId: asset.id,
+          }),
+          status: "PENDING",
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+        })),
       });
     } else {
       // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
       // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
       const allActiveDevices = await this.prisma.device.findMany({
         where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
-        select: { id: true }
+        select: { id: true },
       });
       if (allActiveDevices.length > 0) {
         await this.prisma.deviceCommand.createMany({
-          data: allActiveDevices.map(d => ({
+          data: allActiveDevices.map((d) => ({
             deviceId: d.id,
-            commandType: 'FORCE_SYNC',
-            commandParams: JSON.stringify({ reason: 'global_media_asset_added', campaignId, assetId: asset.id }),
-            status: 'PENDING',
-            expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-          }))
+            commandType: "FORCE_SYNC",
+            commandParams: JSON.stringify({
+              reason: "global_media_asset_added",
+              campaignId,
+              assetId: asset.id,
+            }),
+            status: "PENDING",
+            expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+          })),
         });
       }
     }
 
     // BROADCAST WAKE_UP_CALL only if not rendering
-    const isRendering = dto.status === 'RENDERING';
+    const isRendering = dto.status === "RENDERING";
 
     if (!isRendering) {
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'media_asset_added',
-        campaignId,
-        assetId: asset.id,
-        count: devicesToSync.length
-      }).catch(() => { });
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "media_asset_added",
+          campaignId,
+          assetId: asset.id,
+          count: devicesToSync.length,
+        })
+        .catch(() => {});
     } else {
-      Logger.log(`[CONTENT_DIST] MediaAsset ${asset.id} is rendering. WAKE_UP_CALL deferred.`);
+      Logger.log(
+        `[CONTENT_DIST] MediaAsset ${asset.id} is rendering. WAKE_UP_CALL deferred.`,
+      );
     }
 
     return asset;
@@ -541,16 +678,22 @@ export class CampaignService {
     return this.prisma.campaign.findMany({
       // SRE Cache Bust: Adding a trivial condition to force PgBouncer to parse a new Prepared Statement
       // after the schedule_days column was added in the database.
-      where: { id: { not: '00000000-0000-0000-0000-000000000000' } },
-      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
-      orderBy: { createdAt: 'desc' },
+      where: { id: { not: "00000000-0000-0000-0000-000000000000" } },
+      include: {
+        mediaAssets: { select: mediaAssetSafeSelect },
+        media: { select: mediaSafeSelect },
+      },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async getCampaignById(id: string) {
     return this.prisma.campaign.findUnique({
       where: { id },
-      include: { mediaAssets: { select: mediaAssetSafeSelect }, media: { select: mediaSafeSelect } },
+      include: {
+        mediaAssets: { select: mediaAssetSafeSelect },
+        media: { select: mediaSafeSelect },
+      },
     });
   }
 
@@ -559,24 +702,30 @@ export class CampaignService {
    */
   async getActiveSyncVideos(deviceIdOrUuid: string, deviceCity?: string) {
     const now = new Date();
-    this.logger.log(`🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`);
+    this.logger.log(
+      `🕒 Sync Internal Clock: ${now.toISOString()} (${now.getTime()})`,
+    );
 
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
-      select: { id: true, deviceId: true, city: true, driverId: true }
+      select: { id: true, deviceId: true, city: true, driverId: true },
     });
 
     if (!device) {
-      this.logger.warn(`⚠️ getActiveSyncVideos: Device '${deviceIdOrUuid}' NOT FOUND in DB. Check if registerDevice was called first.`);
-      return { version: 0, sync_hash: 'not-found', media_assets: [] };
+      this.logger.warn(
+        `⚠️ getActiveSyncVideos: Device '${deviceIdOrUuid}' NOT FOUND in DB. Check if registerDevice was called first.`,
+      );
+      return { version: 0, sync_hash: "not-found", media_assets: [] };
     }
 
     const uuid = device.id;
     const hwId = device.deviceId;
-    const city = deviceCity || device.city || 'Santiago';
+    const city = deviceCity || device.city || "Santiago";
     const driverId = device.driverId;
-    this.logger.log(`🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || 'none'}`);
+    this.logger.log(
+      `🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || "none"}`,
+    );
 
     let activeCampaigns: any[] = [];
 
@@ -600,7 +749,7 @@ export class CampaignService {
         LIMIT 15
       `;
 
-      const campaignIds = results.map(r => r.campaign_id);
+      const campaignIds = results.map((r) => r.campaign_id);
 
       if (campaignIds.length > 0) {
         activeCampaigns = await this.prisma.campaign.findMany({
@@ -611,11 +760,13 @@ export class CampaignService {
             videos: true,
             advertiserRef: true,
           },
-          orderBy: { updatedAt: 'desc' }
+          orderBy: { updatedAt: "desc" },
         });
       }
     } catch (primaryError: any) {
-      this.logger.error(`❌ getActiveSyncVideos optimized query failed: ${primaryError?.message}. Falling back to legacy query.`);
+      this.logger.error(
+        `❌ getActiveSyncVideos optimized query failed: ${primaryError?.message}. Falling back to legacy query.`,
+      );
       // Fallback to legacy query if view fails
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
@@ -623,11 +774,16 @@ export class CampaignService {
           startDate: { lte: now },
           endDate: { gte: now },
           OR: [
-            { targetAll: true, OR: [{ targetCity: 'Global' }, { targetCity: city }] },
+            {
+              targetAll: true,
+              OR: [{ targetCity: "Global" }, { targetCity: city }],
+            },
             { devices: { some: { device_id: uuid } } },
             { targets: { some: { deviceId: hwId } } },
-            ...(driverId ? [{ targetDrivers: { some: { id: driverId } } }] : [])
-          ]
+            ...(driverId
+              ? [{ targetDrivers: { some: { id: driverId } } }]
+              : []),
+          ],
         } as any,
         include: {
           mediaAssets: { select: mediaAssetSafeSelect },
@@ -635,56 +791,81 @@ export class CampaignService {
           videos: true,
           advertiserRef: true,
         },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: "desc" },
       });
     }
 
-    this.logger.log(`📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`);
-    activeCampaigns.forEach(c => {
-      const assetsCount = (c.mediaAssets?.length || 0) + (c.media?.length || 0) + (c.videos?.length || 0);
-      this.logger.log(`   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`);
+    this.logger.log(
+      `📊 Campaigns found for ${hwId}: ${activeCampaigns.length} total.`,
+    );
+    activeCampaigns.forEach((c) => {
+      const assetsCount =
+        (c.mediaAssets?.length || 0) +
+        (c.media?.length || 0) +
+        (c.videos?.length || 0);
+      this.logger.log(
+        `   📂 Campaign "${c.name}" [${c.id}] | active=${c.active} | targetAll=${c.targetAll} | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`,
+      );
     });
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
-      this.logger.warn(`⚠️ No active campaigns found for device ${hwId}. Check campaign dates, active flag, and device assignments.`);
-      return { version: 0, sync_hash: 'empty', media_assets: [] };
+      this.logger.warn(
+        `⚠️ No active campaigns found for device ${hwId}. Check campaign dates, active flag, and device assignments.`,
+      );
+      return { version: 0, sync_hash: "empty", media_assets: [] };
     }
 
     const mediaAssets: any[] = [];
     for (const campaign of activeCampaigns) {
       const mapMediaAsset = (ma: any) => ({
-        id: ma.id || ma.checksum || `asset-${Math.random().toString(36).substr(2, 9)}`,
+        id:
+          ma.id ||
+          ma.checksum ||
+          `asset-${Math.random().toString(36).substr(2, 9)}`,
         campaignId: campaign.id,
-        filename: ma.filename || ma.name || ma.title || 'video.mp4',
-        url: ma.cdnUrl || ma.url || '',
-        checksum: ma.hashMd5 || ma.hash || ma.checksum || 'no-checksum',
+        filename: ma.filename || ma.name || ma.title || "video.mp4",
+        url: ma.cdnUrl || ma.url || "",
+        checksum: ma.hashMd5 || ma.hash || ma.checksum || "no-checksum",
         hashMd5: ma.hashMd5 || ma.hash || ma.checksum || null,
         duration: Number(ma.duration || 30),
         qrUrl: campaign.targetUrl || ma.qrUrl || null,
-        advertiserId: campaign.advertiserRef?.id || campaign.advertiserId || null,
-        advertiserName: campaign.advertiserRef?.companyName || campaign.advertiser || 'TAD Advertiser',
+        advertiserId:
+          campaign.advertiserRef?.id || campaign.advertiserId || null,
+        advertiserName:
+          campaign.advertiserRef?.companyName ||
+          campaign.advertiser ||
+          "TAD Advertiser",
         weight: ma.weight ?? null,
       });
 
-      if ((campaign as any).mediaAssets) mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));
-      if ((campaign as any).media) mediaAssets.push(...campaign.media.map(mapMediaAsset));
-      if ((campaign as any).videos) mediaAssets.push(...campaign.videos.map(mapMediaAsset));
+      if (campaign.mediaAssets)
+        mediaAssets.push(...campaign.mediaAssets.map(mapMediaAsset));
+      if (campaign.media)
+        mediaAssets.push(...campaign.media.map(mapMediaAsset));
+      if (campaign.videos)
+        mediaAssets.push(...campaign.videos.map(mapMediaAsset));
     }
 
     const MAX_SLOTS = BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER;
     const finalMediaAssets = mediaAssets.slice(0, MAX_SLOTS);
-    const hashBase = finalMediaAssets.map(a => `${a.id}:${a.checksum || 'no-checksum'}`).join('|');
-    const syncHash = crypto.createHash('md5').update(hashBase).digest('hex');
+    const hashBase = finalMediaAssets
+      .map((a) => `${a.id}:${a.checksum || "no-checksum"}`)
+      .join("|");
+    const syncHash = crypto.createHash("md5").update(hashBase).digest("hex");
     const latestUpdate = activeCampaigns[0].updatedAt.getTime();
 
     return {
       version: latestUpdate,
       sync_hash: syncHash,
-      media_assets: finalMediaAssets
+      media_assets: finalMediaAssets,
     };
   }
 
-  async getCampaignReports(advertiserId?: string, startDate?: Date, endDate?: Date) {
+  async getCampaignReports(
+    advertiserId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     const where: any = {};
     if (advertiserId) {
       where.campaign = { advertiserId };
@@ -699,20 +880,23 @@ export class CampaignService {
       where,
       include: {
         campaign: {
-          select: { name: true, advertiser: true }
-        }
+          select: { name: true, advertiser: true },
+        },
       },
-      orderBy: { date: 'asc' }
+      orderBy: { date: "asc" },
     });
 
-    const summary = metrics.reduce((acc: any, curr) => {
-      acc.impressions += curr.totalImpressions;
-      acc.completions += curr.totalCompletions;
-      return acc;
-    }, { impressions: 0, completions: 0 });
+    const summary = metrics.reduce(
+      (acc: any, curr) => {
+        acc.impressions += curr.totalImpressions;
+        acc.completions += curr.totalCompletions;
+        return acc;
+      },
+      { impressions: 0, completions: 0 },
+    );
 
     const byDate = metrics.reduce((acc: any, curr) => {
-      const day = curr.date.toISOString().split('T')[0];
+      const day = curr.date.toISOString().split("T")[0];
       if (!acc[day]) acc[day] = { date: day, impressions: 0, completions: 0 };
       acc[day].impressions += curr.totalImpressions;
       acc[day].completions += curr.totalCompletions;
@@ -720,7 +904,7 @@ export class CampaignService {
     }, {});
 
     const byCity = metrics.reduce((acc: any, curr) => {
-      const city = curr.city || 'Desconocido';
+      const city = curr.city || "Desconocido";
       if (!acc[city]) acc[city] = { city, impressions: 0 };
       acc[city].impressions += curr.totalImpressions;
       return acc;
@@ -730,7 +914,7 @@ export class CampaignService {
       summary,
       timeSeries: Object.values(byDate),
       geographic: Object.values(byCity),
-      totalRecords: metrics.length
+      totalRecords: metrics.length,
     };
   }
 
@@ -742,38 +926,50 @@ export class CampaignService {
 
     const campaign = await this.prisma.campaign.update({
       where: { id: campaignId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
     });
 
     let devicesToSync = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = await this.prisma.device.findMany({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE }, select: { id: true, deviceId: true } });
+      devicesToSync = await this.prisma.device.findMany({
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        select: { id: true, deviceId: true },
+      });
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: campaignId },
-        include: { device: { select: { deviceId: true } } }
+        include: { device: { select: { deviceId: true } } },
       });
-      devicesToSync = assignments.map(a => ({ id: a.device_id, deviceId: a.device.deviceId }));
+      devicesToSync = assignments.map((a) => ({
+        id: a.device_id,
+        deviceId: a.device.deviceId,
+      }));
     }
 
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
-        data: devicesToSync.map(d => ({
+        data: devicesToSync.map((d) => ({
           deviceId: d.id,
-          commandType: 'FORCE_SYNC',
-          commandParams: JSON.stringify({ reason: 'media_linked', campaignId, mediaId }),
-          status: 'PENDING',
-          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-        }))
+          commandType: "FORCE_SYNC",
+          commandParams: JSON.stringify({
+            reason: "media_linked",
+            campaignId,
+            mediaId,
+          }),
+          status: "PENDING",
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+        })),
       });
 
       // REALTIME BROADCAST
-      this.supabaseService.broadcastEvent('fleet_sync', 'WAKE_UP_CALL', {
-        reason: 'media_linked',
-        campaignId,
-        mediaId,
-        targets: devicesToSync.map(d => d.deviceId)
-      }).catch(() => { });
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "media_linked",
+          campaignId,
+          mediaId,
+          targets: devicesToSync.map((d) => d.deviceId),
+        })
+        .catch(() => {});
     }
 
     return updated;
@@ -786,9 +982,9 @@ export class CampaignService {
   async getOptimalDevicesForCampaign(campaignCity: string, limit: number) {
     const devices = await this.prisma.device.findMany({
       where: {
-        city: campaignCity === 'Global' ? undefined : campaignCity,
+        city: campaignCity === "Global" ? undefined : campaignCity,
         status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-        connectivityStatus: 'ONLINE',
+        connectivityStatus: "ONLINE",
       },
       include: {
         driver: {
@@ -813,8 +1009,8 @@ export class CampaignService {
     };
 
     availableDevices.sort((a: any, b: any) => {
-      const priorityA = priorityMap[a.driver?.level || 'BASE'] || 0;
-      const priorityB = priorityMap[b.driver?.level || 'BASE'] || 0;
+      const priorityA = priorityMap[a.driver?.level || "BASE"] || 0;
+      const priorityB = priorityMap[b.driver?.level || "BASE"] || 0;
       return priorityB - priorityA; // Descendente
     });
 
@@ -822,72 +1018,76 @@ export class CampaignService {
   }
 
   /**
-     * TAD-ADVERTISER: Simulador de Presupuesto — v2.0 con fuentes auditables
-     *
-     * Reemplaza lógica hardcodeada v10.1.0 por @tad/impact-calculator.
-     * Cada output incluye rango, fuentes, warnings y status de calibración.
-     */
-    async simulateImpact(budgetRD: number, city: string): Promise<{
-      budget: number;
-      city: string;
-      recommendedScreens: number;
-      uniqueReach: number;
-      totalImpressions: number;
-      onlineScreensInZone: number;
-      // NUEVOS campos con transparencia
-      uniqueReachRange: { min: number; expected: number; max: number };
-      totalImpressionsRange: { min: number; expected: number; max: number };
-      frequencyOTS: { min: number; expected: number; max: number };
-      cpm: { min: number; expected: number; max: number };
-      warnings: string[];
-      calibrationLabel: string;
-      calibrationDescription: string;
-      sourceLabel: string;
-    }> {
-      const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500 (legacy)
+   * TAD-ADVERTISER: Simulador de Presupuesto — v2.0 con fuentes auditables
+   *
+   * Reemplaza lógica hardcodeada v10.1.0 por @tad/impact-calculator.
+   * Cada output incluye rango, fuentes, warnings y status de calibración.
+   */
+  async simulateImpact(
+    budgetRD: number,
+    city: string,
+  ): Promise<{
+    budget: number;
+    city: string;
+    recommendedScreens: number;
+    uniqueReach: number;
+    totalImpressions: number;
+    onlineScreensInZone: number;
+    // NUEVOS campos con transparencia
+    uniqueReachRange: { min: number; expected: number; max: number };
+    totalImpressionsRange: { min: number; expected: number; max: number };
+    frequencyOTS: { min: number; expected: number; max: number };
+    cpm: { min: number; expected: number; max: number };
+    warnings: string[];
+    calibrationLabel: string;
+    calibrationDescription: string;
+    sourceLabel: string;
+  }> {
+    const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500 (legacy)
 
-      // Contar pantallas disponibles en la zona
-      const onlineScreensCount = await this.prisma.device.count({
-        where: {
-          city: city === 'Global' ? undefined : city,
-          status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-          connectivityStatus: 'ONLINE',
-        },
-      });
+    // Contar pantallas disponibles en la zona
+    const onlineScreensCount = await this.prisma.device.count({
+      where: {
+        city: city === "Global" ? undefined : city,
+        status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
+        connectivityStatus: "ONLINE",
+      },
+    });
 
-      const recommendedScreens = Math.min(
-        onlineScreensCount,
-        Math.floor(budgetRD / costPerScreen),
-      );
+    const recommendedScreens = Math.min(
+      onlineScreensCount,
+      Math.floor(budgetRD / costPerScreen),
+    );
 
-      // Delegar cálculo completo al módulo único de verdad
-      const detailed: ImpactOutput = calculateImpact({
-        screens: recommendedScreens,
-        months: 1, // asume 1 mes por defecto
-        frequencySeconds: 30,
-        includeProduction: false,
-        mode: 'expected',
-      });
+    // Delegar cálculo completo al módulo único de verdad
+    const detailed: ImpactOutput = calculateImpact({
+      screens: recommendedScreens,
+      months: 1, // asume 1 mes por defecto
+      frequencySeconds: 30,
+      includeProduction: false,
+      mode: "expected",
+    });
 
-      // Mapear a respuesta compatible + campos extendidos
-      return {
-        budget: budgetRD,
-        city,
-        recommendedScreens,
-        uniqueReach: detailed.totalUniqueReach.expected,
-        totalImpressions: detailed.totalImpressions.expected,
-        onlineScreensInZone: onlineScreensCount,
-        // NUEVOS campos extendidos
-        uniqueReachRange: detailed.totalUniqueReach,
-        totalImpressionsRange: detailed.totalImpressions,
-        frequencyOTS: detailed.frequencyOTS,
-        cpm: detailed.cpm,
-        warnings: detailed.warnings,
-        calibrationLabel: 'Benchmark internacional (sin datos RD propios)',
-        calibrationDescription: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
-        sourceLabel: 'IAB DOOH Guidelines + Geopath 2024',
-      };
-    }
+    // Mapear a respuesta compatible + campos extendidos
+    return {
+      budget: budgetRD,
+      city,
+      recommendedScreens,
+      uniqueReach: detailed.totalUniqueReach.expected,
+      totalImpressions: detailed.totalImpressions.expected,
+      onlineScreensInZone: onlineScreensCount,
+      // NUEVOS campos extendidos
+      uniqueReachRange: detailed.totalUniqueReach,
+      totalImpressionsRange: detailed.totalImpressions,
+      frequencyOTS: detailed.frequencyOTS,
+      cpm: detailed.cpm,
+      warnings: detailed.warnings,
+      calibrationLabel: "Benchmark internacional (sin datos RD propios)",
+      calibrationDescription:
+        "Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.",
+      sourceLabel: "IAB DOOH Guidelines + Geopath 2024",
+    };
+  }
 
   async createIntent(dto: any) {
     try {
@@ -897,14 +1097,15 @@ export class CampaignService {
           budget: dto.budget,
           expectedScreens: dto.expectedScreens,
           fileMetadata: dto.fileMetadata || {},
-          status: 'PENDING_PAYMENT',
+          status: "PENDING_PAYMENT",
         },
       });
       return { success: true, data: intent };
     } catch (error: any) {
-      this.logger.error('Error creating campaign intent:', error);
-      throw new BadRequestException(`No se pudo registrar la intención de campaña: ${error.message}`);
+      this.logger.error("Error creating campaign intent:", error);
+      throw new BadRequestException(
+        `No se pudo registrar la intención de campaña: ${error.message}`,
+      );
     }
   }
 }
-

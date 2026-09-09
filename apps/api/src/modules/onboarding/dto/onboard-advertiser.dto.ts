@@ -1,6 +1,14 @@
 // apps/api/src/modules/onboarding/dto/onboard-advertiser.dto.ts
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, IsObject, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsObject,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class FileMetadataDto {
   @IsString()

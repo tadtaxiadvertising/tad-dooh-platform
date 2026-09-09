@@ -1,6 +1,12 @@
-import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Request } from 'express';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Request } from "express";
 
 /**
  * REVENUE SHIELD v12.2.5: Subscription Guard
@@ -21,9 +27,10 @@ export class SubscriptionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const deviceId = request.headers['x-device-id'] as string
-      || request.body?.deviceId
-      || (request.params as any)?.deviceId;
+    const deviceId =
+      (request.headers["x-device-id"] as string) ||
+      request.body?.deviceId ||
+      (request.params as any)?.deviceId;
 
     if (!deviceId) {
       // No deviceId — allow through (auth guard handles general access)
@@ -52,7 +59,11 @@ export class SubscriptionGuard implements CanActivate {
     const driver = device.driver;
 
     // Check if subscription is paid and not expired
-    if (driver.subscriptionPaid && driver.subscriptionEnd && driver.subscriptionEnd > new Date()) {
+    if (
+      driver.subscriptionPaid &&
+      driver.subscriptionEnd &&
+      driver.subscriptionEnd > new Date()
+    ) {
       return true; // Active subscription
     }
 
@@ -62,7 +73,9 @@ export class SubscriptionGuard implements CanActivate {
       const isOffline = device.lastHeartbeat < offlineThreshold;
 
       if (isOffline && driver.subscriptionEnd) {
-        const gracePeriodEnd = new Date(driver.subscriptionEnd.getTime() + 48 * 60 * 60 * 1000);
+        const gracePeriodEnd = new Date(
+          driver.subscriptionEnd.getTime() + 48 * 60 * 60 * 1000,
+        );
         if (gracePeriodEnd > new Date()) {
           // Within 48h grace period — allow continued playback
           return true;
@@ -74,8 +87,8 @@ export class SubscriptionGuard implements CanActivate {
     throw new HttpException(
       {
         statusCode: 402,
-        message: 'Subscription expired. Payment required to continue service.',
-        reason: 'SUBSCRIPTION_EXPIRED',
+        message: "Subscription expired. Payment required to continue service.",
+        reason: "SUBSCRIPTION_EXPIRED",
         deviceId,
       },
       HttpStatus.PAYMENT_REQUIRED,

@@ -1,9 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
-import { Public } from './modules/auth/decorators/public.decorator';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, Get } from "@nestjs/common";
+import { Public } from "./modules/auth/decorators/public.decorator";
+import { ApiTags } from "@nestjs/swagger";
 
 interface ApiStatusResponse {
-  status: 'UP';
+  status: "UP";
   timestamp: string;
   service: string;
   version: string;
@@ -14,19 +14,19 @@ interface ApiStatusResponse {
   };
 }
 
-@ApiTags('Health')
+@ApiTags("Health")
 @Controller()
 export class AppController {
   private getStatus(): ApiStatusResponse {
     return {
-      status: 'UP',
+      status: "UP",
       timestamp: new Date().toISOString(),
-      service: 'TAD API Gateway',
-      version: 'v12-shelter',
+      service: "TAD API Gateway",
+      version: "v12-shelter",
       routes: {
-        health: ['/api/health', '/health', '/api/v1/health'],
-        api: '/api/v1',
-        docs: '/api/docs',
+        health: ["/api/health", "/health", "/api/v1/health"],
+        api: "/api/v1",
+        docs: "/api/docs",
       },
     };
   }
@@ -35,9 +35,9 @@ export class AppController {
    * Root/status endpoints for EasyPanel probes and browser smoke tests.
    * Keep these public so a successful deploy never looks like a 404.
    */
-  @Get('/')
-  @Get('api')
-  @Get('api/v1')
+  @Get("/")
+  @Get("api")
+  @Get("api/v1")
   @Public()
   getRoot() {
     return this.getStatus();
@@ -46,7 +46,7 @@ export class AppController {
   /**
    * Health Check endpoint - Requerido por EasyPanel v10+
    */
-  @Get('api/health')
+  @Get("api/health")
   @Public() // Bypassear el AuthGuard global
   getHealth() {
     return this.getStatus();

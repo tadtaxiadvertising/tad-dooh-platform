@@ -3,10 +3,10 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
-} from '@nestjs/common';
-import * as Sentry from '@sentry/nestjs';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+} from "@nestjs/common";
+import * as Sentry from "@sentry/nestjs";
+import { Observable, throwError } from "rxjs";
+import { catchError } from "rxjs/operators";
 
 @Injectable()
 export class SentryInterceptor implements NestInterceptor {

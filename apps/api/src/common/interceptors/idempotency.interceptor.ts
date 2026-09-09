@@ -1,7 +1,14 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, BadRequestException, Logger } from '@nestjs/common';
-import { Observable, of, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { PrismaService } from '../../modules/prisma/prisma.service';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { Observable, of, throwError } from "rxjs";
+import { tap, catchError } from "rxjs/operators";
+import { PrismaService } from "../../modules/prisma/prisma.service";
 
 /**
  * VULN #4 PATCH (v12.1.2): DB-backed IdempotencyInterceptor
@@ -15,49 +22,61 @@ import { PrismaService } from '../../modules/prisma/prisma.service';
 export class IdempotencyInterceptor implements NestInterceptor {
   private readonly logger = new Logger(IdempotencyInterceptor.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     const method = request.method;
 
-    if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      const idempotencyKey = request.headers['idempotency-key'];
+    if (["POST", "PUT", "PATCH"].includes(method)) {
+      const idempotencyKey = request.headers["idempotency-key"];
 
       if (!idempotencyKey) {
         throw new BadRequestException({
-          code: 'IDEMPOTENCY_KEY_MISSING',
-          message: 'Idempotency-Key header is required for this operation',
+          code: "IDEMPOTENCY_KEY_MISSING",
+          message: "Idempotency-Key header is required for this operation",
         });
       }
 
       // Check DB for existing idempotency record with advisory lock
       const existing = await this.prisma.idempotencyKey.findUnique({
-        where: { key: idempotencyKey }
+        where: { key: idempotencyKey },
       });
 
       if (existing) {
         // M3: registrar vencido (expiresAt pasado) → descartar y re-procesar,
         // en vez de devolver una respuesta cacheada de una operación expirada.
         if (existing.expiresAt && existing.expiresAt.getTime() <= Date.now()) {
-          this.logger.warn(`Idempotency key ${idempotencyKey} expiró (${existing.expiresAt.toISOString()}). Descartando y re-procesando.`);
+          this.logger.warn(
+            `Idempotency key ${idempotencyKey} expiró (${existing.expiresAt.toISOString()}). Descartando y re-procesando.`,
+          );
           try {
-            await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+            await this.prisma.idempotencyKey.delete({
+              where: { key: idempotencyKey },
+            });
           } catch (e) {
             // ignore: key pudo haber sido eliminada por un request concurrente
           }
         } else if (existing.isLocked) {
           // If locked, another request is currently processing this key — reject
-          this.logger.warn(`Idempotency key ${idempotencyKey} is currently being processed by another request.`);
+          this.logger.warn(
+            `Idempotency key ${idempotencyKey} is currently being processed by another request.`,
+          );
           throw new BadRequestException({
-            code: 'IDEMPOTENCY_KEY_IN_PROGRESS',
-            message: 'This operation is currently being processed. Please retry in a few seconds.',
+            code: "IDEMPOTENCY_KEY_IN_PROGRESS",
+            message:
+              "This operation is currently being processed. Please retry in a few seconds.",
           });
         } else {
           // Already completed and still valid — return cached response
-          this.logger.log(`Idempotency key ${idempotencyKey} already processed. Returning cached response.`);
+          this.logger.log(
+            `Idempotency key ${idempotencyKey} already processed. Returning cached response.`,
+          );
           try {
-            return of(JSON.parse(existing.response!));
+            return of(JSON.parse(existing.response));
           } catch {
             // If response is not valid JSON, return a generic success
             return of({ success: true, idempotent: true });
@@ -69,12 +88,13 @@ export class IdempotencyInterceptor implements NestInterceptor {
       await this.prisma.idempotencyKey.create({
         data: {
           key: idempotencyKey,
-          driverId: request.user?.entityId || request.body?.driverId || 'unknown',
+          driverId:
+            request.user?.entityId || request.body?.driverId || "unknown",
           path: request.path,
-          response: '{}',
+          response: "{}",
           isLocked: true,
           expiresAt: new Date(Date.now() + 86400000), // 24h TTL
-        }
+        },
       });
 
       return next.handle().pipe(
@@ -85,7 +105,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
             data: {
               response: JSON.stringify(response),
               isLocked: false,
-            }
+            },
           });
         }),
         catchError(async (err) => {
@@ -93,7 +113,9 @@ export class IdempotencyInterceptor implements NestInterceptor {
           // o rollback de $transaction). Sin esto la key quedaría "locked" 24h y el
           // cliente no podría reintentar pese a que nada se persistió.
           try {
-            await this.prisma.idempotencyKey.delete({ where: { key: idempotencyKey } });
+            await this.prisma.idempotencyKey.delete({
+              where: { key: idempotencyKey },
+            });
           } catch (e) {
             // ignore: key pudo no existir o ya fue eliminada
           }

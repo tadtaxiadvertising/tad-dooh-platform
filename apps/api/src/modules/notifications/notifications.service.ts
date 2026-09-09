@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseService } from '../supabase/supabase.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { SupabaseService } from "../supabase/supabase.service";
 
 @Injectable()
 export class NotificationsService {
@@ -17,8 +17,8 @@ export class NotificationsService {
   async createAlert(data: {
     title: string;
     message: string;
-    type: 'INFO' | 'WARNING' | 'CRITICAL' | 'SUCCESS';
-    category: 'SYSTEM' | 'DEVICE' | 'CAMPAIGN' | 'FINANCE';
+    type: "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
+    category: "SYSTEM" | "DEVICE" | "CAMPAIGN" | "FINANCE";
     entityId?: string;
   }) {
     this.logger.log(`📢 Nueva Alerta: ${data.title} - ${data.type}`);
@@ -35,9 +35,13 @@ export class NotificationsService {
 
     // Real-time broadcast vía Supabase
     try {
-      await this.supabaseService.broadcastEvent('system_alerts', 'NEW_ALERT', notification);
+      await this.supabaseService.broadcastEvent(
+        "system_alerts",
+        "NEW_ALERT",
+        notification,
+      );
     } catch (err) {
-      this.logger.error('Error broadcasting alert:', err);
+      this.logger.error("Error broadcasting alert:", err);
     }
 
     return notification;
@@ -45,7 +49,7 @@ export class NotificationsService {
 
   async findAll() {
     return this.prisma.notification.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 50,
     });
   }
@@ -78,7 +82,9 @@ export class NotificationsService {
     this.logger.log(`📱 Procesando PUSH para Chofer ${driverId}`);
     // Fire-and-forget: no bloqueamos la respuesta al llamador
     this.executePushDelivery(driverId, message).catch((err) =>
-      this.logger.error(`[PUSH] Error entregando a ${driverId}: ${err.message}`),
+      this.logger.error(
+        `[PUSH] Error entregando a ${driverId}: ${err.message}`,
+      ),
     );
   }
 
@@ -90,10 +96,10 @@ export class NotificationsService {
 
     // Mirror as system alert for auditability
     return this.createAlert({
-      title: 'Notificación Mobile (Push)',
+      title: "Notificación Mobile (Push)",
       message: message,
-      type: 'WARNING',
-      category: 'DEVICE',
+      type: "WARNING",
+      category: "DEVICE",
       entityId: driverId,
     });
   }
@@ -102,14 +108,20 @@ export class NotificationsService {
    * Publica una notificación dirigida a un conductor por canal privado Realtime.
    * No lanza: si el canal falla, solo registra el error para no romper el flujo.
    */
-  async sendDriverNotification(driverId: string, type: string, payload: Record<string, unknown>) {
+  async sendDriverNotification(
+    driverId: string,
+    type: string,
+    payload: Record<string, unknown>,
+  ) {
     const channel = `driver_notifications_${driverId}`;
     this.logger.log(`📣 [NOTIFY] ${type} -> ${channel}`);
 
     try {
       await this.supabaseService.broadcastEvent(channel, type, payload);
     } catch (err) {
-      this.logger.error(`[NOTIFY] Error enviando ${type} a ${driverId}: ${(err as Error).message}`);
+      this.logger.error(
+        `[NOTIFY] Error enviando ${type} a ${driverId}: ${(err as Error).message}`,
+      );
     }
   }
 }

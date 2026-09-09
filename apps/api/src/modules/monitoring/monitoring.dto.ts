@@ -1,5 +1,11 @@
-import { IsString, IsArray, ValidateNested, IsNumber, IsNotEmpty } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  IsNotEmpty,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class GpsPointDto {
   @IsNumber()
@@ -17,7 +23,7 @@ export class GpsPointDto {
   @IsString()
   @IsNotEmpty()
   timestamp: string;
-  
+
   // Mobile Legacy Support
   lat?: number;
   lng?: number;

@@ -1,61 +1,71 @@
-import { Controller, Get, Delete, Param, Post, Put, Body, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { DeviceService } from './device.service';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
-import { Roles, UserRole } from '../auth/decorators/roles.decorator';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Post,
+  Put,
+  Body,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { DeviceService } from "./device.service";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 const KIOSK_COMMAND_TYPES = [
-  'FORCE_SYNC',
-  'SCREEN_ON',
-  'SCREEN_OFF',
-  'SET_BRIGHTNESS',
-  'SET_VOLUME',
-  'MUTE',
-  'UNMUTE',
-  'LOCK_KIOSK',
-  'UNLOCK_KIOSK',
-  'REBOOT',
-  'RESTART_APP',
-  'ENABLE_MOTION',
-  'DISABLE_MOTION',
+  "FORCE_SYNC",
+  "SCREEN_ON",
+  "SCREEN_OFF",
+  "SET_BRIGHTNESS",
+  "SET_VOLUME",
+  "MUTE",
+  "UNMUTE",
+  "LOCK_KIOSK",
+  "UNLOCK_KIOSK",
+  "REBOOT",
+  "RESTART_APP",
+  "ENABLE_MOTION",
+  "DISABLE_MOTION",
 ];
 
 @Roles(UserRole.ADMIN)
-@Controller('devices')
+@Controller("devices")
 export class DeviceAdminController {
   private readonly logger = new Logger(DeviceAdminController.name);
 
   constructor(
     private prisma: PrismaService,
     private deviceService: DeviceService,
-  ) { }
+  ) {}
 
   // ─── PENDING DEVICE APPROVAL QUEUE ──────────────────────────────────────────
 
   /** List all devices awaiting admin approval */
-  @Get('pending')
+  @Get("pending")
   getPendingDevices() {
     return this.deviceService.getPendingDevices();
   }
 
   /** Admin approves a device → sets it ACTIVE */
-  @Post(':deviceId/approve')
-  approveDevice(@Param('deviceId') deviceId: string) {
+  @Post(":deviceId/approve")
+  approveDevice(@Param("deviceId") deviceId: string) {
     return this.deviceService.approveDevice(deviceId);
   }
 
   /** Admin rejects a device → deletes it */
-  @Delete(':deviceId/reject')
-  rejectDevice(@Param('deviceId') deviceId: string) {
+  @Delete(":deviceId/reject")
+  rejectDevice(@Param("deviceId") deviceId: string) {
     return this.deviceService.rejectDevice(deviceId);
   }
 
   // Ver los anuncios asignados a un taxi específico
-  @Get(':deviceId/campaigns')
-  async getDeviceCampaigns(@Param('deviceId') paramId: string) {
+  @Get(":deviceId/campaigns")
+  async getDeviceCampaigns(@Param("deviceId") paramId: string) {
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: paramId }, { deviceId: paramId }] },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!device) return [];
@@ -67,26 +77,26 @@ export class DeviceAdminController {
       },
     });
 
-    return assignments.map(a => ({
+    return assignments.map((a) => ({
       ...a.campaign,
-      assigned_at: a.assigned_at
+      assigned_at: a.assigned_at,
     }));
   }
 
   // Quitar un anuncio de un taxi específico
-  @Delete(':deviceId/campaigns/:campaignId')
+  @Delete(":deviceId/campaigns/:campaignId")
   async removeCampaignFromDevice(
-    @Param('deviceId') paramDeviceId: string,
-    @Param('campaignId') campaignId: string
+    @Param("deviceId") paramDeviceId: string,
+    @Param("campaignId") campaignId: string,
   ) {
     // Find device by either UUID or Hardware ID
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: paramDeviceId }, { deviceId: paramDeviceId }] },
-      select: { id: true, deviceId: true }
+      select: { id: true, deviceId: true },
     });
 
     if (!device) {
-      return { success: false, message: 'Dispositivo no encontrado' };
+      return { success: false, message: "Dispositivo no encontrado" };
     }
 
     // 1. Borramos en la tabla v2
@@ -97,45 +107,64 @@ export class DeviceAdminController {
           campaign_id: campaignId,
         },
       });
-    } catch (e) { }
+    } catch (e) {}
 
     // 2. Intentamos borrar en la tabla v1 (legacy)
     try {
       await this.prisma.playlistItem.deleteMany({
         where: {
           campaignId: campaignId,
-          deviceId: device.deviceId
-        }
+          deviceId: device.deviceId,
+        },
       });
-    } catch (e) { }
+    } catch (e) {}
 
-    return { success: true, message: 'Campaña removida del dispositivo exitosamente' };
+    return {
+      success: true,
+      message: "Campaña removida del dispositivo exitosamente",
+    };
   }
 
   // Crear un nuevo dispositivo manualmente
   @Post()
-  async createDevice(@Body() data: { deviceId: string, taxiNumber?: string, city?: string }) {
-    if (!data.deviceId) throw new BadRequestException('ID de dispositivo (hardware) es obligatorio');
+  async createDevice(
+    @Body() data: { deviceId: string; taxiNumber?: string; city?: string },
+  ) {
+    if (!data.deviceId)
+      throw new BadRequestException(
+        "ID de dispositivo (hardware) es obligatorio",
+      );
 
     // Check if hardware ID already exists
-    const existing = await this.prisma.device.findUnique({ where: { deviceId: data.deviceId } });
-    if (existing) throw new BadRequestException(`El ID ${data.deviceId} ya está registrado`);
+    const existing = await this.prisma.device.findUnique({
+      where: { deviceId: data.deviceId },
+    });
+    if (existing)
+      throw new BadRequestException(
+        `El ID ${data.deviceId} ya está registrado`,
+      );
 
     return this.prisma.device.create({
       data: {
         deviceId: data.deviceId,
         taxiNumber: data.taxiNumber,
-        city: data.city || 'Santo Domingo',
+        city: data.city || "Santo Domingo",
         status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-      }
+      },
     });
   }
 
   // Actualizar datos de un dispositivo
-  @Put(':id')
+  @Put(":id")
   async updateDevice(
-    @Param('id') id: string,
-    @Body() data: { taxiNumber?: string, city?: string, status?: string, driverId?: string | null }
+    @Param("id") id: string,
+    @Body()
+    data: {
+      taxiNumber?: string;
+      city?: string;
+      status?: string;
+      driverId?: string | null;
+    },
   ) {
     return this.prisma.device.update({
       where: { id },
@@ -145,18 +174,19 @@ export class DeviceAdminController {
         status: data.status as any,
         ...(data.driverId !== undefined && { driverId: data.driverId }),
       },
-      include: { driver: true }
+      include: { driver: true },
     });
   }
 
   // Eliminar un dispositivo completamente
-  @Delete(':deviceId')
-  async deleteDevice(@Param('deviceId') deviceId: string) {
+  @Delete(":deviceId")
+  async deleteDevice(@Param("deviceId") deviceId: string) {
     // Find device by deviceId (hardware ID) or by UUID
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] }
+      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
     });
-    if (!device) return { success: false, message: 'Dispositivo no encontrado' };
+    if (!device)
+      return { success: false, message: "Dispositivo no encontrado" };
 
     const uuid = device.id;
     const hwId = device.deviceId;
@@ -182,18 +212,20 @@ export class DeviceAdminController {
         // 4. Notifications (References by either ID in string field)
         await tx.notification.deleteMany({
           where: {
-            OR: [
-              { entityId: uuid },
-              { entityId: hwId }
-            ]
-          }
+            OR: [{ entityId: uuid }, { entityId: hwId }],
+          },
         });
 
         // 5. Finally delete the device identity
         await tx.device.delete({ where: { id: uuid } });
 
-        this.logger.log(`🗑️ Device ${hwId} (${uuid}) completely purged from system.`);
-        return { success: true, message: `Dispositivo ${hwId} eliminado correctamente` };
+        this.logger.log(
+          `🗑️ Device ${hwId} (${uuid}) completely purged from system.`,
+        );
+        return {
+          success: true,
+          message: `Dispositivo ${hwId} eliminado correctamente`,
+        };
       });
     } catch (error: any) {
       this.logger.error(`❌ Failed to delete device ${hwId}: ${error.message}`);
@@ -202,20 +234,33 @@ export class DeviceAdminController {
   }
 
   // Perfil completo del nodo (device + driver + campaigns)
-  @Get(':deviceId/profile')
-  async getDeviceProfile(@Param('deviceId') deviceId: string) {
+  @Get(":deviceId/profile")
+  async getDeviceProfile(@Param("deviceId") deviceId: string) {
     try {
       const device = await this.prisma.device.findFirst({
         where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
         include: {
           driver: true,
-          campaigns: { include: { campaign: { select: { id: true, name: true, advertiser: true, active: true } } } },
-        }
+          campaigns: {
+            include: {
+              campaign: {
+                select: {
+                  id: true,
+                  name: true,
+                  advertiser: true,
+                  active: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!device) {
-        this.logger.warn(`🔍 Perfil solicitado para dispositivo inexistente: ${deviceId}`);
-        return { error: 'Dispositivo no encontrado' };
+        this.logger.warn(
+          `🔍 Perfil solicitado para dispositivo inexistente: ${deviceId}`,
+        );
+        return { error: "Dispositivo no encontrado" };
       }
 
       return {
@@ -229,19 +274,21 @@ export class DeviceAdminController {
         app_version: device.appVersion,
         last_seen: device.lastSeen,
         player_status: device.playerStatus,
-        driver: device.driver ? {
-          id: device.driver.id,
-          fullName: device.driver.fullName,
-          phone: device.driver.phone,
-          cedula: device.driver.cedula,
-          licensePlate: device.driver.licensePlate,
-          taxiPlate: device.driver.taxiPlate,
-          subscriptionPaid: device.driver.subscriptionPaid,
-          status: device.driver.status,
-        } : null,
+        driver: device.driver
+          ? {
+              id: device.driver.id,
+              fullName: device.driver.fullName,
+              phone: device.driver.phone,
+              cedula: device.driver.cedula,
+              licensePlate: device.driver.licensePlate,
+              taxiPlate: device.driver.taxiPlate,
+              subscriptionPaid: device.driver.subscriptionPaid,
+              status: device.driver.status,
+            }
+          : null,
         campaigns: device.campaigns
-          .filter(c => c.campaign) // Defensa contra campañas huérfanas
-          .map(c => ({
+          .filter((c) => c.campaign) // Defensa contra campañas huérfanas
+          .map((c) => ({
             id: c.campaign.id,
             name: c.campaign.name,
             advertiser: c.campaign.advertiser,
@@ -250,57 +297,72 @@ export class DeviceAdminController {
           })),
       };
     } catch (error: any) {
-      this.logger.error(`❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`);
+      this.logger.error(
+        `❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`,
+      );
       return {
-        error: 'Excepción interna al procesar el perfil',
-        message: error.message
+        error: "Excepción interna al procesar el perfil",
+        message: error.message,
       };
     }
   }
 
   // Actualizar perfil completo (dispositivo y chofer)
-  @Put(':deviceId/profile')
-  async updateDeviceProfile(@Param('deviceId') deviceId: string, @Body() data: any) {
+  @Put(":deviceId/profile")
+  async updateDeviceProfile(
+    @Param("deviceId") deviceId: string,
+    @Body() data: any,
+  ) {
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
-      include: { driver: true }
+      include: { driver: true },
     });
 
-    if (!device) throw new BadRequestException('Dispositivo no encontrado');
+    if (!device) throw new BadRequestException("Dispositivo no encontrado");
 
     // Update Device
     const updateData: any = {};
-    if (data.taxi_number !== undefined) updateData.taxiNumber = data.taxi_number;
-    if (data.status !== undefined) updateData.status = data.status as any;
+    if (data.taxi_number !== undefined)
+      updateData.taxiNumber = data.taxi_number;
+    if (data.status !== undefined) updateData.status = data.status;
 
     // Update Driver if exists
     if (device.driver) {
       updateData.driver = {
         update: {
-          fullName: data.driver_name !== undefined ? data.driver_name : device.driver.fullName,
-          phone: data.driver_phone !== undefined ? data.driver_phone : device.driver.phone,
-          subscriptionPaid: data.subscription_paid !== undefined ? data.subscription_paid : device.driver.subscriptionPaid
-        }
+          fullName:
+            data.driver_name !== undefined
+              ? data.driver_name
+              : device.driver.fullName,
+          phone:
+            data.driver_phone !== undefined
+              ? data.driver_phone
+              : device.driver.phone,
+          subscriptionPaid:
+            data.subscription_paid !== undefined
+              ? data.subscription_paid
+              : device.driver.subscriptionPaid,
+        },
       };
     } else if (data.driver_name) {
       // Create driver if not exists but name is provided
       updateData.driver = {
         create: {
           fullName: data.driver_name,
-          phone: data.driver_phone || 'N/A',
+          phone: data.driver_phone || "N/A",
           subscriptionPaid: data.subscription_paid || false,
-          licensePlate: data.taxi_number || 'N/A',
-          taxiNumber: data.taxi_number || 'N/A',
-        }
+          licensePlate: data.taxi_number || "N/A",
+          taxiNumber: data.taxi_number || "N/A",
+        },
       };
     }
 
     const updated = await this.prisma.device.update({
       where: { id: device.id },
-      data: updateData
+      data: updateData,
     });
 
-    return { success: true, message: 'Perfil actualizado', device: updated };
+    return { success: true, message: "Perfil actualizado", device: updated };
   }
 
   // ── FullyKiosk Remote Commands ──
@@ -308,42 +370,56 @@ export class DeviceAdminController {
   // The player's FullyKioskBridge processes these on next sync cycle.
 
   /** Send a command to a single device */
-  @Post(':deviceId/command')
+  @Post(":deviceId/command")
   async sendDeviceCommand(
-    @Param('deviceId') deviceId: string,
+    @Param("deviceId") deviceId: string,
     @Body() body: { commandType: string; params?: Record<string, unknown> },
   ) {
     if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
-      throw new BadRequestException(`Invalid command type: ${body.commandType}. Valid types: ${KIOSK_COMMAND_TYPES.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid command type: ${body.commandType}. Valid types: ${KIOSK_COMMAND_TYPES.join(", ")}`,
+      );
     }
 
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
     });
-    if (!device) throw new BadRequestException('Dispositivo no encontrado');
+    if (!device) throw new BadRequestException("Dispositivo no encontrado");
 
     const command = await this.prisma.deviceCommand.create({
       data: {
         deviceId: device.id,
         commandType: body.commandType,
         commandParams: body.params ? JSON.stringify(body.params) : null,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+        status: "PENDING",
+        expiresAt: new Date(
+          Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000,
+        ),
       },
     });
 
     // Wake the device via Supabase Realtime
-    this.logger.log(`📤 Command ${body.commandType} queued for device ${device.deviceId}`);
+    this.logger.log(
+      `📤 Command ${body.commandType} queued for device ${device.deviceId}`,
+    );
     return { success: true, command };
   }
 
   /** Broadcast a command to all devices in a fleet or city */
-  @Post('broadcast')
+  @Post("broadcast")
   async broadcastCommand(
-    @Body() body: { commandType: string; params?: Record<string, unknown>; city?: string; fleet?: string },
+    @Body()
+    body: {
+      commandType: string;
+      params?: Record<string, unknown>;
+      city?: string;
+      fleet?: string;
+    },
   ) {
     if (!KIOSK_COMMAND_TYPES.includes(body.commandType)) {
-      throw new BadRequestException(`Invalid command type: ${body.commandType}`);
+      throw new BadRequestException(
+        `Invalid command type: ${body.commandType}`,
+      );
     }
 
     const where: any = { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE };
@@ -356,20 +432,28 @@ export class DeviceAdminController {
     });
 
     if (devices.length === 0) {
-      return { success: false, message: 'No devices found for this filter' };
+      return { success: false, message: "No devices found for this filter" };
     }
 
     const commands = await this.prisma.deviceCommand.createMany({
-      data: devices.map(d => ({
+      data: devices.map((d) => ({
         deviceId: d.id,
         commandType: body.commandType,
         commandParams: body.params ? JSON.stringify(body.params) : null,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000),
+        status: "PENDING",
+        expiresAt: new Date(
+          Date.now() + BUSINESS_RULES.COMMAND_TTL_DAYS * 24 * 3600 * 1000,
+        ),
       })),
     });
 
-    this.logger.log(`📤 Broadcast ${body.commandType} to ${devices.length} devices`);
-    return { success: true, count: commands.count, commandType: body.commandType };
+    this.logger.log(
+      `📤 Broadcast ${body.commandType} to ${devices.length} devices`,
+    );
+    return {
+      success: true,
+      count: commands.count,
+      commandType: body.commandType,
+    };
   }
 }

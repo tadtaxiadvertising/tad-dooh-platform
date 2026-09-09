@@ -1,9 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Request } from 'express';
-import * as jwt from 'jsonwebtoken';
-import { BUSINESS_RULES } from '../../../common/constants/business-rules';
-import { requireEnv } from '../../../utils/env.util';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Request } from "express";
+import * as jwt from "jsonwebtoken";
+import { BUSINESS_RULES } from "../../../common/constants/business-rules";
+import { requireEnv } from "../../../utils/env.util";
 
 /**
  * SEC-03: Device Token Guard
@@ -17,16 +23,16 @@ import { requireEnv } from '../../../utils/env.util';
  */
 @Injectable()
 export class DeviceTokenGuard implements CanActivate {
-  private readonly JWT_SECRET = requireEnv('JWT_SECRET');
+  private readonly JWT_SECRET = requireEnv("JWT_SECRET");
 
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const token = request.headers['x-device-token'] as string;
+    const token = request.headers["x-device-token"] as string;
 
     if (!token) {
-      throw new UnauthorizedException('Missing X-Device-Token header');
+      throw new UnauthorizedException("Missing X-Device-Token header");
     }
 
     // Verify the JWT and extract the deviceId
@@ -34,12 +40,12 @@ export class DeviceTokenGuard implements CanActivate {
     try {
       decoded = jwt.verify(token, this.JWT_SECRET) as { deviceId?: string };
     } catch {
-      throw new UnauthorizedException('Invalid or expired device token');
+      throw new UnauthorizedException("Invalid or expired device token");
     }
 
     const deviceId = decoded.deviceId;
     if (!deviceId) {
-      throw new UnauthorizedException('Device token missing deviceId claim');
+      throw new UnauthorizedException("Device token missing deviceId claim");
     }
 
     // Look up the device and enforce OPERATIVO status
@@ -49,7 +55,7 @@ export class DeviceTokenGuard implements CanActivate {
     });
 
     if (!device) {
-      throw new UnauthorizedException('Device not found');
+      throw new UnauthorizedException("Device not found");
     }
 
     if (device.status !== BUSINESS_RULES.STATUS.DEVICE.ACTIVE) {

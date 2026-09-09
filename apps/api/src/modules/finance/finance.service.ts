@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { InvoiceService } from './invoice.service';
-import { throttledMap } from '../../utils/throttler.util';
-import { WhatsAppService } from '../notifications/whatsapp.service';
-import { EmailService } from '../notifications/email.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
-import * as crypto from 'crypto';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { InvoiceService } from "./invoice.service";
+import { throttledMap } from "../../utils/throttler.util";
+import { WhatsAppService } from "../notifications/whatsapp.service";
+import { EmailService } from "../notifications/email.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import * as crypto from "crypto";
 
 const mediaSafeSelect = {
   id: true,
@@ -37,18 +37,18 @@ export class FinanceService {
   private readonly PAY_PER_AD = BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD; // RD$500 per active ad
 
   constructor(
-   private readonly prisma: PrismaService,
-   private readonly invoiceService: InvoiceService,
-   private readonly whatsappService: WhatsAppService,
-   private readonly emailService: EmailService,
-   private readonly notificationsService: NotificationsService
-   ) { }
+    private readonly prisma: PrismaService,
+    private readonly invoiceService: InvoiceService,
+    private readonly whatsappService: WhatsAppService,
+    private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * RECOVERY: On module init, check if the system missed any critical delinquency scans
    */
   async onModuleInit() {
-    this.logger.log('🔄 [RECOVERY] Checking for missed automated tasks...');
+    this.logger.log("🔄 [RECOVERY] Checking for missed automated tasks...");
     // Nota: checkHighDelinquency se ejecuta SOLO vía cron de las 3AM.
     // No se ejecuta en cada boot: disparaba envíos duplicados y transacciones
     // REGLA-402 repetidas al reiniciar el contenedor (A1/M23).
@@ -65,7 +65,7 @@ export class FinanceService {
   async notifyMorosidad(deviceId: string) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
-      include: { driver: true }
+      include: { driver: true },
     });
 
     if (!device) return;
@@ -74,35 +74,42 @@ export class FinanceService {
     const reference = `REGLA-402-${dateKey}-${deviceId.substring(0, 8)}`;
 
     // 0. Dedup gate: si ya existe un registro para este device hoy, salir.
-    const existingTx = await this.prisma.financialTransaction.findUnique({ where: { reference } });
+    const existingTx = await this.prisma.financialTransaction.findUnique({
+      where: { reference },
+    });
     if (existingTx) {
-      this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado.`);
+      this.logger.log(
+        `⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado.`,
+      );
       return { success: false, notified: false, duplicate: true };
     }
 
     // 1. Registrar el intento de cobro en el Ledger ANTES de notificar
     //    (la referencia @unique impide dobles envíos concurrentes — P2002).
     const amount = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-    const taxAmount = (amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
+    const taxAmount =
+      (amount / (1 + BUSINESS_RULES.ITBIS_RATE)) * BUSINESS_RULES.ITBIS_RATE;
     const netAmount = amount - taxAmount;
 
     try {
       await this.prisma.financialTransaction.create({
         data: {
-          type: 'INCOMING',
-          category: 'SUSCRIPCION',
-          status: 'PENDING',
+          type: "INCOMING",
+          category: "SUSCRIPCION",
+          status: "PENDING",
           amount,
           taxAmount,
           netAmount,
           entityId: device.driver?.id,
           reference,
-          note: `Factura de morosidad generada automáticamente por Kill-Switch.`
-        }
+          note: `Factura de morosidad generada automáticamente por Kill-Switch.`,
+        },
       });
     } catch (e: any) {
-      if (e?.code === 'P2002') {
-        this.logger.log(`⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado concurrente.`);
+      if (e?.code === "P2002") {
+        this.logger.log(
+          `⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado concurrente.`,
+        );
         return { success: false, notified: false, duplicate: true };
       }
       throw e;
@@ -111,17 +118,23 @@ export class FinanceService {
     // 2. Generar la Factura SOS (PDF)
     const pdfBuffer = await this.invoiceService.generateDebtInvoicePDF({
       deviceId: device.deviceId,
-      chofer: device.driver?.fullName || 'Socio TAD',
-      placa: device.taxiNumber
+      chofer: device.driver?.fullName || "Socio TAD",
+      placa: device.taxiNumber,
     });
 
     // 3. Real Notifications (WhatsApp only as Driver lacks email field in current schema)
     const driverPhone = device.driver?.phone;
-    const driverName = device.driver?.fullName || 'Socio TAD';
+    const driverName = device.driver?.fullName || "Socio TAD";
 
     if (driverPhone) {
-      await this.whatsappService.sendDelinquencyAlert(driverPhone, driverName, device.deviceId);
-      this.logger.log(`📱 [WHATSAPP_SENT] Alerta de Morosidad enviada a: ${driverPhone}`);
+      await this.whatsappService.sendDelinquencyAlert(
+        driverPhone,
+        driverName,
+        device.deviceId,
+      );
+      this.logger.log(
+        `📱 [WHATSAPP_SENT] Alerta de Morosidad enviada a: ${driverPhone}`,
+      );
     }
 
     return { success: true, notified: !!driverPhone };
@@ -133,31 +146,43 @@ export class FinanceService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async checkHighDelinquency(targetDate: Date = new Date()) {
-    this.logger.log(`🛡️ [CRON_DELINQUENCY] Iniciando escaneo de morosidad para fecha: ${targetDate.toDateString()}...`);
+    this.logger.log(
+      `🛡️ [CRON_DELINQUENCY] Iniciando escaneo de morosidad para fecha: ${targetDate.toDateString()}...`,
+    );
 
     const delinquentDrivers = await this.prisma.driver.findMany({
       where: {
         status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE,
         subscriptionPaid: false,
-        subscriptionEnd: { lt: targetDate } // Past due
+        subscriptionEnd: { lt: targetDate }, // Past due
       },
-      include: { devices: true }
+      include: { devices: true },
     });
 
     if (delinquentDrivers.length === 0) {
-      this.logger.log(`✅ No hay morosos críticos detectados para ${targetDate.toDateString()}.`);
+      this.logger.log(
+        `✅ No hay morosos críticos detectados para ${targetDate.toDateString()}.`,
+      );
       return;
     }
 
-    this.logger.warn(`🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`);
+    this.logger.warn(
+      `🛑 Detectados ${delinquentDrivers.length} choferes en mora crítica.`,
+    );
 
-    await throttledMap(delinquentDrivers, async (driver) => {
-      for (const device of driver.devices) {
-        await this.notifyMorosidad(device.deviceId).catch(err =>
-          this.logger.error(`Error notifying morosidad for ${device.deviceId}: ${err.message}`)
-        );
-      }
-    }, 5);
+    await throttledMap(
+      delinquentDrivers,
+      async (driver) => {
+        for (const device of driver.devices) {
+          await this.notifyMorosidad(device.deviceId).catch((err) =>
+            this.logger.error(
+              `Error notifying morosidad for ${device.deviceId}: ${err.message}`,
+            ),
+          );
+        }
+      },
+      5,
+    );
   }
 
   /**
@@ -169,7 +194,7 @@ export class FinanceService {
 
     // 1. Get all drivers and their associated devices
     const activeCampaigns = await this.prisma.campaign.findMany({
-      where: { status: 'ACTIVE', active: true }
+      where: { status: "ACTIVE", active: true },
     });
 
     const drivers = await this.prisma.driver.findMany({
@@ -187,38 +212,42 @@ export class FinanceService {
             city: true,
             taxiNumber: true,
             campaigns: {
-              select: { campaign_id: true }
-            }
-          }
+              select: { campaign_id: true },
+            },
+          },
         },
-        referrals: { select: { id: true } }
-        }
-        });
+        referrals: { select: { id: true } },
+      },
+    });
 
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0, 23, 59, 59);
 
     // OPTIMIZACIÓN: Pre-calcular todos los conteos de GPS y PLAYBACKS en una sola query
-    this.logger.log(`🔍 [OPTIMIZACIÓN] Pre-calculando conteos GPS y PoP para ${drivers.length} choferes...`);
+    this.logger.log(
+      `🔍 [OPTIMIZACIÓN] Pre-calculando conteos GPS y PoP para ${drivers.length} choferes...`,
+    );
     const [gpsCountsRaw, playbackEventsRaw] = await Promise.all([
       this.prisma.driverLocation.groupBy({
-        by: ['driverId'],
+        by: ["driverId"],
         where: { timestamp: { gte: periodStart, lte: periodEnd } },
-        _count: { _all: true }
+        _count: { _all: true },
       }),
       this.prisma.playbackEvent.findMany({
         where: {
           timestamp: { gte: periodStart, lte: periodEnd },
-          eventType: 'play_confirm',
+          eventType: "play_confirm",
           verified: true, // REVENUE SHIELD: Only count validated playback events
         },
         select: { deviceId: true, videoId: true },
-        distinct: ['deviceId', 'videoId'] // ANTIDOTE-OOM: deduplica en DB, evita millones de filas en RAM
-      })
+        distinct: ["deviceId", "videoId"], // ANTIDOTE-OOM: deduplica en DB, evita millones de filas en RAM
+      }),
     ]);
 
     // MAPAS para búsqueda rápida O(1)
-    const gpsCountsMap = new Map(gpsCountsRaw.map(item => [item.driverId, item._count._all]));
+    const gpsCountsMap = new Map(
+      gpsCountsRaw.map((item) => [item.driverId, item._count._all]),
+    );
 
     // Mapear Playbacks a Driver (PoP - Proof of Play)
     // driverId -> Set of campaignIds played
@@ -227,23 +256,25 @@ export class FinanceService {
     // Necesitamos saber qué mediaId (videoId) pertenece a qué campaignId
     const mediaToCampaignRaw = await this.prisma.media.findMany({
       where: { campaign_id: { not: null } },
-      select: { id: true, campaign_id: true }
+      select: { id: true, campaign_id: true },
     });
-    const mediaToCampaignMap = new Map(mediaToCampaignRaw.map(m => [m.id, m.campaign_id]));
+    const mediaToCampaignMap = new Map(
+      mediaToCampaignRaw.map((m) => [m.id, m.campaign_id]),
+    );
 
     // Mapear Device a Driver
     const deviceToDriverMap = new Map<string, string>();
-    drivers.forEach(d => {
-      d.devices?.forEach(dev => deviceToDriverMap.set(dev.deviceId, d.id));
+    drivers.forEach((d) => {
+      d.devices?.forEach((dev) => deviceToDriverMap.set(dev.deviceId, d.id));
     });
 
     // FASE 3 (Item 11): precargar los payroll del período en UNA query (kill N+1)
     const payrollRecords = await this.prisma.payrollPayment.findMany({
-      where: { month, year }
+      where: { month, year },
     });
-    const payrollByDriver = new Map(payrollRecords.map(p => [p.driverId, p]));
+    const payrollByDriver = new Map(payrollRecords.map((p) => [p.driverId, p]));
 
-    playbackEventsRaw.forEach(evt => {
+    playbackEventsRaw.forEach((evt) => {
       const driverId = deviceToDriverMap.get(evt.deviceId);
       const campaignId = mediaToCampaignMap.get(evt.videoId);
       if (driverId && campaignId) {
@@ -253,76 +284,98 @@ export class FinanceService {
     });
 
     // REGLA PERFORMANCE: Process with throttledMap to avoid DB pool exhaustion
-    const payroll = await throttledMap(drivers, async (driver) => {
-      try {
-        const gpsPointsCount = gpsCountsMap.get(driver.id) || 0;
-        const playedCampaigns = driverPoPMap.get(driver.id) || new Set();
+    const payroll = await throttledMap(
+      drivers,
+      async (driver) => {
+        try {
+          const gpsPointsCount = gpsCountsMap.get(driver.id) || 0;
+          const playedCampaigns = driverPoPMap.get(driver.id) || new Set();
 
-        // 2. PARADIGMA PoP: Solo se paga por anuncios TRANSMITIDOS (confirmados por playback)
-        // El driver debe tener suscripción paga para recibir el abono
-        const isSubPaid = driver.subscriptionPaid && (!driver.subscriptionEnd || new Date(driver.subscriptionEnd) >= new Date());
+          // 2. PARADIGMA PoP: Solo se paga por anuncios TRANSMITIDOS (confirmados por playback)
+          // El driver debe tener suscripción paga para recibir el abono
+          const isSubPaid =
+            driver.subscriptionPaid &&
+            (!driver.subscriptionEnd ||
+              new Date(driver.subscriptionEnd) >= new Date());
 
-        const activeAdsCount = isSubPaid ? playedCampaigns.size : 0;
-        const baseCommission = 0;
+          const activeAdsCount = isSubPaid ? playedCampaigns.size : 0;
+          const baseCommission = 0;
 
-        // Calculate referral commissions
-        const referrals = driver.referrals ? driver.referrals.length : 0;
-        const driverReferralBonus = referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
+          // Calculate referral commissions
+          const referrals = driver.referrals ? driver.referrals.length : 0;
+          const driverReferralBonus =
+            referrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
 
-        // --- FIX V12: Removed recursive blind advertiser referral payments ---
-        // Los bonos de anunciantes ahora se abonan directo a la Wallet en el Referral Loop (CampaignService)
-        // en tiempo real como 'OPEX_COMMISSION'. Ya no suman al sueldo base recurrente.
-        const advertiserReferralBonus = 0;
+          // --- FIX V12: Removed recursive blind advertiser referral payments ---
+          // Los bonos de anunciantes ahora se abonan directo a la Wallet en el Referral Loop (CampaignService)
+          // en tiempo real como 'OPEX_COMMISSION'. Ya no suman al sueldo base recurrente.
+          const advertiserReferralBonus = 0;
 
-        const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-        const totalAmount = adTransmissionIncome + driverReferralBonus + advertiserReferralBonus;
+          const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
+          const totalAmount =
+            adTransmissionIncome +
+            driverReferralBonus +
+            advertiserReferralBonus;
 
-        // Enhanced: Get the actual taxi number from the assigned devices or driver record
-        const actualTaxiNumber = driver.devices?.[0]?.taxiNumber || driver.taxiNumber || 'S/N';
+          // Enhanced: Get the actual taxi number from the assigned devices or driver record
+          const actualTaxiNumber =
+            driver.devices?.[0]?.taxiNumber || driver.taxiNumber || "S/N";
 
-        // Check if already paid (pre-cargado, sin query por driver)
-        const paymentRecord = payrollByDriver.get(driver.id);
+          // Check if already paid (pre-cargado, sin query por driver)
+          const paymentRecord = payrollByDriver.get(driver.id);
 
-        return {
-          driverId: driver.id,
-          driverName: driver.fullName || 'TAD DRIVER',
-          driverPhone: driver.phone || '',
-          taxiNumber: actualTaxiNumber,
-          activeAds: paymentRecord?.status === 'PAID' ? paymentRecord.activeAds : activeAdsCount,
-          adIncome: adTransmissionIncome,
-          baseCommission,
-          gpsPoints: paymentRecord?.status === 'PAID' ? paymentRecord.gpsPoints : gpsPointsCount,
-          referralBonus: driverReferralBonus,
-          advertiserReferralBonus,
-          totalAmount: paymentRecord?.status === 'PAID' ? paymentRecord.amount : totalAmount,
-          currency: 'DOP',
-          status: paymentRecord?.status || 'PENDING',
-          paidAt: paymentRecord?.paidAt,
-          reference: paymentRecord?.referenceNum
-        };
-      } catch (err) {
-        this.logger.error(`CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`);
-        return {
-          driverId: driver.id,
-          driverName: (driver as any).fullName || 'ERROR',
-          driverPhone: (driver as any).phone || '',
-          taxiNumber: 'ERR',
-          activeAds: 0,
-          adIncome: 0,
-          baseCommission: 0,
-          gpsPoints: 0,
-          referralBonus: 0,
-          advertiserReferralBonus: 0,
-          totalAmount: 0,
-          currency: 'DOP',
-          status: 'ERROR',
-          error: true
-        };
-      }
-    }, 5);
+          return {
+            driverId: driver.id,
+            driverName: driver.fullName || "TAD DRIVER",
+            driverPhone: driver.phone || "",
+            taxiNumber: actualTaxiNumber,
+            activeAds:
+              paymentRecord?.status === "PAID"
+                ? paymentRecord.activeAds
+                : activeAdsCount,
+            adIncome: adTransmissionIncome,
+            baseCommission,
+            gpsPoints:
+              paymentRecord?.status === "PAID"
+                ? paymentRecord.gpsPoints
+                : gpsPointsCount,
+            referralBonus: driverReferralBonus,
+            advertiserReferralBonus,
+            totalAmount:
+              paymentRecord?.status === "PAID"
+                ? paymentRecord.amount
+                : totalAmount,
+            currency: "DOP",
+            status: paymentRecord?.status || "PENDING",
+            paidAt: paymentRecord?.paidAt,
+            reference: paymentRecord?.referenceNum,
+          };
+        } catch (err) {
+          this.logger.error(
+            `CRITICAL: Failed to calculate payroll for driver ${driver.id}: ${err.message}`,
+          );
+          return {
+            driverId: driver.id,
+            driverName: (driver as any).fullName || "ERROR",
+            driverPhone: (driver as any).phone || "",
+            taxiNumber: "ERR",
+            activeAds: 0,
+            adIncome: 0,
+            baseCommission: 0,
+            gpsPoints: 0,
+            referralBonus: 0,
+            advertiserReferralBonus: 0,
+            totalAmount: 0,
+            currency: "DOP",
+            status: "ERROR",
+            error: true,
+          };
+        }
+      },
+      5,
+    );
 
     return payroll;
-
   }
 
   /**
@@ -333,37 +386,51 @@ export class FinanceService {
 
     // Check if payroll already processed for this period to avoid duplicates
     const existing = await this.prisma.payrollPayment.findFirst({
-      where: { month, year }
+      where: { month, year },
     });
 
     if (existing) {
-      this.logger.warn(`⚠️ Payroll for ${month}/${year} already exists. Aborting bulk trigger.`);
-      return { success: false, message: 'La nómina para este periodo ya fue generada.', count: 0 };
+      this.logger.warn(
+        `⚠️ Payroll for ${month}/${year} already exists. Aborting bulk trigger.`,
+      );
+      return {
+        success: false,
+        message: "La nómina para este periodo ya fue generada.",
+        count: 0,
+      };
     }
 
     const payrollData = await this.calculateMonthlyPayroll(month, year);
     const recordsToCreate = payrollData
-      .filter(p => p.totalAmount > 0)
-      .map(p => ({
+      .filter((p) => p.totalAmount > 0)
+      .map((p) => ({
         driverId: p.driverId,
         month,
         year,
         amount: p.totalAmount,
-        status: 'PENDING',
+        status: "PENDING",
       }));
 
     if (recordsToCreate.length === 0) {
-      return { success: true, message: 'No se encontraron montos a liquidar para este periodo.', count: 0 };
+      return {
+        success: true,
+        message: "No se encontraron montos a liquidar para este periodo.",
+        count: 0,
+      };
     }
 
     // REGLA PERFORMANCE: Process with batch size 5 (Optimized for 512MB-1GB RAM)
     let count = 0;
-    await throttledMap(recordsToCreate, async (record) => {
-      await this.prisma.payrollPayment.create({
-        data: record
-      });
-      count++;
-    }, 5);
+    await throttledMap(
+      recordsToCreate,
+      async (record) => {
+        await this.prisma.payrollPayment.create({
+          data: record,
+        });
+        count++;
+      },
+      5,
+    );
 
     this.logger.log(`✅ Bulk billing completed: ${count} drivers credited.`);
     return { success: true, count };
@@ -376,94 +443,110 @@ export class FinanceService {
    * interna `PAY-YYMM-UUID8` generada por el servidor (no controlada por el cliente).
    * El endpoint expuesto aplica IdempotencyInterceptor (Idempotency-Key).
    */
-  async processPayment(driverId: string, month: number, year: number, _clientReference: string) {
-    this.logger.log(`Processing payment for driver ${driverId} - ${month}/${year}`);
+  async processPayment(
+    driverId: string,
+    month: number,
+    year: number,
+    _clientReference: string,
+  ) {
+    this.logger.log(
+      `Processing payment for driver ${driverId} - ${month}/${year}`,
+    );
 
     // Re-calculate to get current amount due and metrics
     const payrollData = await this.calculateMonthlyPayroll(month, year);
-    const driverEntry = payrollData.find(p => p.driverId === driverId);
+    const driverEntry = payrollData.find((p) => p.driverId === driverId);
 
     if (!driverEntry) {
-      throw new Error('Driver not found for payroll calculation');
+      throw new Error("Driver not found for payroll calculation");
     }
 
     // Referencia interna generada por el servidor: PAY-<YYMM>-<uuid8>
-    const reference = `PAY-${String(year).slice(2)}${String(month).padStart(2, '0')}-${crypto.randomUUID().slice(0, 8)}`;
+    const reference = `PAY-${String(year).slice(2)}${String(month).padStart(2, "0")}-${crypto.randomUUID().slice(0, 8)}`;
 
-    return this.prisma.$transaction(async (tx) => {
-      // Guard de negocio: si el periodo ya fue liquidado, no pagar dos veces
-      const existing = await tx.payrollPayment.findUnique({
-        where: { driverId_month_year: { driverId, month, year } }
-      });
-      if (existing?.status === 'PAID') {
-        this.logger.warn(`⏭️ [PAYROLL] Periodo ${month}/${year} de ${driverId} ya fue liquidado. Evitando doble pago.`);
-        return existing;
-      }
-
-      // 1. Record the payroll payment (Detailed record)
-      const payrollRecord = await tx.payrollPayment.upsert({
-        where: {
-          driverId_month_year: { driverId, month, year }
-        },
-        update: {
-          amount: driverEntry.totalAmount,
-          referenceNum: reference,
-          status: 'PAID',
-          paidAt: new Date(),
-          activeAds: driverEntry.activeAds,
-          gpsPoints: driverEntry.gpsPoints
-        },
-        create: {
-          driverId,
-          month,
-          year,
-          amount: driverEntry.totalAmount,
-          referenceNum: reference,
-          status: 'PAID',
-          paidAt: new Date(),
-          activeAds: driverEntry.activeAds,
-          gpsPoints: driverEntry.gpsPoints
+    return this.prisma
+      .$transaction(async (tx) => {
+        // Guard de negocio: si el periodo ya fue liquidado, no pagar dos veces
+        const existing = await tx.payrollPayment.findUnique({
+          where: { driverId_month_year: { driverId, month, year } },
+        });
+        if (existing?.status === "PAID") {
+          this.logger.warn(
+            `⏭️ [PAYROLL] Periodo ${month}/${year} de ${driverId} ya fue liquidado. Evitando doble pago.`,
+          );
+          return existing;
         }
+
+        // 1. Record the payroll payment (Detailed record)
+        const payrollRecord = await tx.payrollPayment.upsert({
+          where: {
+            driverId_month_year: { driverId, month, year },
+          },
+          update: {
+            amount: driverEntry.totalAmount,
+            referenceNum: reference,
+            status: "PAID",
+            paidAt: new Date(),
+            activeAds: driverEntry.activeAds,
+            gpsPoints: driverEntry.gpsPoints,
+          },
+          create: {
+            driverId,
+            month,
+            year,
+            amount: driverEntry.totalAmount,
+            referenceNum: reference,
+            status: "PAID",
+            paidAt: new Date(),
+            activeAds: driverEntry.activeAds,
+            gpsPoints: driverEntry.gpsPoints,
+          },
+        });
+
+        // 2. Record in the Financial Ledger (Unified truth)
+        await tx.financialTransaction.create({
+          data: {
+            type: "OUTGOING",
+            category: "OPEX_DRIVER_PAYOUT",
+            amount: driverEntry.totalAmount,
+            netAmount: driverEntry.totalAmount,
+            taxAmount: 0,
+            entityId: driverId,
+            reference,
+            note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
+            status: "COMPLETED",
+          },
+        });
+
+        return payrollRecord;
+      })
+      .then(async (payrollRecord) => {
+        // 3. Notification unificada al conductor (post-commit, fire-and-forget)
+        await this.notificationsService
+          .sendDriverNotification(driverId, "PAYMENT_LIQUIDATED", {
+            amount: driverEntry.totalAmount,
+            currency: driverEntry.currency,
+            month,
+            year,
+            activeAds: driverEntry.activeAds,
+            paidAt:
+              payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
+          })
+          .catch((err) =>
+            this.logger.warn(
+              `[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`,
+            ),
+          );
+
+        return payrollRecord;
       });
-
-      // 2. Record in the Financial Ledger (Unified truth)
-      await tx.financialTransaction.create({
-        data: {
-          type: 'OUTGOING',
-          category: 'OPEX_DRIVER_PAYOUT',
-          amount: driverEntry.totalAmount,
-          netAmount: driverEntry.totalAmount,
-          taxAmount: 0,
-          entityId: driverId,
-          reference,
-          note: `Liquidación de ${driverEntry.activeAds} anuncios para ${driverEntry.driverName}. Periodo: ${month}/${year}.`,
-          status: 'COMPLETED'
-        }
-      });
-
-      return payrollRecord;
-    }).then(async (payrollRecord) => {
-      // 3. Notification unificada al conductor (post-commit, fire-and-forget)
-      await this.notificationsService.sendDriverNotification(driverId, 'PAYMENT_LIQUIDATED', {
-        amount: driverEntry.totalAmount,
-        currency: driverEntry.currency,
-        month,
-        year,
-        activeAds: driverEntry.activeAds,
-        paidAt: payrollRecord.paidAt?.toISOString() || new Date().toISOString(),
-      }).catch((err) =>
-        this.logger.warn(`[PAYMENT_NOTIFY] No se pudo notificar a ${driverId}: ${err.message}`),
-      );
-
-      return payrollRecord;
-    });
   }
 
   /**
    * Proof of Performance: Campaign billing report (Impressions based)
    */
   async getCampaignBillingReport() {
-    this.logger.log('Generating campaign billing report');
+    this.logger.log("Generating campaign billing report");
 
     const campaigns = await this.prisma.campaign.findMany({
       select: {
@@ -473,37 +556,42 @@ export class FinanceService {
         startDate: true,
         endDate: true,
         media: { select: { id: true, durationSeconds: true } },
-        _count: { select: { devices: true } }
-      }
+        _count: { select: { devices: true } },
+      },
     });
 
     // OPTIMIZACIÓN: Pre-calcular todas las impresiones en una sola query grupal
-    this.logger.log('🔍 [OPTIMIZACIÓN] Pre-calculando impresiones totales...');
+    this.logger.log("🔍 [OPTIMIZACIÓN] Pre-calculando impresiones totales...");
     const impressionCountsRaw = await this.prisma.playbackEvent.groupBy({
-      by: ['videoId'],
-      where: { eventType: 'play_confirm', verified: true },
-      _count: { _all: true }
+      by: ["videoId"],
+      where: { eventType: "play_confirm", verified: true },
+      _count: { _all: true },
     });
 
-    const impressionMap = new Map(impressionCountsRaw.map(i => [i.videoId, i._count._all]));
+    const impressionMap = new Map(
+      impressionCountsRaw.map((i) => [i.videoId, i._count._all]),
+    );
 
     // REGLA PERFORMANCE: Process with higher concurrency (Optimized for 8GB RAM)
     const reports = campaigns.map((campaign) => {
       // 1. Obtener impresiones sumando cada media asset ligado a la campaña
       let totalImpressions = 0;
-      campaign.media.forEach(m => {
+      campaign.media.forEach((m) => {
         totalImpressions += impressionMap.get(m.id) || 0;
       });
 
       // 2. Pricing model: RD$1,500 per 30-second block per media asset
       let monthlyRevenue = 0;
-      campaign.media.forEach(media => {
+      campaign.media.forEach((media) => {
         const duration = (media as any).durationSeconds || 30;
         const blocks = Math.ceil(duration / 30);
-        monthlyRevenue += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
+        monthlyRevenue +=
+          blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
       });
 
-      const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+      const diffTime = Math.abs(
+        campaign.endDate.getTime() - campaign.startDate.getTime(),
+      );
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const diffMonths = Math.max(1, Math.round(diffDays / 30.44)); // Usando promedio orbital para mayor precisión financiera
       const totalRevenue = monthlyRevenue * diffMonths;
@@ -514,7 +602,7 @@ export class FinanceService {
         totalImpressions,
         assignedTaxis: campaign._count.devices,
         estimatedRevenue: totalRevenue,
-        status: campaign.status
+        status: campaign.status,
       };
     });
 
@@ -527,28 +615,30 @@ export class FinanceService {
   async generateInvoiceHtml(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { advertiserRef: true, media: { select: mediaSafeSelect } }
+      include: { advertiserRef: true, media: { select: mediaSafeSelect } },
     });
 
     if (!campaign) return null;
 
     const impressions = await this.prisma.playbackEvent.count({
       where: {
-        videoId: { in: campaign.media.map(m => m.id) },
-        eventType: 'play_confirm',
-        verified: true
-      }
+        videoId: { in: campaign.media.map((m) => m.id) },
+        eventType: "play_confirm",
+        verified: true,
+      },
     });
 
     // RD$1,500 per 30-second block per media asset
     let monthlyBase = 0;
-    campaign.media.forEach(m => {
+    campaign.media.forEach((m) => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
       monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
     });
 
-    const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+    const diffTime = Math.abs(
+      campaign.endDate.getTime() - campaign.startDate.getTime(),
+    );
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
 
     const subtotal = monthlyBase * diffMonths;
@@ -557,17 +647,17 @@ export class FinanceService {
 
     const invoiceData = {
       invoiceNumber: `INV-${campaign.id.substring(0, 8).toUpperCase()}`,
-      date: new Date().toLocaleDateString('es-DO'),
+      date: new Date().toLocaleDateString("es-DO"),
       client: campaign.advertiserRef?.companyName || campaign.advertiser,
-      email: campaign.advertiserRef?.email || 'N/A',
+      email: campaign.advertiserRef?.email || "N/A",
       campaign: campaign.name,
-      period: `${campaign.startDate.toLocaleDateString('es-DO')} - ${campaign.endDate.toLocaleDateString('es-DO')}`,
+      period: `${campaign.startDate.toLocaleDateString("es-DO")} - ${campaign.endDate.toLocaleDateString("es-DO")}`,
       impressions,
       qty: diffMonths,
       unitPrice: monthlyBase,
       subtotal,
       taxes,
-      total
+      total,
     };
 
     return this.generateInvoiceTemplate(invoiceData);
@@ -577,7 +667,7 @@ export class FinanceService {
    * Helper to prevent CSV injection (Formula Injection)
    */
   private sanitizeCsvField(field: string | number | null | undefined): string {
-    if (field == null) return '';
+    if (field == null) return "";
     let str = String(field);
     if (/^[=+\-@\t\r]/.test(str)) {
       str = "'" + str;
@@ -594,12 +684,21 @@ export class FinanceService {
    */
   async exportPayrollCsv(month: number, year: number) {
     const data = await this.calculateMonthlyPayroll(month, year);
-    let csv = 'ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n';
-    data.forEach(d => {
+    let csv =
+      "ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n";
+    data.forEach((d) => {
       const row = [
-        d.driverId, d.driverName, d.taxiNumber || 'N/A', d.gpsPoints,
-        `RD$ ${d.referralBonus}`, d.activeAds, `RD$ ${d.adIncome}`, `RD$ ${d.totalAmount}`
-      ].map(f => this.sanitizeCsvField(f)).join(',');
+        d.driverId,
+        d.driverName,
+        d.taxiNumber || "N/A",
+        d.gpsPoints,
+        `RD$ ${d.referralBonus}`,
+        d.activeAds,
+        `RD$ ${d.adIncome}`,
+        `RD$ ${d.totalAmount}`,
+      ]
+        .map((f) => this.sanitizeCsvField(f))
+        .join(",");
       csv += `${row}\n`;
     });
     return csv;
@@ -611,27 +710,36 @@ export class FinanceService {
   async exportCampaignCsv(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { media: { select: mediaSafeSelect }, _count: { select: { devices: true } } }
+      include: {
+        media: { select: mediaSafeSelect },
+        _count: { select: { devices: true } },
+      },
     });
 
-    if (!campaign) return 'Campaña no encontrada';
+    if (!campaign) return "Campaña no encontrada";
 
     const impressions = await this.prisma.playbackEvent.count({
-      where: { videoId: { in: campaign.media.map(m => m.id) }, eventType: 'play_confirm', verified: true }
+      where: {
+        videoId: { in: campaign.media.map((m) => m.id) },
+        eventType: "play_confirm",
+        verified: true,
+      },
     });
 
     let monthlyBase = 0;
-    campaign.media.forEach(m => {
+    campaign.media.forEach((m) => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
       monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
     });
 
-    const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+    const diffTime = Math.abs(
+      campaign.endDate.getTime() - campaign.startDate.getTime(),
+    );
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
     const total = monthlyBase * diffMonths;
 
-    let csv = 'Detalle de Facturación - TAD DOOH\n';
+    let csv = "Detalle de Facturación - TAD DOOH\n";
     csv += `Campaña,${this.sanitizeCsvField(campaign.name)}\n`;
     csv += `Cliente,${this.sanitizeCsvField(campaign.advertiser)}\n`;
     csv += `Periodo,${this.sanitizeCsvField(campaign.startDate.toLocaleDateString())} - ${this.sanitizeCsvField(campaign.endDate.toLocaleDateString())}\n`;
@@ -639,34 +747,52 @@ export class FinanceService {
     csv += `Impactos Totales,${this.sanitizeCsvField(impressions)}\n`;
     csv += `Monto Total,${this.sanitizeCsvField(`RD$ ${total}`)}\n\n`;
 
-    const mediaRows = campaign.media.map(m => {
+    const mediaRows = campaign.media.map((m) => {
       const dur = m.durationSeconds || 30;
       const blocks = Math.ceil(dur / 30);
       return [
-        m.id, m.originalFilename || m.filename || 'N/A', dur, blocks, `RD$ ${blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}`
-      ].map(f => this.sanitizeCsvField(f)).join(',');
+        m.id,
+        m.originalFilename || m.filename || "N/A",
+        dur,
+        blocks,
+        `RD$ ${blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD}`,
+      ]
+        .map((f) => this.sanitizeCsvField(f))
+        .join(",");
     });
-    csv += 'ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n';
-    mediaRows.forEach(row => { csv += `${row}\n`; });
+    csv += "ID Media,Nombre Media,Duración (s),Bloques 30s,Costo Mensual\n";
+    mediaRows.forEach((row) => {
+      csv += `${row}\n`;
+    });
 
     return csv;
   }
 
   async exportCampaignsCsv() {
     const data = await this.getCampaignBillingReport();
-    let csv = 'ID Campaña,Nombre Campaña,Estado,Taxis Asignados,Impactos Reales,Ingreso Proyectado (RD$)\n';
-    data.forEach(c => {
+    let csv =
+      "ID Campaña,Nombre Campaña,Estado,Taxis Asignados,Impactos Reales,Ingreso Proyectado (RD$)\n";
+    data.forEach((c) => {
       const row = [
-        c.campaignId, c.campaignName, c.status, c.assignedTaxis, c.totalImpressions, c.estimatedRevenue
-      ].map(f => this.sanitizeCsvField(f)).join(',');
+        c.campaignId,
+        c.campaignName,
+        c.status,
+        c.assignedTaxis,
+        c.totalImpressions,
+        c.estimatedRevenue,
+      ]
+        .map((f) => this.sanitizeCsvField(f))
+        .join(",");
       csv += `${row}\n`;
     });
     return csv;
   }
 
   private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
-  private readonly RECURRING_SUB_BASE = BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
-  private readonly REFERRAL_RETENTION_RATE = BUSINESS_RULES.REFERRAL_RETENTION_RATE;
+  private readonly RECURRING_SUB_BASE =
+    BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
+  private readonly REFERRAL_RETENTION_RATE =
+    BUSINESS_RULES.REFERRAL_RETENTION_RATE;
 
   /**
    * FINANCIAL INTELLIGENCE: Registers a new transaction with automatic tax & referral logic.
@@ -680,26 +806,30 @@ export class FinanceService {
     note?: string;
     status?: string;
   }) {
-    this.logger.log(`Recording ${data.type} transaction for category: ${data.category}`);
+    this.logger.log(
+      `Recording ${data.type} transaction for category: ${data.category}`,
+    );
 
     let taxAmount = 0;
     let netAmount = data.amount;
 
     // Apply ITBIS 18% automatically for relevant categories
-    if (data.category === 'SUSCRIPCION' || data.category === 'PUBLICIDAD') {
+    if (data.category === "SUSCRIPCION" || data.category === "PUBLICIDAD") {
       taxAmount = (data.amount / (1 + this.ITBIS_RATE)) * this.ITBIS_RATE;
       netAmount = data.amount - taxAmount;
     }
 
     // Advanced Business Rule: If it's a subscription payment, check for referral retention
-    if (data.category === 'SUSCRIPCION' && data.entityId) {
+    if (data.category === "SUSCRIPCION" && data.entityId) {
       const driver = await this.prisma.driver.findUnique({
         where: { id: data.entityId },
-        select: { referredBy: true }
+        select: { referredBy: true },
       });
 
       if (driver?.referredBy) {
-        this.logger.log(`Referral detected for driver ${data.entityId}. Applying retention logic.`);
+        this.logger.log(
+          `Referral detected for driver ${data.entityId}. Applying retention logic.`,
+        );
         const referralBonus = netAmount * this.REFERRAL_RETENTION_RATE;
         netAmount -= referralBonus; // Retain bonus for the referrer
 
@@ -717,8 +847,8 @@ export class FinanceService {
         entityId: data.entityId,
         reference: data.reference,
         note: data.note,
-        status: data.status || 'COMPLETED'
-      }
+        status: data.status || "COMPLETED",
+      },
     });
   }
 
@@ -726,31 +856,36 @@ export class FinanceService {
    * FINANCIAL INTELLIGENCE: Returns the MRR and Burn Rate projections.
    */
   async getFinancialSummary() {
-    this.logger.log('Generating financial summary and projections');
+    this.logger.log("Generating financial summary and projections");
 
     // 1. MRR Calculation: Number of active drivers * Subscription Base
     const activeSubscribedDrivers = await this.prisma.driver.count({
-      where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true }
+      where: {
+        status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE,
+        subscriptionPaid: true,
+      },
     });
 
     const mrr = activeSubscribedDrivers * this.RECURRING_SUB_BASE;
 
     // 2. Campaign Revenue Calculation (Projected)
     const activeCampaigns = await this.prisma.campaign.findMany({
-      where: { status: 'ACTIVE' },
-      include: { media: { select: mediaSafeSelect } }
+      where: { status: "ACTIVE" },
+      include: { media: { select: mediaSafeSelect } },
     });
 
     let campaignRevenue = 0;
-    activeCampaigns.forEach(campaign => {
+    activeCampaigns.forEach((campaign) => {
       let monthlyBase = 0;
-      campaign.media.forEach(m => {
+      campaign.media.forEach((m) => {
         const dur = m.durationSeconds || 30;
         const blocks = Math.ceil(dur / 30);
         monthlyBase += blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
       });
 
-      const diffTime = Math.abs(campaign.endDate.getTime() - campaign.startDate.getTime());
+      const diffTime = Math.abs(
+        campaign.endDate.getTime() - campaign.startDate.getTime(),
+      );
       const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) || 1;
       campaignRevenue += monthlyBase * diffMonths;
     });
@@ -761,10 +896,10 @@ export class FinanceService {
 
     const monthlyExpenses = await this.prisma.financialTransaction.aggregate({
       where: {
-        type: 'OUTGOING',
-        createdAt: { gte: monthStart }
+        type: "OUTGOING",
+        createdAt: { gte: monthStart },
       },
-      _sum: { amount: true }
+      _sum: { amount: true },
     });
 
     const burnRate = monthlyExpenses._sum.amount || 0;
@@ -775,8 +910,8 @@ export class FinanceService {
       burnRate,
       activeSubscribers: activeSubscribedDrivers,
       netProjection: mrr + campaignRevenue - burnRate,
-      currency: 'DOP',
-      timestamp: new Date()
+      currency: "DOP",
+      timestamp: new Date(),
     };
   }
 
@@ -785,12 +920,12 @@ export class FinanceService {
    * Unit Economics & Escalabilidad
    */
   async getInvestorMetrics() {
-    this.logger.log('Generating investor metrics (Unit Economics)');
+    this.logger.log("Generating investor metrics (Unit Economics)");
 
     // 1. CAC (Customer Acquisition Cost) = Total OPEX_MARKETING / Total Advertisers
     const totalMarketing = await this.prisma.financialTransaction.aggregate({
-      where: { category: 'OPEX_MARKETING' },
-      _sum: { amount: true }
+      where: { category: "OPEX_MARKETING" },
+      _sum: { amount: true },
     });
     const totalAdvertisers = await this.prisma.advertiser.count();
     const marketingSpend = totalMarketing._sum.amount || 0;
@@ -798,31 +933,42 @@ export class FinanceService {
 
     // 2. EBITDA Operativo = Revenue (AD + SUB) - OPEX (PAYOUT + COMM + MKT) (Sin CAPEX, TAX_ITBIS)
     const revenues = await this.prisma.financialTransaction.aggregate({
-      where: { category: { in: ['REVENUE_AD', 'REVENUE_SUBSCRIPTION'] } },
-      _sum: { amount: true }
+      where: { category: { in: ["REVENUE_AD", "REVENUE_SUBSCRIPTION"] } },
+      _sum: { amount: true },
     });
     const opex = await this.prisma.financialTransaction.aggregate({
-      where: { category: { in: ['OPEX_DRIVER_PAYOUT', 'OPEX_COMMISSION', 'OPEX_MARKETING'] } },
-      _sum: { amount: true }
+      where: {
+        category: {
+          in: ["OPEX_DRIVER_PAYOUT", "OPEX_COMMISSION", "OPEX_MARKETING"],
+        },
+      },
+      _sum: { amount: true },
     });
     const totalRev = revenues._sum.amount || 0;
     const totalOpex = opex._sum.amount || 0;
     const ebitda = totalRev - totalOpex;
 
     // 3. Promedio Mensual por Taxi (Para LTV y Payback)
-    const activeTaxis = await this.prisma.device.count({ where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE } });
+    const activeTaxis = await this.prisma.device.count({
+      where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+    });
 
     // Ingresos promedio mensual (simplificado)
     const monthsActive = 12; // Suponemos 12 meses o calculamos base en oldest transaction
-    const monthlyRevPerTaxi = activeTaxis > 0 ? (totalRev / monthsActive) / activeTaxis : 0;
-    const monthlyOpexPerTaxi = activeTaxis > 0 ? (totalOpex / monthsActive) / activeTaxis : 0;
+    const monthlyRevPerTaxi =
+      activeTaxis > 0 ? totalRev / monthsActive / activeTaxis : 0;
+    const monthlyOpexPerTaxi =
+      activeTaxis > 0 ? totalOpex / monthsActive / activeTaxis : 0;
 
     // LTV: Ingreso proyectado por taxi a 24 meses
     const ltv = monthlyRevPerTaxi * 24;
 
     // Payback Period (Meses para recuperar inversión inicial)
     const netMonthlyPerTaxi = monthlyRevPerTaxi - monthlyOpexPerTaxi;
-    const paybackPeriod = netMonthlyPerTaxi > 0 ? BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD / netMonthlyPerTaxi : 999; // 999 if never
+    const paybackPeriod =
+      netMonthlyPerTaxi > 0
+        ? BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD / netMonthlyPerTaxi
+        : 999; // 999 if never
 
     return {
       cac: cac.toFixed(2),
@@ -833,8 +979,8 @@ export class FinanceService {
       monthlyRevPerTaxi: monthlyRevPerTaxi.toFixed(2),
       monthlyOpexPerTaxi: monthlyOpexPerTaxi.toFixed(2),
       hardwareCostPerUnit: BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD,
-      currency: 'DOP',
-      generatedAt: new Date()
+      currency: "DOP",
+      generatedAt: new Date(),
     };
   }
 
@@ -843,8 +989,8 @@ export class FinanceService {
    */
   async getLedger() {
     return this.prisma.financialTransaction.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 50
+      orderBy: { createdAt: "desc" },
+      take: 50,
     });
   }
 
@@ -928,7 +1074,7 @@ export class FinanceService {
             <div class="client-block" style="text-align: right">
                 <h3>Receptor</h3>
                 <p>${data.client}</p>
-                <p class="small">${data.email || 'contacto@cliente.com'}<br>Periodo: ${data.period}</p>
+                <p class="small">${data.email || "contacto@cliente.com"}<br>Periodo: ${data.period}</p>
             </div>
         </div>
 

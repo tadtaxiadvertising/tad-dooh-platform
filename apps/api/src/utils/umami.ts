@@ -1,10 +1,13 @@
-import axios from 'axios';
+import axios from "axios";
 
 export class UmamiClient {
   private readonly baseUrl: string;
   private readonly apiToken: string;
 
-  constructor(apiToken: string, baseUrl: string = 'https://cloud.umami.is/api') {
+  constructor(
+    apiToken: string,
+    baseUrl: string = "https://cloud.umami.is/api",
+  ) {
     this.apiToken = apiToken;
     this.baseUrl = baseUrl;
   }
@@ -15,31 +18,39 @@ export class UmamiClient {
         method,
         url: `${this.baseUrl}${endpoint}`,
         headers: {
-          'Authorization': `Bearer ${this.apiToken}`,
-          'Accept': 'application/json',
+          Authorization: `Bearer ${this.apiToken}`,
+          Accept: "application/json",
         },
         params,
       });
       return response.data;
     } catch (error) {
-      console.error(`❌ Umami API Error (${endpoint}):`, error.response?.data || error.message);
+      console.error(
+        `❌ Umami API Error (${endpoint}):`,
+        error.response?.data || error.message,
+      );
       return null;
     }
   }
 
   async getWebsites() {
-    return this.request('get', '/websites');
+    return this.request("get", "/websites");
   }
 
   async getWebsiteStats(websiteId: string, startAt: number, endAt: number) {
-    return this.request('get', `/websites/${websiteId}/stats`, {
+    return this.request("get", `/websites/${websiteId}/stats`, {
       startAt,
       endAt,
     });
   }
 
-  async getPageViews(websiteId: string, startAt: number, endAt: number, unit: string = 'day') {
-    return this.request('get', `/websites/${websiteId}/pageviews`, {
+  async getPageViews(
+    websiteId: string,
+    startAt: number,
+    endAt: number,
+    unit: string = "day",
+  ) {
+    return this.request("get", `/websites/${websiteId}/pageviews`, {
       startAt,
       endAt,
       unit,

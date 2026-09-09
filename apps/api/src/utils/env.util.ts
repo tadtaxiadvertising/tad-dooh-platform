@@ -5,7 +5,7 @@
  */
 export function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value || value.trim() === '') {
+  if (!value || value.trim() === "") {
     throw new Error(
       `Variable de entorno requerida "${name}" no está configurada. Revisar EasyPanel Secrets / .env.`,
     );

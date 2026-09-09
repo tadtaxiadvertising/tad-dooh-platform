@@ -1,29 +1,29 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
-import { RegisterDeviceDto } from './dto/register-device.dto';
-import { HeartbeatDto } from './dto/heartbeat.dto';
-import { PlaybackConfirmationDto } from './dto/playback-confirmation.dto';
-import { SyncDeviceDto } from './dto/sync-device.dto';
-import { BulkSyncDto } from './dto/bulk-sync.dto';
-import { CampaignService } from '../campaign/campaign.service';
-import { FinanceService } from '../finance/finance.service';
-import { throttledMap } from '../../utils/throttler.util';
-import { requireEnv } from '../../utils/env.util';
-import * as jwt from 'jsonwebtoken';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { RegisterDeviceDto } from "./dto/register-device.dto";
+import { HeartbeatDto } from "./dto/heartbeat.dto";
+import { PlaybackConfirmationDto } from "./dto/playback-confirmation.dto";
+import { SyncDeviceDto } from "./dto/sync-device.dto";
+import { BulkSyncDto } from "./dto/bulk-sync.dto";
+import { CampaignService } from "../campaign/campaign.service";
+import { FinanceService } from "../finance/finance.service";
+import { throttledMap } from "../../utils/throttler.util";
+import { requireEnv } from "../../utils/env.util";
+import * as jwt from "jsonwebtoken";
 
 const MAX_SLOTS_PER_DEVICE = 15;
 
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
-  private readonly JWT_SECRET = requireEnv('JWT_SECRET');
+  private readonly JWT_SECRET = requireEnv("JWT_SECRET");
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly campaignService: CampaignService,
     private readonly financeService: FinanceService,
-  ) { }
+  ) {}
 
   /**
    * Calculates availability slots for a device.
@@ -31,10 +31,15 @@ export class DeviceService {
    */
   async getDeviceSlots(deviceId: string) {
     try {
-      const device = await this.prisma.device.findUnique({ where: { deviceId } });
-      if (!device) throw new Error('Device not found');
+      const device = await this.prisma.device.findUnique({
+        where: { deviceId },
+      });
+      if (!device) throw new Error("Device not found");
 
-      const payload = await this.campaignService.getActiveSyncVideos(deviceId, device.city || 'Santiago');
+      const payload = await this.campaignService.getActiveSyncVideos(
+        deviceId,
+        device.city || "Santiago",
+      );
       const occupied = payload.media_assets?.length || 0;
 
       return {
@@ -42,7 +47,7 @@ export class DeviceService {
         max_slots: MAX_SLOTS_PER_DEVICE,
         assigned_slots: occupied,
         available_slots: Math.max(0, MAX_SLOTS_PER_DEVICE - occupied),
-        usage_percentage: Math.round((occupied / MAX_SLOTS_PER_DEVICE) * 100)
+        usage_percentage: Math.round((occupied / MAX_SLOTS_PER_DEVICE) * 100),
       };
     } catch (error) {
       this.logger.warn(`⚠️ getDeviceSlots(${deviceId}): ${error?.message}`);
@@ -51,11 +56,10 @@ export class DeviceService {
         max_slots: MAX_SLOTS_PER_DEVICE,
         assigned_slots: 0,
         available_slots: MAX_SLOTS_PER_DEVICE,
-        usage_percentage: 0
+        usage_percentage: 0,
       };
     }
   }
-
 
   async registerDevice(dto: RegisterDeviceDto) {
     const existingDevice = await this.prisma.device.findUnique({
@@ -63,7 +67,9 @@ export class DeviceService {
     });
 
     if (existingDevice) {
-      this.logger.log(`Device already exists, updating lastSeen: ${dto.device_id}`);
+      this.logger.log(
+        `Device already exists, updating lastSeen: ${dto.device_id}`,
+      );
       return this.prisma.device.update({
         where: { deviceId: dto.device_id },
         data: {
@@ -75,12 +81,14 @@ export class DeviceService {
       });
     }
 
-    this.logger.log(`Registering new device (PENDING approval): ${dto.device_id}`);
+    this.logger.log(
+      `Registering new device (PENDING approval): ${dto.device_id}`,
+    );
     return this.prisma.device.create({
       data: {
         deviceId: dto.device_id,
         appVersion: dto.app_version,
-        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,          // 🔒 Requires admin approval before joining fleet
+        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL, // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
         driverId: dto.driver_id,
       },
@@ -91,7 +99,7 @@ export class DeviceService {
   async getPendingDevices() {
     return this.prisma.device.findMany({
       where: { status: BUSINESS_RULES.STATUS.DEVICE.INITIAL },
-      orderBy: { lastSeen: 'desc' },
+      orderBy: { lastSeen: "desc" },
       select: { id: true, deviceId: true, appVersion: true, lastSeen: true },
     });
   }
@@ -132,26 +140,30 @@ export class DeviceService {
           playerStatus: true,
           city: true,
           driver: {
-            select: { id: true, fullName: true, subscriptionPaid: true }
-          }
-        }
+            select: { id: true, fullName: true, subscriptionPaid: true },
+          },
+        },
       }),
       // 2. Count campaign assignments per device in one query
-      (this.prisma as any).deviceCampaign.groupBy({
-        by: ['device_id'],
-        _count: { campaign_id: true }
-      }).catch(() => []) // Graceful fallback — table may not exist in all envs
+      (this.prisma as any).deviceCampaign
+        .groupBy({
+          by: ["device_id"],
+          _count: { campaign_id: true },
+        })
+        .catch(() => []), // Graceful fallback — table may not exist in all envs
     ]);
 
     // Build a deviceId -> assignedCampaigns count map
     const slotMap = new Map<string, number>();
-    for (const row of (campaignAssignments || [])) {
+    for (const row of campaignAssignments || []) {
       slotMap.set(row.device_id, row._count?.campaign_id || 0);
     }
 
     return devices.map((d) => {
       const cronWindowMs = 15 * 60 * 1000;
-      const lastSeenAge = d.lastSeen ? now.getTime() - d.lastSeen.getTime() : Infinity;
+      const lastSeenAge = d.lastSeen
+        ? now.getTime() - d.lastSeen.getTime()
+        : Infinity;
       const dbIsOnlineTrustworthy = d.isOnline && lastSeenAge <= cronWindowMs;
       const isOnlineByTimestamp = !!d.lastSeen && lastSeenAge <= thirtyMinMs;
       const isOnline = dbIsOnlineTrustworthy || isOnlineByTimestamp;
@@ -162,7 +174,11 @@ export class DeviceService {
         device_id: d.deviceId,
         deviceId: d.deviceId,
         taxi_number: d.taxiNumber,
-        status: isOnline ? 'online' : (d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED ? 'inactive' : 'offline'),
+        status: isOnline
+          ? "online"
+          : d.status === BUSINESS_RULES.STATUS.DEVICE.SUSPENDED
+            ? "inactive"
+            : "offline",
         is_online: isOnline,
         battery_level: d.batteryLevel,
         occupied_slots: assignedSlots,
@@ -170,29 +186,33 @@ export class DeviceService {
         max_slots: MAX_SLOTS_PER_DEVICE,
         player_status: d.playerStatus,
         last_seen: d.lastSeen,
-        city: d.city || 'Santiago',
-        driver: d.driver ? {
-          id: d.driver.id,
-          fullName: d.driver.fullName,
-          subscriptionPaid: d.driver.subscriptionPaid
-        } : null,
+        city: d.city || "Santiago",
+        driver: d.driver
+          ? {
+              id: d.driver.id,
+              fullName: d.driver.fullName,
+              subscriptionPaid: d.driver.subscriptionPaid,
+            }
+          : null,
         driver_id: d.driver?.id || null,
-        driver_name: d.driver?.fullName || 'No asignado',
-        subscription_status: d.driver?.subscriptionPaid ? 'PAID' : 'PENDING'
+        driver_name: d.driver?.fullName || "No asignado",
+        subscription_status: d.driver?.subscriptionPaid ? "PAID" : "PENDING",
       };
     });
   }
 
   async deviceHeartbeat(dto: HeartbeatDto) {
     // SRE v12.1.1: Single query with driver included — eliminates N+1 (was 2 findUnique calls)
-    let device = await this.prisma.device.findUnique({
+    const device = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
       include: { driver: true },
     });
 
     if (!device) {
       // 🔒 Unknown device: register as PENDING (not ACTIVE) and block content
-      this.logger.warn(`Heartbeat from unknown device: ${dto.device_id}. Registering as PENDING — awaiting admin approval.`);
+      this.logger.warn(
+        `Heartbeat from unknown device: ${dto.device_id}. Registering as PENDING — awaiting admin approval.`,
+      );
       await this.prisma.device.create({
         data: {
           deviceId: dto.device_id,
@@ -204,15 +224,17 @@ export class DeviceService {
         },
       });
       // Return blocked so the tablet does not receive content
-      return { success: true, blocked: true, reason: 'awaiting_approval' };
+      return { success: true, blocked: true, reason: "awaiting_approval" };
     } else if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       // Device exists but is still awaiting admin approval
-      this.logger.log(`⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`);
+      this.logger.log(
+        `⏳ Heartbeat from PENDING device: ${dto.device_id}. Awaiting admin approval.`,
+      );
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
         data: { isOnline: true, lastSeen: new Date() },
       });
-      return { success: true, blocked: true, reason: 'awaiting_approval' };
+      return { success: true, blocked: true, reason: "awaiting_approval" };
     } else {
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
@@ -229,16 +251,21 @@ export class DeviceService {
     }
 
     // SRE v12.1.1: Inline subscription check using already-loaded driver (no extra DB call)
-    let blocked = false;
+    const blocked = false;
     let reason: string | undefined;
 
     if (device.driver) {
       const { driver } = device;
-      if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
+      if (
+        driver.subscriptionPaid &&
+        (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())
+      ) {
         // Paid and valid — OK
       } else {
         // Expired or unpaid — log but DON'T block (per TAD policy)
-        this.logger.warn(`⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
+        this.logger.warn(
+          `⚠️ Device ${dto.device_id}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`,
+        );
         // FASE 2 (Item 10, A1/M23): NO se dispara notifyMorosidad desde el heartbeat.
         // Cada tablet envía heartbeat cada ~15s → el protocolo 402 se ejecutaba en loop.
         // La gestión de morosidad vive SOLO en el cron diario de las 3AM (finance.service).
@@ -246,29 +273,37 @@ export class DeviceService {
     }
 
     // SRE v12.1.1: Fire-and-forget heartbeat record — telemetry is NOT request-critical
-    this.prisma.deviceHeartbeat.create({
-      data: {
-        deviceId: dto.device_id,
-        batteryLevel: dto.battery_level,
-        storageFree: dto.storage_free,
-        timestamp: new Date(),
-      },
-    }).catch(e => {
-      this.logger.error(`Failed to record heartbeat for ${dto.device_id}: ${e.message}`);
-    });
+    this.prisma.deviceHeartbeat
+      .create({
+        data: {
+          deviceId: dto.device_id,
+          batteryLevel: dto.battery_level,
+          storageFree: dto.storage_free,
+          timestamp: new Date(),
+        },
+      })
+      .catch((e) => {
+        this.logger.error(
+          `Failed to record heartbeat for ${dto.device_id}: ${e.message}`,
+        );
+      });
 
-    this.logger.log(`💓 Heartbeat processed for device ${dto.device_id}. Battery: ${dto.battery_level}%, Player: ${dto.player_status}`);
+    this.logger.log(
+      `💓 Heartbeat processed for device ${dto.device_id}. Battery: ${dto.battery_level}%, Player: ${dto.player_status}`,
+    );
     return { success: true, blocked, reason };
   }
 
   private async checkSubscriptionStatus(deviceId: string) {
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
-      include: { driver: true }
+      include: { driver: true },
     });
 
     if (!device || !device.driver) {
-      this.logger.log(`⚠️ Device ${deviceId}: Sin conductor vinculado (grace period).`);
+      this.logger.log(
+        `⚠️ Device ${deviceId}: Sin conductor vinculado (grace period).`,
+      );
       return { blocked: false, reason: undefined };
     }
 
@@ -279,18 +314,25 @@ export class DeviceService {
     // pero coherente con el `SubscriptionGuard` de `device.controller.ts:41` que
     // devuelve HTTP 402 cuando la suscripción realmente está vencida.
     // El comportamiento real de bloqueo vive en el Guard HTTP (más estricto).
-    if (driver.subscriptionPaid && (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())) {
+    if (
+      driver.subscriptionPaid &&
+      (!driver.subscriptionEnd || driver.subscriptionEnd >= new Date())
+    ) {
       return { blocked: false, reason: undefined };
     }
 
     // Suscripción expirada o no pagada - Registramos pero NO bloqueamos (por política TAD)
-    this.logger.warn(`⚠️ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`);
+    this.logger.warn(
+      `⚠️ Device ${deviceId}: suscripción de ${driver.fullName} vencida o no pagada. Permitido por política TAD.`,
+    );
 
     // Trigger notification para administración (fire-and-forget)
     try {
       await this.financeService.notifyMorosidad(deviceId);
     } catch (e) {
-      this.logger.error(`Failed to trigger morosidad notification for ${deviceId}: ${e.message}`);
+      this.logger.error(
+        `Failed to trigger morosidad notification for ${deviceId}: ${e.message}`,
+      );
     }
 
     return { blocked: false, reason: undefined }; // Importante: El Guard HTTP superior ya devuelve 402 si aplica.
@@ -302,7 +344,9 @@ export class DeviceService {
    * Scheduled for removal in v13.0.
    */
   async recordPlayback(dto: PlaybackConfirmationDto) {
-    this.logger.log(`Playback confirmed on device: ${dto.device_id} for video: ${dto.video_id}`);
+    this.logger.log(
+      `Playback confirmed on device: ${dto.device_id} for video: ${dto.video_id}`,
+    );
 
     // Updates the device's last playback time (and last seen time)
     await this.prisma.device.updateMany({
@@ -318,12 +362,12 @@ export class DeviceService {
       data: {
         deviceId: dto.device_id,
         videoId: dto.video_id,
-        eventType: 'play_confirm',
+        eventType: "play_confirm",
         timestamp: new Date(dto.timestamp),
         lat: dto.lat,
         lng: dto.lng,
         isSimulated: dto.isSimulated || false,
-        verified: false
+        verified: false,
       },
     });
   }
@@ -332,13 +376,15 @@ export class DeviceService {
     const { deviceId, lat, lng, batteryLevel, lastHash } = dto;
 
     // 🔒 Block sync for PENDING devices
-    const deviceCheck = await this.prisma.device.findUnique({ where: { deviceId } });
+    const deviceCheck = await this.prisma.device.findUnique({
+      where: { deviceId },
+    });
     if (!deviceCheck) {
-      return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
+      return { blocked: true, reason: "awaiting_approval", media_assets: [] };
     }
     if (deviceCheck.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       this.logger.log(`⏳ Sync blocked for PENDING device: ${deviceId}`);
-      return { blocked: true, reason: 'awaiting_approval', media_assets: [] };
+      return { blocked: true, reason: "awaiting_approval", media_assets: [] };
     }
 
     // 1. Update Telemetry & Health
@@ -355,29 +401,34 @@ export class DeviceService {
 
     // 2. Alert Logic (Critical Inactivity & Battery)
     if (batteryLevel !== undefined && batteryLevel < 15) {
-      this.logger.warn(`🚨 [CRITICAL_BATTERY] Device ${deviceId} at ${batteryLevel}%`);
+      this.logger.warn(
+        `🚨 [CRITICAL_BATTERY] Device ${deviceId} at ${batteryLevel}%`,
+      );
       await this.prisma.notification.create({
         data: {
-          title: 'Batería Crítica detectada',
+          title: "Batería Crítica detectada",
           message: `La tablet ${device.taxiNumber || deviceId} reporta un nivel crítico (${batteryLevel}%).`,
-          type: 'CRITICAL',
-          category: 'DEVICE',
+          type: "CRITICAL",
+          category: "DEVICE",
           entityId: deviceId,
-        }
+        },
       });
     }
 
     // Detect recovery from long offline (Re-entry alert)
     const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-    if (deviceCheck.lastSeen && (new Date().getTime() - deviceCheck.lastSeen.getTime() > threeDaysMs)) {
+    if (
+      deviceCheck.lastSeen &&
+      new Date().getTime() - deviceCheck.lastSeen.getTime() > threeDaysMs
+    ) {
       await this.prisma.notification.create({
         data: {
-          title: 'Dispositivo Recuperado (+3D Offline)',
+          title: "Dispositivo Recuperado (+3D Offline)",
           message: `La tablet ${device.taxiNumber || deviceId} ha vuelto a conectar tras más de 3 días de inactividad crítica.`,
-          type: 'SUCCESS',
-          category: 'DEVICE',
+          type: "SUCCESS",
+          category: "DEVICE",
           entityId: deviceId,
-        }
+        },
       });
     }
 
@@ -390,41 +441,45 @@ export class DeviceService {
     const pendingCommands = await this.prisma.deviceCommand.findMany({
       where: {
         device: { deviceId },
-        status: 'PENDING',
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } }
-        ]
+        status: "PENDING",
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       select: {
         id: true,
         commandType: true,
         commandParams: true,
-      }
+      },
     });
 
     if (pendingCommands.length > 0) {
-      this.logger.log(`📤 Sending ${pendingCommands.length} pending commands to Device ${deviceId}`);
+      this.logger.log(
+        `📤 Sending ${pendingCommands.length} pending commands to Device ${deviceId}`,
+      );
       // Mark as PROCESSING so we don't send them multiple times if sync is fast
       await this.prisma.deviceCommand.updateMany({
-        where: { id: { in: pendingCommands.map(c => c.id) } },
-        data: { status: 'PROCESSING' }
+        where: { id: { in: pendingCommands.map((c) => c.id) } },
+        data: { status: "PROCESSING" },
       });
     }
 
     // Capture device city for geofencing
-    const deviceCity = device.city || 'Santiago';
-    const payload = await this.campaignService.getActiveSyncVideos(deviceId, deviceCity);
+    const deviceCity = device.city || "Santiago";
+    const payload = await this.campaignService.getActiveSyncVideos(
+      deviceId,
+      deviceCity,
+    );
 
     // ============================================
     // DELTA SYNC LOGIC
     // ============================================
     if (lastHash && lastHash === payload.sync_hash) {
-      this.logger.log(`🔄 Device ${deviceId}: Delta Sync matches (${lastHash}). No update needed.`);
+      this.logger.log(
+        `🔄 Device ${deviceId}: Delta Sync matches (${lastHash}). No update needed.`,
+      );
       return {
         update: false,
         blocked: false,
-        sync_hash: payload.sync_hash
+        sync_hash: payload.sync_hash,
       };
     }
 
@@ -433,24 +488,28 @@ export class DeviceService {
         update: true,
         blocked: false,
         media_assets: [],
-        sync_hash: 'empty'
+        sync_hash: "empty",
       };
     }
 
-    this.logger.log(`📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`);
+    this.logger.log(
+      `📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`,
+    );
 
     const licenseToken = jwt.sign(
       {
         deviceId,
         taxi: device.taxiNumber,
-        type: 'OFFLINE_LICENSE',
-        iat: Math.floor(Date.now() / 1000)
+        type: "OFFLINE_LICENSE",
+        iat: Math.floor(Date.now() / 1000),
       },
       this.JWT_SECRET,
-      { expiresIn: '48h' }
+      { expiresIn: "48h" },
     );
 
-    this.logger.log(`✅ Device ${deviceId}: Sync success. Sent ${payload.media_assets?.length || 0} assets.`);
+    this.logger.log(
+      `✅ Device ${deviceId}: Sync success. Sent ${payload.media_assets?.length || 0} assets.`,
+    );
     return {
       update: true,
       blocked: false,
@@ -460,23 +519,25 @@ export class DeviceService {
       campaign_version: payload.version,
       media_assets: payload.media_assets,
       videos: payload.media_assets, // Alias for legacy/TS player compatibility
-      commands: pendingCommands.map(c => ({
+      commands: pendingCommands.map((c) => ({
         id: c.id,
         type: c.commandType,
-        params: c.commandParams ? JSON.parse(c.commandParams) : {}
-      }))
+        params: c.commandParams ? JSON.parse(c.commandParams) : {},
+      })),
     };
   }
 
   async acknowledgeCommand(commandId: string, result: any) {
-    this.logger.log(`📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`);
+    this.logger.log(
+      `📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`,
+    );
     return this.prisma.deviceCommand.update({
       where: { id: commandId },
       data: {
-        status: 'EXECUTED',
+        status: "EXECUTED",
         executedAt: new Date(),
-        result: JSON.stringify(result)
-      }
+        result: JSON.stringify(result),
+      },
     });
   }
 
@@ -495,20 +556,22 @@ export class DeviceService {
   }
 
   async processBulkSync(dto: BulkSyncDto) {
-    this.logger.log(`🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`);
+    this.logger.log(
+      `🔄 [BULK_SYNC] Processing batch from device: ${dto.device_id}`,
+    );
 
     // 1. Validate Device
     const device = await this.prisma.device.findUnique({
-      where: { deviceId: dto.device_id }
+      where: { deviceId: dto.device_id },
     });
 
     if (!device) {
       this.logger.warn(`BulkSync from unknown device: ${dto.device_id}`);
-      return { success: false, reason: 'unknown_device' };
+      return { success: false, reason: "unknown_device" };
     }
 
     if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
-      return { success: false, reason: 'awaiting_approval' };
+      return { success: false, reason: "awaiting_approval" };
     }
 
     // 2. Update Heartbeat / Telemetry
@@ -519,49 +582,53 @@ export class DeviceService {
         batteryLevel: dto.battery_level ?? device.batteryLevel,
         storageFree: dto.storage_free ?? device.storageFree,
         isOnline: true,
-      }
+      },
     });
 
     // 3. Batch insert Playback Events
     if (dto.playbacks && dto.playbacks.length > 0) {
-      this.logger.log(`   -> Inserting ${dto.playbacks.length} playback events`);
-      const playbackData = dto.playbacks.map(p => ({
+      this.logger.log(
+        `   -> Inserting ${dto.playbacks.length} playback events`,
+      );
+      const playbackData = dto.playbacks.map((p) => ({
         deviceId: dto.device_id,
         videoId: p.video_id,
-        eventType: 'play_confirm',
+        eventType: "play_confirm",
         timestamp: new Date(p.timestamp),
         lat: p.lat,
         lng: p.lng,
         isSimulated: p.isSimulated || dto.isSimulated || false,
-        verified: false
+        verified: false,
       }));
       await this.prisma.playbackEvent.createMany({
         data: playbackData,
-        skipDuplicates: true
+        skipDuplicates: true,
       });
 
       // Update lastPlayback
       await this.prisma.device.update({
         where: { deviceId: dto.device_id },
-        data: { lastPlayback: new Date() }
+        data: { lastPlayback: new Date() },
       });
     }
 
     // 4. Batch insert Locations (GPS)
     if (dto.locations && dto.locations.length > 0 && device.driverId) {
-      this.logger.log(`   -> Inserting ${dto.locations.length} location events`);
-      const locationData = dto.locations.map(l => ({
+      this.logger.log(
+        `   -> Inserting ${dto.locations.length} location events`,
+      );
+      const locationData = dto.locations.map((l) => ({
         deviceId: dto.device_id,
         driverId: device.driverId,
         latitude: l.lat,
         longitude: l.lng,
         timestamp: new Date(l.timestamp),
-        isSimulated: l.isSimulated || dto.isSimulated || false
+        isSimulated: l.isSimulated || dto.isSimulated || false,
       }));
 
       await this.prisma.driverLocation.createMany({
         data: locationData,
-        skipDuplicates: true
+        skipDuplicates: true,
       });
 
       // Update current known location
@@ -569,7 +636,7 @@ export class DeviceService {
       if (latestLoc) {
         await this.prisma.device.update({
           where: { deviceId: dto.device_id },
-          data: { lastLat: latestLoc.lat, lastLng: latestLoc.lng }
+          data: { lastLat: latestLoc.lat, lastLng: latestLoc.lng },
         });
       }
     }
@@ -584,6 +651,10 @@ export class DeviceService {
       },
     });
 
-    return { success: true, processedPlaybacks: dto.playbacks?.length || 0, processedLocations: dto.locations?.length || 0 };
+    return {
+      success: true,
+      processedPlaybacks: dto.playbacks?.length || 0,
+      processedLocations: dto.locations?.length || 0,
+    };
   }
 }

@@ -1,20 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { WhatsAppService } from '../notifications/whatsapp.service';
-import { GpsBatchDto } from './monitoring.dto';
-import { throttledMap } from '../../utils/throttler.util';
-import { BUSINESS_RULES } from '../../common/constants/business-rules';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { PrismaService } from "../prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { WhatsAppService } from "../notifications/whatsapp.service";
+import { GpsBatchDto } from "./monitoring.dto";
+import { throttledMap } from "../../utils/throttler.util";
+import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
 // Los 10 dispositivos del Piloto de Santiago (Fase 1)
 const PILOT_DEVICE_IDS = [
-  'STI0001', 'STI0002', 'STI0003', 'STI0004', 'STI0005',
-  'STI0006', 'STI0007', 'STI0008', 'STI0009', 'STI0010',
+  "STI0001",
+  "STI0002",
+  "STI0003",
+  "STI0004",
+  "STI0005",
+  "STI0006",
+  "STI0007",
+  "STI0008",
+  "STI0009",
+  "STI0010",
 ];
 
 // Teléfono del administrador del piloto (para alertas críticas)
-const ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || '18098001234';
+const ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || "18098001234";
 const OFFLINE_THRESHOLD_MINUTES = 15;
 const PUSH_NOTIFICATION_HOURS = 12;
 
@@ -33,9 +41,11 @@ export class MonitoringService {
    * SRE FIX: No usamos await para evitar bloquear el listen(3000) de NestJS (TAD-BOOT-FAST)
    */
   async onModuleInit() {
-    this.logger.log('🔄 [RECOVERY] Running startup connectivity scan in background...');
-    this.checkOfflineDevices().catch(err => 
-      this.logger.error(`❌ Startup connectivity scan failed: ${err.message}`)
+    this.logger.log(
+      "🔄 [RECOVERY] Running startup connectivity scan in background...",
+    );
+    this.checkOfflineDevices().catch((err) =>
+      this.logger.error(`❌ Startup connectivity scan failed: ${err.message}`),
     );
   }
 
@@ -47,7 +57,9 @@ export class MonitoringService {
     const { deviceId } = batch;
     const points = batch.points || batch.locations || [];
 
-    this.logger.log(`📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`);
+    this.logger.log(
+      `📥 Recibiendo lote GPS de dispositivo ${deviceId} (${points.length} puntos)`,
+    );
 
     try {
       // 1. Resolver el Driver ID ligado al dispositivo (fuente de verdad).
@@ -56,19 +68,21 @@ export class MonitoringService {
       // status OPERATIVO: un device BLOQUEADO no debe reactivarse por GPS.
       const device = await this.prisma.device.findUnique({
         where: { deviceId },
-        include: { driver: true }
+        include: { driver: true },
       });
 
       const resolvedDriverId = device?.driverId ?? null;
 
       if (!resolvedDriverId || !device) {
-        this.logger.warn(`⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`);
-        return { status: 'ignored', reason: 'no_driver_linked' };
+        this.logger.warn(
+          `⚠️ Batch recibido para ${deviceId} sin chofer vinculado. Descartando.`,
+        );
+        return { status: "ignored", reason: "no_driver_linked" };
       }
 
       if (points.length > 0) {
         await this.prisma.driverLocation.createMany({
-          data: points.map(p => ({
+          data: points.map((p) => ({
             deviceId,
             driverId: resolvedDriverId,
             latitude: p.latitude ?? p.lat,
@@ -91,18 +105,20 @@ export class MonitoringService {
             lastSeen: new Date(),
             lastSyncAt: new Date(),
             lastSyncSuccess: true,
-            connectivityStatus: 'ONLINE',
+            connectivityStatus: "ONLINE",
           },
         });
       }
 
       return {
-        status: 'success',
+        status: "success",
         processedPoints: points.length,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error(`❌ Error procesando lote GPS para ${deviceId}: ${error.message}`);
+      this.logger.error(
+        `❌ Error procesando lote GPS para ${deviceId}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -112,7 +128,7 @@ export class MonitoringService {
    */
   async getFleetStatus() {
     return await this.prisma.device.findMany({
-      where: { deviceId: { contains: 'STI' } },
+      where: { deviceId: { contains: "STI" } },
       select: {
         deviceId: true,
         taxiNumber: true,
@@ -122,7 +138,7 @@ export class MonitoringService {
         lastSeen: true,
         status: true,
       },
-      orderBy: { deviceId: 'asc' },
+      orderBy: { deviceId: "asc" },
     });
   }
 
@@ -148,17 +164,19 @@ export class MonitoringService {
           },
         },
       },
-      orderBy: { deviceId: 'asc' },
+      orderBy: { deviceId: "asc" },
     });
 
-    const onlineCount = devices.filter(d => d.isOnline).length;
+    const onlineCount = devices.filter((d) => d.isOnline).length;
 
     return {
       summary: {
         total: PILOT_DEVICE_IDS.length,
         online: onlineCount,
         offline: PILOT_DEVICE_IDS.length - onlineCount,
-        healthPercentage: Math.round((onlineCount / PILOT_DEVICE_IDS.length) * 100),
+        healthPercentage: Math.round(
+          (onlineCount / PILOT_DEVICE_IDS.length) * 100,
+        ),
       },
       devices,
     };
@@ -171,7 +189,7 @@ export class MonitoringService {
     return await this.prisma.campaign.findMany({
       where: {
         active: true,
-        status: { in: ['ACTIVE', 'PUBLISHED'] },
+        status: { in: ["ACTIVE", "PUBLISHED"] },
       },
       take: 5,
       select: {
@@ -181,7 +199,7 @@ export class MonitoringService {
         targetImpressions: true,
         metrics: {
           take: 1,
-          orderBy: { date: 'desc' },
+          orderBy: { date: "desc" },
         },
       },
     });
@@ -193,12 +211,18 @@ export class MonitoringService {
    */
   @Cron(CronExpression.EVERY_30_MINUTES)
   async checkOfflineDevices() {
-    this.logger.log('🔍 [CRON] Verificando dispositivos offline y conectividad...');
+    this.logger.log(
+      "🔍 [CRON] Verificando dispositivos offline y conectividad...",
+    );
 
     const now = new Date();
-    const offlineThreshold = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000);
+    const offlineThreshold = new Date(
+      now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000,
+    );
     const criticalThreshold = new Date(now.getTime() - 48 * 60 * 60 * 1000); // 48 Horas
-    const pushThreshold = new Date(now.getTime() - PUSH_NOTIFICATION_HOURS * 60 * 60 * 1000); // 12 Horas
+    const pushThreshold = new Date(
+      now.getTime() - PUSH_NOTIFICATION_HOURS * 60 * 60 * 1000,
+    ); // 12 Horas
 
     try {
       // 1. Marcar como OFFLINE (isOnline = false) los que pasen el threshold de 15 min
@@ -207,23 +231,25 @@ export class MonitoringService {
           lastSeen: { lt: offlineThreshold },
           isOnline: true,
         },
-        data: { isOnline: false, status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED },
+        data: {
+          isOnline: false,
+          status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED,
+        },
       });
 
       // 2. Marcar como connectivity_issue si llevan +48h sin reporte
       const criticalCount = await this.prisma.device.updateMany({
         where: {
-          OR: [
-            { lastSeen: { lt: criticalThreshold } },
-            { lastSeen: null },
-          ],
-          connectivityStatus: { not: 'connectivity_issue' },
+          OR: [{ lastSeen: { lt: criticalThreshold } }, { lastSeen: null }],
+          connectivityStatus: { not: "connectivity_issue" },
         },
-        data: { connectivityStatus: 'connectivity_issue' },
+        data: { connectivityStatus: "connectivity_issue" },
       });
 
       if (criticalCount.count > 0) {
-        this.logger.warn(`🚨 [FLEET] ${criticalCount.count} dispositivos marcados con connectivity_issue (+48h offline).`);
+        this.logger.warn(
+          `🚨 [FLEET] ${criticalCount.count} dispositivos marcados con connectivity_issue (+48h offline).`,
+        );
       }
 
       // 3. Notificaciones PUSH a choferes cada 12h offline
@@ -232,34 +258,47 @@ export class MonitoringService {
           lastSeen: { lt: pushThreshold },
           driverId: { not: null },
         },
-        select: { driverId: true, deviceId: true }
+        select: { driverId: true, deviceId: true },
       });
 
-      await throttledMap(offlineDrivers, async (d) => {
-        if (d.driverId) {
-          await this.notifications.sendPush(
-            d.driverId,
-            `⚠️ TAD: Tu equipo ${d.deviceId} lleva +12h sin conexión. Verifica el encendido de la tablet para no afectar tu nómina.`
-          ).catch(e => this.logger.error(`Error enviando push a ${d.driverId}: ${e.message}`));
-        }
-      }, 5);
+      await throttledMap(
+        offlineDrivers,
+        async (d) => {
+          if (d.driverId) {
+            await this.notifications
+              .sendPush(
+                d.driverId,
+                `⚠️ TAD: Tu equipo ${d.deviceId} lleva +12h sin conexión. Verifica el encendido de la tablet para no afectar tu nómina.`,
+              )
+              .catch((e) =>
+                this.logger.error(
+                  `Error enviando push a ${d.driverId}: ${e.message}`,
+                ),
+              );
+          }
+        },
+        5,
+      );
 
       // 4. Alerta por WhatsApp solo para el PILOTO (STI)
       const offlinePilotDevices = await this.prisma.device.findMany({
         where: {
           deviceId: { in: PILOT_DEVICE_IDS },
           lastSeen: { lt: offlineThreshold },
-          status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED
+          status: BUSINESS_RULES.STATUS.DEVICE.SUSPENDED,
         },
         select: { deviceId: true, taxiNumber: true, lastSeen: true },
       });
 
       if (offlinePilotDevices.length > 0) {
         const deviceList = offlinePilotDevices
-          .map(d => `• ${d.deviceId} (${d.taxiNumber || 'S/N'}) — última: ${d.lastSeen ? d.lastSeen.toLocaleTimeString() : 'nunca'}`)
-          .join('\n');
+          .map(
+            (d) =>
+              `• ${d.deviceId} (${d.taxiNumber || "S/N"}) — última: ${d.lastSeen ? d.lastSeen.toLocaleTimeString() : "nunca"}`,
+          )
+          .join("\n");
 
-        const alertMessage = 
+        const alertMessage =
           `🚨 *ALERTA TAD PILOTO SANTIAGO*\n\n` +
           `${offlinePilotDevices.length} pantalla(s) sin señal:\n\n${deviceList}\n\n` +
           `⏰ Umbral: ${OFFLINE_THRESHOLD_MINUTES} min.`;
@@ -267,7 +306,9 @@ export class MonitoringService {
         await this.whatsapp.sendMessage(ADMIN_PHONE, alertMessage);
       }
     } catch (err) {
-      this.logger.error(`❌ [CRON] Error en checkOfflineDevices: ${err.message}`);
+      this.logger.error(
+        `❌ [CRON] Error en checkOfflineDevices: ${err.message}`,
+      );
     }
   }
 
@@ -276,28 +317,32 @@ export class MonitoringService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async dataRetentionCleanup() {
-    this.logger.log('🧹 [CRON] Ejecutando limpieza de retención de datos...');
+    this.logger.log("🧹 [CRON] Ejecutando limpieza de retención de datos...");
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const hbResult = await this.prisma.deviceHeartbeat.deleteMany({
-        where: { timestamp: { lt: thirtyDaysAgo } }
+        where: { timestamp: { lt: thirtyDaysAgo } },
       });
-      
+
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      
+
       const anResult = await this.prisma.analyticsEvent.deleteMany({
-        where: { 
+        where: {
           processed: true,
-          occurredAt: { lt: ninetyDaysAgo }
-        }
+          occurredAt: { lt: ninetyDaysAgo },
+        },
       });
-      
-      this.logger.log(`✅ [CRON] Limpieza completada: ${hbResult.count} heartbeats, ${anResult.count} analytics events eliminados.`);
+
+      this.logger.log(
+        `✅ [CRON] Limpieza completada: ${hbResult.count} heartbeats, ${anResult.count} analytics events eliminados.`,
+      );
     } catch (err) {
-      this.logger.error(`❌ [CRON] Error en dataRetentionCleanup: ${err.message}`);
+      this.logger.error(
+        `❌ [CRON] Error en dataRetentionCleanup: ${err.message}`,
+      );
     }
   }
 }

@@ -5,10 +5,10 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Request } from 'express';
-import { BUSINESS_RULES } from '../../../common/constants/business-rules';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Request } from "express";
+import { BUSINESS_RULES } from "../../../common/constants/business-rules";
 
 /**
  * KILL-SWITCH 402 (CORE TAD v12)
@@ -45,7 +45,7 @@ export class SubscriptionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const deviceId =
-      (request.headers['x-device-id'] as string) ||
+      (request.headers["x-device-id"] as string) ||
       request.body?.deviceId ||
       (request.params as any)?.deviceId ||
       null;
@@ -115,13 +115,13 @@ export class SubscriptionGuard implements CanActivate {
     // 5. Determinar razón para el 402 (para UI y logs)
     let reason: string;
     if (driver.status === BUSINESS_RULES.STATUS.DRIVER.SUSPENDED) {
-      reason = 'STATE_BLOCKED';
+      reason = "STATE_BLOCKED";
     } else if (driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL) {
-      reason = 'SUBSCRIPTION_PENDING';
+      reason = "SUBSCRIPTION_PENDING";
     } else if (!isPaid) {
-      reason = 'SUBSCRIPTION_UNPAID';
+      reason = "SUBSCRIPTION_UNPAID";
     } else {
-      reason = 'SUBSCRIPTION_EXPIRED';
+      reason = "SUBSCRIPTION_EXPIRED";
     }
 
     this.logger.warn(
@@ -131,9 +131,10 @@ export class SubscriptionGuard implements CanActivate {
     throw new HttpException(
       {
         statusCode: HttpStatus.PAYMENT_REQUIRED,
-        error: 'PAYMENT_REQUIRED',
+        error: "PAYMENT_REQUIRED",
         reason,
-        message: 'Acceso bloqueado: suscripción anual RD$6,000 vencida o pendiente.',
+        message:
+          "Acceso bloqueado: suscripción anual RD$6,000 vencida o pendiente.",
         driverId: driver.id,
         deviceId,
         blockedAt: driver.blockedAt,

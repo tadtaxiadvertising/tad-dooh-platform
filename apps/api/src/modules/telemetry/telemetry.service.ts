@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 /**
  * SRE v12.2.5 — TelemetryService with PoP Validation
@@ -25,7 +25,7 @@ const PLAYBACK_RATE_WINDOW = 60_000; // 1 minute in ms
 @Injectable()
 export class TelemetryService {
   private readonly logger = new Logger(TelemetryService.name);
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // --- Rate Limiting (in-memory, per-instance) ---
   private playbackRateMap = new Map<string, number[]>();
@@ -36,7 +36,7 @@ export class TelemetryService {
     let timestamps = this.playbackRateMap.get(deviceId) || [];
 
     // Prune timestamps outside the current window
-    timestamps = timestamps.filter(t => t > windowStart);
+    timestamps = timestamps.filter((t) => t > windowStart);
 
     if (timestamps.length + additionalCount > PLAYBACK_RATE_LIMIT) {
       return false;
@@ -51,7 +51,7 @@ export class TelemetryService {
     // Periodic cleanup of stale entries (prevent memory leak)
     if (this.playbackRateMap.size > 1000) {
       for (const [key, ts] of this.playbackRateMap.entries()) {
-        if (ts.filter(t => t > windowStart).length === 0) {
+        if (ts.filter((t) => t > windowStart).length === 0) {
           this.playbackRateMap.delete(key);
         }
       }
@@ -67,7 +67,7 @@ export class TelemetryService {
         where: { deviceId },
         select: { status: true },
       });
-      return device?.status === 'OPERATIVO';
+      return device?.status === "OPERATIVO";
     } catch {
       this.logger.error(`Error validating device ${deviceId}`);
       return false;
@@ -75,7 +75,10 @@ export class TelemetryService {
   }
 
   // --- Tablet Key Validation ---
-  async validateTabletKey(deviceId: string, tabletKey: string): Promise<boolean> {
+  async validateTabletKey(
+    deviceId: string,
+    tabletKey: string,
+  ): Promise<boolean> {
     try {
       const device = await this.prisma.device.findUnique({
         where: { deviceId },
@@ -102,7 +105,7 @@ export class TelemetryService {
         select: { active: true, status: true },
       });
 
-      return campaign?.active === true && campaign?.status === 'ACTIVE';
+      return campaign?.active === true && campaign?.status === "ACTIVE";
     } catch {
       this.logger.error(`Error validating video ${videoId}`);
       return false;
@@ -113,13 +116,12 @@ export class TelemetryService {
   async sync(data: any[]) {
     if (!data || data.length === 0) return;
 
-    const safeData = data.length > MAX_BATCH_SIZE
-      ? data.slice(0, MAX_BATCH_SIZE)
-      : data;
+    const safeData =
+      data.length > MAX_BATCH_SIZE ? data.slice(0, MAX_BATCH_SIZE) : data;
 
     if (safeData.length < data.length) {
       this.logger.warn(
-        `⚠️ [ANTI-OOM] Telemetry batch truncated: ${data.length} → ${safeData.length} points (max: ${MAX_BATCH_SIZE})`
+        `⚠️ [ANTI-OOM] Telemetry batch truncated: ${data.length} → ${safeData.length} points (max: ${MAX_BATCH_SIZE})`,
       );
     }
 
@@ -136,7 +138,7 @@ export class TelemetryService {
           const item = chunk[i];
           const base = i * 5;
           values.push(
-            `(gen_random_uuid(), $${base + 1}, ST_SetSRID(ST_MakePoint($${base + 2}, $${base + 3}), 4326), $${base + 4}, $${base + 5})`
+            `(gen_random_uuid(), $${base + 1}, ST_SetSRID(ST_MakePoint($${base + 2}, $${base + 3}), 4326), $${base + 4}, $${base + 5})`,
           );
           params.push(
             item.driverId,
@@ -149,15 +151,17 @@ export class TelemetryService {
 
         await this.prisma.$executeRawUnsafe(
           `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp)
-           VALUES ${values.join(', ')}
+           VALUES ${values.join(", ")}
            ON CONFLICT (driver_id, timestamp) DO NOTHING`,
-          ...params
+          ...params,
         );
 
         totalProcessed += chunk.length;
       }
 
-      this.logger.log(`✅ Batch sync completed: ${totalProcessed} points processed in ${Math.ceil(safeData.length / CHUNK_SIZE)} chunks.`);
+      this.logger.log(
+        `✅ Batch sync completed: ${totalProcessed} points processed in ${Math.ceil(safeData.length / CHUNK_SIZE)} chunks.`,
+      );
     } catch (err) {
       this.logger.error(`Failed to batch sync telemetry: ${err.message}`);
     }
@@ -167,7 +171,7 @@ export class TelemetryService {
   async recordPlayback(data: {
     deviceId: string;
     videoId: string;
-    eventType: 'START' | 'END' | 'ERROR';
+    eventType: "START" | "END" | "ERROR";
     lat?: number;
     lng?: number;
     verified?: boolean;
@@ -176,7 +180,9 @@ export class TelemetryService {
     try {
       // Use raw SQL with ON CONFLICT for deduplication:
       // Same device + video + same-minute timestamp = duplicate
-      const timestamp = data.clientTimestamp ? new Date(data.clientTimestamp) : new Date();
+      const timestamp = data.clientTimestamp
+        ? new Date(data.clientTimestamp)
+        : new Date();
 
       const result = await this.prisma.$executeRawUnsafe(
         `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
@@ -195,13 +201,18 @@ export class TelemetryService {
       );
 
       if (result === 0) {
-        this.logger.warn(`⚠️ Duplicate playback rejected: device=${data.deviceId} video=${data.videoId}`);
+        this.logger.warn(
+          `⚠️ Duplicate playback rejected: device=${data.deviceId} video=${data.videoId}`,
+        );
         return { success: true, duplicate: true };
       }
 
       return { success: true, verified: data.verified ?? false };
     } catch (err) {
-      this.logger.error(`Failed to record playback event for device ${data.deviceId}`, err);
+      this.logger.error(
+        `Failed to record playback event for device ${data.deviceId}`,
+        err,
+      );
       // Fallback to Prisma ORM if raw SQL fails (e.g., dedup constraint not yet applied)
       try {
         return await this.prisma.playbackEvent.create({
@@ -211,25 +222,35 @@ export class TelemetryService {
             eventType: data.eventType,
             lat: data.lat,
             lng: data.lng,
-            timestamp: data.clientTimestamp ? new Date(data.clientTimestamp) : new Date(),
+            timestamp: data.clientTimestamp
+              ? new Date(data.clientTimestamp)
+              : new Date(),
             verified: data.verified ?? false,
           },
         });
       } catch (fallbackErr) {
-        this.logger.error(`Fallback playback insert also failed for device ${data.deviceId}`, fallbackErr);
+        this.logger.error(
+          `Fallback playback insert also failed for device ${data.deviceId}`,
+          fallbackErr,
+        );
         throw fallbackErr;
       }
     }
   }
 
   // --- Bulk Playback Events ---
-  async recordPlaybackBatch(events: any[]): Promise<{ processed: number; rejected: number }> {
-    const safeEvents = events.length > PLAYBACK_MAX_BATCH_SIZE
-      ? events.slice(0, PLAYBACK_MAX_BATCH_SIZE)
-      : events;
+  async recordPlaybackBatch(
+    events: any[],
+  ): Promise<{ processed: number; rejected: number }> {
+    const safeEvents =
+      events.length > PLAYBACK_MAX_BATCH_SIZE
+        ? events.slice(0, PLAYBACK_MAX_BATCH_SIZE)
+        : events;
 
     if (safeEvents.length < events.length) {
-      this.logger.warn(`⚠️ Playback batch truncated: ${events.length} → ${safeEvents.length} (max: ${PLAYBACK_MAX_BATCH_SIZE})`);
+      this.logger.warn(
+        `⚠️ Playback batch truncated: ${events.length} → ${safeEvents.length} (max: ${PLAYBACK_MAX_BATCH_SIZE})`,
+      );
     }
 
     let processed = 0;
@@ -245,9 +266,11 @@ export class TelemetryService {
       for (let i = 0; i < chunk.length; i++) {
         const event = chunk[i];
         const base = i * 7;
-        const ts = event.clientTimestamp ? new Date(event.clientTimestamp) : new Date();
+        const ts = event.clientTimestamp
+          ? new Date(event.clientTimestamp)
+          : new Date();
         values.push(
-          `(gen_random_uuid(), $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, date_trunc('minute', $${base + 6}::timestamp), false, $${base + 7})`
+          `(gen_random_uuid(), $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, date_trunc('minute', $${base + 6}::timestamp), false, $${base + 7})`,
         );
         params.push(
           event.deviceId,
@@ -263,15 +286,17 @@ export class TelemetryService {
       try {
         const insertResult = await this.prisma.$executeRawUnsafe(
           `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
-           VALUES ${values.join(', ')}
+           VALUES ${values.join(", ")}
            ON CONFLICT (device_id, video_id, timestamp)
            DO NOTHING`,
-          ...params
+          ...params,
         );
         processed += chunk.length;
         rejected += chunk.length - insertResult;
       } catch (err) {
-        this.logger.error(`Batch playback chunk failed at offset ${offset}: ${err.message}`);
+        this.logger.error(
+          `Batch playback chunk failed at offset ${offset}: ${err.message}`,
+        );
         // Fallback: insert individually via Prisma ORM
         for (const event of chunk) {
           try {
@@ -282,7 +307,9 @@ export class TelemetryService {
                 eventType: event.eventType,
                 lat: event.lat,
                 lng: event.lng,
-                timestamp: event.clientTimestamp ? new Date(event.clientTimestamp) : new Date(),
+                timestamp: event.clientTimestamp
+                  ? new Date(event.clientTimestamp)
+                  : new Date(),
                 verified: true,
               },
             });
@@ -294,7 +321,9 @@ export class TelemetryService {
       }
     }
 
-    this.logger.log(`✅ Playback batch: ${processed} processed, ${rejected} rejected (duplicates/errors)`);
+    this.logger.log(
+      `✅ Playback batch: ${processed} processed, ${rejected} rejected (duplicates/errors)`,
+    );
     return { processed, rejected };
   }
 }

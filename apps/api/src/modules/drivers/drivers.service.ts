@@ -1,11 +1,23 @@
-import { Injectable, Logger, UnauthorizedException, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
-import { randomBytes } from 'crypto';
-import { BUSINESS_RULES, BCRYPT_ROUNDS, JWT_EXPIRY } from '../../common/constants/business-rules';
-import { PayrollAuditService } from './payroll-audit.service';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  ForbiddenException,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import * as jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
+import {
+  BUSINESS_RULES,
+  BCRYPT_ROUNDS,
+  JWT_EXPIRY,
+} from "../../common/constants/business-rules";
+import { PayrollAuditService } from "./payroll-audit.service";
 
 export interface AuthUser {
   id: string;
@@ -17,9 +29,9 @@ export interface AuthUser {
 // A9: generá una password temporal aleatoria y segura (12+ chars) entregada una sola vez.
 function generateTemporaryPassword(): string {
   // 3 bloques de 4 bytes → 18 caracteres base64url, sin necesidad de separadores largos.
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   const bytes = randomBytes(15);
-  let out = '';
+  let out = "";
   for (let i = 0; i < 15; i++) out += alphabet[bytes[i] % alphabet.length];
   return out;
 }
@@ -31,11 +43,15 @@ export class DriversService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-    private readonly payrollAudit: PayrollAuditService
-  ) { }
+    private readonly payrollAudit: PayrollAuditService,
+  ) {}
 
   private hasBankAccountConfigured(bankAccount: unknown): boolean {
-    if (!bankAccount || typeof bankAccount !== 'object' || Array.isArray(bankAccount)) {
+    if (
+      !bankAccount ||
+      typeof bankAccount !== "object" ||
+      Array.isArray(bankAccount)
+    ) {
       return false;
     }
 
@@ -46,7 +62,9 @@ export class DriversService {
       tipo?: unknown;
     };
 
-    return Boolean(candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo);
+    return Boolean(
+      candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo,
+    );
   }
 
   /**
@@ -74,15 +92,16 @@ export class DriversService {
     if (!device || !device.driver) {
       return {
         access: false,
-        action: 'SHOW_SETUP_SCREEN',
-        message: 'Tablet no asignada a un chofer.',
-        reason: 'NO_DRIVER_ASSIGNED',
+        action: "SHOW_SETUP_SCREEN",
+        message: "Tablet no asignada a un chofer.",
+        reason: "NO_DRIVER_ASSIGNED",
       };
     }
 
     const driver = device.driver;
     const now = Date.now();
-    const subscriptionExpired = !!driver.subscriptionEnd && driver.subscriptionEnd.getTime() < now;
+    const subscriptionExpired =
+      !!driver.subscriptionEnd && driver.subscriptionEnd.getTime() < now;
     const delinquent =
       !driver.subscriptionPaid ||
       subscriptionExpired ||
@@ -92,10 +111,13 @@ export class DriversService {
     if (delinquent) {
       return {
         access: false,
-        action: 'KILL_SWITCH',
+        action: "KILL_SWITCH",
         httpStatus: 402,
-        message: 'Conductor moroso. La PWA debe congelarse hasta regularizar el pago.',
-        reason: subscriptionExpired ? 'SUBSCRIPTION_EXPIRED' : 'SUBSCRIPTION_PENDING',
+        message:
+          "Conductor moroso. La PWA debe congelarse hasta regularizar el pago.",
+        reason: subscriptionExpired
+          ? "SUBSCRIPTION_EXPIRED"
+          : "SUBSCRIPTION_PENDING",
         driverId: driver.id,
         driverStatus: driver.status,
         blockedAt: driver.blockedAt,
@@ -105,7 +127,7 @@ export class DriversService {
 
     return {
       access: true,
-      action: 'PLAY_ADS',
+      action: "PLAY_ADS",
       driverId: driver.id,
       driverName: driver.fullName,
     };
@@ -123,8 +145,19 @@ export class DriversService {
    * Cap estricto: 15 anuncios máximo. Más allá, no se acredita.
    */
   async calculateMonthlyEarnings(driverId: string) {
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const monthStart = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1,
+    );
+    const monthEnd = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
 
     // Reproducciones CONFIRMADAS (PoP): conjunto de videoIds únicos
     // reproducidos en este mes en el(los) dispositivo(s) del conductor.
@@ -132,40 +165,48 @@ export class DriversService {
     // pagar múltiples veces el mismo anuncio reproducido N veces al día.
     // La regla canónica es "por anuncio activo reproducido en su tablet al
     // mes", no "por evento de playback".
-    const playedRows = await this.prisma.playbackEvent.findMany({
-      where: {
-        verified: true,
-        timestamp: { gte: monthStart, lte: monthEnd },
-        device: { driverId },
-      },
-      distinct: ['videoId'],
-      select: { videoId: true },
-    }).catch((err) => {
-      this.logger.warn(`[EARNINGS] playbackEvent query failed for ${driverId}: ${err.message}`);
-      return [] as Array<{ videoId: string }>;
-    });
+    const playedRows = await this.prisma.playbackEvent
+      .findMany({
+        where: {
+          verified: true,
+          timestamp: { gte: monthStart, lte: monthEnd },
+          device: { driverId },
+        },
+        distinct: ["videoId"],
+        select: { videoId: true },
+      })
+      .catch((err) => {
+        this.logger.warn(
+          `[EARNINGS] playbackEvent query failed for ${driverId}: ${err.message}`,
+        );
+        return [] as Array<{ videoId: string }>;
+      });
 
     const playedCampaignsCount = playedRows.length;
-    const cappedAds = Math.min(playedCampaignsCount, BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER);
+    const cappedAds = Math.min(
+      playedCampaignsCount,
+      BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER,
+    );
     const baseEarnings = cappedAds * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
 
     // CPA por referido de anunciante cerrado (best-effort; no se descuenta).
-    const confirmedSales = await this.prisma.commission.count({
-      where: {
-        driverId,
-        sourceType: 'ADVERTISER_SALE',
-        status: 'APPROVED',
-      },
-    }).catch(() => 0);
-    const cpaEarnings = confirmedSales * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
+    const confirmedSales = await this.prisma.commission
+      .count({
+        where: {
+          driverId,
+          sourceType: "ADVERTISER_SALE",
+          status: "APPROVED",
+        },
+      })
+      .catch(() => 0);
+    const cpaEarnings =
+      confirmedSales * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD;
 
     const grossEarnings = baseEarnings + cpaEarnings;
 
     // Auditoría + penalización por debajo de meta de horas.
-    const { amount, penaltyApplied, penaltyAmount } = await this.payrollAudit.applyPenaltyLogic(
-      driverId,
-      grossEarnings,
-    );
+    const { amount, penaltyApplied, penaltyAmount } =
+      await this.payrollAudit.applyPenaltyLogic(driverId, grossEarnings);
 
     return {
       driverId,
@@ -178,7 +219,7 @@ export class DriversService {
       penaltyApplied,
       penaltyAmount,
       projectedEarningsRD: amount,
-      currency: 'DOP',
+      currency: "DOP",
       period: { start: monthStart, end: monthEnd },
     };
   }
@@ -207,27 +248,34 @@ export class DriversService {
             select: { id: true, status: true },
           },
         } as any,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       // FIX M-2: Usar constante en lugar de magic number
-      this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.campaign.count({ where: { status: "ACTIVE" } }),
     ]);
 
-    return drivers.map(d => {
+    return drivers.map((d) => {
       const driver = d as any;
       const validReferrals = driver.referrals
-        ? driver.referrals.filter((r: any) => r.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE && r.subscriptionPaid).length
+        ? driver.referrals.filter(
+            (r: any) =>
+              r.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
+              r.subscriptionPaid,
+          ).length
         : 0;
 
       return {
         ...driver,
         activeAds: activeAdsCount,
         // FIX M-2: Usar constantes en lugar de magic numbers
-        projectedEarnings: driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-          ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
-          : 0,
+        projectedEarnings:
+          driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+            ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+            : 0,
         referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
-        advertiserReferralBonus: (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+        advertiserReferralBonus:
+          (driver.referredAdvertisers?.length || 0) *
+          BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
         referralsCount: validReferrals,
         advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
       };
@@ -242,7 +290,7 @@ export class DriversService {
       where: { id },
       include: {
         devices: true,
-        subscriptions: { orderBy: { startDate: 'desc' } },
+        subscriptions: { orderBy: { startDate: "desc" } },
       },
     });
   }
@@ -273,7 +321,8 @@ export class DriversService {
 
     // SANEAMIENTO DE DATOS: Campos opcionales únicos deben ser null si están vacíos
     const sanitizedCedula = data.cedula?.trim() || null;
-    const sanitizedTaxiPlate = (data.taxiPlate || data.licensePlate)?.trim() || null;
+    const sanitizedTaxiPlate =
+      (data.taxiPlate || data.licensePlate)?.trim() || null;
 
     const driver = await this.prisma.driver
       .create({
@@ -290,19 +339,35 @@ export class DriversService {
           insuranceAcceptedAt: null,
           contractAccepted: data.contractAccepted ?? false,
           contractAcceptedAt: data.contractAccepted ? new Date() : null,
-          agreementVersion: data.agreementVersion ?? '2.0',
+          agreementVersion: data.agreementVersion ?? "2.0",
           referredBy: data.referredBy || null,
-          status: data.subscriptionPaid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
-          onboardingStatus: data.contractAccepted ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
+          status: data.subscriptionPaid
+            ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+            : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+          onboardingStatus: data.contractAccepted
+            ? BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY
+            : BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
         },
         include: { devices: true },
       })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
-        this.logger.error(`[DRIVER_CREATE] Fallo creando driver phone=${data.phone}: ${msg}`);
-        if (typeof err === 'object' && err !== null && 'code' in err && (err as Record<string, unknown>).code === 'P2002') {
-          const meta = (err as Record<string, unknown>).meta as Record<string, unknown> | undefined; const target = meta?.target || 'campo único';
-          throw new BadRequestException(`Ya existe un conductor con ese valor (${target}). Verifica teléfono/cédula/placa.`);
+        this.logger.error(
+          `[DRIVER_CREATE] Fallo creando driver phone=${data.phone}: ${msg}`,
+        );
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          (err as Record<string, unknown>).code === "P2002"
+        ) {
+          const meta = (err as Record<string, unknown>).meta as
+            | Record<string, unknown>
+            | undefined;
+          const target = meta?.target || "campo único";
+          throw new BadRequestException(
+            `Ya existe un conductor con ese valor (${target}). Verifica teléfono/cédula/placa.`,
+          );
         }
         throw new HttpException(
           `No se pudo crear el conductor: ${msg}`,
@@ -335,48 +400,58 @@ export class DriversService {
     try {
       user = await this.prisma.driver.findUnique({ where: { phone } });
     } catch (err) {
-      this.logger.error(`[DRIVER_LOGIN] DB lookup failed for phone ${phone}: ${err instanceof Error ? err.message : String(err)}`);
-      throw new UnauthorizedException('No se pudo validar las credenciales');
+      this.logger.error(
+        `[DRIVER_LOGIN] DB lookup failed for phone ${phone}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw new UnauthorizedException("No se pudo validar las credenciales");
     }
     if (!user) {
-      throw new UnauthorizedException('Chofer no encontrado con este teléfono');
+      throw new UnauthorizedException("Chofer no encontrado con este teléfono");
     }
 
     if (!user.password) {
-      throw new UnauthorizedException('Debe configurar su contraseña contactando a soporte.');
+      throw new UnauthorizedException(
+        "Debe configurar su contraseña contactando a soporte.",
+      );
     }
 
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+      throw new UnauthorizedException("Contraseña incorrecta");
     }
 
     const payload = {
       sub: user.id,
       phone: user.phone,
-      role: 'DRIVER',
+      role: "DRIVER",
       app_metadata: {
-        role: 'DRIVER',
+        role: "DRIVER",
         entityId: user.id,
       },
     };
 
     // FIX C-1: NO usar fallback hardcodeado. Si no hay secreto, el token no se puede firmar.
-    const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || this.configService.get<string>('JWT_SECRET');
+    const jwtSecret =
+      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
+      this.configService.get<string>("JWT_SECRET");
     if (!jwtSecret) {
-      this.logger.error('🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.');
-      throw new ForbiddenException('AUTH_CONFIG_MISSING_JWT_SECRET');
+      this.logger.error(
+        "🚨 [DRIVER_LOGIN] JWT_SECRET no configurado. Login bloqueado por seguridad.",
+      );
+      throw new ForbiddenException("AUTH_CONFIG_MISSING_JWT_SECRET");
     }
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: JWT_EXPIRY });
 
-    const device = await this.prisma.device.findFirst({ where: { driverId: user.id } });
+    const device = await this.prisma.device.findFirst({
+      where: { driverId: user.id },
+    });
 
     return {
       access_token: token,
       driverId: user.id,
       name: user.fullName,
-      role: 'DRIVER',
+      role: "DRIVER",
       entityId: user.id,
       deviceId: device?.deviceId || null,
       subscriptionPaid: user.subscriptionPaid,
@@ -396,7 +471,9 @@ export class DriversService {
       data: {
         subscriptionPaid: paid,
         subscriptionEnd: endDate,
-        status: paid ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE : BUSINESS_RULES.STATUS.DRIVER.SUSPENDED,
+        status: paid
+          ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+          : BUSINESS_RULES.STATUS.DRIVER.SUSPENDED,
         blockedAt: paid ? null : new Date(),
       },
     });
@@ -406,10 +483,15 @@ export class DriversService {
    * Assign a hardware device to a driver
    */
   async assignDevice(driverId: string, deviceId: string) {
-    const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
-    if (!driver) throw new Error('Chofer no encontrado');
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+    });
+    if (!driver) throw new Error("Chofer no encontrado");
 
-    if (driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE && driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY) {
+    if (
+      driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
+      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY
+    ) {
       throw new ForbiddenException(
         `Onboarding incompleto o suscripción no pagada. Asegúrate de abonar RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} primero.`,
       );
@@ -418,7 +500,7 @@ export class DriversService {
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ deviceId }, { id: deviceId }] },
     });
-    if (!device) throw new Error('Dispositivo no encontrado en el inventario');
+    if (!device) throw new Error("Dispositivo no encontrado en el inventario");
 
     // Remove any existing bindings this driver has
     await this.prisma.device.updateMany({
@@ -445,12 +527,19 @@ export class DriversService {
   /**
    * Aceptar firma electrónica del contrato y pasar a PENDING_PAYMENT
    */
-  async acceptAgreement(driverId: string, version: string, ipAddress: string, userAgent: string) {
-    const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
-    if (!driver) throw new Error('Chofer no encontrado');
+  async acceptAgreement(
+    driverId: string,
+    version: string,
+    ipAddress: string,
+    userAgent: string,
+  ) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+    });
+    if (!driver) throw new Error("Chofer no encontrado");
 
     if (driver.contractAccepted) {
-      throw new Error('El conductor ya ha aceptado el contrato previamente');
+      throw new Error("El conductor ya ha aceptado el contrato previamente");
     }
 
     await this.prisma.contractAcceptance.create({
@@ -463,7 +552,7 @@ export class DriversService {
         contractAccepted: true,
         contractAcceptedAt: new Date(),
         agreementVersion: version,
-        onboardingStatus: 'PENDING_PAYMENT',
+        onboardingStatus: "PENDING_PAYMENT",
       },
     });
   }
@@ -474,8 +563,12 @@ export class DriversService {
   async getStats() {
     const [total, active, suspended, unpaid] = await Promise.all([
       this.prisma.driver.count(),
-      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE } }),
-      this.prisma.driver.count({ where: { status: BUSINESS_RULES.STATUS.DRIVER.SUSPENDED } }),
+      this.prisma.driver.count({
+        where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE },
+      }),
+      this.prisma.driver.count({
+        where: { status: BUSINESS_RULES.STATUS.DRIVER.SUSPENDED },
+      }),
       this.prisma.driver.count({ where: { subscriptionPaid: false } }),
     ]);
 
@@ -497,18 +590,20 @@ export class DriversService {
     });
 
     if (!device) {
-      throw new ForbiddenException('Dispositivo no encontrado.');
+      throw new ForbiddenException("Dispositivo no encontrado.");
     }
 
     if (!device.driver) {
-      this.logger.warn(`[HUB] Hub solicitado para deviceId ${deviceId} pero no tiene conductor vinculado.`);
+      this.logger.warn(
+        `[HUB] Hub solicitado para deviceId ${deviceId} pero no tiene conductor vinculado.`,
+      );
       // Retornar un hub vacío/default en lugar de throw para que el Admin Dashboard no se rompa
       return {
-        driverName: 'Sín Conductor',
+        driverName: "Sín Conductor",
         deviceId: device.deviceId,
-        taxiNumber: device.taxiNumber || '---',
-        phone: '---',
-        cedula: '---',
+        taxiNumber: device.taxiNumber || "---",
+        phone: "---",
+        cedula: "---",
         subscriptionPaid: false,
         adsPlayed: 0,
         activeAds: 0,
@@ -518,7 +613,7 @@ export class DriversService {
         lastPayment: null,
         totalPaid: 0,
         gpsPoints: 0,
-        notices: []
+        notices: [],
       };
     }
 
@@ -539,32 +634,41 @@ export class DriversService {
     this.logger.debug(`[DRIVER_HUB][GET_BY_ID] Start driverId=${driverId}`);
     try {
       if (!driverId) {
-        throw new ForbiddenException('ID de conductor no proporcionado.');
+        throw new ForbiddenException("ID de conductor no proporcionado.");
       }
 
       const driver = await this.prisma.driver.findUnique({
         where: { id: driverId },
         include: {
           devices: {
-            select: { id: true, deviceId: true, status: true }
+            select: { id: true, deviceId: true, status: true },
           },
           referredAdvertisers: {
-            select: { id: true }
+            select: { id: true },
           },
         } as any,
       });
 
       if (!driver) {
-        this.logger.error(`[DRIVER_HUB][GET_BY_ID][NOT_FOUND] driverId=${driverId}`);
-        throw new ForbiddenException('Perfil de conductor no encontrado. Por favor, re-inicia sesión.');
+        this.logger.error(
+          `[DRIVER_HUB][GET_BY_ID][NOT_FOUND] driverId=${driverId}`,
+        );
+        throw new ForbiddenException(
+          "Perfil de conductor no encontrado. Por favor, re-inicia sesión.",
+        );
       }
 
       const deviceId = (driver as any).devices?.[0]?.deviceId || null;
-      this.logger.debug(`[DRIVER_HUB][GET_BY_ID][FOUND] driverId=${driverId} deviceId=${deviceId}`);
+      this.logger.debug(
+        `[DRIVER_HUB][GET_BY_ID][FOUND] driverId=${driverId} deviceId=${deviceId}`,
+      );
 
       return await this.buildHubData(driver, deviceId);
     } catch (err) {
-      this.logger.error(`[DRIVER_HUB][GET_BY_ID][ERROR] driverId=${driverId} message=${err.message}`, err.stack);
+      this.logger.error(
+        `[DRIVER_HUB][GET_BY_ID][ERROR] driverId=${driverId} message=${err.message}`,
+        err.stack,
+      );
       // Evitar que el 500 rompa el portal si es posible devolver un error controlado
       if (err instanceof ForbiddenException) throw err;
       throw new Error(`Error al obtener datos del dashboard: ${err.message}`);
@@ -577,70 +681,122 @@ export class DriversService {
   private async buildHubData(driver: any, deviceId: string | null) {
     this.logger.debug(`[HUB_BUILD] Iniciando construcción para ${driver.id}`);
 
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const monthStart = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1,
+    );
+    const monthEnd = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
 
     // Queries en paralelo con manejo individual de errores
     const fetchAdsPlayed = deviceId
-      ? this.prisma.analyticsEvent.count({
-        where: { deviceId, eventType: { in: ['play_confirm', 'video_end', 'impression'] } }
-      }).catch(e => { this.logger.warn(`[HUB_WARN] Error adsPlayed: ${e.message}`); return 0; })
+      ? this.prisma.analyticsEvent
+          .count({
+            where: {
+              deviceId,
+              eventType: { in: ["play_confirm", "video_end", "impression"] },
+            },
+          })
+          .catch((e) => {
+            this.logger.warn(`[HUB_WARN] Error adsPlayed: ${e.message}`);
+            return 0;
+          })
       : Promise.resolve(0);
 
-    const fetchGpsPoints = this.prisma.driverLocation.count({
-      where: { driverId: driver.id, timestamp: { gte: monthStart, lte: monthEnd } }
-    }).catch(e => { this.logger.warn(`[HUB_WARN] Error gpsPoints: ${e.message}`); return 0; });
+    const fetchGpsPoints = this.prisma.driverLocation
+      .count({
+        where: {
+          driverId: driver.id,
+          timestamp: { gte: monthStart, lte: monthEnd },
+        },
+      })
+      .catch((e) => {
+        this.logger.warn(`[HUB_WARN] Error gpsPoints: ${e.message}`);
+        return 0;
+      });
 
     const fetchActiveAds = deviceId
-      ? this.prisma.deviceCampaign.count({
-        where: { device: { deviceId }, campaign: { status: 'ACTIVE' } }
-      }).catch(e => {
-        this.logger.warn(`[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`);
-        return this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
+      ? this.prisma.deviceCampaign
+          .count({
+            where: { device: { deviceId }, campaign: { status: "ACTIVE" } },
+          })
+          .catch((e) => {
+            this.logger.warn(
+              `[HUB_WARN] Error deviceCampaign count: ${e.message}. Using global fallback.`,
+            );
+            return this.prisma.campaign
+              .count({ where: { status: "ACTIVE" } })
+              .catch(() => 0);
+          })
+      : this.prisma.campaign
+          .count({ where: { status: "ACTIVE" } })
+          .catch(() => 0);
+
+    const fetchLastPayment = this.prisma.payrollPayment
+      .findFirst({
+        where: { driverId: driver.id },
+        orderBy: { createdAt: "desc" },
       })
-      : this.prisma.campaign.count({ where: { status: 'ACTIVE' } }).catch(() => 0);
+      .catch((e) => {
+        this.logger.warn(`[HUB_WARN] Error lastPayment: ${e.message}`);
+        return null;
+      });
 
-    const fetchLastPayment = this.prisma.payrollPayment.findFirst({
-      where: { driverId: driver.id },
-      orderBy: { createdAt: 'desc' },
-    }).catch(e => { this.logger.warn(`[HUB_WARN] Error lastPayment: ${e.message}`); return null; });
-
-    const fetchTotalPaid = this.prisma.payrollPayment.aggregate({
-      where: { driverId: driver.id, status: 'PAID' },
-      _sum: { amount: true },
-    }).catch(e => { this.logger.warn(`[HUB_WARN] Error totalPaid aggregate: ${e.message}`); return { _sum: { amount: 0 } }; });
+    const fetchTotalPaid = this.prisma.payrollPayment
+      .aggregate({
+        where: { driverId: driver.id, status: "PAID" },
+        _sum: { amount: true },
+      })
+      .catch((e) => {
+        this.logger.warn(`[HUB_WARN] Error totalPaid aggregate: ${e.message}`);
+        return { _sum: { amount: 0 } };
+      });
 
     this.logger.debug(`[HUB_BUILD] Ejecutando queries paralelas...`);
 
-    const [
-      adsPlayed,
-      gpsPoints,
-      activeAdsCount,
-      lastPayment,
-      totalPaidSum,
-    ] = await Promise.all([
-      fetchAdsPlayed,
-      fetchGpsPoints,
-      fetchActiveAds,
-      fetchLastPayment,
-      fetchTotalPaid,
-    ]);
+    const [adsPlayed, gpsPoints, activeAdsCount, lastPayment, totalPaidSum] =
+      await Promise.all([
+        fetchAdsPlayed,
+        fetchGpsPoints,
+        fetchActiveAds,
+        fetchLastPayment,
+        fetchTotalPaid,
+      ]);
 
-    this.logger.debug(`[HUB_BUILD] Datos base obtenidos. adsPlayed=${adsPlayed}, activeAds=${activeAdsCount}`);
+    this.logger.debug(
+      `[HUB_BUILD] Datos base obtenidos. adsPlayed=${adsPlayed}, activeAds=${activeAdsCount}`,
+    );
 
     // El bono GPS ha sido eliminado en v10.1.0
 
-    const projectedEarnings = driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-      ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
-      : 0;
+    const projectedEarnings =
+      driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+        ? (activeAdsCount || 0) * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+        : 0;
 
     // Referidos (Conteo defensivo con catch)
-    const referralsCount = await this.prisma.driver.count({
-      where: { referredBy: driver.id, status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE, subscriptionPaid: true },
-    }).catch(() => 0);
+    const referralsCount = await this.prisma.driver
+      .count({
+        where: {
+          referredBy: driver.id,
+          status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE,
+          subscriptionPaid: true,
+        },
+      })
+      .catch(() => 0);
 
-    const referralEarnings = referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
-    const advertiserReferralEarnings = (driver.referredAdvertisers?.length || 0) * BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
+    const referralEarnings =
+      referralsCount * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
+    const advertiserReferralEarnings =
+      (driver.referredAdvertisers?.length || 0) *
+      BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
     const totalPaid = (totalPaidSum as any)?._sum?.amount || 0;
 
@@ -652,17 +808,28 @@ export class DriversService {
     let penaltyAmount = 0;
 
     try {
-      const penaltyResult = await this.payrollAudit.applyPenaltyLogic(driver.id, projectedEarnings);
+      const penaltyResult = await this.payrollAudit.applyPenaltyLogic(
+        driver.id,
+        projectedEarnings,
+      );
       finalProjected = penaltyResult.amount;
       penaltyApplied = penaltyResult.penaltyApplied;
       penaltyAmount = penaltyResult.penaltyAmount;
     } catch (pErr) {
-      this.logger.error(`[HUB_ERROR] Error en applyPenaltyLogic: ${pErr.message}`);
+      this.logger.error(
+        `[HUB_ERROR] Error en applyPenaltyLogic: ${pErr.message}`,
+      );
     }
 
-    const balance = finalProjected + referralEarnings + advertiserReferralEarnings - totalPaid;
+    const balance =
+      finalProjected +
+      referralEarnings +
+      advertiserReferralEarnings -
+      totalPaid;
 
-    this.logger.log(`✅ [HUB_SUCCESS] Hub construido para ${driver.fullName} (${driver.id}). Balance: ${balance}`);
+    this.logger.log(
+      `✅ [HUB_SUCCESS] Hub construido para ${driver.fullName} (${driver.id}). Balance: ${balance}`,
+    );
 
     return {
       driverId: driver.id,
@@ -671,7 +838,7 @@ export class DriversService {
       consecutiveMonthsUnderGoal: driver.consecutiveMonthsUnderGoal,
       phone: driver.phone,
       cedula: driver.cedula,
-      taxiNumber: driver.taxiNumber || driver.taxiPlate || 'S/N',
+      taxiNumber: driver.taxiNumber || driver.taxiPlate || "S/N",
       adsPlayed,
       projectedEarnings: finalProjected,
       baseEarnings: projectedEarnings,
@@ -687,16 +854,16 @@ export class DriversService {
       balance,
       lastPayment: lastPayment
         ? {
-          amount: lastPayment.amount,
-          status: lastPayment.status,
-          date: lastPayment.paidAt || lastPayment.createdAt,
-        }
+            amount: lastPayment.amount,
+            status: lastPayment.status,
+            date: lastPayment.paidAt || lastPayment.createdAt,
+          }
         : null,
       subscriptionStatus: driver.status,
       subscriptionPaid: driver.subscriptionPaid,
       contractAccepted: Boolean(driver.contractAccepted),
       agreementVersion: driver.agreementVersion || null,
-      onboardingStatus: driver.onboardingStatus || 'UNKNOWN',
+      onboardingStatus: driver.onboardingStatus || "UNKNOWN",
       bankAccountConfigured: this.hasBankAccountConfigured(driver.bankAccount),
       deviceId,
     };
@@ -713,7 +880,9 @@ export class DriversService {
         data: { driverId: null },
       });
     } catch (err) {
-      this.logger.warn(`[DRIVER_REMOVE] No se pudieron desvincular dispositivos del conductor ${id}: ${err.message}`);
+      this.logger.warn(
+        `[DRIVER_REMOVE] No se pudieron desvincular dispositivos del conductor ${id}: ${err.message}`,
+      );
     }
 
     return this.prisma.driver.delete({ where: { id } });
@@ -725,31 +894,46 @@ export class DriversService {
    * NOTA: Este método solo debe llamarse desde el controlador con doble validación de seguridad.
    */
   async purgeAll() {
-    const nodeEnv = this.configService.get<string>('NODE_ENV');
-    if (nodeEnv === 'production') {
-      this.logger.error('🚨 [DRIVER_PURGE][BLOCKED] Intento de purgeAll bloqueado en entorno production.');
-      throw new ForbiddenException('PURGE_NOT_ALLOWED_IN_PRODUCTION');
+    const nodeEnv = this.configService.get<string>("NODE_ENV");
+    if (nodeEnv === "production") {
+      this.logger.error(
+        "🚨 [DRIVER_PURGE][BLOCKED] Intento de purgeAll bloqueado en entorno production.",
+      );
+      throw new ForbiddenException("PURGE_NOT_ALLOWED_IN_PRODUCTION");
     }
 
-    this.logger.error(`[DRIVER_PURGE][CRITICAL] purgeAll ejecutado en entorno=${nodeEnv || 'undefined'}.`);
+    this.logger.error(
+      `[DRIVER_PURGE][CRITICAL] purgeAll ejecutado en entorno=${nodeEnv || "undefined"}.`,
+    );
     const tables = [
-      'driverLocation', 'payrollPayment', 'subscription',
-      'analyticsEvent', 'deviceHeartbeat', 'playbackEvent',
-      'deviceCommand', 'campaignMetric', 'playlistItem', 'deviceCampaign',
+      "driverLocation",
+      "payrollPayment",
+      "subscription",
+      "analyticsEvent",
+      "deviceHeartbeat",
+      "playbackEvent",
+      "deviceCommand",
+      "campaignMetric",
+      "playlistItem",
+      "deviceCampaign",
     ];
 
     for (const table of tables) {
       try {
         await (this.prisma as any)[table].deleteMany();
       } catch (err) {
-        this.logger.warn(`[PURGE] Tabla ${table} falló o no existe: ${err.message}`);
+        this.logger.warn(
+          `[PURGE] Tabla ${table} falló o no existe: ${err.message}`,
+        );
       }
     }
 
     try {
       await this.prisma.device.updateMany({ data: { driverId: null } });
     } catch (err) {
-      this.logger.warn(`[PURGE] No se pudo desvincular devices: ${err.message}`);
+      this.logger.warn(
+        `[PURGE] No se pudo desvincular devices: ${err.message}`,
+      );
     }
 
     const [deletedDrivers, deletedDevices] = await Promise.all([
@@ -762,7 +946,7 @@ export class DriversService {
     );
 
     return {
-      message: 'Base de datos limpiada exitosamente',
+      message: "Base de datos limpiada exitosamente",
       deletedDrivers: deletedDrivers.count,
       deletedDevices: deletedDevices.count,
     };
@@ -779,11 +963,11 @@ export class DriversService {
           campaignId,
         },
       },
-      update: { status: 'ACTIVE' },
+      update: { status: "ACTIVE" },
       create: {
         driverId,
         campaignId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
   }
@@ -795,7 +979,7 @@ export class DriversService {
   async getDriverTransactions(driverId: string) {
     const payments = await this.prisma.payrollPayment.findMany({
       where: { driverId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 50,
       select: {
         id: true,
@@ -815,7 +999,7 @@ export class DriversService {
 
     const subscriptions = await this.prisma.subscription.findMany({
       where: { driverId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 20,
       select: {
         id: true,
@@ -829,9 +1013,9 @@ export class DriversService {
     });
 
     const transactions = [
-      ...payments.map(p => ({
+      ...payments.map((p) => ({
         id: p.id,
-        type: 'EARNING',
+        type: "EARNING",
         amount: p.amount,
         date: (p.paidAt || p.createdAt).toISOString(),
         desc: `Ganancias ${p.month}/${p.year} — ${p.activeAds} campañas, ${p.gpsPoints} puntos GPS`,
@@ -842,9 +1026,12 @@ export class DriversService {
         activeAds: p.activeAds,
         gpsPoints: p.gpsPoints,
       })),
-      ...subscriptions.map(s => ({
+      ...subscriptions.map((s) => ({
         id: s.id,
-        type: s.status === 'ACTIVE' && s.paidAt ? 'SUBSCRIPTION' : 'SUBSCRIPTION_PENDING',
+        type:
+          s.status === "ACTIVE" && s.paidAt
+            ? "SUBSCRIPTION"
+            : "SUBSCRIPTION_PENDING",
         amount: -s.amount,
         date: (s.paidAt || s.createdAt).toISOString(),
         desc: `${s.plan} — ${s.status}`,
@@ -853,6 +1040,8 @@ export class DriversService {
       })),
     ];
 
-    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return transactions.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }
 }

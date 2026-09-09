@@ -1,52 +1,58 @@
-import { Module, MiddlewareConsumer, NestModule, OnModuleInit, Logger } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
-import * as zod from 'zod';
-import { DeviceModule } from './modules/device/device.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { CampaignModule } from './modules/campaign/campaign.module';
-import { FleetModule } from './modules/fleet/fleet.module';
-import { MediaModule } from './modules/media/media.module';
-import { AssetsModule } from './modules/assets/assets.module';
-import { DriversModule } from './modules/drivers/drivers.module';
-import { AdvertisersModule } from './modules/advertisers/advertisers.module';
-import { FinanceModule } from './modules/finance/finance.module';
-import { SyncModule } from './modules/sync/sync.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { PrismaModule } from './modules/prisma/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { SupabaseModule } from './modules/supabase/supabase.module';
-import { SheetsModule } from './modules/sheets/sheets.module';
-import { AuthService } from './modules/auth/auth.service';
-import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
-import { LoggerMiddleware } from './middleware/logger.middleware';
-import { SimulationModule } from './modules/simulation/simulation.module';
-import { AntigravityModule } from './antigravity/antigravity.module';
-import { PortalRequestsModule } from './modules/portal-requests/portal-requests.module';
-import { BiModule } from './modules/bi/bi.module';
-import { MonitoringModule } from './modules/monitoring/monitoring.module';
-import { RolesGuard } from './modules/auth/guards/roles.guard';
-import { AppController } from './app.controller';
-import { WalletModule } from './modules/wallet/wallet.module';
-import { TelemetryModule } from './modules/telemetry/telemetry.module';
-import { ReferralModule } from './modules/referral/referral.module';
-import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+import {
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+  OnModuleInit,
+  Logger,
+} from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { SentryInterceptor } from "./common/interceptors/sentry.interceptor";
+import * as zod from "zod";
+import { DeviceModule } from "./modules/device/device.module";
+import { AnalyticsModule } from "./modules/analytics/analytics.module";
+import { CampaignModule } from "./modules/campaign/campaign.module";
+import { FleetModule } from "./modules/fleet/fleet.module";
+import { MediaModule } from "./modules/media/media.module";
+import { AssetsModule } from "./modules/assets/assets.module";
+import { DriversModule } from "./modules/drivers/drivers.module";
+import { AdvertisersModule } from "./modules/advertisers/advertisers.module";
+import { FinanceModule } from "./modules/finance/finance.module";
+import { SyncModule } from "./modules/sync/sync.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { PrismaModule } from "./modules/prisma/prisma.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { SupabaseModule } from "./modules/supabase/supabase.module";
+import { SheetsModule } from "./modules/sheets/sheets.module";
+import { AuthService } from "./modules/auth/auth.service";
+import { SupabaseAuthGuard } from "./modules/auth/guards/supabase-auth.guard";
+import { LoggerMiddleware } from "./middleware/logger.middleware";
+import { SimulationModule } from "./modules/simulation/simulation.module";
+import { AntigravityModule } from "./antigravity/antigravity.module";
+import { PortalRequestsModule } from "./modules/portal-requests/portal-requests.module";
+import { BiModule } from "./modules/bi/bi.module";
+import { MonitoringModule } from "./modules/monitoring/monitoring.module";
+import { RolesGuard } from "./modules/auth/guards/roles.guard";
+import { AppController } from "./app.controller";
+import { WalletModule } from "./modules/wallet/wallet.module";
+import { TelemetryModule } from "./modules/telemetry/telemetry.module";
+import { ReferralModule } from "./modules/referral/referral.module";
+import { SystemSettingsModule } from "./modules/system-settings/system-settings.module";
 
-import { OnboardingModule } from './modules/onboarding/onboarding.module';
-import { KYCModule } from './modules/kyc/kyc.module';
-import { SocialAgentModule } from './modules/social-agent/social-agent.module';
-import { HealthController } from './health/health.controller';
+import { OnboardingModule } from "./modules/onboarding/onboarding.module";
+import { KYCModule } from "./modules/kyc/kyc.module";
+import { SocialAgentModule } from "./modules/social-agent/social-agent.module";
+import { HealthController } from "./health/health.controller";
 
 @Module({
   imports: [
     // Configuration with Validation (STRICT MODE para Easypanel)
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'production' ? undefined : '.env',
-      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      envFilePath: process.env.NODE_ENV === "production" ? undefined : ".env",
+      ignoreEnvFile: process.env.NODE_ENV === "production",
       validate: (config) => {
         const schema = zod.object({
           DATABASE_URL: zod.string().url().optional(),
@@ -57,17 +63,22 @@ import { HealthController } from './health/health.controller';
           SUPABASE_ANON_KEY: zod.string().optional(),
           SUPABASE_PUBLISHABLE_KEY: zod.string().optional(),
           SUPABASE_JWT_SECRET: zod.string().optional(),
-          PORT: zod.string().regex(/^\d+$/).default('3000'),
-          NODE_ENV: zod.string().default('production'),
-          CORS_ORIGIN: zod.string().default('*'),
+          PORT: zod.string().regex(/^\d+$/).default("3000"),
+          NODE_ENV: zod.string().default("production"),
+          CORS_ORIGIN: zod.string().default("*"),
           UMAMI_API_TOKEN: zod.string().optional(),
           CDN_URL_PREFIX: zod.string().url().optional(),
         });
 
         const result = schema.safeParse(config);
         if (!result.success) {
-          console.error('🔥 FATAL ERROR: Configuración de entorno inválida en startup', result.error.format());
-          throw new Error('Configuración de entorno inválida. Revisar variables en Easypanel.');
+          console.error(
+            "🔥 FATAL ERROR: Configuración de entorno inválida en startup",
+            result.error.format(),
+          );
+          throw new Error(
+            "Configuración de entorno inválida. Revisar variables en Easypanel.",
+          );
         }
         const data = result.data || config;
 
@@ -75,8 +86,14 @@ import { HealthController } from './health/health.controller';
         // invisible que perjudique la firma de tokens (SHELTER de seguridad).
         // La config histórica de EasyPanel solo define SUPABASE_JWT_SECRET;
         // se hereda a JWT_SECRET para no invalidar los tokens vigentes.
-        if (!data.JWT_SECRET && !data.SUPABASE_JWT_SECRET && process.env.NODE_ENV !== 'test') {
-          throw new Error('JWT_SECRET/SUPABASE_JWT_SECRET no configurados. Revisar EasyPanel Secrets.');
+        if (
+          !data.JWT_SECRET &&
+          !data.SUPABASE_JWT_SECRET &&
+          process.env.NODE_ENV !== "test"
+        ) {
+          throw new Error(
+            "JWT_SECRET/SUPABASE_JWT_SECRET no configurados. Revisar EasyPanel Secrets.",
+          );
         }
 
         // REGLA SRE: Sincronización de secretos para evitar 401 en EasyPanel
@@ -86,7 +103,7 @@ import { HealthController } from './health/health.controller';
         if (!data.SUPABASE_JWT_SECRET && data.JWT_SECRET) {
           data.SUPABASE_JWT_SECRET = data.JWT_SECRET;
         }
-        
+
         return data;
       },
     }),
@@ -154,10 +171,10 @@ export class AppModule implements NestModule, OnModuleInit {
 
   configure(consumer: MiddlewareConsumer) {
     // Apply LoggerMiddleware to all routes under /api/
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer.apply(LoggerMiddleware).forRoutes("*");
   }
 
   async onModuleInit() {
-    this.logger.log('🚀 TAD Backend Iniciado.');
+    this.logger.log("🚀 TAD Backend Iniciado.");
   }
 }

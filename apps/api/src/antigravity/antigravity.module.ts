@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { AntigravityService } from './antigravity.service';
+import { Module } from "@nestjs/common";
+import { AntigravityService } from "./antigravity.service";
 
 @Module({
   providers: [AntigravityService],

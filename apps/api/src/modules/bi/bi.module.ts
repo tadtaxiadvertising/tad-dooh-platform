@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
-import { BiController } from './bi.controller';
-import { BiService } from './bi.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { AuthModule } from '../auth/auth.module';
-import { BiScheduler } from './bi.scheduler';
+import { Module } from "@nestjs/common";
+import { BiController } from "./bi.controller";
+import { BiService } from "./bi.service";
+import { PrismaModule } from "../prisma/prisma.module";
+import { AuthModule } from "../auth/auth.module";
+import { BiScheduler } from "./bi.scheduler";
 
 @Module({
   imports: [PrismaModule, AuthModule],

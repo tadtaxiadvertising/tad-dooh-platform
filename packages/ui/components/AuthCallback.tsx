@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { ShieldCheck, Loader2, AlertTriangle } from 'lucide-react';
-import { PortalConfig, getPortalConfig, supabase } from '@tad/services';
+import { PortalConfig, getPortalConfig, supabase, writeSsrSessionCookie, clearSsrSessionCookie } from '@tad/services';
 
 interface AuthCallbackProps {
   config?: PortalConfig;
@@ -181,6 +181,35 @@ async function exchangeWithBackend(
       localStorage.setItem(`${config.tokenKey}_refresh`, refresh);
     }
 
+    // Re-point supabase-js at the REAL session (the backend reissued a
+    // role-bearing token). This overwrites the raw GUEST OAuth session that
+    // detectSessionInUrl persisted into localStorage, so AuthProvider +
+    // api.ts get a session whose app_metadata.role is correct. Without this,
+    // the next page load resolves the stale hash session → GUEST → logout.
+    if (refresh) {
+      try {
+        const { error: setError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: refresh,
+        });
+        if (setError) {
+          console.warn('[AuthCallback] setSession failed:', setError.message);
+        }
+      } catch (err) {
+        console.warn('[AuthCallback] setSession exception:', err);
+      }
+    }
+
+    // Write the canonical @supabase/ssr cookie (sb-<ref>-auth-token) so SSR
+    // middleware can validate/refresh the session server-side. The value is
+    // the base64url-encoded GoTrue session document.
+    try {
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      writeSsrSessionCookie(freshSession);
+    } catch {
+      /* keep legacy cookie as fallback */
+    }
+
     // Track success for analytics
     if (typeof window !== 'undefined' && (window as any).umami) {
       (window as any).umami.track('auth_login_attempt', {
@@ -198,14 +227,15 @@ async function exchangeWithBackend(
     console.error('[AuthCallback] OAuth exchange failed:', message);
     // Clean any partial Supabase session IMMEDIATELY before redirect
     try { 
-      await supabase.auth.signOut({ scope: 'global' }); 
+      await supabase.auth.signOut({ scope: 'local' }); 
     } catch { /* noop */ }
     // Clear all portal localStorage
     ['tad_admin_token', 'tad_admin_user', 'tad_advertiser_token', 'tad_advertiser_user', 'tad_driver_token', 'tad_driver_user'].forEach(key => {
       try { localStorage.removeItem(key); } catch {}
     });
-    // Clear sb-access-token cookie
+    // Clear sb-access-token and canonical SSR cookies
     try { document.cookie = 'sb-access-token=; path=/; max-age=0; SameSite=Lax'; } catch {}
+    try { clearSsrSessionCookie(); } catch {}
     router.replace(`${config.loginPath}?error=${encodeURIComponent(message)}`);
   }
 }

@@ -62,6 +62,27 @@ test.describe('Admin Dashboard — Autenticación', () => {
     expect(redirectedToLogin, 'La sesión no debe perderse al refrescar').toBe(false);
   });
 
+  test('Login escribe cookie canónica @supabase/ssr (sb-<ref>-auth-token)', async ({ page }) => {
+    // REGRESIÓN: tras autenticarse, el middleware SSR debe poder leer una
+    // sesión server-side (getUser). Sin esta cookie, createServerClient no
+    // puede validar/refrescar la sesión y el flujo rompe tras F5
+    // (el "entra 1 segundo y lo expulsan" reportado).
+    await loginAsAdmin(page);
+    const cookies = await page.context().cookies();
+    const ssrCookie = cookies.find(c => /^sb-.+-auth-token$/.test(c.name));
+    expect(ssrCookie, 'Debe existir la cookie sb-<ref>-auth-token').toBeTruthy();
+    expect(ssrCookie!.value.length, 'La cookie canónica no puede estar vacía').toBeGreaterThan(10);
+
+    // El token dentro de la cookie debe traer el rol ADMIN (claims role-bearing)
+    const raw = Buffer.from(ssrCookie!.value.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
+    const sessionDoc = JSON.parse(raw);
+    const claims = JSON.parse(
+      Buffer.from(sessionDoc.access_token.split('.')[1], 'base64url').toString('utf-8'),
+    );
+    const role = claims?.app_metadata?.role || claims?.role || 'GUEST';
+    expect(role, 'El access_token de la cookie debe ser role-bearing (ADMIN)').toBe('ADMIN');
+  });
+
   test('Rutas protegidas redirigen a /login sin sesión', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });

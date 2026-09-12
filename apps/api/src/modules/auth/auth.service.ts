@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  NotFoundException,
 } from "@nestjs/common";
 import { SupabaseService } from "../supabase/supabase.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -135,9 +136,34 @@ export class AuthService {
         `✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || "N/A"}`,
       );
 
+            // Reissue tokens so the returned access_token carries the freshly
+            // injected app_metadata.role. The session from signInWithPassword
+            // was signed BEFORE the injection and its claims are immutable, so
+            // returning it would give SSR/middleware decoders a GUEST role →
+            // instant logout. Refresh against GoTrue and use the new tokens.
+            let accessToken = data.session.access_token;
+            let refreshToken = data.session.refresh_token;
+            if (anonClient) {
+              try {
+                const { data: refreshed, error: refreshError } =
+                  await anonClient.auth.refreshSession({
+                    refresh_token: data.session.refresh_token,
+                  });
+                if (!refreshError && refreshed.session?.access_token) {
+                  accessToken = refreshed.session.access_token;
+                  refreshToken = refreshed.session.refresh_token || refreshToken;
+                  this.logger.debug(`✅ Reissued role-bearing access_token for ${email}`);
+                } else {
+                  this.logger.warn(`⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`);
+                }
+              } catch (e: any) {
+                this.logger.warn(`⚠️ Exception reissuing tokens for ${email}: ${e.message}`);
+              }
+            }
+
       return {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
         user: {
           id: userId,
           email: email,
@@ -353,23 +379,46 @@ export class AuthService {
       payload?.app_metadata?.role !== resolvedRole ||
       payload?.app_metadata?.entityId !== entityId
     ) {
-      this.supabaseService
+      const { error: updateError } = await this.supabaseService
         .getClient()
         .auth.admin.updateUserById(userId, {
           app_metadata: { role: resolvedRole, entityId },
-        })
-        .then(({ error: updateError }) => {
-          if (updateError) {
-            this.logger.warn(
-              `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
-            );
-          }
-        })
-        .catch((e) => {
-          this.logger.warn(
-            `⚠️ Exception refreshing app_metadata for ${email}: ${e.message}`,
-          );
         });
+      if (updateError) {
+        this.logger.warn(
+          `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
+        );
+      } else {
+        this.logger.debug(`💉 app_metadata injected for ${email}: role=${resolvedRole}`);
+      }
+    }
+
+    // Reissue tokens so the returned access_token carries app_metadata.role.
+    // The OAuth token was signed BEFORE the metadata injection and its claims
+    // are immutable — returning it would give SSR/middleware decoders a GUEST
+    // role and instantly logout the user. Refresh against GoTrue (anon scope)
+    // and return the freshly minted, role-bearing token pair instead.
+    let accessToken = dto.access_token;
+    let refreshToken = dto.refresh_token || '';
+    const anonClient = this.supabaseService.getAnonClient();
+    if (anonClient && dto.refresh_token) {
+      try {
+        const { data: refreshed, error: refreshError } =
+          await anonClient.auth.refreshSession({
+            refresh_token: dto.refresh_token,
+          });
+        if (!refreshError && refreshed.session?.access_token) {
+          accessToken = refreshed.session.access_token;
+          refreshToken = refreshed.session.refresh_token || refreshToken;
+          this.logger.debug(`✅ Reissued role-bearing access_token for ${email}`);
+        } else {
+          this.logger.warn(
+            `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
+          );
+        }
+      } catch (e: any) {
+        this.logger.warn(`⚠️ Exception reissuing tokens for ${email}: ${e.message}`);
+      }
     }
 
     this.logger.log(
@@ -381,8 +430,8 @@ export class AuthService {
       profile?.status === "PENDING_ONBOARDING";
 
     return {
-      access_token: dto.access_token,
-      refresh_token: dto.refresh_token || "",
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: userId,
         email,
@@ -392,6 +441,143 @@ export class AuthService {
       },
       needsOnboarding,
     };
+  }
+
+  /**
+   * Bootstrap: sync users from Prisma DB into Supabase Auth.
+   * This fixes the root cause: users existed in Prisma but NOT in Supabase Auth,
+   * causing signInWithPassword() to always fail with "invalid_credentials".
+   *
+   * Protected by BOOTSTRAP_SECRET env var to prevent abuse.
+   */
+  async syncUsersToSupabaseAuth(bootstrapSecret: string): Promise<{ synced: number; errors: string[] }> {
+    const expectedSecret = process.env.BOOTSTRAP_SECRET;
+    if (!expectedSecret || bootstrapSecret !== expectedSecret) {
+      throw new ForbiddenException('Invalid bootstrap secret');
+    }
+
+    const serviceClient = this.supabaseService.getClient();
+    if (!serviceClient) {
+      throw new Error('Supabase service client not available');
+    }
+
+    const DEFAULT_PASSWORD = 'TadAdmin2026!';
+    const errors: string[] = [];
+    let synced = 0;
+
+    // 1. Get all users from Prisma
+    const [admins, advertisers, drivers] = await Promise.all([
+      this.prisma.user.findMany({ select: { id: true, email: true, role: true } }),
+      this.prisma.advertiser.findMany({ select: { id: true, email: true } }),
+      this.prisma.driver.findMany({ select: { id: true, phone: true } }),
+    ]);
+
+    this.logger.log(`🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`);
+
+    // Helper to upsert a user in Supabase Auth
+    const upsertUser = async (email: string, password: string, appMeta: Record<string, any>) => {
+      try {
+        // Try signup (idempotent: if user exists, Supabase returns 400 with "User already registered")
+        const { data, error } = await serviceClient.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          app_metadata: appMeta,
+        });
+
+        if (error) {
+          if (error.message?.includes('already registered') || error.status === 400) {
+            // User exists — just update app_metadata
+            const { data: users } = await serviceClient.auth.admin.listUsers();
+            const existing = users?.users?.find((u: any) => u.email === email);
+            if (existing) {
+              await serviceClient.auth.admin.updateUserById(existing.id, {
+                app_metadata: appMeta,
+                password,
+              });
+              this.logger.debug(`✅ Updated existing auth user: ${email}`);
+              synced++;
+            }
+          } else {
+            errors.push(`${email}: ${error.message}`);
+            this.logger.warn(`⚠️ Failed to sync ${email}: ${error.message}`);
+          }
+        } else {
+          this.logger.debug(`✅ Created auth user: ${email}`);
+          synced++;
+        }
+      } catch (e: any) {
+        errors.push(`${email}: ${e.message}`);
+        this.logger.warn(`⚠️ Exception syncing ${email}: ${e.message}`);
+      }
+    };
+
+    // 2. Sync admins
+    for (const admin of admins) {
+      if (!admin.email) continue;
+      await upsertUser(admin.email, DEFAULT_PASSWORD, {
+        role: admin.role || 'ADMIN',
+        entityId: admin.id,
+      });
+    }
+
+    // 3. Sync advertisers
+    for (const adv of advertisers) {
+      if (!adv.email) continue;
+      await upsertUser(adv.email, DEFAULT_PASSWORD, {
+        role: 'ADVERTISER',
+        entityId: adv.id,
+      });
+    }
+
+    // 4. Sync drivers (use phone@tad.driver as email proxy)
+    for (const driver of drivers) {
+      const driverEmail = `${driver.phone}@tad.driver`;
+      await upsertUser(driverEmail, DEFAULT_PASSWORD, {
+        role: 'DRIVER',
+        entityId: driver.id,
+      });
+    }
+
+    this.logger.log(`✅ Auth sync complete: ${synced} users synced, ${errors.length} errors`);
+    return { synced, errors };
+  }
+
+  /**
+   * Confirm a user by email (admin API).
+   * Used to fix users created via public signup that are stuck in unconfirmed state.
+   */
+  async confirmUserByEmail(email: string, bootstrapSecret: string): Promise<{ confirmed: boolean }> {
+    const expectedSecret = process.env.BOOTSTRAP_SECRET;
+    if (!expectedSecret || bootstrapSecret !== expectedSecret) {
+      throw new ForbiddenException('Invalid bootstrap secret');
+    }
+
+    const serviceClient = this.supabaseService.getClient();
+    const { data: users, error: listError } = await serviceClient.auth.admin.listUsers();
+
+    if (listError) {
+      throw new Error(`Failed to list users: ${listError.message}`);
+    }
+
+    const user = users?.users?.find((u: any) => u.email === email);
+    if (!user) {
+      throw new NotFoundException(`User ${email} not found in Supabase Auth`);
+    }
+
+    // Confirm the user and set password
+    const { error: updateError } = await serviceClient.auth.admin.updateUserById(user.id, {
+      email_confirm: true,
+      password: 'TadAdmin2026!',
+      app_metadata: { role: 'ADMIN', entityId: user.id },
+    });
+
+    if (updateError) {
+      throw new Error(`Failed to confirm user: ${updateError.message}`);
+    }
+
+    this.logger.log(`✅ Confirmed user: ${email} (id=${user.id})`);
+    return { confirmed: true };
   }
 
   async generatePairingToken(driverId: string) {

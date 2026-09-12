@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAD — Utilitarian Dense Wordmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0b;
+      --fg: #fafafa;
+      --fg-muted: #71717a;
+      --accent: #22d3ee;
+      --accent-dim: #06b6d4;
+      --card: #18181b;
+      --border: #27272a;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #fafafa;
+        --fg: #09090b;
+        --fg-muted: #52525b;
+        --accent: #06b6d4;
+        --accent-dim: #0891b2;
+        --card: #ffffff;
+        --border: #e4e4e7;
+      }
+    }
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+    .wordmark {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: -0.03em;
+      color: var(--fg);
+      line-height: 1;
+      position: relative;
+    }
+    .wordmark::before {
+      content: 'TAD';
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--accent);
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      opacity: 0.15;
+    }
+    .wordmark-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: clamp(3.5rem, 13vw, 7rem);
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      line-height: 1;
+    }
+    .wordmark-compressed {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: -0.08em;
+      color: var(--fg);
+      line-height: 1;
+    }
+    .wordmark-accent {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: -0.03em;
+      color: var(--fg);
+      line-height: 1;
+    }
+    .wordmark-accent span {
+      color: var(--accent);
+    }
+    .tagline {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 400;
+      font-size: clamp(0.75rem, 1.5vw, 1rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+    }
+    .variants {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      opacity: 0.4;
+      width: 100%;
+      max-width: 800px;
+    }
+    .variants:hover { opacity: 1; }
+    .variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .variant:hover { 
+      transform: translateY(-4px); 
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.1);
+    }
+    .variant .mini-wordmark {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--fg);
+    }
+    .variant.v1 .mini-wordmark { font-weight: 700; }
+    .variant.v2 .mini-wordmark { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-weight: 500; 
+      font-size: 1.25rem; 
+    }
+    .variant.v3 .mini-wordmark { font-weight: 600; letter-spacing: -0.08em; }
+    .variant.v4 .mini-wordmark { font-weight: 700; }
+    .variant.v4 .mini-wordmark span { color: var(--accent); }
+    .variant label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+    }
+    .usage {
+      margin-top: 3rem;
+      text-align: center;
+      max-width: 600px;
+      opacity: 0.7;
+    }
+    .usage h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--fg);
+      letter-spacing: -0.01em;
+    }
+    .usage p {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      color: var(--fg-muted);
+      line-height: 1.7;
+    }
+    .palette {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="wordmark" id="mainWordmark">TAD</div>
+    <p class="tagline">Personal Brand</p>
+    
+    <div class="variants" role="tablist" aria-label="Logo variants">
+      <div class="variant v1" role="tab" tabindex="0" aria-selected="true" onclick="setVariant('v1')" onkeydown="if(event.key==='Enter')setVariant('v1')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Bold Grotesk</label>
+      </div>
+      <div class="variant v2" role="tab" tabindex="0" aria-selected="false" onclick="setVariant('v2')" onkeydown="if(event.key==='Enter')setVariant('v2')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Mono</label>
+      </div>
+      <div class="variant v3" role="tab" tabindex="0" aria-selected="false" onclick="setVariant('v3')" onkeydown="if(event.key==='Enter')setVariant('v3')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Compressed</label>
+      </div>
+      <div class="variant v4" role="tab" tabindex="0" aria-selected="false" onclick="setVariant('v4')" onkeydown="if(event.key==='Enter')setVariant('v4')">
+        <div class="mini-wordmark">TA<span>D</span></div>
+        <label>Accent Dot</label>
+      </div>
+    </div>
+    
+    <div class="usage">
+      <h3>Design Stance: Utilitarian Dense</h3>
+      <p>Technical, precise, developer-native. Space Grotesk + JetBrains Mono — fonts built for code and UI density. Cyan accent signals technical competence. Four weight/width variants cover every use case from favicon to hero.</p>
+      <div class="palette">
+        <div class="swatch" style="background: var(--fg);" title="Foreground"></div>
+        <div class="swatch" style="background: var(--fg-muted);" title="Muted"></div>
+        <div class="swatch" style="background: var(--accent);" title="Cyan Accent"></div>
+        <div class="swatch" style="background: var(--card);" title="Card/Surface"></div>
+        <div class="swatch" style="background: var(--bg);" title="Background"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function setVariant(v) {
+      const main = document.getElementById('mainWordmark');
+      const tabs = document.querySelectorAll('.variant');
+      tabs.forEach(t => t.setAttribute('aria-selected', 'false'));
+      document.querySelector('.variant.' + v).setAttribute('aria-selected', 'true');
+      if (v === 'v1') {
+        main.className = 'wordmark';
+        main.textContent = 'TAD';
+      } else if (v === 'v2') {
+        main.className = 'wordmark wordmark-mono';
+        main.textContent = 'TAD';
+      } else if (v === 'v3') {
+        main.className = 'wordmark wordmark-compressed';
+        main.textContent = 'TAD';
+      } else {
+        main.className = 'wordmark wordmark-accent';
+        main.innerHTML = 'TA<span>D</span>';
+      }
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '4') setVariant('v' + e.key);
+    });
+  </script>
+</body>
+</html>

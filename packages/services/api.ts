@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { supabase } from './supabase';
+import { writeSsrSessionCookie } from './session-cookies';
 import {
   getValidSession,
   getLocalStorageToken,
@@ -167,6 +168,11 @@ export const login = (email: string, password: string) =>
     // Synchronize Supabase Client state (Critical for auto-refresh)
     if (access_token && refresh_token) {
       await supabase.auth.setSession({ access_token, refresh_token });
+      // Mirror the role-bearing session into the canonical @supabase/ssr cookie
+      try {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (s) writeSsrSessionCookie(s);
+      } catch { /* legacy cookie still covers SSR */ }
     }
 
     localStorage.setItem('tad_admin_token', access_token);

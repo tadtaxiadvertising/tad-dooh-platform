@@ -8,6 +8,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { SupabaseService } from "../supabase/supabase.service";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../network/kill_switch_state.dart';
 import '../network/kill_switch_interceptor.dart';
 import '../sync/sync_engine.dart';
@@ -12,6 +13,13 @@ import '../network/api_constants.dart';
 /// ─── KillSwitch state ────────────────────────────────────────────────────────
 
 final killSwitchProvider = ChangeNotifierProvider((ref) => KillSwitchState());
+
+/// ─── App version (for X-Client-Version header) ────────────────────────────────
+
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  return '${packageInfo.version}+${packageInfo.buildNumber}';
+});
 
 /// ─── Supabase client ─────────────────────────────────────────────────────────
 
@@ -28,6 +36,19 @@ final dioProvider = Provider((ref) {
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
     headers: {'Content-Type': 'application/json'},
+  ));
+
+  // Add X-Client-Version header for token rotation detection
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      try {
+        final version = await ref.read(appVersionProvider.future);
+        options.headers['X-Client-Version'] = version;
+      } catch (_) {
+        // If version fetch fails, continue without header
+      }
+      return handler.next(options);
+    },
   ));
 
   dio.interceptors.add(KillSwitchInterceptor(
@@ -63,33 +84,25 @@ class AuthHelpers {
 
   static const _kPrefToken = 'tad_driver_token';
   static const _kPrefPhone = 'tad_driver_phone';
-  static const _kPrefPass = 'tad_driver_pass';
+  // _kPrefPass REMOVED - password not cached anymore (security + stale state prevention)
 
   Future<void> clearAuth() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kPrefToken);
     await prefs.remove(_kPrefPhone);
-    await prefs.remove(_kPrefPass);
   }
 
   Future<bool> silentReLogin() async {
     final prefs = await SharedPreferences.getInstance();
     final phone = prefs.getString(_kPrefPhone);
-    final password = prefs.getString(_kPrefPass);
-    if (phone == null || password == null) return false;
+    // No password cached - silent re-login not possible without user input
+    // This will return false and trigger onUnauthorized -> login screen
+    if (phone == null) return false;
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.fetch(RequestOptions(
-        path: ApiConstants.loginPath,
-        method: 'POST',
-        data: {'phone': phone, 'password': password},
-      ));
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final data = res.data as Map<String, dynamic>;
-        await prefs.setString(_kPrefToken, data['access_token']?.toString() ?? '');
-        return true;
-      }
+      // Can't re-login without password, return false to force manual login
+      return false;
     } catch (_) {}
     return false;
   }

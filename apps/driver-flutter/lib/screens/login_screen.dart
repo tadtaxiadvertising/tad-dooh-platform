@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tad_theme.dart';
@@ -79,12 +80,19 @@ class ApiException implements Exception {
 /// 200 → LoginResult (access_token + driver hub data)
 /// 401 → "Credenciales inválidas"
 /// 402 → "Suscripción vencida" (KillSwitch — backend bloquea si no pagó)
-/// 403 → "Cuenta suspendada"
+/// 403 → "Cuenta suspendida"
 /// 403 AUTH_CONFIG_MISSING → "Error de configuración del servidor"
 /// 5xx → retry up to 2 times with backoff
 Future<LoginResult> apiLogin(String phone, String password) async {
   const maxRetries = 2;
   String? lastError;
+
+  // Get app version for X-Client-Version header
+  String? clientVersion;
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    clientVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+  } catch (_) {}
 
   for (var attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -93,6 +101,9 @@ Future<LoginResult> apiLogin(String phone, String password) async {
 
       final req = await client.postUrl(Uri.parse('$kApiBase/drivers/login'));
       req.headers.contentType = ContentType.json;
+      if (clientVersion != null) {
+        req.headers.set('X-Client-Version', clientVersion);
+      }
       req.write(jsonEncode({'phone': phone, 'password': password}));
 
       final res = await req.close();
@@ -146,10 +157,43 @@ Future<LoginResult> apiLogin(String phone, String password) async {
   throw ApiException(0, lastError ?? 'Error desconocido');
 }
 
+/// GET /drivers/me/hub — fetched fresh from backend with the freshly-issued token.
+/// Returns DriverHubData so the UI never navigates with a stale cached hub.
+Future<DriverHubData> apiFetchHub(String accessToken) async {
+  final client = HttpClient();
+  client.connectionTimeout = const Duration(seconds: 10);
+
+  // Get app version for X-Client-Version header
+  String? clientVersion;
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    clientVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+  } catch (_) {}
+
+  try {
+    final req = await client.getUrl(Uri.parse('$kApiBase/drivers/me/hub'));
+    req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
+    req.headers.set(HttpHeaders.acceptHeader, ContentType.json.mimeType);
+    if (clientVersion != null) {
+      req.headers.set('X-Client-Version', clientVersion);
+    }
+    final res = await req.close();
+    final body = await res.transform(utf8.decoder).join();
+    if (res.statusCode == 200) {
+      return DriverHubData.fromJson(jsonDecode(body) as Map<String, dynamic>);
+    }
+    throw ApiException(res.statusCode, 'No se pudo obtener los datos del conductor');
+  } on SocketException catch (_) {
+    throw ApiException(0, 'Sin conexión a internet');
+  } finally {
+    client.close();
+  }
+}
+
 // ─── Token persistence (SharedPreferences) ──────────────────────────────────
 
-/// Saves auth + cached creds after successful login.
-/// Creds se guardan para re-login silencioso en 401 (backend no tiene refresh).
+/// Saves auth + cached phone after successful login.
+/// Phone cached for silent re-login attempt on 401; password NOT cached (security + stale state prevention).
 Future<void> persistLogin(LoginResult result, {String? phone, String? password}) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(kPrefToken, result.accessToken);
@@ -158,9 +202,9 @@ Future<void> persistLogin(LoginResult result, {String? phone, String? password})
     kPrefTokenExp,
     DateTime.now().add(const Duration(days: 7)).toIso8601String(),
   );
-  // Cache creds for silent re-login on 401
+  // Cache phone ONLY for silent re-login attempt (which will fail gracefully without password)
   if (phone != null) await prefs.setString(kPrefPhone, phone);
-  if (password != null) await prefs.setString(kPrefPassword, password);
+  // Password intentionally NOT cached - prevents silent re-login with stale subscription status
 }
 
 /// Sets onboarding force flag. In Flutter native, the dashboard checks
@@ -244,69 +288,70 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await apiLogin(phone, password);
       await persistLogin(result, phone: phone, password: password);
 
-      final hub = result.hub;
-      if (!hub.contractAccepted || !hub.bankAccountConfigured) {
+      // ALWAYS fetch fresh hub from backend before navigation (avoids stale cached hub with old subscription status)
+      final freshHub = await apiFetchHub(result.accessToken);
+      if (!freshHub.contractAccepted || !freshHub.bankAccountConfigured) {
         setOnboardingForceFlag();
       }
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard', arguments: result.hub);
+        Navigator.pushReplacementNamed(context, '/dashboard', arguments: freshHub);
       }
-       // Let dashboard decide onboarding from hub.contractAccepted /
-       // hub.bankAccountConfigured (already computed by backend).
-       return;
-     } on ApiException catch (e) {
-       if (!mounted) return;
-       setState(() {
-         _loading = false;
-         _error = switch (e.statusCode) {
-           401 => 'Credenciales inválidas',
-           402 => 'Suscripción vencida — contacta a soporte',
-           403 => 'Cuenta suspendida — contacta a soporte',
-           _ => e.message.isNotEmpty ? e.message : 'Error de conexión',
-         };
-       });
-     } catch (_) {
-       if (!mounted) return;
-       setState(() {
-         _loading = false;
-         _error = 'V1 ERROR: $_';
-       });
-     }
+      // Let dashboard decide onboarding from freshHub.contractAccepted /
+      // freshHub.bankAccountConfigured (already computed by backend).
+      return;
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = switch (e.statusCode) {
+          401 => 'Credenciales inválidas',
+          402 => 'Suscripción vencida — contacta a soporte',
+          403 => 'Cuenta suspendida — contacta a soporte',
+          _ => e.message.isNotEmpty ? e.message : 'Error de conexión',
+        };
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'V1 ERROR: $_';
+      });
     }
+  }
 
-    static String _toDigitsOnly(String value) => value.replaceAll(RegExp(r'\D+'), '');
+  static String _toDigitsOnly(String value) => value.replaceAll(RegExp(r'\D+'), '');
 
-     @override
-     Widget build(BuildContext context) {
-       return Scaffold(
-         backgroundColor: TadColors.tadDark,
-         body: SafeArea(
-           child: Center(
-             child: SingleChildScrollView(
-               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-               child: Column(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 children: [
-                   // Logo
-                   const Text(
-                     'TAD Driver',
-                     style: TextStyle(
-                       color: TadColors.tadYellow,
-                       fontSize: 44,
-                       fontWeight: FontWeight.w900,
-                       letterSpacing: -1,
-                     ),
-                   ),
-                   const SizedBox(height: 8),
-                   const Text(
-                     'Inicia sesión en tu cuenta',
-                     style: TextStyle(
-                       color: TadColors.tadTextSecondary,
-                       fontSize: 15,
-                     ),
-                   ),
-                   const SizedBox(height: 36),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: TadColors.tadDark,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                const Text(
+                  'TAD Driver',
+                  style: TextStyle(
+                    color: TadColors.tadYellow,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Inicia sesión en tu cuenta',
+                  style: TextStyle(
+                    color: TadColors.tadTextSecondary,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 36),
 
                 // Card
                 stitchedCard(

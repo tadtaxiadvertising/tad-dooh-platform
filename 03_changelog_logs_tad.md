@@ -1,6 +1,16 @@
 # 📜 CHANGELOG & LOGS - TAD DOOH PLATFORM
 
-> **Última Actualización**: 2026-08-09
+> **Última Actualización**: 2026-09-09
+
+---
+
+## [DBA-POSTGIS-RLS-FIX] - 2026-09-09
+
+### 🚀 FEATURE / 🔧 FIX: Resolución Autónoma de Error RLS PostGIS (spatial_ref_sys)
+- **Cambio**: Creación de Skill agéntico maestro para auditar y corregir el error de ownership `42501` en Supabase al interactuar con tablas generadas por PostGIS.
+- **Archivos tocados**:
+  - `04_flujo_operativo_tad.md`
+- **Nota Infraestructura**: La corrección altera el `OWNER` de la tabla `spatial_ref_sys` a nivel de PostgreSQL en Supabase, permitiendo que Prisma ORM y el panel de control alternen políticas RLS sin fallos de permisos en el VPS de Easypanel.
 
 ---
 

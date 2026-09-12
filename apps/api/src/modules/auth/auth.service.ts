@@ -383,21 +383,6 @@ export class AuthService {
         .getClient()
         .auth.admin.updateUserById(userId, {
           app_metadata: { role: resolvedRole, entityId },
-<<<<<<< HEAD
-        })
-        .then(({ error: updateError }) => {
-          if (updateError) {
-            this.logger.warn(
-              `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
-            );
-          }
-        })
-        .catch((e) => {
-          this.logger.warn(
-            `⚠️ Exception refreshing app_metadata for ${email}: ${e.message}`,
-          );
-=======
->>>>>>> d82f9899 (fix(auth): sync SSO session end-to-end (Google OAuth no longer expels user))
         });
       if (updateError) {
         this.logger.warn(
@@ -445,13 +430,8 @@ export class AuthService {
       profile?.status === "PENDING_ONBOARDING";
 
     return {
-<<<<<<< HEAD
-      access_token: dto.access_token,
-      refresh_token: dto.refresh_token || "",
-=======
       access_token: accessToken,
       refresh_token: refreshToken,
->>>>>>> d82f9899 (fix(auth): sync SSO session end-to-end (Google OAuth no longer expels user))
       user: {
         id: userId,
         email,

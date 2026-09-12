@@ -67,6 +67,22 @@ export class AuthController {
   }
 
   @Public()
+  @Post("bootstrap/confirm-user")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "One-time: confirm a stuck user in Supabase Auth" })
+  async confirmUser(@Body() dto: { email: string; secret: string }) {
+    return this.authService.confirmUserByEmail(dto.email, dto.secret);
+  }
+
+  @Public()
+  @Post("bootstrap/sync-users")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "One-time: sync Prisma users into Supabase Auth" })
+  async syncUsers(@Body() dto: { secret: string }) {
+    return this.authService.syncUsersToSupabaseAuth(dto.secret);
+  }
+
+  @Public()
   @Post("driver/register")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Self-register a driver account" })

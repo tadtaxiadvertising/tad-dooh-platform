@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAD — Calm Editorial Wordmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1a2e;
+      --ink-light: #4a4a6a;
+      --paper: #fafaf9;
+      --accent: #2d5a87;
+      --accent-light: #4a7ba7;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #f0f0f5;
+        --ink-light: #b0b0c0;
+        --paper: #14141f;
+        --accent: #7ba8d4;
+        --accent-light: #9cc0e8;
+      }
+    }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .wordmark {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1;
+      position: relative;
+    }
+    .wordmark::after {
+      content: '';
+      position: absolute;
+      bottom: -0.15em;
+      left: 0.1em;
+      right: 0.1em;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.6;
+    }
+    .wordmark-alt {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .wordmark-light {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 300;
+      font-size: clamp(4rem, 15vw, 8rem);
+      letter-spacing: 0.08em;
+      color: var(--ink-light);
+      line-height: 1;
+    }
+    .tagline {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-top: 0.5rem;
+    }
+    .variants {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--ink-light);
+      opacity: 0.3;
+      width: 100%;
+      max-width: 800px;
+    }
+    .variants:hover { opacity: 1; }
+    .variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .variant:hover { transform: translateY(-4px); }
+    .variant .mini-wordmark {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2rem;
+      color: var(--ink);
+    }
+    .variant.v1 .mini-wordmark { font-weight: 500; letter-spacing: -0.02em; }
+    .variant.v2 .mini-wordmark { font-weight: 400; font-style: italic; letter-spacing: -0.02em; }
+    .variant.v3 .mini-wordmark { font-weight: 300; letter-spacing: 0.08em; color: var(--ink-light); }
+    .variant label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+    .usage {
+      margin-top: 3rem;
+      text-align: center;
+      max-width: 600px;
+      opacity: 0.7;
+    }
+    .usage h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 500;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--ink);
+    }
+    .usage p {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      color: var(--ink-light);
+      line-height: 1.7;
+    }
+    .palette {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .swatch {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      .swatch { border-color: rgba(255,255,255,0.1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="wordmark" id="mainWordmark">TAD</div>
+    <p class="tagline">Personal Brand</p>
+    
+    <div class="variants" role="tablist" aria-label="Logo variants">
+      <div class="variant v1" role="tab" tabindex="0" aria-selected="true" onclick="setVariant('v1')" onkeydown="if(event.key==='Enter')setVariant('v1')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Primary</label>
+      </div>
+      <div class="variant v2" role="tab" tabindex="0" aria-selected="false" onclick="setVariant('v2')" onkeydown="if(event.key==='Enter')setVariant('v2')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Italic</label>
+      </div>
+      <div class="variant v3" role="tab" tabindex="0" aria-selected="false" onclick="setVariant('v3')" onkeydown="if(event.key==='Enter')setVariant('v3')">
+        <div class="mini-wordmark">TAD</div>
+        <label>Light Tracked</label>
+      </div>
+    </div>
+    
+    <div class="usage">
+      <h3>Design Stance: Calm Editorial</h3>
+      <p>Elegant serif wordmark with subtle accent line. Playfair Display brings warmth and authority; DM Sans keeps it grounded. Works beautifully at large sizes for hero usage, scales down cleanly for favicons.</p>
+      <div class="palette">
+        <div class="swatch" style="background: var(--ink);" title="Primary Ink"></div>
+        <div class="swatch" style="background: var(--ink-light);" title="Muted Ink"></div>
+        <div class="swatch" style="background: var(--accent);" title="Accent Blue"></div>
+        <div class="swatch" style="background: var(--paper);" title="Paper/Background"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function setVariant(v) {
+      const main = document.getElementById('mainWordmark');
+      const tabs = document.querySelectorAll('.variant');
+      tabs.forEach(t => t.setAttribute('aria-selected', 'false'));
+      document.querySelector('.variant.' + v).setAttribute('aria-selected', 'true');
+      if (v === 'v1') {
+        main.className = 'wordmark';
+        main.textContent = 'TAD';
+      } else if (v === 'v2') {
+        main.className = 'wordmark wordmark-alt';
+        main.textContent = 'TAD';
+      } else {
+        main.className = 'wordmark wordmark-light';
+        main.textContent = 'TAD';
+      }
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '3') setVariant('v' + e.key);
+    });
+  </script>
+</body>
+</html>

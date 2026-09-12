@@ -36,5 +36,24 @@
       "url": "https://mcp.supabase.com/mcp",
       "enabled": true
     }
+  },
+  "permission": {
+    "playwright_*": "allow",
+    "browser_*": "allow",
+    "mcp_playwright_*": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "edit": "allow",
+    "bash": {
+      "*": "ask",
+      "git push*": "ask",
+      "git reset --hard*": "deny",
+      "rm *": "deny",
+      "rm -rf *": "deny",
+      "del *": "deny",
+      "rmdir *": "deny",
+      "format *": "deny",
+      "Remove-Item *": "deny"
+    }
   }
 }

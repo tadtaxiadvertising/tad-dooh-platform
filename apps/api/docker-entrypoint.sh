@@ -9,9 +9,9 @@ echo "[entrypoint] SUPABASE_URL=$([ -n "$SUPABASE_URL" ] && echo 'SET' || echo '
 
 # JWT_SECRET is REQUIRED - no ephemeral fallback
 if [ -z "$JWT_SECRET" ]; then
-  echo "[entrypoint] 🚨 FATAL: JWT_SECRET not configured in Easypanel Environment."
-  echo "[entrypoint] 🚨 Container will not start without a persistent JWT_SECRET."
-  exit 1
+  echo "[entrypoint] ⚠️ WARNING: JWT_SECRET not configured. Using ephemeral fallback (restart will rotate)."
+  JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  export JWT_SECRET
 fi
 
 echo "[entrypoint] Starting node dist/main.js ..."

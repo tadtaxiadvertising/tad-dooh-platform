@@ -1,6 +1,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { Public } from "./modules/auth/decorators/public.decorator";
 import { ApiTags } from "@nestjs/swagger";
+import { PrismaService } from "./modules/prisma/prisma.service";
 
 interface ApiStatusResponse {
   status: "UP";
@@ -17,6 +18,8 @@ interface ApiStatusResponse {
 @ApiTags("Health")
 @Controller()
 export class AppController {
+  constructor(private readonly prisma: PrismaService) {}
+
   private getStatus(): ApiStatusResponse {
     return {
       status: "UP",

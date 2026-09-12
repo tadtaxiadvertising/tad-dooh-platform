@@ -43,6 +43,7 @@ export class DriversService {
 
   constructor(
     private prisma: PrismaService,
+    private supabaseService: SupabaseService,
     private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService,
   ) {}
@@ -443,6 +444,26 @@ export class DriversService {
     }
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: JWT_EXPIRY });
+
+    // Inject app_metadata into Supabase so subsequent getUser calls carry correct role
+    // Fire-and-forget; don't block login response on metadata sync
+    this.supabaseService
+      .getClient()
+      .auth.admin.updateUserById(user.id, {
+        app_metadata: { role: "DRIVER", entityId: user.id },
+      })
+      .then(({ error: updateError }) => {
+        if (updateError) {
+          this.logger.warn(
+            `⚠️ Failed to inject app_metadata for driver ${user.id}: ${updateError.message}`,
+          );
+        }
+      })
+      .catch((e) => {
+        this.logger.warn(
+          `⚠️ Exception injecting app_metadata for driver ${user.id}: ${e.message}`,
+        );
+      });
 
     const device = await this.prisma.device.findFirst({
       where: { driverId: user.id },

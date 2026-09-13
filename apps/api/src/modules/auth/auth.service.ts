@@ -355,6 +355,15 @@ export class AuthService {
         profile = { ...adminUser, role: resolvedRole };
       }
     } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {
+      const adminAccount = await this.prisma.user.findUnique({ where: { email } });
+      if (adminAccount) {
+        this.logger.warn(
+          `🚫 Admin account ${email} blocked from advertiser portal`,
+        );
+        throw new ForbiddenException(
+          `La cuenta de Google (${email}) es el administrador de la plataforma y no puede acceder como anunciante.`,
+        );
+      }
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { email },
       });

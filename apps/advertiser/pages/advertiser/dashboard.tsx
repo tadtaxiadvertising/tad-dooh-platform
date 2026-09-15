@@ -83,47 +83,48 @@ export default function AdvertiserDashboard() {
       {wizardOverlay}
       <Toaster theme="dark" position="top-right" richColors />
 
-      {/* Hero Section */}
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 text-[#FFD700] mb-2">
-            <ShieldCheck size={18} />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Military Grade Analytics</span>
+      <div className="max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 text-[#FFD700] mb-2">
+              <ShieldCheck size={18} />
+              <span className="text-xs md:text-sm font-black uppercase tracking-[0.2em]">Military Grade Analytics</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tighter text-white uppercase italic">
+              {data?.brand?.name || 'Advertiser'} <span className="text-[#FFD700]">BI</span>
+            </h1>
+            <p className="text-base md:text-lg text-[#F4F4F5]/60 mt-2">
+              Panel de control avanzado para el monitoreo de campañas DOOH y gestión de inventario en tiempo real.
+            </p>
           </div>
-          <h1 className="text-5xl font-black tracking-tighter text-white uppercase italic">
-            {data?.brand?.name || 'Advertiser'} <span className="text-[#FFD700]">BI</span>
-          </h1>
-          <p className="text-[#F4F4F5]/60 max-w-md mt-2">
-            Panel de control avanzado para el monitoreo de campañas DOOH y gestión de inventario en tiempo real.
-          </p>
-        </div>
 
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm">
-            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Status</span>
-            <span className="flex items-center gap-2 text-sm font-black tracking-tight text-white">
-              <span className="relative inline-flex h-2 w-2" aria-hidden="true">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm">
+              <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Status</span>
+              <span className="flex items-center gap-2 text-sm md:text-base font-black tracking-tight text-white">
+                <span className="relative inline-flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                </span>
+                SECURE_NODE
               </span>
-              SECURE_NODE
-            </span>
+            </div>
+            <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm transition-colors duration-300 hover:border-[#FFD400]/25">
+              <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Live Campaigns</span>
+              <span className="font-mono text-xl md:text-2xl font-black leading-none text-[#FFD400]" style={{ textShadow: '0 0 14px rgba(255,212,0,0.35)' }}>
+                {data?.stats?.activeCampaigns || 0}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-transparent px-5 py-4 backdrop-blur-sm transition-colors duration-300 hover:border-[#FFD400]/25">
-            <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">Live Campaigns</span>
-            <span className="font-mono text-xl font-black leading-none text-[#FFD400]" style={{ textShadow: '0 0 14px rgba(255,212,0,0.35)' }}>
-              {data?.stats?.activeCampaigns || 0}
-            </span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Module 4: Marketing Insights */}
-      <section id="insights">
-        <MetricsGrid data={data?.stats} />
-      </section>
+        {/* Module 4: Marketing Insights */}
+        <section id="insights">
+          <MetricsGrid data={data?.stats} />
+        </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Module 2: Expansion of Inventory / Budget Simulation */}
         <div className="lg:col-span-2">
           <BudgetSimulator />
@@ -149,6 +150,7 @@ export default function AdvertiserDashboard() {
           <BillingPortal data={data?.financials} />
         </div>
       </div>
+    </div>
     </AdvertiserLayout>
   );
 }

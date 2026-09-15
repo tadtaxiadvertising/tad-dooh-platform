@@ -90,52 +90,52 @@ export function OnboardingWizard<T extends number>({
         </motion.button>
 
         {/* Progress Bar - Desktop: Horizontal with labels, Mobile: Compact */}
-        <div className="hidden lg:flex items-center gap-2 flex-1 max-w-3xl mx-8" layout>
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
-            <motion.div
-              key={i}
-              layoutId={`progress-${i}`}
-              className="flex flex-col items-center gap-1.5 flex-1"
-            >
-              <motion.div
-                className={clsx(
-                  "h-1.5 rounded-full transition-all duration-500 w-full",
-                  step >= i
-                    ? "bg-[#FDCB01] shadow-[0_0_12px_rgba(253,203,1,0.4)]"
-                    : "bg-white/10"
-                )}
-                initial={false}
-                animate={{ width: step >= i ? '100%' : '0%' }}
-              />
-              <span className={clsx(
-                "text-[9px] font-black uppercase tracking-wider transition-colors whitespace-nowrap",
-                step >= i ? "text-[#FDCB01]" : "text-gray-600"
-              )}>
-                {labels[i - 1]}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+                <motion.div className="hidden lg:flex items-center gap-2 flex-1 max-w-3xl mx-8" layout>
+                  {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
+                    <motion.div
+                      key={i}
+                      layoutId={`progress-${i}`}
+                      className="flex flex-col items-center gap-1.5 flex-1"
+                    >
+                      <motion.div
+                        className={clsx(
+                          "h-1.5 rounded-full transition-all duration-500 w-full",
+                          step >= i
+                            ? "bg-[#FDCB01] shadow-[0_0_12px_rgba(253,203,1,0.4)]"
+                            : "bg-white/10"
+                        )}
+                        initial={false}
+                        animate={{ width: step >= i ? '100%' : '0%' }}
+                      />
+                      <span className={clsx(
+                        "text-[9px] font-black uppercase tracking-wider transition-colors whitespace-nowrap",
+                        step >= i ? "text-[#FDCB01]" : "text-gray-600"
+                      )}>
+                        {labels[i - 1]}
+                      </span>
+                    </motion.div>
+                  ))}
+                </motion.div>
 
-        {/* Mobile Progress - Compact */}
-        <div className="lg:hidden flex items-center gap-1.5 flex-1 max-w-md mx-4" layout>
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
-            <motion.div
-              key={i}
-              layoutId={`progress-mobile-${i}`}
-              className={clsx(
-                "h-1 rounded-full transition-all duration-500",
-                step >= i
-                  ? "bg-[#FDCB01] w-8 shadow-[0_0_12px_rgba(253,203,1,0.4)]"
-                  : "bg-white/10 w-4"
-              )}
-              initial={false}
-              animate={{ width: step >= i ? '2rem' : '1rem' }}
-            />
-          ))}
-        </div>
+                {/* Mobile Progress - Compact */}
+                <motion.div className="lg:hidden flex items-center gap-1.5 flex-1 max-w-md mx-4" layout>
+                  {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
+                    <motion.div
+                      key={i}
+                      layoutId={`progress-mobile-${i}`}
+                      className={clsx(
+                        "h-1 rounded-full transition-all duration-500",
+                        step >= i
+                          ? "bg-[#FDCB01] w-8 shadow-[0_0_12px_rgba(253,203,1,0.4)]"
+                          : "bg-white/10 w-4"
+                      )}
+                      initial={false}
+                      animate={{ width: step >= i ? '2rem' : '1rem' }}
+                    />
+                  ))}
+                </motion.div>
 
-        {/* Step counter + panel toggle for simulator */}
+                {/* Step counter + panel toggle for simulator */}
         <div className="flex items-center gap-4 hidden lg:flex">
           <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest tabular-nums w-16 text-right">
             {step}/{totalSteps}

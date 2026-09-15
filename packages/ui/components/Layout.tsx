@@ -259,59 +259,60 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </p>
               <div className="space-y-1.5">
                 {group.items.map((item: any) => {
-                  const Icon = item.icon;
-                  const allHrefTexts = navigationGroups.flatMap((g: any) => g.items.map((i: any) => i.href));
-                  const isExactMatch = router.pathname === item.href;
-                  const isPrefixMatch = item.href !== '/' && router.pathname.startsWith(item.href + '/');
-                  // Es activo si es coincidencia exacta, O si es un sub-path y no hay otro botón en el menú que coincida mejor.
-                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some((otherHref: string) =>
-                    otherHref !== item.href &&
-                    otherHref.length > item.href.length &&
-                    (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
-                  ));
+                                  const Icon = item.icon;
+                                  const allHrefTexts = navigationGroups.flatMap((g: any) => g.items.map((i: any) => i.href));
+                                  const isExactMatch = router.pathname === item.href;
+                                  const isPrefixMatch = item.href !== '/' && router.pathname.startsWith(item.href + '/');
+                                  // Es activo si es coincidencia exacta, O si es un sub-path y no hay otro botón en el menú que coincida mejor.
+                                  const isActive = isExactMatch || (isPrefixMatch && !allHrefTexts.some((otherHref: string) =>
+                                    otherHref !== item.href &&
+                                    otherHref.length > item.href.length &&
+                                    (router.pathname === otherHref || router.pathname.startsWith(otherHref + '/'))
+                                  ));
 
-                  return (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsSidebarOpen(false);
-                        router.push(item.href);
-                      }}
-                      title={isCollapsed ? item.name : undefined}
-                      className={clsx(
-                        'group flex items-center text-[12px] font-bold rounded-2xl transition-all duration-500 relative tracking-wider border border-transparent uppercase overflow-hidden',
-                        isActive
-                          ? 'bg-tad-yellow text-black shadow-[0_12px_24px_rgba(250,212,0,0.2)] border-tad-yellow/40'
-                          : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10 hover:translate-x-2',
-                        isCollapsed ? 'justify-center p-4' : 'px-5 py-4 hover:pl-8'
-                      )}
-                    >
-                      {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-black rounded-r-full opacity-20" />
-                      )}
+                                  return (
+                                    <a
+                                      key={item.name}
+                                      href={item.href}
+                                      aria-current={isActive ? 'page' : undefined}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setIsSidebarOpen(false);
+                                        router.push(item.href);
+                                      }}
+                                      title={isCollapsed ? item.name : undefined}
+                                      className={clsx(
+                                        'group flex items-center text-[12px] font-bold rounded-2xl transition-all duration-500 relative tracking-wider border border-transparent uppercase overflow-hidden',
+                                        isActive
+                                          ? 'bg-tad-yellow text-black shadow-[0_12px_24px_rgba(250,212,0,0.2)] border-tad-yellow/40'
+                                          : 'text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10 hover:translate-x-2',
+                                        isCollapsed ? 'justify-center p-4' : 'px-5 py-4 hover:pl-8'
+                                      )}
+                                    >
+                                      {isActive && (
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-black rounded-r-full opacity-20" />
+                                      )}
 
-                      <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-4 w-5 h-5")}>
-                        <Icon
-                          className={clsx(
-                            'shrink-0 transition-all duration-500 relative z-10',
-                            isActive ? 'text-black' : 'text-zinc-500 group-hover:text-zinc-300',
-                            isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
-                          )}
-                          aria-hidden="true"
-                        />
-                      </div>
+                                      <div className={clsx("relative flex items-center justify-center", isCollapsed ? "w-5 h-5" : "mr-4 w-5 h-5")}>
+                                        <Icon
+                                          className={clsx(
+                                            'shrink-0 transition-all duration-500 relative z-10',
+                                            isActive ? 'text-black' : 'text-zinc-500 group-hover:text-zinc-300',
+                                            isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
+                                          )}
+                                          aria-hidden="true"
+                                        />
+                                      </div>
 
-                      <span className={clsx(
-                        "relative z-10 transition-all duration-300 whitespace-nowrap",
-                        isCollapsed ? "opacity-0 w-0 hidden lg:block translate-x-4" : "opacity-100 w-auto translate-x-0"
-                      )}>
-                        {item.name}
-                      </span>
-                    </a>
-                  );
-                })}
+                                      <span className={clsx(
+                                        "relative z-10 transition-all duration-300 whitespace-nowrap",
+                                        isCollapsed ? "opacity-0 w-0 hidden lg:block translate-x-4" : "opacity-100 w-auto translate-x-0"
+                                      )}>
+                                        {item.name}
+                                      </span>
+                                    </a>
+                                  );
+                                })}
               </div>
             </div>
           ))}

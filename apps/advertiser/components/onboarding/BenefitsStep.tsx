@@ -67,7 +67,7 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
           Paso 1 de 4 · Beneficios
         </motion.div>
         <motion.h1
-          className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2"
+          className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2 max-w-none"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
@@ -77,7 +77,7 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
           <span className="text-[#FDCB01]">alto impacto</span>
         </motion.h1>
         <motion.p
-          className="text-sm font-bold uppercase tracking-[0.18em] text-[#FDCB01]"
+          className="text-base md:text-lg font-bold uppercase tracking-[0.18em] text-[#FDCB01] max-w-none"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}

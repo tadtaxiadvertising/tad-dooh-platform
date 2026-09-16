@@ -67,7 +67,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
           Simulador en vivo · 2 de 4
         </motion.div>
         <motion.h1
-          className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2"
+          className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2 max-w-none"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
@@ -77,7 +77,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
           <span className="text-[#FDCB01]">y presupuesto</span>
         </motion.h1>
         <motion.p
-          className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-[#AAAAAA]"
+          className="inline-flex items-center gap-1.5 mt-2 text-sm md:text-base font-bold uppercase tracking-wider text-[#AAAAAA] max-w-none"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}

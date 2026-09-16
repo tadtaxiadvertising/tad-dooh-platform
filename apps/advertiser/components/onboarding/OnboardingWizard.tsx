@@ -120,44 +120,37 @@ export function OnboardingWizard<T extends number>({
                   )}
                   style={{ width: isSimulator ? '25%' : '25%' }}
                 >
-                  <div className="relative flex items-center justify-center">
-                    {/* Connecting line segment (visual only, progress handled by fill above) */}
-                    {i < totalSteps && (
-                      <div className="absolute left-1/2 top-1/2 w-full h-1 -translate-y-1/2 -translate-x-full bg-white/10 rounded-full pointer-events-none" />
+                  <motion.div
+                    className={clsx(
+                      "rounded-full transition-all duration-500 flex items-center justify-center relative z-10",
+                      isSimulator ? "w-12 h-12 md:w-14 md:h-14" : "w-10 h-10 md:w-12 md:h-12",
+                      isActive
+                        ? "bg-[#FDCB01] text-black shadow-[0_0_24px_rgba(253,203,1,0.7),0_0_40px_rgba(253,203,1,0.3)] ring-4 ring-[#FDCB01]/30"
+                        : isCompleted
+                          ? "bg-[#22C55E] text-black shadow-[0_0_16px_rgba(34,197,94,0.5)]"
+                          : "bg-white/10 text-gray-500 hover:bg-white/20"
                     )}
-                    
-                    <motion.div
-                      className={clsx(
-                        "rounded-full transition-all duration-500 flex items-center justify-center relative z-10",
-                        isSimulator ? "w-12 h-12 md:w-14 md:h-14" : "w-10 h-10 md:w-12 md:h-12",
-                        isActive
-                          ? "bg-[#FDCB01] text-black shadow-[0_0_24px_rgba(253,203,1,0.7),0_0_40px_rgba(253,203,1,0.3)] ring-4 ring-[#FDCB01]/30"
-                          : isCompleted
-                            ? "bg-[#22C55E] text-black shadow-[0_0_16px_rgba(34,197,94,0.5)]"
-                            : "bg-white/10 text-gray-500 hover:bg-white/20"
-                      )}
-                      initial={false}
-                      animate={{ 
-                        scale: isActive ? 1.15 : 1,
-                        boxShadow: isActive ? '0 0 32px rgba(253,203,1,0.8), 0 0 64px rgba(253,203,1,0.3)' : undefined
-                      }}
-                      transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-                      whileHover={!isCompleted && !isActive ? { scale: 1.1 } : {}}
-                    >
-                      {isCompleted ? (
-                        <motion.span 
-                          key="check"
-                          initial={{ scale: 0, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        >
-                          <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                        </motion.span>
-                      ) : (
-                        <span className="font-black text-[12px] md:text-[13px]">{i}</span>
-                      )}
-                    </motion.div>
-                  </div>
+                    initial={false}
+                    animate={{ 
+                      scale: isActive ? 1.15 : 1,
+                      boxShadow: isActive ? '0 0 32px rgba(253,203,1,0.8), 0 0 64px rgba(253,203,1,0.3)' : undefined
+                    }}
+                    transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                    whileHover={!isCompleted && !isActive ? { scale: 1.1 } : {}}
+                  >
+                    {isCompleted ? (
+                      <motion.span 
+                        key="check"
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                      >
+                        <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      </motion.span>
+                    ) : (
+                      <span className="font-black text-[12px] md:text-[13px]">{i}</span>
+                    )}
+                  </motion.div>
                   
                   {/* Labels - always visible for simulator, active for others */}
                   <span className={clsx(
@@ -362,7 +355,7 @@ export function OnboardingWizard<T extends number>({
                       </div>
                     </>
                   ) : (
-                    // NON-SIMULATOR STEPS: Ultra-minimal panel
+                    // NON-SIMULATOR STEPS: Ultra-minimal panel - NO upcoming steps boxes
                     <div className="text-center h-full flex flex-col items-center justify-center">
                       <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 mb-3 mx-auto">
                         <motion.span
@@ -384,21 +377,7 @@ export function OnboardingWizard<T extends number>({
                     </div>
                   )}
 
-                  {/* Only show upcoming steps hint on non-simulator steps - very subtle */}
-                  {!isSimulatorStep && step < totalSteps && (
-                    <div className="mt-6 pt-4 border-t border-white/5 space-y-2">
-                      {labels.slice(step).map((label, i) => (
-                        <div
-                          key={label}
-                          className="px-2 py-1.5 rounded-lg text-[9px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Success step completion */}
+                  {/* Success step completion only */}
                   {!isSimulatorStep && step === 4 && (
                     <motion.div
                       className="mt-6 p-3 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-center"

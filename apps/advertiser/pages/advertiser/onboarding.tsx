@@ -209,7 +209,6 @@ export default function AdvertiserOnboarding() {
         onPrev={prevStep}
         onClose={goToLogin}
         stepLabels={['Beneficios', 'Simulador', 'Compromiso', 'Éxito']}
-        simulatorData={step === 2 ? { screens: simulator.screens, impressions: estimate.impressions, budget: estimate.total } : undefined}
       >
         {renderStepContent()}
       </OnboardingWizard>

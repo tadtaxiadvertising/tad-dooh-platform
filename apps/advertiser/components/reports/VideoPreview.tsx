@@ -29,8 +29,8 @@ interface VideoPreviewProps {
   className?: string;
 }
 
-/** Discrimina la razón exacta del rechazo para un mensaje accionable. */
-function r7Rejection(mimeType: string, sizeInMb: number): string[] {
+/** Discrimina la razón exacta del rechazo para un mensaje accionable. Exportada para tests. */
+export function r7Rejection(mimeType: string, sizeInMb: number): string[] {
   const reasons: string[] = [];
   const normalizedMime = (mimeType || '').trim().toLowerCase();
   // R7: estrictamente video/mp4 (H.264). No se aceptan derivados de mime.

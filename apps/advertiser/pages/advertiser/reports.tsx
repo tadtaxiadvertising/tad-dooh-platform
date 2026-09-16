@@ -7,11 +7,12 @@ import {
 import {
   Download, Calendar,
   TrendingUp, Users, Activity, FileText,
-  ChevronDown
+  ChevronDown, Film
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from "@tad/services";
 import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
+import { VideoPreview } from '@/components/reports/VideoPreview';
 import type { GetServerSideProps } from 'next';
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
@@ -29,6 +30,30 @@ interface GeoMetric {
   impressions: number;
 }
 
+interface CreativeAsset {
+  id: string;
+  campaignName: string;
+  filename: string;
+  url: string;
+  fileSizeBytes: number;
+  type: string;
+}
+
+/**
+ * Deriva el MIME desde la extensión del nombre/URL del asset.
+ * El modelo MediaAsset solo persiste `type` (VIDEO|IMAGE), no mimeType —
+ * la extensión del archivo es la única fuente disponible.
+ * Si no es .mp4, VideoPreview aplica el gate R7 y lo rechaza.
+ */
+const deriveMimeFromExtension = (nameOrUrl: string): string => {
+  const clean = (nameOrUrl || '').split('?')[0].toLowerCase();
+  if (clean.endsWith('.mp4')) return 'video/mp4';
+  if (clean.endsWith('.webm')) return 'video/webm';
+  if (clean.endsWith('.mov')) return 'video/quicktime';
+  if (clean.endsWith('.avi')) return 'video/x-msvideo';
+  return 'application/octet-stream';
+};
+
 interface ReportsSummary {
   summary?: {
     impressions: number;
@@ -45,6 +70,7 @@ const formatNumber = (value?: number) =>
 export default function AdvertiserReports() {
   const { session } = useAuth();
   const [data, setData] = useState<ReportsSummary | null>(null);
+  const [creatives, setCreatives] = useState<CreativeAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +82,37 @@ export default function AdvertiserReports() {
       } catch (e) {
         console.error('Error fetching reports:', e);
         setError('No se pudieron cargar los reportes. Intenta nuevamente.');
-      } finally {
-        setLoading(false);
       }
     };
 
-    if (session?.access_token) fetchReports();
+    // Creativos de las campañas del anunciante (assets reales, no mock).
+    // Solo videos; VideoPreview aplica el gate R7 (formato+tamaño) en render.
+    const fetchCreatives = async () => {
+      try {
+        const response = await api.get('/campaigns');
+        const campaigns = Array.isArray(response.data) ? response.data : [];
+        const assets: CreativeAsset[] = campaigns.flatMap((campaign: any) =>
+          (campaign.mediaAssets || [])
+            .filter((asset: any) => (asset.type || '').toUpperCase() === 'VIDEO')
+            .map((asset: any) => ({
+              id: asset.id,
+              campaignName: campaign.name,
+              filename: asset.filename,
+              url: asset.url,
+              fileSizeBytes: Number(asset.fileSize || 0),
+              type: asset.type,
+            }))
+        );
+        setCreatives(assets.slice(0, 6));
+      } catch (e) {
+        // No bloquea los reportes si falla el fetch de creativos.
+        console.error('Error fetching creatives:', e);
+      }
+    };
+
+    if (session?.access_token) {
+      Promise.all([fetchReports(), fetchCreatives()]).finally(() => setLoading(false));
+    }
   }, [session]);
 
   // Mensaje "coming soon" para módulos aún no implementados.
@@ -253,6 +304,43 @@ export default function AdvertiserReports() {
               )}
             </div>
           </div>
+
+          {/* Creative Assets — previsualización con gate R7 (MP4 H.264 ≤ 55MB) */}
+          {creatives.length > 0 && (
+            <div className="mt-12 space-y-6">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight">Creativos en Circulación</h3>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">
+                  Previsualización sujeta a R7: MP4 (H.264) · máx 55 MB
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {creatives.map((asset) => (
+                  <div
+                    key={asset.id}
+                    className="bg-zinc-900/30 backdrop-blur-2xl border border-white/5 p-6 rounded-[2rem] space-y-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest truncate">
+                          {asset.campaignName}
+                        </p>
+                        <h4 className="text-xs font-black uppercase tracking-tight text-white truncate mt-1">
+                          {asset.filename}
+                        </h4>
+                      </div>
+                      <Film className="w-4 h-4 text-[#fad400]/60 shrink-0 mt-0.5" />
+                    </div>
+                    <VideoPreview
+                      url={asset.url}
+                      mimeType={deriveMimeFromExtension(asset.filename || asset.url)}
+                      sizeInMb={asset.fileSizeBytes / (1024 * 1024)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Export Section Shadow */}
           <div className="mt-12 p-8 bg-zinc-900/20 border border-white/5 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6">

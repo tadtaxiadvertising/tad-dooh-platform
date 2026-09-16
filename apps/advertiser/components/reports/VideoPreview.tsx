@@ -38,7 +38,9 @@ export function r7Rejection(mimeType: string, sizeInMb: number): string[] {
     reasons.push(`Formato no permitido ("${mimeType || 'desconocido'}") — R7 exige MP4 H.264.`);
   }
   if (sizeInMb > R7_MAX_SIZE_MB) {
-    reasons.push(`Tamaño ${sizeInMb.toFixed(1)}MB excede el límite de ${R7_MAX_SIZE_MB}MB.`);
+    // Precisión suficiente para distinguir 55.01 de 55 sin ruido decimal.
+    const shown = Number(sizeInMb.toFixed(2));
+    reasons.push(`Tamaño ${shown}MB excede el límite de ${R7_MAX_SIZE_MB}MB.`);
   }
   return reasons;
 }

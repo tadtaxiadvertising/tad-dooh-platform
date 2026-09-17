@@ -250,6 +250,21 @@ export function sourcesUsedIn(
     .filter((s): s is ImpactSource => Boolean(s));
 }
 
+/** Devuelve los ids de fuentes referenciados en FORMULAS_USED que NO existen */
+export function validateFormulaSources(): string[] {
+  const missing: string[] = [];
+  (Object.keys(FORMULAS_USED) as (keyof typeof FORMULAS_USED)[]).forEach(
+    (key) => {
+      FORMULAS_USED[key].forEach((id) => {
+        if (!SOURCES.some((s) => s.id === id)) {
+          missing.push(`${key} → ${id}`);
+        }
+      });
+    },
+  );
+  return missing;
+}
+
 /** Mapa fórmula → fuentes usadas, para audit trail en cada cálculo */
 export const FORMULAS_USED = {
   grossImpressionsPerScreenPerMonth: [
@@ -258,8 +273,9 @@ export const FORMULAS_USED = {
     "attention-rate",
   ],
   uniqueReachPerScreenPerMonth: [
-    "grossImpressionsPerScreenPerMonth",
-    "occupancy-rate",
+    "daily-active-hours",
+    "attention-rate",
+    "taxi-occupancy-rate",
     "passengers-per-trip",
     "taxi-use-frequency-monthly",
   ],
@@ -269,17 +285,32 @@ export const FORMULAS_USED = {
 /**
  * Determina si la calculadora está en modo "asumido" (sin datos RD propios)
  * o "calibrado" (con datos DIGESETT/ONE/eye-tracking ingestados).
+ *
+ * `dataSourcesIngested` documenta QUÉ datasets operativos ya alimentan la
+ * calibración (ids de suficientes fuentes Tier A/B de medición RD propia).
+ *
+ * MECANISMO DE CALIBRACIÓN (v12.4): este flag debe flipar a `true` cuando
+ * TAD ingiera datos operativos reales RD (dispositivos desplegados +
+ * telemetría propia), NO en pre-launch. Hasta entonces `hasOwnData=false`
+ * y cada cálculo advierte al usuario sobre incertidumbre ±40-60%.
+ *
+ * Fuentes RD de calibración pendientes de ingestar (no inventadas aquí):
+ * - ONE ENMOV / Mobiliario y parque vehicular (encuesta origen-destino RD)
+ * - DIGESETT — datos de tránsito y taxis RD
+ * - Eye-tracking propio (Tobii, n≥30 viajes, Q4 2026)
+ * - OD Taxi TAD (telemetría de la flota propia, Q1 2027)
  */
 export function isCalibrationStatus(): {
   hasOwnData: boolean;
   dataSourcesIngested: string[];
   staleSourcesCount: number;
 } {
-  // TODO cuando Supabase tenga datos operativos (devices > 0), cambiar hasOwnData=true.
-  // Por ahora 2026-09-02: BD pre-launch, 0 devices, 0 telemetry.
+  // TODO(calibration): al tener telemetría operativa RD ingerida, mover los
+  // pasos 1-6 de FORMULAS_USED a Tier A/B y devolver hasOwnData=true
+  // con los ids de los datasets ingeridos aquí.
   return {
     hasOwnData: false,
-    dataSourcesIngested: [],
+    dataSourcesIngested: [] as string[],
     staleSourcesCount: SOURCES.filter((s) => s.stale).length,
   };
 }

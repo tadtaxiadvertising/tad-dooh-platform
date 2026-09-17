@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsBoolean,
   IsOptional,
+  IsArray,
 } from "class-validator";
 
 export class CreateCampaignDto {
@@ -45,6 +46,18 @@ export class CreateCampaignDto {
   @IsString()
   @IsOptional()
   target_city?: string;
+
+  /** Targeting multi-ciudad (JSONB array). Vacío [] = sin restricción por ciudad. */
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  target_cities?: string[];
+
+  /** Targeting multi-flota (JSONB array). Vacío [] = sin restricción por flota. */
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  target_fleets?: string[];
 
   @IsString()
   @IsOptional()

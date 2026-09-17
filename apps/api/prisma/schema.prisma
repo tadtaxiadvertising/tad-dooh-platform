@@ -86,9 +86,9 @@ model Campaign {
   version           Int      @default(1)
   isGlobal          Boolean  @default(false) @map("is_global")
   targetAll         Boolean  @default(true) @map("target_all")
-  targetCities      String   @default("[]") @map("target_cities")
+  targetCities      Json     @default("[]") @map("target_cities")
   targetCity        String   @default("Global") @map("target_city")
-  targetFleets      String   @default("[]") @map("target_fleets")
+  targetFleets      Json     @default("[]") @map("target_fleets")
   priority          Int      @default(0)
   targetImpressions Int      @default(0) @map("target_impressions")
   budget            Float    @default(0)
@@ -377,9 +377,8 @@ model Driver {
   contractAcceptances   ContractAcceptance[]
   portalRequests        PortalRequest[]
   isSimulated           Boolean                @default(false) @map("is_simulated")
-  walletBalance         Float                  @default(0.0) @map("wallet_balance")
   referralCode          String?                @unique @default(uuid()) @map("referral_code")
-  bankAccount           Json?                  @map("bank_account")
+  bankAccount           Json?                  @map("bank_account") // @deprecated: Use Wallet.bankInfo instead. Kept for backward compatibility.
   commissions           Commission[]
   telemetryLogs         Telemetry[]            @relation("DriverTelemetry")
   activeAds             ActiveAd[]
@@ -387,6 +386,7 @@ model Driver {
 
   @@index([status])
   @@index([phone])
+  @@index([status, onboardingStatus])
   @@map("drivers")
 }
 
@@ -398,6 +398,7 @@ model FinancialTransaction {
   netAmount Float    @map("net_amount")
   taxAmount Float    @map("tax_amount")
   status    String   @default("PENDING")
+  currency  Currency @default(DOP) @map("currency")
   entityId  String?  @map("entity_id")
   reference String?  @unique
   note      String?
@@ -407,6 +408,7 @@ model FinancialTransaction {
   @@index([type])
   @@index([category])
   @@index([status])
+  @@index([currency])
   @@index([createdAt])
   @@index([category, createdAt(sort: Desc)])
   @@map("financial_transactions")
@@ -646,7 +648,7 @@ model Invoice {
   subtotal     Float
   taxAmount    Float      @map("tax_amount")
   totalAmount  Float      @map("total_amount")
-  status       String     @default("PENDING") // PENDING, PAID, OVERDUE
+  status       String     @default("PENDING") // PROFORMA, PENDING, PAID, OVERDUE
   pdfUrl       String?    @map("pdf_url")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
@@ -707,8 +709,9 @@ model Wallet {
   availableBalance  Float  @default(0.0) @map("available_balance")
   pendingWithdrawal Float  @default(0.0) @map("pending_withdrawal")
   bankInfo          Json?  @map("bank_info")
-  driver            Driver @relation(fields: [driverId], references: [id])
+  driver            Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
+  @@index([driverId])
   @@map("wallets")
 }
 
@@ -716,6 +719,13 @@ enum SystemStatus {
   OPERATIVO
   PENDIENTE_PAGO
   BLOQUEADO
+}
+
+// ISO 4217: moneda funcional de las transacciones. DOP es el default del negocio.
+enum Currency {
+  DOP
+  USD
+  EUR
 }
 
 model SystemSetting {

@@ -579,7 +579,10 @@ export default function CampaignDetailPage() {
             <div className="space-y-3 mb-6">
               {(() => {
                 try {
-                  const cities = JSON.parse(campaign.targetCities || '[]');
+                  const raw = campaign.targetCities;
+                  const cities = Array.isArray(raw)
+                    ? raw
+                    : JSON.parse((raw as string) || '[]');
                   return cities.length > 0 ? cities.map((c: string, ci: number) => (
                     <div key={ci} className="flex items-center gap-3 bg-gray-900/50 px-4 py-3 rounded-xl border border-gray-700/50 hover:border-tad-yellow/30 transition-all">
                       <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow" />

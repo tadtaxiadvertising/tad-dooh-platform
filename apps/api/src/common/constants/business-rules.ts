@@ -116,6 +116,14 @@ export const BUSINESS_RULES = {
    * debe migrarse a `SystemSettings` (tabla `system_settings`).
    */
   CHURN_RATE_DEFAULT: 0.045,
+
+  /**
+   * RNC del emisor (TAD Taxi Advertising SRL) para exportaciones contables DGII
+   * (formatos 606/607/608). TODO(config): completar con el RNC real de la empresa
+   * antes de presentación formal ante la DGII. Si queda vacío, los CSV se
+   * generan igualmente pero con el campo RNC Emisor en blanco.
+   */
+  DGII_RNC_EMISOR: "",
 } as const;
 
 export type BusinessRules = typeof BUSINESS_RULES;

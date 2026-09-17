@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { BiService } from "./bi.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { AdvertiserBillingService } from "../advertisers/advertiser-billing.service";
 
 @Injectable()
 export class BiScheduler {
@@ -10,30 +11,31 @@ export class BiScheduler {
   constructor(
     private readonly biService: BiService,
     private readonly prisma: PrismaService,
+    private readonly advertiserBilling: AdvertiserBillingService,
   ) {}
 
   /**
    * Generar snapshot de BI cada medianoche (00:00 AST).
-   * Los snapshots permiten comparar rendimiento hist\u00f3rico sin queries pesadas en runtime.
+   * Los snapshots permiten comparar rendimiento histórico sin queries pesadas en runtime.
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleDailySnapshot() {
     this.logger.log(
-      "\ud83d\ude80 Iniciando generaci\u00f3n de snapshot diario de BI...",
+      "🚀 Iniciando generación de snapshot diario de BI...",
     );
     try {
-      await this.biService.getMasterKpis();
-      this.logger.log("\u2705 Snapshot diario generado con \u00e9xito.");
+      await this.biService.getMasterKpis(true);
+      this.logger.log("✅ Snapshot diario generado con éxito.");
     } catch (error) {
       this.logger.error(
-        "\u274c Error al generar snapshot de BI:",
+        "❌ Error al generar snapshot de BI:",
         error.message,
       );
     }
   }
 
   /**
-   * Conciliaci\u00f3n financiera proactiva a las 02:00 AM AST.
+   * Conciliación financiera proactiva a las 02:00 AM AST.
    * Analiza suscripciones, impresiones y pagos del periodo actual.
    */
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
@@ -41,18 +43,67 @@ export class BiScheduler {
     const now = new Date();
     const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     this.logger.log(
-      `\ud83c\udf19 Iniciando conciliaci\u00f3n autom\u00e1tica para el periodo ${period}...`,
+      `🌙 Iniciando conciliación automática para el periodo ${period}...`,
     );
     try {
       const result = await this.biService.generateReconciliationReport(period);
       this.logger.log(
-        `\u2705 Conciliaci\u00f3n completada: ${result.total} registros procesados.`,
+        `✅ Conciliación completada: ${result.total} registros procesados.`,
       );
     } catch (error) {
       this.logger.error(
-        "\u274c Falla en conciliaci\u00f3n autom\u00e1tica:",
+        "❌ Falla en conciliación automática:",
         error.message,
       );
+    }
+  }
+
+  /**
+   * CONCILIACIÓN MENSUAL OFICIAL — Día 2, 08:00 AST (America/Santo_Domingo).
+   *
+   * Truth Bridge del mes ANTERIOR. A diferencia de handleReconciliation()
+   * (conciliación proactiva diaria del mes en curso, que se hace incremental),
+   * este cron ejecuta el cierre oficial del mes ya terminado para detectar
+   * fugas y discrepancias antes del corte contable.
+   *
+   * Ejecuta para el mes previo porque el día 2 el mes anterior está cerrado
+   * (todos los playbacks, GPS, nóminas y pagos del mes ya se registraron),
+   * garantizando un snapshot completo y estable.
+   *
+   * Con timeZone explícito para que no dependa de la zona del contenedor.
+   */
+  @Cron("0 8 2 * *", {
+    name: "monthly-reconciliation-previous-month",
+    timeZone: "America/Santo_Domingo",
+  })
+  async handleMonthlyReconciliation() {
+    const now = new Date();
+    // Mes anterior: si estamos en enero (0), retroceder a diciembre del año previo.
+    const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const period = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+    this.logger.log(
+      `📼 Iniciando conciliación mensual oficial para el periodo cerrado ${period}...`,
+    );
+    try {
+      const result = await this.biService.generateReconciliationReport(period);
+      this.logger.log(
+        `✅ Conciliación mensual ${period} completada: ${result.total} registros procesados.`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Falla en conciliación mensual ${period}:`,
+        error.message,
+      );
+      await this.prisma.systemError.create({
+        data: {
+          source: "BI",
+          message: `Monthly reconciliation failed for ${period}: ${error.message}`,
+          details: error.stack,
+          entityId: period,
+          severity: "ERROR",
+        },
+      });
     }
   }
 
@@ -65,7 +116,7 @@ export class BiScheduler {
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleIdempotencyCleanup() {
     this.logger.log(
-      "\ud83e\uddf9 [IDEMPOTENCY_TTL] Purging expired idempotency keys...",
+      "🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...",
     );
     try {
       // Release stale locks first (PROCESSING keys older than 1h are orphans from crashed requests)
@@ -77,7 +128,7 @@ export class BiScheduler {
         data: { isLocked: false },
       });
       this.logger.log(
-        `\u26a0 Released ${staleLocks.count} stale idempotency locks (orphaned from crashed requests).`,
+        `⚠ Released ${staleLocks.count} stale idempotency locks (orphaned from crashed requests).`,
       );
 
       // Purge all expired keys (expiresAt < now)
@@ -85,10 +136,33 @@ export class BiScheduler {
         where: { expiresAt: { lt: new Date() } },
       });
       this.logger.log(
-        `\u2705 Purged ${deleted.count} expired idempotency keys.`,
+        `✅ Purged ${deleted.count} expired idempotency keys.`,
       );
     } catch (error) {
-      this.logger.error("\u274c Error in idempotency cleanup:", error.message);
+      this.logger.error("❌ Error in idempotency cleanup:", error.message);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ADVERTISER SUBSCRIPTION BILLING — 1st of each month at 02:30 AM AST
+  // ─────────────────────────────────────────────────────────────────────────────
+  @Cron("30 2 1 * *", { name: "advertiser-subscription-billing", timeZone: "America/Santo_Domingo" })
+  async handleAdvertiserSubscriptionBilling() {
+    this.logger.log("🧾 CRON: Ejecutando facturación de suscripciones de anunciantes (día 1, 02:30)");
+    try {
+      const result = await this.advertiserBilling.runMonthlySubscriptionBilling();
+      this.logger.log(`✅ Facturación suscripciones completada: ${result.processed} procesadas, ${result.failed} fallidas`);
+    } catch (err) {
+      this.logger.error(`❌ Error en facturación suscripciones: ${err.message}`, err.stack);
+      await this.prisma.systemError.create({
+        data: {
+          source: "ADVERTISER_BILLING",
+          message: `Cron advertiser billing failed: ${err.message}`,
+          details: err.stack,
+          entityId: "monthly-advertiser-billing",
+          severity: "ERROR",
+        },
+      });
     }
   }
 }

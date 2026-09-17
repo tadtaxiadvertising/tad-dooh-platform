@@ -5,6 +5,7 @@ import {
   Put,
   Body,
   Req,
+  Param,
   UseInterceptors,
   BadRequestException,
   UnauthorizedException,
@@ -85,6 +86,43 @@ export class WalletController {
     }
 
     return this.walletService.updateBank(driverId, parsed.data);
+  }
+
+  /**
+   * CONFIRMACIÓN ADMIN DE RETIRO (v12.4) — cierra el flujo bancario.
+   * Invocado por el webhook de confirmación del banco (o conciliación manual).
+   * Marca la transacción de retiro PENDING como COMPLETED (idempotente).
+   */
+  @Post("withdrawals/:transactionId/confirm")
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(IdempotencyInterceptor)
+  async confirmWithdrawal(@Param("transactionId") transactionId: string) {
+    if (!transactionId) {
+      throw new BadRequestException("transactionId is required");
+    }
+    return this.walletService.confirmWithdrawal(transactionId);
+  }
+
+  /**
+   * RECHAZO ADMIN DE RETIRO (v12.4) — cierra el flujo con reembolso.
+   * Invocado por el webhook de fallo del banco (o conciliación manual).
+   * Reembolsa el monto retenido al balance y marca la transacción FAILED (idempotente).
+   */
+  @Post("withdrawals/:transactionId/reject")
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(IdempotencyInterceptor)
+  async rejectWithdrawal(
+    @Param("transactionId") transactionId: string,
+    @Body() payload: { reason?: string },
+  ) {
+    if (!transactionId) {
+      throw new BadRequestException("transactionId is required");
+    }
+    const reason =
+      typeof payload?.reason === "string" && payload.reason.trim().length > 0
+        ? payload.reason.trim().slice(0, 500)
+        : undefined;
+    return this.walletService.refundFailedWithdrawal(transactionId, reason);
   }
 
   /**

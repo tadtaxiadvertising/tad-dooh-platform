@@ -16,60 +16,127 @@ import { BUSINESS_RULES } from "../../common/constants/business-rules";
 @Injectable()
 export class BiService {
   private readonly logger = new Logger(BiService.name);
+  // Guarda anti-stampede: evita que N requests concurrentes disparen N cálculos
+  // pesados en runtime cuando el snapshot no está listo aún.
+  private snapshotCalculationInFlight = false;
 
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * KPI MASTER - Consolidates all dashboard KPIs
-   * Uses cached snapshots to ensure 512MB RAM compliance.
+   * KPI MASTER - Consolidates all dashboard KPIs.
+   * Reads from the persisted `bi_dashboard_snapshots` cache (written nightly by
+   * the cron + on-demand here). Elimina el fallback real-time en cada request:
+   * - Si existe snapshot de HOY  -> se usa directamente (lectura cache hit).
+   * - Si no existe el de hoy     -> cae al snapshot más reciente (degradado,
+   *   dashboard nunca vacío) y se dispara UNA sola regeneración async.
+   * - El cálculo pesado solo corre cuando no hay NINGÚN snapshot o con
+   *   forceRefresh (cron). Anti-stampede evita cálculos concurrentes.
    */
-  async getMasterKpis(): Promise<BiKpiResponse> {
+  async getMasterKpis(forceRefresh = false): Promise<BiKpiResponse> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Try to get today's snapshot
-    let snapshot = null;
+    // 1. Lectura cache-hit del snapshot de hoy
     try {
-      snapshot = await this.prisma.biDashboardSnapshot.findUnique({
+      let snapshot = await this.prisma.biDashboardSnapshot.findUnique({
         where: { snapshotDate: today },
       });
+
+      if (snapshot && !forceRefresh) {
+        return this.mapSnapshot(snapshot);
+      }
+
+      // 2. Degradado: sin snapshot de hoy, usar el más reciente disponible
+      if (!forceRefresh) {
+        const latest = await this.prisma.biDashboardSnapshot.findFirst({
+          orderBy: { snapshotDate: "desc" },
+        });
+        if (latest) {
+          // Dispara regeneración asíncrona (una sola vez) para no arriesgar
+          // datos del día anterior por mucho tiempo sin actualizarse.
+          this.triggerSnapshotRegeneration();
+          return this.mapSnapshot(latest);
+        }
+      }
     } catch (e) {
       this.logger.warn(`⚠️ BI Snapshot table error: ${e.message}`);
     }
 
-    if (snapshot) {
-      return {
-        mrr: snapshot.mrr,
-        activeSubscribers: snapshot.totalDevices - snapshot.offlineDevices,
-        totalDevices: snapshot.totalDevices,
-        onlineDevices: snapshot.onlineDevices,
-        offlineDevices: snapshot.offlineDevices,
-        criticalDevices: snapshot.criticalDevices,
-        activeCampaigns: snapshot.activeCampaigns,
-        totalImpressionsMtd: snapshot.totalImpressionsMtd,
-        deliveryRateAvg: snapshot.deliveryRateAvg,
-        syncHealthRate: snapshot.syncHealthRate,
+    // 3. Cálculo pesado: solo sin ningún snapshot o con forceRefresh (cron).
+    return this.computeAndPersistSnapshot();
+  }
 
-        // INVESTOR METRICS (v7.5)
-        yieldPerScreen: snapshot.yieldPerScreen,
-        arpu: snapshot.arpu,
-        churnRate: snapshot.churnRate,
-        projectedRevenue: snapshot.projectedRevenue,
+  /** Mapea un registro persistido al contrato de respuesta del dashboard. */
+  private mapSnapshot(
+    snapshot: {
+      mrr: number;
+      totalDevices: number;
+      onlineDevices: number;
+      offlineDevices: number;
+      criticalDevices: number;
+      activeCampaigns: number;
+      totalImpressionsMtd: number;
+      deliveryRateAvg: number;
+      syncHealthRate: number;
+      yieldPerScreen: number;
+      arpu: number;
+      churnRate: number;
+      projectedRevenue: number;
+      generatedAt: Date;
+    },
+  ): BiKpiResponse {
+    return {
+      mrr: snapshot.mrr,
+      activeSubscribers: snapshot.totalDevices - snapshot.offlineDevices,
+      totalDevices: snapshot.totalDevices,
+      onlineDevices: snapshot.onlineDevices,
+      offlineDevices: snapshot.offlineDevices,
+      criticalDevices: snapshot.criticalDevices,
+      activeCampaigns: snapshot.activeCampaigns,
+      totalImpressionsMtd: snapshot.totalImpressionsMtd,
+      deliveryRateAvg: snapshot.deliveryRateAvg,
+      syncHealthRate: snapshot.syncHealthRate,
 
-        discrepancyCount: await this.prisma.reconciliationReport.count({
-          where: { hasDiscrepancy: true },
-        }),
-        recentDiscrepancies: (await this.prisma.reconciliationReport.findMany({
-          where: { hasDiscrepancy: true },
-          take: 5,
-          orderBy: { createdAt: "desc" },
-        })) as any[],
-        lastUpdate: snapshot.generatedAt,
-      };
+      // INVESTOR METRICS (v7.5)
+      yieldPerScreen: snapshot.yieldPerScreen,
+      arpu: snapshot.arpu,
+      churnRate: snapshot.churnRate,
+      projectedRevenue: snapshot.projectedRevenue,
+
+      discrepancyCount: 0,
+      recentDiscrepancies: [],
+      lastUpdate: snapshot.generatedAt,
+    };
+  }
+
+  /**
+   * Dispara (una sola vez) la regeneración del snapshot. Anti-stampede:
+   * si ya hay un cálculo corriendo, este llamado se descarta.
+   */
+  private triggerSnapshotRegeneration(): void {
+    if (this.snapshotCalculationInFlight) {
+      return;
     }
+    this.snapshotCalculationInFlight = true;
+    this.computeAndPersistSnapshot()
+      .catch((err) =>
+        this.logger.error(
+          `🚨 Snapshot background regeneration failed: ${err.message}`,
+        ),
+      )
+      .finally(() => {
+        this.snapshotCalculationInFlight = false;
+      });
+  }
 
-    // 2. Real-time Fallback (SRE Optimized)
+  /**
+   * Calcula KPIs real-time (SRE Optimized) y persiste el snapshot del día.
+   * Es la fuente del refresh diario (cron) y del arranque en frío.
+   */
+  private async computeAndPersistSnapshot(): Promise<BiKpiResponse> {
     this.logger.log("📊 Generating fresh BI metrics (SRE Optimized)...");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const monthStart = new Date(
       new Date().getFullYear(),
       new Date().getMonth(),

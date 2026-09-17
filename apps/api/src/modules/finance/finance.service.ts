@@ -8,6 +8,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import * as crypto from "crypto";
+import { PayrollAuditService } from "../drivers/payroll-audit.service";
 
 const mediaSafeSelect = {
   id: true,
@@ -42,6 +43,7 @@ export class FinanceService {
     private readonly whatsappService: WhatsAppService,
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
+    private readonly payrollAudit: PayrollAuditService,
   ) {}
 
   /**
@@ -312,10 +314,22 @@ export class FinanceService {
           const advertiserReferralBonus = 0;
 
           const adTransmissionIncome = activeAdsCount * this.PAY_PER_AD;
-          const totalAmount =
+          const prePenaltyAmount =
             adTransmissionIncome +
             driverReferralBonus +
             advertiserReferralBonus;
+
+          // Apply penalty logic based on consecutive months under goal
+          const penaltyResult = await this.payrollAudit.applyPenaltyLogic(
+            driver.id,
+            prePenaltyAmount,
+          );
+          const totalAmount = penaltyResult.amount;
+          const penaltyApplied = penaltyResult.penaltyApplied;
+          const penaltyPercentage = penaltyApplied
+            ? BUSINESS_RULES.LEVELS.BASE.penalty
+            : 0;
+          const penaltyAmount = penaltyResult.penaltyAmount;
 
           // Enhanced: Get the actual taxi number from the assigned devices or driver record
           const actualTaxiNumber =
@@ -345,6 +359,14 @@ export class FinanceService {
               paymentRecord?.status === "PAID"
                 ? paymentRecord.amount
                 : totalAmount,
+            penaltyApplied:
+              paymentRecord?.status === "PAID"
+                ? paymentRecord.penaltyApplied
+                : penaltyApplied,
+            penaltyPercentage:
+              paymentRecord?.status === "PAID"
+                ? paymentRecord.penaltyPercentage
+                : penaltyPercentage,
             currency: "DOP",
             status: paymentRecord?.status || "PENDING",
             paidAt: paymentRecord?.paidAt,
@@ -366,6 +388,8 @@ export class FinanceService {
             referralBonus: 0,
             advertiserReferralBonus: 0,
             totalAmount: 0,
+            penaltyApplied: false,
+            penaltyPercentage: 0,
             currency: "DOP",
             status: "ERROR",
             error: true,
@@ -402,14 +426,18 @@ export class FinanceService {
 
     const payrollData = await this.calculateMonthlyPayroll(month, year);
     const recordsToCreate = payrollData
-      .filter((p) => p.totalAmount > 0)
-      .map((p) => ({
-        driverId: p.driverId,
-        month,
-        year,
-        amount: p.totalAmount,
-        status: "PENDING",
-      }));
+          .filter((p) => p.totalAmount > 0)
+          .map((p) => ({
+            driverId: p.driverId,
+            month,
+            year,
+            amount: p.totalAmount,
+            status: "PENDING",
+            penaltyApplied: p.penaltyApplied || false,
+            penaltyPercentage: p.penaltyPercentage || 0,
+            activeAds: p.activeAds || 0,
+            gpsPoints: p.gpsPoints || 0,
+          }));
 
     if (recordsToCreate.length === 0) {
       return {
@@ -489,6 +517,8 @@ export class FinanceService {
             paidAt: new Date(),
             activeAds: driverEntry.activeAds,
             gpsPoints: driverEntry.gpsPoints,
+            penaltyApplied: driverEntry.penaltyApplied || false,
+            penaltyPercentage: driverEntry.penaltyPercentage || 0,
           },
           create: {
             driverId,
@@ -500,6 +530,8 @@ export class FinanceService {
             paidAt: new Date(),
             activeAds: driverEntry.activeAds,
             gpsPoints: driverEntry.gpsPoints,
+            penaltyApplied: driverEntry.penaltyApplied || false,
+            penaltyPercentage: driverEntry.penaltyPercentage || 0,
           },
         });
 
@@ -518,7 +550,14 @@ export class FinanceService {
           },
         });
 
-        return payrollRecord;
+        // 3. INCREMENT wallet balance (driver receives payment) - Upsert Wallet model
+                await tx.wallet.upsert({
+                  where: { driverId },
+                  update: { availableBalance: { increment: driverEntry.totalAmount } },
+                  create: { driverId, availableBalance: driverEntry.totalAmount },
+                });
+
+                return payrollRecord;
       })
       .then(async (payrollRecord) => {
         // 3. Notification unificada al conductor (post-commit, fire-and-forget)
@@ -685,7 +724,7 @@ export class FinanceService {
   async exportPayrollCsv(month: number, year: number) {
     const data = await this.calculateMonthlyPayroll(month, year);
     let csv =
-      "ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Monto Liquidar\n";
+      "ID Socio/TAD DRIVER,Nombre TAD DRIVER,Taxi,GPS Points,Referidos,Ads Activos,Ingresos Ads,Penalización (%),Monto Liquidar\n";
     data.forEach((d) => {
       const row = [
         d.driverId,
@@ -695,6 +734,7 @@ export class FinanceService {
         `RD$ ${d.referralBonus}`,
         d.activeAds,
         `RD$ ${d.adIncome}`,
+        d.penaltyPercentage ? `${(d.penaltyPercentage * 100).toFixed(1)}%` : "0%",
         `RD$ ${d.totalAmount}`,
       ]
         .map((f) => this.sanitizeCsvField(f))
@@ -788,6 +828,136 @@ export class FinanceService {
     return csv;
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EXPORTACIÓN CONTABLE DGII (v12.4.1) — Formatos 606 / 607 / 608
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Layouts según la Dirección General de Impuestos Internos (DGII-RD).
+  // NOTA DE HONESTIDAD: estos exportadores emiten los campos/esquema compatibles
+  // con el formato DGII y los datos que el sistema realmente persiste. El RNC
+  // del emisor (TAD) y el NCF efectivo del proveedor/cliente deben completarse
+  // desde la configuración fiscal de la empresa antes de una presentación formal
+  // ante la DGII; aquí se mapean desde datos existentes cuando están disponibles.
+
+  /**
+   * DGII 606 — Declaración de Compras y Gastos (reporta las compras recibidas que
+   * generan ITBIS pagado). Se alimenta de FinancialTransactions de tipo gasto/compra
+   * y de facturas de proveedores (categories de compra).
+   */
+  async exportDgii606(year: number): Promise<string> {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+
+    const txs = await this.prisma.financialTransaction.findMany({
+      where: {
+        type: { in: ["EXPENSE", "OUTGOING", "COMPRA", "GASTO"] },
+        createdAt: { gte: start, lt: end },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // Cabecera DGII 606 (fila 1: RNC emisor, periodo, formato, nro lote)
+    const rncEmisor = BUSINESS_RULES.DGII_RNC_EMISOR ?? "";
+    let csv = "";
+    csv += `RNC Emisor,Periodo,Formato,Secuencia,Total Registros\n`;
+    csv += `${this.sanitizeCsvField(rncEmisor)},${year},606,1,${txs.length}\n`;
+    csv += `Registro,Comprobante,NCF,Número de Coordinación,Fecha de Emisión,RNC/Tipo ID,Proveedor,Tipo Bien/Servicio,Base Imponible,Costo,ITBIS 18%,Monto Total\n`;
+
+    txs.forEach((tx, i) => {
+      csv += `${i + 1},${this.sanitizeCsvField(tx.reference || tx.id)},,${this.sanitizeCsvField(
+        tx.createdAt.toISOString().slice(0, 10),
+      )},${this.sanitizeCsvField(tx.entityId || "")},${this.sanitizeCsvField(
+        tx.note || tx.category,
+      )},${this.sanitizeCsvField(tx.category)},${this.sanitizeCsvField(
+        tx.netAmount,
+      )},,${this.sanitizeCsvField(tx.taxAmount)},${this.sanitizeCsvField(
+        tx.amount,
+      )}\n`;
+    });
+    return csv;
+  }
+
+  /**
+   * DGII 607 — Declaración de Ventas y Servicios (reporta las ventas facturadas,
+   * incluye ITBIS cobrado). Se alimenta de Invoices (facturas a anunciantes) y de
+   * FinancialTransactions de venta/ingreso.
+   */
+  async exportDgii607(year: number): Promise<string> {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+
+    // Facturas emitidas a anunciantes (fuente primaria de ventas)
+    const invoices = await this.prisma.invoice.findMany({
+      where: { issueDate: { gte: start, lt: end } },
+      include: { advertiser: true },
+      orderBy: { issueDate: "asc" },
+    });
+
+    // Transacciones de venta que no tienen Invoice asociada
+    const salesTxs = await this.prisma.financialTransaction.findMany({
+      where: {
+        type: { in: ["INCOME", "INCOMING", "VENTA", "INGRESO"] },
+        createdAt: { gte: start, lt: end },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    let csv = "";
+    csv += `RNC Emisor,Periodo,Formato,Secuencia,Total Registros\n`;
+    csv += `${this.sanitizeCsvField(BUSINESS_RULES.DGII_RNC_EMISOR ?? "")},${year},607,1,${invoices.length + salesTxs.length}\n`;
+    csv += `Registro,Comprobante,NCF Tipo,Fecha de Emisión,RNC Cliente,Razón Social Cliente,Tipo Bien/Servicio,Exento No Gravado,Gravado 18%,ITBIS,Fecha Pago\n`;
+
+    invoices.forEach((inv, i) => {
+      const ncf = inv.id ? `B{$year}${inv.id.slice(0, 20).toUpperCase()}` : "";
+      csv += `${i + 1},,${this.sanitizeCsvField(ncf)},${inv.issueDate
+        .toISOString()
+        .slice(0, 10)},${this.sanitizeCsvField(
+        inv.advertiserId,
+      )},${this.sanitizeCsvField(inv.advertiser.companyName)},0,${this.sanitizeCsvField(
+        inv.subtotal,
+      )},${this.sanitizeCsvField(inv.taxAmount)},${this.sanitizeCsvField(
+        inv.totalAmount ?? inv.subtotal + (inv.taxAmount || 0),
+      )}\n`;
+    });
+
+    salesTxs.forEach((tx, i) => {
+      csv += `${invoices.length + i + 1},,${this.sanitizeCsvField(
+        tx.reference || "",
+      )},${tx.createdAt.toISOString().slice(0, 10)},${this.sanitizeCsvField(
+        tx.entityId || "",
+      )},${this.sanitizeCsvField(tx.note || tx.category)},${this.sanitizeCsvField(
+        tx.category,
+      )},0,${this.sanitizeCsvField(tx.netAmount)},${this.sanitizeCsvField(
+        tx.taxAmount,
+      )},${this.sanitizeCsvField(tx.amount)}\n`;
+    });
+    return csv;
+  }
+
+  /**
+   * DGII 608 — Declaración de Retenciones y Pagos de Nómina (reporta las retenciones
+   * de honorarios/sueldos a terceros). Se alimenta de PayrollPayments (pagos a
+   * conductores) con su monto e ITBIS retenido.
+   */
+  async exportDgii608(year: number): Promise<string> {
+    const records = await this.prisma.payrollPayment.findMany({
+      where: { year },
+      include: { driver: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    let csv = "";
+    csv += `RNC Emisor,Periodo,Formato,Secuencia,Total Registros\n`;
+    csv += `${this.sanitizeCsvField(BUSINESS_RULES.DGII_RNC_EMISOR ?? "")},${year},608,1,${records.length}\n`;
+    csv += `Registro,RNC/Tipo ID Beneficiario,Beneficiario,RNC/Tipo ID Persona Retenida,Persona Retenida,Monto Sujeto Retención,Monto Retenido,Tipo Retención,Fecha de Pago\n`;
+
+    records.forEach((r, i) => {
+      csv += `${i + 1},,${this.sanitizeCsvField(r.driver.fullName)},${
+        r.amount
+      },0.00,ISR,${r.createdAt.toISOString().slice(0, 10)}\n`;
+    });
+    return csv;
+  }
+
   private readonly ITBIS_RATE = BUSINESS_RULES.ITBIS_RATE;
   private readonly RECURRING_SUB_BASE =
     BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD;
@@ -805,9 +975,11 @@ export class FinanceService {
     reference?: string;
     note?: string;
     status?: string;
+    currency?: string;
   }) {
+    const currency = (data.currency || "DOP") as "DOP" | "USD" | "EUR";
     this.logger.log(
-      `Recording ${data.type} transaction for category: ${data.category}`,
+      `Recording ${data.type} transaction for category: ${data.category} (${currency})`,
     );
 
     let taxAmount = 0;
@@ -844,6 +1016,7 @@ export class FinanceService {
         amount: data.amount,
         taxAmount,
         netAmount,
+        currency,
         entityId: data.entityId,
         reference: data.reference,
         note: data.note,

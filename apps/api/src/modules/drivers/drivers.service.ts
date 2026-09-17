@@ -43,30 +43,25 @@ export class DriversService {
 
   constructor(
     private prisma: PrismaService,
-    private supabaseService: SupabaseService,
     private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService,
   ) {}
 
-  private hasBankAccountConfigured(bankAccount: unknown): boolean {
-    if (
-      !bankAccount ||
-      typeof bankAccount !== "object" ||
-      Array.isArray(bankAccount)
-    ) {
+  private async hasBankAccountConfigured(driverId: string): Promise<boolean> {
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { driverId },
+      select: { bankInfo: true },
+    });
+    if (!wallet || !wallet.bankInfo || typeof wallet.bankInfo !== 'object' || Array.isArray(wallet.bankInfo)) {
       return false;
     }
-
-    const candidate = bankAccount as {
+    const candidate = wallet.bankInfo as {
       banco?: unknown;
       cuenta?: unknown;
       cedula?: unknown;
       tipo?: unknown;
     };
-
-    return Boolean(
-      candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo,
-    );
+    return Boolean(candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo);
   }
 
   /**
@@ -445,26 +440,6 @@ export class DriversService {
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: JWT_EXPIRY });
 
-    // Inject app_metadata into Supabase so subsequent getUser calls carry correct role
-    // Fire-and-forget; don't block login response on metadata sync
-    this.supabaseService
-      .getClient()
-      .auth.admin.updateUserById(user.id, {
-        app_metadata: { role: "DRIVER", entityId: user.id },
-      })
-      .then(({ error: updateError }) => {
-        if (updateError) {
-          this.logger.warn(
-            `⚠️ Failed to inject app_metadata for driver ${user.id}: ${updateError.message}`,
-          );
-        }
-      })
-      .catch((e) => {
-        this.logger.warn(
-          `⚠️ Exception injecting app_metadata for driver ${user.id}: ${e.message}`,
-        );
-      });
-
     const device = await this.prisma.device.findFirst({
       where: { driverId: user.id },
     });
@@ -480,7 +455,7 @@ export class DriversService {
       contractAccepted: user.contractAccepted,
       agreementVersion: user.agreementVersion || null,
       onboardingStatus: user.onboardingStatus,
-      bankAccountConfigured: this.hasBankAccountConfigured(user.bankAccount),
+      bankAccountConfigured: await this.hasBankAccountConfigured(user.id),
     };
   }
 
@@ -886,7 +861,7 @@ export class DriversService {
       contractAccepted: Boolean(driver.contractAccepted),
       agreementVersion: driver.agreementVersion || null,
       onboardingStatus: driver.onboardingStatus || "UNKNOWN",
-      bankAccountConfigured: this.hasBankAccountConfigured(driver.bankAccount),
+      bankAccountConfigured: await this.hasBankAccountConfigured(driver.id),
       deviceId,
     };
   }

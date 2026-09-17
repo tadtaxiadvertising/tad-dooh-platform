@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/tad_theme.dart';
-import '../../screens/login_screen.dart'
-    as legacy show apiLogin, persistLogin, apiFetchHub, ApiException;
+import '../../screens/login_screen.dart' as legacy show apiLogin, persistLogin, ApiException;
 
 /// Login screen. Requiere credenciales reales (sin bypass) y respeta el
 /// kill-switch: 402 bloquea el acceso mediante suscripción vencida.
@@ -160,40 +159,38 @@ class _LoginScreenV2State extends State<LoginScreenV2> {
   }
 
   Future<void> _doLogin() async {
-      setState(() { _loading = true; _error = null; });
+    setState(() { _loading = true; _error = null; });
 
-      final rawPhone = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
-      final password = _passwordCtrl.text;
+    final rawPhone = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final password = _passwordCtrl.text;
 
-      if (rawPhone.isEmpty || password.isEmpty) {
-        if (mounted) {
-          setState(() { _loading = false; _error = 'Ingresa teléfono y contraseña'; });
-        }
-        return;
+    if (rawPhone.isEmpty || password.isEmpty) {
+      if (mounted) {
+        setState(() { _loading = false; _error = 'Ingresa teléfono y contraseña'; });
       }
-
-      try {
-              final result = await legacy.apiLogin(rawPhone, password);
-              await legacy.persistLogin(result, phone: rawPhone, password: password);
-
-              // ALWAYS fetch fresh hub from backend before navigation (avoids stale cached hub with old subscription status)
-              final freshHub = await legacy.apiFetchHub(result.accessToken);
-              if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/dashboard', arguments: freshHub);
-            } on legacy.ApiException catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _loading = false;
-          _error = switch (e.statusCode) {
-            401 => 'Credenciales inválidas',
-            402 => 'Suscripción vencida — contacte a TAD',
-            403 => 'Cuenta suspendida',
-            _ => e.message,
-          };
-        });
-      } catch (_) {
-        if (!mounted) return;
-        setState(() { _loading = false; _error = 'Error de conexión — intente de nuevo'; });
-      }
+      return;
     }
+
+    try {
+      final result = await legacy.apiLogin(rawPhone, password);
+      await legacy.persistLogin(result, phone: rawPhone, password: password);
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/dashboard', arguments: result.hub);
+    } on legacy.ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = switch (e.statusCode) {
+          401 => 'Credenciales inválidas',
+          402 => 'Suscripción vencida — contacte a TAD',
+          403 => 'Cuenta suspendida',
+          _ => e.message,
+        };
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = 'Error de conexión — intente de nuevo'; });
+    }
+  }
 }

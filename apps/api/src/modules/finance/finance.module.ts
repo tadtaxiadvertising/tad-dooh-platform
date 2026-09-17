@@ -4,9 +4,11 @@ import { FinanceService } from "./finance.service";
 import { InvoiceService } from "./invoice.service";
 import { PrismaModule } from "../prisma/prisma.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { DriversModule } from "../drivers/drivers.module";
+import { AdvertisersModule } from "../advertisers/advertisers.module";
 
 @Module({
-  imports: [PrismaModule, NotificationsModule],
+  imports: [PrismaModule, NotificationsModule, DriversModule, AdvertisersModule],
   controllers: [FinanceController],
   providers: [FinanceService, InvoiceService],
   exports: [FinanceService, InvoiceService],

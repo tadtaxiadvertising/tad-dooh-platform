@@ -7,7 +7,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import * as crypto from "crypto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { AuthUser } from "../auth/auth.types";
-import { calculateImpact, ImpactOutput } from "../../libs/impact-calculator";
+import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -77,6 +77,12 @@ export class CampaignService {
     if (dto.active !== undefined) data.active = dto.active;
     if (dto.target_all !== undefined) data.targetAll = dto.target_all;
     if (dto.target_city) data.targetCity = dto.target_city;
+    if (dto.target_cities !== undefined)
+      data.targetCities =
+        dto.target_cities.length > 0 ? dto.target_cities : [];
+    if (dto.target_fleets !== undefined)
+      data.targetFleets =
+        dto.target_fleets.length > 0 ? dto.target_fleets : [];
     if (dto.budget !== undefined) data.budget = Number(dto.budget);
     if (dto.target_impressions !== undefined)
       data.targetImpressions = Number(dto.target_impressions);
@@ -272,6 +278,8 @@ export class CampaignService {
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : false,
         targetCity: dto.target_city || "Global",
+        targetCities: dto.target_cities && dto.target_cities.length > 0 ? dto.target_cities : [],
+        targetFleets: dto.target_fleets && dto.target_fleets.length > 0 ? dto.target_fleets : [],
         category: dto.category || "General",
         whatsapp: dto.whatsapp,
         instagram: dto.instagram,
@@ -741,7 +749,7 @@ export class CampaignService {
           AND (
             target_all = true OR 
             target_city = ${city} OR
-            target_cities::text LIKE ${`%${city}%`} OR
+            target_cities @> ${JSON.stringify([city])}::jsonb OR
             assigned_device_uuids::jsonb @> ${JSON.stringify([uuid])}::jsonb OR
             assigned_hw_ids::jsonb @> ${JSON.stringify([hwId])}::jsonb OR
             (assigned_driver_ids::jsonb @> ${JSON.stringify([driverId])}::jsonb AND ${!!driverId})

@@ -299,14 +299,14 @@ export default function CommitmentStep({
         transition={{ duration: 0.5 }}
       >
         <motion.h1
-          className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2 max-w-none"
+          className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
           Asegura tu campaña
         </motion.h1>
         <motion.p
-          className="text-base md:text-lg font-bold uppercase tracking-wider text-[#22C55E] max-w-none"
+          className="text-xs text-[#AAAAAA] font-bold uppercase tracking-wider"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}

@@ -14,7 +14,7 @@ import {
 import CityMapBackdrop from '../../components/advertiser/CityMapBackdrop';
 import { captureReferralCode, clearReferralCode } from '../../components/advertiser/referral';
 import { GoogleSignInButton } from '@tad/ui';
-import { PORTAL_CONFIGS, supabase } from '@tad/services';
+import { PORTAL_CONFIGS } from '@tad/services';
 
 export { captureReferralCode, clearReferralCode };
 
@@ -62,40 +62,34 @@ export default function AdvertiserLoginPage() {
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError('');
+    e.preventDefault();
+    setError('');
 
-      if (!email.trim() || !password) {
-        setError('Ingresa tu correo corporativo y contraseña.');
-        return;
+    if (!email.trim() || !password) {
+      setError('Ingresa tu correo corporativo y contraseña.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/proxy/advertisers/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Credenciales inválidas. Verifica e intenta de nuevo.');
       }
 
-      setLoading(true);
-      try {
-        const res = await fetch('/api/proxy/advertisers/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), password }),
-        });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          throw new Error(data?.message || 'Credenciales inválidas. Verifica e intenta de nuevo.');
-        }
-
-        // Clear any stale Supabase session (e.g., from previous admin login)
-        // so the canonical sb-<ref>-auth-token cookie doesn't leak a foreign role.
-        try {
-          await supabase.auth.signOut({ scope: 'local' });
-        } catch { /* noop */ }
-
-        persistSession(data, email.trim());
-        router.replace('/advertiser/dashboard');
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
-        setLoading(false);
-      }
-    };
+      persistSession(data, email.trim());
+      router.replace('/advertiser/dashboard');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
+      setLoading(false);
+    }
+  };
 
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();

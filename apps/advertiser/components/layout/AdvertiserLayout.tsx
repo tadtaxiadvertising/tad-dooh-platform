@@ -1,4 +1,5 @@
 import React from 'react';
+import { Layout } from '@tad/ui';
 import CityMapBackdrop from '@/components/advertiser/CityMapBackdrop';
 
 interface AdvertiserLayoutProps {
@@ -9,7 +10,7 @@ interface AdvertiserLayoutProps {
 
 export function AdvertiserLayout({ title, subtitle, children }: AdvertiserLayoutProps) {
   return (
-    <>
+    <Layout>
       {/* Identidad ambiental del portal: ciudad nocturna tras el vidrio */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 opacity-40">
         <CityMapBackdrop />
@@ -24,6 +25,6 @@ export function AdvertiserLayout({ title, subtitle, children }: AdvertiserLayout
         </div>
       )}
       {children}
-    </>
+    </Layout>
   );
 }

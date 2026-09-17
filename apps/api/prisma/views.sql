@@ -83,6 +83,13 @@ CREATE INDEX IF NOT EXISTS idx_mv_campaigns_hwids
 CREATE INDEX IF NOT EXISTS idx_mv_campaigns_drivers
   ON mv_active_campaigns USING GIN (assigned_driver_ids);
 
+-- GIN sobre target_cities/target_fleets (JSONB array) — habilita el targeting
+-- multi-ciudad/flota de alto rendimiento via operador @> (v12.4.1).
+CREATE INDEX IF NOT EXISTS idx_mv_campaigns_target_cities_gin
+  ON mv_active_campaigns USING GIN (target_cities jsonb_path_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_campaigns_target_fleets_gin
+  ON mv_active_campaigns USING GIN (target_fleets jsonb_path_ops);
+
 -- ── Helper: Refresh zero-downtime ──
 -- REQUIERE permisos DDL en producción — crear vía migración Prisma o panel.
 CREATE OR REPLACE FUNCTION refresh_active_campaigns()

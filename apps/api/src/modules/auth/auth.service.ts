@@ -19,7 +19,6 @@ import {
   JWT_EXPIRY,
 } from "../../common/constants/business-rules";
 import * as jwt from "jsonwebtoken";
-import * as crypto from "node:crypto";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
 
 @Injectable()
@@ -300,33 +299,19 @@ export class AuthService {
   async exchangeOAuth(dto: OAuthExchangeDto) {
     this.logger.log(`🔐 OAuth exchange attempt → role=${dto.intended_role}`);
 
-    const decoded = jwt.decode(dto.access_token, { complete: true }) as {
-      header?: { alg?: string; kid?: string };
-      payload?: any;
-    } | null;
-    const alg = decoded?.header?.alg;
-    const kid = decoded?.header?.kid;
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new HttpException(
+        "Server JWT secret not configured.",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
     let payload: any;
     try {
-      if (alg === "HS256") {
-        const jwtSecret =
-          process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-        if (!jwtSecret) {
-          throw new Error("Server JWT secret not configured.");
-        }
-        payload = jwt.verify(dto.access_token, jwtSecret, {
-          algorithms: ["HS256"],
-        });
-      } else if (alg === "ES256" || alg === "RS256") {
-        payload = await this.verifySupabaseJwtWithJwks(
-          dto.access_token,
-          alg,
-          kid,
-        );
-      } else {
-        throw new Error(`Unsupported token algorithm: ${alg}`);
-      }
+      payload = jwt.verify(dto.access_token, jwtSecret, {
+        algorithms: ["HS256"],
+      });
     } catch (err: any) {
       this.logger.warn(
         `🚫 Invalid Supabase token presented to /oauth/exchange: ${err.message}`,
@@ -355,15 +340,6 @@ export class AuthService {
         profile = { ...adminUser, role: resolvedRole };
       }
     } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {
-      const adminAccount = await this.prisma.user.findUnique({ where: { email } });
-      if (adminAccount) {
-        this.logger.warn(
-          `🚫 Admin account ${email} blocked from advertiser portal`,
-        );
-        throw new ForbiddenException(
-          `La cuenta de Google (${email}) es el administrador de la plataforma y no puede acceder como anunciante.`,
-        );
-      }
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { email },
       });
@@ -670,121 +646,5 @@ export class AuthService {
       access_token: token,
       driverId: driver.id,
     };
-  }
-
-  private readonly jwksCache = new Map<
-    string,
-    { keys: any[]; fetchedAt: number }
-  >();
-
-  private supabaseJwksUrl(): string {
-    const base = process.env.SUPABASE_URL;
-    if (!base) {
-      throw new Error("SUPABASE_URL not configured for JWKS lookup.");
-    }
-    return `${base.replace(/\/$/, "")}/auth/v1/.well-known/jwks.json`;
-  }
-
-  private async getSupabaseJwks(): Promise<any[]> {
-    const url = this.supabaseJwksUrl();
-    const ttl = 10 * 60 * 1000;
-    const cached = this.jwksCache.get(url);
-    if (cached && Date.now() - cached.fetchedAt < ttl) {
-      return cached.keys;
-    }
-    const res = await fetch(url, {
-      headers: { Accept: "application/json", "User-Agent": "tad-api" },
-    });
-    if (!res.ok) {
-      if (cached) {
-        return cached.keys;
-      }
-      throw new Error(`JWKS fetch failed: ${res.status}`);
-    }
-    const j = (await res.json()) as { keys: any[] };
-    const keys = Array.isArray(j?.keys) ? j.keys : [];
-    this.jwksCache.set(url, { keys, fetchedAt: Date.now() });
-    return keys;
-  }
-
-  private es256RawToDer(r: Buffer, s: Buffer): Buffer {
-    const int = (v: Buffer) => {
-      let b = Buffer.from(v);
-      while (b.length > 1 && b[0] === 0x00) {
-        b = b.subarray(1);
-      }
-      if (b[0] & 0x80) {
-        b = Buffer.concat([Buffer.from([0x00]), b]);
-      }
-      return b;
-    };
-    const rInt = int(r);
-    const sInt = int(s);
-    return Buffer.concat([
-      Buffer.from([0x30, 2 + rInt.length + 2 + sInt.length]),
-      Buffer.from([0x02, rInt.length]),
-      rInt,
-      Buffer.from([0x02, sInt.length]),
-      sInt,
-    ]);
-  }
-
-  private async verifySupabaseJwtWithJwks(
-    token: string,
-    alg: string,
-    kid?: string,
-  ): Promise<any> {
-    const [header, payloadB64, signatureB64] = token.split(".");
-    if (!header || !payloadB64 || !signatureB64) {
-      throw new Error("Malformed token");
-    }
-    const keys = await this.getSupabaseJwks();
-    const key =
-      keys.find((k) => k.kid === kid) || (keys.length === 1 ? keys[0] : null);
-    if (!key) {
-      throw new Error(`No matching JWKS key for kid=${kid}`);
-    }
-    const publicKey = crypto.createPublicKey({
-      key: key as crypto.JsonWebKey,
-      format: "jwk",
-    });
-    const message = `${header}.${payloadB64}`;
-    const signature = Buffer.from(signatureB64, "base64url");
-
-    let valid = false;
-    try {
-      if (alg === "ES256") {
-        const der = this.es256RawToDer(
-          signature.subarray(0, 32),
-          signature.subarray(32, 64),
-        );
-        valid = crypto
-          .createVerify("SHA256")
-          .update(message)
-          .verify(publicKey, der);
-      } else {
-        valid = crypto
-          .createVerify("RSA-SHA256")
-          .update(message)
-          .verify(publicKey, signature);
-      }
-    } catch (e: any) {
-      throw new Error(`Signature verification failed: ${e.message}`);
-    }
-    if (!valid) {
-      throw new Error("Token signature is invalid");
-    }
-
-    const claims = JSON.parse(
-      Buffer.from(payloadB64, "base64url").toString("utf8"),
-    ) as any;
-    const now = Math.floor(Date.now() / 1000);
-    if (claims.exp && claims.exp <= now - 30) {
-      throw new Error("Token has expired");
-    }
-    if (claims.nbf && claims.nbf > now + 30) {
-      throw new Error("Token not yet valid");
-    }
-    return claims;
   }
 }

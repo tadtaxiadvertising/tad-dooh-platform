@@ -76,6 +76,47 @@ export class SupabaseService {
     return data.publicUrl;
   }
 
+  /**
+   * Sube un buffer (PDF, imagen, etc.) a un bucket privado/público y devuelve
+   * la URL pública y el path almacenado. Regla SRE: crear bucket si no existe
+   * (con fallback silencioso si ya existe) y nunca dejar el upload fallar
+   * silenciosamente.
+   */
+  async uploadBuffer(params: {
+    bucket: string;
+    path: string;
+    data: Buffer | Uint8Array;
+    contentType?: string;
+    upsert?: boolean;
+  }): Promise<{ path: string; publicUrl: string; size: number }> {
+    const { bucket, path, data, contentType = "application/pdf", upsert = false } = params;
+
+    // 0. Auto-create del bucket si no existe (SRE — nunca continuar con bucket ausente)
+    const { error: bucketError } = await this.supabase.storage
+      .createBucket(bucket, { public: true })
+      .catch((err) => ({ error: err }));
+    if (bucketError && !String(bucketError.message || "").includes("already exists")) {
+      throw new Error(`FALLÓ_CREAR_BUCKET ${bucket}: ${bucketError.message}`);
+    }
+
+    // 1. Subida del buffer
+    const { error: uploadError } = await this.supabase.storage
+      .from(bucket)
+      .upload(path, data, {
+        contentType,
+        upsert,
+        cacheControl: "3600",
+      });
+    if (uploadError) {
+      throw new Error(`FALLÓ_UPLOAD ${path}: ${uploadError.message}`);
+    }
+
+    // 2. URL pública
+    const { data: urlData } = this.supabase.storage.from(bucket).getPublicUrl(path);
+
+    return { path, publicUrl: urlData.publicUrl, size: data.length };
+  }
+
   // Listar archivos para la vista /media
   async listMediaFiles(bucket: string = "campaign-videos") {
     const { data, error } = await this.supabase.storage.from(bucket).list("", {

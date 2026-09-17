@@ -174,7 +174,7 @@ export class SyncService {
           ...(device.city
             ? [
                 {
-                  targetCities: { contains: `"${device.city}"` },
+                  targetCities: { array_contains: [device.city] },
                 },
               ]
             : []),
@@ -183,7 +183,7 @@ export class SyncService {
           ...(device.fleet
             ? [
                 {
-                  targetFleets: { contains: `"${device.fleet}"` },
+                  targetFleets: { array_contains: [device.fleet] },
                 },
               ]
             : []),
@@ -217,7 +217,7 @@ export class SyncService {
         AND (
           target_all = true OR 
           target_city = ${city} OR
-          target_cities::text LIKE ${`%${city}%`} OR
+          target_cities @> ${JSON.stringify([city])}::jsonb OR
           assigned_device_uuids::jsonb @> ${JSON.stringify([device.id])}::jsonb OR
           assigned_hw_ids::jsonb @> ${JSON.stringify([deviceId])}::jsonb OR
           (assigned_driver_ids::jsonb @> ${JSON.stringify([driver?.id])}::jsonb AND ${!!isDriverActive})

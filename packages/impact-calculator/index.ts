@@ -26,9 +26,9 @@
  * 10) ALCANCE_TOTAL_CAMPAÑA = ALCANCE_ÚNICO_MES_PANTALLA × pantallas × meses
  */
 
-import { SOURCES, getSource, isCalibrationStatus, ImpactSource } from './sources';
+import { SOURCES, getSource, getActiveSource, isCalibrationStatus, ImpactSource } from './sources';
 
-export { SOURCES, isCalibrationStatus };
+export { SOURCES, getSource, getActiveSource, isCalibrationStatus };
 export type { ImpactSource };
 
 export type CalculationMode = 'conservative' | 'expected' | 'optimistic';

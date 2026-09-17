@@ -17,6 +17,7 @@ import { InvoiceService } from "./invoice.service";
 import { WhatsAppService } from "../notifications/whatsapp.service";
 import { EmailService } from "../notifications/email.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { AdvertiserBillingService } from "../advertisers/advertiser-billing.service";
 import { Response } from "express";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -53,6 +54,7 @@ export class FinanceController {
     private readonly whatsappService: WhatsAppService,
     private readonly emailService: EmailService,
     private readonly prisma: PrismaService,
+    private readonly advertiserBillingService: AdvertiserBillingService,
   ) {}
 
   /**
@@ -265,6 +267,38 @@ export class FinanceController {
     res.set("Content-Disposition", `attachment; filename=campaign-${id}.csv`);
     res.status(HttpStatus.OK).send(csv);
   }
+
+  /**
+   * Exportación Contable DGII (v12.4.1) — Formatos 606/607/608.
+   * GET /finance/export/dgii/606?year=2026
+   * GET /finance/export/dgii/607?year=2026
+   * GET /finance/export/dgii/608?year=2026
+   */
+  @Get("export/dgii/:format.csv")
+  async exportDgii(
+    @Param("format") format: string,
+    @Query("year") year: string,
+    @Res() res: Response,
+  ) {
+    if (!["606", "607", "608"].includes(format)) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: "Formato DGII inválido. Use 606, 607 o 608." });
+    }
+    const y = year ? parseInt(year) : new Date().getFullYear();
+    let csv = "";
+    let filename = `dgii-${format}-${y}.csv`;
+    if (format === "606") {
+      csv = await this.financeService.exportDgii606(y);
+    } else if (format === "607") {
+      csv = await this.financeService.exportDgii607(y);
+    } else {
+      csv = await this.financeService.exportDgii608(y);
+    }
+    res.set("Content-Type", "text/csv; charset=utf-8");
+    res.set("Content-Disposition", `attachment; filename=${filename}`);
+    res.status(HttpStatus.OK).send(csv);
+  }
   /**
    * FINANCIAL INTELLIGENCE: Registers a new financial transaction (Income/Expense).
    */
@@ -280,6 +314,7 @@ export class FinanceController {
       reference?: string;
       note?: string;
       status?: string;
+      currency?: string;
     },
   ) {
     return this.financeService.recordTransaction(data);
@@ -465,5 +500,140 @@ export class FinanceController {
         ? "Email enviado al conductor"
         : "Error al enviar el email",
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ADVERTISER SUBSCRIPTION INVOICE ENDPOINTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Envía la factura de suscripción de un anunciante por email.
+   * POST /finance/advertiser/:advertiserId/invoice/:invoiceId/email
+   * Body: { email: string }
+   */
+  @Post("advertiser/:advertiserId/invoice/:invoiceId/email")
+  async emailAdvertiserInvoice(
+    @Param("advertiserId") advertiserId: string,
+    @Param("invoiceId") invoiceId: string,
+    @Body() body: { email: string },
+  ) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId, advertiserId },
+      include: { advertiser: true },
+    });
+    if (!invoice) return { success: false, message: "Factura no encontrada" };
+
+    const pdf = await this.invoiceService.generateTransactionReceiptPDF({
+      ...invoice,
+      category: `Suscripción Mensual - ${invoice.advertiser.companyName}`,
+      reference: invoice.id,
+    });
+
+    const result = await this.emailService.sendEmail({
+      to: body.email,
+      subject: `Factura Suscripción TAD DOOH - ${invoice.id.slice(0, 12).toUpperCase()} - RD$ ${invoice.totalAmount.toLocaleString()}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: #FFD400; margin: 0; font-size: 28px;">TAD DOOH NETWORK</h1>
+            <p style="color: #888; margin: 10px 0 0;">Factura de Suscripción Mensual</p>
+          </div>
+          <div style="background: #fafafa; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #eee;">
+            <p style="font-size: 16px; color: #333;">Estimado/a <strong>${invoice.advertiser.contactName}</strong>,</p>
+            <p style="color: #555;">Adjuntamos la factura correspondiente a su suscripción mensual.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr style="background: #FFF9C4;">
+                <td style="padding: 12px; border: 1px solid #ddd;"><strong>TOTAL A PAGAR</strong></td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: right;"><strong style="font-size: 18px; color: #E65100;">RD$ ${invoice.totalAmount.toLocaleString()}</strong></td>
+              </tr>
+            </table>
+            <p style="color: #666; font-size: 14px;">
+              <strong>Fecha de emisión:</strong> ${new Date(invoice.issueDate).toLocaleDateString()}<br>
+              <strong>Fecha de vencimiento:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}<br>
+              <strong>N° Factura:</strong> ${invoice.id.slice(0, 12).toUpperCase()}
+            </p>
+            <p style="color: #888; font-size: 12px; margin-top: 30px;">El PDF adjunto tiene validez fiscal. Para consultas: facturacion@tad.do</p>
+          </div>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `Factura_Suscripcion_${invoice.id.slice(0, 8).toUpperCase()}.pdf`,
+          content: pdf,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+
+    return {
+      ...result,
+      message: result.success
+        ? "Factura de suscripción enviada correctamente"
+        : "Error al enviar la factura",
+    };
+  }
+
+  /**
+   * Dispara facturación manual de una suscripción específica (admin).
+   * POST /finance/advertiser/subscription/:subscriptionId/bill
+   */
+  @Post("advertiser/subscription/:subscriptionId/bill")
+  async billSubscriptionNow(@Param("subscriptionId") subscriptionId: string) {
+    try {
+      const result =
+        await this.advertiserBillingService.billSubscriptionNow(subscriptionId);
+      return result;
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Error al facturar suscripción ${subscriptionId}: ${err.message}`,
+      );
+    }
+  }
+
+  /**
+   * Proforma Anunciantes (v12.4.1): genera una factura PROFORMA (pre-billing)
+   * ANTES de activar una campaña. Permite al anunciante aprobar el monto
+   * estimado antes de comprometer inventario.
+   * POST /finance/advertiser/proforma
+   * Body: { advertiserId, numberOfScreens, monthlyRate, months?, description?, reference? }
+   */
+  @Post("advertiser/proforma")
+  @UseInterceptors(IdempotencyInterceptor)
+  async generateProforma(
+    @Body()
+    body: {
+      advertiserId: string;
+      numberOfScreens: number;
+      monthlyRate: number;
+      months?: number;
+      description?: string;
+      reference?: string;
+    },
+  ) {
+    try {
+      return await this.advertiserBillingService.generateProformaInvoice(body);
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Error al generar proforma: ${err.message}`,
+      );
+    }
+  }
+
+  /**
+   * Confirma una proforma → la convierte en factura PENDING (lista para cobro).
+   * POST /finance/advertiser/proforma/:invoiceId/confirm
+   */
+  @Post("advertiser/proforma/:invoiceId/confirm")
+  @UseInterceptors(IdempotencyInterceptor)
+  async confirmProforma(@Param("invoiceId") invoiceId: string) {
+    try {
+      return await this.advertiserBillingService.confirmProformaInvoice(
+        invoiceId,
+      );
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Error al confirmar proforma ${invoiceId}: ${err.message}`,
+      );
+    }
   }
 }

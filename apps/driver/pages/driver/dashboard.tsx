@@ -605,14 +605,25 @@ export default function DriverDashboard() {
 
     setBankPendingSync(pendingSync);
 
-    // ── Guard mandatorio ──────────────────────────────────────────────────────
-    // Re-abre el modal aunque el conductor ya lo haya "visto" si los pasos
-    // obligatorios (contrato y banco) siguen incompletos. Evita el bypass
-    // mediante el flag de localStorage.
-    const isMandatoryIncomplete =
-      !hubData.contractAccepted || (!hubData.bankAccountConfigured && !pendingSync);
+    // ── Guard mandatorio (SOLO contrato) ────────────────────────────────────
+    // El único gate verdaderamente obligatorio es aceptar el contrato. Un
+    // conductor que ya aceptó el contrato NO debe verse forzado a onboarding en
+    // cada login por no haber configurado aún su banco o pagado la membresía —
+    // esos son pasos suaves que muestran progreso pero no bloquean el dashboard.
+    const isNewUser = !hubData.contractAccepted;
+    const hasPendingSteps =
+      !hubData.contractAccepted ||
+      (!hubData.bankAccountConfigured && !pendingSync) ||
+      !hubData.subscriptionPaid;
 
-    if (forceOnboarding || !hasSeenOnboarding || isMandatoryIncomplete) {
+    // Auto-abrir SOLO para: (a) nuevo usuario real (contrato pendiente),
+    // (b) usuario que nunca ha visto el onboarding en este dispositivo,
+    // (c) contrato revertido. Un usuario recurrente con banco/pago pendiente
+    // SIEMPRE podrá cerrar y no se re-abre en cada login.
+    const shouldOpen =
+      isNewUser || (hasPendingSteps && !hasSeenOnboarding) || forceOnboarding;
+
+    if (shouldOpen) {
       setShowOnboarding(true);
     }
   }, [hubData?.driverId, hubData?.contractAccepted, hubData?.bankAccountConfigured]);
@@ -681,31 +692,12 @@ export default function DriverDashboard() {
   };
 
   const closeOnboarding = () => {
-    // ── Bloqueo de pasos obligatorios ─────────────────────────────────────────
-    // 'contract' y 'bank' son mandatorios: no se puede cerrar el modal hasta
-    // completarlos. Protege contra conductores que hagan bypass desde el cliente.
-    if (hubData) {
-      const currentBankPending =
-        typeof window !== 'undefined' && hubData.driverId
-          ? localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === '1'
-          : bankPendingSync;
-
-      const currentStage = getDriverOnboardingStage(
-        {
-          agreementVersion: hubData.agreementVersion,
-          bankAccountConfigured: hubData.bankAccountConfigured,
-          contractAccepted: hubData.contractAccepted,
-          driverId: hubData.driverId,
-          onboardingStatus: hubData.onboardingStatus,
-          subscriptionPaid: hubData.subscriptionPaid,
-        },
-        currentBankPending,
-      );
-
-      if (currentStage === 'contract' || currentStage === 'bank') {
-        // Paso obligatorio — no permitir cierre
-        return;
-      }
+    // ── Bloqueo de paso obligatorio (SOLO contrato) ─────────────────────────
+    // El contrato es el único paso que no se puede cerrar hasta completarse.
+    // Banco y pago son pasos suaves: el conductor puede cerrar y retomar luego
+    // (se guarda el flag "seen" para que no se re-abra en cada login).
+    if (hubData && !hubData.contractAccepted) {
+      return;
     }
 
     if (typeof window !== 'undefined' && hubData?.driverId) {

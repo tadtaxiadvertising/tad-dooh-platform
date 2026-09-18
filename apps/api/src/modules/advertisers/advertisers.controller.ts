@@ -167,4 +167,13 @@ export class AdvertisersController {
   async getInvoices(@Param("id") id: string) {
     return this.advertisersService.getInvoices(id);
   }
+
+  /**
+   * Perfil extendido del anunciante para el ADMIN
+   */
+  @Get(":id/admin-profile")
+  @Roles(UserRole.ADMIN)
+  async getAdminProfile(@Param("id") id: string) {
+    return this.advertisersService.getAdminProfile(id);
+  }
 }

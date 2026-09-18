@@ -638,6 +638,47 @@ export class AdvertisersService {
   }
 
   // PORTAL LOGIN
+
+  /**
+   * GET /advertisers/:id/admin-profile — Perfil extendido para el admin.
+   * Incluye campañas, medios, facturas y métricas consolidadas.
+   */
+  async getAdminProfile(id: string) {
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id },
+      include: {
+        campaigns: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            _count: { select: { media: true, targetDrivers: true, metrics: true } },
+            mediaAssets: { select: mediaAssetSafeSelect },
+          },
+        },
+        invoices: {
+          orderBy: { issueDate: "desc" },
+          take: 20,
+        },
+        referredBy: {
+          select: { id: true, fullName: true, phone: true },
+        },
+      } as any,
+    });
+    if (!advertiser) throw new BadRequestException("Anunciante no encontrado");
+
+    // Total de campañas y devices contratados (agregado ligero)
+    const totalCampaigns = advertiser.campaigns?.length ?? 0;
+    const activeCampaigns = (advertiser.campaigns ?? []).filter(
+      (c: any) => c.active && c.status !== "COMPLETED",
+    ).length;
+
+    return {
+      ...advertiser,
+      totalVerifiedPlays: totalCampaigns, // compat: total de campañas
+      activeCampaigns,
+      profileStatus: advertiser.status,
+    } as any;
+  }
+
   async login(email: string, pass: string) {
     const user = await this.prisma.advertiser.findUnique({ where: { email } });
     if (!user) {
@@ -682,6 +723,9 @@ export class AdvertisersService {
       name: user.companyName,
       role: "ADVERTISER",
       entityId: user.id,
+      status: user.status,
+      category: user.category || null,
+      phone: user.phone || null,
     };
   }
 

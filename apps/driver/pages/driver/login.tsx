@@ -72,7 +72,11 @@ export default function DriverLoginPage() {
         localStorage.setItem('tad_driver_token', accessToken);
         localStorage.setItem('tad_driver_user', JSON.stringify(storedUser));
 
-        if (!storedUser.contractAccepted || !storedUser.bankAccountConfigured) {
+        // Forzar onboarding SOLO para nuevos usuarios reales (contrato sin
+        // aceptar). Un conductor recurrente con banco/membresía pendiente NO
+        // debe ser re-forzado a onboarding en cada login — esa fricción es el
+        // bug que mostraba el "borde de nuevo usuario" a conductores activos.
+        if (!storedUser.contractAccepted) {
           sessionStorage.setItem('tad_driver_force_onboarding', '1');
         } else {
           sessionStorage.removeItem('tad_driver_force_onboarding');

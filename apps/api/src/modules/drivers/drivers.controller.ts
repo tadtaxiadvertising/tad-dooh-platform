@@ -63,6 +63,25 @@ export class DriversController {
   }
 
   /**
+   * GET /api/drivers/onboarding-pending — Choferes con onboarding incompleto
+   * Debe declararse antes de @Get(':id') para evitar colisión de rutas.
+   */
+  @Get("onboarding-pending")
+  @Roles(UserRole.ADMIN)
+  async getOnboardingPending() {
+    return this.driversService.getOnboardingPending();
+  }
+
+  /**
+   * GET /api/drivers/:id/admin-profile — Perfil extendido para admin
+   */
+  @Get(":id/admin-profile")
+  @Roles(UserRole.ADMIN)
+  async getAdminProfile(@Param("id") id: string) {
+    return this.driversService.getAdminProfile(id);
+  }
+
+  /**
    * GET /api/drivers/:id — Detalle de un chofer
    */
   @Get(":id")
@@ -208,6 +227,22 @@ export class DriversController {
         userAgent,
       );
     } catch (e) {
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  /**
+   * POST /api/drivers/:id/complete-bank-setup — Confirmar cuenta bancaria y finalizar onboarding
+   */
+  @Post(":id/complete-bank-setup")
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
+  async completeBankSetup(@Param("id") id: string) {
+    try {
+      return await this.driversService.completeBankSetup(id);
+    } catch (e) {
+      if (e instanceof ForbiddenException) throw e;
+      if (e instanceof BadRequestException) throw e;
       throw new BadRequestException(e.message);
     }
   }

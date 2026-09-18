@@ -262,20 +262,22 @@ export class DriversService {
         : 0;
 
       return {
-        ...driver,
-        activeAds: activeAdsCount,
-        // FIX M-2: Usar constantes en lugar de magic numbers
-        projectedEarnings:
-          driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-            ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
-            : 0,
-        referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
-        advertiserReferralBonus:
-          (driver.referredAdvertisers?.length || 0) *
-          BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-        referralsCount: validReferrals,
-        advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
-      };
+              ...driver,
+              activeAds: activeAdsCount,
+              // FIX M-2: Usar constantes en lugar de magic numbers
+              projectedEarnings:
+                driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+                  ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+                  : 0,
+              referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
+              advertiserReferralBonus:
+                (driver.referredAdvertisers?.length || 0) *
+                BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+              referralsCount: validReferrals,
+              advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
+              // NUEVO: onboardingStatus visible para admin
+              onboardingStatus: driver.onboardingStatus || 'UNKNOWN',
+            };
     });
   }
 
@@ -463,6 +465,19 @@ export class DriversService {
    * Actualizar el estado de suscripción de un chofer
    */
   async updateSubscription(id: string, paid: boolean, endDate?: Date) {
+    const driver = await this.prisma.driver.findUnique({ where: { id } });
+    if (!driver) throw new Error("Chofer no encontrado");
+
+    // Si se marca como pagado y estaba en PENDING_PAYMENT/READY, avanzar a BANK_PENDING
+    let newOnboardingStatus = driver.onboardingStatus;
+    const payableSteps: string[] = [
+      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.PENDING_PAYMENT,
+      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY,
+    ];
+    if (paid && payableSteps.includes(driver.onboardingStatus)) {
+      newOnboardingStatus = BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING;
+    }
+
     return this.prisma.driver.update({
       where: { id },
       data: {
@@ -472,8 +487,120 @@ export class DriversService {
           ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
           : BUSINESS_RULES.STATUS.DRIVER.SUSPENDED,
         blockedAt: paid ? null : new Date(),
+        onboardingStatus: newOnboardingStatus,
       },
     });
+  }
+
+  /**
+   * Completar configuración de cuenta bancaria → onboarding COMPLETED
+   * Se llama cuando el driver (o admin) confirma que la wallet tiene bankInfo completo.
+   */
+  async completeBankSetup(driverId: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+    });
+    if (!driver) throw new Error("Chofer no encontrado");
+
+    const bankReady = await this.hasBankAccountConfigured(driverId);
+    if (!bankReady) {
+      throw new BadRequestException(
+        "Configuración bancaria incompleta. Se requieren: banco, cuenta, cédula y tipo.",
+      );
+    }
+
+    // Requiere pago previo (BANK_PENDING viene de updateSubscription con paid=true)
+    if (
+      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING &&
+      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY &&
+      !driver.subscriptionPaid
+    ) {
+      throw new ForbiddenException(
+        "Debe completar la suscripción (pago) antes de poder finalizar el onboarding.",
+      );
+    }
+
+    return this.prisma.driver.update({
+      where: { id: driverId },
+      data: {
+        onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
+        status: driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL
+          ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+          : driver.status,
+      },
+    });
+  }
+
+  /**
+   * Listar choferes con onboarding incompleto (dashboard admin)
+   * Útil para que el admin sepa quiénes faltan completar TOS/Pago/Banco.
+   */
+  async getOnboardingPending() {
+    const incomplete = await this.prisma.driver.findMany({
+      where: {
+        onboardingStatus: {
+          not: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
+        },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        cedula: true,
+        status: true,
+        onboardingStatus: true,
+        subscriptionPaid: true,
+        contractAccepted: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return incomplete;
+  }
+
+  /**
+   * GET /drivers/:id/admin-profile — Perfil extendido para el admin.
+   * Incluye onboarding, suscripción, banca y referidos.
+   */
+  async getAdminProfile(id: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id },
+      include: {
+        devices: {
+          select: { id: true, deviceId: true, status: true, lastSeen: true },
+        },
+        subscriptions: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+        contractAcceptances: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        referencedDrivers: {
+          where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE },
+          select: { id: true, fullName: true, status: true, subscriptionPaid: true },
+        },
+        referredAdvertisers: {
+          select: { id: true, companyName: true, status: true },
+        },
+      } as any,
+    });
+    if (!driver) throw new Error("Chofer no encontrado");
+
+    const bankReady = await this.hasBankAccountConfigured(id);
+    const lastPayment = await this.prisma.payrollPayment.findFirst({
+      where: { driverId: id },
+      orderBy: { createdAt: "desc" },
+      select: { amount: true, status: true, paidAt: true, createdAt: true },
+    }).catch(() => null);
+
+    return {
+      ...driver,
+      bankAccountConfigured: bankReady,
+      onboardingStatus: driver.onboardingStatus || "UNKNOWN",
+      lastPayment,
+    } as any;
   }
 
   /**
@@ -485,12 +612,21 @@ export class DriversService {
     });
     if (!driver) throw new Error("Chofer no encontrado");
 
+    // Verificar onboarding completado (TOS + Pago + Banco)
+    const onboardingCompleteSteps: string[] = [
+      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
+      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING,
+    ];
+    const onboardingComplete = onboardingCompleteSteps.includes(
+      driver.onboardingStatus,
+    );
+
     if (
       driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
-      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY
+      !onboardingComplete
     ) {
       throw new ForbiddenException(
-        `Onboarding incompleto o suscripción no pagada. Asegúrate de abonar RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} primero.`,
+        `Onboarding incompleto o suscripción no pagada. Estado actual: ${driver.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
       );
     }
 
@@ -549,7 +685,7 @@ export class DriversService {
         contractAccepted: true,
         contractAcceptedAt: new Date(),
         agreementVersion: version,
-        onboardingStatus: "PENDING_PAYMENT",
+        onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.PENDING_PAYMENT,
       },
     });
   }

@@ -16,15 +16,17 @@ COPY tsconfig.base.json ./
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api', 'packages/impact-calculator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
     && npm ci --workspace=apps/api --workspace=packages/impact-calculator
 
-# 2. Build shared packages first
+# 2. Copy all source files
+COPY . .
+
+# 3. Build shared packages first (using source files just copied)
 RUN npm run build --workspace=packages/impact-calculator
 
-# 3. Copy source and build API
-COPY . .
+# 4. Build API
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 RUN npm run build -w apps/api
 
-# 3. Prune devDependencies (but keep node_modules structure)
+# 5. Prune devDependencies (but keep node_modules structure)
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
     && npm prune --omit=dev --workspace=apps/api
 

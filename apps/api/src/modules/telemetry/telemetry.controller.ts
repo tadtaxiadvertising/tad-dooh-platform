@@ -207,10 +207,21 @@ export class TelemetryController {
       return { success: false, reason: "EMPTY_PAYLOAD" };
     }
 
-    // Validate deviceId for the batch (all events assumed from same device)
+    // The batch contract is one device per request. Reject mixed-device
+    // batches instead of validating only the first device and then trusting
+    // every row downstream.
     const deviceId = payload[0]?.deviceId;
     if (!deviceId) {
       return { success: false, reason: "MISSING_DEVICE_ID" };
+    }
+
+    const mixedDevice = payload.some((event) => event.deviceId !== deviceId);
+    if (mixedDevice) {
+      return {
+        success: false,
+        reason: "MIXED_DEVICE_BATCH",
+        message: "All playback events in a batch must belong to the same device",
+      };
     }
 
     const deviceValid = await this.telemetryService.validateDevice(deviceId);
@@ -222,11 +233,56 @@ export class TelemetryController {
       };
     }
 
-    const videoIds = [...new Set(payload.map((e) => e.videoId))];
-    for (const videoId of videoIds) {
-      const videoValid = await this.telemetryService.validateVideo(videoId);
-      if (!videoValid) {
-        this.logger.warn(`⚠️ Invalid videoId=${videoId} in batch`);
+    // Validate every event before marking the batch as verified. Previously,
+    // invalid videoIds were only logged and were still persisted as verified.
+    const videoIds = [...new Set(payload.map((event) => event.videoId))];
+    const videoResults = await Promise.all(
+      videoIds.map(async (videoId) => ({
+        videoId,
+        valid: await this.telemetryService.validateVideo(videoId),
+      })),
+    );
+    const invalidVideo = videoResults.find((result) => !result.valid);
+    if (invalidVideo) {
+      this.logger.warn(
+        `⚠️ Invalid videoId=${invalidVideo.videoId} in playback batch`,
+      );
+      return {
+        success: false,
+        reason: "VIDEO_INVALID",
+        message: "One or more videos are not part of an active campaign",
+      };
+    }
+
+    // Reject malformed event types and timestamps before persistence.
+    const validEventTypes = new Set(["START", "END", "ERROR"]);
+    const now = Date.now();
+    const fiveMinAgo = now - 5 * 60 * 1000;
+    const oneMinFuture = now + 60 * 1000;
+
+    for (const event of payload) {
+      if (!event.videoId || !validEventTypes.has(event.eventType)) {
+        return {
+          success: false,
+          reason: "EVENT_INVALID",
+          message: "Playback event has an invalid videoId or eventType",
+        };
+      }
+
+      if (event.clientTimestamp) {
+        const timestamp = new Date(event.clientTimestamp);
+        if (
+          Number.isNaN(timestamp.getTime()) ||
+          timestamp.getTime() < fiveMinAgo ||
+          timestamp.getTime() > oneMinFuture
+        ) {
+          return {
+            success: false,
+            reason: "TIMESTAMP_INVALID",
+            message:
+              "One or more event timestamps are outside the 5-minute acceptance window",
+          };
+        }
       }
     }
 

@@ -11,11 +11,14 @@ COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 
-# Scope workspace to API only
-RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
-    && npm ci --workspace=apps/api
+# Scope workspace to API only + build shared packages
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api', 'packages/impact-calculator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
+    && npm ci --workspace=apps/api --workspace=packages/impact-calculator
 
-# 2. Copy source and build
+# 2. Build shared packages first
+RUN npm run build --workspace=packages/impact-calculator
+
+# 3. Copy source and build API
 COPY . .
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 RUN npm run build -w apps/api

@@ -13,19 +13,24 @@
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
-        "strictNullChecks": false,
-        "noImplicitAny": false,
-        "strictBindCallApply": false,
-        "forceConsistentCasingInFileNames": false,
-        "noFallthroughCasesInSwitch": false,
-        "rootDir": "src",
-            "types": ["node"],
-            "baseUrl": ".",
-            "paths": {
-                          "@tad/impact-calculator": ["../../apps/api/src/libs/impact-calculator/index.ts"],
-                          "@tad/impact-calculator/*": ["../../apps/api/src/libs/impact-calculator/*"]
-                        }
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "rootDir": "src",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@tad/impact-calculator": ["../../packages/impact-calculator/dist/index"],
+      "@tad/impact-calculator/*": ["../../packages/impact-calculator/dist/*"]
+    },
+    "composite": true,
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"],
+  "references": [
+    { "path": "../../packages/impact-calculator" }
+  ]
 }

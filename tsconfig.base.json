@@ -19,9 +19,9 @@
       "@tad/store": ["./packages/store/index.ts"],
       "@tad/store/*": ["./packages/store/*"],
       "@tad/logging": ["./packages/logging/index.ts"],
-            "@tad/logging/*": ["./packages/logging/*"],
-            "@tad/impact-calculator": ["./apps/api/src/libs/impact-calculator/index.ts"],
-            "@tad/impact-calculator/*": ["./apps/api/src/libs/impact-calculator/*"]
+      "@tad/logging/*": ["./packages/logging/*"],
+      "@tad/impact-calculator": ["./packages/impact-calculator/index.ts"],
+      "@tad/impact-calculator/*": ["./packages/impact-calculator/*"]
     }
   }
 }

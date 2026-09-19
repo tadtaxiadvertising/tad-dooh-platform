@@ -162,7 +162,7 @@ export class DeviceAdminController {
     data: {
       taxiNumber?: string;
       city?: string;
-      status?: string;
+      status?: 'OPERATIVO' | 'PENDIENTE_PAGO' | 'BLOQUEADO';
       driverId?: string | null;
     },
   ) {
@@ -171,7 +171,7 @@ export class DeviceAdminController {
       data: {
         taxiNumber: data.taxiNumber,
         city: data.city,
-        status: data.status as any,
+        status: data.status,
         ...(data.driverId !== undefined && { driverId: data.driverId }),
       },
       include: { driver: true },
@@ -324,7 +324,14 @@ export class DeviceAdminController {
     const updateData: any = {};
     if (data.taxi_number !== undefined)
       updateData.taxiNumber = data.taxi_number;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.status !== undefined) {
+      // Validar que sea un SystemStatus válido
+      const validStatuses = ['OPERATIVO', 'PENDIENTE_PAGO', 'BLOQUEADO'];
+      if (!validStatuses.includes(data.status)) {
+        throw new BadRequestException(`Status inválido: ${data.status}. Valores válidos: ${validStatuses.join(', ')}`);
+      }
+      updateData.status = data.status;
+    }
 
     // Update Driver if exists
     if (device.driver) {

@@ -54,7 +54,9 @@ export class OnboardingService {
             email,
             phone,
             password: hashedPassword,
-            status: "ACTIVE",
+            // NUEVO: Status de onboarding — no ACTIVE directo
+            // Permite al dashboard detectar onboarding incompleto
+            status: "PENDING_REVIEW",
           },
         });
 
@@ -107,5 +109,24 @@ export class OnboardingService {
         "Error al procesar el registro. Intente de nuevo.",
       );
     }
+  }
+
+  /**
+   * Completar onboarding: marcar advertiser como ACTIVE tras finalizar wizard
+   */
+  async completeOnboarding(advertiserId: string) {
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id: advertiserId },
+    });
+    if (!advertiser) throw new Error("Anunciante no encontrado");
+
+    if (advertiser.status === "ACTIVE") {
+      return { advertiserId, status: "ACTIVE", message: "Ya estaba activo" };
+    }
+
+    return this.prisma.advertiser.update({
+      where: { id: advertiserId },
+      data: { status: "ACTIVE" },
+    });
   }
 }

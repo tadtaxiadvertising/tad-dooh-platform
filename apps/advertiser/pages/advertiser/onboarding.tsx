@@ -71,6 +71,22 @@ export default function AdvertiserOnboarding() {
   };
   const goToLogin = () => router.push('/advertiser/login');
 
+  const handleOnboardingComplete = async () => {
+    try {
+      const advertiserId = localStorage.getItem('tad_adv_pending_onboarding_id');
+      if (advertiserId) {
+        await fetch('/api/proxy/onboarding/advertiser/' + advertiserId + '/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        localStorage.removeItem('tad_adv_pending_onboarding_id');
+      }
+    } catch {
+      // Silencioso — no bloquear el flujo si falla
+    }
+    router.push('/advertiser/login');
+  };
+
   const validateCommitment = (): string => {
     if (
       !form.rnc.trim() ||
@@ -138,6 +154,8 @@ export default function AdvertiserOnboarding() {
         budget: estimate.total,
         impressions: estimate.impressions,
       });
+      // NUEVO: Guardar advertiserId para completar onboarding después
+      localStorage.setItem('tad_adv_pending_onboarding_id', data.advertiserId);
       setTimeout(() => setStep(4), 600);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
@@ -180,7 +198,7 @@ export default function AdvertiserOnboarding() {
           />
         );
       case 4:
-        return <SuccessStep onContinue={goToLogin} campaignData={campaignData || undefined} />;
+        return <SuccessStep onContinue={handleOnboardingComplete} campaignData={campaignData || undefined} />;
       default:
         return null;
     }

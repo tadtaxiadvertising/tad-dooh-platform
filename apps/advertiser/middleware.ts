@@ -53,6 +53,21 @@ export async function middleware(request: NextRequest) {
   // 2. Auth routes
   if (pathname === LOGIN_PATH || pathname === '/login') {
     if (quickRole === EXPECTED_ROLE) {
+      // NUEVO: Verificar status del JWT claims para redirigir correctamente
+      let status = 'ACTIVE';
+      try {
+        if (sessionToken) {
+          const payloadBase64 = sessionToken.split('.')[1];
+          if (payloadBase64) {
+            const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+            status = decoded.app_metadata?.status || decoded.status || 'ACTIVE';
+          }
+        }
+      } catch { /* fallback to ACTIVE */ }
+      
+      if (status === 'PENDING_REVIEW') {
+        return NextResponse.redirect(new URL('/advertiser/onboarding', request.url));
+      }
       return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
     }
     return NextResponse.next();
@@ -115,6 +130,22 @@ export async function middleware(request: NextRequest) {
 
   if (role !== EXPECTED_ROLE) {
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+  }
+
+  // NUEVO: Redirigir a onboarding si status es PENDING_REVIEW y no están ya ahí
+  if (pathname === DASHBOARD_PATH || pathname.startsWith(DASHBOARD_PATH + '/')) {
+    try {
+      if (sessionToken) {
+        const payloadBase64 = sessionToken.split('.')[1];
+        if (payloadBase64) {
+          const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+          const status = decoded.app_metadata?.status || decoded.status || 'ACTIVE';
+          if (status === 'PENDING_REVIEW') {
+            return NextResponse.redirect(new URL('/advertiser/onboarding', request.url));
+          }
+        }
+      }
+    } catch { /* noop */ }
   }
 
   return response;

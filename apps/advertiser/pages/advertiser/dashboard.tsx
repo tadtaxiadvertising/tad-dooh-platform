@@ -3,7 +3,7 @@ import { AdvertiserLayout } from '@/components/layout/AdvertiserLayout';
 import { MetricsGrid } from '@/components/bi/MetricsGrid';
 import { BudgetSimulator } from '@/components/bi/BudgetSimulator';
 import { BillingPortal } from '@/components/bi/BillingPortal';
-import OnboardingWizard, { getOnboardingKey } from '@/components/advertiser/OnboardingWizard';
+import OnboardingWizard from '@/components/advertiser/OnboardingWizard';
 import {
   ShieldCheck,
   Zap,
@@ -22,16 +22,23 @@ export default function AdvertiserDashboard() {
   const { session } = useAuth();
 
   const entityId = session?.user?.app_metadata?.entityId;
+  // NUEVO: Leer status del JWT claims (backend) — fuente de verdad
+  // session.user puede ser User de Supabase (sin status) o nuestro sintético (con status)
+  const backendStatus = (session?.user as any)?.status || session?.user?.app_metadata?.status || 'ACTIVE';
 
-  // Wizard de bienvenida: se muestra solo si tad_adv_onboarded_${id} no existe
+  // Wizard de bienvenida: SOLO si backendStatus indica onboarding incompleto
+  // (PENDING_REVIEW = INITIAL) — localStorage solo como fallback
   useEffect(() => {
     if (!entityId) return;
     try {
-      setShowWizard(window.localStorage.getItem(getOnboardingKey(entityId)) !== '1');
+      const localDone = window.localStorage.getItem(`tad_adv_onboarded_${entityId}`) === '1';
+      // Solo mostrar wizard si el backend tiene status PENDING_REVIEW (onboarding incompleto)
+      const needsOnboarding = backendStatus === 'PENDING_REVIEW' && !localDone;
+      setShowWizard(needsOnboarding);
     } catch {
       setShowWizard(false);
     }
-  }, [entityId]);
+  }, [entityId, backendStatus]);
 
   const wizardOverlay = entityId && showWizard ? (
     <OnboardingWizard advertiserId={entityId} onComplete={() => setShowWizard(false)} />

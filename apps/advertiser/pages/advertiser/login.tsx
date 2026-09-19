@@ -36,7 +36,12 @@ function persistSession(payload: Record<string, unknown>, fallbackEmail: string)
       '',
     email: payload?.email || (payload as any)?.user?.email || fallbackEmail,
     role: 'ADVERTISER',
-    entityId: payload?.advertiserId || null,
+    entityId: payload?.advertiserId || (payload as any)?.user?.entityId || null,
+    name: payload?.name || payload?.companyName || fallbackEmail,
+    // NUEVO: campos del backend para UX de onboarding/estados
+    status: payload?.status || 'ACTIVE',
+    category: payload?.category || null,
+    phone: payload?.phone || null,
   };
 
   const isSecure = window.location.protocol === 'https:';

@@ -10,6 +10,7 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
+COPY tsconfig.base.json ./
 
 # Scope workspace to API only + build shared packages
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api', 'packages/impact-calculator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \

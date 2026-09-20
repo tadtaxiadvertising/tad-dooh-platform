@@ -18,6 +18,9 @@ COPY apps/advertiser ./apps/advertiser
 # tailwindcss/postcss y silenciosamente cambiar el output de CSS.
 RUN npm install
 
+# Build shared packages first (impact-calculator is required by advertiser)
+RUN npm run build --workspace=packages/impact-calculator
+
 # INYECCIÓN CRÍTICA DE IDENTIDAD ADVERTISER
 ARG NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi

@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { FinanceController } from "./finance.controller";
 import { FinanceService } from "./finance.service";
 import { InvoiceService } from "./invoice.service";
@@ -8,7 +8,7 @@ import { DriversModule } from "../drivers/drivers.module";
 import { AdvertisersModule } from "../advertisers/advertisers.module";
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, DriversModule, AdvertisersModule],
+  imports: [PrismaModule, NotificationsModule, DriversModule, forwardRef(() => AdvertisersModule)],
   controllers: [FinanceController],
   providers: [FinanceService, InvoiceService],
   exports: [FinanceService, InvoiceService],

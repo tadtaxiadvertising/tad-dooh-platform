@@ -148,6 +148,15 @@ export class PortalRequestsService {
           const cData = JSON.parse(request.data);
 
           // 1. Create the Campaign
+          // Validate dates before passing to Prisma
+          const parsedStartDate = Date.parse(cData.startDate);
+          const parsedEndDate = Date.parse(cData.endDate);
+
+          if (isNaN(parsedStartDate) || isNaN(parsedEndDate)) {
+            this.logger.error(`[APPROVAL_FLOW] ❌ Invalid dates provided for request ${id}`);
+            throw new BadRequestException('Las fechas de inicio y fin deben ser válidas y obligatorias.');
+          }
+
           const newCampaign = await this.prisma.campaign.create({
             data: {
               name: cData.name,
@@ -156,8 +165,8 @@ export class PortalRequestsService {
               advertiserId: (request.advertiserId as string) || null, // Optional FK field
               description:
                 request.description || "Inició vía Portal de Anunciante",
-              startDate: new Date(cData.startDate),
-              endDate: new Date(cData.endDate),
+              startDate: new Date(parsedStartDate),
+              endDate: new Date(parsedEndDate),
               status: "ACTIVE",
               active: true,
               isGlobal: true,

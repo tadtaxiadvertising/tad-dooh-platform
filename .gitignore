@@ -103,9 +103,7 @@ zig*/
 \#*\#
 
 # Build artifacts
-**/dist/
-dist/
-out/
+.next/
 .next/
 *.hprof
 *.hprof.txt

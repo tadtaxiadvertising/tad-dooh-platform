@@ -11,26 +11,24 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Archivos del monorepo
-COPY package*.json ./
-COPY apps/tad-remotion/package.json ./apps/tad-remotion/
-COPY packages/ ./packages/
+# Archivos SOLO de tad-remotion (evita problemas del monorepo)
+COPY apps/tad-remotion/package.json ./package.json
 
-# Instalar dependencias
-RUN npm install --legacy-peer-deps
+# Instalar dependencias de tad-remotion
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Copiar código fuente y build
-COPY apps/tad-remotion ./apps/tad-remotion
-RUN npm run build --prefix apps/tad-remotion
+# Copiar código fuente
+COPY apps/tad-remotion/tsconfig.json ./tsconfig.json
+COPY apps/tad-remotion/src ./src
+
+# Build
+RUN npm run build
 
 # Asegurar browser de Remotion
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium
 RUN node -e "try{require('@remotion/renderer').ensureBrowser().then(()=>console.log('Browser ready')).catch(e=>console.log('Browser check skipped:',e.message))}catch(e){console.log('Browser check error:',e.message)}"
-
-# Podar devDeps
-RUN npm prune --production --force
 
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=896"
@@ -44,4 +42,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD curl -fsS "http://127.0.0.1:8000/health" >/dev/null || exit 1
 
-CMD ["node", "apps/tad-remotion/dist/index.js"]
+CMD ["node", "dist/index.js"]

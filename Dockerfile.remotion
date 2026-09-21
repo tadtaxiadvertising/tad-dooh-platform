@@ -1,4 +1,4 @@
-# Single-stage Remotion worker optimizado para Easypanel (1024MB RAM disponible)
+# Single-stage Remotion worker - COPY pre-built dist (no remote build)
 FROM node:20-bullseye-slim
 
 WORKDIR /app
@@ -11,28 +11,17 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Archivos SOLO de tad-remotion (evita problemas del monorepo)
+# Copiar package.json y instalar SOLO production deps
 COPY apps/tad-remotion/package.json ./package.json
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Instalar dependencias + devDeps para build
-RUN npm install --no-audit --no-fund
+# Copiar build pre-compilado (requiere `npm run build` local antes de push)
+COPY apps/tad-remotion/dist ./dist
 
-# Copiar código fuente
-COPY apps/tad-remotion/tsconfig.json ./tsconfig.json
-COPY apps/tad-remotion/src ./src
-
-# Build
-RUN npm run build
-
-# Remover devDeps después del build
-RUN npm prune --omit=dev --force
-
-# Asegurar browser de Remotion
+# Asegurar browser de Remotion (runtime)
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium
-# Skip browser check at build time - will run at runtime
-# RUN node -e "try{require('@remotion/renderer').ensureBrowser().then(()=>console.log('Browser ready')).catch(e=>console.log('Browser check skipped:',e.message))}catch(e){console.log('Browser check error:',e.message)}"
 
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=896"

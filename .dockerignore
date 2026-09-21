@@ -7,8 +7,6 @@ node_modules
 **/node_modules
 
 # Local build/test artifacts.
-dist
-**/dist
 .next
 **/.next
 coverage

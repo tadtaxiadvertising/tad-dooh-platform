@@ -1,7 +1,16 @@
-# Single-stage Remotion worker - COPY pre-built dist (no remote build)
+# Single-stage Remotion worker - minimal debug
 FROM node:20-bullseye-slim
 
 WORKDIR /app
+
+# Debug: list what's in the build context root
+RUN ls -la /
+
+# Debug: check tad-remotion exists
+RUN ls -la /app/../apps/tad-remotion/ 2>/dev/null || echo "NOT FOUND: /app/../apps/tad-remotion"
+
+# Debug: check dist exists
+RUN ls -la /app/../apps/tad-remotion/dist/ 2>/dev/null || echo "dist NOT FOUND"
 
 # Runtime dependencies - skip chromium for now to debug
 RUN apt-get update && apt-get install -y \
@@ -10,20 +19,17 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Debug: list what's in the build context
-RUN ls -la /app
-
 # Copiar package.json y instalar SOLO production deps
 COPY apps/tad-remotion/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Copiar build pre-compilado (requiere `npm run build` local antes de push)
+# Copiar build pre-compilado
 COPY apps/tad-remotion/dist ./dist
 
 # Debug: verify dist copied
 RUN ls -la /app/dist
 
-# Asegurar browser de Remotion (runtime) - will install chromium at runtime if needed
+# Asegurar browser de Remotion (runtime)
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium

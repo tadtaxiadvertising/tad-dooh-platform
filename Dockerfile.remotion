@@ -31,7 +31,8 @@ RUN npm prune --omit=dev --force
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium
-RUN node -e "try{require('@remotion/renderer').ensureBrowser().then(()=>console.log('Browser ready')).catch(e=>console.log('Browser check skipped:',e.message))}catch(e){console.log('Browser check error:',e.message)}"
+# Skip browser check at build time - will run at runtime
+# RUN node -e "try{require('@remotion/renderer').ensureBrowser().then(()=>console.log('Browser ready')).catch(e=>console.log('Browser check skipped:',e.message))}catch(e){console.log('Browser check error:',e.message)}"
 
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=896"

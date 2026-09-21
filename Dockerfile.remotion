@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y \
 # Archivos SOLO de tad-remotion (evita problemas del monorepo)
 COPY apps/tad-remotion/package.json ./package.json
 
-# Instalar dependencias de tad-remotion
-RUN npm install --omit=dev --no-audit --no-fund
+# Instalar dependencias + devDeps para build
+RUN npm install --no-audit --no-fund
 
 # Copiar código fuente
 COPY apps/tad-remotion/tsconfig.json ./tsconfig.json
@@ -23,6 +23,9 @@ COPY apps/tad-remotion/src ./src
 
 # Build
 RUN npm run build
+
+# Remover devDeps después del build
+RUN npm prune --omit=dev --force
 
 # Asegurar browser de Remotion
 ENV PUPPETEER_SKIP_DOWNLOAD=true

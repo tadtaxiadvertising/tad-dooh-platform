@@ -3,11 +3,10 @@ FROM node:20-bullseye-slim
 
 WORKDIR /app
 
-# Runtime dependencies mínimas para Chromium
+# Runtime dependencies - skip chromium for now to debug
 RUN apt-get update && apt-get install -y \
     curl \
     ffmpeg \
-    chromium \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,7 +23,7 @@ COPY apps/tad-remotion/dist ./dist
 # Debug: verify dist copied
 RUN ls -la /app/dist
 
-# Asegurar browser de Remotion (runtime)
+# Asegurar browser de Remotion (runtime) - will install chromium at runtime if needed
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium

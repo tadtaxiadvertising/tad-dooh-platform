@@ -11,12 +11,18 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Debug: list what's in the build context
+RUN ls -la /app
+
 # Copiar package.json y instalar SOLO production deps
 COPY apps/tad-remotion/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 
 # Copiar build pre-compilado (requiere `npm run build` local antes de push)
 COPY apps/tad-remotion/dist ./dist
+
+# Debug: verify dist copied
+RUN ls -la /app/dist
 
 # Asegurar browser de Remotion (runtime)
 ENV PUPPETEER_SKIP_DOWNLOAD=true

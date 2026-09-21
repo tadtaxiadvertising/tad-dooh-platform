@@ -1,35 +1,28 @@
-# Single-stage Remotion worker - minimal debug
+# Single-stage Remotion worker - build from source (only tad-remotion)
 FROM node:20-bullseye-slim
 
 WORKDIR /app
 
-# Debug: list what's in the build context root
-RUN ls -la /
-
-# Debug: check tad-remotion exists
-RUN ls -la /app/../apps/tad-remotion/ 2>/dev/null || echo "NOT FOUND: /app/../apps/tad-remotion"
-
-# Debug: check dist exists
-RUN ls -la /app/../apps/tad-remotion/dist/ 2>/dev/null || echo "dist NOT FOUND"
-
-# Runtime dependencies - skip chromium for now to debug
+# Runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     ffmpeg \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar package.json y instalar SOLO production deps
+# Copy package.json and install ALL deps (including dev for build)
 COPY apps/tad-remotion/package.json ./package.json
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
-# Copiar build pre-compilado
-COPY apps/tad-remotion/dist ./dist
+# Copy source and build
+COPY apps/tad-remotion/tsconfig.json ./tsconfig.json
+COPY apps/tad-remotion/src ./src
+RUN npm run build
 
-# Debug: verify dist copied
-RUN ls -la /app/dist
+# Remove dev deps after build
+RUN npm prune --omit=dev --force
 
-# Asegurar browser de Remotion (runtime)
+# Runtime
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_BROWSER=chromium
 ENV CHROMIUM_PATH=/usr/bin/chromium
@@ -38,8 +31,6 @@ ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=896"
 ENV PORT=8000
 ENV REMOTION_CONCURRENCY=1
-ENV REMOTION_BROWSER=chromium
-ENV CHROMIUM_PATH=/usr/bin/chromium
 
 EXPOSE 8000
 

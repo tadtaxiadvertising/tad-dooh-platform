@@ -1,0 +1,54 @@
+/**
+ * Payments Module - Factory Pattern for Payment Providers
+ * 
+ * Permite cambiar de proveedor (AZUL, Stripe, Manual) sin tocar lógica de negocio
+ */
+
+import { Module, Global } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ManualTransferProvider } from './providers/manual-transfer.provider';
+import { IPaymentProvider, PaymentProviderFactory, PaymentProviderType } from './interfaces/payment-provider.interface';
+
+// Token para inyección del factory
+export const PAYMENT_PROVIDER_FACTORY = 'PAYMENT_PROVIDER_FACTORY';
+export const CURRENT_PAYMENT_PROVIDER = 'CURRENT_PAYMENT_PROVIDER';
+
+/**
+ * Factory function que retorna el proveedor configurado
+ */
+export const paymentProviderFactory: PaymentProviderFactory = (providerType: PaymentProviderType) => {
+  switch (providerType) {
+    case 'MANUAL_TRANSFER':
+      return new ManualTransferProvider(new ConfigService());
+    case 'AZUL':
+      // TODO: Implementar AzulProvider cuando se valide API
+      throw new Error('AZUL provider not implemented yet - pending API validation');
+    case 'STRIPE':
+      // TODO: Implementar StripeProvider
+      throw new Error('STRIPE provider not implemented yet');
+    default:
+      throw new Error(`Unknown payment provider: ${providerType}`);
+  }
+};
+
+@Global()
+@Module({
+  providers: [
+    {
+      provide: PAYMENT_PROVIDER_FACTORY,
+      useValue: paymentProviderFactory,
+    },
+    {
+      provide: CURRENT_PAYMENT_PROVIDER,
+      useFactory: (factory: PaymentProviderFactory, config: ConfigService) => {
+        const providerType = (config.get('PAYMENT_PROVIDER') as PaymentProviderType) || 'MANUAL_TRANSFER';
+        const provider = factory(providerType);
+        return provider;
+      },
+      inject: [PAYMENT_PROVIDER_FACTORY, ConfigService],
+    },
+    ManualTransferProvider,
+  ],
+  exports: [PAYMENT_PROVIDER_FACTORY, CURRENT_PAYMENT_PROVIDER, ManualTransferProvider],
+})
+export class PaymentsModule {}

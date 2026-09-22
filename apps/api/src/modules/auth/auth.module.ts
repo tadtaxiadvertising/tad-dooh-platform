@@ -13,12 +13,9 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        // Prefer SUPABASE_JWT_SECRET for local validation (no network call).
-        // Fallback to JWT_SECRET for backward compatibility.
-        secret:
-          config.get<string>("SUPABASE_JWT_SECRET") ||
-          config.get<string>("JWT_SECRET") ||
-          "tad-default-secret-change-me-in-production",
+        // SUPABASE_JWT_SECRET es OBLIGATORIO en producción.
+        // Sin secreto configurado, la app debe fallar al arrancar (main.ts crash-early).
+        secret: config.get<string>("SUPABASE_JWT_SECRET") || config.get<string>("JWT_SECRET"),
         signOptions: { expiresIn: "7d" },
       }),
     }),

@@ -44,6 +44,7 @@ import { CommissionModule } from "./modules/commission/commission.module";
 import { QrScanModule } from "./modules/qr-scan/qr-scan.module";
 import { ConversationModule } from "./modules/conversation/conversation.module";
 import { VerifiedMetricsModule } from "./modules/verified-metrics/verified-metrics.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
 
 import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { KYCModule } from "./modules/kyc/kyc.module";
@@ -143,6 +144,7 @@ import { HealthController } from "./health/health.controller";
     QrScanModule,
     ConversationModule,
     VerifiedMetricsModule,
+    PaymentsModule,
     SimulationModule,
     OnboardingModule,
     KYCModule,

@@ -14,6 +14,7 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  UseInterceptors,
 } from "@nestjs/common";
 import { Request } from "express";
 import { DriversService } from "./drivers.service";
@@ -23,6 +24,7 @@ import { UserRole } from "../auth/decorators/roles.decorator";
 import { Throttle } from "@nestjs/throttler";
 import { TenantGuard } from "../auth/guards/tenant.guard";
 import { SystemSettingsService } from "../system-settings/system-settings.service";
+import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 
 @Controller("drivers")
 export class DriversController {
@@ -95,6 +97,8 @@ export class DriversController {
 
   /**
    * POST /api/drivers — Registrar un nuevo chofer
+   * C2 FIX: subscriptionPaid y subscriptionEnd REMOVIDOS del DTO público.
+   * Solo ADMIN puede setear suscripción pagada vía PUT /drivers/:id/subscription.
    */
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
@@ -108,8 +112,6 @@ export class DriversController {
       taxiPlate?: string;
       licensePlate?: string;
       deviceId?: string;
-      subscriptionPaid?: boolean;
-      subscriptionEnd?: string;
       password?: string;
       contractAccepted?: boolean;
       agreementVersion?: string;
@@ -141,11 +143,9 @@ export class DriversController {
       taxiPlate: sanitize(body.taxiPlate),
       licensePlate: sanitize(body.licensePlate),
       deviceId: sanitize(body.deviceId),
-      subscriptionPaid: isAdmin ? body.subscriptionPaid : false,
-      subscriptionEnd:
-        isAdmin && body.subscriptionEnd
-          ? new Date(body.subscriptionEnd)
-          : undefined,
+      // C2 FIX: Forzar subscriptionPaid=false, subscriptionEnd=undefined para registros públicos
+      subscriptionPaid: false,
+      subscriptionEnd: undefined,
       password: body.password,
     });
   }
@@ -184,11 +184,13 @@ export class DriversController {
     return this.driversService.calculateMonthlyEarnings(id);
   }
 
-  /**
+  /** 
    * PUT /api/drivers/:id/subscription — Actualizar estado de suscripción
+   * Requiere Idempotency-Key para prevenir doble procesamiento de pagos de suscripción
    */
   @Put(":id/subscription")
   @Roles(UserRole.ADMIN)
+  @UseInterceptors(IdempotencyInterceptor)
   async updateSubscription(
     @Param("id") id: string,
     @Body() body: { paid: boolean; endDate?: string },
@@ -202,10 +204,12 @@ export class DriversController {
 
   /**
    * POST /api/drivers/:id/accept-agreement — Firma Electrónica
+   * Requiere Idempotency-Key para prevenir doble procesamiento
    */
   @Post(":id/accept-agreement")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @UseGuards(TenantGuard)
+  @UseInterceptors(IdempotencyInterceptor)
   async acceptAgreement(
     @Param("id") id: string,
     @Body() body: { version: string },
@@ -233,10 +237,12 @@ export class DriversController {
 
   /**
    * POST /api/drivers/:id/complete-bank-setup — Confirmar cuenta bancaria y finalizar onboarding
+   * Requiere Idempotency-Key para prevenir doble procesamiento
    */
   @Post(":id/complete-bank-setup")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @UseGuards(TenantGuard)
+  @UseInterceptors(IdempotencyInterceptor)
   async completeBankSetup(@Param("id") id: string) {
     try {
       return await this.driversService.completeBankSetup(id);
@@ -249,9 +255,11 @@ export class DriversController {
 
   /**
    * POST /api/drivers/:id/assign-device — Asignar pantalla al chofer
+   * Requiere Idempotency-Key para prevenir asignaciones duplicadas
    */
   @Post(":id/assign-device")
   @Roles(UserRole.ADMIN)
+  @UseInterceptors(IdempotencyInterceptor)
   async assignDevice(
     @Param("id") id: string,
     @Body() body: { deviceId: string },
@@ -262,9 +270,11 @@ export class DriversController {
 
   /**
    * POST /api/drivers/:id/unlink-device — Desvincular pantalla
+   * Requiere Idempotency-Key para prevenir desvinculaciones duplicadas
    */
   @Post(":id/unlink-device")
   @Roles(UserRole.ADMIN)
+  @UseInterceptors(IdempotencyInterceptor)
   async unlinkDevice(@Param("id") id: string) {
     return this.driversService.unlinkDevice(id);
   }
@@ -350,6 +360,7 @@ export class DriversController {
       throw new BadRequestException(e.message);
     }
   }
+
   /**
    * POST /api/drivers/purge-all — Purge ALL drivers and devices
    * FIX C-3: Requires ADMIN role (class-level guard) + x-admin-secret header.

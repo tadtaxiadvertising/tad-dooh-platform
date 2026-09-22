@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
@@ -37,7 +37,7 @@ export class SocialAgentService {
       const copy = await this.generateCopy(marketingMetric);
 
       // 4. Save as PENDING draft
-      await this.prisma.socialPostDraft.create({
+      const draft = await this.prisma.socialPostDraft.create({
         data: {
           platform: "IG/FB",
           copy,
@@ -47,7 +47,23 @@ export class SocialAgentService {
         },
       });
 
-      this.logger.log("Daily social content draft created successfully.");
+      // 5. Create HumanReviewTask for mandatory human approval before publishing
+      await this.prisma.humanReviewTask.create({
+        data: {
+          type: "SOCIAL_POST",
+          entityId: draft.id,
+          entityType: "SocialPostDraft",
+          status: "PENDING",
+          payload: {
+            platform: draft.platform,
+            copy: draft.copy,
+            mediaUrl: draft.mediaUrl,
+            scheduledFor: draft.scheduledFor,
+          },
+        },
+      });
+
+      this.logger.log(`Daily social content draft ${draft.id} created with HumanReviewTask for approval.`);
     } catch (error) {
       this.logger.error("Error in daily content generation:", error);
     }
@@ -103,27 +119,180 @@ export class SocialAgentService {
     }
   }
 
+  /**
+   * BLOQUEADO: Publicación directa a Meta Graph API.
+   * Ahora crea un HumanReviewTask y espera aprobación humana explícita.
+   * Use publishApprovedPost(taskId) tras revisión humana.
+   */
   async publishPost(draftId: string) {
     const draft = await this.prisma.socialPostDraft.findUnique({
       where: { id: draftId },
     });
 
-    if (!draft || draft.status !== "PENDING") {
-      throw new Error("Invalid draft or already processed");
+    if (!draft) {
+      throw new BadRequestException("Draft not found");
+    }
+
+    if (draft.status === "PUBLISHED") {
+      throw new BadRequestException("Draft already published");
+    }
+
+    if (draft.status === "REJECTED") {
+      throw new BadRequestException("Cannot publish rejected draft");
+    }
+
+    // Create HumanReviewTask for mandatory approval
+    const existingTask = await this.prisma.humanReviewTask.findFirst({
+      where: {
+        entityId: draftId,
+        entityType: "SocialPostDraft",
+        status: "PENDING",
+      },
+    });
+
+    if (existingTask) {
+      throw new BadRequestException({
+        code: "REVIEW_PENDING",
+        message: "Draft already has a pending human review task",
+        taskId: existingTask.id,
+      });
+    }
+
+    const task = await this.prisma.humanReviewTask.create({
+      data: {
+        type: "SOCIAL_POST",
+        entityId: draftId,
+        entityType: "SocialPostDraft",
+        status: "PENDING",
+        payload: {
+          platform: draft.platform,
+          copy: draft.copy,
+          mediaUrl: draft.mediaUrl,
+          scheduledFor: draft.scheduledFor,
+        },
+      },
+    });
+
+    this.logger.log(`Created HumanReviewTask ${task.id} for draft ${draftId} — awaiting human approval.`);
+
+    return {
+      success: true,
+      taskId: task.id,
+      message: "Draft submitted for human review. Publish will proceed after approval.",
+    };
+  }
+
+  /**
+   * Publica a Meta Graph API SOLO tras aprobación humana (HumanReviewTask APPROVED).
+   * Este método es invocado por el controlador tras validar que el task está APPROVED.
+   */
+  async publishApprovedPost(taskId: string, reviewerId: string) {
+    const task = await this.prisma.humanReviewTask.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task) {
+      throw new BadRequestException("Review task not found");
+    }
+
+    if (task.entityType !== "SocialPostDraft") {
+      throw new BadRequestException("Task is not for a social post");
+    }
+
+    if (task.status !== "APPROVED") {
+      throw new ForbiddenException({
+        code: "NOT_APPROVED",
+        message: `Task status is ${task.status}. Must be APPROVED to publish.`,
+        taskStatus: task.status,
+      });
+    }
+
+    const draft = await this.prisma.socialPostDraft.findUnique({
+      where: { id: task.entityId },
+    });
+
+    if (!draft) {
+      throw new BadRequestException("Associated draft not found");
+    }
+
+    if (draft.status === "PUBLISHED") {
+      throw new BadRequestException("Draft already published");
     }
 
     // Call Meta Graph API to publish
     // This requires META_ACCESS_TOKEN and Page/Account IDs
-    this.logger.log(`Publishing draft ${draftId} to Meta...`);
+    this.logger.log(`Publishing draft ${draft.id} to Meta (task ${taskId} approved by ${reviewerId})...`);
 
-    // Implementation of Meta Graph API call goes here...
+    const accessToken = this.configService.get<string>("META_ACCESS_TOKEN");
+    if (!accessToken) {
+      this.logger.error("META_ACCESS_TOKEN not configured — cannot publish");
+      throw new BadRequestException("META_ACCESS_TOKEN not configured");
+    }
 
-    await this.prisma.socialPostDraft.update({
-      where: { id: draftId },
-      data: { status: "APPROVED" },
+    // Build the Meta Graph API call based on platform
+    // For IG/FB page posts: POST /{page-id}/feed with message, attached_media, etc.
+    const pageId = this.configService.get<string>("META_PAGE_ID");
+    if (!pageId) {
+      this.logger.error("META_PAGE_ID not configured — cannot publish");
+      throw new BadRequestException("META_PAGE_ID not configured");
+    }
+
+    try {
+      // For image posts: first upload photo to get media_fbid, then post with attached_media
+      // Simplified: use /feed with message and link/image URL if supported
+      // Real implementation depends on whether it's a Page post, IG media, etc.
+      const url = `https://graph.facebook.com/v21.0/${pageId}/feed`;
+      
+      const response = await firstValueFrom(
+        this.httpService.post(
+          url,
+          {
+            message: draft.copy,
+            // For link/image posts, Meta may need different fields
+            // This is a simplified version — production needs proper media handling
+            link: draft.mediaUrl, // or use attached_media with uploaded photo ID
+          },
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        ),
+      );
+
+      await this.prisma.$transaction([
+        this.prisma.socialPostDraft.update({
+          where: { id: draft.id },
+          data: { status: "PUBLISHED" },
+        }),
+        this.prisma.humanReviewTask.update({
+          where: { id: taskId },
+          data: {
+            reviewerId,
+            reviewedAt: new Date(),
+            reviewNote: "Published to Meta Graph API",
+          },
+        }),
+      ]);
+
+      this.logger.log(`✅ Draft ${draft.id} published to Meta successfully (task ${taskId}).`);
+      return { success: true, metaResponse: response.data };
+    } catch (error) {
+      this.logger.error("Meta Graph API publish failed:", error.response?.data || error.message);
+      throw new BadRequestException({
+        code: "META_PUBLISH_FAILED",
+        message: "Failed to publish to Meta Graph API",
+        details: error.response?.data || error.message,
+      });
+    }
+  }
+
+  /**
+   * Lista tasks de revisión pendientes para admins
+   */
+  async getPendingReviews() {
+    return this.prisma.humanReviewTask.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
     });
-
-    return { success: true };
   }
 
   private async generateImage(prompt: string): Promise<string> {

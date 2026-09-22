@@ -1,8 +1,18 @@
-import { Controller, Get, Post, Body, Param } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+} from "@nestjs/common";
 import { KYCService, KYCSubmission } from "./kyc.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
+import { TenantGuard } from "../auth/guards/tenant.guard";
 
+@Roles(UserRole.ADMIN, UserRole.DRIVER)
+@UseGuards(TenantGuard)
 @Controller("kyc")
 export class KYCController {
   constructor(private readonly kycService: KYCService) {}
@@ -32,7 +42,6 @@ export class KYCController {
   }
 
   @Get(":id/status")
-  @Public()
   async status(@Param("id") id: string) {
     return this.kycService.getStatus(id);
   }

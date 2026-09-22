@@ -12,6 +12,7 @@ import {
 import { PortalRequestsService } from "./portal-requests.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
+import { TenantGuard } from "../auth/guards/tenant.guard";
 
 @Controller("portal-requests")
 export class PortalRequestsController {
@@ -30,13 +31,15 @@ export class PortalRequestsController {
   }
 
   @Get("advertiser/:advertiserId")
-  @Public() // Allow advertisers to see their own requests
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
+  @UseGuards(TenantGuard)
   async findByAdvertiser(@Param("advertiserId") advertiserId: string) {
     return this.portalRequestsService.findByAdvertiser(advertiserId);
   }
 
   @Get("driver/:driverId")
-  @Public() // Allow drivers to see their own requests
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
   async findByDriver(@Param("driverId") driverId: string) {
     return this.portalRequestsService.findByDriver(driverId);
   }

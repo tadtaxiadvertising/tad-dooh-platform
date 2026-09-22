@@ -34,6 +34,21 @@ export class MediaController {
     return this.mediaService.generateUploadUrl(fileName, fileType);
   }
 
+  @Post("confirm")
+  async confirmUpload(@Body() body: {
+    path: string;
+    campaignId?: string;
+    expectedSize?: number;
+    expectedHashMd5?: string;
+    filename?: string;
+    qrUrl?: string;
+  }) {
+    if (!body.path) {
+      throw new BadRequestException("path es requerido");
+    }
+    return this.mediaService.confirmUpload(body);
+  }
+
   @Post("register-bypassed")
   async registerBypassed(@Body() body: any) {
     if (!body.filename || !body.storageKey || !body.publicUrl) {

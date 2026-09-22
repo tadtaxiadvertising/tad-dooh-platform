@@ -10,6 +10,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     configService: ConfigService,
     private readonly supabaseService: SupabaseService,
   ) {
+    // SUPABASE_JWT_SECRET o JWT_SECRET es OBLIGATORIO.
+    // Si no está configurado, la app falla al arrancar (no hay default inseguro).
+    const secret =
+      configService.get<string>("SUPABASE_JWT_SECRET") ||
+      configService.get<string>("JWT_SECRET");
+
+    if (!secret) {
+      throw new Error(
+        "JWT_SECRET o SUPABASE_JWT_SECRET no configurados. La app no puede iniciar sin secreto válido.",
+      );
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: any) => {
@@ -23,11 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      // We still need a secret for the base Strategy to not error,
-      // but we will do the real verification in validate() using Supabase.
-      secretOrKey:
-        configService.get<string>("JWT_SECRET") ||
-        "tad-default-secret-change-me-in-production",
+      secretOrKey: secret,
       passReqToCallback: true,
     });
   }

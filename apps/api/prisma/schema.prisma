@@ -676,11 +676,49 @@ model Commission {
   driverId   String   @map("driver_id")
   amount     Float    @default(500.0)
   sourceType String   @map("source_type") // "ADVERTISER_SALE" | "DRIVER_REFERRAL"
-  status     String   @default("PENDING") // PENDING, APPROVED, PAID
+  status     String   @default("PENDING") // PENDING, APPROVED, PAID, REJECTED, REVOKED
   createdAt  DateTime @default(now()) @map("created_at")
+  approvedAt DateTime? @map("approved_at")
+  approvedBy String?   @map("approved_by")
+  paidAt     DateTime? @map("paid_at")
+  revokedAt  DateTime? @map("revoked_at")
+  revokedBy  String?   @map("revoked_by")
+  revocationReason String? @map("revocation_reason")
+  reference  String   @unique @map("reference") // Clave de idempotencia
+  metadata   Json?    @map("metadata")
   driver     Driver   @relation(fields: [driverId], references: [id])
+  settlementBatchId String? @map("settlement_batch_id")
+  settlementBatch SettlementBatch? @relation("SettlementBatchCommissions", fields: [settlementBatchId], references: [id])
 
+  @@index([driverId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([settlementBatchId])
   @@map("commissions")
+}
+
+model SettlementBatch {
+  id              String   @id @default(uuid())
+  period          String   @unique @map("period") // "2026-09"
+  status          String   @default("DRAFT") // DRAFT, APPROVED, PAID
+  grossTotal      Float    @default(0) @map("gross_total")
+  netTotal        Float    @default(0) @map("net_total")
+  withholdings    Float    @default(0) @map("withholdings")
+  referentsCount  Int      @default(0) @map("referents_count")
+  commissionsCount Int     @default(0) @map("commissions_count")
+  referents       Json?    @map("referents") // Array de SettlementReferent
+  commissions     Json?    @map("commissions") // Array de comisiones incluidas
+  generatedBy     String   @map("generated_by")
+  approvedAt      DateTime? @map("approved_at")
+  approvedBy      String?   @map("approved_by")
+  paidAt          DateTime? @map("paid_at")
+  paidBy          String?   @map("paid_by")
+  paymentReference String?  @map("payment_reference")
+  createdAt       DateTime @default(now()) @map("created_at")
+  commissionsRef  Commission[] @relation("SettlementBatchCommissions")
+
+  @@index([status])
+  @@map("settlement_batches")
 }
 
 model Telemetry {
@@ -799,13 +837,34 @@ model SocialPostDraft {
   platform     String
   copy         String
   mediaUrl     String   @map("media_url")
-  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED, PUBLISHED
   scheduledFor DateTime @map("scheduled_for")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("social_post_drafts")
+}
+
+/// Human Review Tasks: aprobación obligatoria antes de publicar a Meta Graph API.
+/// Nada se publica automáticamente — todo requiere revisión humana explícita.
+model HumanReviewTask {
+  id           String   @id @default(cuid())
+  type         String   // SOCIAL_POST, DRIVER_ONBOARDING, CAMPAIGN_ACTIVATION, PAYMENT_VERIFICATION, etc.
+  entityId     String   @map("entity_id") // ID del SocialPostDraft, Driver, Campaign, etc.
+  entityType   String   @map("entity_type") // "SocialPostDraft", "Driver", "Campaign"
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  payload      Json?    // Snapshot de datos relevantes para la revisión
+  reviewerId   String?  @map("reviewer_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewNote   String?  @map("review_note")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([entityId, entityType])
+  @@index([reviewerId])
+  @@map("human_review_tasks")
 }
 
 /// Social Agent: log de interacciones entrantes procesadas por el bot (Meta Messenger/IG DM).
@@ -819,4 +878,232 @@ model SocialInteractionLog {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("social_interaction_logs")
+}
+
+/// QR Scan tracking con deduplicación
+model QrScan {
+  id        String   @id @default(uuid())
+  qrCode    String   @map("qr_code") // Identificador del QR/campaña
+  referrerCode String? @map("referrer_code") // Código de referente si aplica
+  scannedAt DateTime @default(now()) @map("scanned_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  deviceId  String?  @map("device_id") // Si se escanea desde tablet conocida
+  driverId  String?  @map("driver_id") // Si se identifica conductor
+  converted Boolean  @default(false) @map("converted") // Si generó lead/conversión
+  leadId    String?  @map("lead_id") // Referencia al lead creado
+
+  @@index([qrCode])
+  @@index([referrerCode])
+  @@index([scannedAt])
+  @@index([driverId])
+  @@index([leadId])
+  @@map("qr_scans")
+}
+
+/// Conversación de WhatsApp/Messenger con consentimiento y estado
+model Conversation {
+  id            String   @id @default(uuid())
+  platform      String   // WHATSAPP, MESSENGER, INSTAGRAM
+  threadId      String   @unique @map("thread_id") // Meta thread ID
+  contactPhone  String?  @map("contact_phone")
+  contactName   String?  @map("contact_name")
+  leadId        String?  @map("lead_id")
+  driverId      String?  @map("driver_id")
+  advertiserId  String?  @map("advertiser_id")
+  status        String   @default("OPEN") // OPEN, HANDOFF, CLOSED, BLOCKED
+  stage         String   @default("INITIAL") // INITIAL, QUALIFYING, PAYMENT_PENDING, HUMAN_REVIEW, COMPLETED
+  consentGiven  Boolean  @default(false) @map("consent_given")
+  consentAt     DateTime? @map("consent_at")
+  assignedTo    String?  @map("assigned_to") // Operador humano asignado
+  metadata      Json?    // Datos adicionales (código QR, referente, etc.)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  closedAt      DateTime? @map("closed_at")
+  messages      ConversationMessage[]
+
+  @@index([threadId])
+  @@index([leadId])
+  @@index([driverId])
+  @@index([advertiserId])
+  @@index([status])
+  @@index([stage])
+  @@map("conversations")
+}
+
+/// Mensaje individual dentro de una conversación
+model ConversationMessage {
+  id            String   @id @default(uuid())
+  conversationId String  @map("conversation_id")
+  direction     String   // INBOUND, OUTBOUND
+  content       String
+  messageType   String   @default("TEXT") @map("message_type") // TEXT, IMAGE, DOCUMENT, TEMPLATE
+  metaMessageId String?  @map("meta_message_id")
+  status        String   @default("SENT") // SENT, DELIVERED, READ, FAILED
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("conversation_messages")
+}
+
+/// Payment Intent - Intención de pago con idempotencia
+model PaymentIntent {
+  id              String   @id @default(uuid())
+  type            String   // DRIVER_SUBSCRIPTION, ADVERTISER_CAMPAIGN
+  amount          Float    @map("amount") // en centavos (RD$6000 = 600000)
+  currency        String   @default("DOP") @map("currency")
+  provider        String?  // AZUL, MANUAL_TRANSFER, STRIPE
+  reference       String   @unique @map("reference") // Clave de idempotencia
+  idempotencyKey  String   @unique @map("idempotency_key")
+  status          String   @default("CREATED") @map("status") // CREATED, REDIRECTED, PENDING, PAID, FAILED, EXPIRED, REFUNDED
+  providerRef     String?  @map("provider_ref")
+  providerData    Json?    @map("provider_data")
+  leadId          String?  @map("lead_id")
+  metadata        Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  paidAt          DateTime? @map("paid_at")
+
+  // Relations
+  paymentEvidence PaymentEvidence?
+  paymentVerification PaymentVerification?
+  lead Lead? @relation(fields: [leadId], references: [id])
+
+  @@index([status])
+  @@index([leadId])
+  @@index([reference])
+  @@map("payment_intents")
+}
+
+/// Payment Evidence - Comprobante recibido
+model PaymentEvidence {
+  id              String   @id @default(uuid())
+  paymentIntentId String   @unique @map("payment_intent_id") // One-to-one with PaymentIntent
+  fileUrl         String   @map("file_url")
+  fileHash        String?  @map("file_hash")
+  fileSize        BigInt?  @map("file_size")
+  mimeType        String?  @map("mime_type")
+  submittedBy     String?  @map("submitted_by")
+  submittedAt     DateTime @default(now()) @map("submitted_at")
+  reviewedBy      String?  @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewStatus    String   @default("SUBMITTED") @map("review_status") // SUBMITTED, UNDER_REVIEW, PAYMENT_CONFIRMED, REJECTED
+  reviewNote      String?  @map("review_note")
+  metadata        Json?
+
+  // Relations
+  paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+
+  @@index([reviewStatus])
+  @@map("payment_evidence")
+}
+
+/// Payment Verification - Resultado de revisión humana
+model PaymentVerification {
+  id              String   @id @default(uuid())
+  paymentIntentId String   @unique @map("payment_intent_id") // One-to-one with PaymentIntent
+  verifiedBy      String   @map("verified_by")
+  verifiedAt      DateTime @default(now()) @map("verified_at")
+  status          String   // PAYMENT_CONFIRMED, REJECTED
+  amountConfirmed Float?   @map("amount_confirmed")
+  note            String?
+  metadata        Json?
+
+  // Relations
+  paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+
+  @@map("payment_verifications")
+}
+
+/// Lead - Persona o empresa que inicia contacto
+model Lead {
+  id              String   @id @default(uuid())
+  type            String   // ADVERTISER, DRIVER
+  source          String?  // QR, WHATSAPP, ORGANIC, REFERRAL
+  referrerCode    String?  @map("referrer_code")
+  referrerId      String?  @map("referrer_id")
+  contactName     String?  @map("contact_name")
+  contactPhone    String?  @map("contact_phone")
+  contactEmail    String?  @map("contact_email")
+  city            String?
+  status          String   @default("NEW") // NEW, QUALIFIED, PAYMENT_PENDING, CONVERTED, REJECTED
+  metadata        Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  referralAttribution ReferralAttribution?
+  paymentIntents    PaymentIntent[]
+
+  @@index([referrerCode])
+  @@index([status])
+  @@index([type])
+  @@map("leads")
+}
+
+/// Referral Attribution - Atribución inmutable de referidos
+model ReferralAttribution {
+  id                String   @id @default(uuid())
+  leadId            String   @unique @map("lead_id")
+  referrerId        String   @map("referrer_id")
+  referrerCode      String   @map("referrer_code")
+  firstContactAt    DateTime @default(now()) @map("first_contact_at")
+  conversionAt      DateTime? @map("conversion_at")
+  conversionType    String?  @map("conversion_type") // DRIVER_SUBSCRIPTION, ADVERTISER_CAMPAIGN
+  commissionCreated Boolean  @default(false) @map("commission_created")
+  commissionId      String?  @map("commission_id")
+  metadata          Json?
+
+  // Relations
+  lead              Lead       @relation(fields: [leadId], references: [id])
+
+  @@index([referrerId])
+  @@index([conversionType])
+  @@map("referral_attributions")
+}
+
+/// Commission Ledger - Registro inmutable de comisiones
+model CommissionLedger {
+  id          String   @id @default(uuid())
+  driverId    String   @map("driver_id")
+  commissionId String? @map("commission_id")
+  amount      Float
+  sourceType  String   @map("source_type") // DRIVER_REFERRAL, ADVERTISER_REFERRAL
+  reference   String
+  status      String   @default("PENDING") // PENDING, APPROVED, PAID, REVOKED
+  period      String   // YYYY-MM
+  createdAt   DateTime @default(now()) @map("created_at")
+  approvedAt  DateTime? @map("approved_at")
+  paidAt      DateTime? @map("paid_at")
+  revokedAt   DateTime? @map("revoked_at")
+  metadata    Json?
+
+  @@unique([driverId, period, reference], map: "CommissionLedger_driver_id_period_reference_key")
+  @@index([driverId])
+  @@index([period])
+  @@index([status])
+  @@map("commission_ledger")
+}
+
+/// Conversion Event - Evento de negocio confirmado
+model ConversionEvent {
+  id              String   @id @default(uuid())
+  type            String   // DRIVER_SUBSCRIPTION_PAID, ADVERTISER_CAMPAIGN_PAID, DRIVER_APPROVED
+  entityId        String   @map("entity_id")
+  entityType      String   @map("entity_type") // DRIVER, CAMPAIGN
+  referrerId      String?  @map("referrer_id")
+  referrerCode    String?  @map("referrer_code")
+  amount          Float?
+  commissionAmount Float?  @map("commission_amount")
+  idempotencyKey  String   @unique @map("idempotency_key")
+  confirmedAt     DateTime @default(now()) @map("confirmed_at")
+  metadata        Json?
+
+  @@index([referrerId])
+  @@index([type])
+  @@index([entityId])
+  @@map("conversion_events")
 }

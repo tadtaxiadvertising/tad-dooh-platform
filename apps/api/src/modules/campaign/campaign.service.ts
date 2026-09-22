@@ -181,6 +181,8 @@ export class CampaignService {
                 amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
                 sourceType: "ADVERTISER_SALE",
                 status: "APPROVED",
+                reference: bonusReference,
+                metadata: { campaignId: campaign.id },
               },
             });
 

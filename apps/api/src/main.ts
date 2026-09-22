@@ -4,6 +4,7 @@ import { PrismaService } from "./modules/prisma/prisma.service";
 import { Logger, RequestMethod, ValidationPipe } from "@nestjs/common";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
 import { PrismaClientExceptionFilter } from "./common/filters/prisma-exception.filter";
+import { requireEnv } from "./utils/env.util";
 
 // Safe BigInt serialization for Prisma
 declare global {
@@ -22,29 +23,19 @@ if (!BigInt.prototype.toJSON) {
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
   try {
-    // JWT_SECRET: crash-early en producción si falta (los tokens firmados con
-    // un secreto volátil se invalidaban en cada reinicio). La config histórica
-    // de EasyPanel solo define SUPABASE_JWT_SECRET; si falta JWT_SECRET se hereda
-    // de él para no invalidar los tokens vigentes. En desarrollo se usa un
-    // secreto local ESTABLE (nunca aleatorio) para no invalidar sesiones.
-    if (!process.env.JWT_SECRET) {
-      if (process.env.SUPABASE_JWT_SECRET) {
-        process.env.JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
-        logger.warn(
-          "⚠️ JWT_SECRET no definido — heredado de SUPABASE_JWT_SECRET (mantiene tokens válidos).",
-        );
-      } else if (process.env.NODE_ENV === "production") {
-        logger.error(
-          "❌ JWT_SECRET/SUPABASE_JWT_SECRET no configurados — Abortando arranque. Configúrelos en EasyPanel Secrets.",
-        );
-        process.exit(1);
-      } else {
-        process.env.JWT_SECRET = "dev-local-insecure-secret";
-        logger.warn(
-          "⚠️ JWT_SECRET no configurado en desarrollo — usando secreto local estable (NO usar en producción).",
-        );
-      }
+    // JWT_SECRET: crash-early si falta. Usa requireEnv() que lanza Error si no está configurado.
+    // En desarrollo, se puede definir SUPABASE_JWT_SECRET como alias.
+    const jwtSecret =
+      process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      logger.error(
+        "❌ JWT_SECRET/SUPABASE_JWT_SECRET no configurados — Abortando arranque. Configúrelos en EasyPanel Secrets.",
+      );
+      process.exit(1);
     }
+    // Normalizar: JWT_SECRET siempre definido para librerías que lo lean directo
+    process.env.JWT_SECRET = jwtSecret;
+    logger.log("✅ JWT_SECRET validado correctamente");
 
     // Forzamos el buffer de logs para capturar errores prematuros de inyección
     const app = await NestFactory.create(AppModule, {

@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Req,
 } from "@nestjs/common";
 import { SocialAgentService } from "./social-agent.service";
 import { ConfigService } from "@nestjs/config";
@@ -54,6 +55,62 @@ export class SocialAgentController {
       where: { status: "PENDING" },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  @Get("reviews/pending")
+  @Roles(UserRole.ADMIN)
+  async getPendingReviews() {
+    return this.socialAgentService.getPendingReviews();
+  }
+
+  @Post("review/:id/approve")
+  @Roles(UserRole.ADMIN)
+  async approveReview(
+    @Param("id") taskId: string,
+    @Body() body: { note?: string },
+    @Req() req: any,
+  ) {
+    const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
+    const task = await this.prisma.humanReviewTask.update({
+      where: { id: taskId },
+      data: {
+        status: "APPROVED",
+        reviewerId,
+        reviewedAt: new Date(),
+        reviewNote: body.note || "Approved by admin",
+      },
+    });
+    return { success: true, task };
+  }
+
+  @Post("review/:id/reject")
+  @Roles(UserRole.ADMIN)
+  async rejectReview(
+    @Param("id") taskId: string,
+    @Body() body: { note?: string },
+    @Req() req: any,
+  ) {
+    const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
+    const task = await this.prisma.humanReviewTask.update({
+      where: { id: taskId },
+      data: {
+        status: "REJECTED",
+        reviewerId,
+        reviewedAt: new Date(),
+        reviewNote: body.note || "Rejected by admin",
+      },
+    });
+    return { success: true, task };
+  }
+
+  @Post("publish-approved/:taskId")
+  @Roles(UserRole.ADMIN)
+  async publishApprovedPost(
+    @Param("taskId") taskId: string,
+    @Req() req: any,
+  ) {
+    const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
+    return this.socialAgentService.publishApprovedPost(taskId, reviewerId);
   }
 
   @Post("approve/:id")

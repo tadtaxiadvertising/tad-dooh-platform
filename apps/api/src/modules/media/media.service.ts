@@ -296,4 +296,110 @@ export class MediaService {
       );
     }
   }
+
+  /**
+   * Confirma una subida directa a Supabase Storage.
+   * Valida: archivo existe, tamaño coincide, hash MD5 coincide.
+   * Crea registro en BD con metadata verificada.
+   */
+  async confirmUpload(data: {
+    path: string;
+    campaignId?: string;
+    expectedSize?: number;
+    expectedHashMd5?: string;
+    filename?: string;
+    qrUrl?: string;
+  }) {
+    const { path, campaignId, expectedSize, expectedHashMd5, filename, qrUrl } = data;
+
+    // 1. Verificar que el archivo existe en Supabase y obtener metadata
+    const { data: fileData, error: statError } = await this.supabase.storage
+      .from("ads-videos")
+      .download(path);
+
+    if (statError || !fileData) {
+      this.logger.error(`Archivo no encontrado en storage: ${path} - ${statError?.message}`);
+      throw new BadRequestException("Archivo no encontrado en storage tras subida");
+    }
+
+    // 2. Calcular tamaño y hash reales
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const actualSize = buffer.length;
+    const actualHashMd5 = this.generateHash(buffer);
+
+    // 3. Validar tamaño si se esperaba
+    if (expectedSize && actualSize !== expectedSize) {
+      this.logger.warn(`Tamaño mismatch: esperado ${expectedSize}, real ${actualSize} para ${path}`);
+      throw new BadRequestException(
+        `Tamaño de archivo no coincide: esperado ${expectedSize} bytes, recibido ${actualSize} bytes`,
+      );
+    }
+
+    // 4. Validar hash si se esperaba
+    if (expectedHashMd5 && actualHashMd5 !== expectedHashMd5) {
+      this.logger.warn(`Hash mismatch: esperado ${expectedHashMd5}, real ${actualHashMd5} para ${path}`);
+      throw new BadRequestException(
+        `Hash MD5 no coincide. El archivo pudo corromperse durante la subida.`,
+      );
+    }
+
+    // 5. Validar tamaño máximo
+    if (actualSize > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
+      throw new BadRequestException(
+        `El archivo excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`,
+      );
+    }
+
+    // 6. Detectar MIME type desde extensión/nombre
+    const fileName = filename || path.split("/").pop() || "video.mp4";
+    const ext = extname(fileName).toLowerCase();
+    let mimeType = "video/mp4";
+    if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+    else if (ext === ".png") mimeType = "image/png";
+
+    this.validateMediaFile(fileName, mimeType);
+
+    // 7. Construir URLs
+    const basePrefix = this.config.get("CDN_URL_PREFIX") || this.config.get("SUPABASE_URL");
+    const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${path}`;
+    
+    const cdnPrefix = this.config.get("CDN_URL_PREFIX");
+    let finalCdnUrl = publicUrl;
+    if (cdnPrefix && publicUrl.includes(this.config.get("SUPABASE_URL"))) {
+      finalCdnUrl = publicUrl.replace(this.config.get("SUPABASE_URL"), cdnPrefix);
+    }
+
+    // 8. Crear registro en BD
+    try {
+      const media = await this.prisma.media.create({
+        data: {
+          filename: fileName,
+          originalFilename: fileName,
+          url: publicUrl,
+          cdnUrl: finalCdnUrl,
+          storageKey: path,
+          campaign_id: campaignId && campaignId !== "general" ? campaignId : null,
+          mimeType,
+          fileSize: BigInt(actualSize),
+          status: "READY",
+          qrUrl: qrUrl || null,
+          hashMd5: actualHashMd5,
+        },
+      });
+
+      this.logger.log(`✅ Upload confirmado: ${path} (${actualSize} bytes, hash: ${actualHashMd5})`);
+
+      return {
+        ...media,
+        fileSize: Number(media.fileSize),
+        verified: true,
+      };
+    } catch (dbError: any) {
+      this.logger.error("Database Insert Error on confirm: ", dbError);
+      throw new BadRequestException(
+        `Error guardando metadata: ${dbError.message}`,
+      );
+    }
+  }
 }

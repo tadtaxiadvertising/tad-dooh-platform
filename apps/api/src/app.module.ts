@@ -40,6 +40,10 @@ import { WalletModule } from "./modules/wallet/wallet.module";
 import { TelemetryModule } from "./modules/telemetry/telemetry.module";
 import { ReferralModule } from "./modules/referral/referral.module";
 import { SystemSettingsModule } from "./modules/system-settings/system-settings.module";
+import { CommissionModule } from "./modules/commission/commission.module";
+import { QrScanModule } from "./modules/qr-scan/qr-scan.module";
+import { ConversationModule } from "./modules/conversation/conversation.module";
+import { VerifiedMetricsModule } from "./modules/verified-metrics/verified-metrics.module";
 
 import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { KYCModule } from "./modules/kyc/kyc.module";
@@ -135,6 +139,10 @@ import { HealthController } from "./health/health.controller";
     TelemetryModule,
     ReferralModule,
     SystemSettingsModule,
+    CommissionModule,
+    QrScanModule,
+    ConversationModule,
+    VerifiedMetricsModule,
     SimulationModule,
     OnboardingModule,
     KYCModule,

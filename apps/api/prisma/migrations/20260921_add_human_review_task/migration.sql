@@ -1,9 +1,9 @@
 -- Add HumanReviewTask model for mandatory human approval before publishing to Meta Graph API
--- Also adds PUBLISHED status to SocialPostDraft
+-- Idempotent version (2026-09-23): IF NOT EXISTS guards.
+-- Table name matches schema @@map("human_review_tasks").
 
--- Create human_review_tasks table
-CREATE TABLE "human_review_tasks" (
-    "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS human_review_tasks (
+    "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "entity_id" TEXT NOT NULL,
     "entity_type" TEXT NOT NULL,
@@ -18,11 +18,8 @@ CREATE TABLE "human_review_tasks" (
 );
 
 -- Add indexes
-CREATE INDEX "human_review_tasks_status_idx" ON "human_review_tasks"("status");
-CREATE INDEX "human_review_tasks_entity_id_entity_type_idx" ON "human_review_tasks"("entity_id", "entity_type");
-CREATE INDEX "human_review_tasks_reviewer_id_idx" ON "human_review_tasks"("reviewer_id");
+CREATE INDEX IF NOT EXISTS "human_review_tasks_status_idx" ON human_review_tasks("status");
+CREATE INDEX IF NOT EXISTS "human_review_tasks_entity_id_entity_type_idx" ON human_review_tasks("entity_id", "entity_type");
+CREATE INDEX IF NOT EXISTS "human_review_tasks_reviewer_id_idx" ON human_review_tasks("reviewer_id");
 
--- Update SocialPostDraft to allow PUBLISHED status (no schema change needed, just validation)
--- The status field already accepts any string, so PUBLISHED is valid
-
--- Migration completed: HumanReviewTask table created
+-- SocialPostDraft.status already accepts any string, PUBLISHED is valid. No DDL needed.

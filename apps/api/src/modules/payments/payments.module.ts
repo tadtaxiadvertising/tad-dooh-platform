@@ -10,10 +10,12 @@ import { ManualTransferProvider } from './providers/manual-transfer.provider';
 import { IPaymentProvider, PaymentProviderFactory, PaymentProviderType } from './interfaces/payment-provider.interface';
 import { PaymentIntentController } from './payment-intent.controller';
 import { PaymentEvidenceService } from './services/payment-evidence.service';
+import {
+  CURRENT_PAYMENT_PROVIDER,
+  PAYMENT_PROVIDER_FACTORY,
+} from './payment-provider.tokens';
 
-// Token para inyección del factory
-export const PAYMENT_PROVIDER_FACTORY = 'PAYMENT_PROVIDER_FACTORY';
-export const CURRENT_PAYMENT_PROVIDER = 'CURRENT_PAYMENT_PROVIDER';
+export { CURRENT_PAYMENT_PROVIDER, PAYMENT_PROVIDER_FACTORY } from './payment-provider.tokens';
 
 /**
  * Factory function que retorna el proveedor configurado

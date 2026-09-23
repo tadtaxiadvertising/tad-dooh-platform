@@ -33,7 +33,7 @@ import {
 import {
   PAYMENT_PROVIDER_FACTORY,
   CURRENT_PAYMENT_PROVIDER,
-} from "./payments.module";
+} from "./payment-provider.tokens";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 

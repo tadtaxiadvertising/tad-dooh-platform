@@ -8,6 +8,8 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ManualTransferProvider } from './providers/manual-transfer.provider';
 import { IPaymentProvider, PaymentProviderFactory, PaymentProviderType } from './interfaces/payment-provider.interface';
+import { PaymentIntentController } from './payment-intent.controller';
+import { PaymentEvidenceService } from './services/payment-evidence.service';
 
 // Token para inyección del factory
 export const PAYMENT_PROVIDER_FACTORY = 'PAYMENT_PROVIDER_FACTORY';
@@ -33,7 +35,9 @@ export const paymentProviderFactory: PaymentProviderFactory = (providerType: Pay
 
 @Global()
 @Module({
+  controllers: [PaymentIntentController],
   providers: [
+    PaymentEvidenceService,
     {
       provide: PAYMENT_PROVIDER_FACTORY,
       useValue: paymentProviderFactory,
@@ -49,6 +53,6 @@ export const paymentProviderFactory: PaymentProviderFactory = (providerType: Pay
     },
     ManualTransferProvider,
   ],
-  exports: [PAYMENT_PROVIDER_FACTORY, CURRENT_PAYMENT_PROVIDER, ManualTransferProvider],
+  exports: [PAYMENT_PROVIDER_FACTORY, CURRENT_PAYMENT_PROVIDER, ManualTransferProvider, PaymentEvidenceService],
 })
 export class PaymentsModule {}

@@ -1,12 +1,32 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class SystemSettingsService implements OnModuleInit {
+  private readonly logger = new Logger(SystemSettingsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
-    await this.seedDefaults();
+    if (!this.prisma.isDatabaseAvailable) {
+      this.logger.warn(
+        "Se omitió la inicialización de valores por defecto porque la base de datos no está disponible.",
+      );
+      return;
+    }
+
+    try {
+      await this.seedDefaults();
+    } catch (error) {
+      // The settings seed is a convenience initializer, not a startup
+      // dependency. Propagating a transient database-auth error from here
+      // makes Nest exit and causes EasyPanel to hammer Supabase in a
+      // crash-loop, which can trip the pooler's authentication circuit breaker.
+      this.logger.error(
+        "No se pudieron inicializar los valores por defecto de configuración; el API continuará en modo degradado.",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
 
   async getAll() {

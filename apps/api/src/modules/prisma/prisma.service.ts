@@ -8,6 +8,41 @@ import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
 import * as path from "path";
 
+/**
+ * Supabase's shared pooler requires `postgres.<project-ref>` as the database
+ * user. Direct database connections use just `postgres`, so normalize only
+ * that exact, known pooler misconfiguration and leave every other URL intact.
+ */
+export function normalizeSupabasePoolerUsername(
+  databaseUrl: string | undefined,
+  supabaseUrl: string | undefined,
+): { url: string | undefined; normalized: boolean } {
+  if (!databaseUrl || !supabaseUrl) {
+    return { url: databaseUrl, normalized: false };
+  }
+
+  try {
+    const database = new URL(databaseUrl);
+    const supabase = new URL(supabaseUrl);
+    const projectRef = supabase.hostname.match(
+      /^([a-z0-9-]+)\.supabase\.co$/i,
+    )?.[1];
+
+    if (
+      !projectRef ||
+      !database.hostname.endsWith(".pooler.supabase.com") ||
+      database.username !== "postgres"
+    ) {
+      return { url: databaseUrl, normalized: false };
+    }
+
+    database.username = `postgres.${projectRef}`;
+    return { url: database.toString(), normalized: true };
+  } catch {
+    return { url: databaseUrl, normalized: false };
+  }
+}
+
 @Injectable()
 export class PrismaService
   extends PrismaClient
@@ -26,7 +61,11 @@ export class PrismaService
   }
 
   constructor() {
-    let url = process.env.DATABASE_URL;
+    const normalizedDatabase = normalizeSupabasePoolerUsername(
+      process.env.DATABASE_URL,
+      process.env.SUPABASE_URL,
+    );
+    let url = normalizedDatabase.url;
     let warnMsg: string | undefined;
     // SRE v12.1.1: Default 5 connections para Supabase Free Tier en EasyPanel.
     // 20 conexiones puede agotar el pool durante CRON bursts + heartbeat storms.
@@ -71,6 +110,11 @@ export class PrismaService
     if (warnMsg) {
       this.logger.warn(warnMsg);
     }
+    if (normalizedDatabase.normalized) {
+      this.logger.warn(
+        "DATABASE_URL usaba el usuario `postgres` con el pooler de Supabase; se corrigió a `postgres.<project-ref>`.",
+      );
+    }
   }
 
   async onModuleInit() {
@@ -103,6 +147,12 @@ export class PrismaService
         this.logger.error(
           `❌ Intento ${attempts}/${MAX_RETRIES} fallido: ${errMsg}`,
         );
+        if (this.isDatabaseAuthenticationError(errMsg)) {
+          this.logger.error(
+            "🚨 Credenciales de DATABASE_URL rechazadas. No se reintentará para evitar bloquear el pooler de Supabase.",
+          );
+          return;
+        }
         if (attempts >= MAX_RETRIES) {
           this.logger.error(
             "🚨 ERROR FATAL: No se pudo conectar a la base de datos tras 5 intentos.",
@@ -114,6 +164,15 @@ export class PrismaService
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
+  }
+
+  private isDatabaseAuthenticationError(message: string): boolean {
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes("authentication failed") ||
+      normalized.includes("password authentication failed") ||
+      normalized.includes("too many authentication failures")
+    );
   }
 
   /**

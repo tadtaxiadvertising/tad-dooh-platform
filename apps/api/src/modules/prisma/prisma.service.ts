@@ -14,6 +14,16 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+  private databaseAvailable = false;
+
+  /**
+   * Indicates whether the initial database connection completed successfully.
+   * Startup initializers use this to avoid generating extra connection attempts
+   * when the pooler has rejected the configured credentials.
+   */
+  get isDatabaseAvailable(): boolean {
+    return this.databaseAvailable;
+  }
 
   constructor() {
     let url = process.env.DATABASE_URL;
@@ -72,6 +82,7 @@ export class PrismaService
     while (attempts < MAX_RETRIES) {
       try {
         await this.$connect();
+        this.databaseAvailable = true;
         this.logger.log(
           `✅ Conexión establecida con éxito en el intento ${attempts + 1}`,
         );
@@ -85,6 +96,7 @@ export class PrismaService
 
         return;
       } catch (e) {
+        this.databaseAvailable = false;
         attempts++;
         const delay = attempts * 2000;
         const errMsg = e instanceof Error ? e.message : String(e);

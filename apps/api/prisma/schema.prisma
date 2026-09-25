@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -672,15 +672,95 @@ model ActiveAd {
 }
 
 model Commission {
-  id         String   @id @default(uuid())
-  driverId   String   @map("driver_id")
-  amount     Float    @default(500.0)
-  sourceType String   @map("source_type") // "ADVERTISER_SALE" | "DRIVER_REFERRAL"
-  status     String   @default("PENDING") // PENDING, APPROVED, PAID
-  createdAt  DateTime @default(now()) @map("created_at")
-  driver     Driver   @relation(fields: [driverId], references: [id])
+  id                   String                 @id @default(uuid())
+  driverId             String                 @map("driver_id")
+  amount               Float                  @default(500.0)
+  sourceType           String                 @map("source_type") // "ADVERTISER_SALE" | "DRIVER_REFERRAL"
+  status               String                 @default("PENDING") // PENDING, APPROVED, PAID, REVERSED
+  referralConversionId String?                @unique @map("referral_conversion_id")
+  payoutBatchId        String?                @map("payout_batch_id")
+  createdAt            DateTime               @default(now())
+  paidAt               DateTime?              @map("paid_at")
+  driver               Driver                 @relation(fields: [driverId], references: [id])
+  referralConversion   ReferralConversion?    @relation(fields: [referralConversionId], references: [id])
+  payoutBatch          CommissionPayoutBatch? @relation(fields: [payoutBatchId], references: [id])
 
+  @@index([status, createdAt])
+  @@index([driverId, status])
   @@map("commissions")
+}
+
+model PaymentEvidence {
+  id                 String                  @id @default(uuid())
+  paymentType        String                  @map("payment_type") // DRIVER_SUBSCRIPTION | ADVERTISER_CAMPAIGN
+  amount             Float
+  currency           Currency                @default(DOP)
+  status             String                  @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, CONFIRMED, REJECTED, REFUNDED
+  receiptUrl         String?                 @map("receipt_url")
+  externalReference  String?                 @map("external_reference")
+  submittedBy        String?                 @map("submitted_by")
+  reviewedBy         String?                 @map("reviewed_by")
+  reviewNote         String?                 @map("review_note")
+  submittedAt        DateTime                @default(now()) @map("submitted_at")
+  confirmedAt        DateTime?               @map("confirmed_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  referralConversion ReferralConversion?
+  reviews            PaymentEvidenceReview[]
+
+  @@index([status, submittedAt])
+  @@index([paymentType, status])
+  @@map("payment_evidence")
+}
+
+model PaymentEvidenceReview {
+  id                String          @id @default(uuid())
+  paymentEvidenceId String          @map("payment_evidence_id")
+  action            String // SUBMITTED, CONFIRMED, REJECTED, REFUNDED
+  actor             String?
+  note              String?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  paymentEvidence   PaymentEvidence @relation(fields: [paymentEvidenceId], references: [id], onDelete: Cascade)
+
+  @@index([paymentEvidenceId, createdAt])
+  @@map("payment_evidence_reviews")
+}
+
+model ReferralConversion {
+  id                   String           @id @default(uuid())
+  referralCode         String           @map("referral_code")
+  conversionType       String           @map("conversion_type") // DRIVER | ADVERTISER
+  referrerDriverId     String           @map("referrer_driver_id")
+  referredDriverId     String?          @unique @map("referred_driver_id")
+  referredAdvertiserId String?          @unique @map("referred_advertiser_id")
+  paymentEvidenceId    String?          @unique @map("payment_evidence_id")
+  status               String           @default("PENDING_PAYMENT") // PENDING_PAYMENT, PAYMENT_CONFIRMED, COMMISSION_CREATED, REVERSED
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  paymentEvidence      PaymentEvidence? @relation(fields: [paymentEvidenceId], references: [id])
+  commission           Commission?
+
+  @@index([referrerDriverId, status])
+  @@index([referralCode])
+  @@index([conversionType, createdAt])
+  @@map("referral_conversions")
+}
+
+model CommissionPayoutBatch {
+  id          String       @id @default(uuid())
+  periodKey   String       @unique @map("period_key") // YYYY-MM closing cycle
+  periodStart DateTime     @map("period_start")
+  periodEnd   DateTime     @map("period_end")
+  payoutDate  DateTime     @map("payout_date")
+  status      String       @default("DRAFT") // DRAFT, APPROVED, PAID, CANCELLED
+  totalAmount Float        @default(0) @map("total_amount")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  approvedAt  DateTime?    @map("approved_at")
+  paidAt      DateTime?    @map("paid_at")
+  commissions Commission[]
+
+  @@index([status, payoutDate])
+  @@map("commission_payout_batches")
 }
 
 model Telemetry {

@@ -5,16 +5,21 @@
 
 /* stylelint-disable at-rule-no-unknown */
 @theme {
-  /* TAD Premium palette (migrada desde tailwind.config.js v3) */
-  --color-tad-bg: #0a0a0a;
-  --color-tad-surface: rgba(255, 255, 255, 0.05);
-  --color-tad-accent: #FFD400;
+  /* TAD Premium palette (alineada con Admin / Driver) */
+  --color-tad-yellow: #FFD400;
+  --color-tad-accent: #ffae00;
   --color-tad-accent-hover: #e6be00;
   --color-tad-gold: #FDCB01;
+  --color-tad-bg: #0a0a0a;
+  --color-tad-surface: rgba(255, 255, 255, 0.05);
   --color-tad-text: #f0f0f0;
   --color-tad-text-muted: #a0a0a0;
+  --color-zinc-deep: #09090b;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+
+  --shadow-3xl: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
 
   /* Animaciones migradas desde tailwind.config.js v3 */
   --animate-spin-slow: spin-slow 10s linear infinite;

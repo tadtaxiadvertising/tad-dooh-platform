@@ -22,11 +22,10 @@ export default function DriverOnboarding() {
   
   // Simulator states
   const [campaigns, setCampaigns] = useState(5);
-  const [referredAdvertisers, setReferredAdvertisers] = useState(0);
   const [referredDrivers, setReferredDrivers] = useState(0);
 
-  // Total projected earnings: campaign pay (RD$500 each) + advertiser referral (RD$500 each) + driver referral (RD$500 each)
-  const projectedEarnings = (campaigns * 500) + (referredAdvertisers * REFERRAL_BUSINESS_BONUS) + (referredDrivers * REFERRAL_DRIVER_BONUS);
+  // Total projected earnings: campaign pay (RD$500 each) + driver referral (RD$500 each)
+  const projectedEarnings = (campaigns * 500) + (referredDrivers * REFERRAL_DRIVER_BONUS);
 
   // Registration fields
   const [formData, setFormData] = useState({
@@ -123,8 +122,6 @@ export default function DriverOnboarding() {
             onPrev={prevStep}
             campaigns={campaigns}
             setCampaigns={setCampaigns}
-            referredAdvertisers={referredAdvertisers}
-            setReferredAdvertisers={setReferredAdvertisers}
             referredDrivers={referredDrivers}
             setReferredDrivers={setReferredDrivers}
             projectedEarnings={projectedEarnings}

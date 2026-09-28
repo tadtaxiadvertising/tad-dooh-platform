@@ -20,14 +20,6 @@ const BENEFITS = [
     border: 'border-[#22C55E]/20',
   },
   {
-    icon: Store,
-    title: 'Referidos de Negocios',
-    desc: `Gana RD$${REFERRAL_BUSINESS_BONUS.toLocaleString()} adicionales por cada marca o negocio local que recomiendes y se anuncie con nosotros.`,
-    color: 'text-[#FF8C00]',
-    bg: 'bg-[#FF8C00]/10',
-    border: 'border-[#FF8C00]/20',
-  },
-  {
     icon: Users,
     title: 'Invitar Compañeros',
     desc: `Gana un bono de RD$${REFERRAL_DRIVER_BONUS.toLocaleString()} por cada compañero taxista que refieras cuando instale su pantalla.`,

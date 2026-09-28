@@ -11,8 +11,8 @@ interface EarningsCalculatorStepProps {
   onPrev: () => void;
   campaigns: number;
   setCampaigns: (value: number) => void;
-  referredAdvertisers: number;
-  setReferredAdvertisers: (value: number) => void;
+  referredAdvertisers?: number;
+  setReferredAdvertisers?: (value: number) => void;
   referredDrivers: number;
   setReferredDrivers: (value: number) => void;
   projectedEarnings: number;
@@ -194,22 +194,9 @@ export default function EarningsCalculatorStep({
           description="Rotación exacta cada 30 segundos · Ganas RD$500 mensuales por cada anuncio"
         />
 
-        {/* Business Referral Slider */}
-        <SliderField
-          label="2. Negocios Recomendados"
-          min={0}
-          max={100}
-          value={referredAdvertisers}
-          onChange={setReferredAdvertisers}
-          color="orange"
-          icon={TrendingUp}
-          ariaLabel="Negocios recomendados"
-          bonusText={`Bonificación RD$ ${REFERRAL_BUSINESS_BONUS.toLocaleString()} c/u por negocios recomendados`}
-        />
-
         {/* Driver Referral Slider */}
         <SliderField
-          label="3. Compañeros Taxistas Invitados"
+          label="2. Compañeros Taxistas Invitados"
           min={0}
           max={100}
           value={referredDrivers}
@@ -263,19 +250,6 @@ export default function EarningsCalculatorStep({
                 RD${(campaigns * 500).toLocaleString()}
               </span>
             </div>
-            {referredAdvertisers > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex justify-between gap-4 text-[#FF8C00]"
-              >
-                <span>Bonificación negocios ({referredAdvertisers} × RD${REFERRAL_BUSINESS_BONUS.toLocaleString()}):</span>
-                <span className="font-bold tabular-nums shrink-0">
-                  RD${(referredAdvertisers * REFERRAL_BUSINESS_BONUS).toLocaleString()}
-                </span>
-              </motion.div>
-            )}
             {referredDrivers > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}

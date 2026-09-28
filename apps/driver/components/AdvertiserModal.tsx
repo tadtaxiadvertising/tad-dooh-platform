@@ -133,8 +133,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
         {/* Header */}
         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02] shrink-0">
           <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-emerald-500" />
-            {initialData ? 'Editar Anunciante' : 'Anunciantes Drive'}
+            <Building2 className="w-8 h-8 text-[#FFD400]" />
+            {initialData ? 'Editar Marca' : 'Registro de Marca'}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl text-zinc-500 hover:text-white" title="Cerrar"><X className="w-6 h-6" /></button>
         </div>
@@ -371,8 +371,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
               </div>
 
               <div className="pt-4">
-                <button type="submit" disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-black font-black uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all">
-                  {loading ? 'Guardando...' : <><Upload className="w-5 h-5" /> {initialData ? 'Actualizar Perfil' : 'Crear Cuenta'}</>}
+                <button type="submit" disabled={loading} className="w-full bg-[#FFD400] hover:bg-[#ffe45c] disabled:bg-[#FFD400]/50 text-black font-black uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all">
+                  {loading ? 'Guardando...' : <><Upload className="w-5 h-5" /> {initialData ? 'Actualizar Perfil' : 'Guardar Datos'}</>}
                 </button>
               </div>
             </form>

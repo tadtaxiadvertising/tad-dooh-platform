@@ -96,9 +96,11 @@ export default function OnboardingWizard({ advertiserId, onComplete }: Onboardin
 
   const completeOnboarding = () => {
     try {
-      localStorage.setItem(getOnboardingKey(advertiserId), '1');
-    } catch {
-      /* noop */
+      if (typeof window !== 'undefined' && advertiserId) {
+        window.localStorage.setItem(getOnboardingKey(advertiserId), '1');
+      }
+    } catch (err) {
+      console.error('[OnboardingWizard] Error al guardar completitud de onboarding local:', err);
     }
     onComplete();
   };

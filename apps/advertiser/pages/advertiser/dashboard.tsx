@@ -27,21 +27,32 @@ export default function AdvertiserDashboard() {
   const backendStatus = (session?.user as any)?.status || session?.user?.app_metadata?.status || 'ACTIVE';
 
   // Wizard de bienvenida: SOLO si backendStatus indica onboarding incompleto
-  // (PENDING_REVIEW = INITIAL) — localStorage solo como fallback
+  // (PENDING_REVIEW = INITIAL) — localStorage como fuente de verdad local (R1)
   useEffect(() => {
     if (!entityId) return;
     try {
-      const localDone = window.localStorage.getItem(`tad_adv_onboarded_${entityId}`) === '1';
-      // Solo mostrar wizard si el backend tiene status PENDING_REVIEW (onboarding incompleto)
-      const needsOnboarding = backendStatus === 'PENDING_REVIEW' && !localDone;
-      setShowWizard(needsOnboarding);
+      const localDone = typeof window !== 'undefined' && window.localStorage.getItem(`tad_adv_onboarded_${entityId}`) === '1';
+      // Si ya completó localmente O el status en backend es ACTIVE, NO mostrar wizard
+      const isCompleted = localDone || backendStatus === 'ACTIVE';
+      setShowWizard(!isCompleted && backendStatus === 'PENDING_REVIEW');
     } catch {
       setShowWizard(false);
     }
   }, [entityId, backendStatus]);
 
+  const handleWizardComplete = () => {
+    try {
+      if (typeof window !== 'undefined' && entityId) {
+        window.localStorage.setItem(`tad_adv_onboarded_${entityId}`, '1');
+      }
+    } catch (err) {
+      console.error('[AdvertiserDashboard] Error guardando completitud de onboarding:', err);
+    }
+    setShowWizard(false);
+  };
+
   const wizardOverlay = entityId && showWizard ? (
-    <OnboardingWizard advertiserId={entityId} onComplete={() => setShowWizard(false)} />
+    <OnboardingWizard advertiserId={entityId} onComplete={handleWizardComplete} />
   ) : null;
 
   useEffect(() => {

@@ -594,14 +594,23 @@ export default function DriverDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const hasClosedRef = React.useRef(false);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !hubData?.driverId) return;
+
+    if (hasClosedRef.current) return;
 
     const pendingKey = getDriverBankPendingKey(hubData.driverId);
     const onboardingKey = getDriverOnboardingStorageKey(hubData.driverId);
     const pendingSync = localStorage.getItem(pendingKey) === '1';
     const forceOnboarding = sessionStorage.getItem('tad_driver_force_onboarding') === '1';
     const hasSeenOnboarding = localStorage.getItem(onboardingKey) === '1';
+
+    // Limpiar flag temporal de sessionStorage para evitar bucles en F5/refresh
+    if (forceOnboarding) {
+      sessionStorage.removeItem('tad_driver_force_onboarding');
+    }
 
     setBankPendingSync(pendingSync);
 
@@ -700,6 +709,8 @@ export default function DriverDashboard() {
       return;
     }
 
+    hasClosedRef.current = true;
+
     if (typeof window !== 'undefined' && hubData?.driverId) {
       localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
       sessionStorage.removeItem('tad_driver_force_onboarding');
@@ -716,6 +727,10 @@ export default function DriverDashboard() {
       await api.post(`/drivers/${hubData.driverId}/accept-agreement`, {
         version: DRIVER_AGREEMENT_VERSION,
       });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
+        sessionStorage.removeItem('tad_driver_force_onboarding');
+      }
       await refreshHub();
     } catch (error: any) {
       const message =

@@ -131,7 +131,7 @@ export default function PoliticaDeCookies() {
         </p>
         <LegalList
           items={[
-                        <Link href="https://support.google.com/chrome/answer/95647" key="chrome-help" target="_blank" rel="noopener noreferrer" passHref>support.google.com/chrome/answer/95647</Link></>,
+            <><LegalHighlight>Google Chrome:</LegalHighlight> <Link href="https://support.google.com/chrome/answer/95647" key="chrome-help" target="_blank" rel="noopener noreferrer" passHref>support.google.com/chrome/answer/95647</Link></>,
             <><LegalHighlight>Mozilla Firefox:</LegalHighlight> <a href="https://support.mozilla.org/es/kb/Borrar%20cookies" target="_blank" rel="noopener noreferrer">support.mozilla.org/es/kb/Borrar cookies</a></>,
             <><LegalHighlight>Safari:</LegalHighlight> <a href="https://support.apple.com/es-es/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer">support.apple.com/es-es/guide/safari/sfri11471</a></>,
             <><LegalHighlight>Microsoft Edge:</LegalHighlight> <a href="https://support.microsoft.com/es-es/microsoft-edge/eliminar-cookies-en-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener noreferrer">support.microsoft.com/es-es/microsoft-edge/eliminar-cookies</a></>,

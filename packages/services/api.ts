@@ -270,6 +270,14 @@ export const getBiHotspots = () => api.get('/bi/hotspots').then(res => Array.isA
 export const getReferralStats = () => api.get('/referral/stats').then(res => res.data);
 export const getReferralNetwork = () => api.get('/referral/network').then(res => res.data);
 
+/**
+ * Driver self-service: obtener su propio código real de referido.
+ * Devuelve referralCode (UUID real de BD), URL de referido de anunciante,
+ * URL de referido de conductor y payload para QR.
+ */
+export const getMyReferralCode = () =>
+  api.get('/referral/me').then(res => res.data);
+
 // Device Inventory
 export const getDeviceCampaigns = (deviceId: string) => api.get(`/devices/${deviceId}/campaigns`).then(res => res.data);
 export const removeCampaignFromDevice = (deviceId: string, campaignId: string) => api.delete(`/devices/${deviceId}/campaigns/${campaignId}`).then(res => res.data);
@@ -504,6 +512,7 @@ export const updateAdvertiser = (id: string, data: any) => api.patch(`/advertise
 export const deleteAdvertiser = (id: string) => api.delete(`/advertisers/${id}`).then(res => res.data);
 export const getAdvertiserHub = () => api.get('/campaigns/advertiser/hub').then(res => res.data);
 export const getAdvertiserPublicProfile = (id: string) => api.get(`/campaigns/advertiser/${id}/profile`).then(res => res.data);
+export const getMyAdvertiserReferrals = (driverId: string) => api.get(`/referral/advertisers/me?driverId=${driverId}`).then(res => res.data);
 
 // Device Profile
 export const getDeviceProfile = (deviceId: string) => api.get(`/devices/${deviceId}/profile`).then(res => res.data);

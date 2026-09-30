@@ -89,13 +89,22 @@ export class SupabaseService {
     contentType?: string;
     upsert?: boolean;
   }): Promise<{ path: string; publicUrl: string; size: number }> {
-    const { bucket, path, data, contentType = "application/pdf", upsert = false } = params;
+    const {
+      bucket,
+      path,
+      data,
+      contentType = "application/pdf",
+      upsert = false,
+    } = params;
 
     // 0. Auto-create del bucket si no existe (SRE — nunca continuar con bucket ausente)
     const { error: bucketError } = await this.supabase.storage
       .createBucket(bucket, { public: true })
       .catch((err) => ({ error: err }));
-    if (bucketError && !String(bucketError.message || "").includes("already exists")) {
+    if (
+      bucketError &&
+      !String(bucketError.message || "").includes("already exists")
+    ) {
       throw new Error(`FALLÓ_CREAR_BUCKET ${bucket}: ${bucketError.message}`);
     }
 
@@ -112,13 +121,24 @@ export class SupabaseService {
     }
 
     // 2. URL pública
-    const { data: urlData } = this.supabase.storage.from(bucket).getPublicUrl(path);
+    const { data: urlData } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
 
     return { path, publicUrl: urlData.publicUrl, size: data.length };
   }
 
   // Listar archivos para la vista /media
-  async listMediaFiles(bucket: string = "campaign-videos") {
+  async listMediaFiles(bucket: string = "campaign-videos"): Promise<
+    Array<{
+      name: string;
+      id?: string;
+      cacheControl?: string;
+      contentType?: string;
+      metadata?: Record<string, unknown>;
+      url: string;
+    }>
+  > {
     const { data, error } = await this.supabase.storage.from(bucket).list("", {
       limit: 100,
       sortBy: { column: "created_at", order: "desc" },

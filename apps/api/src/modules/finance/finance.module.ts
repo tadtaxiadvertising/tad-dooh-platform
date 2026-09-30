@@ -8,7 +8,12 @@ import { DriversModule } from "../drivers/drivers.module";
 import { AdvertisersModule } from "../advertisers/advertisers.module";
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, DriversModule, forwardRef(() => AdvertisersModule)],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    DriversModule,
+    forwardRef(() => AdvertisersModule),
+  ],
   controllers: [FinanceController],
   providers: [FinanceService, InvoiceService],
   exports: [FinanceService, InvoiceService],

@@ -1,17 +1,22 @@
 /**
  * Payment Evidence Service
- * 
+ *
  * Maneja la recepción, validación y revisión humana de comprobantes de pago.
- * Según Plan Maestro TAD v1: "El comprobante enviado por WhatsApp no es una prueba 
+ * Según Plan Maestro TAD v1: "El comprobante enviado por WhatsApp no es una prueba
  * financiera definitiva. Es una evidencia pendiente de revisión."
- * 
+ *
  * Estados: SUBMITTED → UNDER_REVIEW → PAYMENT_CONFIRMED | REJECTED
  */
 
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import { v4 as uuidv4 } from "uuid";
 
 export interface CreatePaymentEvidenceInput {
   paymentIntentId: string;
@@ -26,7 +31,7 @@ export interface CreatePaymentEvidenceInput {
 export interface ReviewPaymentEvidenceInput {
   evidenceId: string;
   reviewedBy: string;
-  status: 'PAYMENT_CONFIRMED' | 'REJECTED';
+  status: "PAYMENT_CONFIRMED" | "REJECTED";
   reviewNote?: string;
   amountConfirmed?: number;
 }
@@ -45,7 +50,9 @@ export class PaymentEvidenceService {
    * Idempotente por paymentIntentId + fileHash
    */
   async submitEvidence(input: CreatePaymentEvidenceInput) {
-    this.logger.log(`Submitting payment evidence for intent: ${input.paymentIntentId}`);
+    this.logger.log(
+      `Submitting payment evidence for intent: ${input.paymentIntentId}`,
+    );
 
     // Verificar que la intención de pago existe
     const paymentIntent = await this.prisma.paymentIntent.findUnique({
@@ -53,19 +60,23 @@ export class PaymentEvidenceService {
     });
 
     if (!paymentIntent) {
-      throw new NotFoundException(`PaymentIntent ${input.paymentIntentId} not found`);
+      throw new NotFoundException(
+        `PaymentIntent ${input.paymentIntentId} not found`,
+      );
     }
 
     // Verificar si ya hay evidencia pendiente para esta intención
     const existing = await this.prisma.paymentEvidence.findFirst({
       where: {
         paymentIntentId: input.paymentIntentId,
-        reviewStatus: { in: ['SUBMITTED', 'UNDER_REVIEW'] },
+        reviewStatus: { in: ["SUBMITTED", "UNDER_REVIEW"] },
       },
     });
 
     if (existing) {
-      this.logger.warn(`Evidence already exists for ${input.paymentIntentId}, updating`);
+      this.logger.warn(
+        `Evidence already exists for ${input.paymentIntentId}, updating`,
+      );
       return this.prisma.paymentEvidence.update({
         where: { id: existing.id },
         data: {
@@ -75,7 +86,7 @@ export class PaymentEvidenceService {
           mimeType: input.mimeType,
           submittedBy: input.submittedBy,
           submittedAt: new Date(),
-          reviewStatus: 'SUBMITTED',
+          reviewStatus: "SUBMITTED",
           metadata: input.metadata,
         },
       });
@@ -90,7 +101,7 @@ export class PaymentEvidenceService {
         fileSize: input.fileSize,
         mimeType: input.mimeType,
         submittedBy: input.submittedBy,
-        reviewStatus: 'SUBMITTED',
+        reviewStatus: "SUBMITTED",
         metadata: input.metadata,
       },
     });
@@ -98,10 +109,10 @@ export class PaymentEvidenceService {
     // Crear HumanReviewTask para revisión obligatoria
     await this.prisma.humanReviewTask.create({
       data: {
-        type: 'PAYMENT_VERIFICATION',
+        type: "PAYMENT_VERIFICATION",
         entityId: evidence.id,
-        entityType: 'PaymentEvidence',
-        status: 'PENDING',
+        entityType: "PaymentEvidence",
+        status: "PENDING",
         payload: {
           paymentIntentId: input.paymentIntentId,
           fileUrl: input.fileUrl,
@@ -116,10 +127,12 @@ export class PaymentEvidenceService {
     // Actualizar PaymentIntent status a UNDER_REVIEW
     await this.prisma.paymentIntent.update({
       where: { id: input.paymentIntentId },
-      data: { status: 'UNDER_REVIEW' },
+      data: { status: "UNDER_REVIEW" },
     });
 
-    this.logger.log(`Payment evidence ${evidence.id} submitted, HumanReviewTask created`);
+    this.logger.log(
+      `Payment evidence ${evidence.id} submitted, HumanReviewTask created`,
+    );
     return evidence;
   }
 
@@ -128,7 +141,9 @@ export class PaymentEvidenceService {
    * Solo ADMIN puede llamar esto
    */
   async reviewEvidence(input: ReviewPaymentEvidenceInput) {
-    this.logger.log(`Reviewing payment evidence ${input.evidenceId} by ${input.reviewedBy}: ${input.status}`);
+    this.logger.log(
+      `Reviewing payment evidence ${input.evidenceId} by ${input.reviewedBy}: ${input.status}`,
+    );
 
     const evidence = await this.prisma.paymentEvidence.findUnique({
       where: { id: input.evidenceId },
@@ -136,14 +151,16 @@ export class PaymentEvidenceService {
     });
 
     if (!evidence) {
-      throw new NotFoundException(`PaymentEvidence ${input.evidenceId} not found`);
+      throw new NotFoundException(
+        `PaymentEvidence ${input.evidenceId} not found`,
+      );
     }
 
-    if (evidence.reviewStatus === 'PAYMENT_CONFIRMED') {
-      throw new BadRequestException('Evidence already confirmed');
+    if (evidence.reviewStatus === "PAYMENT_CONFIRMED") {
+      throw new BadRequestException("Evidence already confirmed");
     }
-    if (evidence.reviewStatus === 'REJECTED') {
-      throw new BadRequestException('Evidence already rejected');
+    if (evidence.reviewStatus === "REJECTED") {
+      throw new BadRequestException("Evidence already rejected");
     }
 
     // Actualizar evidencia
@@ -161,11 +178,11 @@ export class PaymentEvidenceService {
     await this.prisma.humanReviewTask.updateMany({
       where: {
         entityId: input.evidenceId,
-        entityType: 'PaymentEvidence',
-        status: 'PENDING',
+        entityType: "PaymentEvidence",
+        status: "PENDING",
       },
       data: {
-        status: input.status === 'PAYMENT_CONFIRMED' ? 'APPROVED' : 'REJECTED',
+        status: input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
         reviewerId: input.reviewedBy,
         reviewedAt: new Date(),
         reviewNote: input.reviewNote,
@@ -173,13 +190,17 @@ export class PaymentEvidenceService {
     });
 
     // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
-    if (input.status === 'PAYMENT_CONFIRMED') {
-      await this.confirmPayment(evidence.paymentIntentId, input.reviewedBy, input.amountConfirmed);
+    if (input.status === "PAYMENT_CONFIRMED") {
+      await this.confirmPayment(
+        evidence.paymentIntentId,
+        input.reviewedBy,
+        input.amountConfirmed,
+      );
     } else {
       // Rechazado
       await this.prisma.paymentIntent.update({
         where: { id: evidence.paymentIntentId },
-        data: { status: 'REJECTED' },
+        data: { status: "REJECTED" },
       });
     }
 
@@ -190,7 +211,11 @@ export class PaymentEvidenceService {
    * Confirma el pago tras revisión humana exitosa
    * Crea PaymentVerification y dispara flujo correspondiente
    */
-  private async confirmPayment(paymentIntentId: string, verifiedBy: string, amountConfirmed?: number) {
+  private async confirmPayment(
+    paymentIntentId: string,
+    verifiedBy: string,
+    amountConfirmed?: number,
+  ) {
     const paymentIntent = await this.prisma.paymentIntent.findUnique({
       where: { id: paymentIntentId },
     });
@@ -206,7 +231,7 @@ export class PaymentEvidenceService {
       data: {
         paymentIntentId,
         verifiedBy,
-        status: 'PAYMENT_CONFIRMED',
+        status: "PAYMENT_CONFIRMED",
         amountConfirmed: confirmedAmount,
         note: `Confirmed by human operator ${verifiedBy}`,
       },
@@ -216,20 +241,28 @@ export class PaymentEvidenceService {
     await this.prisma.paymentIntent.update({
       where: { id: paymentIntentId },
       data: {
-        status: 'PAID',
+        status: "PAID",
         paidAt: new Date(),
         providerRef: `MANUAL-${verifiedBy}-${Date.now()}`,
       },
     });
 
     // Disparar flujo según tipo
-    if (paymentIntent.type === 'DRIVER_SUBSCRIPTION') {
-      await this.handleDriverSubscriptionConfirmed(paymentIntent, confirmedAmount);
-    } else if (paymentIntent.type === 'ADVERTISER_CAMPAIGN') {
-      await this.handleAdvertiserCampaignConfirmed(paymentIntent, confirmedAmount);
+    if (paymentIntent.type === "DRIVER_SUBSCRIPTION") {
+      await this.handleDriverSubscriptionConfirmed(
+        paymentIntent,
+        confirmedAmount,
+      );
+    } else if (paymentIntent.type === "ADVERTISER_CAMPAIGN") {
+      await this.handleAdvertiserCampaignConfirmed(
+        paymentIntent,
+        confirmedAmount,
+      );
     }
 
-    this.logger.log(`Payment ${paymentIntentId} confirmed by ${verifiedBy}, amount: ${confirmedAmount}`);
+    this.logger.log(
+      `Payment ${paymentIntentId} confirmed by ${verifiedBy}, amount: ${confirmedAmount}`,
+    );
   }
 
   /**
@@ -238,8 +271,13 @@ export class PaymentEvidenceService {
    * - Crea comisión de referido si aplica (RD$500)
    * - Actualiza onboardingStatus
    */
-  private async handleDriverSubscriptionConfirmed(paymentIntent: any, amount: number) {
-    this.logger.log(`Handling driver subscription confirmed for lead: ${paymentIntent.leadId}`);
+  private async handleDriverSubscriptionConfirmed(
+    paymentIntent: any,
+    amount: number,
+  ) {
+    this.logger.log(
+      `Handling driver subscription confirmed for lead: ${paymentIntent.leadId}`,
+    );
 
     if (!paymentIntent.leadId) {
       this.logger.warn(`No leadId on paymentIntent ${paymentIntent.id}`);
@@ -257,25 +295,28 @@ export class PaymentEvidenceService {
     }
 
     // Verificar si ya se creó comisión para este referido
-    const existingAttribution = await this.prisma.referralAttribution.findUnique({
-      where: { leadId: paymentIntent.leadId },
-    });
+    const existingAttribution =
+      await this.prisma.referralAttribution.findUnique({
+        where: { leadId: paymentIntent.leadId },
+      });
 
     if (existingAttribution?.commissionCreated) {
-      this.logger.log(`Commission already created for lead ${paymentIntent.leadId}`);
+      this.logger.log(
+        `Commission already created for lead ${paymentIntent.leadId}`,
+      );
       return;
     }
 
     // Crear comisión para el referente (RD$500)
     const commissionRef = `REF-DRIVER-${paymentIntent.leadId}-${Date.now()}`;
-    
+
     await this.prisma.commission.create({
       data: {
         driverId: lead.referrerId,
         amount: 500,
-        sourceType: 'DRIVER_REFERRAL',
+        sourceType: "DRIVER_REFERRAL",
         reference: commissionRef,
-        status: 'PENDING',
+        status: "PENDING",
         metadata: {
           leadId: paymentIntent.leadId,
           paymentIntentId: paymentIntent.id,
@@ -290,7 +331,7 @@ export class PaymentEvidenceService {
         where: { id: existingAttribution.id },
         data: {
           conversionAt: new Date(),
-          conversionType: 'DRIVER_SUBSCRIPTION',
+          conversionType: "DRIVER_SUBSCRIPTION",
           commissionCreated: true,
           commissionId: commissionRef,
         },
@@ -302,7 +343,7 @@ export class PaymentEvidenceService {
           referrerId: lead.referrerId,
           referrerCode: lead.referrerCode,
           conversionAt: new Date(),
-          conversionType: 'DRIVER_SUBSCRIPTION',
+          conversionType: "DRIVER_SUBSCRIPTION",
           commissionCreated: true,
           commissionId: commissionRef,
         },
@@ -312,10 +353,12 @@ export class PaymentEvidenceService {
     // Actualizar lead
     await this.prisma.lead.update({
       where: { id: paymentIntent.leadId },
-      data: { status: 'CONVERTED' },
+      data: { status: "CONVERTED" },
     });
 
-    this.logger.log(`Driver referral commission created for referrer ${lead.referrerId}`);
+    this.logger.log(
+      `Driver referral commission created for referrer ${lead.referrerId}`,
+    );
   }
 
   /**
@@ -323,8 +366,13 @@ export class PaymentEvidenceService {
    * - Actualiza campaña status = ACTIVE
    * - Crea comisión de referido si aplica
    */
-  private async handleAdvertiserCampaignConfirmed(paymentIntent: any, amount: number) {
-    this.logger.log(`Handling advertiser campaign confirmed for lead: ${paymentIntent.leadId}`);
+  private async handleAdvertiserCampaignConfirmed(
+    paymentIntent: any,
+    amount: number,
+  ) {
+    this.logger.log(
+      `Handling advertiser campaign confirmed for lead: ${paymentIntent.leadId}`,
+    );
 
     if (!paymentIntent.leadId) return;
 
@@ -334,22 +382,23 @@ export class PaymentEvidenceService {
 
     if (!lead || !lead.referrerId) return;
 
-    const existingAttribution = await this.prisma.referralAttribution.findUnique({
-      where: { leadId: paymentIntent.leadId },
-    });
+    const existingAttribution =
+      await this.prisma.referralAttribution.findUnique({
+        where: { leadId: paymentIntent.leadId },
+      });
 
     if (existingAttribution?.commissionCreated) return;
 
     // Crear comisión para referente (RD$500)
     const commissionRef = `REF-ADV-${paymentIntent.leadId}-${Date.now()}`;
-    
+
     await this.prisma.commission.create({
       data: {
         driverId: lead.referrerId,
         amount: 500,
-        sourceType: 'ADVERTISER_SALE',
+        sourceType: "ADVERTISER_SALE",
         reference: commissionRef,
-        status: 'PENDING',
+        status: "PENDING",
         metadata: {
           leadId: paymentIntent.leadId,
           paymentIntentId: paymentIntent.id,
@@ -363,7 +412,7 @@ export class PaymentEvidenceService {
         where: { id: existingAttribution.id },
         data: {
           conversionAt: new Date(),
-          conversionType: 'ADVERTISER_CAMPAIGN',
+          conversionType: "ADVERTISER_CAMPAIGN",
           commissionCreated: true,
           commissionId: commissionRef,
         },
@@ -375,7 +424,7 @@ export class PaymentEvidenceService {
           referrerId: lead.referrerId,
           referrerCode: lead.referrerCode,
           conversionAt: new Date(),
-          conversionType: 'ADVERTISER_CAMPAIGN',
+          conversionType: "ADVERTISER_CAMPAIGN",
           commissionCreated: true,
           commissionId: commissionRef,
         },
@@ -384,10 +433,12 @@ export class PaymentEvidenceService {
 
     await this.prisma.lead.update({
       where: { id: paymentIntent.leadId },
-      data: { status: 'CONVERTED' },
+      data: { status: "CONVERTED" },
     });
 
-    this.logger.log(`Advertiser referral commission created for referrer ${lead.referrerId}`);
+    this.logger.log(
+      `Advertiser referral commission created for referrer ${lead.referrerId}`,
+    );
   }
 
   /**
@@ -395,13 +446,13 @@ export class PaymentEvidenceService {
    */
   async getPendingEvidence() {
     return this.prisma.paymentEvidence.findMany({
-      where: { reviewStatus: { in: ['SUBMITTED', 'UNDER_REVIEW'] } },
+      where: { reviewStatus: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
       include: {
         paymentIntent: {
           include: { lead: true },
         },
       },
-      orderBy: { submittedAt: 'asc' },
+      orderBy: { submittedAt: "asc" },
     });
   }
 

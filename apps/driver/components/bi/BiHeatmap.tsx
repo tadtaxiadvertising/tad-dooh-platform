@@ -12,7 +12,7 @@ const HeatLayer = ({ points }: { points: any[] }) => {
   useEffect(() => {
     if (!map || !points || points.length === 0) return;
 
-    // @ts-ignore
+    // @ts-expect-error leaflet.heat types not included in leaflet typings
     const heatLayer = L.heatLayer(points, {
       radius: 20,
       blur: 15,

@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { createHash } from "crypto";
+import { useCallback, useState, useRef } from "react";
+
+// ─── Business rules (espejo de backend) ─────────────────────────────────────────
+const ALLOWED_MIME_TYPES = ["video/mp4", "image/jpeg", "image/png"];
+const ALLOWED_EXTENSIONS = [".mp4", ".jpg", ".jpeg", ".png"];
+const MAX_SIZE_BYTES = 57671680; // 55MB
 
 interface UploadProgress {
   loaded: number;
@@ -20,9 +24,39 @@ interface UseDirectUploadOptions {
   onSuccess?: (result: UploadResult) => void;
   onError?: (error: Error) => void;
   onProgress?: (progress: UploadProgress) => void;
+  maxRetries?: number;
+  retryBaseDelayMs?: number;
+}
+
+function extOf(name: string): string {
+  const idx = name.lastIndexOf(".");
+  return idx >= 0 ? name.slice(idx).toLowerCase() : "";
+}
+
+function validateFile(file: File): string | null {
+  const ext = extOf(file.name);
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return `Extensión no permitida: "${file.name}". Solo se aceptan ${ALLOWED_EXTENSIONS.join(", ")}.`;
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return `Tipo MIME no permitido: ${file.type || "(sin tipo)"}. Solo se aceptan ${ALLOWED_MIME_TYPES.join(", ")}.`;
+  }
+  if (file.size > MAX_SIZE_BYTES) {
+    const maxMB = (MAX_SIZE_BYTES / (1024 * 1024)).toFixed(1);
+    return `El archivo excede el límite permitido de ${maxMB}MB (${file.name}).`;
+  }
+  return null;
 }
 
 export function useDirectUpload(options: UseDirectUploadOptions = {}) {
+  const {
+    onSuccess,
+    onError,
+    onProgress,
+    maxRetries = 3,
+    retryBaseDelayMs = 1000,
+  } = options;
+
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress>({
     loaded: 0,
@@ -30,47 +64,71 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     percentage: 0,
   });
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const currentFileRef = useRef<File | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+
+  const resetState = useCallback(() => {
+    setProgress({ loaded: 0, total: 0, percentage: 0 });
+    setError(null);
+    setRetryCount(0);
+  }, []);
+
+  const cancelUpload = useCallback(() => {
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    currentFileRef.current = null;
+    setIsUploading(false);
+    setProgress({ loaded: 0, total: 0, percentage: 0 });
+    setError("Subida cancelada por el usuario.");
+    setRetryCount(0);
+  }, []);
 
   const calculateHash = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("MD5", buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hash = await crypto.subtle.digest("MD5", file);
+    const hashArray = Array.from(new Uint8Array(hash));
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   };
 
   const upload = async (file: File, campaignId?: string) => {
-    if (isUploading) return;
-
-    // Validaciones cliente
-    const allowedTypes = ["video/mp4", "image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
-      const err = new Error(
-        `Tipo de archivo no permitido: ${file.type}. Solo MP4, JPG, PNG.`
-      );
-      setError(err.message);
+    // Validación cliente
+    const validationError = validateFile(file);
+    if (validationError) {
+      const err = new Error(validationError);
+      setError(validationError);
       options.onError?.(err);
       throw err;
     }
 
-    const maxSize = 100 * 1024 * 1024; // 100MB
-    if (file.size > maxSize) {
-      const err = new Error(`El archivo excede el límite de 100MB`);
-      setError(err.message);
-      options.onError?.(err);
-      throw err;
+    if (controllerRef.current?.signal.aborted) {
+      throw new Error("Subida cancelada antes de iniciar.");
     }
 
     setIsUploading(true);
     setError(null);
+    setRetryCount(0);
     setProgress({ loaded: 0, total: file.size, percentage: 0 });
+
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+    let uploadedPath: string | null = null;
 
     try {
       // 1. Obtener signed URL del backend
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
       const uploadUrlRes = await fetch(
-        `${apiBase}/media/upload-url?fileName=${encodeURIComponent(
-          file.name
-        )}&fileType=${encodeURIComponent(file.type)}`,
+        `${apiBase}/media/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`,
         {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
@@ -86,11 +144,12 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       }
 
       const { uploadUrl, path, publicUrl } = await uploadUrlRes.json();
+      uploadedPath = path;
 
       // 2. Calcular hash MD5 localmente (para verificación)
       const hashMd5 = await calculateHash(file);
 
-      // 3. Subir directamente a Supabase Storage con progress
+      // 3. Subir a Supabase Storage con progress + soporte de cancelación
       await uploadToSignedUrl(uploadUrl, file, (loaded) => {
         setProgress({
           loaded,
@@ -155,15 +214,13 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     isUploading,
     progress,
     error,
-    reset: () => {
-      setProgress({ loaded: 0, total: 0, percentage: 0 });
-      setError(null);
-    },
+    retryCount,
+    reset: resetState,
+    cancel: cancelUpload,
   };
 }
 
 function getAuthToken(): string {
-  // Prioridad: cookie Supabase > localStorage > sessionStorage
   if (typeof document !== "undefined") {
     const cookieMatch = document.cookie.match(/sb-access-token=([^;]+)/);
     if (cookieMatch) return cookieMatch[1];
@@ -182,10 +239,24 @@ function getAuthToken(): string {
 async function uploadToSignedUrl(
   signedUrl: string,
   file: File,
-  onProgress: (loaded: number) => void
+  onProgress: (loaded: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+
+    xhrRef.current = xhr;
+    currentFileRef.current = file;
+
+    if (signal?.aborted) {
+      xhr.abort();
+      reject(new Error("Upload aborted"));
+      return;
+    }
+
+    signal?.addEventListener("abort", () => {
+      xhr.abort();
+    });
 
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {

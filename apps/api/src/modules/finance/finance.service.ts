@@ -426,18 +426,18 @@ export class FinanceService {
 
     const payrollData = await this.calculateMonthlyPayroll(month, year);
     const recordsToCreate = payrollData
-          .filter((p) => p.totalAmount > 0)
-          .map((p) => ({
-            driverId: p.driverId,
-            month,
-            year,
-            amount: p.totalAmount,
-            status: "PENDING",
-            penaltyApplied: p.penaltyApplied || false,
-            penaltyPercentage: p.penaltyPercentage || 0,
-            activeAds: p.activeAds || 0,
-            gpsPoints: p.gpsPoints || 0,
-          }));
+      .filter((p) => p.totalAmount > 0)
+      .map((p) => ({
+        driverId: p.driverId,
+        month,
+        year,
+        amount: p.totalAmount,
+        status: "PENDING",
+        penaltyApplied: p.penaltyApplied || false,
+        penaltyPercentage: p.penaltyPercentage || 0,
+        activeAds: p.activeAds || 0,
+        gpsPoints: p.gpsPoints || 0,
+      }));
 
     if (recordsToCreate.length === 0) {
       return {
@@ -551,13 +551,13 @@ export class FinanceService {
         });
 
         // 3. INCREMENT wallet balance (driver receives payment) - Upsert Wallet model
-                await tx.wallet.upsert({
-                  where: { driverId },
-                  update: { availableBalance: { increment: driverEntry.totalAmount } },
-                  create: { driverId, availableBalance: driverEntry.totalAmount },
-                });
+        await tx.wallet.upsert({
+          where: { driverId },
+          update: { availableBalance: { increment: driverEntry.totalAmount } },
+          create: { driverId, availableBalance: driverEntry.totalAmount },
+        });
 
-                return payrollRecord;
+        return payrollRecord;
       })
       .then(async (payrollRecord) => {
         // 3. Notification unificada al conductor (post-commit, fire-and-forget)
@@ -734,7 +734,9 @@ export class FinanceService {
         `RD$ ${d.referralBonus}`,
         d.activeAds,
         `RD$ ${d.adIncome}`,
-        d.penaltyPercentage ? `${(d.penaltyPercentage * 100).toFixed(1)}%` : "0%",
+        d.penaltyPercentage
+          ? `${(d.penaltyPercentage * 100).toFixed(1)}%`
+          : "0%",
         `RD$ ${d.totalAmount}`,
       ]
         .map((f) => this.sanitizeCsvField(f))

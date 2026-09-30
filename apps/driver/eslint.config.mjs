@@ -14,6 +14,14 @@ const eslintConfig = [
   {
     ignores: [".next/**", "out/**", "build/**"],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-html-link-for-pages": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

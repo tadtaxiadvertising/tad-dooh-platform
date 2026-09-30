@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import * as crypto from "crypto";
 
@@ -45,8 +50,12 @@ export class LeadService {
     });
 
     if (existingLead) {
-      this.logger.warn(`Duplicate lead detected for type=${dto.type}, referent=${dto.referentId}`);
-      throw new BadRequestException("Ya existe un lead registrado con estos datos");
+      this.logger.warn(
+        `Duplicate lead detected for type=${dto.type}, referent=${dto.referentId}`,
+      );
+      throw new BadRequestException(
+        "Ya existe un lead registrado con estos datos",
+      );
     }
 
     const lead = await this.prisma.lead.create({
@@ -110,7 +119,11 @@ export class LeadService {
   /**
    * Update lead status (SUBMITTED -> UNDER_REVIEW -> CONFIRMED/REJECTED)
    */
-  async updateLeadStatus(id: string, status: "SUBMITTED" | "UNDER_REVIEW" | "CONFIRMED" | "REJECTED", reviewerId?: string) {
+  async updateLeadStatus(
+    id: string,
+    status: "SUBMITTED" | "UNDER_REVIEW" | "CONFIRMED" | "REJECTED",
+    reviewerId?: string,
+  ) {
     const lead = await this.prisma.lead.update({
       where: { id },
       data: { status, updatedAt: new Date() },
@@ -184,19 +197,17 @@ export class LeadService {
   /**
    * Register payment evidence (receipt from WhatsApp or bank transfer)
    */
-  async registerPaymentEvidence(
-    dto: {
-      paymentIntentId: string;
-      leadId: string;
-      type: "WHATSAPP_RECEIPT" | "BANK_TRANSFER" | "CARD_PAYMENT" | "OTHER";
-      fileUrl: string;
-      hash?: string;
-      mimeType?: string;
-      fileSize?: number;
-      reviewerId?: string;
-      reviewNotes?: string;
-    },
-  ) {
+  async registerPaymentEvidence(dto: {
+    paymentIntentId: string;
+    leadId: string;
+    type: "WHATSAPP_RECEIPT" | "BANK_TRANSFER" | "CARD_PAYMENT" | "OTHER";
+    fileUrl: string;
+    hash?: string;
+    mimeType?: string;
+    fileSize?: number;
+    reviewerId?: string;
+    reviewNotes?: string;
+  }) {
     const evidence = await this.prisma.paymentEvidence.create({
       data: {
         paymentIntentId: dto.paymentIntentId,
@@ -224,7 +235,10 @@ export class LeadService {
     paymentIntentId: string,
     status: "CONFIRMED" | "REJECTED" | "REFUNDED",
     reviewerNotes?: string,
-    verificationMethod: "MANUAL_REVIEW" | "WEBHOOK" | "AUTOMATED" = "MANUAL_REVIEW",
+    verificationMethod:
+      | "MANUAL_REVIEW"
+      | "WEBHOOK"
+      | "AUTOMATED" = "MANUAL_REVIEW",
   ) {
     const paymentIntent = await this.prisma.paymentIntent.findUnique({
       where: { id: paymentIntentId },
@@ -234,10 +248,17 @@ export class LeadService {
     });
 
     if (!paymentIntent) {
-      throw new NotFoundException(`PaymentIntent with id ${paymentIntentId} not found`);
+      throw new NotFoundException(
+        `PaymentIntent with id ${paymentIntentId} not found`,
+      );
     }
 
-    const intentStatus = status === "CONFIRMED" ? "PAID" : status === "REJECTED" ? "FAILED" : "REFUNDED";
+    const intentStatus =
+      status === "CONFIRMED"
+        ? "PAID"
+        : status === "REJECTED"
+          ? "FAILED"
+          : "REFUNDED";
 
     // Update payment intent status
     const updatedIntent = await this.prisma.paymentIntent.update({

@@ -27,7 +27,9 @@ export class QrScanService {
    * Si ya existe un escaneo similar reciente, no crea duplicado.
    */
   async recordScan(input: RecordQrScanInput): Promise<QrScanResult> {
-    this.logger.log(`[QR_SCAN] Recording scan: ${input.qrCode} from ${input.ipAddress}`);
+    this.logger.log(
+      `[QR_SCAN] Recording scan: ${input.qrCode} from ${input.ipAddress}`,
+    );
 
     // Ventana de deduplicación: 24 horas
     const dedupeWindow = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -43,7 +45,9 @@ export class QrScanService {
     });
 
     if (existing) {
-      this.logger.log(`[QR_SCAN] Duplicate scan detected for ${input.qrCode} from ${input.ipAddress}, returning existing`);
+      this.logger.log(
+        `[QR_SCAN] Duplicate scan detected for ${input.qrCode} from ${input.ipAddress}, returning existing`,
+      );
       return {
         scan: existing,
         isDuplicate: true,
@@ -64,7 +68,9 @@ export class QrScanService {
       },
     });
 
-    this.logger.log(`[QR_SCAN] Created new scan ${scan.id} for ${input.qrCode}`);
+    this.logger.log(
+      `[QR_SCAN] Created new scan ${scan.id} for ${input.qrCode}`,
+    );
     return { scan, isDuplicate: false, converted: false };
   }
 
@@ -132,7 +138,8 @@ export class QrScanService {
 
     const total = scans.length;
     const converted = scans.filter((s) => s.converted).length;
-    const uniqueDrivers = new Set(scans.map((s) => s.driverId).filter(Boolean)).size;
+    const uniqueDrivers = new Set(scans.map((s) => s.driverId).filter(Boolean))
+      .size;
 
     return {
       referrerCode,

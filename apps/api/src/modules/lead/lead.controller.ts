@@ -64,19 +64,23 @@ export class LeadController {
     @Body(new ValidationPipe()) dto: z.infer<typeof CreateLeadDto>,
     @Request() req: any,
   ) {
-    return this.leadService.createLead({
-      type: dto.type,
-      source: dto.source,
-      qrCode: dto.qrCode,
-      referentId: dto.referentId,
-      referentType: dto.referentType,
-      channel: dto.channel,
-      contactName: dto.contactName,
-      contactPhone: dto.contactPhone,
-      contactEmail: dto.contactEmail,
-      city: dto.city,
-      consentGiven: dto.consentGiven,
-    }, req.ip, req.get("User-Agent"));
+    return this.leadService.createLead(
+      {
+        type: dto.type,
+        source: dto.source,
+        qrCode: dto.qrCode,
+        referentId: dto.referentId,
+        referentType: dto.referentType,
+        channel: dto.channel,
+        contactName: dto.contactName,
+        contactPhone: dto.contactPhone,
+        contactEmail: dto.contactEmail,
+        city: dto.city,
+        consentGiven: dto.consentGiven,
+      },
+      req.ip,
+      req.get("User-Agent"),
+    );
   }
 
   /**
@@ -98,7 +102,11 @@ export class LeadController {
     @Body(new ValidationPipe()) dto: z.infer<typeof UpdateLeadStatusDto>,
     @Request() req: any,
   ) {
-    return this.leadService.updateLeadStatus(id, dto.status, req.user?.entityId);
+    return this.leadService.updateLeadStatus(
+      id,
+      dto.status,
+      req.user?.entityId,
+    );
   }
 
   /**
@@ -132,7 +140,11 @@ export class LeadController {
     @Body(new ValidationPipe()) dto: z.infer<typeof VerifyPaymentDto>,
     @Request() req: any,
   ) {
-    return this.leadService.verifyPayment(dto.paymentIntentId, dto.status, dto.reviewerNotes);
+    return this.leadService.verifyPayment(
+      dto.paymentIntentId,
+      dto.status,
+      dto.reviewerNotes,
+    );
   }
 
   /**
@@ -141,7 +153,8 @@ export class LeadController {
    */
   @Get()
   async getLeads(
-    @Query() filters: {
+    @Query()
+    filters: {
       type?: "ADVERTISER" | "DRIVER";
       status?: "SUBMITTED" | "UNDER_REVIEW" | "CONFIRMED" | "REJECTED";
       referentId?: string;

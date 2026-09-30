@@ -68,11 +68,11 @@ export const BUSINESS_RULES = {
       SUSPENDED: "BLOQUEADO",
       BLOCKED: "BLOQUEADO",
       ONBOARDING: {
-        TOS_PENDING: "TOS_PENDING",      // Recién creado, pendiente aceptar TOS
-        READY: "READY",                  // TOS aceptado, pendiente pago suscripción
+        TOS_PENDING: "TOS_PENDING", // Recién creado, pendiente aceptar TOS
+        READY: "READY", // TOS aceptado, pendiente pago suscripción
         PENDING_PAYMENT: "PENDING_PAYMENT", // Alias semántico para READY (pago pendiente)
-        BANK_PENDING: "BANK_PENDING",    // Pago confirmado, pendiente configurar cuenta bancaria
-        COMPLETED: "COMPLETED",          // Onboarding 100% completo (TOS + Pago + Banco)
+        BANK_PENDING: "BANK_PENDING", // Pago confirmado, pendiente configurar cuenta bancaria
+        COMPLETED: "COMPLETED", // Onboarding 100% completo (TOS + Pago + Banco)
       },
     },
     ADVERTISER: {

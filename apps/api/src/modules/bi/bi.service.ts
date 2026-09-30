@@ -38,7 +38,7 @@ export class BiService {
 
     // 1. Lectura cache-hit del snapshot de hoy
     try {
-      let snapshot = await this.prisma.biDashboardSnapshot.findUnique({
+      const snapshot = await this.prisma.biDashboardSnapshot.findUnique({
         where: { snapshotDate: today },
       });
 
@@ -67,24 +67,22 @@ export class BiService {
   }
 
   /** Mapea un registro persistido al contrato de respuesta del dashboard. */
-  private mapSnapshot(
-    snapshot: {
-      mrr: number;
-      totalDevices: number;
-      onlineDevices: number;
-      offlineDevices: number;
-      criticalDevices: number;
-      activeCampaigns: number;
-      totalImpressionsMtd: number;
-      deliveryRateAvg: number;
-      syncHealthRate: number;
-      yieldPerScreen: number;
-      arpu: number;
-      churnRate: number;
-      projectedRevenue: number;
-      generatedAt: Date;
-    },
-  ): BiKpiResponse {
+  private mapSnapshot(snapshot: {
+    mrr: number;
+    totalDevices: number;
+    onlineDevices: number;
+    offlineDevices: number;
+    criticalDevices: number;
+    activeCampaigns: number;
+    totalImpressionsMtd: number;
+    deliveryRateAvg: number;
+    syncHealthRate: number;
+    yieldPerScreen: number;
+    arpu: number;
+    churnRate: number;
+    projectedRevenue: number;
+    generatedAt: Date;
+  }): BiKpiResponse {
     return {
       mrr: snapshot.mrr,
       activeSubscribers: snapshot.totalDevices - snapshot.offlineDevices,

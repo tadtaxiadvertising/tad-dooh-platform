@@ -11,7 +11,13 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import { CommissionService, CreateCommissionInput, CommissionStatus, CommissionSourceType, MonthlySettlementInput } from "./commission.service";
+import {
+  CommissionService,
+  CreateCommissionInput,
+  CommissionStatus,
+  CommissionSourceType,
+  MonthlySettlementInput,
+} from "./commission.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
@@ -32,7 +38,9 @@ export class CommissionController {
   @UseInterceptors(IdempotencyInterceptor)
   async createCommission(@Body() body: CreateCommissionInput) {
     if (!body.driverId || !body.amount || !body.sourceType || !body.reference) {
-      throw new BadRequestException("driverId, amount, sourceType, reference son requeridos");
+      throw new BadRequestException(
+        "driverId, amount, sourceType, reference son requeridos",
+      );
     }
 
     if (!Object.values(CommissionSourceType).includes(body.sourceType)) {
@@ -53,7 +61,8 @@ export class CommissionController {
   @Get("pending/:driverId")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
   async getPendingCommissions(@Param("driverId") driverId: string) {
-    const commissions = await this.commissionService.getPendingCommissions(driverId);
+    const commissions =
+      await this.commissionService.getPendingCommissions(driverId);
     return { success: true, commissions };
   }
 
@@ -63,7 +72,8 @@ export class CommissionController {
   @Get("history/:driverId")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
   async getCommissionHistory(@Param("driverId") driverId: string) {
-    const commissions = await this.commissionService.getDriverCommissionHistory(driverId);
+    const commissions =
+      await this.commissionService.getDriverCommissionHistory(driverId);
     return { success: true, commissions };
   }
 
@@ -82,7 +92,10 @@ export class CommissionController {
       throw new BadRequestException("approvedBy es requerido");
     }
 
-    const commission = await this.commissionService.approveCommission(id, body.approvedBy);
+    const commission = await this.commissionService.approveCommission(
+      id,
+      body.approvedBy,
+    );
     return { success: true, commission };
   }
 
@@ -101,7 +114,11 @@ export class CommissionController {
       throw new BadRequestException("reason y revokedBy son requeridos");
     }
 
-    const result = await this.commissionService.revokeCommission(id, body.reason, body.revokedBy);
+    const result = await this.commissionService.revokeCommission(
+      id,
+      body.reason,
+      body.revokedBy,
+    );
     return { success: true, ...result };
   }
 
@@ -165,7 +182,10 @@ export class CommissionController {
       throw new BadRequestException("approvedBy es requerido");
     }
 
-    const batch = await this.commissionService.approveSettlementBatch(id, body.approvedBy);
+    const batch = await this.commissionService.approveSettlementBatch(
+      id,
+      body.approvedBy,
+    );
     return { success: true, batch };
   }
 
@@ -184,7 +204,11 @@ export class CommissionController {
       throw new BadRequestException("paidBy es requerido");
     }
 
-    const batch = await this.commissionService.paySettlementBatch(id, body.paidBy, body.referenceNum);
+    const batch = await this.commissionService.paySettlementBatch(
+      id,
+      body.paidBy,
+      body.referenceNum,
+    );
     return { success: true, batch };
   }
 
@@ -194,10 +218,7 @@ export class CommissionController {
    */
   @Get("reconcile/:month/:year")
   @Roles(UserRole.ADMIN)
-  async reconcile(
-    @Param("month") month: string,
-    @Param("year") year: string,
-  ) {
+  async reconcile(@Param("month") month: string, @Param("year") year: string) {
     const m = parseInt(month, 10);
     const y = parseInt(year, 10);
 

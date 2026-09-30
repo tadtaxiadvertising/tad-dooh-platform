@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target, Library, Loader2, Link2, Unlink, Eye, Tablet } from 'lucide-react';
+import { X, Upload, Film, Users, Zap, CheckCircle2, AlertCircle, Target, Library, Loader2, Link2, Unlink, Tablet } from 'lucide-react';
 import { 
   getDrivers, 
   getMedia, 

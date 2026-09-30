@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LegalLayout, LegalSection, LegalList, LegalCallout, LegalHighlight, LegalTable } from '@tad/ui';
 
 export default function TerminosDeServicio() {
@@ -237,7 +238,7 @@ export default function TerminosDeServicio() {
         <h3>8.3. Efectos de la terminación</h3>
         <p>
           Tras la terminación, perderá el acceso a la Plataforma, a sus datos de cuenta y a los reportes.
-          Conservaremos sus datos según nuestra <a href="/politica-de-privacidad">Política de Privacidad</a>{' '}
+          Conservaremos sus datos según nuestra <Link href="/politica-de-privacidad">Política de Privacidad</Link>{' '}
           y las obligaciones legales aplicables.
         </p>
       </LegalSection>
@@ -314,7 +315,7 @@ export default function TerminosDeServicio() {
       <LegalSection id="disposiciones" title="13. Disposiciones generales">
         <LegalList
           items={[
-            <><LegalHighlight>Acuerdo completo:</LegalHighlight> estos Términos, junto con la <a href="/politica-de-privacidad">Política de Privacidad</a>, constituyen el acuerdo completo entre usted y TAD.</>,
+            <><LegalHighlight>Acuerdo completo:</LegalHighlight> estos Términos, junto con la <Link href="/politica-de-privacidad">Política de Privacidad</Link>, constituyen el acuerdo completo entre usted y TAD.</>,
             <><LegalHighlight>Divisibilidad:</LegalHighlight> si alguna disposición se considera inválida, las demás permanecen en vigor.</>,
             <><LegalHighlight>No renuncia:</LegalHighlight> la falta de ejercicio de cualquier derecho no constituye una renuncia al mismo.</>,
             <><LegalHighlight>Cesión:</LegalHighlight> usted no puede ceder estos Términos sin nuestro consentimiento escrito. TAD puede cederlos a un afiliado o sucesor.</>,

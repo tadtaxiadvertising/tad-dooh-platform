@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LegalLayout, LegalSection, LegalList, LegalCallout, LegalHighlight, LegalTable } from '@tad/ui';
 
 export default function PoliticaDePrivacidad() {
@@ -59,7 +60,7 @@ export default function PoliticaDePrivacidad() {
           items={[
             <><LegalHighlight>Información del dispositivo:</LegalHighlight> tipo de dispositivo, sistema operativo, versión de la app, identificadores únicos (IDFA, GAID, IMEI cuando aplique).</>,
             <><LegalHighlight>Datos de conexión:</LegalHighlight> dirección IP, tipo de navegador, proveedor de servicios de internet, datos de red móvil.</>,
-            <><LegalHighlight>Cookies y tecnologías similares:</LegalHighlight> ver nuestra <a href="/politica-de-cookies">Política de Cookies</a> para más detalles.</>,
+            <><LegalHighlight>Cookies y tecnologías similares:</LegalHighlight> ver nuestra <Link href="/politica-de-cookies">Política de Cookies</Link> para más detalles.</>,
           ]}
         />
         <h3>2.4. Datos financieros</h3>
@@ -195,7 +196,7 @@ export default function PoliticaDePrivacidad() {
             <><LegalHighlight>Datos de transacciones financieras:</LegalHighlight> 10 años (Código Tributario de RD).</>,
             <><LegalHighlight>Datos de geolocalización de conductores:</LegalHighlight> 90 días para datos en tiempo real; 2 años para datos agregados.</>,
             <><LegalHighlight>Logs de auditoría y seguridad:</LegalHighlight> 3 años.</>,
-            <><LegalHighlight>Cookies de sesión:</LegalHighlight> hasta 30 días. Cookies persistentes: según configuración (ver <a href="/politica-de-cookies">Política de Cookies</a>).</>,
+            <><LegalHighlight>Cookies de sesión:</LegalHighlight> hasta 30 días. Cookies persistentes: según configuración (ver <Link href="/politica-de-cookies">Política de Cookies</Link>).</>,
           ]}
         />
       </LegalSection>

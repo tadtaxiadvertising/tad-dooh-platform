@@ -147,7 +147,9 @@ export class WalletService {
           await tx.wallet.create({
             data: { driverId, availableBalance: 0 },
           });
-          throw new BadRequestException("Wallet created with zero balance. Cannot withdraw.");
+          throw new BadRequestException(
+            "Wallet created with zero balance. Cannot withdraw.",
+          );
         }
 
         if (!walletRow.bank_info) {
@@ -248,14 +250,14 @@ export class WalletService {
 
   async updateBank(driverId: string, bankData: any) {
     const { driverId: _, ...accountData } = bankData;
-    
+
     // Upsert bank info in Wallet model
     const wallet = await this.prisma.wallet.upsert({
       where: { driverId },
       update: { bankInfo: accountData },
       create: { driverId, bankInfo: accountData },
     });
-    
+
     return { success: true, bankAccount: wallet.bankInfo };
   }
 

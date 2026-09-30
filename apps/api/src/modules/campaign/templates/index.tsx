@@ -1,7 +1,7 @@
-import React from 'react';
-import { registerRoot } from 'remotion';
-import { DynamicAdTemplate } from './dynamic-ad';
-import { Composition } from 'remotion';
+import React from "react";
+import { registerRoot } from "remotion";
+import { DynamicAdTemplate } from "./dynamic-ad";
+import { Composition } from "remotion";
 
 export const RemotionVideo: React.FC = () => {
   return (
@@ -14,10 +14,10 @@ export const RemotionVideo: React.FC = () => {
         width={1080}
         height={1920} // Vertical for tablets
         defaultProps={{
-          logoUrl: '',
-          brandColor: '#e51636',
-          primaryText: 'MI OFERTA TAD',
-          secondaryText: 'Contacto: tadtaxi.com',
+          logoUrl: "",
+          brandColor: "#e51636",
+          primaryText: "MI OFERTA TAD",
+          secondaryText: "Contacto: tadtaxi.com",
         }}
       />
     </>

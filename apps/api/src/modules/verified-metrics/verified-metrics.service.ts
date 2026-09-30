@@ -63,14 +63,24 @@ export class VerifiedMetricsService {
     dateFrom: Date,
     dateTo: Date,
   ): Promise<CampaignVerifiedReport> {
-    this.logger.log(`[VERIFIED_METRICS] Campaign ${campaignId} verified stats ${dateFrom.toISOString()} - ${dateTo.toISOString()}`);
+    this.logger.log(
+      `[VERIFIED_METRICS] Campaign ${campaignId} verified stats ${dateFrom.toISOString()} - ${dateTo.toISOString()}`,
+    );
 
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {
         mediaAssets: true,
-        devices: { 
-          include: { device: { include: { driver: { select: { id: true, fullName: true, taxiNumber: true } } } } } 
+        devices: {
+          include: {
+            device: {
+              include: {
+                driver: {
+                  select: { id: true, fullName: true, taxiNumber: true },
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -96,15 +106,25 @@ export class VerifiedMetricsService {
     });
 
     // Reproducciones ESTIMADAS (basadas en dispositivos asignados y días activos)
-    const daysInPeriod = Math.max(1, Math.ceil((dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysInPeriod = Math.max(
+      1,
+      Math.ceil(
+        (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
     const estimatedPerDevicePerDay = 120; // 24h * 60min / 30s slot = 2880, pero real ~120 por operación
     const deviceCount = campaign.devices.length;
-    const estimatedTotal = deviceCount * daysInPeriod * estimatedPerDevicePerDay;
+    const estimatedTotal =
+      deviceCount * daysInPeriod * estimatedPerDevicePerDay;
 
     // Agrupar por media asset
     const byMediaAsset = campaign.mediaAssets.map((m) => {
       const verified = verifiedEvents.filter((e) => e.videoId === m.id).length;
-      const estimated = deviceCount * daysInPeriod * (m.weight || 1) * (estimatedPerDevicePerDay / campaign.mediaAssets.length);
+      const estimated =
+        deviceCount *
+        daysInPeriod *
+        (m.weight || 1) *
+        (estimatedPerDevicePerDay / campaign.mediaAssets.length);
       return {
         mediaAssetId: m.id,
         filename: m.filename,
@@ -127,7 +147,8 @@ export class VerifiedMetricsService {
     });
 
     const totalVerified = verifiedEvents.length;
-    const verificationRate = estimatedTotal > 0 ? (totalVerified / estimatedTotal) * 100 : 0;
+    const verificationRate =
+      estimatedTotal > 0 ? (totalVerified / estimatedTotal) * 100 : 0;
 
     return {
       campaignId: campaign.id,
@@ -152,11 +173,18 @@ export class VerifiedMetricsService {
     dateFrom: Date,
     dateTo: Date,
   ): Promise<DriverPlaybackStats> {
-    this.logger.log(`[VERIFIED_METRICS] Driver ${driverId} verified stats ${dateFrom.toISOString()} - ${dateTo.toISOString()}`);
+    this.logger.log(
+      `[VERIFIED_METRICS] Driver ${driverId} verified stats ${dateFrom.toISOString()} - ${dateTo.toISOString()}`,
+    );
 
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
-      select: { id: true, fullName: true, taxiNumber: true, devices: { select: { id: true } } },
+      select: {
+        id: true,
+        fullName: true,
+        taxiNumber: true,
+        devices: { select: { id: true } },
+      },
     });
 
     if (!driver) {
@@ -182,7 +210,7 @@ export class VerifiedMetricsService {
     // Campañas únicas reproducidas
     const campaignIds = new Set<string>();
     const videoIds = new Set(verifiedEvents.map((e) => e.videoId));
-    
+
     // Resolver campañas desde media assets
     const mediaAssets = await this.prisma.mediaAsset.findMany({
       where: { id: { in: Array.from(videoIds) } },
@@ -211,7 +239,9 @@ export class VerifiedMetricsService {
    * Obtiene resumen de verificación global (todas las campañas).
    */
   async getGlobalVerificationSummary(dateFrom: Date, dateTo: Date) {
-    this.logger.log(`[VERIFIED_METRICS] Global summary ${dateFrom.toISOString()} - ${dateTo.toISOString()}`);
+    this.logger.log(
+      `[VERIFIED_METRICS] Global summary ${dateFrom.toISOString()} - ${dateTo.toISOString()}`,
+    );
 
     // Total eventos verificados
     const totalVerified = await this.prisma.playbackEvent.count({
@@ -233,7 +263,12 @@ export class VerifiedMetricsService {
     });
 
     // Estimación global
-    const daysInPeriod = Math.max(1, Math.ceil((dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysInPeriod = Math.max(
+      1,
+      Math.ceil(
+        (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
     let estimatedTotal = 0;
     for (const c of activeCampaigns) {
       estimatedTotal += c.devices.length * daysInPeriod * 120;
@@ -256,7 +291,11 @@ export class VerifiedMetricsService {
     const deviceIds = topDevices.map((d) => d.deviceId);
     const devices = await this.prisma.device.findMany({
       where: { id: { in: deviceIds } },
-      select: { id: true, taxiNumber: true, driver: { select: { id: true, fullName: true } } },
+      select: {
+        id: true,
+        taxiNumber: true,
+        driver: { select: { id: true, fullName: true } },
+      },
     });
 
     const deviceMap = new Map(devices.map((d) => [d.id, d]));
@@ -265,7 +304,10 @@ export class VerifiedMetricsService {
       period: { from: dateFrom, to: dateTo },
       totalVerifiedPlays: totalVerified,
       totalEstimatedPlays: estimatedTotal,
-      globalVerificationRate: estimatedTotal > 0 ? Math.round((totalVerified / estimatedTotal) * 10000) / 100 : 0,
+      globalVerificationRate:
+        estimatedTotal > 0
+          ? Math.round((totalVerified / estimatedTotal) * 10000) / 100
+          : 0,
       activeCampaignsCount: activeCampaigns.length,
       topDevices: topDevices.map((d) => ({
         deviceId: d.deviceId,
@@ -281,7 +323,9 @@ export class VerifiedMetricsService {
    * Idempotente por deviceId + videoId + timestamp (unique constraint).
    */
   async verifyPlaybackEvents(eventIds: string[], verifiedBy: string) {
-    this.logger.log(`[VERIFIED_METRICS] Verifying ${eventIds.length} playback events by ${verifiedBy}`);
+    this.logger.log(
+      `[VERIFIED_METRICS] Verifying ${eventIds.length} playback events by ${verifiedBy}`,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.playbackEvent.updateMany({
@@ -299,7 +343,9 @@ export class VerifiedMetricsService {
    * Útil para alertas operativas.
    */
   async detectAnomalies(dateFrom: Date, dateTo: Date) {
-    this.logger.log(`[VERIFIED_METRICS] Detecting anomalies ${dateFrom.toISOString()} - ${dateTo.toISOString()}`);
+    this.logger.log(
+      `[VERIFIED_METRICS] Detecting anomalies ${dateFrom.toISOString()} - ${dateTo.toISOString()}`,
+    );
 
     // Dispositivos asignados a campañas activas
     const activeCampaigns = await this.prisma.campaign.findMany({
@@ -308,10 +354,14 @@ export class VerifiedMetricsService {
         startDate: { lte: dateTo },
         endDate: { gte: dateFrom },
       },
-      include: { 
-        devices: { 
-          include: { device: { include: { driver: { select: { id: true, fullName: true } } } } } 
-        } 
+      include: {
+        devices: {
+          include: {
+            device: {
+              include: { driver: { select: { id: true, fullName: true } } },
+            },
+          },
+        },
       },
     });
 
@@ -320,7 +370,10 @@ export class VerifiedMetricsService {
     for (const c of activeCampaigns) {
       for (const dc of c.devices) {
         allDeviceIds.add(dc.device_id);
-        deviceInfo.set(dc.device_id, { taxiNumber: dc.device?.taxiNumber, driver: dc.device?.driver });
+        deviceInfo.set(dc.device_id, {
+          taxiNumber: dc.device?.taxiNumber,
+          driver: dc.device?.driver,
+        });
       }
     }
 
@@ -336,8 +389,12 @@ export class VerifiedMetricsService {
       distinct: ["deviceId"],
     });
 
-    const verifiedDeviceIds = new Set(devicesWithVerified.map((d) => d.deviceId));
-    const silentDevices = Array.from(allDeviceIds).filter((id) => !verifiedDeviceIds.has(id));
+    const verifiedDeviceIds = new Set(
+      devicesWithVerified.map((d) => d.deviceId),
+    );
+    const silentDevices = Array.from(allDeviceIds).filter(
+      (id) => !verifiedDeviceIds.has(id),
+    );
 
     return {
       period: { from: dateFrom, to: dateTo },

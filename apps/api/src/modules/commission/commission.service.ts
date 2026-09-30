@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
@@ -162,7 +167,9 @@ export class CommissionService {
    * Solo operable por ADMIN.
    */
   async approveCommission(commissionId: string, approvedBy: string) {
-    this.logger.log(`[COMMISSION] Approving commission ${commissionId} by ${approvedBy}`);
+    this.logger.log(
+      `[COMMISSION] Approving commission ${commissionId} by ${approvedBy}`,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const commission = await tx.commission.findUnique({
@@ -199,10 +206,15 @@ export class CommissionService {
       await tx.wallet.upsert({
         where: { driverId: commission.driverId },
         update: { availableBalance: { increment: commission.amount } },
-        create: { driverId: commission.driverId, availableBalance: commission.amount },
+        create: {
+          driverId: commission.driverId,
+          availableBalance: commission.amount,
+        },
       });
 
-      this.logger.log(`[COMMISSION] Approved commission ${commissionId}, wallet incremented`);
+      this.logger.log(
+        `[COMMISSION] Approved commission ${commissionId}, wallet incremented`,
+      );
 
       return updated;
     });
@@ -240,8 +252,14 @@ export class CommissionService {
    * Revoca una comisión (fraude, reembolso, anulación)
    * Crea entrada compensatoria en ledger y revierte wallet si ya se pagó.
    */
-  async revokeCommission(commissionId: string, reason: string, revokedBy: string) {
-    this.logger.warn(`[COMMISSION] Revoking commission ${commissionId}: ${reason}`);
+  async revokeCommission(
+    commissionId: string,
+    reason: string,
+    revokedBy: string,
+  ) {
+    this.logger.warn(
+      `[COMMISSION] Revoking commission ${commissionId}: ${reason}`,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const commission = await tx.commission.findUnique({
@@ -253,7 +271,9 @@ export class CommissionService {
       }
 
       if (commission.status === CommissionStatus.REVOKED) {
-        throw new BadRequestException(`Commission ${commissionId} already revoked`);
+        throw new BadRequestException(
+          `Commission ${commissionId} already revoked`,
+        );
       }
 
       // Marcar comisión como REVOKED
@@ -268,7 +288,11 @@ export class CommissionService {
       });
 
       // Si ya estaba APROBADA/PAGADA, crear entrada compensatoria en ledger
-      if ([CommissionStatus.APPROVED, CommissionStatus.PAID].includes(commission.status as CommissionStatus)) {
+      if (
+        [CommissionStatus.APPROVED, CommissionStatus.PAID].includes(
+          commission.status as CommissionStatus,
+        )
+      ) {
         await tx.financialTransaction.create({
           data: {
             type: "INCOMING", // Reversión: entrada positiva para la empresa
@@ -302,11 +326,15 @@ export class CommissionService {
    * Genera lote de liquidación mensual (idempotente por periodo).
    * Agrupa comisiones APPROVED del mes por referente.
    */
-  async generateMonthlySettlement(input: MonthlySettlementInput): Promise<SettlementBatch> {
+  async generateMonthlySettlement(
+    input: MonthlySettlementInput,
+  ): Promise<SettlementBatch> {
     const { month, year, generatedBy } = input;
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
 
-    this.logger.log(`[SETTLEMENT] Generating monthly settlement for ${periodKey}`);
+    this.logger.log(
+      `[SETTLEMENT] Generating monthly settlement for ${periodKey}`,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Verificar idempotencia: ¿ya existe lote para este periodo?
@@ -315,7 +343,9 @@ export class CommissionService {
       });
 
       if (existingBatch) {
-        this.logger.warn(`[SETTLEMENT] Batch for ${periodKey} already exists, returning existing`);
+        this.logger.warn(
+          `[SETTLEMENT] Batch for ${periodKey} already exists, returning existing`,
+        );
         return this.mapBatchToOutput(existingBatch);
       }
 
@@ -336,7 +366,9 @@ export class CommissionService {
       });
 
       if (commissions.length === 0) {
-        this.logger.log(`[SETTLEMENT] No approved commissions for ${periodKey}`);
+        this.logger.log(
+          `[SETTLEMENT] No approved commissions for ${periodKey}`,
+        );
         // Crear lote vacío para marcar periodo como procesado
         const emptyBatch = await tx.settlementBatch.create({
           data: {
@@ -371,14 +403,16 @@ export class CommissionService {
             netAmount: 0,
           });
         }
-        const ref = byReferent.get(key)!;
+        const ref = byReferent.get(key);
         ref.commissions.push({
           id: c.id,
           amount: c.amount,
           sourceType: c.sourceType as CommissionSourceType,
           reference: c.reference,
           createdAt: c.createdAt,
-          relatedEntityId: (c.metadata as Record<string, any>)?.campaignId || (c.metadata as Record<string, any>)?.referredDriverId,
+          relatedEntityId:
+            (c.metadata as Record<string, any>)?.campaignId ||
+            (c.metadata as Record<string, any>)?.referredDriverId,
         });
         ref.grossAmount += c.amount;
       }
@@ -388,7 +422,9 @@ export class CommissionService {
       let totalWithholdings = 0;
 
       for (const ref of byReferent.values()) {
-        ref.withholding = Math.round(ref.grossAmount * BUSINESS_RULES.REFERRAL_RETENTION_RATE);
+        ref.withholding = Math.round(
+          ref.grossAmount * BUSINESS_RULES.REFERRAL_RETENTION_RATE,
+        );
         ref.netAmount = ref.grossAmount - ref.withholding;
         totalGross += ref.grossAmount;
         totalWithholdings += ref.withholding;
@@ -407,7 +443,9 @@ export class CommissionService {
           referentsCount: byReferent.size,
           commissionsCount: commissions.length,
           generatedBy,
-          referents: JSON.parse(JSON.stringify(Array.from(byReferent.values()))),
+          referents: JSON.parse(
+            JSON.stringify(Array.from(byReferent.values())),
+          ),
           commissions: JSON.parse(
             JSON.stringify(
               commissions.map((c) => ({
@@ -455,7 +493,9 @@ export class CommissionService {
       }
 
       if (batch.status !== "DRAFT") {
-        throw new BadRequestException(`Batch ${batchId} is not in DRAFT status`);
+        throw new BadRequestException(
+          `Batch ${batchId} is not in DRAFT status`,
+        );
       }
 
       // Marcar comisiones como PAID
@@ -477,7 +517,9 @@ export class CommissionService {
         },
       });
 
-      this.logger.log(`[SETTLEMENT] Batch ${batchId} approved, ${batch.commissionsCount} commissions marked PAID`);
+      this.logger.log(
+        `[SETTLEMENT] Batch ${batchId} approved, ${batch.commissionsCount} commissions marked PAID`,
+      );
 
       return this.mapBatchToOutput(updated);
     });
@@ -487,7 +529,11 @@ export class CommissionService {
    * Paga un lote aprobado (APPROVED → PAID)
    * Genera las órdenes de pago reales (transferencias bancarias).
    */
-  async paySettlementBatch(batchId: string, paidBy: string, referenceNum?: string) {
+  async paySettlementBatch(
+    batchId: string,
+    paidBy: string,
+    referenceNum?: string,
+  ) {
     this.logger.log(`[SETTLEMENT] Paying batch ${batchId} by ${paidBy}`);
 
     return this.prisma.$transaction(async (tx) => {
@@ -500,10 +546,12 @@ export class CommissionService {
       }
 
       if (batch.status !== "APPROVED") {
-        throw new BadRequestException(`Batch ${batchId} must be APPROVED before paying`);
+        throw new BadRequestException(
+          `Batch ${batchId} must be APPROVED before paying`,
+        );
       }
 
-      const referents = (batch.referents as unknown) as SettlementReferent[];
+      const referents = batch.referents as unknown as SettlementReferent[];
 
       // Procesar pago por referente
       for (const ref of referents) {
@@ -516,7 +564,9 @@ export class CommissionService {
             netAmount: ref.netAmount,
             taxAmount: ref.withholding,
             entityId: ref.driverId,
-            reference: referenceNum || `SETTLE-${batch.period}-${ref.driverId.slice(0, 8)}`,
+            reference:
+              referenceNum ||
+              `SETTLE-${batch.period}-${ref.driverId.slice(0, 8)}`,
             note: `Pago liquidación comisiones ${batch.period} - ${ref.commissions.length} comisiones`,
             status: "COMPLETED",
           },
@@ -624,9 +674,13 @@ export class CommissionService {
     for (const c of commissions) {
       const ledger = ledgerEntries.find((l) => l.reference === c.reference);
       if (!ledger) {
-        discrepancies.push(`Commission ${c.id} (${c.reference}) has no ledger entry`);
+        discrepancies.push(
+          `Commission ${c.id} (${c.reference}) has no ledger entry`,
+        );
       } else if (ledger.amount !== c.amount) {
-        discrepancies.push(`Commission ${c.id} amount mismatch: commission=${c.amount}, ledger=${ledger.amount}`);
+        discrepancies.push(
+          `Commission ${c.id} amount mismatch: commission=${c.amount}, ledger=${ledger.amount}`,
+        );
       }
     }
 
@@ -634,7 +688,9 @@ export class CommissionService {
     for (const l of ledgerEntries) {
       const commission = commissions.find((c) => c.reference === l.reference);
       if (!commission) {
-        discrepancies.push(`Ledger entry ${l.id} (${l.reference}) has no matching commission`);
+        discrepancies.push(
+          `Ledger entry ${l.id} (${l.reference}) has no matching commission`,
+        );
       }
     }
 
@@ -651,9 +707,13 @@ export class CommissionService {
     // Comisiones PAID sin payout correspondiente
     const paidCommissions = commissions.filter((c) => c.status === "PAID");
     for (const c of paidCommissions) {
-      const payout = payouts.find((p) => p.reference?.includes(c.driverId.slice(0, 8)));
+      const payout = payouts.find((p) =>
+        p.reference?.includes(c.driverId.slice(0, 8)),
+      );
       if (!payout) {
-        discrepancies.push(`Commission ${c.id} marked PAID but no payout found for driver ${c.driverId}`);
+        discrepancies.push(
+          `Commission ${c.id} marked PAID but no payout found for driver ${c.driverId}`,
+        );
       }
     }
 
@@ -696,11 +756,14 @@ export class CommissionService {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, number> {
-    return array.reduce((acc, item) => {
-      const k = String(item[key]);
-      acc[k] = (acc[k] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    return array.reduce(
+      (acc, item) => {
+        const k = String(item[key]);
+        acc[k] = (acc[k] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
   }
 
   private mapBatchToOutput(batch: any): SettlementBatch {

@@ -136,30 +136,36 @@ export class AuthService {
         `✅ Login exitoso: ${email} | Rol: ${role} | Entity: ${entityId || "N/A"}`,
       );
 
-            // Reissue tokens so the returned access_token carries the freshly
-            // injected app_metadata.role. The session from signInWithPassword
-            // was signed BEFORE the injection and its claims are immutable, so
-            // returning it would give SSR/middleware decoders a GUEST role →
-            // instant logout. Refresh against GoTrue and use the new tokens.
-            let accessToken = data.session.access_token;
-            let refreshToken = data.session.refresh_token;
-            if (anonClient) {
-              try {
-                const { data: refreshed, error: refreshError } =
-                  await anonClient.auth.refreshSession({
-                    refresh_token: data.session.refresh_token,
-                  });
-                if (!refreshError && refreshed.session?.access_token) {
-                  accessToken = refreshed.session.access_token;
-                  refreshToken = refreshed.session.refresh_token || refreshToken;
-                  this.logger.debug(`✅ Reissued role-bearing access_token for ${email}`);
-                } else {
-                  this.logger.warn(`⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`);
-                }
-              } catch (e: any) {
-                this.logger.warn(`⚠️ Exception reissuing tokens for ${email}: ${e.message}`);
-              }
-            }
+      // Reissue tokens so the returned access_token carries the freshly
+      // injected app_metadata.role. The session from signInWithPassword
+      // was signed BEFORE the injection and its claims are immutable, so
+      // returning it would give SSR/middleware decoders a GUEST role →
+      // instant logout. Refresh against GoTrue and use the new tokens.
+      let accessToken = data.session.access_token;
+      let refreshToken = data.session.refresh_token;
+      if (anonClient) {
+        try {
+          const { data: refreshed, error: refreshError } =
+            await anonClient.auth.refreshSession({
+              refresh_token: data.session.refresh_token,
+            });
+          if (!refreshError && refreshed.session?.access_token) {
+            accessToken = refreshed.session.access_token;
+            refreshToken = refreshed.session.refresh_token || refreshToken;
+            this.logger.debug(
+              `✅ Reissued role-bearing access_token for ${email}`,
+            );
+          } else {
+            this.logger.warn(
+              `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
+            );
+          }
+        } catch (e: any) {
+          this.logger.warn(
+            `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
+          );
+        }
+      }
 
       return {
         access_token: accessToken,
@@ -324,7 +330,9 @@ export class AuthService {
         this.logger.warn(
           `🚫 No public Supabase client available to verify OAuth token: ${err.message}`,
         );
-        throw new UnauthorizedException("Token de Supabase inválido o expirado.");
+        throw new UnauthorizedException(
+          "Token de Supabase inválido o expirado.",
+        );
       }
 
       const { data, error } = await anonClient.auth.getUser(dto.access_token);
@@ -332,7 +340,9 @@ export class AuthService {
         this.logger.warn(
           `🚫 Invalid Supabase token presented to /oauth/exchange: ${error?.message || err.message}`,
         );
-        throw new UnauthorizedException("Token de Supabase inválido o expirado.");
+        throw new UnauthorizedException(
+          "Token de Supabase inválido o expirado.",
+        );
       }
 
       payload = {
@@ -419,7 +429,9 @@ export class AuthService {
           `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
         );
       } else {
-        this.logger.debug(`💉 app_metadata injected for ${email}: role=${resolvedRole}`);
+        this.logger.debug(
+          `💉 app_metadata injected for ${email}: role=${resolvedRole}`,
+        );
       }
     }
 
@@ -429,7 +441,7 @@ export class AuthService {
     // role and instantly logout the user. Refresh against GoTrue (anon scope)
     // and return the freshly minted, role-bearing token pair instead.
     let accessToken = dto.access_token;
-    let refreshToken = dto.refresh_token || '';
+    let refreshToken = dto.refresh_token || "";
     const anonClient = this.supabaseService.getAnonClient();
     if (anonClient && dto.refresh_token) {
       try {
@@ -440,14 +452,18 @@ export class AuthService {
         if (!refreshError && refreshed.session?.access_token) {
           accessToken = refreshed.session.access_token;
           refreshToken = refreshed.session.refresh_token || refreshToken;
-          this.logger.debug(`✅ Reissued role-bearing access_token for ${email}`);
+          this.logger.debug(
+            `✅ Reissued role-bearing access_token for ${email}`,
+          );
         } else {
           this.logger.warn(
             `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
           );
         }
       } catch (e: any) {
-        this.logger.warn(`⚠️ Exception reissuing tokens for ${email}: ${e.message}`);
+        this.logger.warn(
+          `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
+        );
       }
     }
 
@@ -480,32 +496,42 @@ export class AuthService {
    *
    * Protected by BOOTSTRAP_SECRET env var to prevent abuse.
    */
-  async syncUsersToSupabaseAuth(bootstrapSecret: string): Promise<{ synced: number; errors: string[] }> {
+  async syncUsersToSupabaseAuth(
+    bootstrapSecret: string,
+  ): Promise<{ synced: number; errors: string[] }> {
     const expectedSecret = process.env.BOOTSTRAP_SECRET;
     if (!expectedSecret || bootstrapSecret !== expectedSecret) {
-      throw new ForbiddenException('Invalid bootstrap secret');
+      throw new ForbiddenException("Invalid bootstrap secret");
     }
 
     const serviceClient = this.supabaseService.getClient();
     if (!serviceClient) {
-      throw new Error('Supabase service client not available');
+      throw new Error("Supabase service client not available");
     }
 
-    const DEFAULT_PASSWORD = 'TadAdmin2026!';
+    const DEFAULT_PASSWORD = "TadAdmin2026!";
     const errors: string[] = [];
     let synced = 0;
 
     // 1. Get all users from Prisma
     const [admins, advertisers, drivers] = await Promise.all([
-      this.prisma.user.findMany({ select: { id: true, email: true, role: true } }),
+      this.prisma.user.findMany({
+        select: { id: true, email: true, role: true },
+      }),
       this.prisma.advertiser.findMany({ select: { id: true, email: true } }),
       this.prisma.driver.findMany({ select: { id: true, phone: true } }),
     ]);
 
-    this.logger.log(`🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`);
+    this.logger.log(
+      `🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`,
+    );
 
     // Helper to upsert a user in Supabase Auth
-    const upsertUser = async (email: string, password: string, appMeta: Record<string, any>) => {
+    const upsertUser = async (
+      email: string,
+      password: string,
+      appMeta: Record<string, any>,
+    ) => {
       try {
         // Try signup (idempotent: if user exists, Supabase returns 400 with "User already registered")
         const { data, error } = await serviceClient.auth.admin.createUser({
@@ -516,7 +542,10 @@ export class AuthService {
         });
 
         if (error) {
-          if (error.message?.includes('already registered') || error.status === 400) {
+          if (
+            error.message?.includes("already registered") ||
+            error.status === 400
+          ) {
             // User exists — just update app_metadata
             const { data: users } = await serviceClient.auth.admin.listUsers();
             const existing = users?.users?.find((u: any) => u.email === email);
@@ -546,7 +575,7 @@ export class AuthService {
     for (const admin of admins) {
       if (!admin.email) continue;
       await upsertUser(admin.email, DEFAULT_PASSWORD, {
-        role: admin.role || 'ADMIN',
+        role: admin.role || "ADMIN",
         entityId: admin.id,
       });
     }
@@ -555,7 +584,7 @@ export class AuthService {
     for (const adv of advertisers) {
       if (!adv.email) continue;
       await upsertUser(adv.email, DEFAULT_PASSWORD, {
-        role: 'ADVERTISER',
+        role: "ADVERTISER",
         entityId: adv.id,
       });
     }
@@ -564,12 +593,14 @@ export class AuthService {
     for (const driver of drivers) {
       const driverEmail = `${driver.phone}@tad.driver`;
       await upsertUser(driverEmail, DEFAULT_PASSWORD, {
-        role: 'DRIVER',
+        role: "DRIVER",
         entityId: driver.id,
       });
     }
 
-    this.logger.log(`✅ Auth sync complete: ${synced} users synced, ${errors.length} errors`);
+    this.logger.log(
+      `✅ Auth sync complete: ${synced} users synced, ${errors.length} errors`,
+    );
     return { synced, errors };
   }
 
@@ -577,14 +608,18 @@ export class AuthService {
    * Confirm a user by email (admin API).
    * Used to fix users created via public signup that are stuck in unconfirmed state.
    */
-  async confirmUserByEmail(email: string, bootstrapSecret: string): Promise<{ confirmed: boolean }> {
+  async confirmUserByEmail(
+    email: string,
+    bootstrapSecret: string,
+  ): Promise<{ confirmed: boolean }> {
     const expectedSecret = process.env.BOOTSTRAP_SECRET;
     if (!expectedSecret || bootstrapSecret !== expectedSecret) {
-      throw new ForbiddenException('Invalid bootstrap secret');
+      throw new ForbiddenException("Invalid bootstrap secret");
     }
 
     const serviceClient = this.supabaseService.getClient();
-    const { data: users, error: listError } = await serviceClient.auth.admin.listUsers();
+    const { data: users, error: listError } =
+      await serviceClient.auth.admin.listUsers();
 
     if (listError) {
       throw new Error(`Failed to list users: ${listError.message}`);
@@ -596,11 +631,12 @@ export class AuthService {
     }
 
     // Confirm the user and set password
-    const { error: updateError } = await serviceClient.auth.admin.updateUserById(user.id, {
-      email_confirm: true,
-      password: 'TadAdmin2026!',
-      app_metadata: { role: 'ADMIN', entityId: user.id },
-    });
+    const { error: updateError } =
+      await serviceClient.auth.admin.updateUserById(user.id, {
+        email_confirm: true,
+        password: "TadAdmin2026!",
+        app_metadata: { role: "ADMIN", entityId: user.id },
+      });
 
     if (updateError) {
       throw new Error(`Failed to confirm user: ${updateError.message}`);

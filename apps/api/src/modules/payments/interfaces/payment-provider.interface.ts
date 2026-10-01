@@ -1,13 +1,17 @@
 /**
  * Payment Provider Abstraction Interface
- * 
+ *
  * Permite intercambiar proveedores de pago (AZUL, Stripe, transferencia manual, etc.)
  * sin reescribir la lógica de campañas, referidos y finanzas.
- * 
+ *
  * Basado en Plan Maestro TAD v1 - Fase 7: "Interfaz de proveedor intercambiable"
  */
 
-export type PaymentProviderType = 'AZUL' | 'STRIPE' | 'MANUAL_TRANSFER' | 'OTHER';
+export type PaymentProviderType =
+  | "AZUL"
+  | "STRIPE"
+  | "MANUAL_TRANSFER"
+  | "OTHER";
 
 export interface PaymentProviderConfig {
   provider: PaymentProviderType;
@@ -20,7 +24,7 @@ export interface PaymentProviderConfig {
 }
 
 export interface CreatePaymentIntentInput {
-  type: 'DRIVER_SUBSCRIPTION' | 'ADVERTISER_CAMPAIGN';
+  type: "DRIVER_SUBSCRIPTION" | "ADVERTISER_CAMPAIGN";
   amount: number; // en centavos/unidad mínima (ej: 600000 = RD$6,000.00)
   currency: string; // 'DOP'
   reference: string; // Clave de idempotencia única
@@ -45,15 +49,15 @@ export interface PaymentIntentResult {
   providerData?: Record<string, any>;
 }
 
-export type PaymentIntentStatus = 
-  | 'CREATED' 
-  | 'REDIRECTED' 
-  | 'PENDING' 
-  | 'PAID' 
-  | 'FAILED' 
-  | 'EXPIRED' 
-  | 'REFUNDED' 
-  | 'CANCELLED';
+export type PaymentIntentStatus =
+  | "CREATED"
+  | "REDIRECTED"
+  | "PENDING"
+  | "PAID"
+  | "FAILED"
+  | "EXPIRED"
+  | "REFUNDED"
+  | "CANCELLED";
 
 export interface PaymentWebhookPayload {
   provider: PaymentProviderType;
@@ -82,7 +86,7 @@ export interface RefundResult {
   success: boolean;
   refundId?: string;
   amount: number;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  status: "PENDING" | "COMPLETED" | "FAILED";
 }
 
 /**
@@ -101,7 +105,9 @@ export interface IPaymentProvider {
    * Crea una intención de pago
    * Debe ser idempotente usando idempotencyKey
    */
-  createPaymentIntent(input: CreatePaymentIntentInput): Promise<PaymentIntentResult>;
+  createPaymentIntent(
+    input: CreatePaymentIntentInput,
+  ): Promise<PaymentIntentResult>;
 
   /**
    * Obtiene el estado de una intención de pago
@@ -117,12 +123,19 @@ export interface IPaymentProvider {
    * Procesa un webhook del proveedor
    * Debe validar firma y retornar payload parseado
    */
-  processWebhook(payload: any, signature?: string): Promise<PaymentWebhookPayload>;
+  processWebhook(
+    payload: any,
+    signature?: string,
+  ): Promise<PaymentWebhookPayload>;
 
   /**
    * Inicia un reembolso
    */
-  refundPayment(reference: string, amount?: number, reason?: string): Promise<RefundResult>;
+  refundPayment(
+    reference: string,
+    amount?: number,
+    reason?: string,
+  ): Promise<RefundResult>;
 
   /**
    * Realiza conciliación diaria
@@ -133,10 +146,16 @@ export interface IPaymentProvider {
   /**
    * Verifica si el proveedor está disponible/healthy
    */
-  healthCheck(): Promise<{ healthy: boolean; latencyMs?: number; error?: string }>;
+  healthCheck(): Promise<{
+    healthy: boolean;
+    latencyMs?: number;
+    error?: string;
+  }>;
 }
 
 /**
  * Factory para obtener proveedor configurado
  */
-export type PaymentProviderFactory = (providerType: PaymentProviderType) => IPaymentProvider;
+export type PaymentProviderFactory = (
+  providerType: PaymentProviderType,
+) => IPaymentProvider;

@@ -1,7 +1,7 @@
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from 'react';
 import Head from 'next/head';
-import api, { supabase } from '@tad/services';
+import api, { supabase, getMyAdvertiserReferrals } from '@tad/services';
 import { useBackgroundTelemetry } from '../../hooks/useBackgroundTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
@@ -15,20 +15,19 @@ const DRIVER_STARTER_KIT_FEE_RD = 6000;
 
 const DRIVER_REFERRAL_STORAGE_KEY = 'tad_driver_referrals_v1';
 
-function getReferralFinancialsFromStorage(): { referredAdvertisers: number; referredDrivers: number } {
-  if (typeof window === 'undefined') return { referredAdvertisers: 0, referredDrivers: 0 };
+function getReferralFinancialsFromStorage(): { referredDrivers: number } {
+  if (typeof window === 'undefined') return { referredDrivers: 0 };
 
   const raw = localStorage.getItem(DRIVER_REFERRAL_STORAGE_KEY);
-  if (!raw) return { referredAdvertisers: 0, referredDrivers: 0 };
+  if (!raw) return { referredDrivers: 0 };
 
   try {
-    const parsed = JSON.parse(raw) as { referredAdvertisers?: number; referredDrivers?: number };
+    const parsed = JSON.parse(raw) as { referredDrivers?: number };
     return {
-      referredAdvertisers: Number.isFinite(parsed.referredAdvertisers) ? Math.max(0, parsed.referredAdvertisers ?? 0) : 0,
       referredDrivers: Number.isFinite(parsed.referredDrivers) ? Math.max(0, parsed.referredDrivers ?? 0) : 0,
     };
   } catch {
-    return { referredAdvertisers: 0, referredDrivers: 0 };
+    return { referredDrivers: 0 };
   }
 }
 
@@ -586,6 +585,37 @@ export default function DriverDashboard() {
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
   const [bankPendingSync, setBankPendingSync] = React.useState(false);
   const [walletState, setWalletState] = React.useState<WalletState | null>(null);
+  const [referralData, setReferralData] = React.useState<{
+    referralCode: string;
+    url: string;
+    driverUrl: string;
+    qrPayload: string;
+  } | null>(null);
+  const [referralLoading, setReferralLoading] = React.useState(true);
+  const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
+    advertisers: Array<{
+      id: string;
+      companyName: string;
+      createdAt: string;
+      _count: { campaigns: number };
+      referrer?: { fullName: string } | null;
+    }>;
+    totalBonus: number;
+    count: number;
+  } | null>(null);
+  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
+  const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
+    advertisers: Array<{
+      id: string;
+      companyName: string;
+      createdAt: string;
+      _count: { campaigns: number };
+      referrer?: { fullName: string } | null;
+    }>;
+    totalBonus: number;
+    count: number;
+  } | null>(null);
+  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
 
   // Iniciar tracking GPS al montar
   useEffect(() => {
@@ -637,6 +667,61 @@ export default function DriverDashboard() {
     }
   }, [hubData?.driverId, hubData?.contractAccepted, hubData?.bankAccountConfigured]);
 
+  // Fetch real referral code from backend (replaces synthetic DRV-XXXXXX)
+  useEffect(() => {
+    if (!hubData?.driverId) {
+      setReferralLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setReferralLoading(true);
+    getMyReferralCode()
+      .then((data) => {
+        if (!cancelled) {
+          setReferralData(data);
+        }
+      })
+      .catch(() => {
+        // Silently fail — fallback to synthetic values in UI
+        if (!cancelled) {
+          setReferralData(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setReferralLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [hubData?.driverId]);
+
+  // Fetch advertiser referrals from backend
+  useEffect(() => {
+    if (!hubData?.driverId) {
+      setAdvertiserReferralsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setAdvertiserReferralsLoading(true);
+    getMyAdvertiserReferrals(hubData.driverId)
+      .then((data) => {
+        if (!cancelled) {
+          setAdvertiserReferrals(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAdvertiserReferrals(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAdvertiserReferralsLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [hubData?.driverId]);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !hubData?.driverId) return;
 
@@ -667,9 +752,8 @@ export default function DriverDashboard() {
     const ads = hubData?.activeSlots ?? 0;
     const nextWallet: WalletState = {
       ads,
-      referredAdvertisers: referrals.referredAdvertisers,
       referredDrivers: referrals.referredDrivers,
-      total: calculateWalletTotal(ads, referrals.referredAdvertisers, referrals.referredDrivers),
+      total: calculateWalletTotal(ads, referrals.referredDrivers),
       isOffline: connectionStatus === 'offline',
     };
 
@@ -803,6 +887,8 @@ export default function DriverDashboard() {
         hubData={hubData}
         isLocalMode={isLocalMode}
         walletState={walletState}
+        referralData={referralData}
+        advertiserReferrals={advertiserReferrals}
         onSupport={handleSupport}
         onReportFalla={handleReportFalla}
         onReferir={handleReferir}
@@ -824,13 +910,13 @@ export default function DriverDashboard() {
               hubData={
                 hubData
                   ? {
-                    agreementVersion: hubData.agreementVersion,
-                    bankAccountConfigured: hubData.bankAccountConfigured,
-                    contractAccepted: hubData.contractAccepted,
-                    driverId: hubData.driverId,
-                    onboardingStatus: hubData.onboardingStatus,
-                    subscriptionPaid: hubData.subscriptionPaid,
-                  }
+                      agreementVersion: hubData.agreementVersion,
+                      bankAccountConfigured: hubData.bankAccountConfigured,
+                      contractAccepted: hubData.contractAccepted,
+                      driverId: hubData.driverId,
+                      onboardingStatus: hubData.onboardingStatus,
+                      subscriptionPaid: hubData.subscriptionPaid,
+                    }
                   : null
               }
               onOpen={() => setShowOnboarding(true)}

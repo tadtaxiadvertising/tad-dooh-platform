@@ -31,6 +31,7 @@ import { GrowthCenter } from './GrowthCenter';
 import { PulseDot } from './dashboard-utils';
 import type { WalletState } from './DriverWalletCard';
 import type { DriverHubData } from '../../hooks/useDriverHub';
+import { getMyReferralCode } from '@tad/services';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ConnectionStatus = 'online' | 'offline' | 'syncing';
@@ -149,12 +150,31 @@ function HomeTab({
   walletState,
   connectionStatus,
   readinessCard,
+  referralData,
+  advertiserReferrals,
 }: {
   hubData: DriverHubData | null;
   isLocalMode: boolean;
   walletState: WalletState | null;
   connectionStatus: ConnectionStatus;
   readinessCard?: React.ReactNode;
+  referralData?: {
+    referralCode: string;
+    url: string;
+    driverUrl: string;
+    qrPayload: string;
+  } | null;
+  advertiserReferrals?: {
+    advertisers: Array<{
+      id: string;
+      companyName: string;
+      createdAt: string;
+      _count: { campaigns: number };
+      referrer?: { fullName: string } | null;
+    }>;
+    totalBonus: number;
+    count: number;
+  } | null;
 }) {
   const serviceBannerConfig =
     connectionStatus === 'offline'
@@ -192,15 +212,23 @@ function HomeTab({
 
       {/* Growth Center */}
       <GrowthCenter
-        referralUrl={`/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
-        referralCode={hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500'}
+        referralUrl={referralData?.url ?? `/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
+        referralCode={referralData?.referralCode ?? (hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500')}
         onShare={() => {
-          if (navigator.share) {
-            navigator.share({
-              title: 'Únete a TAD Driver',
-              text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
-              url: window.location.origin + '/driver/onboarding',
-            }).catch(() => undefined);
+          if (referralData?.driverUrl) {
+            if (navigator.share) {
+              navigator.share({
+                title: 'Únete a TAD Driver',
+                text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
+                url: referralData.driverUrl,
+              }).catch(() => undefined);
+            } else {
+              window.open(
+                `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + referralData.driverUrl)}`,
+                '_blank',
+                'noopener,noreferrer',
+              );
+            }
           } else {
             window.open(
               `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + window.location.origin + '/driver/onboarding')}`,
@@ -209,6 +237,7 @@ function HomeTab({
             );
           }
         }}
+        advertiserReferrals={advertiserReferrals ?? null}
       />
 
       {/* Earnings Ledger */}
@@ -241,6 +270,8 @@ export const DriverShell: React.FC<DriverShellProps> = ({
   onLogout,
   syncingNow,
   onSincronizar,
+  referralData,
+  advertiserReferrals,
 }) => {
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
 
@@ -257,14 +288,16 @@ export const DriverShell: React.FC<DriverShellProps> = ({
       >
         {/* Tab transitions with AnimatePresence for smooth fade */}
 {activeTab === 'home' && (
-<HomeTab
-            connectionStatus={connectionStatus}
-            hubData={hubData}
-            isLocalMode={isLocalMode}
-            walletState={walletState}
-            readinessCard={readinessCard}
-          />
-        )}
+  <HomeTab
+    connectionStatus={connectionStatus}
+    hubData={hubData}
+    isLocalMode={isLocalMode}
+    walletState={walletState}
+    readinessCard={readinessCard}
+    referralData={referralData}
+    advertiserReferrals={advertiserReferrals}
+  />
+)}
 
         {activeTab === 'routes' && (
           <RoutesTab

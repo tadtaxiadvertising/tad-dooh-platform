@@ -15,6 +15,7 @@ import {
   HttpException,
   HttpStatus,
   UseInterceptors,
+  Query,
 } from "@nestjs/common";
 import { Request } from "express";
 import { DriversService } from "./drivers.service";
@@ -99,6 +100,9 @@ export class DriversController {
    * POST /api/drivers — Registrar un nuevo chofer
    * C2 FIX: subscriptionPaid y subscriptionEnd REMOVIDOS del DTO público.
    * Solo ADMIN puede setear suscripción pagada vía PUT /drivers/:id/subscription.
+   *
+   * Atribución de referido: acepta `?ref=` query param con el código del referidor.
+   * El servicio resuelve referralCode → driverId y persiste referredBy.
    */
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
@@ -116,8 +120,10 @@ export class DriversController {
       contractAccepted?: boolean;
       agreementVersion?: string;
       referredBy?: string;
+      referralCode?: string;
     },
     @Req() req?: any,
+    @Query("ref") referralCode?: string,
   ) {
     if (!body.fullName || !body.phone) {
       throw new BadRequestException("fullName y phone son obligatorios");
@@ -147,6 +153,7 @@ export class DriversController {
       subscriptionPaid: false,
       subscriptionEnd: undefined,
       password: body.password,
+      referralCode: referralCode?.trim() || undefined,
     });
   }
 
@@ -184,7 +191,7 @@ export class DriversController {
     return this.driversService.calculateMonthlyEarnings(id);
   }
 
-  /** 
+  /**
    * PUT /api/drivers/:id/subscription — Actualizar estado de suscripción
    * Requiere Idempotency-Key para prevenir doble procesamiento de pagos de suscripción
    */

@@ -12,7 +12,7 @@ describe("SystemSettingsService", () => {
     const prisma = {
       isDatabaseAvailable: true,
       systemSetting: {
-        upsert: jest.fn().mockRejectedValue(databaseError),
+        upsert: jest.fn().mockImplementation(() => { throw databaseError; }),
       },
     };
     const loggerError = jest

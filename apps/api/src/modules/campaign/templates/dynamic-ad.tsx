@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   AbsoluteFill,
   Img,
@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
   Sequence,
-} from 'remotion';
+} from "remotion";
 
 export interface DynamicAdProps {
   logoUrl: string;
@@ -20,15 +20,15 @@ export interface DynamicAdProps {
 
 export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
   logoUrl,
-  brandColor = '#e51636',
-  primaryText = '¡OFERTA 2x1 SOLO POR HOY!',
-  secondaryText = 'Haz tu orden ahora',
+  brandColor = "#e51636",
+  primaryText = "¡OFERTA 2x1 SOLO POR HOY!",
+  secondaryText = "Haz tu orden ahora",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const bgScale = interpolate(frame, [0, 150], [1, 1.1], {
-    extrapolateRight: 'clamp',
+    extrapolateRight: "clamp",
   });
 
   const logoScale = spring({
@@ -48,7 +48,7 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
   const textOpacity = interpolate(frame, [25, 45], [0, 1]);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: '#0a0a0b', overflow: 'hidden' }}>
+    <AbsoluteFill style={{ backgroundColor: "#0a0a0b", overflow: "hidden" }}>
       <AbsoluteFill
         style={{
           background: `radial-gradient(circle at center, ${brandColor} 0%, #0a0a0b 100%)`,
@@ -57,21 +57,21 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
         }}
       />
 
-      <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
             transform: `scale(${logoScale})`,
-            background: 'white',
-            padding: '40px',
-            borderRadius: '50px',
+            background: "white",
+            padding: "40px",
+            borderRadius: "50px",
             boxShadow: `0px 20px 50px ${brandColor}80`,
-            marginBottom: '40px',
+            marginBottom: "40px",
           }}
         >
           {logoUrl && (
-            <Img 
-              src={logoUrl} 
-              style={{ width: '300px', height: 'auto', objectFit: 'contain' }} 
+            <Img
+              src={logoUrl}
+              style={{ width: "300px", height: "auto", objectFit: "contain" }}
             />
           )}
         </div>
@@ -81,17 +81,17 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
             style={{
               transform: `translateY(${textY}px)`,
               opacity: textOpacity,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             <h1
               style={{
-                fontFamily: 'sans-serif',
-                fontSize: '80px',
+                fontFamily: "sans-serif",
+                fontSize: "80px",
                 fontWeight: 900,
-                color: 'white',
+                color: "white",
                 lineHeight: 1.1,
-                textTransform: 'uppercase',
+                textTransform: "uppercase",
                 margin: 0,
               }}
             >
@@ -99,15 +99,15 @@ export const DynamicAdTemplate: React.FC<DynamicAdProps> = ({
             </h1>
             <p
               style={{
-                fontFamily: 'sans-serif',
-                fontSize: '35px',
+                fontFamily: "sans-serif",
+                fontSize: "35px",
                 fontWeight: 500,
                 color: brandColor,
-                marginTop: '20px',
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                padding: '10px 30px',
-                borderRadius: '20px',
-                display: 'inline-block',
+                marginTop: "20px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                padding: "10px 30px",
+                borderRadius: "20px",
+                display: "inline-block",
               }}
             >
               {secondaryText}

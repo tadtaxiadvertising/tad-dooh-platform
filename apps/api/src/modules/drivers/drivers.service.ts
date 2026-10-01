@@ -19,6 +19,7 @@ import {
   JWT_EXPIRY,
 } from "../../common/constants/business-rules";
 import { PayrollAuditService } from "./payroll-audit.service";
+import { ReferralService } from "../referral/referral.service";
 
 export interface AuthUser {
   id: string;
@@ -45,6 +46,7 @@ export class DriversService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private readonly payrollAudit: PayrollAuditService,
+    private readonly referralService: ReferralService,
   ) {}
 
   private async hasBankAccountConfigured(driverId: string): Promise<boolean> {
@@ -52,7 +54,12 @@ export class DriversService {
       where: { driverId },
       select: { bankInfo: true },
     });
-    if (!wallet || !wallet.bankInfo || typeof wallet.bankInfo !== 'object' || Array.isArray(wallet.bankInfo)) {
+    if (
+      !wallet ||
+      !wallet.bankInfo ||
+      typeof wallet.bankInfo !== "object" ||
+      Array.isArray(wallet.bankInfo)
+    ) {
       return false;
     }
     const candidate = wallet.bankInfo as {
@@ -61,7 +68,9 @@ export class DriversService {
       cedula?: unknown;
       tipo?: unknown;
     };
-    return Boolean(candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo);
+    return Boolean(
+      candidate.banco && candidate.cuenta && candidate.cedula && candidate.tipo,
+    );
   }
 
   /**
@@ -262,22 +271,22 @@ export class DriversService {
         : 0;
 
       return {
-              ...driver,
-              activeAds: activeAdsCount,
-              // FIX M-2: Usar constantes en lugar de magic numbers
-              projectedEarnings:
-                driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-                  ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
-                  : 0,
-              referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
-              advertiserReferralBonus:
-                (driver.referredAdvertisers?.length || 0) *
-                BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-              referralsCount: validReferrals,
-              advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
-              // NUEVO: onboardingStatus visible para admin
-              onboardingStatus: driver.onboardingStatus || 'UNKNOWN',
-            };
+        ...driver,
+        activeAds: activeAdsCount,
+        // FIX M-2: Usar constantes en lugar de magic numbers
+        projectedEarnings:
+          driver.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+            ? activeAdsCount * BUSINESS_RULES.DRIVER_RATE_PER_CAMPAIGN_RD
+            : 0,
+        referralBonus: validReferrals * BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD,
+        advertiserReferralBonus:
+          (driver.referredAdvertisers?.length || 0) *
+          BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
+        referralsCount: validReferrals,
+        advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
+        // NUEVO: onboardingStatus visible para admin
+        onboardingStatus: driver.onboardingStatus || "UNKNOWN",
+      };
     });
   }
 
@@ -310,6 +319,7 @@ export class DriversService {
     contractAccepted?: boolean;
     agreementVersion?: string;
     referredBy?: string;
+    referralCode?: string;
   }) {
     const plainPassword =
       data.password?.trim() ||
@@ -322,6 +332,27 @@ export class DriversService {
     const sanitizedCedula = data.cedula?.trim() || null;
     const sanitizedTaxiPlate =
       (data.taxiPlate || data.licensePlate)?.trim() || null;
+
+    // Resolver referredBy: prioridad referralCode (desde ?ref= URL) sobre referredBy directo
+    let resolvedReferredBy: string | null = null;
+    if (data.referralCode) {
+      const referrer = await this.prisma.driver.findUnique({
+        where: { referralCode: data.referralCode },
+        select: { id: true },
+      });
+      if (referrer) {
+        resolvedReferredBy = referrer.id;
+        this.logger.log(
+          `[DRIVER_CREATE] Driver ${data.phone} referido por código ${data.referralCode} → ${referrer.id}`,
+        );
+      } else {
+        this.logger.warn(
+          `[DRIVER_CREATE] Código de referido inválido ${data.referralCode} para driver ${data.phone}`,
+        );
+      }
+    } else if (data.referredBy) {
+      resolvedReferredBy = data.referredBy;
+    }
 
     const driver = await this.prisma.driver
       .create({
@@ -339,7 +370,7 @@ export class DriversService {
           contractAccepted: data.contractAccepted ?? false,
           contractAcceptedAt: data.contractAccepted ? new Date() : null,
           agreementVersion: data.agreementVersion ?? "2.0",
-          referredBy: data.referredBy || null,
+          referredBy: resolvedReferredBy,
           status: data.subscriptionPaid
             ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
             : BUSINESS_RULES.STATUS.DRIVER.INITIAL,
@@ -463,6 +494,8 @@ export class DriversService {
 
   /**
    * Actualizar el estado de suscripción de un chofer
+   * Cuando un driver referido alcanza ACTIVE + subscriptionPaid, se materializa
+   * el bonus del referidor (driver→driver) si aún no fue abonado.
    */
   async updateSubscription(id: string, paid: boolean, endDate?: Date) {
     const driver = await this.prisma.driver.findUnique({ where: { id } });
@@ -475,10 +508,14 @@ export class DriversService {
       BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY,
     ];
     if (paid && payableSteps.includes(driver.onboardingStatus)) {
-      newOnboardingStatus = BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING;
+      newOnboardingStatus =
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING;
     }
 
-    return this.prisma.driver.update({
+    const willBeActive =
+      paid && driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE;
+
+    const updated = await this.prisma.driver.update({
       where: { id },
       data: {
         subscriptionPaid: paid,
@@ -490,6 +527,23 @@ export class DriversService {
         onboardingStatus: newOnboardingStatus,
       },
     });
+
+    // Si este driver fue referido y ahora alcanza ACTIVO, materializar el bonus del referidor
+    if (willBeActive && driver.referredBy) {
+      try {
+        await this.referralService.awardDriverReferralBonus(
+          driver.referredBy,
+          id,
+          "ONBOARDING_COMPLETE",
+        );
+      } catch (err) {
+        this.logger.error(
+          `[DRIVER_SUBSCRIPTION] Fallo al abonar bonus de referido para driver ${id} (referido por ${driver.referredBy}): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    return updated;
   }
 
   /**
@@ -511,8 +565,10 @@ export class DriversService {
 
     // Requiere pago previo (BANK_PENDING viene de updateSubscription con paid=true)
     if (
-      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING &&
-      driver.onboardingStatus !== BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY &&
+      driver.onboardingStatus !==
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING &&
+      driver.onboardingStatus !==
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.READY &&
       !driver.subscriptionPaid
     ) {
       throw new ForbiddenException(
@@ -524,9 +580,10 @@ export class DriversService {
       where: { id: driverId },
       data: {
         onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
-        status: driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL
-          ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
-          : driver.status,
+        status:
+          driver.status === BUSINESS_RULES.STATUS.DRIVER.INITIAL
+            ? BUSINESS_RULES.STATUS.DRIVER.ACTIVE
+            : driver.status,
       },
     });
   }
@@ -579,7 +636,12 @@ export class DriversService {
         },
         referencedDrivers: {
           where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE },
-          select: { id: true, fullName: true, status: true, subscriptionPaid: true },
+          select: {
+            id: true,
+            fullName: true,
+            status: true,
+            subscriptionPaid: true,
+          },
         },
         referredAdvertisers: {
           select: { id: true, companyName: true, status: true },
@@ -589,11 +651,13 @@ export class DriversService {
     if (!driver) throw new Error("Chofer no encontrado");
 
     const bankReady = await this.hasBankAccountConfigured(id);
-    const lastPayment = await this.prisma.payrollPayment.findFirst({
-      where: { driverId: id },
-      orderBy: { createdAt: "desc" },
-      select: { amount: true, status: true, paidAt: true, createdAt: true },
-    }).catch(() => null);
+    const lastPayment = await this.prisma.payrollPayment
+      .findFirst({
+        where: { driverId: id },
+        orderBy: { createdAt: "desc" },
+        select: { amount: true, status: true, paidAt: true, createdAt: true },
+      })
+      .catch(() => null);
 
     return {
       ...driver,
@@ -685,7 +749,8 @@ export class DriversService {
         contractAccepted: true,
         contractAcceptedAt: new Date(),
         agreementVersion: version,
-        onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.PENDING_PAYMENT,
+        onboardingStatus:
+          BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.PENDING_PAYMENT,
       },
     });
   }

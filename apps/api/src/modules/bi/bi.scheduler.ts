@@ -20,17 +20,12 @@ export class BiScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleDailySnapshot() {
-    this.logger.log(
-      "🚀 Iniciando generación de snapshot diario de BI...",
-    );
+    this.logger.log("🚀 Iniciando generación de snapshot diario de BI...");
     try {
       await this.biService.getMasterKpis(true);
       this.logger.log("✅ Snapshot diario generado con éxito.");
     } catch (error) {
-      this.logger.error(
-        "❌ Error al generar snapshot de BI:",
-        error.message,
-      );
+      this.logger.error("❌ Error al generar snapshot de BI:", error.message);
     }
   }
 
@@ -51,10 +46,7 @@ export class BiScheduler {
         `✅ Conciliación completada: ${result.total} registros procesados.`,
       );
     } catch (error) {
-      this.logger.error(
-        "❌ Falla en conciliación automática:",
-        error.message,
-      );
+      this.logger.error("❌ Falla en conciliación automática:", error.message);
     }
   }
 
@@ -80,7 +72,8 @@ export class BiScheduler {
     const now = new Date();
     // Mes anterior: si estamos en enero (0), retroceder a diciembre del año previo.
     const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const prevYear =
+      now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
     const period = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
     this.logger.log(
       `📼 Iniciando conciliación mensual oficial para el periodo cerrado ${period}...`,
@@ -115,9 +108,7 @@ export class BiScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleIdempotencyCleanup() {
-    this.logger.log(
-      "🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...",
-    );
+    this.logger.log("🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...");
     try {
       // Release stale locks first (PROCESSING keys older than 1h are orphans from crashed requests)
       const staleLocks = await this.prisma.idempotencyKey.updateMany({
@@ -135,9 +126,7 @@ export class BiScheduler {
       const deleted = await this.prisma.idempotencyKey.deleteMany({
         where: { expiresAt: { lt: new Date() } },
       });
-      this.logger.log(
-        `✅ Purged ${deleted.count} expired idempotency keys.`,
-      );
+      this.logger.log(`✅ Purged ${deleted.count} expired idempotency keys.`);
     } catch (error) {
       this.logger.error("❌ Error in idempotency cleanup:", error.message);
     }
@@ -146,14 +135,25 @@ export class BiScheduler {
   // ─────────────────────────────────────────────────────────────────────────────
   // ADVERTISER SUBSCRIPTION BILLING — 1st of each month at 02:30 AM AST
   // ─────────────────────────────────────────────────────────────────────────────
-  @Cron("30 2 1 * *", { name: "advertiser-subscription-billing", timeZone: "America/Santo_Domingo" })
+  @Cron("30 2 1 * *", {
+    name: "advertiser-subscription-billing",
+    timeZone: "America/Santo_Domingo",
+  })
   async handleAdvertiserSubscriptionBilling() {
-    this.logger.log("🧾 CRON: Ejecutando facturación de suscripciones de anunciantes (día 1, 02:30)");
+    this.logger.log(
+      "🧾 CRON: Ejecutando facturación de suscripciones de anunciantes (día 1, 02:30)",
+    );
     try {
-      const result = await this.advertiserBilling.runMonthlySubscriptionBilling();
-      this.logger.log(`✅ Facturación suscripciones completada: ${result.processed} procesadas, ${result.failed} fallidas`);
+      const result =
+        await this.advertiserBilling.runMonthlySubscriptionBilling();
+      this.logger.log(
+        `✅ Facturación suscripciones completada: ${result.processed} procesadas, ${result.failed} fallidas`,
+      );
     } catch (err) {
-      this.logger.error(`❌ Error en facturación suscripciones: ${err.message}`, err.stack);
+      this.logger.error(
+        `❌ Error en facturación suscripciones: ${err.message}`,
+        err.stack,
+      );
       await this.prisma.systemError.create({
         data: {
           source: "ADVERTISER_BILLING",

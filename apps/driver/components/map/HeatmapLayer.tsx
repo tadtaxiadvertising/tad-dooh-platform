@@ -4,9 +4,7 @@ import L from 'leaflet';
 
 // leaflet.heat is a side-effect plugin that adds L.heatLayer
 // We import it this way to ensure it only runs in the browser
-if (typeof window !== 'undefined') {
-  require('leaflet.heat');
-}
+import 'leaflet.heat';
 
 interface HeatmapLayerProps {
   points: [number, number, number][]; // [lat, lng, intensity]
@@ -34,7 +32,7 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
   useEffect(() => {
     if (!map || !points || points.length === 0) return;
 
-    // @ts-ignore - heatLayer is added by the plugin
+    // @ts-expect-error heatLayer is added by the leaflet.heat plugin
     const heatLayer = (L as any).heatLayer(points, {
       radius,
       blur,

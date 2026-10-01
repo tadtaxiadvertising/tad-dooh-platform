@@ -8,6 +8,7 @@ import * as crypto from "crypto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { AuthUser } from "../auth/auth.types";
 import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
+import { ReferralService } from "../referral/referral.service";
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -53,7 +54,24 @@ export class CampaignService {
     private readonly prisma: PrismaService,
     private readonly supabaseService: SupabaseService,
     private readonly notificationsService: NotificationsService,
+    private readonly referralService: ReferralService,
   ) {}
+
+  /**
+   * Helper: calcular duración máxima de media para una campaña.
+   * Por defecto 30 segundos; campañas con duración extendida permiten hasta 60s.
+   */
+  private getCampaignMaxMediaDuration(campaign: {
+    status?: string;
+    targetImpressions?: number;
+  }): number {
+    // Si la campaña tiene más de 100k impresiones objetivo o está en status SPECIAL,
+    // permitimos videos de hasta 60 segundos. Caso contrario, 30 segundos estándar.
+    if (campaign.targetImpressions && campaign.targetImpressions >= 100000) {
+      return 60;
+    }
+    return 30;
+  }
 
   // ... previous methods (createCampaign, addMediaAsset, etc. omitted for brevity if they match)
   // Note: I will include them to ensure the file remains functional.
@@ -78,11 +96,9 @@ export class CampaignService {
     if (dto.target_all !== undefined) data.targetAll = dto.target_all;
     if (dto.target_city) data.targetCity = dto.target_city;
     if (dto.target_cities !== undefined)
-      data.targetCities =
-        dto.target_cities.length > 0 ? dto.target_cities : [];
+      data.targetCities = dto.target_cities.length > 0 ? dto.target_cities : [];
     if (dto.target_fleets !== undefined)
-      data.targetFleets =
-        dto.target_fleets.length > 0 ? dto.target_fleets : [];
+      data.targetFleets = dto.target_fleets.length > 0 ? dto.target_fleets : [];
     if (dto.budget !== undefined) data.budget = Number(dto.budget);
     if (dto.target_impressions !== undefined)
       data.targetImpressions = Number(dto.target_impressions);
@@ -159,62 +175,16 @@ export class CampaignService {
 
         if (adv && adv.referredBy && adv._count.campaigns === 1) {
           const driverId = adv.referredBy;
-          const bonusReference = `REF-BONUS-${campaign.id.substring(0, 8)}`;
 
-          // FASE 2 (Item 7): bonus atómico e idempotente — commission + ledger + wallet
-          // dentro de una sola transacción, con upsert por reference @unique (no P2002,
-          // no doble abono si updateCampaign se ejecuta concurrentemente).
-          await this.prisma.$transaction(async (tx) => {
-            const existingComm = await tx.commission.findFirst({
-              where: { driverId, sourceType: "ADVERTISER_SALE" },
-            });
-
-            if (existingComm) return;
-
-            this.logger.log(
-              `💸 [REFERRAL_LOOP] Triggering referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`,
-            );
-
-            await tx.commission.create({
-              data: {
-                driverId,
-                amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-                sourceType: "ADVERTISER_SALE",
-                status: "APPROVED",
-                reference: bonusReference,
-                metadata: { campaignId: campaign.id },
-              },
-            });
-
-            await tx.financialTransaction.upsert({
-              where: { reference: bonusReference },
-              update: {},
-              create: {
-                type: "OUTGOING",
-                category: "OPEX_COMMISSION",
-                amount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-                netAmount: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-                taxAmount: 0,
-                entityId: driverId,
-                reference: bonusReference,
-                note: "Bono de Referido por 1ra campaña activa de anunciante asociado.",
-                status: "COMPLETED",
-              },
-            });
-
-            await tx.wallet.upsert({
-              where: { driverId },
-              update: {
-                availableBalance: {
-                  increment: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-                },
-              },
-              create: {
-                driverId,
-                availableBalance: BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD,
-              },
-            });
-          });
+          // Delegar al servicio de referral para bonus idempotente (commission + ledger + wallet)
+          await this.referralService.awardAdvertiserReferralBonus(
+            driverId,
+            campaign.advertiserId,
+            campaign.id,
+          );
+          this.logger.log(
+            `💸 [REFERRAL_LOOP] Delegated referral bonus for Driver ${driverId} (Advertiser ${campaign.advertiserId} activated 1st campaign)`,
+          );
         }
       } catch (err) {
         this.logger.error(
@@ -280,8 +250,14 @@ export class CampaignService {
         budget: dto.budget || 0,
         targetAll: dto.target_all !== undefined ? dto.target_all : false,
         targetCity: dto.target_city || "Global",
-        targetCities: dto.target_cities && dto.target_cities.length > 0 ? dto.target_cities : [],
-        targetFleets: dto.target_fleets && dto.target_fleets.length > 0 ? dto.target_fleets : [],
+        targetCities:
+          dto.target_cities && dto.target_cities.length > 0
+            ? dto.target_cities
+            : [],
+        targetFleets:
+          dto.target_fleets && dto.target_fleets.length > 0
+            ? dto.target_fleets
+            : [],
         category: dto.category || "General",
         whatsapp: dto.whatsapp,
         instagram: dto.instagram,
@@ -578,6 +554,93 @@ export class CampaignService {
   }
 
   async addMediaAsset(campaignId: string, dto: AddMediaAssetDto) {
+    // ── Validaciones de negocio ──────────────────────────────────────────────
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        status: true,
+        advertiserId: true,
+        targetImpressions: true,
+        targetAll: true,
+        isGlobal: true,
+      },
+    });
+    if (!campaign) {
+      throw new BadRequestException("Campaña no encontrada");
+    }
+
+    // Validar que el media existe y obtener sus propiedades
+    const media = await this.prisma.media.findUnique({
+      where: { id: dto.checksum || dto.url },
+      select: {
+        id: true,
+        durationSeconds: true,
+        mimeType: true,
+        status: true,
+        campaign_id: true,
+      },
+    });
+
+    // Si no se encontró por checksum/url, buscar por filename
+    const mediaByFilename = media
+      ? media
+      : await this.prisma.media.findFirst({
+          where: { filename: dto.filename },
+          select: {
+            id: true,
+            durationSeconds: true,
+            mimeType: true,
+            status: true,
+            campaign_id: true,
+          },
+        });
+
+    if (!mediaByFilename) {
+      throw new BadRequestException(
+        `Media no encontrado: ni por ID/checksum "${dto.checksum || dto.url}" ni por nombre "${dto.filename}"`,
+      );
+    }
+
+    // Verificar que el media no esté ya asignado a otra campaña activa
+    if (
+      mediaByFilename.campaign_id &&
+      mediaByFilename.campaign_id !== campaignId
+    ) {
+      const otherCampaign = await this.prisma.campaign.findUnique({
+        where: { id: mediaByFilename.campaign_id },
+        select: { id: true, active: true, status: true },
+      });
+      if (otherCampaign?.active) {
+        throw new BadRequestException(
+          `El archivo ya está asignado a la campaña activa "${otherCampaign.id}". Desasigna primero o usa otro archivo.`,
+        );
+      }
+    }
+
+    // Validar duración vs. restricciones de campaña
+    const maxDuration = this.getCampaignMaxMediaDuration(campaign);
+    if (
+      mediaByFilename.durationSeconds &&
+      mediaByFilename.durationSeconds > maxDuration
+    ) {
+      throw new BadRequestException(
+        `El archivo excede la duración máxima permitida para esta campaña (${maxDuration}s). Duración del archivo: ${mediaByFilename.durationSeconds}s.`,
+      );
+    }
+
+    // Validar formato MIME
+    if (
+      mediaByFilename.mimeType &&
+      !BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.includes(
+        mediaByFilename.mimeType as (typeof BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES)[number],
+      )
+    ) {
+      throw new BadRequestException(
+        `Formato no permitido: ${mediaByFilename.mimeType}. Solo se aceptan MP4 (H.264), JPG o PNG.`,
+      );
+    }
+
     // Inventory Control: If targeted to specific devices, check their current slots
     const deviceId = (dto as any).deviceId;
     if (deviceId) {
@@ -606,7 +669,7 @@ export class CampaignService {
     });
 
     // Invalidate campaign cache
-    const campaign = await this.prisma.campaign.update({
+    await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { updatedAt: new Date() },
     });
@@ -929,12 +992,76 @@ export class CampaignService {
   }
 
   async linkMediaToCampaign(campaignId: string, mediaId: string) {
+    // ── Validaciones de negocio ──────────────────────────────────────────────
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        status: true,
+        advertiserId: true,
+        targetImpressions: true,
+        targetAll: true,
+        isGlobal: true,
+      },
+    });
+    if (!campaign) {
+      throw new BadRequestException("Campaña no encontrada");
+    }
+
+    const media = await this.prisma.media.findUnique({
+      where: { id: mediaId },
+      select: {
+        id: true,
+        durationSeconds: true,
+        mimeType: true,
+        status: true,
+        campaign_id: true,
+      },
+    });
+
+    if (!media) {
+      throw new BadRequestException("Media no encontrado");
+    }
+
+    // Validar que el media no esté ya asignado a otra campaña activa
+    if (media.campaign_id && media.campaign_id !== campaignId) {
+      const otherCampaign = await this.prisma.campaign.findUnique({
+        where: { id: media.campaign_id },
+        select: { id: true, active: true, status: true },
+      });
+      if (otherCampaign?.active) {
+        throw new BadRequestException(
+          `El archivo ya está asignado a la campaña activa "${otherCampaign.id}". Desasigna primero o usa otro archivo.`,
+        );
+      }
+    }
+
+    // Validar duración vs. restricciones de campaña
+    const maxDuration = this.getCampaignMaxMediaDuration(campaign);
+    if (media.durationSeconds && media.durationSeconds > maxDuration) {
+      throw new BadRequestException(
+        `El archivo excede la duración máxima permitida para esta campaña (${maxDuration}s). Duración del archivo: ${media.durationSeconds}s.`,
+      );
+    }
+
+    // Validar formato MIME
+    if (
+      media.mimeType &&
+      !BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES.includes(
+        media.mimeType as (typeof BUSINESS_RULES.ALLOWED_MEDIA_MIME_TYPES)[number],
+      )
+    ) {
+      throw new BadRequestException(
+        `Formato no permitido: ${media.mimeType}. Solo se aceptan MP4 (H.264), JPG o PNG.`,
+      );
+    }
+
     const updated = await this.prisma.media.update({
       where: { id: mediaId },
       data: { campaign_id: campaignId },
     });
 
-    const campaign = await this.prisma.campaign.update({
+    await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { updatedAt: new Date() },
     });

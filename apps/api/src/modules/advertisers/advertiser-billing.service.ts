@@ -25,7 +25,9 @@ export class AdvertiserBillingService {
    * Creates Invoice records and sends PDF via email.
    */
   async runMonthlySubscriptionBilling() {
-    this.logger.log("🏁 CRON: Iniciando facturación mensual de suscripciones de anunciantes");
+    this.logger.log(
+      "🏁 CRON: Iniciando facturación mensual de suscripciones de anunciantes",
+    );
 
     const now = new Date();
     const subscriptions = await this.prisma.advertiserSubscription.findMany({
@@ -36,7 +38,9 @@ export class AdvertiserBillingService {
       include: { advertiser: true },
     });
 
-    this.logger.log(`📋 Encontradas ${subscriptions.length} suscripciones para facturar`);
+    this.logger.log(
+      `📋 Encontradas ${subscriptions.length} suscripciones para facturar`,
+    );
 
     let processed = 0;
     let failed = 0;
@@ -65,7 +69,9 @@ export class AdvertiserBillingService {
       }
     }
 
-    this.logger.log(`✅ CRON completado: ${processed} procesadas, ${failed} fallidas`);
+    this.logger.log(
+      `✅ CRON completado: ${processed} procesadas, ${failed} fallidas`,
+    );
     return { processed, failed };
   }
 
@@ -104,7 +110,9 @@ export class AdvertiserBillingService {
       },
     });
 
-    this.logger.log(`📄 Factura creada: ${invoice.id} - RD$ ${totalAmount.toLocaleString()} para ${advertiser.companyName}`);
+    this.logger.log(
+      `📄 Factura creada: ${invoice.id} - RD$ ${totalAmount.toLocaleString()} para ${advertiser.companyName}`,
+    );
 
     // 3. Generate PDF (Proof of Play + Invoice combined)
     const pdf = await this.generateSubscriptionInvoicePDF({
@@ -162,7 +170,13 @@ export class AdvertiserBillingService {
     await this.emailService.sendEmail({
       to: advertiser.email,
       subject: `Factura Suscripción TAD DOOH - ${invoiceNumber} - RD$ ${totalAmount.toLocaleString()}`,
-      html: this.buildSubscriptionEmailHtml(advertiser, invoice, subtotal, taxAmount, totalAmount),
+      html: this.buildSubscriptionEmailHtml(
+        advertiser,
+        invoice,
+        subtotal,
+        taxAmount,
+        totalAmount,
+      ),
       attachments: [
         {
           filename: `Factura_${invoiceNumber}.pdf`,
@@ -185,7 +199,9 @@ export class AdvertiserBillingService {
       data: { nextBillingDate: nextBilling },
     });
 
-    this.logger.log(`✅ Suscripción ${sub.id} facturada. Próximo cobro: ${format(nextBilling, "yyyy-MM-dd")}`);
+    this.logger.log(
+      `✅ Suscripción ${sub.id} facturada. Próximo cobro: ${format(nextBilling, "yyyy-MM-dd")}`,
+    );
   }
 
   /**
@@ -199,7 +215,14 @@ export class AdvertiserBillingService {
     taxAmount: number;
     totalAmount: number;
   }): Promise<Buffer> {
-    const { invoice, subscription, advertiser, subtotal, taxAmount, totalAmount } = data;
+    const {
+      invoice,
+      subscription,
+      advertiser,
+      subtotal,
+      taxAmount,
+      totalAmount,
+    } = data;
 
     const docDefinition = {
       defaultStyle: { font: "Helvetica" },
@@ -220,7 +243,11 @@ export class AdvertiserBillingService {
             },
           ],
         },
-        { canvas: [{ type: "line", x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1 }] },
+        {
+          canvas: [
+            { type: "line", x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1 },
+          ],
+        },
         { text: "\n" },
         { text: "FACTURA DE SUSCRIPCIÓN MENSUAL", style: "header" },
         { text: "\nDATOS DEL ANUNCIANTE:", style: "subheader" },
@@ -231,8 +258,14 @@ export class AdvertiserBillingService {
               [{ text: "Empresa", bold: true }, advertiser.companyName],
               [{ text: "Contacto", bold: true }, advertiser.contactName],
               [{ text: "Email", bold: true }, advertiser.email],
-              [{ text: "RNC/Cédula", bold: true }, advertiser.rnc || "No proporcionado"],
-              [{ text: "Suscripción", bold: true }, `${subscription.numberOfScreens} pantalla(s) @ RD$ ${subscription.monthlyRate.toLocaleString()}/mes`],
+              [
+                { text: "RNC/Cédula", bold: true },
+                advertiser.rnc || "No proporcionado",
+              ],
+              [
+                { text: "Suscripción", bold: true },
+                `${subscription.numberOfScreens} pantalla(s) @ RD$ ${subscription.monthlyRate.toLocaleString()}/mes`,
+              ],
             ],
             layout: "lightHorizontalLines",
           },
@@ -256,31 +289,62 @@ export class AdvertiserBillingService {
                 `RD$ ${subtotal.toLocaleString()}`,
               ],
               [
-                { text: "Subtotal", colSpan: 3, alignment: "right", bold: true },
+                {
+                  text: "Subtotal",
+                  colSpan: 3,
+                  alignment: "right",
+                  bold: true,
+                },
                 {},
                 {},
                 { text: `RD$ ${subtotal.toLocaleString()}`, bold: true },
               ],
               [
-                { text: `ITBIS (${(subscription.taxRate * 100).toFixed(0)}%)`, colSpan: 3, alignment: "right", bold: true },
+                {
+                  text: `ITBIS (${(subscription.taxRate * 100).toFixed(0)}%)`,
+                  colSpan: 3,
+                  alignment: "right",
+                  bold: true,
+                },
                 {},
                 {},
-                { text: `RD$ ${taxAmount.toLocaleString()}`, bold: true, color: "#E65100" },
+                {
+                  text: `RD$ ${taxAmount.toLocaleString()}`,
+                  bold: true,
+                  color: "#E65100",
+                },
               ],
               [
-                { text: "TOTAL A PAGAR", colSpan: 3, alignment: "right", bold: true, fillColor: "#FFF9C4" },
+                {
+                  text: "TOTAL A PAGAR",
+                  colSpan: 3,
+                  alignment: "right",
+                  bold: true,
+                  fillColor: "#FFF9C4",
+                },
                 {},
                 {},
-                { text: `RD$ ${totalAmount.toLocaleString()}`, bold: true, fillColor: "#FFF9C4", fontSize: 14 },
+                {
+                  text: `RD$ ${totalAmount.toLocaleString()}`,
+                  bold: true,
+                  fillColor: "#FFF9C4",
+                  fontSize: 14,
+                },
               ],
             ],
           },
         },
         { text: "\n\nCONDICIONES DE PAGO:", style: "subheader" },
         { text: "• Pago neto a 30 días desde fecha de emisión", fontSize: 10 },
-        { text: "• Transferencia: Banco Popular Dominicano - Cuenta Corriente 802-XXXXXXX", fontSize: 10 },
+        {
+          text: "• Transferencia: Banco Popular Dominicano - Cuenta Corriente 802-XXXXXXX",
+          fontSize: 10,
+        },
         { text: "• Referencia obligatoria: Número de factura", fontSize: 10 },
-        { text: "• Factura sujeta a retención de ITBIS según normativa DGII", fontSize: 10 },
+        {
+          text: "• Factura sujeta a retención de ITBIS según normativa DGII",
+          fontSize: 10,
+        },
         { text: "\n\nNOTA TÉCNICA:", style: "subheader" },
         {
           text: "Esta factura corresponde a la suscripción mensual de pantallas digitales en la red TAD DOOH. El servicio incluye exhibición de contenido publicitario, telemetría GPS, reportes de impacto y certificado de exhibición mensual.",
@@ -289,7 +353,12 @@ export class AdvertiserBillingService {
         },
       ],
       styles: {
-        header: { fontSize: 14, bold: true, alignment: "center", margin: [0, 10, 0, 10] },
+        header: {
+          fontSize: 14,
+          bold: true,
+          alignment: "center",
+          margin: [0, 10, 0, 10],
+        },
         subheader: { fontSize: 12, bold: true, margin: [0, 5, 0, 5] },
       },
     };
@@ -493,7 +562,9 @@ export class AdvertiserBillingService {
       where: { id: invoiceId },
       data: { status: "PENDING" },
     });
-    this.logger.log(`✅ Proforma ${invoiceId} confirmada → PENDING (lista para cobro)`);
+    this.logger.log(
+      `✅ Proforma ${invoiceId} confirmada → PENDING (lista para cobro)`,
+    );
     return { success: true, idempotent: false, status: "PENDING" };
   }
 }

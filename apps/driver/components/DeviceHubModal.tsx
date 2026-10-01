@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tablet, X, Check, AlertCircle, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, MapPin, Database, Activity, ShieldCheck, User, CreditCard, Clock, Terminal, ExternalLink, CheckCircle2, Globe } from 'lucide-react';
-import { getDeviceProfile, sendCommand, updateDeviceProfile, deleteDevice, removeCampaignFromDevice } from "@tad/services";
+import { Tablet, X, RefreshCw, Zap, Play, LayoutGrid, Settings, Phone, Database, Activity, ShieldCheck, User, Clock, Terminal, ExternalLink, CheckCircle2, Globe } from 'lucide-react';
+import { getDeviceProfile, sendCommand, deleteDevice, removeCampaignFromDevice } from "@tad/services";
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { AntigravityButton } from '@tad/ui';

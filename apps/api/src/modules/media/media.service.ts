@@ -273,15 +273,68 @@ export class MediaService {
     }
   }
 
+  /**
+   * Renombrar un archivo multimedia.
+   * Valida que el nuevo nombre no esté vacío, no contenga caracteres no permitidos
+   * y actualiza filename + originalFilename en la BD.
+   */
+  async renameFile(id: string, newFilename: string) {
+    if (!newFilename || newFilename.trim().length === 0) {
+      throw new BadRequestException(
+        "El nombre del archivo no puede estar vacío.",
+      );
+    }
+
+    const sanitized = newFilename.trim().replace(/[\\/&?:*$#%'\"!<>|?]/g, "_");
+    if (sanitized.length === 0) {
+      throw new BadRequestException(
+        "El nombre del archivo contiene solo caracteres no permitidos.",
+      );
+    }
+
+    const media = await this.prisma.media.findUnique({ where: { id } });
+    if (!media) throw new BadRequestException("Media no encontrada");
+
+    await this.prisma.media.update({
+      where: { id },
+      data: {
+        filename: sanitized,
+        originalFilename: sanitized,
+      },
+    });
+
+    return { success: true };
+  }
+
   async deleteFile(id: string) {
     try {
       const media = await this.prisma.media.findUnique({ where: { id } });
       if (!media) throw new BadRequestException("Media no encontrada");
 
+      // VERIFICAR que el archivo no esté asignado a una campaña activa
+      if (media.campaign_id) {
+        const campaign = await this.prisma.campaign.findUnique({
+          where: { id: media.campaign_id },
+          select: {
+            id: true,
+            active: true,
+            status: true,
+            targetAll: true,
+            isGlobal: true,
+          },
+        });
+
+        if (campaign && campaign.active) {
+          throw new BadRequestException(
+            `No se puede eliminar el archivo porque está asignado a la campaña activa "${campaign.id}". Desasigna primero el archivo de la campaña o pausa/completa la campaña.`,
+          );
+        }
+      }
+
       // Eliminar de Supabase Storage
       if (media.storageKey) {
         await this.supabase.storage
-          .from("campaign-videos")
+          .from("ads-videos")
           .remove([media.storageKey])
           .catch(() => {});
       }
@@ -290,6 +343,7 @@ export class MediaService {
       await this.prisma.media.delete({ where: { id } });
       return { success: true };
     } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error(`Error deleting file: ${error.message}`);
       throw new BadRequestException(
         `Error al eliminar archivo: ${error.message}`,
@@ -310,7 +364,8 @@ export class MediaService {
     filename?: string;
     qrUrl?: string;
   }) {
-    const { path, campaignId, expectedSize, expectedHashMd5, filename, qrUrl } = data;
+    const { path, campaignId, expectedSize, expectedHashMd5, filename, qrUrl } =
+      data;
 
     // 1. Verificar que el archivo existe en Supabase y obtener metadata
     const { data: fileData, error: statError } = await this.supabase.storage
@@ -318,8 +373,12 @@ export class MediaService {
       .download(path);
 
     if (statError || !fileData) {
-      this.logger.error(`Archivo no encontrado en storage: ${path} - ${statError?.message}`);
-      throw new BadRequestException("Archivo no encontrado en storage tras subida");
+      this.logger.error(
+        `Archivo no encontrado en storage: ${path} - ${statError?.message}`,
+      );
+      throw new BadRequestException(
+        "Archivo no encontrado en storage tras subida",
+      );
     }
 
     // 2. Calcular tamaño y hash reales
@@ -330,7 +389,9 @@ export class MediaService {
 
     // 3. Validar tamaño si se esperaba
     if (expectedSize && actualSize !== expectedSize) {
-      this.logger.warn(`Tamaño mismatch: esperado ${expectedSize}, real ${actualSize} para ${path}`);
+      this.logger.warn(
+        `Tamaño mismatch: esperado ${expectedSize}, real ${actualSize} para ${path}`,
+      );
       throw new BadRequestException(
         `Tamaño de archivo no coincide: esperado ${expectedSize} bytes, recibido ${actualSize} bytes`,
       );
@@ -338,7 +399,9 @@ export class MediaService {
 
     // 4. Validar hash si se esperaba
     if (expectedHashMd5 && actualHashMd5 !== expectedHashMd5) {
-      this.logger.warn(`Hash mismatch: esperado ${expectedHashMd5}, real ${actualHashMd5} para ${path}`);
+      this.logger.warn(
+        `Hash mismatch: esperado ${expectedHashMd5}, real ${actualHashMd5} para ${path}`,
+      );
       throw new BadRequestException(
         `Hash MD5 no coincide. El archivo pudo corromperse durante la subida.`,
       );
@@ -361,13 +424,17 @@ export class MediaService {
     this.validateMediaFile(fileName, mimeType);
 
     // 7. Construir URLs
-    const basePrefix = this.config.get("CDN_URL_PREFIX") || this.config.get("SUPABASE_URL");
+    const basePrefix =
+      this.config.get("CDN_URL_PREFIX") || this.config.get("SUPABASE_URL");
     const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${path}`;
-    
+
     const cdnPrefix = this.config.get("CDN_URL_PREFIX");
     let finalCdnUrl = publicUrl;
     if (cdnPrefix && publicUrl.includes(this.config.get("SUPABASE_URL"))) {
-      finalCdnUrl = publicUrl.replace(this.config.get("SUPABASE_URL"), cdnPrefix);
+      finalCdnUrl = publicUrl.replace(
+        this.config.get("SUPABASE_URL"),
+        cdnPrefix,
+      );
     }
 
     // 8. Crear registro en BD
@@ -379,7 +446,8 @@ export class MediaService {
           url: publicUrl,
           cdnUrl: finalCdnUrl,
           storageKey: path,
-          campaign_id: campaignId && campaignId !== "general" ? campaignId : null,
+          campaign_id:
+            campaignId && campaignId !== "general" ? campaignId : null,
           mimeType,
           fileSize: BigInt(actualSize),
           status: "READY",
@@ -388,7 +456,9 @@ export class MediaService {
         },
       });
 
-      this.logger.log(`✅ Upload confirmado: ${path} (${actualSize} bytes, hash: ${actualHashMd5})`);
+      this.logger.log(
+        `✅ Upload confirmado: ${path} (${actualSize} bytes, hash: ${actualHashMd5})`,
+      );
 
       return {
         ...media,
@@ -401,5 +471,139 @@ export class MediaService {
         `Error guardando metadata: ${dbError.message}`,
       );
     }
+  }
+
+  /**
+   * Obtener un archivo multimedia por ID (con todas sus propiedades).
+   */
+  async getMediaById(id: string) {
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+      include: {
+        campaign: true,
+      },
+    });
+
+    if (!media) {
+      throw new BadRequestException("Media no encontrada");
+    }
+
+    return {
+      id: media.id,
+      url: media.cdnUrl || media.url,
+      filename: media.filename,
+      originalFilename: media.originalFilename,
+      size: Number(media.fileSize),
+      mimeType: media.mimeType,
+      mime_type: media.mime_type,
+      durationSeconds: media.durationSeconds,
+      width: media.width,
+      height: media.height,
+      storageKey: media.storageKey,
+      campaign_id: media.campaign_id,
+      campaign: media.campaign
+        ? {
+            id: media.campaign.id,
+            name: media.campaign.name,
+            active: media.campaign.active,
+            status: media.campaign.status,
+          }
+        : null,
+      status: media.status,
+      createdAt: media.createdAt,
+      qrUrl: media.qrUrl,
+    };
+  }
+
+  /**
+   * Desvincular un archivo de su campaña actual.
+   */
+  async unlinkMediaFromCampaign(id: string) {
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+    });
+
+    if (!media) {
+      throw new BadRequestException("Media no encontrada");
+    }
+
+    if (!media.campaign_id) {
+      throw new BadRequestException(
+        "El archivo no está asignado a ninguna campaña",
+      );
+    }
+
+    // Verificar que la campaña existe
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: media.campaign_id },
+      select: {
+        id: true,
+        active: true,
+        status: true,
+        targetAll: true,
+        isGlobal: true,
+      },
+    });
+
+    if (!campaign) {
+      throw new BadRequestException("Campaña no encontrada");
+    }
+
+    // Desvincular
+    await this.prisma.media.update({
+      where: { id },
+      data: { campaign_id: null },
+    });
+
+    // Invalidar caché de campaña y forzar sync
+    await this.prisma.campaign.update({
+      where: { id: media.campaign_id },
+      data: { updatedAt: new Date() },
+    });
+
+    // Broadcast a dispositivos
+    let devicesToSync = [];
+    if (campaign.targetAll || campaign.isGlobal) {
+      devicesToSync = await this.prisma.device.findMany({
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        select: { id: true, deviceId: true },
+      });
+    } else {
+      const assignments = await this.prisma.deviceCampaign.findMany({
+        where: { campaign_id: media.campaign_id },
+        include: { device: { select: { deviceId: true } } },
+      });
+      devicesToSync = assignments.map((a) => ({
+        id: a.device_id,
+        deviceId: a.device.deviceId,
+      }));
+    }
+
+    if (devicesToSync.length > 0) {
+      await this.prisma.deviceCommand.createMany({
+        data: devicesToSync.map((d) => ({
+          deviceId: d.id,
+          commandType: "FORCE_SYNC",
+          commandParams: JSON.stringify({
+            reason: "media_unlinked",
+            campaignId: media.campaign_id,
+            mediaId: id,
+          }),
+          status: "PENDING",
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+        })),
+      });
+
+      this.supabaseService
+        .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
+          reason: "media_unlinked",
+          campaignId: media.campaign_id,
+          mediaId: id,
+          targets: devicesToSync.map((d) => d.deviceId),
+        })
+        .catch(() => {});
+    }
+
+    return { success: true };
   }
 }

@@ -25,8 +25,7 @@ async function bootstrap() {
   try {
     // JWT_SECRET: crash-early si falta. Usa requireEnv() que lanza Error si no está configurado.
     // En desarrollo, se puede definir SUPABASE_JWT_SECRET como alias.
-    const jwtSecret =
-      process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
     if (!jwtSecret) {
       logger.error(
         "❌ JWT_SECRET/SUPABASE_JWT_SECRET no configurados — Abortando arranque. Configúrelos en EasyPanel Secrets.",

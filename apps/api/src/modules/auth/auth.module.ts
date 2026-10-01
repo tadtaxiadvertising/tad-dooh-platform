@@ -15,7 +15,9 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
       useFactory: (config: ConfigService) => ({
         // SUPABASE_JWT_SECRET es OBLIGATORIO en producción.
         // Sin secreto configurado, la app debe fallar al arrancar (main.ts crash-early).
-        secret: config.get<string>("SUPABASE_JWT_SECRET") || config.get<string>("JWT_SECRET"),
+        secret:
+          config.get<string>("SUPABASE_JWT_SECRET") ||
+          config.get<string>("JWT_SECRET"),
         signOptions: { expiresIn: "7d" },
       }),
     }),

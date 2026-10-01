@@ -44,7 +44,10 @@ export class QrScanController {
   @Put(":id/convert")
   @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
-  async markConverted(@Param("id") id: string, @Body() body: { leadId: string }) {
+  async markConverted(
+    @Param("id") id: string,
+    @Body() body: { leadId: string },
+  ) {
     if (!body.leadId) {
       throw new BadRequestException("leadId es requerido");
     }
@@ -58,7 +61,10 @@ export class QrScanController {
    */
   @Get("stats/:qrCode")
   @Roles(UserRole.ADMIN)
-  async getStats(@Param("qrCode") qrCode: string, @Query("days") days?: string) {
+  async getStats(
+    @Param("qrCode") qrCode: string,
+    @Query("days") days?: string,
+  ) {
     const d = days ? parseInt(days, 10) : 30;
     if (isNaN(d) || d < 1 || d > 365) {
       throw new BadRequestException("days debe ser entre 1 y 365");
@@ -73,7 +79,10 @@ export class QrScanController {
    */
   @Get("referral/:referrerCode")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
-  async getReferralStats(@Param("referrerCode") referrerCode: string, @Query("days") days?: string) {
+  async getReferralStats(
+    @Param("referrerCode") referrerCode: string,
+    @Query("days") days?: string,
+  ) {
     const d = days ? parseInt(days, 10) : 30;
     if (isNaN(d) || d < 1 || d > 365) {
       throw new BadRequestException("days debe ser entre 1 y 365");

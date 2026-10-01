@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { createHash } from "crypto";
+import { useState } from "react";
 
 interface UploadProgress {
   loaded: number;

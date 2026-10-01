@@ -4,14 +4,16 @@ import dynamic from 'next/dynamic';
 import { AuthProvider } from '@tad/ui';
 import { Layout } from '@tad/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { PaymentLockOverlay } from '@tad/ui';
-import { CookieBanner } from '@tad/ui';
 import { useState, useEffect } from 'react';
 import { logger } from '@tad/logging';
+import { PaymentLockOverlay } from '@tad/ui';
+import { CookieBanner } from '@tad/ui';
 
 // Client-only: avoids useQueryClient() during SSR prerendering
 const AntigravitySync = dynamic(() => import('../components/AntigravitySync'), { ssr: false });
+
+// Client-only: Toaster requires React hooks which aren't available during SSR
+const ToasterClient = dynamic(() => import('sonner').then(m => m.Toaster), { ssr: false });
 
 
 const PUBLIC_PAGES = ['/login', '/check-in'];
@@ -83,21 +85,21 @@ export default function App(props: AppProps) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AntigravitySync />
-      <AppWrapper {...props} queryClient={queryClient} />
-      <Toaster richColors position="top-right" theme="dark" />
-      <PaymentLockOverlay />
-      {typeof window !== 'undefined' && !hasShownCookieBanner && (
-        <CookieBanner
-          basePath="/advertiser"
-          onAccept={() => setHasShownCookieBanner(true)}
-          onReject={() => setHasShownCookieBanner(true)}
-        />
-      )}
-    </QueryClientProvider>
-  );
-}
+      <QueryClientProvider client={queryClient}>
+        <AntigravitySync />
+        <AppWrapper {...props} queryClient={queryClient} />
+        <ToasterClient richColors position="top-right" theme="dark" />
+        <PaymentLockOverlay />
+        {typeof window !== 'undefined' && !hasShownCookieBanner && (
+          <CookieBanner
+            basePath="/advertiser"
+            onAccept={() => setHasShownCookieBanner(true)}
+            onReject={() => setHasShownCookieBanner(true)}
+          />
+        )}
+      </QueryClientProvider>
+    );
+  }
 
 
 

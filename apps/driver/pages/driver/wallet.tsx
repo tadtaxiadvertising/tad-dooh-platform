@@ -71,9 +71,8 @@ export default function DriverWalletPage() {
   // Build wallet state from hub data
   const walletState: WalletState = {
     ads: hubData?.activeSlots ?? 0,
-    referredAdvertisers: 0,
     referredDrivers: 0,
-    total: calculateWalletTotal(hubData?.activeSlots ?? 0, 0, 0),
+    total: calculateWalletTotal(hubData?.activeSlots ?? 0, 0),
     isOffline: false,
   };
 

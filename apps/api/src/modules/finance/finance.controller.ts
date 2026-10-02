@@ -287,7 +287,7 @@ export class FinanceController {
     }
     const y = year ? parseInt(year) : new Date().getFullYear();
     let csv = "";
-    let filename = `dgii-${format}-${y}.csv`;
+    const filename = `dgii-${format}-${y}.csv`;
     if (format === "606") {
       csv = await this.financeService.exportDgii606(y);
     } else if (format === "607") {

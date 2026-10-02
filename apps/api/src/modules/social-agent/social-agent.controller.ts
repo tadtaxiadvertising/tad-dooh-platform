@@ -105,10 +105,7 @@ export class SocialAgentController {
 
   @Post("publish-approved/:taskId")
   @Roles(UserRole.ADMIN)
-  async publishApprovedPost(
-    @Param("taskId") taskId: string,
-    @Req() req: any,
-  ) {
+  async publishApprovedPost(@Param("taskId") taskId: string, @Req() req: any) {
     const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
     return this.socialAgentService.publishApprovedPost(taskId, reviewerId);
   }

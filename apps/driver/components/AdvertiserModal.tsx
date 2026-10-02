@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, Mail, Upload, CheckCircle2, UserCheck, MonitorSmartphone, CalendarRange, Minus, Plus, Radio } from 'lucide-react';
+import { X, Building2, Upload, CheckCircle2, UserCheck, MonitorSmartphone, CalendarRange, Minus, Plus, Radio } from 'lucide-react';
 import { createAdvertiser, updateAdvertiser, getDrivers } from "@tad/services";
 
 const SCREEN_PRESETS = [1, 2, 3, 4, 5];
@@ -59,7 +59,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({ isOpen, onClos
       try {
         const data = await getDrivers();
         setDrivers(data || []);
-      } catch (err) {
+      } catch {
         console.error('Error fetching drivers for referral list');
       }
     };

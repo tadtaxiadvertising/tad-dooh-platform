@@ -153,8 +153,12 @@ export class PortalRequestsService {
           const parsedEndDate = Date.parse(cData.endDate);
 
           if (isNaN(parsedStartDate) || isNaN(parsedEndDate)) {
-            this.logger.error(`[APPROVAL_FLOW] ❌ Invalid dates provided for request ${id}`);
-            throw new BadRequestException('Las fechas de inicio y fin deben ser válidas y obligatorias.');
+            this.logger.error(
+              `[APPROVAL_FLOW] ❌ Invalid dates provided for request ${id}`,
+            );
+            throw new BadRequestException(
+              "Las fechas de inicio y fin deben ser válidas y obligatorias.",
+            );
           }
 
           const newCampaign = await this.prisma.campaign.create({

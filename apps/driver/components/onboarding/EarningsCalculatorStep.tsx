@@ -4,20 +4,16 @@ import { motion } from 'framer-motion';
 import { RotateCcw, Calculator, ArrowRight, TrendingUp, BadgeCheck, Wifi, Clock, ShieldCheck } from 'lucide-react';
 
 const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 500;
 
 interface EarningsCalculatorStepProps {
   onNext: () => void;
   onPrev: () => void;
   campaigns: number;
   setCampaigns: (value: number) => void;
-  referredAdvertisers?: number;
-  setReferredAdvertisers?: (value: number) => void;
   referredDrivers: number;
   setReferredDrivers: (value: number) => void;
   projectedEarnings: number;
   REFERRAL_DRIVER_BONUS: number;
-  REFERRAL_BUSINESS_BONUS: number;
 }
 
 interface SliderFieldProps {
@@ -129,13 +125,10 @@ export default function EarningsCalculatorStep({
   onPrev,
   campaigns,
   setCampaigns,
-  referredAdvertisers,
-  setReferredAdvertisers,
   referredDrivers,
   setReferredDrivers,
   projectedEarnings,
   REFERRAL_DRIVER_BONUS,
-  REFERRAL_BUSINESS_BONUS,
 }: EarningsCalculatorStepProps) {
   return (
     <div className="flex-1 flex flex-col">

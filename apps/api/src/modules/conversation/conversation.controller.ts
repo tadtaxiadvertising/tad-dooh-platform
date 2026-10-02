@@ -11,7 +11,12 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import { ConversationService, CreateConversationInput, AddMessageInput, UpdateConversationInput } from "./conversation.service";
+import {
+  ConversationService,
+  CreateConversationInput,
+  AddMessageInput,
+  UpdateConversationInput,
+} from "./conversation.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
@@ -34,10 +39,13 @@ export class ConversationController {
     }
 
     if (!["WHATSAPP", "MESSENGER", "INSTAGRAM"].includes(body.platform)) {
-      throw new BadRequestException("platform debe ser WHATSAPP, MESSENGER o INSTAGRAM");
+      throw new BadRequestException(
+        "platform debe ser WHATSAPP, MESSENGER o INSTAGRAM",
+      );
     }
 
-    const result = await this.conversationService.findOrCreateConversation(body);
+    const result =
+      await this.conversationService.findOrCreateConversation(body);
     return { success: true, ...result };
   }
 
@@ -57,7 +65,10 @@ export class ConversationController {
       throw new BadRequestException("direction debe ser INBOUND u OUTBOUND");
     }
 
-    const message = await this.conversationService.addMessage({ ...body, conversationId: id });
+    const message = await this.conversationService.addMessage({
+      ...body,
+      conversationId: id,
+    });
     return { success: true, message };
   }
 
@@ -68,8 +79,14 @@ export class ConversationController {
   @Put(":id")
   @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
-  async updateConversation(@Param("id") id: string, @Body() body: UpdateConversationInput) {
-    const conversation = await this.conversationService.updateConversation(id, body);
+  async updateConversation(
+    @Param("id") id: string,
+    @Body() body: UpdateConversationInput,
+  ) {
+    const conversation = await this.conversationService.updateConversation(
+      id,
+      body,
+    );
     return { success: true, conversation };
   }
 
@@ -85,7 +102,10 @@ export class ConversationController {
       throw new BadRequestException("assignedTo es requerido");
     }
 
-    const conversation = await this.conversationService.handoffToHuman(id, body.assignedTo);
+    const conversation = await this.conversationService.handoffToHuman(
+      id,
+      body.assignedTo,
+    );
     return { success: true, conversation };
   }
 
@@ -116,9 +136,12 @@ export class ConversationController {
   @Get("thread/:threadId")
   @Roles(UserRole.ADMIN)
   async getByThreadId(@Param("threadId") threadId: string) {
-    const conversation = await this.conversationService.getConversationByThreadId(threadId);
+    const conversation =
+      await this.conversationService.getConversationByThreadId(threadId);
     if (!conversation) {
-      throw new NotFoundException(`Conversation with threadId ${threadId} not found`);
+      throw new NotFoundException(
+        `Conversation with threadId ${threadId} not found`,
+      );
     }
     return { success: true, conversation };
   }

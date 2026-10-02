@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
@@ -63,7 +68,9 @@ export class SocialAgentService {
         },
       });
 
-      this.logger.log(`Daily social content draft ${draft.id} created with HumanReviewTask for approval.`);
+      this.logger.log(
+        `Daily social content draft ${draft.id} created with HumanReviewTask for approval.`,
+      );
     } catch (error) {
       this.logger.error("Error in daily content generation:", error);
     }
@@ -173,12 +180,15 @@ export class SocialAgentService {
       },
     });
 
-    this.logger.log(`Created HumanReviewTask ${task.id} for draft ${draftId} — awaiting human approval.`);
+    this.logger.log(
+      `Created HumanReviewTask ${task.id} for draft ${draftId} — awaiting human approval.`,
+    );
 
     return {
       success: true,
       taskId: task.id,
-      message: "Draft submitted for human review. Publish will proceed after approval.",
+      message:
+        "Draft submitted for human review. Publish will proceed after approval.",
     };
   }
 
@@ -221,7 +231,9 @@ export class SocialAgentService {
 
     // Call Meta Graph API to publish
     // This requires META_ACCESS_TOKEN and Page/Account IDs
-    this.logger.log(`Publishing draft ${draft.id} to Meta (task ${taskId} approved by ${reviewerId})...`);
+    this.logger.log(
+      `Publishing draft ${draft.id} to Meta (task ${taskId} approved by ${reviewerId})...`,
+    );
 
     const accessToken = this.configService.get<string>("META_ACCESS_TOKEN");
     if (!accessToken) {
@@ -242,7 +254,7 @@ export class SocialAgentService {
       // Simplified: use /feed with message and link/image URL if supported
       // Real implementation depends on whether it's a Page post, IG media, etc.
       const url = `https://graph.facebook.com/v21.0/${pageId}/feed`;
-      
+
       const response = await firstValueFrom(
         this.httpService.post(
           url,
@@ -273,10 +285,15 @@ export class SocialAgentService {
         }),
       ]);
 
-      this.logger.log(`✅ Draft ${draft.id} published to Meta successfully (task ${taskId}).`);
+      this.logger.log(
+        `✅ Draft ${draft.id} published to Meta successfully (task ${taskId}).`,
+      );
       return { success: true, metaResponse: response.data };
     } catch (error) {
-      this.logger.error("Meta Graph API publish failed:", error.response?.data || error.message);
+      this.logger.error(
+        "Meta Graph API publish failed:",
+        error.response?.data || error.message,
+      );
       throw new BadRequestException({
         code: "META_PUBLISH_FAILED",
         message: "Failed to publish to Meta Graph API",

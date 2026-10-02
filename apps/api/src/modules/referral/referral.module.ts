@@ -7,5 +7,6 @@ import { PrismaModule } from "../prisma/prisma.module";
   imports: [PrismaModule],
   controllers: [ReferralController],
   providers: [ReferralService],
+  exports: [ReferralService],
 })
 export class ReferralModule {}

@@ -145,8 +145,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // getRawBody está disponible en Next.js (next/dist/compiled/raw-body).
         if (req.method !== 'GET' && req.method !== 'HEAD') {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const getRawBody = require('next/dist/compiled/raw-body');
             const rawBody = await getRawBody(req, {
               length: req.headers['content-length'],
               limit: '5mb',

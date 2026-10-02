@@ -2,7 +2,6 @@ import React from 'react';
 
 export interface WalletState {
   ads: number;
-  referredAdvertisers: number;
   referredDrivers: number;
   total: number;
   isOffline: boolean;
@@ -14,7 +13,7 @@ interface DriverWalletCardProps {
 
 export const PAY_PER_UNIT_RD = 500;
 
-export function calculateWalletTotal(ads: number, referredAdvertisers: number = 0, referredDrivers: number = 0): number {
+export function calculateWalletTotal(ads: number, referredDrivers: number = 0): number {
   return (ads * PAY_PER_UNIT_RD) + (referredDrivers * PAY_PER_UNIT_RD);
 }
 

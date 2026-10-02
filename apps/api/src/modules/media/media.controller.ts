@@ -35,14 +35,17 @@ export class MediaController {
   }
 
   @Post("confirm")
-  async confirmUpload(@Body() body: {
-    path: string;
-    campaignId?: string;
-    expectedSize?: number;
-    expectedHashMd5?: string;
-    filename?: string;
-    qrUrl?: string;
-  }) {
+  async confirmUpload(
+    @Body()
+    body: {
+      path: string;
+      campaignId?: string;
+      expectedSize?: number;
+      expectedHashMd5?: string;
+      filename?: string;
+      qrUrl?: string;
+    },
+  ) {
     if (!body.path) {
       throw new BadRequestException("path es requerido");
     }
@@ -90,5 +93,36 @@ export class MediaController {
   @Patch(":id")
   async updateMedia(@Param("id") id: string, @Body() dto: { qrUrl: string }) {
     return this.mediaService.updateMedia(id, dto);
+  }
+
+  /**
+   * PATCH /media/:id/rename — Renombrar archivo multimedia.
+   * Valida nombre no vacío y sin caracteres peligrosos.
+   */
+  @Patch(":id/rename")
+  async renameMedia(
+    @Param("id") id: string,
+    @Body() body: { filename: string },
+  ) {
+    if (!body.filename) {
+      throw new BadRequestException("filename es requerido");
+    }
+    return this.mediaService.renameFile(id, body.filename);
+  }
+
+  /**
+   * GET /media/:id — Obtener un archivo por ID (con todas sus propiedades).
+   */
+  @Get(":id")
+  async getMediaById(@Param("id") id: string) {
+    return this.mediaService.getMediaById(id);
+  }
+
+  /**
+   * POST /media/:id/unlink — Desvincular un archivo de su campaña actual.
+   */
+  @Post(":id/unlink")
+  async unlinkMedia(@Param("id") id: string) {
+    return this.mediaService.unlinkMediaFromCampaign(id);
   }
 }

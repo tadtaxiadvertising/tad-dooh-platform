@@ -650,7 +650,9 @@ export class AdvertisersService {
         campaigns: {
           orderBy: { createdAt: "desc" },
           include: {
-            _count: { select: { media: true, targetDrivers: true, metrics: true } },
+            _count: {
+              select: { media: true, targetDrivers: true, metrics: true },
+            },
             mediaAssets: { select: mediaAssetSafeSelect },
           },
         },

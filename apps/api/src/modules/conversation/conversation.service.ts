@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 export interface CreateConversationInput {
@@ -22,7 +27,12 @@ export interface AddMessageInput {
 
 export interface UpdateConversationInput {
   status?: "OPEN" | "HANDOFF" | "CLOSED" | "BLOCKED";
-  stage?: "INITIAL" | "QUALIFYING" | "PAYMENT_PENDING" | "HUMAN_REVIEW" | "COMPLETED";
+  stage?:
+    | "INITIAL"
+    | "QUALIFYING"
+    | "PAYMENT_PENDING"
+    | "HUMAN_REVIEW"
+    | "COMPLETED";
   consentGiven?: boolean;
   assignedTo?: string;
   metadata?: Record<string, any>;
@@ -39,7 +49,9 @@ export class ConversationService {
    * Si ya existe, la retorna; si no, la crea.
    */
   async findOrCreateConversation(input: CreateConversationInput) {
-    this.logger.log(`[CONVERSATION] Find or create: ${input.platform} thread ${input.threadId}`);
+    this.logger.log(
+      `[CONVERSATION] Find or create: ${input.platform} thread ${input.threadId}`,
+    );
 
     // Buscar por threadId único
     let conversation = await this.prisma.conversation.findUnique({
@@ -50,13 +62,20 @@ export class ConversationService {
     if (conversation) {
       // Actualizar campos si vienen nuevos datos
       const updates: any = {};
-      if (input.contactPhone && !conversation.contactPhone) updates.contactPhone = input.contactPhone;
-      if (input.contactName && !conversation.contactName) updates.contactName = input.contactName;
+      if (input.contactPhone && !conversation.contactPhone)
+        updates.contactPhone = input.contactPhone;
+      if (input.contactName && !conversation.contactName)
+        updates.contactName = input.contactName;
       if (input.leadId && !conversation.leadId) updates.leadId = input.leadId;
-      if (input.driverId && !conversation.driverId) updates.driverId = input.driverId;
-      if (input.advertiserId && !conversation.advertiserId) updates.advertiserId = input.advertiserId;
+      if (input.driverId && !conversation.driverId)
+        updates.driverId = input.driverId;
+      if (input.advertiserId && !conversation.advertiserId)
+        updates.advertiserId = input.advertiserId;
       if (input.metadata) {
-        updates.metadata = { ...(conversation.metadata as Record<string, any> || {}), ...input.metadata };
+        updates.metadata = {
+          ...((conversation.metadata as Record<string, any>) || {}),
+          ...input.metadata,
+        };
       }
 
       if (Object.keys(updates).length > 0) {
@@ -88,7 +107,9 @@ export class ConversationService {
       include: { messages: true },
     });
 
-    this.logger.log(`[CONVERSATION] Created new conversation ${conversation.id} for thread ${input.threadId}`);
+    this.logger.log(
+      `[CONVERSATION] Created new conversation ${conversation.id} for thread ${input.threadId}`,
+    );
     return { conversation, created: true };
   }
 
@@ -97,9 +118,17 @@ export class ConversationService {
    * Actualiza updatedAt de la conversación.
    */
   async addMessage(input: AddMessageInput) {
-    const { conversationId, direction, content, messageType = "TEXT", metaMessageId } = input;
+    const {
+      conversationId,
+      direction,
+      content,
+      messageType = "TEXT",
+      metaMessageId,
+    } = input;
 
-    this.logger.log(`[CONVERSATION] Adding ${direction} message to ${conversationId}`);
+    this.logger.log(
+      `[CONVERSATION] Adding ${direction} message to ${conversationId}`,
+    );
 
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -132,7 +161,10 @@ export class ConversationService {
   /**
    * Actualiza el estado/etapa de una conversación.
    */
-  async updateConversation(conversationId: string, input: UpdateConversationInput) {
+  async updateConversation(
+    conversationId: string,
+    input: UpdateConversationInput,
+  ) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
     });
@@ -246,21 +278,49 @@ export class ConversationService {
   async getStats(days: number = 30) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [total, byStatus, byStage, byPlatform, withConsent, handoffs] = await Promise.all([
-      this.prisma.conversation.count({ where: { createdAt: { gte: since } } }),
-      this.prisma.conversation.groupBy({ by: ["status"], where: { createdAt: { gte: since } }, _count: { id: true } }),
-      this.prisma.conversation.groupBy({ by: ["stage"], where: { createdAt: { gte: since } }, _count: { id: true } }),
-      this.prisma.conversation.groupBy({ by: ["platform"], where: { createdAt: { gte: since } }, _count: { id: true } }),
-      this.prisma.conversation.count({ where: { consentGiven: true, createdAt: { gte: since } } }),
-      this.prisma.conversation.count({ where: { status: "HANDOFF", createdAt: { gte: since } } }),
-    ]);
+    const [total, byStatus, byStage, byPlatform, withConsent, handoffs] =
+      await Promise.all([
+        this.prisma.conversation.count({
+          where: { createdAt: { gte: since } },
+        }),
+        this.prisma.conversation.groupBy({
+          by: ["status"],
+          where: { createdAt: { gte: since } },
+          _count: { id: true },
+        }),
+        this.prisma.conversation.groupBy({
+          by: ["stage"],
+          where: { createdAt: { gte: since } },
+          _count: { id: true },
+        }),
+        this.prisma.conversation.groupBy({
+          by: ["platform"],
+          where: { createdAt: { gte: since } },
+          _count: { id: true },
+        }),
+        this.prisma.conversation.count({
+          where: { consentGiven: true, createdAt: { gte: since } },
+        }),
+        this.prisma.conversation.count({
+          where: { status: "HANDOFF", createdAt: { gte: since } },
+        }),
+      ]);
 
     return {
       periodDays: days,
       totalConversations: total,
-      byStatus: byStatus.reduce((acc, s) => ({ ...acc, [s.status]: s._count.id }), {}),
-      byStage: byStage.reduce((acc, s) => ({ ...acc, [s.stage]: s._count.id }), {}),
-      byPlatform: byPlatform.reduce((acc, s) => ({ ...acc, [s.platform]: s._count.id }), {}),
+      byStatus: byStatus.reduce(
+        (acc, s) => ({ ...acc, [s.status]: s._count.id }),
+        {},
+      ),
+      byStage: byStage.reduce(
+        (acc, s) => ({ ...acc, [s.stage]: s._count.id }),
+        {},
+      ),
+      byPlatform: byPlatform.reduce(
+        (acc, s) => ({ ...acc, [s.platform]: s._count.id }),
+        {},
+      ),
       consentRate: total > 0 ? (withConsent / total) * 100 : 0,
       handoffRate: total > 0 ? (handoffs / total) * 100 : 0,
     };

@@ -93,10 +93,11 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
   }, []);
 
   const calculateHash = async (file: File): Promise<string> => {
-    const hash = await crypto.subtle.digest("MD5", file);
-    const hashArray = Array.from(new Uint8Array(hash));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
+      const buffer = await file.arrayBuffer();
+      const hash = await crypto.subtle.digest("MD5", buffer);
+      const hashArray = Array.from(new Uint8Array(hash));
+      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    };
 
   const upload = async (file: File, campaignId?: string) => {
     // Validación cliente
@@ -239,25 +240,10 @@ function getAuthToken(): string {
 async function uploadToSignedUrl(
   signedUrl: string,
   file: File,
-  onProgress: (loaded: number) => void,
-  signal?: AbortSignal
+  onProgress: (loaded: number) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-
-    xhrRef.current = xhr;
-    currentFileRef.current = file;
-
-    if (signal?.aborted) {
-      xhr.abort();
-      reject(new Error("Upload aborted"));
-      return;
-    }
-
-    signal?.addEventListener("abort", () => {
-      xhr.abort();
-    });
-
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
         onProgress(event.loaded);

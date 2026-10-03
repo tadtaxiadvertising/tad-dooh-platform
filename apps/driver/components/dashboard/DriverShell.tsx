@@ -47,6 +47,25 @@ interface DriverShellProps {
   isLocalMode: boolean;
   // Wallet card state
   walletState: WalletState | null;
+  // Referral data
+  referralData?: {
+    referralCode: string;
+    url: string;
+    driverUrl: string;
+    qrPayload: string;
+  } | null;
+  advertiserReferrals?: {
+    advertisers: Array<{
+      id: string;
+      companyName: string;
+      createdAt: string;
+      _count: { campaigns: number };
+      referrer?: { fullName: string } | null;
+    }>;
+    totalBonus: number;
+    count: number;
+  } | null;
+  advertiserReferralsLoading?: boolean;
   // Actions
   onSupport: () => void;
   onReportFalla: () => void;
@@ -211,34 +230,35 @@ function HomeTab({
       {walletState ? <DriverWalletCard wallet={walletState} /> : <DriverWalletCardSkeleton />}
 
       {/* Growth Center */}
-      <GrowthCenter
-        referralUrl={referralData?.url ?? `/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
-        referralCode={referralData?.referralCode ?? (hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500')}
-        onShare={() => {
-          if (referralData?.driverUrl) {
-            if (navigator.share) {
-              navigator.share({
-                title: 'Únete a TAD Driver',
-                text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
-                url: referralData.driverUrl,
-              }).catch(() => undefined);
-            } else {
-              window.open(
-                `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + referralData.driverUrl)}`,
-                '_blank',
-                'noopener,noreferrer',
-              );
-            }
-          } else {
-            window.open(
-              `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + window.location.origin + '/driver/onboarding')}`,
-              '_blank',
-              'noopener,noreferrer',
-            );
-          }
-        }}
-        advertiserReferrals={advertiserReferrals ?? null}
-      />
+            <GrowthCenter
+              referralUrl={referralData?.url ?? `/driver/onboarding?ref=${hubData?.driverId ?? 'tad500'}`}
+              referralCode={referralData?.referralCode ?? (hubData?.driverId ? `DRV-${hubData.driverId.slice(0, 6).toUpperCase()}` : 'DRV-TAD500')}
+              onShare={() => {
+                if (referralData?.driverUrl) {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'Únete a TAD Driver',
+                      text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
+                      url: referralData.driverUrl,
+                    }).catch(() => undefined);
+                  } else {
+                    window.open(
+                      `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + referralData.driverUrl)}`,
+                      '_blank',
+                      'noopener,noreferrer',
+                    );
+                  }
+                } else {
+                  window.open(
+                    `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + window.location.origin + '/driver/onboarding')}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  );
+                }
+              }}
+              advertiserReferrals={advertiserReferrals ?? null}
+              advertiserReferralsLoading={advertiserReferralsLoading ?? false}
+            />
 
       {/* Earnings Ledger */}
       <EarningsLedger

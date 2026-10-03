@@ -1,7 +1,7 @@
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from 'react';
 import Head from 'next/head';
-import api, { supabase, getMyAdvertiserReferrals } from '@tad/services';
+import api, { supabase, getMyAdvertiserReferrals, getMyReferralCode } from '@tad/services';
 import { useBackgroundTelemetry } from '../../hooks/useBackgroundTelemetry';
 import { usePaymentStore } from '../../store/usePaymentStore';
 import { useDriverHub } from '../../hooks/useDriverHub';
@@ -585,44 +585,32 @@ export default function DriverDashboard() {
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
   const [bankPendingSync, setBankPendingSync] = React.useState(false);
   const [walletState, setWalletState] = React.useState<WalletState | null>(null);
-  const [referralData, setReferralData] = React.useState<{
-    referralCode: string;
-    url: string;
-    driverUrl: string;
-    qrPayload: string;
-  } | null>(null);
-  const [referralLoading, setReferralLoading] = React.useState(true);
-  const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
-    advertisers: Array<{
-      id: string;
-      companyName: string;
-      createdAt: string;
-      _count: { campaigns: number };
-      referrer?: { fullName: string } | null;
-    }>;
-    totalBonus: number;
-    count: number;
-  } | null>(null);
-  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
-  const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
-    advertisers: Array<{
-      id: string;
-      companyName: string;
-      createdAt: string;
-      _count: { campaigns: number };
-      referrer?: { fullName: string } | null;
-    }>;
-    totalBonus: number;
-    count: number;
-  } | null>(null);
-  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
+    const [referralData, setReferralData] = React.useState<{
+      referralCode: string;
+      url: string;
+      driverUrl: string;
+      qrPayload: string;
+    } | null>(null);
+    const [referralLoading, setReferralLoading] = React.useState(true);
+    const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
+      advertisers: Array<{
+        id: string;
+        companyName: string;
+        createdAt: string;
+        _count: { campaigns: number };
+        referrer?: { fullName: string } | null;
+      }>;
+      totalBonus: number;
+      count: number;
+    } | null>(null);
+    const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
 
-  // Iniciar tracking GPS al montar
-  useEffect(() => {
-    startTracking();
-    return () => stopTracking();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Iniciar tracking GPS al montar
+    useEffect(() => {
+      startTracking();
+      return () => stopTracking();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
   const hasClosedRef = React.useRef(false);
 

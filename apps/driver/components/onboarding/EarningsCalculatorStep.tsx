@@ -14,6 +14,7 @@ interface EarningsCalculatorStepProps {
   setReferredDrivers: (value: number) => void;
   projectedEarnings: number;
   REFERRAL_DRIVER_BONUS: number;
+  REFERRAL_BUSINESS_BONUS?: number;
 }
 
 interface SliderFieldProps {

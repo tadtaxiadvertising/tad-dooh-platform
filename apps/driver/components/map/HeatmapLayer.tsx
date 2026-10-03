@@ -32,7 +32,7 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
   useEffect(() => {
     if (!map || !points || points.length === 0) return;
 
-    // @ts-expect-error heatLayer is added by the leaflet.heat plugin
+    // heatLayer added by leaflet.heat plugin
     const heatLayer = (L as any).heatLayer(points, {
       radius,
       blur,

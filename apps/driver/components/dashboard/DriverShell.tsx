@@ -171,6 +171,7 @@ function HomeTab({
   readinessCard,
   referralData,
   advertiserReferrals,
+  advertiserReferralsLoading,
 }: {
   hubData: DriverHubData | null;
   isLocalMode: boolean;
@@ -194,6 +195,7 @@ function HomeTab({
     totalBonus: number;
     count: number;
   } | null;
+  advertiserReferralsLoading?: boolean;
 }) {
   const serviceBannerConfig =
     connectionStatus === 'offline'
@@ -292,6 +294,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
   onSincronizar,
   referralData,
   advertiserReferrals,
+  advertiserReferralsLoading,
 }) => {
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
 
@@ -316,6 +319,7 @@ export const DriverShell: React.FC<DriverShellProps> = ({
     readinessCard={readinessCard}
     referralData={referralData}
     advertiserReferrals={advertiserReferrals}
+    advertiserReferralsLoading={advertiserReferralsLoading}
   />
 )}
 

@@ -29,10 +29,10 @@ export const BUSINESS_RULES = {
   MAX_VIDEO_SIZE_BYTES: 57671680,
 
   /** Tipos MIME permitidos para piezas publicitarias (video MP4 H.264 + estáticos JPG/PNG) */
-  ALLOWED_MEDIA_MIME_TYPES: ["video/mp4", "image/jpeg", "image/png"],
+  ALLOWED_MEDIA_MIME_TYPES: ["video/mp4", "video/quicktime", "image/jpeg", "image/png", "image/webp"],
 
   /** Extensiones permitidas para piezas publicitarias */
-  ALLOWED_MEDIA_EXTENSIONS: [".mp4", ".jpg", ".jpeg", ".png"],
+  ALLOWED_MEDIA_EXTENSIONS: [".mp4", ".mov", ".jpg", ".jpeg", ".png", ".webp"],
 
   /** Máximo de campañas activas simultáneas por anunciante */
   MAX_CAMPAIGNS_PER_ADVERTISER: 15,

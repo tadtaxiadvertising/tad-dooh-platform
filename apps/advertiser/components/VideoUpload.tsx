@@ -4,8 +4,8 @@ import { useDirectUpload } from "@/hooks/useDirectUpload";
 
 // Reglas de negocio espejo del backend (validadas también en useDirectUpload)
 const MAX_SIZE_BYTES = 55 * 1024 * 1024; // 55MB
-const ALLOWED_EXTENSIONS = [".mp4", ".jpg", ".jpeg", ".png"];
-const ALLOWED_MIME_TYPES = ["video/mp4", "image/jpeg", "image/png"];
+const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".jpg", ".jpeg", ".png", ".webp"];
+const ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "image/jpeg", "image/png", "image/webp"];
 
 function extOf(name: string): string {
   const idx = name.lastIndexOf(".");

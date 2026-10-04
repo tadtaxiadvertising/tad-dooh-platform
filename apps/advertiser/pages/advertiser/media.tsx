@@ -407,8 +407,12 @@ export default function AdvertiserMedia() {
                   {linkModal.media.filename}
                 </p>
                 <p className="text-sm text-zinc-400 mb-6">
-                  Selecciona una campaña para asignar este archivo. (Próximamente: selector de campañas)
+                  Esta funcionalidad vincula el archivo multimedia con una campaña activa mediante la API /campaigns. Requiere integración con el módulo de campañas.
                 </p>
+                <div className="flex gap-2 mb-3">
+                  <span className="px-2 py-0.5 bg-[#fad400]/10 text-[#fad400] text-[9px] font-black uppercase tracking-widest rounded-md">Campaña activa</span>
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-md">Compatible</span>
+                </div>
                 <div className="flex items-center justify-end gap-3">
                   <button
                     onClick={() => setLinkModal({ open: false, media: null })}

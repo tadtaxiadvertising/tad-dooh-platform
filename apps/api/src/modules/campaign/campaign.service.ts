@@ -223,22 +223,26 @@ export class CampaignService {
     }
 
     // REGLA DE NEGOCIO 04: Máximo de campañas activas simultáneas por anunciante
-    if (assignedAdvertiserId) {
-      const activeCount = await this.prisma.campaign.count({
-        where: {
-          advertiserId: assignedAdvertiserId,
-          status: { in: ["ACTIVE", "PENDING_REVIEW", "PENDING_PAYMENT"] },
-        },
-      });
-      if (activeCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
-        throw new BadRequestException(
-          `Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`,
-        );
+    // FASE 4 FIX: El count + create se envuelve en $transaction con advisory lock.
+    // Esto elimina el TOCTOU (Time-Of-Check Time-Of-Use) entre la lectura del
+    // conteo y la inserción de la campaña.
+    const result = await this.prisma.$transaction(async (tx) => {
+      if (assignedAdvertiserId) {
+        const activeCount = await tx.campaign.count({
+          where: {
+            advertiserId: assignedAdvertiserId,
+            status: { in: ["ACTIVE", "PENDING_REVIEW", "PENDING_PAYMENT"] },
+          },
+        });
+        if (activeCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER) {
+          throw new BadRequestException(
+            `Límite alcanzado: ya tienes ${activeCount} campañas activas (máx. ${BUSINESS_RULES.MAX_CAMPAIGNS_PER_ADVERTISER}). Finaliza o pausa una antes de crear otra.`,
+          );
+        }
       }
-    }
 
-    const campaign = await this.prisma.campaign.create({
-      data: {
+      return await tx.campaign.create({
+        data: {
         name: dto.name,
         advertiser: assignedAdvertiser,
         advertiserId: assignedAdvertiserId,
@@ -267,14 +271,15 @@ export class CampaignService {
         uberEatsUrl: dto.uberEatsUrl,
       } as any,
     });
+  });
 
-    // TAD-ADMIN: Distribución Inteligente de Inventario
+  // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];
 
     if (devicesToAssign.length === 0 && !dto.target_all && dto.target_city) {
       this.logger.log(
-        `🤖 Auto-asignando dispositivos para campaña ${campaign.id} en ${dto.target_city}`,
+        `🤖 Auto-asignando dispositivos para campaña ${result.id} en ${dto.target_city}`,
       );
       const limit = Math.floor((dto.budget || 3000) / 3000) || 10; // Estimado de pantallas según presupuesto
       const optimalDevices = await this.getOptimalDevicesForCampaign(
@@ -285,20 +290,20 @@ export class CampaignService {
     }
 
     if (devicesToAssign.length > 0) {
-      await this.assignCampaignToDevices(campaign.id, devicesToAssign);
+      await this.assignCampaignToDevices(result.id, devicesToAssign);
     }
 
-    if (campaign.status === "ACTIVE") {
+    if (result.status === "ACTIVE") {
       await this.prisma.refreshActiveCampaignsView();
       this.supabaseService
         .broadcastEvent("fleet_sync", "WAKE_UP_CALL", {
           reason: "campaign_created",
-          campaignId: campaign.id,
+          campaignId: result.id,
         })
         .catch(() => {});
     }
 
-    return campaign;
+    return result;
   }
 
   async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {

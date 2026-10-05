@@ -6,12 +6,16 @@ const prisma = new PrismaClient();
 // Business constants matching the service layer
 const RATE_PER_AD_DRIVER = 500; // RD$ per active campaign per driver/month
 const COST_PER_AD_ADVERTISER = 1500; // RD$ per campaign per advertiser
-// SEC: password de seed desde env; el valor por defecto jamás se loguea.
-const DEFAULT_PASSWORD = process.env.SEED_PASSWORD || 'ChangeMe-Seed-2026!';
+// SEC: password de seed desde env (OBLIGATORIO); sin default inseguro.
+const SEED_PASSWORD = process.env.SEED_PASSWORD;
+if (!SEED_PASSWORD || SEED_PASSWORD.length < 8) {
+  console.error('❌ SEED_PASSWORD requerido (mín. 8 caracteres). Defínalo en variables de entorno.');
+  process.exit(1);
+}
 
 async function main() {
   console.log('=== TAD DOOH Platform — Full Ecosystem Seed ===\n');
-  const hashedPw = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+  const hashedPw = await bcrypt.hash(SEED_PASSWORD, 10);
 
   // ── Step 1: Advertisers ──────────────────────────────────
   console.log('1/7  Creating 5 advertisers...');
@@ -68,7 +72,7 @@ async function main() {
     });
     drivers.push(driver);
   }
-  console.log(`   ✓ ${drivers.length} drivers ready (login: phone / ${DEFAULT_PASSWORD})`);
+  console.log(`   ✓ ${drivers.length} drivers ready (login: phone / SEED_PASSWORD from env)`);
 
   // ── Step 3: Devices (screens) ─────────────────────────────
   console.log('3/7  Creating 10 devices and assigning to drivers...');
@@ -316,7 +320,7 @@ async function main() {
   console.log(`  Campaigns:    ${campaignRecords.length} active`);
   console.log(`  Requests:     4 pending (2 campaign + 2 payout)`);
   console.log(`  Payroll:      5 paid records (last month)`);
-  console.log(`\n  Default password for all: password de SEED_PASSWORD (env, no logueado)`);
+  console.log(`\n  Default password for all: SEED_PASSWORD from env (no logueado)`);
   console.log(`  Driver projected earnings: RD$${campaignRecords.length * RATE_PER_AD_DRIVER}/month per driver`);
   console.log(`  Advertiser cost: RD$${COST_PER_AD_ADVERTISER}/campaign\n`);
 }

@@ -149,19 +149,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const s = buildSessionFromLocalToken('tad_admin_token', 'tad_admin_user');
           if (s) activeSession = s;
         } else {
-          const portals: [string, string][] = [
-            ['tad_admin_token', 'tad_admin_user'],
-            ['tad_advertiser_token', 'tad_advertiser_user'],
-            ['tad_driver_token', 'tad_driver_user'],
-          ];
-          for (const [tokenKey, userKey] of portals) {
-            const s = buildSessionFromLocalToken(tokenKey, userKey);
-            if (s) {
-              activeSession = s;
-              break;
-            }
-          }
-        }
+                  // SEC-01 FIX: No fallback to all portal tokens.
+                  // If we're on a non-portal path (e.g. '/', '/p/...') and have no Supabase session,
+                  // we MUST NOT pick up a token from another portal. This prevents cross-portal
+                  // session pollution where a driver on '/' could inherit an admin token.
+                  // The role/portal guard below will redirect to the correct login.
+                  activeSession = null;
+                }
       }
 
       if (activeSession?.access_token) {

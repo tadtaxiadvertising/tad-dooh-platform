@@ -40,10 +40,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, "jwt") {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey:
-        secret ||
-        configService.get<string>("JWT_SECRET") ||
-        "tad-default-secret-change-me",
+      secretOrKey: secret || configService.get<string>("JWT_SECRET"),
     });
   }
 

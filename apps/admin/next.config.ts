@@ -7,7 +7,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-  || "https://tad-api.tadprod.ibusiness.com.do";
+  || "https://tad.api.ibuisiness.com.do";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -40,12 +40,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
-      {
-        source: "/p/advertiser/:path*",
-        destination: "https://proyecto-ia-tad-advertiser.rewvid.easypanel.host",
-        permanent: false,
-      },
+      return [
+        {
+          source: "/p/advertiser/:path*",
+          destination: "https://tad.anunciante.ibuisiness.com.do",
+          permanent: false,
+        },
       { source: "/", destination: "/login", permanent: false },
       { source: "/dashboard", destination: "/admin", permanent: false },
       { source: "/campaigns/:path*", destination: "/admin/campaigns/:path*", permanent: false },

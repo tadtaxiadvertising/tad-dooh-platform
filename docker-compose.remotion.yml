@@ -29,8 +29,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      # Cambiar por tu dominio en EasyPanel (sin https://)
-      TAD_REMOTION_DOMAIN: ${TAD_REMOTION_DOMAIN:-tad-remotion.rewvid.easypanel.host}
+          # Cambiar por tu dominio en EasyPanel (sin https://)
+          TAD_REMOTION_DOMAIN: ${TAD_REMOTION_DOMAIN:-tad.remotion.ibuisiness.com.do}
     depends_on:
       tad-remotion:
         condition: service_healthy

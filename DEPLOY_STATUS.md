@@ -58,16 +58,30 @@ Ecosistema Completo: 98% (Fase Post-Escalado)
 
 ---
 
-## 🔗 URLs IMPORTANTES
+## 🔗 URLs IMPORTANTES (PRODUCCIÓN - ibuisiness.com.do)
 
-| Servicio | URL |
-| --- | --- |
-| **Dashboard Admin** | <https://tad-dashboard.rewvid.easypanel.host> |
-| **API Gateway** | <https://tad-api.rewvid.easypanel.host/api/v1> |
-| **Video Engine** | <https://tad-remotion.rewvid.easypanel.host> |
-| **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> |
-| **Portal Conductor** | <https://tad-driver.rewvid.easypanel.host> |
+| Servicio | URL | Estado |
+| --- | --- | --- |
+| **Dashboard Admin** | <https://tad.adm.ibuisiness.com.do> | 🟢 Producción |
+| **API Gateway** | <https://tad.api.ibuisiness.com.do/api/v1> | 🟢 Producción |
+| **Video Engine** | <https://tad.remotion.ibuisiness.com.do> | 🟢 Producción |
+| **Portal Anunciante** | <https://tad.anunciante.ibuisiness.com.do> | 🟢 Producción |
+| **Portal Conductor** | <https://tad.driver.ibuisiness.com.do> | 🟢 Producción |
+| **Tablet Player** | <https://tad.player.ibuisiness.com.do> | 🟢 Producción |
+| **Simulator** | <https://tad.simulator.ibuisiness.com.do> | 🟢 Producción |
 
 ---
 
-**Estado Técnico:** 🟢 **ESTABLE** (Producción Ready v10.0)
+## 🔗 URLs LEGACY (EasyPanel - rewvid.easypanel.host) — *Deprecated*
+
+| Servicio | URL | Estado |
+| --- | --- | --- |
+| **Dashboard Admin** | <https://tad-dashboard.rewvid.easypanel.host> | 🟡 Legacy |
+| **API Gateway** | <https://tad-api.rewvid.easypanel.host/api/v1> | 🟡 Legacy |
+| **Video Engine** | <https://tad-remotion.rewvid.easypanel.host> | 🟡 Legacy |
+| **Portal Anunciante** | <https://tad-advertiser.rewvid.easypanel.host> | 🟡 Legacy |
+| **Portal Conductor** | <https://tad-driver.rewvid.easypanel.host> | 🟡 Legacy |
+
+---
+
+**Estado Técnico:** 🟢 **ESTABLE** (Producción Ready v10.0 — Dominios ibuisiness.com.do activos)

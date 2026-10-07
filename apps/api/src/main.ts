@@ -66,6 +66,11 @@ async function bootstrap() {
       ? rawCorsOrigin.split(",").map((o) => o.trim())
       : [];
     const baseOrigins = [
+      // New production domains (ibuisiness.com.do)
+      "https://tad.adm.ibuisiness.com.do",
+      "https://tad.anunciante.ibuisiness.com.do",
+      "https://tad.driver.ibuisiness.com.do",
+      // Legacy EasyPanel domains (kept for backward compatibility during transition)
       "https://tad-admin.rewvid.easypanel.host",
       "https://tad-driver.rewvid.easypanel.host",
       "https://tad-driver-flutter.rewvid.easypanel.host",

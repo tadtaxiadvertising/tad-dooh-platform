@@ -87,14 +87,14 @@ const nextConfig: NextConfig = {
   // si ya hay sesión DRIVER). Los redirects de next.config se ejecutan
   // ANTES que el middleware y rompen el flujo del portal driver.
   async redirects() {
-    return [
-      {
-        source: '/p/advertiser/:path*',
-        destination: 'https://tad-admin.tadprod.ibusiness.com.do',
-        permanent: false,
+        return [
+          {
+            source: '/p/advertiser/:path*',
+            destination: 'https://tad.anunciante.ibuisiness.com.do',
+            permanent: false,
+          },
+        ];
       },
-    ];
-  },
 };
 
 export default withSentryConfig(withPWA(nextConfig), {

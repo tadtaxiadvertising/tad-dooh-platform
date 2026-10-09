@@ -7,7 +7,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const BACKEND_INTERNAL = process.env.BACKEND_INTERNAL_URL
   || process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-  || "https://tad.api.ibuisiness.com.do";
+  || "https://tad.api.ibusiness.com.do";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
       return [
         {
           source: "/p/advertiser/:path*",
-          destination: "https://tad.anunciante.ibuisiness.com.do",
+          destination: "https://tad.anunciante.ibusiness.com.do",
           permanent: false,
         },
       { source: "/", destination: "/login", permanent: false },

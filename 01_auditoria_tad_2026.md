@@ -25,14 +25,14 @@
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-| Componente | Tecnología | URL Producción (ibuisiness.com.do) | URL Legacy (EasyPanel) | Estado |
+| Componente | Tecnología | URL Producción (ibusiness.com.do) | URL Legacy (EasyPanel) | Estado |
 | --- | --- | --- | --- | --- |
-| **Dashboard Admin** | Next.js 15 / Tailw4 | <https://tad.adm.ibuisiness.com.do> | <https://tad-dashboard.rewvid.easypanel.host> | ✅ v12.0 Operativo |
-| **API Backend** | NestJS 10 / Prisma 5 | <https://tad.api.ibuisiness.com.do/api/v1> | <https://tad-api.rewvid.easypanel.host/api/v1> | ✅ v12.0 Operativo |
-| **Portal Anunciante** | Next.js 15 / Tailw4 | <https://tad.anunciante.ibuisiness.com.do> | <https://tad-advertiser.rewvid.easypanel.host> | ✅ v12.0 Live |
-| **Portal Conductor** | Next.js 15 (V12) | <https://tad.driver.ibuisiness.com.do> | <https://tad-driver.rewvid.easypanel.host> | ✅ v12.0 Live |
-| **Video Engine** | Remotion / Chromium | <https://tad.remotion.ibuisiness.com.do> | <https://tad-remotion.rewvid.easypanel.host> | ✅ ON-LINE |
-| **Tablet Player** | PWA (Offline-first) | <https://tad.player.ibuisiness.com.do> | Carga local vía FullyKiosk | ✅ Funcional |
+| **Dashboard Admin** | Next.js 15 / Tailw4 | <https://tad.adm.ibusiness.com.do> | <https://tad-dashboard.rewvid.easypanel.host> | ✅ v12.0 Operativo |
+| **API Backend** | NestJS 10 / Prisma 5 | <https://tad.api.ibusiness.com.do/api/v1> | <https://tad-api.rewvid.easypanel.host/api/v1> | ✅ v12.0 Operativo |
+| **Portal Anunciante** | Next.js 15 / Tailw4 | <https://tad.anunciante.ibusiness.com.do> | <https://tad-advertiser.rewvid.easypanel.host> | ✅ v12.0 Live |
+| **Portal Conductor** | Next.js 15 (V12) | <https://tad.driver.ibusiness.com.do> | <https://tad-driver.rewvid.easypanel.host> | ✅ v12.0 Live |
+| **Video Engine** | Remotion / Chromium | <https://tad.remotion.ibusiness.com.do> | <https://tad-remotion.rewvid.easypanel.host> | ✅ ON-LINE |
+| **Tablet Player** | PWA (Offline-first) | <https://tad.player.ibusiness.com.do> | Carga local vía FullyKiosk | ✅ Funcional |
 
 ---
 

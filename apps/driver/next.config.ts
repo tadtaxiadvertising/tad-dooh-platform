@@ -90,7 +90,7 @@ const nextConfig: NextConfig = {
         return [
           {
             source: '/p/advertiser/:path*',
-            destination: 'https://tad.anunciante.ibuisiness.com.do',
+            destination: 'https://tad.anunciante.ibusiness.com.do',
             permanent: false,
           },
         ];

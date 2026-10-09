@@ -17,16 +17,16 @@ NC='\033[0m' # No Color
 
 # Dominios de producción
 DOMAINS=(
-    "tad.api.ibuisiness.com.do"
-    "tad.adm.ibuisiness.com.do"
-    "tad.anunciante.ibuisiness.com.do"
-    "tad.driver.ibuisiness.com.do"
-    "tad.player.ibuisiness.com.do"
-    "tad.remotion.ibuisiness.com.do"
-    "tad.simulator.ibuisiness.com.do"
+    "tad.api.ibusiness.com.do"
+    "tad.adm.ibusiness.com.do"
+    "tad.anunciante.ibusiness.com.do"
+    "tad.driver.ibusiness.com.do"
+    "tad.player.ibusiness.com.do"
+    "tad.remotion.ibusiness.com.do"
+    "tad.simulator.ibusiness.com.do"
 )
 
-API_BASE="https://tad.api.ibuisiness.com.do"
+API_BASE="https://tad.api.ibusiness.com.do"
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}  TAD DOOH Platform — Verificación Post-Deploy${NC}"
@@ -139,19 +139,19 @@ if check_http "$API_BASE/health" 200 "API Gateway"; then ((PASSED++)); else ((FA
 if check_json "$API_BASE/health" '.status == "ok"' "API Health JSON"; then ((PASSED++)); else ((FAILED++)); fi
 
 ((TOTAL++))
-if check_http "https://tad.adm.ibuisiness.com.do/" 200 "Admin Dashboard"; then ((PASSED++)); else ((FAILED++)); fi
+if check_http "https://tad.adm.ibusiness.com.do/" 200 "Admin Dashboard"; then ((PASSED++)); else ((FAILED++)); fi
 
 ((TOTAL++))
-if check_http "https://tad.anunciante.ibuisiness.com.do/" 200 "Advertiser Portal"; then ((PASSED++)); else ((FAILED++)); fi
+if check_http "https://tad.anunciante.ibusiness.com.do/" 200 "Advertiser Portal"; then ((PASSED++)); else ((FAILED++)); fi
 
 ((TOTAL++))
-if check_http "https://tad.driver.ibuisiness.com.do/" 200 "Driver Portal"; then ((PASSED++)); else ((FAILED++)); fi
+if check_http "https://tad.driver.ibusiness.com.do/" 200 "Driver Portal"; then ((PASSED++)); else ((FAILED++)); fi
 
 ((TOTAL++))
-if check_json "https://tad.player.ibuisiness.com.do/health" '.status == "OK"' "Tablet Player"; then ((PASSED++)); else ((FAILED++)); fi
+if check_json "https://tad.player.ibusiness.com.do/health" '.status == "OK"' "Tablet Player"; then ((PASSED++)); else ((FAILED++)); fi
 
 ((TOTAL++))
-if check_json "https://tad.remotion.ibuisiness.com.do/health" '.status == "ok" or .status == "healthy"' "Video Engine"; then ((PASSED++)); else ((FAILED++)); fi
+if check_json "https://tad.remotion.ibusiness.com.do/health" '.status == "ok" or .status == "healthy"' "Video Engine"; then ((PASSED++)); else ((FAILED++)); fi
 
 echo ""
 
@@ -161,12 +161,12 @@ echo ""
 echo -e "${BLUE}🔒 3. Verificando CORS (API Gateway)...${NC}"
 
 CORS_ORIGINS=(
-    "https://tad.adm.ibuisiness.com.do"
-    "https://tad.anunciante.ibuisiness.com.do"
-    "https://tad.driver.ibuisiness.com.do"
-    "https://tad.player.ibuisiness.com.do"
-    "https://tad.remotion.ibuisiness.com.do"
-    "https://tad.simulator.ibuisiness.com.do"
+    "https://tad.adm.ibusiness.com.do"
+    "https://tad.anunciante.ibusiness.com.do"
+    "https://tad.driver.ibusiness.com.do"
+    "https://tad.player.ibusiness.com.do"
+    "https://tad.remotion.ibusiness.com.do"
+    "https://tad.simulator.ibusiness.com.do"
 )
 
 for origin in "${CORS_ORIGINS[@]}"; do
@@ -204,7 +204,7 @@ echo -e "${BLUE}🔄 5. Verificando Redirects...${NC}"
 
 ((TOTAL++))
 # Admin: / → /login
-redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.adm.ibuisiness.com.do/" --max-time 10)
+redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.adm.ibusiness.com.do/" --max-time 10)
 if [[ "$redirect" == *"login"* ]]; then
     echo -e "${GREEN}✅ Admin Redirect${NC} / → /login"
     ((PASSED++))
@@ -215,7 +215,7 @@ fi
 
 ((TOTAL++))
 # Driver: / → /driver/login
-redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.driver.ibuisiness.com.do/" --max-time 10)
+redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.driver.ibusiness.com.do/" --max-time 10)
 if [[ "$redirect" == *"driver/login"* ]]; then
     echo -e "${GREEN}✅ Driver Redirect${NC} / → /driver/login"
     ((PASSED++))
@@ -226,7 +226,7 @@ fi
 
 ((TOTAL++))
 # Advertiser: / → /login
-redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.anunciante.ibuisiness.com.do/" --max-time 10)
+redirect=$(curl -s -o /dev/null -w "%{redirect_url}" "https://tad.anunciante.ibusiness.com.do/" --max-time 10)
 if [[ "$redirect" == *"login"* ]]; then
     echo -e "${GREEN}✅ Advertiser Redirect${NC} / → /login"
     ((PASSED++))

@@ -30,7 +30,7 @@ services:
       - caddy_config:/config
     environment:
           # Cambiar por tu dominio en EasyPanel (sin https://)
-          TAD_REMOTION_DOMAIN: ${TAD_REMOTION_DOMAIN:-tad.remotion.ibuisiness.com.do}
+          TAD_REMOTION_DOMAIN: ${TAD_REMOTION_DOMAIN:-tad.remotion.ibusiness.com.do}
     depends_on:
       tad-remotion:
         condition: service_healthy

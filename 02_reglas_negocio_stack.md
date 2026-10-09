@@ -5,17 +5,17 @@
 
 ---
 
-## 🌐 URLS DE PRODUCCIÓN (ibuisiness.com.do)
+## 🌐 URLS DE PRODUCCIÓN (ibusiness.com.do)
 
 | Recurso | URL | Estado |
 | :--- | :--- | :--- |
-| **Dashboard Admin** | <https://tad.adm.ibuisiness.com.do> | 🟢 Producción |
-| **API (Gateway)** | <https://tad.api.ibuisiness.com.do/api/v1> | 🟢 Producción |
-| **Video Engine** | <https://tad.remotion.ibuisiness.com.do> | 🟢 Producción |
-| **Portal Anunciante** | <https://tad.anunciante.ibuisiness.com.do> | 🟢 Producción |
-| **Portal Conductor** | <https://tad.driver.ibuisiness.com.do> | 🟢 Producción |
-| **Tablet Player** | <https://tad.player.ibuisiness.com.do> | 🟢 Producción |
-| **Simulator** | <https://tad.simulator.ibuisiness.com.do> | 🟢 Producción |
+| **Dashboard Admin** | <https://tad.adm.ibusiness.com.do> | 🟢 Producción |
+| **API (Gateway)** | <https://tad.api.ibusiness.com.do/api/v1> | 🟢 Producción |
+| **Video Engine** | <https://tad.remotion.ibusiness.com.do> | 🟢 Producción |
+| **Portal Anunciante** | <https://tad.anunciante.ibusiness.com.do> | 🟢 Producción |
+| **Portal Conductor** | <https://tad.driver.ibusiness.com.do> | 🟢 Producción |
+| **Tablet Player** | <https://tad.player.ibusiness.com.do> | 🟢 Producción |
+| **Simulator** | <https://tad.simulator.ibusiness.com.do> | 🟢 Producción |
 | **Supabase Project** | <https://supabase.com/dashboard/project/ltdcdhqixvbpdcitthqf> | 🟢 Activo |
 
 ---

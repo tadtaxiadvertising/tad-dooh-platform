@@ -16,7 +16,7 @@
 # =============================================================================
 # EasyPanel Service Name: tad-api
 # Dockerfile: Dockerfile.api
-# Dominio: https://tad.api.ibuisiness.com.do
+# Dominio: https://tad.api.ibusiness.com.do
 
 # Base de datos (Supabase Pooler - puerto 6543)
 DATABASE_URL=postgresql://postgres:<TU_PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?connection_limit=5
@@ -37,8 +37,8 @@ PORT=3000
 NODE_ENV=production
 NODE_OPTIONS="--max-old-space-size=512 --expose-gc"
 
-# CORS — NUEVOS DOMINIOS PRODUCCIÓN (ibuisiness.com.do)
-CORS_ORIGIN=https://tad.adm.ibuisiness.com.do,https://tad.anunciante.ibuisiness.com.do,https://tad.driver.ibuisiness.com.do,https://tad.player.ibuisiness.com.do,https://tad.remotion.ibuisiness.com.do,https://tad.simulator.ibuisiness.com.do,https://tad.api.ibuisiness.com.do
+# CORS — NUEVOS DOMINIOS PRODUCCIÓN (ibusiness.com.do)
+CORS_ORIGIN=https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.remotion.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do
 
 # CDN / Storage
 CDN_URL_PREFIX=https://media.tad.do
@@ -53,10 +53,10 @@ SENTRY_DSN=
 # =============================================================================
 # EasyPanel Service Name: tad-admin
 # Dockerfile: Dockerfile.admin
-# Dominio: https://tad.adm.ibuisiness.com.do
+# Dominio: https://tad.adm.ibusiness.com.do
 
 # API Gateway (público - para navegador)
-NEXT_PUBLIC_API_URL=https://tad.api.ibuisiness.com.do/api
+NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
 
 # API Gateway (interno - para SSR en EasyPanel, red privada)
 BACKEND_INTERNAL_URL=http://tad-api:3000
@@ -85,10 +85,10 @@ NEXT_PUBLIC_SENTRY_DSN=
 # =============================================================================
 # EasyPanel Service Name: tad-advertiser
 # Dockerfile: Dockerfile.advertiser
-# Dominio: https://tad.anunciante.ibuisiness.com.do
+# Dominio: https://tad.anunciante.ibusiness.com.do
 
 # API Gateway (público - para navegador)
-NEXT_PUBLIC_API_URL=https://tad.api.ibuisiness.com.do/api
+NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
 
 # API Gateway (interno - para SSR en EasyPanel, red privada)
 BACKEND_INTERNAL_URL=http://tad-api:3000
@@ -117,10 +117,10 @@ NEXT_PUBLIC_SENTRY_DSN=
 # =============================================================================
 # EasyPanel Service Name: tad-driver
 # Dockerfile: Dockerfile.driver
-# Dominio: https://tad.driver.ibuisiness.com.do
+# Dominio: https://tad.driver.ibusiness.com.do
 
 # API Gateway (público - para navegador)
-NEXT_PUBLIC_API_URL=https://tad.api.ibuisiness.com.do/api
+NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
 
 # API Gateway (interno - para SSR en EasyPanel, red privada)
 BACKEND_INTERNAL_URL=http://tad-api:3000
@@ -149,10 +149,10 @@ NEXT_PUBLIC_SENTRY_DSN=
 # =============================================================================
 # EasyPanel Service Name: tad-player
 # Dockerfile: Dockerfile.player
-# Dominio: https://tad.player.ibuisiness.com.do
+# Dominio: https://tad.player.ibusiness.com.do
 
 # API Gateway (build-time para Vite)
-VITE_API_URL=https://tad.api.ibuisiness.com.do/api
+VITE_API_URL=https://tad.api.ibusiness.com.do/api
 
 # Supabase (build-time para Vite)
 VITE_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
@@ -168,7 +168,7 @@ HOSTNAME="0.0.0.0"
 # =============================================================================
 # EasyPanel Service Name: tad-remotion
 # Dockerfile: apps/tad-remotion/Dockerfile (via docker-compose.remotion.yml)
-# Dominio: https://tad.remotion.ibuisiness.com.do
+# Dominio: https://tad.remotion.ibusiness.com.do
 
 # API Gateway interno (para callbacks de render)
 API_URL=http://tad-api:3000
@@ -182,7 +182,7 @@ NODE_OPTIONS="--max-old-space-size=1024 --expose-gc"
 REMOTION_CONCURRENCY=1
 
 # Caddy (reverse proxy + SSL automático)
-TAD_REMOTION_DOMAIN=tad.remotion.ibuisiness.com.do
+TAD_REMOTION_DOMAIN=tad.remotion.ibusiness.com.do
 
 
 # =============================================================================
@@ -190,7 +190,7 @@ TAD_REMOTION_DOMAIN=tad.remotion.ibuisiness.com.do
 # =============================================================================
 # EasyPanel Service Name: tad-simulator
 # Dockerfile: Dockerfile.simulator
-# Dominio: https://tad.simulator.ibuisiness.com.do (si se expone web UI)
+# Dominio: https://tad.simulator.ibusiness.com.do (si se expone web UI)
 
 # API Gateway
 API_URL=http://tad-api:3000
@@ -224,32 +224,32 @@ NODE_ENV=production
 #
 # 1. tad-api          → Deploy primero (todos dependen de él)
 #    ☐ Variables cargadas
-#    ☐ Health check: curl https://tad.api.ibuisiness.com.do/health
+#    ☐ Health check: curl https://tad.api.ibusiness.com.do/health
 #    ☐ Logs: "TAD DOOH API Gateway Operativo en el puerto 3000"
 #
 # 2. tad-remotion     → Deploy segundo (API debe estar vivo)
 #    ☐ Variables cargadas
-#    ☐ Health check: curl https://tad.remotion.ibuisiness.com.do/health
+#    ☐ Health check: curl https://tad.remotion.ibusiness.com.do/health
 #    ☐ Logs: "Remotion server ready on port 8000"
 #
 # 3. tad-admin        → Deploy tercero
 #    ☐ Variables cargadas (incluir BACKEND_INTERNAL_URL=http://tad-api:3000)
-#    ☐ Health check: curl https://tad.adm.ibuisiness.com.do/
+#    ☐ Health check: curl https://tad.adm.ibusiness.com.do/
 #    ☐ Verificar: Redirige / → /login
 #
 # 4. tad-advertiser   → Deploy cuarto (ya funciona, verificar)
 #    ☐ Variables cargadas (incluir BACKEND_INTERNAL_URL=http://tad-api:3000)
-#    ☐ Health check: curl https://tad.anunciante.ibuisiness.com.do/
+#    ☐ Health check: curl https://tad.anunciante.ibusiness.com.do/
 #    ☐ Verificar: Redirige / → /login
 #
 # 5. tad-driver       → Deploy quinto
 #    ☐ Variables cargadas (incluir BACKEND_INTERNAL_URL=http://tad-api:3000)
-#    ☐ Health check: curl https://tad.driver.ibuisiness.com.do/
+#    ☐ Health check: curl https://tad.driver.ibusiness.com.do/
 #    ☐ Verificar: Redirige / → /driver/login
 #
 # 6. tad-player       → Deploy sexto
 #    ☐ Variables cargadas (VITE_* en build args)
-#    ☐ Health check: curl https://tad.player.ibuisiness.com.do/health
+#    ☐ Health check: curl https://tad.player.ibusiness.com.do/health
 #    ☐ Verificar: Responde {"status":"OK","service":"tad-player"}
 #
 # 7. tad-simulator    → Deploy séptimo (opcional)
@@ -259,18 +259,18 @@ NODE_ENV=production
 # =============================================================================
 # VERIFICACIÓN POST-DEPLOY (Ejecutar desde tu máquina)
 # =============================================================================
-# curl -s https://tad.api.ibuisiness.com.do/health | jq .
-# curl -s https://tad.adm.ibuisiness.com.do/ | head -5
-# curl -s https://tad.anunciante.ibuisiness.com.do/ | head -5
-# curl -s https://tad.driver.ibuisiness.com.do/ | head -5
-# curl -s https://tad.player.ibuisiness.com.do/health | jq .
-# curl -s https://tad.remotion.ibuisiness.com.do/health | jq .
+# curl -s https://tad.api.ibusiness.com.do/health | jq .
+# curl -s https://tad.adm.ibusiness.com.do/ | head -5
+# curl -s https://tad.anunciante.ibusiness.com.do/ | head -5
+# curl -s https://tad.driver.ibusiness.com.do/ | head -5
+# curl -s https://tad.player.ibusiness.com.do/health | jq .
+# curl -s https://tad.remotion.ibusiness.com.do/health | jq .
 #
 # Verificar CORS:
-# curl -H "Origin: https://tad.adm.ibuisiness.com.do" \
+# curl -H "Origin: https://tad.adm.ibusiness.com.do" \
 #      -H "Access-Control-Request-Method: POST" \
 #      -X OPTIONS \
-#      https://tad.api.ibuisiness.com.do/api/v1/auth/login -v
+#      https://tad.api.ibusiness.com.do/api/v1/auth/login -v
 #
 # =============================================================================
 # DNS REQUERIDO (Configurar en tu proveedor DNS - Cloudflare, GoDaddy, etc.)

@@ -101,7 +101,7 @@ export class SystemSettingsService implements OnModuleInit {
       { key: "offlineLimit", value: "48", type: "NUMBER", group: "FLEET" },
       {
         key: "remotionUrl",
-        value: "https://tad-remotion.rewvid.easypanel.host",
+        value: "https://tad.remotion.ibusiness.com.do",
         type: "STRING",
         group: "SYSTEM",
       },

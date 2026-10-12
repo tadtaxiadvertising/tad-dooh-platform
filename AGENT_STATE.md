@@ -59,3 +59,9 @@ VERIFICATION CHECKLIST (per master loop §35)
 
 COMMITTED: fix(campaign): wrap 15-slot count + create in $transaction (fbeb84e9)
 FINANCIAL: $transaction + server-generated reference verified (PAY-YYMM-UUID8)
+
+## PHASE 2 — REFERRAL SECURITY & IDEMPOTENCY (COMPLETED ✅)
+- Self-referral prevention in DriversService.create (phone match check)
+- Self-referral rejection in ReferralService.awardDriverReferralBonus
+- Added unit tests in apps/api/src/modules/referral/referral.service.spec.ts (4/4 passed)
+- TypeScript check passed on apps/api (exit 0)

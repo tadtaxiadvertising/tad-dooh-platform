@@ -132,6 +132,13 @@ export class ReferralService {
     referredDriverId: string,
     milestone: string,
   ) {
+    if (driverId === referredDriverId) {
+      this.logger.warn(
+        `⚠️ [DRIVER_REFERRAL] Intento de auto-referido rechazado para driver ${driverId}`,
+      );
+      return;
+    }
+
     const bonusAmount = BUSINESS_RULES.DRIVER_REFERRAL_BONUS_RD;
     const reference = `REF-DRIVER-${referredDriverId.substring(0, 8)}-${milestone}`;
 

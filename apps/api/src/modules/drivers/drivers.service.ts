@@ -338,13 +338,20 @@ export class DriversService {
     if (data.referralCode) {
       const referrer = await this.prisma.driver.findUnique({
         where: { referralCode: data.referralCode },
-        select: { id: true },
+        select: { id: true, phone: true },
       });
       if (referrer) {
-        resolvedReferredBy = referrer.id;
-        this.logger.log(
-          `[DRIVER_CREATE] Driver ${data.phone} referido por código ${data.referralCode} → ${referrer.id}`,
-        );
+        // Impedir auto-referencia si coincide el teléfono (registro propio)
+        if (referrer.phone === data.phone) {
+          this.logger.warn(
+            `⚠️ [DRIVER_CREATE] Intento de auto-referencia por código ${data.referralCode} ignorado para el teléfono ${data.phone}`,
+          );
+        } else {
+          resolvedReferredBy = referrer.id;
+          this.logger.log(
+            `[DRIVER_CREATE] Driver ${data.phone} referido por código ${data.referralCode} → ${referrer.id}`,
+          );
+        }
       } else {
         this.logger.warn(
           `[DRIVER_CREATE] Código de referido inválido ${data.referralCode} para driver ${data.phone}`,

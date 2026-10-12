@@ -3,6 +3,7 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { BiService } from "./bi.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdvertiserBillingService } from "../advertisers/advertiser-billing.service";
+import { CampaignExpirationService } from "../campaign-expiration/campaign-expiration.service";
 
 @Injectable()
 export class BiScheduler {
@@ -12,6 +13,7 @@ export class BiScheduler {
     private readonly biService: BiService,
     private readonly prisma: PrismaService,
     private readonly advertiserBilling: AdvertiserBillingService,
+    private readonly campaignExpiration: CampaignExpirationService,
   ) {}
 
   /**
@@ -165,4 +167,73 @@ export class BiScheduler {
       });
     }
   }
+
+  /**
+   * CADUCIDAD DE CAMPañAS: Verificar campañas que expiran (7 días) y notificar.
+   * Ejecuta a las 19:00 AST para dar margen al anunciante antes del cierre.
+   */
+  @Cron("0 19 * * *", {
+    name: "campaign-expiration-notification",
+    timeZone: "America/Santo_Domingo",
+  })
+  async handleCampaignExpirationNotification() {
+    this.logger.log(
+      "📅 CRON: Verificando campañas que expiran en próximos 7 días...",
+    );
+    try {
+      const result = await this.campaignExpiration.checkAndNotifyExpiringCampaigns(7);
+      this.logger.log(
+        `✅ Caducidad de campañas completada: ${result.campaignsChecked} verificadas, ${result.notificationsSent} notificaciones enviadas`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `❌ Error en notificación de caducidad de campañas: ${err.message}`,
+        err.stack,
+      );
+      await this.prisma.systemError.create({
+        data: {
+          source: "CAMPAIGN_EXPIRATION",
+          message: `Campaign expiration check failed: ${err.message}`,
+          details: err.stack,
+          entityId: "campaign-expiration",
+          severity: "ERROR",
+        },
+      });
+    }
+  }
+
+  /**
+   * PROCESAMIENTO DE COLA: Enviar notificaciones de caducidad desde la cola.
+   * Ejecuta a las 20:00 AST.
+   */
+  @Cron("0 20 * * *", {
+    name: "campaign-expiration-queue-process",
+    timeZone: "America/Santo_Domingo",
+  })
+  async handleCampaignExpirationQueueProcess() {
+    this.logger.log(
+      "📤 CRON: Procesando cola de notificaciones de caducidad...",
+    );
+    try {
+      const result = await this.campaignExpiration.processExpirationQueue();
+      this.logger.log(
+        `✅ Procesamiento de cola completado: ${result.notificationsSent} notificaciones enviadas`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `❌ Error en procesamiento de cola: ${err.message}`,
+        err.stack,
+      );
+      await this.prisma.systemError.create({
+        data: {
+          source: "CAMPAIGN_EXPIRATION_QUEUE",
+          message: `Campaign expiration queue processing failed: ${err.message}`,
+          details: err.stack,
+          entityId: "campaign-expiration-queue",
+          severity: "ERROR",
+        },
+      });
+    }
+  }
 }
+

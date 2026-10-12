@@ -23,8 +23,33 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Admin login – returns JWT token" })
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: any) {
+    const result = await this.authService.login(dto);
+
+    // A7-HTTPONLY: Enviar access_token en cookie HttpOnly + Secure para producción
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieDomain = process.env.COOKIE_DOMAIN || "tad.do";
+    const cookiePath = "/";
+
+    // El token de Supabase (GoTrue) incluye su propio refresh_token en la cookie
+    // El access_token custom creamos el HttpOnly
+    const accessToken = result.access_token;
+
+    // Configurar la cookie HttpOnly (solo el access_token personalizado)
+    // Para el refresh_token (también de Supabase), GoTrue lo maneja en su cookie 'sb-refresh-token'
+    res.cookie("tad_access_token", accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      domain: cookieDomain,
+      path: cookiePath,
+      maxAge: 3600 * 24 * 7, // 7 days (aprox)
+      partitionable: true,
+    });
+
+    // Retornar solo datos de usuario (sin tokens, ya en cookie HttpOnly)
+    const { access_token, refresh_token, ...user } = result;
+    return user;
   }
 
   @Public()

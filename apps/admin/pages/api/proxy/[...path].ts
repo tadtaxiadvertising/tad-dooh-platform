@@ -191,6 +191,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // === A7-HTTPONLY: Pasar set-cookie del backend al cliente ===
+    // El backend (NestJS auth controller) setea el token en un cookie HttpOnly.
+    // El proxy lo reenvía al navegador para que el navegador lo almacene.
+    const serverSetCookie = backendResponse.headers.get('set-cookie');
+    const resHeaders = new Headers(res.getHeaders());
+    if (serverSetCookie) {
+      resHeaders.append('set-cookie', serverSetCookie);
+    }
+    resHeaders.set('Access-Control-Allow-Credentials', 'true');
+    resHeaders.set('Access-Control-Allow-Origin', requestOrigin);
+    resHeaders.set('Vary', 'Origin');
+    resHeaders.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+
     // Verificación de seguridad para evitar "Cannot read properties of undefined (reading 'headers')"
     if (!backendResponse) {
       throw new Error('Backend response is undefined after all attempts');
@@ -214,6 +227,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // === A7-COOKIE: Pasar set-cookie del backend al cliente ===
+    // El backend NestJS auth controller setea 'tad_access_token' como cookie HttpOnly.
+    // El proxy la reenvía al navegador para almacenamiento seguro.
+    const serverSetCookie = backendResponse.headers.get('set-cookie');
+    if (serverSetCookie) {
+      res.setHeader('set-cookie', Array.isArray(res.getHeader('set-cookie'))
+        ? [...res.getHeader('set-cookie'), serverSetCookie]
+        : serverSetCookie);
+    }
 
     const contentType = backendResponse.headers.get('content-type');
     if (contentType) res.setHeader('Content-Type', contentType);

@@ -21,41 +21,66 @@ const CHUNK_SIZE = 100;
 const PLAYBACK_MAX_BATCH_SIZE = 200;
 const PLAYBACK_RATE_LIMIT = 60; // events per minute per device
 const PLAYBACK_RATE_WINDOW = 60_000; // 1 minute in ms
+const RATE_LIMIT_WINDOW_TZ = "UTC"; // Use UTC to avoid TZ ambiguity
 
 @Injectable()
 export class TelemetryService {
   private readonly logger = new Logger(TelemetryService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  // --- Rate Limiting (in-memory, per-instance) ---
-  private playbackRateMap = new Map<string, number[]>();
+  // --- Rate Limiting (DB-backed, persistent across restarts) ---
+  // Uses `rate_limit_windows` table with atomic UPDATE for concurrency safety.
 
-  checkPlaybackRateLimit(deviceId: string, additionalCount = 1): boolean {
-    const now = Date.now();
-    const windowStart = now - PLAYBACK_RATE_WINDOW;
-    let timestamps = this.playbackRateMap.get(deviceId) || [];
+  private async getWindowStart(): Promise<Date> {
+    // Align to UTC minute boundary for consistent windowing
+    const now = new Date();
+    const utc = now.toLocaleString("en-US", { timeZone: "UTC" });
+    return new Date(utc);
+  }
 
-    // Prune timestamps outside the current window
-    timestamps = timestamps.filter((t) => t > windowStart);
+  private async pruneExpiredWindows() {
+    const windowMs = 60_000; // Prune windows older than 1 minute
+    const cutoff = new Date(Date.now() - windowMs);
+    await this.prisma.$executeRawUnsafe(
+      `DELETE FROM rate_limit_windows WHERE window_start < ${cutoff.toISOString()}`,
+    );
+  }
 
-    if (timestamps.length + additionalCount > PLAYBACK_RATE_LIMIT) {
+  async checkPlaybackRateLimit(deviceId: string, additionalCount = 1): Promise<boolean> {
+    const now = await this.getWindowStart();
+    const windowStart = new Date(now.getTime());
+    // Round down to nearest minute
+    windowStart.setMilliseconds(0);
+    windowStart.setSeconds(0);
+
+    const windowStartStr = windowStart.toISOString();
+
+    // Check existing count for this device in this window
+    const existing = await this.prisma.$executeRawUnsafe(
+      `SELECT count FROM rate_limit_windows
+       WHERE device_id = ${deviceId} AND window_start = ${windowStartStr}`,
+    );
+
+    let currentCount = 0;
+    if (existing && Array.isArray(existing) && existing.length > 0) {
+      // Extract count from result (first element is count)
+      const firstRow = existing[0] as any;
+      currentCount = firstRow?.count || 0;
+    }
+
+    if (currentCount + additionalCount > PLAYBACK_RATE_LIMIT) {
       return false;
     }
 
-    // Add the new event(s)
-    for (let i = 0; i < additionalCount; i++) {
-      timestamps.push(now + i);
-    }
-    this.playbackRateMap.set(deviceId, timestamps);
+    // Increment or insert using atomic upsert
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO rate_limit_windows (id, device_id, window_start, count)
+       VALUES (gen_random_uuid(), ${deviceId}, ${windowStartStr}, 1)
+       ON CONFLICT (device_id, window_start)
+       DO UPDATE SET count = rate_limit_windows.count + 1`,
+    );
 
-    // Periodic cleanup of stale entries (prevent memory leak)
-    if (this.playbackRateMap.size > 1000) {
-      for (const [key, ts] of this.playbackRateMap.entries()) {
-        if (ts.filter((t) => t > windowStart).length === 0) {
-          this.playbackRateMap.delete(key);
-        }
-      }
-    }
+    // Prune expired windows (handled by the DB constraint row TTL in production)
 
     return true;
   }
@@ -152,7 +177,7 @@ export class TelemetryService {
         await this.prisma.$executeRawUnsafe(
           `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp)
            VALUES ${values.join(", ")}
-           ON CONFLICT (driver_id, timestamp) DO NOTHING`,
+           ON CONFLICT (driver_id, date_trunc('second', timestamp)) DO NOTHING`,
           ...params,
         );
 

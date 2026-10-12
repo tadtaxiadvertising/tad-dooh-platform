@@ -5,11 +5,12 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { AuthModule } from "../auth/auth.module";
 import { AdvertisersModule } from "../advertisers/advertisers.module";
 import { BiScheduler } from "./bi.scheduler";
+import { CampaignExpirationService } from "../campaign-expiration/campaign-expiration.service";
 
 @Module({
   imports: [PrismaModule, AuthModule, AdvertisersModule],
   controllers: [BiController],
-  providers: [BiService, BiScheduler],
+  providers: [BiService, BiScheduler, CampaignExpirationService],
   exports: [BiService],
 })
 export class BiModule {}

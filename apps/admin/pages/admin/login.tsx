@@ -37,6 +37,7 @@ export default function AdminLoginPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
         cache: 'no-store',
+        credentials: 'include', // Enviar/Recibir cookies HttpOnly (access_token)
       });
 
       const text = await res.text().catch(() => '');
@@ -70,12 +71,10 @@ export default function AdminLoginPage() {
         throw new Error('Tu cuenta no tiene rol de administrador. Usa el portal de anunciantes o conductores.');
       }
 
-      // A7: NO guardar refresh token en localStorage (seguridad).
-      // Access token en cookie (credentials: include) + memoria (React context).
-      localStorage.setItem('tad_admin_token', data.access_token);
-      localStorage.setItem('tad_admin_user', JSON.stringify(tokenPayload));
-
-      (window as any).__tad_user = tokenPayload;
+      // A7: Access token ahora está en cookie HttpOnly (no en localStorage).
+      // El usuario ya está autenticado; redirigir al dashboard.
+      // TODO: El middleware de auth verificará la cookie 'tad_access_token' en cada request.
+      (window as any).__tad_user = user;
 
       router.replace('/admin/dashboard');
     } catch (err) {

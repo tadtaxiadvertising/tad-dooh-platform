@@ -34,16 +34,18 @@ export class DeviceController {
     return { success: true, device_id: device.deviceId };
   }
 
+  // R1: Debounce GPS 300s + rate limit 20/10s
   @Post("heartbeat")
-  @Throttle({ default: { limit: 500, ttl: 60000 } })
+  @Throttle({ default: { limit: 20, ttl: 10_000 } })
   @HttpCode(HttpStatus.OK)
   async heartbeat(@Body() dto: HeartbeatDto) {
     await this.deviceService.deviceHeartbeat(dto);
     return { success: true };
   }
 
+  // R1: Debounce GPS 300s + playback 10/min per device
   @Post("playback")
-  @Throttle({ default: { limit: 500, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async playback(@Body() dto: PlaybackConfirmationDto) {
     await this.deviceService.recordPlayback(dto);
@@ -54,7 +56,7 @@ export class DeviceController {
   // SEC-03: DeviceTokenGuard validates X-Device-Token and enforces OPERATIVO status
   @UseGuards(DeviceTokenGuard, SubscriptionGuard)
   @Post("sync")
-  @Throttle({ default: { limit: 500, ttl: 60000 } })
+  @Throttle({ default: { limit: 30, ttl: 10_000 } })
   @HttpCode(HttpStatus.OK)
   async sync(@Body() dto: SyncDeviceDto) {
     return this.deviceService.syncDeviceCampaigns(dto);
@@ -62,7 +64,7 @@ export class DeviceController {
 
   @UseGuards(DeviceTokenGuard, SubscriptionGuard)
   @Post("bulk-sync")
-  @Throttle({ default: { limit: 500, ttl: 60000 } })
+  @Throttle({ default: { limit: 30, ttl: 10_000 } })
   @HttpCode(HttpStatus.OK)
   async bulkSync(@Body() dto: BulkSyncDto) {
     return this.deviceService.processBulkSync(dto);

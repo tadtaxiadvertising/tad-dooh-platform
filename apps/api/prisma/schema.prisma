@@ -559,6 +559,46 @@ model Notification {
   @@map("notifications")
 }
 
+/// V12.1.4 (B4 PATCH): Tabla de cola de notificaciones para deduplicar
+/// mensajes enviados por el CRON de caducidad de campañas.
+/// Constraint única evita notificaciones duplicadas por retry/race.
+model NotificationQueue {
+  id        String   @id @default(uuid())
+  type      String
+  category  String
+  entityId  String
+  title     String
+  message   String
+  sent      Boolean  @default(false)
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([type, category, entityId], name: "notification_queue_unique")
+  @@index([sent])
+  @@index([createdAt])
+  @@map("notification_queue")
+}
+
+/// V12.1.4 (B4 PATCH): Registro de campañas que expirarán pronto para
+/// disparar notificaciones de caducidad a anunciantes.
+model CampaignExpiration {
+  id                 String    @id @default(uuid())
+  campaignId         String
+  advertiserId       String
+  driverId           String?
+  remainingDays      Int
+  notificationSent   Boolean   @default(false)
+  scheduledFor       DateTime  @map("scheduled_for")
+  notifiedAt         DateTime? @map("notified_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([campaignId], name: "campaign_expiration_campaign_unique")
+  @@index([remainingDays])
+  @@index([scheduledFor])
+  @@map("campaign_expirations")
+}
+
 model BiDashboardSnapshot {
   id                  String   @id @default(uuid())
   snapshotDate        DateTime @unique @map("snapshot_date")
@@ -822,6 +862,7 @@ model IdempotencyKey {
   path      String
   method    String?
   response  String? // JSON-stringified response payload
+  responseHeaders String? // JSON-stringified request headers for reconstruction
   isLocked  Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")

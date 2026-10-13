@@ -1,7 +1,7 @@
 # ============ STAGE 1: Build Flutter Web ============
 FROM ghcr.io/cirruslabs/flutter:3.27.4 AS builder
 
-ARG FLUTTER_APP_API_URL=https://tad.api.ibuisiness.com.do/api/v1
+ARG FLUTTER_APP_API_URL=https://tad.api.ibusiness.com.do/api/v1
 ARG FLUTTER_APP_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ARG FLUTTER_APP_SUPABASE_ANON_KEY
 ARG FLUTTER_APP_ENV=production
@@ -25,7 +25,7 @@ RUN flutter pub get
 COPY . .
 
 # 3) Buscar .env template o crearlo con vars de build
-RUN echo "API_BASE_URL=${API_BASE_URL:-https://tad.api.ibuisiness.com.do/api/v1}" > .env && \
+RUN echo "API_BASE_URL=${API_BASE_URL:-https://tad.api.ibusiness.com.do/api/v1}" > .env && \
     echo "SUPABASE_URL=${SUPABASE_URL:-https://ltdcdhqixvbpdcitthqf.supabase.co}" >> .env && \
     echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-sb_publishable_sa_TwjDpFtkNn93Ynrw5PA_pv3BhfSi}" >> .env && \
     echo "APP_ENV=${APP_ENV:-production}" >> .env && \

@@ -193,11 +193,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // === A7-HTTPONLY: Pasar set-cookie del backend al cliente ===
     // El backend (NestJS auth controller) setea el token en un cookie HttpOnly.
-    // El proxy lo reenvía al navegador para que el navegador lo almacene.
-    const serverSetCookie = backendResponse.headers.get('set-cookie');
+    // El proxy lo reenvía al naveador para que el navegador lo almacene.
+    const proxySetCookie = backendResponse.headers.get('set-cookie');
     const resHeaders = new Headers(res.getHeaders());
-    if (serverSetCookie) {
-      resHeaders.append('set-cookie', serverSetCookie);
+    if (proxySetCookie) {
+      resHeaders.append('set-cookie', proxySetCookie);
     }
     resHeaders.set('Access-Control-Allow-Credentials', 'true');
     resHeaders.set('Access-Control-Allow-Origin', requestOrigin);

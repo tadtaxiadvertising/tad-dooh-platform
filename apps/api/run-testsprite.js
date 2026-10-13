@@ -8,7 +8,6 @@ async function runTestSprite() {
     args: ["@testsprite/testsprite-mcp@latest", "server"],
     env: {
       ...process.env,
-      TESTSPRITE_API_KEY: "sk-user-Bts2e-KtGon595wIiYPoU3ekap0qQ0_UPwc_wS-8YGnMOfReaYteBRs6FM5HG51T-PkLTvyt_1WT6Bfp0pBY0v4N0opeqlvkY_3S2DUK60TcqrKsgrNf_OXyztIBim73OYI"
     }
   });
 

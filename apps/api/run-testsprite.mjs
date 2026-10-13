@@ -3,7 +3,6 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import path from "path";
 
 const PROJECT_PATH = process.cwd();
-const API_KEY = "sk-user-Bts2e-KtGon595wIiYPoU3ekap0qQ0_UPwc_wS-8YGnMOfReaYteBRs6FM5HG51T-PkLTvyt_1WT6Bfp0pBY0v4N0opeqlvkY_3S2DUK60TcqrKsgrNf_OXyztIBim73OYI";
 
 async function callToolSafe(client, toolName, args, timeoutMs = 300000) {
   console.log(`\n📋 Calling ${toolName}...`);
@@ -24,7 +23,7 @@ async function runTestSprite() {
   const transport = new StdioClientTransport({
     command: process.platform === 'win32' ? "npx.cmd" : "npx",
     args: ["-y", "@testsprite/testsprite-mcp@latest"],
-    env: { ...process.env, API_KEY }
+    env: process.env
   });
 
   const client = new Client({ name: "TAD-TestRunner", version: "1.0.0" }, { capabilities: {} });

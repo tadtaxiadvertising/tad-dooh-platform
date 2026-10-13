@@ -23,9 +23,14 @@ FROM node:20-alpine AS builder
 ARG VITE_API_URL
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
+# Vite only reads .env files, never Dockerfile ENV vars. Write the build args
+# to a .env file at the project root before the Vite build so the SPA gets
+# the real API/Supabase URLs (fall back to the values in player/.env.example
+# when EasyPanel does not pass them as build args).
+RUN echo "VITE_API_URL=${VITE_API_URL:-https://tad.api.ibusiness.com.do/api}" > .env && \
+    echo "VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-https://ltdcdhqixvbpdcitthqf.supabase.co}" >> .env && \
+    echo "VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY:-}" >> .env
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app

@@ -14,5 +14,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: Build the canonical API Dockerfile
+      run: docker build . --file Dockerfile.api --tag tad-api:test
+    - name: Build the canonical Admin Dockerfile
+      run: docker build . --file Dockerfile.admin --tag tad-admin:test
+    - name: Build the canonical Driver Dockerfile
+      run: docker build . --file Dockerfile.driver --tag tad-driver:test
+    - name: Build the canonical Player Dockerfile
+      run: docker build . --file Dockerfile.player --tag tad-player:test
+    - name: Build the canonical Remotion Dockerfile
+      run: docker build . --file Dockerfile.remotion --tag tad-remotion:test

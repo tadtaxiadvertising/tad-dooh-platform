@@ -18,10 +18,13 @@ COPY apps/admin ./apps/admin
 # transitoria pide una version yanked de @typescript-eslint/scope-manager).
 RUN npm install --legacy-peer-deps --no-audit --no-fund
 
-# Build con vars del entorno
+# Build-time public env vars (client-baked por Next.js).
+# Defaults solo para builds de CI / standalone. La clave y la URL reales se
+# inyectan con el despliegue (EasyPanel) a partir de la plantilla
+# easypanel-env-template.md (NEXT_PUBLIC_SUPABASE_ANON_KEY y NEXT_PUBLIC_API_URL).
 ARG NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=REPLACE_WITH_REAL_ANON_KEY
+ARG NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY

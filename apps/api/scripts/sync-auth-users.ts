@@ -14,6 +14,7 @@
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *   DATABASE_URL
+ *   TAD_AUTH_SYNC_BOOTSTRAP_PASSWORD (only used when creating missing Auth users)
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -60,7 +61,7 @@ function supabaseAdminRequest(path: string, method: string, body?: any): Promise
   });
 }
 
-async function upsertAuthUser(email: string, password: string, appMetadata: Record<string, any>) {
+async function upsertAuthUser(email: string, password: string | undefined, appMetadata: Record<string, any>) {
   // 1. Try to list users and find by email
   const listRes = await supabaseAdminRequest('/auth/v1/admin/users', 'GET');
   const users = listRes.data?.users || [];
@@ -75,15 +76,14 @@ async function upsertAuthUser(email: string, password: string, appMetadata: Reco
       email_confirm: true,
     });
 
-    // Update password if needed
-    if (password) {
-      await supabaseAdminRequest(`/auth/v1/admin/users/${existing.id}`, 'PUT', {
-        password,
-      });
-    }
-
     console.log(`  ✅ Updated ${email}: confirmed + metadata set`);
     return existing.id;
+  }
+
+  // Never create users with a repository-wide default password.
+  if (!password) {
+    console.error(`  ❌ Cannot create ${email}: set TAD_AUTH_SYNC_BOOTSTRAP_PASSWORD in the environment`);
+    return null;
   }
 
   // 2. Create via admin API (auto-confirms)
@@ -116,13 +116,13 @@ async function main() {
 
   console.log(`📊 Found: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers\n`);
 
-  // Default password for all seeded users
-  const DEFAULT_PASSWORD = 'TadAdmin2026!';
+  // Only used for newly created Auth users; existing passwords are never overwritten.
+  const bootstrapPassword = process.env.TAD_AUTH_SYNC_BOOTSTRAP_PASSWORD;
 
   // 1. Admin users
   console.log('── Admin Users ──');
   for (const admin of admins) {
-    await upsertAuthUser(admin.email, DEFAULT_PASSWORD, {
+    await upsertAuthUser(admin.email, bootstrapPassword, {
       role: admin.role || 'ADMIN',
       entityId: admin.id,
     });

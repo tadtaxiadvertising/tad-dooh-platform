@@ -36,10 +36,7 @@
 
 ### Login del Dashboard Admin
 
-```text
-Email:    admin@tad.do
-Password: TadAdmin2026!
-```
+No se almacenan credenciales de acceso en el repositorio. Administra usuarios mediante el flujo seguro de autenticación y guarda secretos únicamente en el gestor de secretos.
 
 ### Supabase & Postgres (EasyPanel Secrets)
 

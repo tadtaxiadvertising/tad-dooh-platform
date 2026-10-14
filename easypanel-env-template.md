@@ -32,6 +32,10 @@ SUPABASE_JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>
 # JWT (hereda de SUPABASE_JWT_SECRET si no se define)
 JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>
 
+# Solo para bootstrap de usuarios nuevos; no cambia contraseñas existentes.
+# Configurar temporalmente si se usa /auth/bootstrap/sync-users y retirar después.
+AUTH_BOOTSTRAP_PASSWORD=
+
 # Servidor
 PORT=3000
 NODE_ENV=production

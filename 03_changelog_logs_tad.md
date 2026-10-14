@@ -309,7 +309,7 @@
   - Añadida §29: SubscriptionGuard nuance — Device module ENFORCED, Driver module STUB (`return true`)
 - **DOC 14 (Testing) — Correcciones Críticas**:
   - Corregido Playwright config: `testDir: './tests/e2e'` (no `./tests`), `fullyParallel: false`, `workers: 1`, `baseURL: localhost:3004`, 3 projects (android-kiosk, admin-desktop, offline-resilience)
-  - Corregido seed credentials: `admin@tadtaxi.do` / `tad12345` (seed script), `admin@tad.do` / `TadAdmin2026!` (production)
+  - Corregido seed credentials: `admin@tadtaxi.do` / `tad12345` (seed script), `admin@tad.do` / `[CREDENCIAL RETIRADA; rotar si fue utilizada]` (production)
   - Corregido simulation routes: `/simulation/scenario` (no `/simulation/start`), `/simulation/state` (no `/simulation/status`), `/simulation/purge` added, port 3000 (no 3001)
   - Reemplazada sección aspiracional CI con honest status: "NO CI pipeline exists, no quality gates"
   - E2E status corregido: 4/6 (2 specs outside testDir), no 6/6

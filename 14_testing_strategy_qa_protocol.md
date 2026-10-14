@@ -62,7 +62,7 @@ apps/driver/tests/
 **Credenciales de test:**
 - Email: `admin@tadtaxi.do` (seed script)
 - Password: `tad12345` (seed script)
-- **Production admin:** `admin@tad.do` / `TadAdmin2026!` (manually created, NOT from seed)
+- **Production admin:** `admin@tad.do` / `[CREDENCIAL RETIRADA; rotar si fue utilizada]` (manually created, NOT from seed)
 
 ---
 
@@ -485,7 +485,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@tad.do',
-      password: '$2b$10$...', // TadAdmin2026!
+      password: '$2b$10$...', // [CREDENCIAL RETIRADA; rotar si fue utilizada]
       name: 'Admin TAD',
       role: 'ADMIN',
     },
@@ -566,7 +566,7 @@ npx prisma db seed
 
 ### 7.1 Critical Path (Obligatorio antes de cada deploy)
 
-- [ ] Login admin funciona (`admin@tad.do` / `TadAdmin2026!`)
+- [ ] Login admin funciona (`admin@tad.do` / `[CREDENCIAL RETIRADA; rotar si fue utilizada]`)
 - [ ] Dashboard carga sin errores de consola
 - [ ] Kill-Switch 402 se activa correctamente
 - [ ] GPS batch endpoint acepta 10+ puntos

@@ -27,7 +27,7 @@ Este documento centraliza el estado actual, las reglas de negocio implementadas 
 - **Dashboard Admin**: <https://tad-dashboard.rewvid.easypanel.host>
 - **API (v12)**: <https://tad-api.rewvid.easypanel.host/api/v1>
 - **Video Engine**: <https://tad-remotion.rewvid.easypanel.host>
-- **Admin User**: `admin@tad.do` / `TadAdmin2026!`
+- **Admin User**: `admin@tad.do` / `[CREDENCIAL RETIRADA; rotar si fue utilizada]`
 
 ---
 

@@ -63,7 +63,7 @@ check_cors_origin() {
     --header "Access-Control-Request-Method: POST" \
     --header "Access-Control-Request-Headers: authorization,content-type" \
     "${API_URL%/}/api/v1/auth/login" 2>/dev/null)" || response='|000'
-  code="$(printf '%s' "$response" | sed 's/.*|//')"
+  code="$(printf '%s' "$response" | tail -n 1 | sed 's/.*|//')"
   allowed_origin="$(printf '%s\n' "$response" | awk 'tolower($1) == "access-control-allow-origin:" { gsub("\r", "", $2); print $2; exit }')"
   if [[ "$code" =~ ^2[0-9][0-9]$ && "$allowed_origin" == "$origin" ]]; then
     pass "CORS permite $origin (HTTP $code)"

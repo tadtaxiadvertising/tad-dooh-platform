@@ -70,7 +70,7 @@ import { HealthController } from "./health/health.controller";
           SUPABASE_JWT_SECRET: zod.string().min(32),
           PORT: zod.string().regex(/^\d+$/).default("3000"),
           NODE_ENV: zod.string().default("production"),
-          CORS_ORIGIN: zod.string().default("https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.remotion.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do"),
+          CORS_ORIGIN: zod.string().default("https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do"),
           UMAMI_API_TOKEN: zod.string().optional(),
           CDN_URL_PREFIX: zod.string().url().optional(),
         });

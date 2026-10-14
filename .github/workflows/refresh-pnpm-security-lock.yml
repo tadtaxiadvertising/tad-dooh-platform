@@ -1,4 +1,5 @@
 name: Refresh pnpm lockfile for Next.js security patch
+# Temporary workflow used only to generate the lockfile on this isolated branch.
 
 on:
   push:

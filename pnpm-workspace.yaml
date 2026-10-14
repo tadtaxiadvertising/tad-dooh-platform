@@ -2,8 +2,6 @@ packages:
   - "apps/*"
   - "packages/*"
 
-linkWorkspacePackages: true
-
 allowBuilds:
   '@nestjs/core': true
   '@prisma/client': true

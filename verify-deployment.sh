@@ -53,6 +53,24 @@ check_https() {
     fail "$name no responde correctamente por HTTPS" "URL: $url; HTTP: $code"
   fi
 }
+ 
+check_cors_origin() {
+  local origin="$1"
+  local response code allowed_origin
+  response="$(curl --silent --show-error --max-time 10 --dump-header - --output /dev/null \
+    --write-out '|%{http_code}' --request OPTIONS \
+    --header "Origin: $origin" \
+    --header "Access-Control-Request-Method: POST" \
+    --header "Access-Control-Request-Headers: authorization,content-type" \
+    "${API_URL%/}/api/v1/auth/login" 2>/dev/null)" || response='|000'
+  code="$(printf '%s' "$response" | sed 's/.*|//')"
+  allowed_origin="$(printf '%s\n' "$response" | awk 'tolower($1) == "access-control-allow-origin:" { gsub("\r", "", $2); print $2; exit }')"
+  if [[ "$code" =~ ^2[0-9][0-9]$ && "$allowed_origin" == "$origin" ]]; then
+    pass "CORS permite $origin (HTTP $code)"
+  else
+    fail "CORS no permite $origin" "HTTP: $code; Access-Control-Allow-Origin: ${allowed_origin:-ausente}"
+  fi
+}
 
 echo
 echo "TAD DOOH Platform — verificación de despliegue"
@@ -69,17 +87,24 @@ echo
 
 echo "2. HTTPS / respuesta HTTP"
 if command -v curl >/dev/null 2>&1; then
-  check_https "API health" "${API_URL%/}/health"
+  check_https "API health" "${API_URL%/}/api/health"
   check_https "Admin" "$ADMIN_URL"
   check_https "Driver (canónico)" "$DRIVER_URL"
   check_https "Drive (alias)" "$DRIVE_URL"
   check_https "Player health" "${PLAYER_URL%/}/health"
+  echo
+  echo "3. CORS de los portales"
+  check_cors_origin "$ADMIN_URL"
+  check_cors_origin "$DRIVER_URL"
+  check_cors_origin "$DRIVE_URL"
+  check_cors_origin "$PLAYER_URL"
+  check_cors_origin "https://tad.anunciante.ibusiness.com.do"
 else
   warn "curl no está instalado; se omiten las comprobaciones HTTPS."
 fi
 echo
 
-echo "3. Configuración local (solo archivos existentes)"
+echo "4. Configuración local (solo archivos existentes)"
 env_files_found=0
 for app in admin driver player; do
   env_file="$ENV_ROOT/$app/.env"
@@ -98,7 +123,7 @@ if [[ "$env_files_found" -eq 0 ]]; then
 fi
 echo
 
-echo "4. Resumen"
+echo "5. Resumen"
 printf "  OK: %s | Fallos: %s | Advertencias: %s\n" "$PASSED" "$FAILED" "$WARNINGS"
 if [[ "$FAILED" -gt 0 ]]; then
   echo "Resultado: verificación fallida."

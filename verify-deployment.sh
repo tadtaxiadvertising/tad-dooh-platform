@@ -15,6 +15,7 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ENV_ROOT="${ENV_ROOT:-$ROOT_DIR/apps}"
 API_URL="${API_URL:-https://tad.api.ibusiness.com.do}"
 DRIVER_URL="${DRIVER_URL:-https://tad.driver.ibusiness.com.do}"
+DRIVE_URL="${DRIVE_URL:-https://tad.drive.ibusiness.com.do}" # Optional alias for the driver portal
 PLAYER_URL="${PLAYER_URL:-https://tad.player.ibusiness.com.do}"
 ADMIN_URL="${ADMIN_URL:-https://tad.adm.ibusiness.com.do}"
 
@@ -46,8 +47,8 @@ check_https() {
   local url="$2"
   local code
   code="$(curl --silent --show-error --location --max-time 10 --output /dev/null --write-out '%{http_code}' "$url" 2>/dev/null)" || code="000"
-  if [[ "$code" =~ ^[2-4][0-9][0-9]$ ]]; then
-    pass "$name responde por HTTPS (HTTP $code)"
+  if [[ "$code" =~ ^2[0-9][0-9]$ ]]; then
+    pass "$name responde correctamente por HTTPS (HTTP $code)"
   else
     fail "$name no responde correctamente por HTTPS" "URL: $url; HTTP: $code"
   fi
@@ -61,15 +62,17 @@ echo
 echo "1. DNS"
 check_domain "API" "$API_URL"
 check_domain "Admin" "$ADMIN_URL"
-check_domain "Driver" "$DRIVER_URL"
+check_domain "Driver (canónico)" "$DRIVER_URL"
+check_domain "Drive (alias)" "$DRIVE_URL"
 check_domain "Player" "$PLAYER_URL"
 echo
 
 echo "2. HTTPS / respuesta HTTP"
 if command -v curl >/dev/null 2>&1; then
-  check_https "API health" "${API_URL%/}/api/health"
+  check_https "API health" "${API_URL%/}/health"
   check_https "Admin" "$ADMIN_URL"
-  check_https "Driver" "$DRIVER_URL"
+  check_https "Driver (canónico)" "$DRIVER_URL"
+  check_https "Drive (alias)" "$DRIVE_URL"
   check_https "Player health" "${PLAYER_URL%/}/health"
 else
   warn "curl no está instalado; se omiten las comprobaciones HTTPS."

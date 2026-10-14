@@ -1,5 +1,5 @@
 name: Refresh pnpm lockfile for Next.js security patch
-# Temporary workflow used only to regenerate the lockfile on the isolated fix branch. Link local workspace packages explicitly.
+# Temporary workflow used only to regenerate the lockfile on the isolated fix branch. Link local workspace packages via .npmrc.
 # Temporary workflow used only to generate the lockfile on this isolated branch.
 
 on:
@@ -11,6 +11,7 @@ on:
       - "apps/driver/package.json"
       - "apps/advertiser/package.json"
       - "pnpm-workspace.yaml"
+      - ".npmrc"
       - ".github/workflows/refresh-pnpm-security-lock.yml"
 
 permissions:

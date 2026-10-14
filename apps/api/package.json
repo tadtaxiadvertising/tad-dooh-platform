@@ -26,7 +26,6 @@
     "clean": "ts-node scripts/clean-db.ts",
     "cleanup:logs": "ts-node scripts/cleanup-old-logs.ts",
     "seed:devices": "ts-node scripts/seed-fleet.ts",
-    "test:remotion": "ts-node scripts/test-video-render.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -46,8 +45,6 @@
     "@nestjs/swagger": "^7.1.17",
     "@nestjs/throttler": "^5.1.1",
     "@prisma/client": "^5.22.0",
-    "@remotion/bundler": "^4.0.446",
-    "@remotion/renderer": "^4.0.446",
     "@sentry/nestjs": "^10.46.0",
     "@sentry/node": "^10.46.0",
     "@sentry/profiling-node": "^10.46.0",
@@ -71,16 +68,15 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "pdfmake": "^0.3.7",
-      "pg": "^8.20.0",
-      "prisma": "^5.22.0",
-      "qrcode": "^1.5.4",
-      "reflect-metadata": "^0.1.14",
-      "remotion": "^4.0.446",
-      "rxjs": "^7.8.1",
-      "uuid": "^9.0.1",
-      "winston": "^3.19.0",
-      "zod": "^3.25.30",
-      "date-fns": "^4.1.0"
+    "pg": "^8.20.0",
+    "prisma": "^5.22.0",
+    "qrcode": "^1.5.4",
+    "reflect-metadata": "^0.1.14",
+    "rxjs": "^7.8.1",
+    "uuid": "^9.0.1",
+    "winston": "^3.19.0",
+    "zod": "^3.25.30",
+    "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",

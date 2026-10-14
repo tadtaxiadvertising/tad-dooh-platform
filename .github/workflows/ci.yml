@@ -221,12 +221,6 @@ jobs:
             docker build -f Dockerfile.player -t tad-player:test .
           fi
 
-      - name: Build Remotion
-        run: |
-          if [ -f Dockerfile.remotion ]; then
-            docker build -f Dockerfile.remotion -t tad-remotion:test .
-          fi
-
   # ── SUMMARY ──────────────────────────────────────────────────────────────────
   summary:
     name: Summary

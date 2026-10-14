@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: next-security-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   refresh-lockfile:
     runs-on: ubuntu-24.04
@@ -59,4 +63,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
           git commit -m "chore: refresh lockfile for Next.js security patch [skip ci]"
+          git fetch origin fix/nextjs-security-15-5-24
+          git rebase origin/fix/nextjs-security-15-5-24
           git push origin HEAD:fix/nextjs-security-15-5-24

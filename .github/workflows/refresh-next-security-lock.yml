@@ -1,4 +1,5 @@
 name: Refresh lockfile for Next.js security patch
+# Runs only on the isolated security-fix branch; no production secrets are used.
 
 on:
   push:

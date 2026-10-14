@@ -70,6 +70,7 @@ async function bootstrap() {
       "https://tad.adm.ibusiness.com.do",
       "https://tad.anunciante.ibusiness.com.do",
       "https://tad.driver.ibusiness.com.do",
+      "https://tad.player.ibusiness.com.do",
       // Legacy EasyPanel domains (kept for backward compatibility during transition)
       "https://tad-admin.rewvid.easypanel.host",
       "https://tad-driver.rewvid.easypanel.host",

@@ -70,6 +70,8 @@ async function bootstrap() {
       "https://tad.adm.ibusiness.com.do",
       "https://tad.anunciante.ibusiness.com.do",
       "https://tad.driver.ibusiness.com.do",
+      // Optional alias for the driver portal; DNS and EasyPanel domain mapping must also exist.
+      "https://tad.drive.ibusiness.com.do",
       "https://tad.player.ibusiness.com.do",
       // Legacy EasyPanel domains (kept for backward compatibility during transition)
       "https://tad-admin.rewvid.easypanel.host",

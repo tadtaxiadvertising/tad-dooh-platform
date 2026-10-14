@@ -1,4 +1,5 @@
 name: Refresh pnpm lockfile for Next.js security patch
+# Temporary workflow used only to regenerate the lockfile on the isolated fix branch.
 # Temporary workflow used only to generate the lockfile on this isolated branch.
 
 on:
@@ -9,6 +10,7 @@ on:
       - "apps/admin/package.json"
       - "apps/driver/package.json"
       - "apps/advertiser/package.json"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/refresh-pnpm-security-lock.yml"
 
 permissions:

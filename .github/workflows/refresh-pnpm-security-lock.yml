@@ -1,0 +1,49 @@
+name: Refresh pnpm lockfile for Next.js security patch
+
+on:
+  push:
+    branches:
+      - fix/nextjs-security-15-5-24
+    paths:
+      - "apps/admin/package.json"
+      - "apps/driver/package.json"
+      - "apps/advertiser/package.json"
+      - ".github/workflows/refresh-pnpm-security-lock.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: next-security-pnpm-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: fix/nextjs-security-15-5-24
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Regenerate pnpm lockfile without lifecycle scripts
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+      - name: Commit updated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "pnpm-lock.yaml already matches the manifests"
+            exit 0
+          fi
+          git commit -m "chore: refresh pnpm lockfile for Next.js patch"
+          git fetch origin fix/nextjs-security-15-5-24
+          git rebase origin/fix/nextjs-security-15-5-24
+          git push origin HEAD:fix/nextjs-security-15-5-24

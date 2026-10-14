@@ -16,9 +16,9 @@ jobs:
   # ── 1. FORMAT & LINT ──────────────────────────────────────────────────────────
   format:
     name: Format & Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -48,9 +48,9 @@ jobs:
   # ── 2. TYPECHECK ─────────────────────────────────────────────────────────────
   typecheck:
     name: TypeScript Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -82,9 +82,9 @@ jobs:
   # ── 3. UNIT & INTEGRATION TESTS ──────────────────────────────────────────────
   test:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -114,9 +114,9 @@ jobs:
   # ── 4. PRISMA SCHEMA VALIDATION ──────────────────────────────────────────────
   prisma:
     name: Prisma Validation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -147,9 +147,9 @@ jobs:
   # ── 5. SECURITY AUDIT ────────────────────────────────────────────────────────
   security:
     name: Security Audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -180,10 +180,10 @@ jobs:
   # ── 6. BUILD ALL IMAGES ──────────────────────────────────────────────────────
   build:
     name: Build Docker Images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [format, typecheck, test, prisma, security]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
@@ -224,7 +224,7 @@ jobs:
   # ── SUMMARY ──────────────────────────────────────────────────────────────────
   summary:
     name: Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [format, typecheck, test, prisma, security, build]
     if: always()
     steps:

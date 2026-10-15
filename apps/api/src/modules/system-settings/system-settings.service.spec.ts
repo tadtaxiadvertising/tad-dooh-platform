@@ -1,4 +1,3 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { Logger } from "@nestjs/common";
 import { SystemSettingsService } from "./system-settings.service";
 
@@ -12,7 +11,9 @@ describe("SystemSettingsService", () => {
     const prisma = {
       isDatabaseAvailable: true,
       systemSetting: {
-        upsert: jest.fn().mockImplementation(() => { throw databaseError; }),
+        upsert: jest.fn().mockImplementation(() => {
+          throw databaseError;
+        }),
       },
     };
     const loggerError = jest

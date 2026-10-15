@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConversationService } from '../conversation.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
+import { ConversationService } from "../conversation.service";
+import { PrismaService } from "../../prisma/prisma.service";
 
-describe('ConversationService', () => {
+describe("ConversationService", () => {
   let service: ConversationService;
-  let prisma: PrismaService;
 
   const mockPrisma = {
     conversation: {
@@ -30,65 +30,70 @@ describe('ConversationService', () => {
     }).compile();
 
     service = module.get<ConversationService>(ConversationService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
-  describe('findOrCreateConversation', () => {
-    it('should return existing conversation when threadId exists', async () => {
+  describe("findOrCreateConversation", () => {
+    it("should return existing conversation when threadId exists", async () => {
       const existing = {
-        id: 'conv-1',
-        threadId: 'thread-123',
-        status: 'OPEN',
+        id: "conv-1",
+        threadId: "thread-123",
+        contactPhone: "+18095551234",
+        status: "OPEN",
       };
       mockPrisma.conversation.findUnique.mockResolvedValue(existing);
 
       const result = await service.findOrCreateConversation({
-        platform: 'WHATSAPP',
-        threadId: 'thread-123',
-        contactId: 'contact-1',
+        platform: "WHATSAPP",
+        threadId: "thread-123",
+        contactPhone: "+18095551234",
       });
 
-      expect(result).toEqual(existing);
+      expect(result.conversation).toEqual(existing);
+      expect(result.created).toBe(false);
       expect(mockPrisma.conversation.create).not.toHaveBeenCalled();
     });
 
-    it('should create new conversation when threadId does not exist', async () => {
+    it("should create new conversation when threadId does not exist", async () => {
       mockPrisma.conversation.findUnique.mockResolvedValue(null);
       mockPrisma.conversation.create.mockResolvedValue({
-        id: 'conv-new',
-        threadId: 'thread-123',
-        status: 'OPEN',
+        id: "conv-new",
+        threadId: "thread-123",
+        status: "OPEN",
       });
 
       const result = await service.findOrCreateConversation({
-        platform: 'WHATSAPP',
-        threadId: 'thread-123',
-        contactId: 'contact-1',
+        platform: "WHATSAPP",
+        threadId: "thread-123",
       });
 
-      expect(result.threadId).toBe('thread-123');
+      expect(result.conversation.threadId).toBe("thread-123");
+      expect(result.created).toBe(true);
       expect(mockPrisma.conversation.create).toHaveBeenCalled();
     });
   });
 
-  describe('addMessage', () => {
-    it('should add message to conversation', async () => {
+  describe("addMessage", () => {
+    it("should add message to conversation", async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: "conv-1",
+        status: "OPEN",
+      });
       mockPrisma.conversationMessage.create.mockResolvedValue({
-        id: 'msg-1',
-        conversationId: 'conv-1',
-        direction: 'INBOUND',
-        content: 'Hello',
-        messageType: 'TEXT',
+        id: "msg-1",
+        conversationId: "conv-1",
+        direction: "INBOUND",
+        content: "Hello",
+        messageType: "TEXT",
       });
 
       const result = await service.addMessage({
-        conversationId: 'conv-1',
-        direction: 'INBOUND',
-        content: 'Hello',
+        conversationId: "conv-1",
+        direction: "INBOUND",
+        content: "Hello",
       });
 
-      expect(result.content).toBe('Hello');
+      expect(result.content).toBe("Hello");
       expect(mockPrisma.conversationMessage.create).toHaveBeenCalled();
     });
   });

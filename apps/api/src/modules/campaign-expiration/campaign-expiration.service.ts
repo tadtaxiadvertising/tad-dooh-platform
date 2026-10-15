@@ -23,9 +23,11 @@ export class CampaignExpirationService {
    */
   async queueExpiringCampaigns(daysThreshold: number = 30) {
     const now = new Date();
-    const thresholdDate = new Date(now.getTime() + daysThreshold * 24 * 60 * 60 * 1000);
+    const thresholdDate = new Date(
+      now.getTime() + daysThreshold * 24 * 60 * 60 * 1000,
+    );
 
-    const campaigns = await this.prisma.campaign.findMany({
+    const campaigns = (await this.prisma.campaign.findMany({
       where: {
         endDate: {
           gte: now,
@@ -39,7 +41,7 @@ export class CampaignExpirationService {
         name: true,
         endDate: true,
       },
-    }) as Array<{
+    })) as Array<{
       id: string;
       advertiserId: string;
       name: string;
@@ -151,7 +153,7 @@ export class CampaignExpirationService {
 
     try {
       // 1. Buscar campañas que expiran en el umbral
-      const campaigns = await this.prisma.campaign.findMany({
+      const campaigns = (await this.prisma.campaign.findMany({
         where: {
           endDate: {
             gte: now,
@@ -165,7 +167,7 @@ export class CampaignExpirationService {
           name: true,
           endDate: true,
         },
-      }) as Array<{
+      })) as Array<{
         id: string;
         advertiserId: string;
         name: string;

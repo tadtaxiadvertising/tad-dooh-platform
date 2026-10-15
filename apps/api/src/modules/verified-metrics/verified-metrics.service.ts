@@ -369,11 +369,14 @@ export class VerifiedMetricsService {
     const deviceInfo = new Map<string, any>();
     for (const c of activeCampaigns) {
       for (const dc of c.devices) {
-        allDeviceIds.add(dc.device_id);
-        deviceInfo.set(dc.device_id, {
-          taxiNumber: dc.device?.taxiNumber,
-          driver: dc.device?.driver,
-        });
+        const devId = dc.device_id || (dc as any).deviceId || dc.device?.id;
+        if (devId) {
+          allDeviceIds.add(devId);
+          deviceInfo.set(devId, {
+            taxiNumber: dc.device?.taxiNumber,
+            driver: dc.device?.driver,
+          });
+        }
       }
     }
 

@@ -5,10 +5,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { DeviceModule } from "../device/device.module";
 
 @Module({
-  imports: [
-    PrismaModule,
-    DeviceModule,
-  ],
+  imports: [PrismaModule, DeviceModule],
   controllers: [AssetsController],
   providers: [AssetsService],
 })

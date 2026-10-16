@@ -12,9 +12,8 @@ COPY package*.json ./
 COPY apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
 COPY packages/ ./packages/
 
-# Scope npm's workspace install to the agents service only
-RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/agents-orchestrator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
-    && npm ci --workspace=apps/agents-orchestrator
+# Scope npm's workspace install to the agents service only (lockfile stays in sync)
+RUN npm ci --workspace=apps/agents-orchestrator
 
 # Copy source and build
 COPY . .
@@ -30,9 +29,8 @@ COPY package*.json ./
 COPY apps/agents-orchestrator/package.json ./apps/agents-orchestrator/
 COPY packages/ ./packages/
 
-# Install ONLY production dependencies
-RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/agents-orchestrator']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" \
-    && npm ci --omit=dev --workspace=apps/agents-orchestrator
+# Install ONLY production dependencies (lockfile stays in sync)
+RUN npm ci --omit=dev --workspace=apps/agents-orchestrator
 
 # Phase 3: Runtime Stage (Zero-Waste)
 FROM node:20-alpine AS runner

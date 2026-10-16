@@ -131,6 +131,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Prisma validate schema
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ci_test_db"
         run: |
           if [ -f "$PRISMA_SCHEMA" ]; then
             npx prisma validate -s "$PRISMA_SCHEMA" 2>&1 | tail -10

@@ -538,7 +538,9 @@ export class AuthService {
         if (listError) {
           throw new Error(`Failed to list Auth users: ${listError.message}`);
         }
-        const existing = listedUsers?.users?.find((u: any) => u.email === email);
+        const existing = listedUsers?.users?.find(
+          (u: any) => u.email === email,
+        );
         if (existing) {
           const { error: updateError } =
             await serviceClient.auth.admin.updateUserById(existing.id, {
@@ -546,7 +548,9 @@ export class AuthService {
               app_metadata: appMeta,
             });
           if (updateError) {
-            throw new Error(`Failed to update Auth metadata: ${updateError.message}`);
+            throw new Error(
+              `Failed to update Auth metadata: ${updateError.message}`,
+            );
           }
           this.logger.debug(`✅ Updated existing auth user: ${email}`);
           synced++;
@@ -554,20 +558,27 @@ export class AuthService {
         }
 
         if (!password) {
-          errors.push(`${email}: missing AUTH_BOOTSTRAP_PASSWORD for new Auth user`);
-          this.logger.warn(`⚠️ Cannot create Auth user ${email}: AUTH_BOOTSTRAP_PASSWORD is not configured`);
+          errors.push(
+            `${email}: missing AUTH_BOOTSTRAP_PASSWORD for new Auth user`,
+          );
+          this.logger.warn(
+            `⚠️ Cannot create Auth user ${email}: AUTH_BOOTSTRAP_PASSWORD is not configured`,
+          );
           return;
         }
 
-        const { error: createError } = await serviceClient.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          app_metadata: appMeta,
-        });
+        const { error: createError } =
+          await serviceClient.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            app_metadata: appMeta,
+          });
         if (createError) {
           errors.push(`${email}: ${createError.message}`);
-          this.logger.warn(`⚠️ Failed to create Auth user ${email}: ${createError.message}`);
+          this.logger.warn(
+            `⚠️ Failed to create Auth user ${email}: ${createError.message}`,
+          );
           return;
         }
         this.logger.debug(`✅ Created auth user: ${email}`);

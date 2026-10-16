@@ -1,5 +1,5 @@
-import { describe, beforeEach, afterEach, it, expect, jest } from "@jest/globals";
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { CampaignService } from "../campaign.service";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -14,34 +14,34 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
 
   beforeEach(async () => {
     txMock = {
-      $executeRaw: jest.fn<any>().mockResolvedValue(1),
+      $executeRaw: jest.fn().mockResolvedValue(1),
       deviceCampaign: {
-        count: jest.fn<any>(),
-        create: jest.fn<any>(),
+        count: jest.fn(),
+        create: jest.fn(),
       },
     };
 
     prismaService = {
-      $transaction: jest.fn<any>(async (cb: any) => cb(txMock)),
+      $transaction: jest.fn(async (cb: any) => cb(txMock)),
       device: {
-        findMany: jest.fn<any>(),
+        findMany: jest.fn(),
       },
       campaign: {
-        count: jest.fn<any>(),
-        create: jest.fn<any>(),
+        count: jest.fn(),
+        create: jest.fn(),
       },
     };
 
     const supabaseService = {
-      broadcastEvent: jest.fn<any>().mockResolvedValue(true),
+      broadcastEvent: jest.fn().mockResolvedValue(true),
     };
 
     const notificationsService = {
-      sendDriverNotification: jest.fn<any>().mockResolvedValue(true),
+      sendDriverNotification: jest.fn().mockResolvedValue(true),
     };
 
     const referralService = {
-      awardAdvertiserReferralBonus: jest.fn<any>().mockResolvedValue(true),
+      awardAdvertiserReferralBonus: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({

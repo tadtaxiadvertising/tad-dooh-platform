@@ -28,11 +28,7 @@ export interface AddMessageInput {
 export interface UpdateConversationInput {
   status?: "OPEN" | "HANDOFF" | "CLOSED" | "BLOCKED";
   stage?:
-    | "INITIAL"
-    | "QUALIFYING"
-    | "PAYMENT_PENDING"
-    | "HUMAN_REVIEW"
-    | "COMPLETED";
+    "INITIAL" | "QUALIFYING" | "PAYMENT_PENDING" | "HUMAN_REVIEW" | "COMPLETED";
   consentGiven?: boolean;
   assignedTo?: string;
   metadata?: Record<string, any>;

@@ -46,7 +46,10 @@ export class TelemetryService {
     );
   }
 
-  async checkPlaybackRateLimit(deviceId: string, additionalCount = 1): Promise<boolean> {
+  async checkPlaybackRateLimit(
+    deviceId: string,
+    additionalCount = 1,
+  ): Promise<boolean> {
     const now = await this.getWindowStart();
     const windowStart = new Date(now.getTime());
     // Round down to nearest minute
@@ -64,7 +67,7 @@ export class TelemetryService {
     let currentCount = 0;
     if (existing && Array.isArray(existing) && existing.length > 0) {
       // Extract count from result (first element is count)
-      const firstRow = existing[0] as any;
+      const firstRow = existing[0];
       currentCount = firstRow?.count || 0;
     }
 

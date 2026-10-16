@@ -14,75 +14,75 @@ export class NotificationsService {
   /**
    /** Crear una alerta y disparar transmisión en tiempo real
     */
-   async createAlert(data: {
-     title: string;
-     message: string;
-     type: "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
-     category: "SYSTEM" | "DEVICE" | "CAMPAIGN" | "FINANCE";
-     entityId?: string;
-   }) {
-     this.logger.log(`📢 Nueva Alerta: ${data.title} - ${data.type}`);
+  async createAlert(data: {
+    title: string;
+    message: string;
+    type: "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
+    category: "SYSTEM" | "DEVICE" | "CAMPAIGN" | "FINANCE";
+    entityId?: string;
+  }) {
+    this.logger.log(`📢 Nueva Alerta: ${data.title} - ${data.type}`);
 
-     const notification = await this.prisma.notification.create({
-       data: {
-         title: data.title,
-         message: data.message,
-         type: data.type,
-         category: data.category,
-         entityId: data.entityId,
-       },
-     });
+    const notification = await this.prisma.notification.create({
+      data: {
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        category: data.category,
+        entityId: data.entityId,
+      },
+    });
 
-     // Real-time broadcast vía Supabase
-     try {
-       await this.supabaseService.broadcastEvent(
-         "system_alerts",
-         "NEW_ALERT",
-         notification,
-       );
-     } catch (err) {
-       this.logger.error("Error broadcasting alert:", err);
-     }
+    // Real-time broadcast vía Supabase
+    try {
+      await this.supabaseService.broadcastEvent(
+        "system_alerts",
+        "NEW_ALERT",
+        notification,
+      );
+    } catch (err) {
+      this.logger.error("Error broadcasting alert:", err);
+    }
 
-     return notification;
-   }
+    return notification;
+  }
 
-   /** Crear una alerta con deduplicación: verifica si ya existe una notificación
-    * similar (mismo type+category+entityId) en las últimas N horas antes de crear.
-    */
-   async createAlertWithDedup(data: {
-     title: string;
-     message: string;
-     type: "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
-     category: "SYSTEM" | "DEVICE" | "CAMPAIGN" | "FINANCE";
-     entityId?: string;
-     dedupHours?: number;
-   }) {
-     const dedupHours = data.dedupHours ?? 24;
+  /** Crear una alerta con deduplicación: verifica si ya existe una notificación
+   * similar (mismo type+category+entityId) en las últimas N horas antes de crear.
+   */
+  async createAlertWithDedup(data: {
+    title: string;
+    message: string;
+    type: "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
+    category: "SYSTEM" | "DEVICE" | "CAMPAIGN" | "FINANCE";
+    entityId?: string;
+    dedupHours?: number;
+  }) {
+    const dedupHours = data.dedupHours ?? 24;
 
-     // Deduplicación solo aplicable si hay entityId
-     if (data.entityId) {
-       const existing = await this.prisma.notification.findFirst({
-         where: {
-           entityId: data.entityId,
-           type: data.type,
-           category: data.category,
-           createdAt: {
-             gte: new Date(Date.now() - dedupHours * 60 * 60 * 1000),
-           },
-         },
-       });
+    // Deduplicación solo aplicable si hay entityId
+    if (data.entityId) {
+      const existing = await this.prisma.notification.findFirst({
+        where: {
+          entityId: data.entityId,
+          type: data.type,
+          category: data.category,
+          createdAt: {
+            gte: new Date(Date.now() - dedupHours * 60 * 60 * 1000),
+          },
+        },
+      });
 
-       if (existing) {
-         this.logger.log(`🔄 Notificación duplicada filtrada: ${data.title}`);
-         return existing;
-       }
-     }
+      if (existing) {
+        this.logger.log(`🔄 Notificación duplicada filtrada: ${data.title}`);
+        return existing;
+      }
+    }
 
-     return this.createAlert(data);
-   }
+    return this.createAlert(data);
+  }
 
-   async findAll() {
+  async findAll() {
     return this.prisma.notification.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,

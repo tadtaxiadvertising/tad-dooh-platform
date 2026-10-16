@@ -1,14 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { QrScanService } from '../qr-scan.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
+import { QrScanService } from "../qr-scan.service";
+import { PrismaService } from "../../prisma/prisma.service";
 
-describe('QrScanService', () => {
+describe("QrScanService", () => {
   let service: QrScanService;
-  let prisma: PrismaService;
 
   const mockPrisma = {
     qrScan: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
@@ -26,62 +27,67 @@ describe('QrScanService', () => {
     }).compile();
 
     service = module.get<QrScanService>(QrScanService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
-  describe('recordScan', () => {
-    it('should create new scan when no duplicate in 24h', async () => {
+  describe("recordScan", () => {
+    it("should create new scan when no duplicate in 24h", async () => {
       mockPrisma.qrScan.findFirst.mockResolvedValue(null);
       mockPrisma.qrScan.create.mockResolvedValue({
-        id: 'scan-1',
-        qrCode: 'QR-TEST-123',
-        referrerCode: 'REF-DRIVER-1',
+        id: "scan-1",
+        qrCode: "QR-TEST-123",
+        referrerCode: "REF-DRIVER-1",
         converted: false,
       });
 
       const result = await service.recordScan({
-        qrCode: 'QR-TEST-123',
-        referrerCode: 'REF-DRIVER-1',
-        ipAddress: '192.168.1.1',
+        qrCode: "QR-TEST-123",
+        referrerCode: "REF-DRIVER-1",
+        ipAddress: "192.168.1.1",
       });
 
       expect(result).toBeDefined();
-      expect(result.qrCode).toBe('QR-TEST-123');
+      expect(result.scan.qrCode).toBe("QR-TEST-123");
+      expect(result.isDuplicate).toBe(false);
       expect(mockPrisma.qrScan.create).toHaveBeenCalled();
     });
 
-    it('should return existing scan when duplicate in 24h', async () => {
+    it("should return existing scan when duplicate in 24h", async () => {
       const existing = {
-        id: 'scan-1',
-        qrCode: 'QR-TEST-123',
-        referrerCode: 'REF-DRIVER-1',
+        id: "scan-1",
+        qrCode: "QR-TEST-123",
+        referrerCode: "REF-DRIVER-1",
         converted: false,
       };
       mockPrisma.qrScan.findFirst.mockResolvedValue(existing);
 
       const result = await service.recordScan({
-        qrCode: 'QR-TEST-123',
-        referrerCode: 'REF-DRIVER-1',
-        ipAddress: '192.168.1.1',
+        qrCode: "QR-TEST-123",
+        referrerCode: "REF-DRIVER-1",
+        ipAddress: "192.168.1.1",
       });
 
-      expect(result).toEqual(existing);
+      expect(result.scan).toEqual(existing);
+      expect(result.isDuplicate).toBe(true);
       expect(mockPrisma.qrScan.create).not.toHaveBeenCalled();
     });
   });
 
-  describe('markConverted', () => {
-    it('should mark scan as converted and link to lead', async () => {
+  describe("markConverted", () => {
+    it("should mark scan as converted and link to lead", async () => {
+      mockPrisma.qrScan.findUnique.mockResolvedValue({
+        id: "scan-1",
+        converted: false,
+      });
       mockPrisma.qrScan.update.mockResolvedValue({
-        id: 'scan-1',
+        id: "scan-1",
         converted: true,
-        leadId: 'lead-1',
+        leadId: "lead-1",
       });
 
-      const result = await service.markConverted('scan-1', 'lead-1');
+      const result = await service.markConverted("scan-1", "lead-1");
       expect(result.converted).toBe(true);
-      expect(result.leadId).toBe('lead-1');
+      expect(result.leadId).toBe("lead-1");
     });
   });
 });

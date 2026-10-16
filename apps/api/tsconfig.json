@@ -19,7 +19,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "rootDir": "src",
-    "types": ["node"],
+    "types": ["node", "jest"],
     "baseUrl": ".",
     "paths": {
       "@tad/impact-calculator": ["../../packages/impact-calculator/dist/index"],
@@ -29,7 +29,7 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"],
+  "exclude": ["node_modules", "dist", "test"],
   "references": [
     { "path": "../../packages/impact-calculator" }
   ]

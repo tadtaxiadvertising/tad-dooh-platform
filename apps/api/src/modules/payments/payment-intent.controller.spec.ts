@@ -1,6 +1,6 @@
 import { ConfigModule } from "@nestjs/config";
-import { Test, TestingModule } from "@nestjs/testing";
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { PrismaModule } from "../prisma/prisma.module";
 import { PrismaService } from "../prisma/prisma.service";
 import { PaymentIntentController } from "./payment-intent.controller";

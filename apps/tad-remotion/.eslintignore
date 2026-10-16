@@ -1,0 +1,18 @@
+# ESLint ignore patterns for tad-remotion
+# ---------------------------------------------------------------------------
+# Remotion engine is a Node.js service, not a Next.js app.
+# Excluimos:
+#  - dist/               : build output
+#  - node_modules/       : dependencies
+#  - out/                : build output
+#  - build/              : build output
+#  - src/templates/      : Remotion compositions (JSX templates requiring custom parser)
+#  - src/skill/          : AI pipeline code (tsx, not lintable by ESLint)
+
+dist/
+node_modules/
+out/
+build/
+src/templates/
+src/skill/
+src/index.ts

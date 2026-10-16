@@ -5,6 +5,10 @@
   "author": "TAD Dominicana",
   "license": "PROPRIETARY",
   "private": true,
+  "engines": {
+    "node": ">=20.x",
+    "pnpm": ">=9.x"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

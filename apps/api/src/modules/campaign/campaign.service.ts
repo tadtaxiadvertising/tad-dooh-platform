@@ -243,37 +243,37 @@ export class CampaignService {
 
       return await tx.campaign.create({
         data: {
-        name: dto.name,
-        advertiser: assignedAdvertiser,
-        advertiserId: assignedAdvertiserId,
-        startDate: new Date(dto.start_date),
-        endDate: new Date(dto.end_date),
-        active: initialStatus === "ACTIVE",
-        status: initialStatus,
-        targetImpressions: dto.target_impressions || 0,
-        budget: dto.budget || 0,
-        targetAll: dto.target_all !== undefined ? dto.target_all : false,
-        targetCity: dto.target_city || "Global",
-        targetCities:
-          dto.target_cities && dto.target_cities.length > 0
-            ? dto.target_cities
-            : [],
-        targetFleets:
-          dto.target_fleets && dto.target_fleets.length > 0
-            ? dto.target_fleets
-            : [],
-        category: dto.category || "General",
-        whatsapp: dto.whatsapp,
-        instagram: dto.instagram,
-        facebook: dto.facebook,
-        websiteUrl: dto.websiteUrl,
-        pedidosYaUrl: dto.pedidosYaUrl,
-        uberEatsUrl: dto.uberEatsUrl,
-      } as any,
+          name: dto.name,
+          advertiser: assignedAdvertiser,
+          advertiserId: assignedAdvertiserId,
+          startDate: new Date(dto.start_date),
+          endDate: new Date(dto.end_date),
+          active: initialStatus === "ACTIVE",
+          status: initialStatus,
+          targetImpressions: dto.target_impressions || 0,
+          budget: dto.budget || 0,
+          targetAll: dto.target_all !== undefined ? dto.target_all : false,
+          targetCity: dto.target_city || "Global",
+          targetCities:
+            dto.target_cities && dto.target_cities.length > 0
+              ? dto.target_cities
+              : [],
+          targetFleets:
+            dto.target_fleets && dto.target_fleets.length > 0
+              ? dto.target_fleets
+              : [],
+          category: dto.category || "General",
+          whatsapp: dto.whatsapp,
+          instagram: dto.instagram,
+          facebook: dto.facebook,
+          websiteUrl: dto.websiteUrl,
+          pedidosYaUrl: dto.pedidosYaUrl,
+          uberEatsUrl: dto.uberEatsUrl,
+        } as any,
+      });
     });
-  });
 
-  // TAD-ADMIN: Distribución Inteligente de Inventario
+    // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];
 

@@ -181,7 +181,8 @@ export class BiScheduler {
       "📅 CRON: Verificando campañas que expiran en próximos 7 días...",
     );
     try {
-      const result = await this.campaignExpiration.checkAndNotifyExpiringCampaigns(7);
+      const result =
+        await this.campaignExpiration.checkAndNotifyExpiringCampaigns(7);
       this.logger.log(
         `✅ Caducidad de campañas completada: ${result.campaignsChecked} verificadas, ${result.notificationsSent} notificaciones enviadas`,
       );
@@ -236,4 +237,3 @@ export class BiScheduler {
     }
   }
 }
-

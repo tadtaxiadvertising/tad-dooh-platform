@@ -132,8 +132,8 @@ describe('VerifiedMetricsService', () => {
       mockPrisma.campaign.findMany.mockResolvedValue([
         {
           devices: [
-            { deviceId: 'device-1', device: { id: 'device-1', taxiNumber: 'T-001', driver: { id: 'driver-1', fullName: 'Driver 1' } } },
-            { deviceId: 'device-2', device: { id: 'device-2', taxiNumber: 'T-002', driver: { id: 'driver-2', fullName: 'Driver 2' } } },
+            { device_id: 'device-1', device: { id: 'device-1', taxiNumber: 'T-001', driver: { id: 'driver-1', fullName: 'Driver 1' } } },
+            { device_id: 'device-2', device: { id: 'device-2', taxiNumber: 'T-002', driver: { id: 'driver-2', fullName: 'Driver 2' } } },
           ],
         },
       ]);

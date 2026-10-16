@@ -22,6 +22,13 @@ describe('ConversationService', () => {
   };
 
   beforeEach(async () => {
+    mockPrisma.conversation.findUnique.mockResolvedValue({
+      id: 'conv-1',
+      threadId: 'thread-123',
+      status: 'OPEN',
+      messages: [],
+    });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConversationService,
@@ -40,16 +47,18 @@ describe('ConversationService', () => {
         id: 'conv-1',
         threadId: 'thread-123',
         status: 'OPEN',
+        contactPhone: 'contact-1',
       };
       mockPrisma.conversation.findUnique.mockResolvedValue(existing);
 
       const result = await service.findOrCreateConversation({
         platform: 'WHATSAPP',
         threadId: 'thread-123',
-        contactId: 'contact-1',
+        contactPhone: 'contact-1',
       });
 
-      expect(result).toEqual(existing);
+      expect(result).toHaveProperty('conversation');
+      expect(result.conversation).toEqual(existing);
       expect(mockPrisma.conversation.create).not.toHaveBeenCalled();
     });
 
@@ -64,16 +73,23 @@ describe('ConversationService', () => {
       const result = await service.findOrCreateConversation({
         platform: 'WHATSAPP',
         threadId: 'thread-123',
-        contactId: 'contact-1',
+        contactPhone: 'contact-1',
       });
 
-      expect(result.threadId).toBe('thread-123');
+      expect(result.conversation.threadId).toBe('thread-123');
       expect(mockPrisma.conversation.create).toHaveBeenCalled();
     });
   });
 
   describe('addMessage', () => {
     it('should add message to conversation', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        threadId: 'thread-123',
+        status: 'OPEN',
+        messages: [],
+      });
+
       mockPrisma.conversationMessage.create.mockResolvedValue({
         id: 'msg-1',
         conversationId: 'conv-1',

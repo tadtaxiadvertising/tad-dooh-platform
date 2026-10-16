@@ -14,7 +14,8 @@
         "compositions": "remotion compositions src/templates/index.tsx",
         "versions": "remotion versions",
         "web": "node dist/index.js",
-        "web:dev": "ts-node src/index.ts"
+        "web:dev": "ts-node src/index.ts",
+        "lint": "eslint src/"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
@@ -73,6 +74,10 @@
         "@types/node": "^20.11.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "@typescript-eslint/eslint-plugin": "^8.71.2",
+        "@typescript-eslint/parser": "^8.71.2",
+        "eslint": "^9.0.0",
+        "eslint-config-next": "15.2.6",
         "ts-node": "^10.9.2",
         "typescript": "^5.3.3"
     }

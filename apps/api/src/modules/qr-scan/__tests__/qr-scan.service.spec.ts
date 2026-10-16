@@ -9,6 +9,7 @@ describe('QrScanService', () => {
   const mockPrisma = {
     qrScan: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
@@ -47,7 +48,7 @@ describe('QrScanService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.qrCode).toBe('QR-TEST-123');
+      expect(result.scan.qrCode).toBe('QR-TEST-123');
       expect(mockPrisma.qrScan.create).toHaveBeenCalled();
     });
 
@@ -66,13 +67,19 @@ describe('QrScanService', () => {
         ipAddress: '192.168.1.1',
       });
 
-      expect(result).toEqual(existing);
+      expect(result).toEqual(expect.objectContaining({ scan: existing, isDuplicate: true, converted: false }));
       expect(mockPrisma.qrScan.create).not.toHaveBeenCalled();
     });
   });
 
   describe('markConverted', () => {
     it('should mark scan as converted and link to lead', async () => {
+      mockPrisma.qrScan.findUnique.mockResolvedValue({
+        id: 'scan-1',
+        qrCode: 'QR-TEST-123',
+        referrerCode: 'REF-DRIVER-1',
+        converted: false,
+      });
       mockPrisma.qrScan.update.mockResolvedValue({
         id: 'scan-1',
         converted: true,

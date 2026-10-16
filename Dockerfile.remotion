@@ -1,5 +1,5 @@
 # Single-stage Remotion worker - build from source (only tad-remotion)
-FROM node:20-bookworm-slim
+FROM node:22-alpine
 
 WORKDIR /app
 

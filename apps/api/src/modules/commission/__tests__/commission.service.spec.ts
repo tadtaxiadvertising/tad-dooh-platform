@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommissionService } from '../commission.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CommissionStatus, CommissionSourceType } from '../types';
+import { CommissionStatus, CommissionSourceType } from '../commission.service';
 
 describe('CommissionService', () => {
   let service: CommissionService;
@@ -10,6 +10,7 @@ describe('CommissionService', () => {
   const mockPrisma = {
     commission: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
@@ -53,6 +54,7 @@ describe('CommissionService', () => {
         amount: 500,
         status: CommissionStatus.PENDING,
       });
+      mockPrisma.driver.findUnique.mockResolvedValue({ id: 'driver-1', fullName: 'Driver 1' });
 
       const result = await service.createIdempotent({
         driverId: 'driver-1',
@@ -62,7 +64,7 @@ describe('CommissionService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.reference).toBe('REF-BONUS-123');
+      expect(result.commission.reference).toBe('REF-BONUS-123');
       expect(mockPrisma.commission.create).toHaveBeenCalled();
     });
 
@@ -73,7 +75,7 @@ describe('CommissionService', () => {
         amount: 500,
         status: CommissionStatus.PENDING,
       };
-      mockPrisma.commission.findUnique.mockResolvedValue(existing);
+      mockPrisma.commission.findFirst.mockResolvedValue(existing as any);
 
       const result = await service.createIdempotent({
         driverId: 'driver-1',
@@ -82,7 +84,7 @@ describe('CommissionService', () => {
         reference: 'REF-BONUS-123',
       });
 
-      expect(result).toEqual(existing);
+      expect(result.commission).toEqual(existing);
       expect(mockPrisma.commission.create).not.toHaveBeenCalled();
     });
   });
@@ -95,7 +97,7 @@ describe('CommissionService', () => {
         status: 'APPROVED',
       });
 
-      const result = await service.generateMonthlySettlement('2026-09');
+      const result = await service.generateMonthlySettlement({ month: 9, year: 2026, generatedBy: 'admin-user' });
       expect(result.status).toBe('APPROVED');
     });
 
@@ -110,7 +112,7 @@ describe('CommissionService', () => {
         netTotal: 0,
       });
 
-      const result = await service.generateMonthlySettlement('2026-09');
+      const result = await service.generateMonthlySettlement({ month: 9, year: 2026, generatedBy: 'admin-user' });
       expect(result.grossTotal).toBe(0);
     });
   });

@@ -1,5 +1,5 @@
-const fs = require('fs');
-const sharp = require('sharp');
+import fs from 'fs';
+import sharp from 'sharp';
 sharp('public/tad-logo-dark-mode.svg')
   .resize(1200)
   .png()

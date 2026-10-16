@@ -1,7 +1,11 @@
 {
-  "name": "@tad/logging",
-  "version": "0.1.0",
-  "main": "./index.ts",
-  "types": "./index.ts",
-  "private": true
+    "name": "@tad/logging",
+    "version": "0.1.0",
+    "main": "./index.ts",
+    "types": "./index.ts",
+    "private": true,
+    "devDependencies": {
+        "eslint": "^9.0.0",
+        "eslint-config-next": "15.2.6"
+    }
 }

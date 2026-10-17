@@ -11,6 +11,7 @@ import {
   Req,
   UseInterceptors,
   InternalServerErrorException,
+  Logger,
 } from "@nestjs/common";
 import { FinanceService } from "./finance.service";
 import { InvoiceService } from "./invoice.service";
@@ -48,6 +49,8 @@ const mediaSafeSelect = {
 @Controller("finance")
 @Roles(UserRole.ADMIN)
 export class FinanceController {
+  private readonly logger = new Logger(FinanceController.name);
+
   constructor(
     private readonly financeService: FinanceService,
     private readonly invoiceService: InvoiceService,
@@ -584,8 +587,12 @@ export class FinanceController {
         await this.advertiserBillingService.billSubscriptionNow(subscriptionId);
       return result;
     } catch (err) {
+      this.logger.error(
+        `Error al facturar suscripción ${subscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+      );
       throw new InternalServerErrorException(
-        `Error al facturar suscripción ${subscriptionId}: ${err.message}`,
+        "Error al facturar la suscripción.",
       );
     }
   }
@@ -613,8 +620,12 @@ export class FinanceController {
     try {
       return await this.advertiserBillingService.generateProformaInvoice(body);
     } catch (err) {
+      this.logger.error(
+        `Error al generar proforma: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+      );
       throw new InternalServerErrorException(
-        `Error al generar proforma: ${err.message}`,
+        "Error al generar la proforma.",
       );
     }
   }
@@ -631,8 +642,12 @@ export class FinanceController {
         invoiceId,
       );
     } catch (err) {
+      this.logger.error(
+        `Error al confirmar proforma ${invoiceId}: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+      );
       throw new InternalServerErrorException(
-        `Error al confirmar proforma ${invoiceId}: ${err.message}`,
+        "Error al confirmar la proforma.",
       );
     }
   }

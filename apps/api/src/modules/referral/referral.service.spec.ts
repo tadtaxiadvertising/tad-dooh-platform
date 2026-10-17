@@ -45,7 +45,11 @@ describe("ReferralService", () => {
   describe("awardDriverReferralBonus", () => {
     it("should reject self-referral", async () => {
       const driverId = "driver-123";
-      await service.awardDriverReferralBonus(driverId, driverId, "ONBOARDING_COMPLETE");
+      await service.awardDriverReferralBonus(
+        driverId,
+        driverId,
+        "ONBOARDING_COMPLETE",
+      );
 
       expect(prisma.$transaction).not.toHaveBeenCalled();
       expect(prisma.commission.create).not.toHaveBeenCalled();
@@ -58,7 +62,11 @@ describe("ReferralService", () => {
 
       prisma.commission.findFirst.mockResolvedValue(null);
 
-      await service.awardDriverReferralBonus(driverId, referredDriverId, milestone);
+      await service.awardDriverReferralBonus(
+        driverId,
+        referredDriverId,
+        milestone,
+      );
 
       expect(prisma.commission.findFirst).toHaveBeenCalledWith({
         where: {
@@ -90,7 +98,11 @@ describe("ReferralService", () => {
 
       prisma.commission.findFirst.mockResolvedValue({ id: "comm-1" });
 
-      await service.awardDriverReferralBonus(driverId, referredDriverId, milestone);
+      await service.awardDriverReferralBonus(
+        driverId,
+        referredDriverId,
+        milestone,
+      );
 
       expect(prisma.commission.create).not.toHaveBeenCalled();
       expect(prisma.financialTransaction.upsert).not.toHaveBeenCalled();
@@ -106,7 +118,11 @@ describe("ReferralService", () => {
 
       prisma.commission.findFirst.mockResolvedValue({ id: "comm-2" });
 
-      await service.awardAdvertiserReferralBonus(driverId, advertiserId, campaignId);
+      await service.awardAdvertiserReferralBonus(
+        driverId,
+        advertiserId,
+        campaignId,
+      );
 
       expect(prisma.commission.create).not.toHaveBeenCalled();
       expect(prisma.financialTransaction.upsert).not.toHaveBeenCalled();

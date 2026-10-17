@@ -27,7 +27,7 @@
     "build:backend": "npm run build --workspace api",
     "build:all": "npm run build --workspaces",
     "start": "npm run start --workspace api",
-    "lint": "npm run lint --workspaces --if-present",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix --config packages/services/eslint.config.cjs",
     "test": "npm run test --workspaces --if-present"
   },
   "keywords": [
@@ -70,6 +70,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
+    "eslint": "^8.57.1",
     "postcss": "^8.4.31"
   }
 }

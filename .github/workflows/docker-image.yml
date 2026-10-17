@@ -22,5 +22,3 @@ jobs:
       run: docker build . --file Dockerfile.driver --tag tad-driver:test
     - name: Build the canonical Player Dockerfile
       run: docker build . --file Dockerfile.player --tag tad-player:test
-    - name: Build the canonical Remotion Dockerfile
-      run: docker build . --file Dockerfile.remotion --tag tad-remotion:test

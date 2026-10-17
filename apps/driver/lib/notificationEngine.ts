@@ -191,9 +191,9 @@ async function pruneHistory(): Promise<void> {
 
 // ─── Engine (Singleton) ───────────────────────────────────────────────────────
 
-let listeners: Set<NotificationListener> = new Set();
+const listeners: Set<NotificationListener> = new Set();
 let engineItems: NotificationItem[] = [];
-let autoDismissTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+const autoDismissTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 let initialized = false;
 
 function emitState(): void {

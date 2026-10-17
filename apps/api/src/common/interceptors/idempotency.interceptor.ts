@@ -76,12 +76,9 @@ export class IdempotencyInterceptor implements NestInterceptor {
             `Idempotency key ${idempotencyKey} already processed. Returning cached response.`,
           );
           try {
-            const cached = JSON.parse(existing.response);
-            // Reconstruct response headers from stored state if available
-            if (existing.responseHeaders) {
-              const headers = JSON.parse(existing.responseHeaders);
-              return of({ ...cached, headers });
-            }
+            const cached = existing.response
+              ? JSON.parse(existing.response)
+              : {};
             return of(cached);
           } catch {
             return of({ success: true, idempotent: true });
@@ -97,7 +94,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
             request.user?.entityId || request.body?.driverId || "unknown",
           path: request.path,
           response: "{ }",
-          responseHeaders: "{}",
           isLocked: true,
           expiresAt: new Date(Date.now() + 86400000), // 24h TTL
         },
@@ -110,7 +106,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
             where: { key: idempotencyKey },
             data: {
               response: JSON.stringify(response),
-              responseHeaders: JSON.stringify(request.headers),
               isLocked: false,
             },
           });

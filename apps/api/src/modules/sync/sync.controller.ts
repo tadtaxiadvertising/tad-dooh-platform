@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { SyncService } from "./sync.service";
 import { Public } from "../auth/decorators/public.decorator";
-import { Response } from "express";
+import type { Response } from "express";
 
 type CacheEntry = {
   value: string;

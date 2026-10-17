@@ -635,8 +635,8 @@ export class FleetService {
           counts.map((c) => [
             c.driverId,
             {
-              count: (c._count as { id: number }).id,
-              avgSpeed: (c._avg as { speed: number | null })?.speed ?? 0,
+              count: c._count.id,
+              avgSpeed: c._avg?.speed ?? 0,
             },
           ]),
         );

@@ -26,7 +26,7 @@ import {
 import { z } from "zod";
 import { PrismaService } from "../prisma/prisma.service";
 import { PaymentEvidenceService } from "./services/payment-evidence.service";
-import {
+import type {
   IPaymentProvider,
   PaymentProviderFactory,
 } from "./interfaces/payment-provider.interface";

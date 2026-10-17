@@ -345,8 +345,8 @@ export class SyncService {
 
     const schedules = activeCampaigns.map((c) => ({
       campaignId: c.id,
-      scheduleDays: safeJsonArray(c.scheduleDays as unknown as string | null),
-      scheduleHours: safeJsonArray(c.scheduleHours as unknown as string | null),
+      scheduleDays: safeJsonArray(c.scheduleDays),
+      scheduleHours: safeJsonArray(c.scheduleHours),
       frequencyCap: c.frequencyCap || 0,
     }));
 

@@ -460,7 +460,7 @@ export class AdvertisersService {
       const totalAssigned = assignments.length;
       const syncedCount = assignments.filter(
         (a) =>
-          a.device.status === "ACTIVE" &&
+          a.device.status === "OPERATIVO" &&
           a.device.lastSyncSuccess &&
           a.device.lastSyncAt &&
           a.device.lastSyncAt >= c.updatedAt,

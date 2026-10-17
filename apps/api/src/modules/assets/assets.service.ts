@@ -76,7 +76,7 @@ export class AssetsService {
       },
     });
 
-    const manifest = {};
+    const manifest: Record<string, any> = {};
     for (const campaign of activeCampaigns) {
       for (const asset of campaign.mediaAssets) {
         manifest[asset.id] = {

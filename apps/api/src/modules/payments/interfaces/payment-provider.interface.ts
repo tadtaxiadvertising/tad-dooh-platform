@@ -8,10 +8,7 @@
  */
 
 export type PaymentProviderType =
-  | "AZUL"
-  | "STRIPE"
-  | "MANUAL_TRANSFER"
-  | "OTHER";
+  "AZUL" | "STRIPE" | "MANUAL_TRANSFER" | "OTHER";
 
 export interface PaymentProviderConfig {
   provider: PaymentProviderType;

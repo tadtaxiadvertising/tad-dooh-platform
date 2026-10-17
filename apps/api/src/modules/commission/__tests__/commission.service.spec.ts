@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { CommissionService } from '../commission.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CommissionStatus, CommissionSourceType } from '../commission.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { CommissionService } from "../commission.service";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CommissionStatus, CommissionSourceType } from "../commission.service";
 
-describe('CommissionService', () => {
+describe("CommissionService", () => {
   let service: CommissionService;
   let prisma: PrismaService;
 
@@ -45,43 +45,46 @@ describe('CommissionService', () => {
     jest.clearAllMocks();
   });
 
-  describe('createIdempotent', () => {
-    it('should create commission when reference does not exist', async () => {
+  describe("createIdempotent", () => {
+    it("should create commission when reference does not exist", async () => {
       mockPrisma.commission.findUnique.mockResolvedValue(null);
       mockPrisma.commission.create.mockResolvedValue({
-        id: 'commission-1',
-        reference: 'REF-BONUS-123',
+        id: "commission-1",
+        reference: "REF-BONUS-123",
         amount: 500,
         status: CommissionStatus.PENDING,
       });
-      mockPrisma.driver.findUnique.mockResolvedValue({ id: 'driver-1', fullName: 'Driver 1' });
+      mockPrisma.driver.findUnique.mockResolvedValue({
+        id: "driver-1",
+        fullName: "Driver 1",
+      });
 
       const result = await service.createIdempotent({
-        driverId: 'driver-1',
+        driverId: "driver-1",
         amount: 500,
         sourceType: CommissionSourceType.DRIVER_REFERRAL,
-        reference: 'REF-BONUS-123',
+        reference: "REF-BONUS-123",
       });
 
       expect(result).toBeDefined();
-      expect(result.commission.reference).toBe('REF-BONUS-123');
+      expect(result.commission.reference).toBe("REF-BONUS-123");
       expect(mockPrisma.commission.create).toHaveBeenCalled();
     });
 
-    it('should return existing commission when reference exists', async () => {
+    it("should return existing commission when reference exists", async () => {
       const existing = {
-        id: 'commission-1',
-        reference: 'REF-BONUS-123',
+        id: "commission-1",
+        reference: "REF-BONUS-123",
         amount: 500,
         status: CommissionStatus.PENDING,
       };
       mockPrisma.commission.findFirst.mockResolvedValue(existing as any);
 
       const result = await service.createIdempotent({
-        driverId: 'driver-1',
+        driverId: "driver-1",
         amount: 500,
         sourceType: CommissionSourceType.DRIVER_REFERRAL,
-        reference: 'REF-BONUS-123',
+        reference: "REF-BONUS-123",
       });
 
       expect(result.commission).toEqual(existing);
@@ -89,30 +92,38 @@ describe('CommissionService', () => {
     });
   });
 
-  describe('generateMonthlySettlement', () => {
-    it('should return existing batch if already processed', async () => {
+  describe("generateMonthlySettlement", () => {
+    it("should return existing batch if already processed", async () => {
       mockPrisma.settlementBatch.findUnique.mockResolvedValue({
-        id: 'batch-1',
-        period: '2026-09',
-        status: 'APPROVED',
+        id: "batch-1",
+        period: "2026-09",
+        status: "APPROVED",
       });
 
-      const result = await service.generateMonthlySettlement({ month: 9, year: 2026, generatedBy: 'admin-user' });
-      expect(result.status).toBe('APPROVED');
+      const result = await service.generateMonthlySettlement({
+        month: 9,
+        year: 2026,
+        generatedBy: "admin-user",
+      });
+      expect(result.status).toBe("APPROVED");
     });
 
-    it('should create new batch when no commissions pending', async () => {
+    it("should create new batch when no commissions pending", async () => {
       mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
       mockPrisma.commission.findMany.mockResolvedValue([]);
       mockPrisma.settlementBatch.create.mockResolvedValue({
-        id: 'batch-new',
-        period: '2026-09',
-        status: 'APPROVED',
+        id: "batch-new",
+        period: "2026-09",
+        status: "APPROVED",
         grossTotal: 0,
         netTotal: 0,
       });
 
-      const result = await service.generateMonthlySettlement({ month: 9, year: 2026, generatedBy: 'admin-user' });
+      const result = await service.generateMonthlySettlement({
+        month: 9,
+        year: 2026,
+        generatedBy: "admin-user",
+      });
       expect(result.grossTotal).toBe(0);
     });
   });

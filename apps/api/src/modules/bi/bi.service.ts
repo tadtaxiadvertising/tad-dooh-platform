@@ -320,7 +320,7 @@ export class BiService {
       },
       connectivity: {
         status: connectivityStatus,
-        lastHeartbeat: device.lastHeartbeat,
+        lastHeartbeat: device.lastHeartbeat || new Date(0),
         hoursOffline: Math.round(hoursOffline * 10) / 10,
       },
       battery: {

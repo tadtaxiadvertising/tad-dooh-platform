@@ -280,8 +280,10 @@ export class FinanceService {
       const driverId = deviceToDriverMap.get(evt.deviceId);
       const campaignId = mediaToCampaignMap.get(evt.videoId);
       if (driverId && campaignId) {
-        if (!driverPoPMap.has(driverId)) driverPoPMap.set(driverId, new Set());
-        driverPoPMap.get(driverId).add(campaignId);
+        const driverPoP = driverPoPMap.get(driverId);
+        if (driverPoP) {
+          driverPoP.add(campaignId);
+        }
       }
     });
 

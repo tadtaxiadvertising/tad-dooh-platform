@@ -69,7 +69,7 @@ export class MediaService {
       // 0. Auto-create bucket if missing (Ensure we don't proceed if this fails silently)
       const { error: bucketError } = await this.supabase.storage
         .createBucket("ads-videos", { public: true })
-        .catch((err) => ({ error: err }));
+        .catch((err: Error) => ({ error: err }));
       if (
         bucketError &&
         bucketError.message !== "The resource already exists"
@@ -139,7 +139,7 @@ export class MediaService {
         );
       }
       const supabaseUrl = this.config.get("SUPABASE_URL");
-      const cdnPrefix = this.config.get("CDN_URL_PREFIX");
+      const cdnPrefix = String(this.config.get("CDN_URL_PREFIX"));
       const allowedHosts = [supabaseUrl, cdnPrefix]
         .filter((h): h is string => Boolean(h))
         .map((h) => new URL(h).host);
@@ -154,7 +154,7 @@ export class MediaService {
     }
 
     try {
-      const cdnPrefix = this.config.get("CDN_URL_PREFIX");
+      const cdnPrefix = String(this.config.get("CDN_URL_PREFIX"));
       let finalCdnUrl = data.publicUrl;
 
       // Si tenemos un CDN_PREFIX, reemplazamos la base de Supabase por el CDN
@@ -428,13 +428,10 @@ export class MediaService {
       this.config.get("CDN_URL_PREFIX") || this.config.get("SUPABASE_URL");
     const publicUrl = `${basePrefix}/storage/v1/object/public/ads-videos/${path}`;
 
-    const cdnPrefix = this.config.get("CDN_URL_PREFIX");
+    const cdnPrefix = String(this.config.get("CDN_URL_PREFIX"));
     let finalCdnUrl = publicUrl;
-    if (cdnPrefix && publicUrl.includes(this.config.get("SUPABASE_URL"))) {
-      finalCdnUrl = publicUrl.replace(
-        this.config.get("SUPABASE_URL"),
-        cdnPrefix,
-      );
+    if (cdnPrefix && publicUrl.includes(String(this.config.get("SUPABASE_URL") ?? ""))) {
+      finalCdnUrl = publicUrl.split(String(this.config.get("SUPABASE_URL") ?? "")).join(cdnPrefix);
     }
 
     // 8. Crear registro en BD

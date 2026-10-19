@@ -619,7 +619,7 @@ export class DeviceService {
       );
       const locationData = dto.locations.map((l) => ({
         deviceId: dto.device_id,
-        driverId: device.driverId,
+        driverId: device.driverId ?? "",
         latitude: l.lat,
         longitude: l.lng,
         timestamp: new Date(l.timestamp),

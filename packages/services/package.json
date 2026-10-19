@@ -12,7 +12,7 @@
         "build": "echo 'Next.js handles build via transpilePackages'"
     },
     "devDependencies": {
-        "eslint": "^9.0.0",
+        "eslint": "^9.39.5",
         "eslint-config-next": "15.2.6"
     }
 }

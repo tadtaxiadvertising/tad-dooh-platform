@@ -669,7 +669,7 @@ export class CampaignService {
     const asset = await this.prisma.mediaAsset.create({
       data: {
         campaignId,
-        type: dto.type,
+        type: dto.type ?? "",
         filename: dto.filename,
         url: dto.url,
         fileSize: Math.round(Number(dto.fileSize || 0)),
@@ -686,23 +686,23 @@ export class CampaignService {
     });
 
     // Create FORCE_SYNC commands for assigned devices
-    let devicesToSync = [];
+    let devicesToSync: { deviceId: string }[] = [];
     if (campaign.targetAll || campaign.isGlobal) {
       devicesToSync = await this.prisma.device.findMany({
         where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true },
-      });
+      }).then((d) => d.map((dev) => ({ deviceId: dev.id })));
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: campaignId },
       });
-      const devicesToSync = assignments.map((a) => ({ deviceId: a.device_id }));
+      devicesToSync = assignments.map((a) => ({ deviceId: a.device_id }));
     }
 
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
         data: devicesToSync.map((d) => ({
-          deviceId: d.id,
+          deviceId: d.deviceId,
           commandType: "FORCE_SYNC",
           commandParams: JSON.stringify({
             reason: "media_asset_added",
@@ -1097,7 +1097,7 @@ export class CampaignService {
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
         data: devicesToSync.map((d) => ({
-          deviceId: d.id,
+          deviceId: d.deviceId,
           commandType: "FORCE_SYNC",
           commandParams: JSON.stringify({
             reason: "media_linked",

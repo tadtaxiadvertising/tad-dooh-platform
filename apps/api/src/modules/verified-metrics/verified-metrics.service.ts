@@ -139,7 +139,7 @@ export class VerifiedMetricsService {
       const verified = verifiedEvents.filter((e) => e.deviceId === d.id).length;
       return {
         deviceId: d.id,
-        taxiNumber: d.taxiNumber,
+        taxiNumber: d.taxiNumber ?? "",
         driverId: d.driver?.id || "",
         driverName: d.driver?.fullName || "Unknown",
         verifiedPlays: verified,

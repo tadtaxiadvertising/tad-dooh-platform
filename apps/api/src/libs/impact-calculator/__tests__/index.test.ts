@@ -331,12 +331,11 @@ r_expected.sourcesUsed.forEach((s) => {
 
 // === Result ===
 
-console.log(`\n=== Result: ${passed} passed, ${failed} failed ===`);
+console.log("\n=== Result: ${passed} passed, ${failed} failed ===");
 if (failed > 0) {
   console.log("\nFAILURES:");
   failures.forEach((f, i) => console.log(`\n[${i + 1}]\n${f}`));
-  process.exit(1);
+  throw new Error(`${failed} tests failed`);
 }
 
 console.log("\n✅ All tests passed");
-process.exit(0);

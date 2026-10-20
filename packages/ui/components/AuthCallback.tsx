@@ -34,7 +34,7 @@ export function AuthCallback({ config: externalConfig }: AuthCallbackProps) {
     const config = externalConfig || getPortalConfig(window.location.pathname);
     const { hash, search } = window.location;
     const urlParams = new URLSearchParams(search);
-    const nextPath = urlParams.get('next') || config.dashboardPath;
+    const nextPath = safeInternalRedirect(urlParams.get('next'), config.dashboardPath);
     const provider = urlParams.get('provider') || 'pkce';
 
     // Surface upstream errors (invalid/expired link, denied OAuth consent, etc.)
@@ -120,6 +120,24 @@ export function AuthCallback({ config: externalConfig }: AuthCallbackProps) {
 }
 
 /**
+ * Accept only same-origin relative paths for post-authentication redirects.
+ * This prevents an OAuth callback URL from becoming an open redirect.
+ */
+function safeInternalRedirect(candidate: string | null, fallback: string): string {
+  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(candidate, window.location.origin);
+    if (parsed.origin !== window.location.origin) return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Exchange the Supabase session (issued by Google OAuth) with our backend so
  * the user's role gets validated against the local DB and injected into
  * app_metadata. The backend returns a portal-shaped session payload identical
@@ -141,7 +159,7 @@ async function exchangeWithBackend(
 
     const apiBase =
       (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
-      'https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1';
+      'https://tad.api.ibusiness.com.do/api/v1';
 
     const res = await fetch(`${apiBase}/auth/oauth/exchange`, {
       method: 'POST',

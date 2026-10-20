@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "commonjs",
+    "moduleResolution": "bundler",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2021",
-    "jsx": "react",
+    "jsx": "preserve",
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
@@ -19,19 +19,16 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "src",
-    "types": ["node", "jest", "react"],
-    "isolatedModules": true,
+    "types": ["node", "jest"],
+    "allowJs": false,
     "baseUrl": ".",
     "paths": {
       "@tad/impact-calculator": ["../../packages/impact-calculator/dist/index"],
       "@tad/impact-calculator/*": ["../../packages/impact-calculator/dist/*"]
     },
-    "composite": true,
+    "composite": false,
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"],
-  "references": [
-    { "path": "../../packages/impact-calculator" }
-  ]
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

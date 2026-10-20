@@ -2,7 +2,7 @@ import { Controller, Post, Get, Res, Param, Logger } from "@nestjs/common";
 import { SheetsService } from "./sheets.service";
 import { InvoiceService } from "../finance/invoice.service";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
-import { Response } from "express";
+import type { Response } from "express";
 
 @Controller("sheets")
 export class SheetsController {

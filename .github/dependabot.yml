@@ -1,0 +1,82 @@
+# Dependabot Configuration
+# ----------------------------
+# Mantiene automáticamente las dependencias actualizadas.
+# Se ejecuta semanalmente el viernes a las 09:00 UTC.
+# Solo actualiza minor/patch versions. Los cambios se abren en PRs separados.
+# ULTRA-SEGURO: no actualiza versiones mayores sin revisión manual.
+
+version: 2
+updates:
+  # ─── npm (pnpm) ──────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    draft: false
+    reviewers:
+      - "tad-team"
+    assignees:
+      - "tad-team"
+    commit-message:
+      prefix: "chore(deps): "
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automation"
+    # Evita actualizar versiones mayores (breaking changes) automáticamente
+    versioning-strategy: "increase"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Skip major version updates (breaking changes)
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # ─── Docker ──────────────────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    draft: false
+    reviewers:
+      - "tad-team"
+    commit-message:
+      prefix: "chore(deps): "
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automation"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # ─── GitHub Actions ──────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "11:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    draft: false
+    reviewers:
+      - "tad-team"
+    commit-message:
+      prefix: "chore(ci): "
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automation"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

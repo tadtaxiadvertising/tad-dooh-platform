@@ -340,8 +340,8 @@ export class PaymentEvidenceService {
       await this.prisma.referralAttribution.create({
         data: {
           leadId: paymentIntent.leadId,
-          referrerId: lead.referrerId,
-          referrerCode: lead.referrerCode,
+          referrerId: lead.referrerId ?? "",
+          referrerCode: lead.referrerCode ?? "",
           conversionAt: new Date(),
           conversionType: "DRIVER_SUBSCRIPTION",
           commissionCreated: true,
@@ -421,8 +421,8 @@ export class PaymentEvidenceService {
       await this.prisma.referralAttribution.create({
         data: {
           leadId: paymentIntent.leadId,
-          referrerId: lead.referrerId,
-          referrerCode: lead.referrerCode,
+          referrerId: lead.referrerId ?? "",
+          referrerCode: lead.referrerCode ?? "",
           conversionAt: new Date(),
           conversionType: "ADVERTISER_CAMPAIGN",
           commissionCreated: true,

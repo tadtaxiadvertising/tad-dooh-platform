@@ -235,11 +235,11 @@ jobs:
           echo "## 🚀 CI Quality Gates Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           for job in format typecheck test prisma security build; do
-            status=$(echo "${{ needs.$job.result }}" | tr '[:upper:]' '[:lower:]')
-            echo "- **${job}**: ${{ job }} ($status)" >> $GITHUB_STEP_SUMMARY
+            status=$(echo "${{ needs[job] }}" | tr '[:upper:]' '[:lower:]')
+            echo "- **${job}**: ($status)" >> $GITHUB_STEP_SUMMARY
           done
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ contains(needs.*.result, 'failure') }}" == "true" ]; then
+          if [ "${{ contains(fromJSON(toJSON(needs.*.result)), 'failure') }}" == "true" ]; then
             echo "❌ **Some gates failed** — review logs before merging." >> $GITHUB_STEP_SUMMARY
             exit 1
           else

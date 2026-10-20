@@ -1,4 +1,4 @@
-const axios = require('axios');
+const axios = import'axios');
 
 async function test() {
   try {

@@ -12,7 +12,7 @@ import {
   forwardRef,
   ForbiddenException,
 } from "@nestjs/common";
-import { Response } from "express";
+import type { Response } from "express";
 import { AnalyticsService } from "./analytics.service";
 import { WhatsAppService } from "../notifications/whatsapp.service";
 import { InvoiceService } from "../finance/invoice.service";

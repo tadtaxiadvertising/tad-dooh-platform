@@ -19,7 +19,7 @@ import { WhatsAppService } from "../notifications/whatsapp.service";
 import { EmailService } from "../notifications/email.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdvertiserBillingService } from "../advertisers/advertiser-billing.service";
-import { Response } from "express";
+import type { Response } from "express";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";

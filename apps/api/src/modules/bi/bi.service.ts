@@ -320,7 +320,7 @@ export class BiService {
       },
       connectivity: {
         status: connectivityStatus,
-        lastHeartbeat: device.lastHeartbeat,
+        lastHeartbeat: device.lastHeartbeat || new Date(0),
         hoursOffline: Math.round(hoursOffline * 10) / 10,
       },
       battery: {
@@ -328,20 +328,21 @@ export class BiService {
         status: batteryStatus,
         history: lastHeartbeats.map((h) => ({
           ts: h.timestamp,
-          level: h.batteryLevel,
+          // `h.batteryLevel` es `number | null`; normalizar a número para satisfacer el tipo estricto
+          level: h.batteryLevel ?? 0,
         })),
       },
       gps: {
-        lastLat: device.lastLat,
-        lastLng: device.lastLng,
+        lastLat: device.lastLat ?? 0,
+        lastLng: device.lastLng ?? 0,
         lastKnownLocations: lastLocations,
         googleMapsUrl: lastLocations[0]
           ? `https://maps.google.com/?q=${lastLocations[0].latitude},${lastLocations[0].longitude}`
-          : null,
+          : "",
       },
       financials: {
         subscriptionStatus: subscription?.status || "MISSING",
-        subscriptionEnd: subscription?.dueDate,
+        subscriptionEnd: subscription?.dueDate ?? new Date(0),
         daysUntilExpiry: subscription?.dueDate
           ? Math.ceil((subscription.dueDate.getTime() - Date.now()) / 86400000)
           : 0,

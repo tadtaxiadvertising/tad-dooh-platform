@@ -17,7 +17,7 @@ import {
   UseInterceptors,
   Query,
 } from "@nestjs/common";
-import { Request } from "express";
+import type { Request } from "express";
 import { DriversService } from "./drivers.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";

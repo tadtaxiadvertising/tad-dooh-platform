@@ -46,7 +46,7 @@ export class OnboardingService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         // 1. Create Advertiser
-        const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+        const hashedPassword = await bcrypt.hash(password ?? "", BCRYPT_ROUNDS);
         const advertiser = await tx.advertiser.create({
           data: {
             companyName,

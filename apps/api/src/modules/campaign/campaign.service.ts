@@ -166,20 +166,26 @@ export class CampaignService {
 
       try {
         const adv = await this.prisma.advertiser.findUnique({
-          where: { id: campaign.advertiserId },
+          where: { id: campaign.advertiserId || "" },
           select: {
             referredBy: true,
-            _count: { select: { campaigns: { where: { status: "ACTIVE" } } } },
+            _count: {
+              select: {
+                campaigns: {
+                  where: { status: "ACTIVE" },
+                },
+              },
+            },
           },
         });
 
-        if (adv && adv.referredBy && adv._count.campaigns === 1) {
+        if (adv && adv.referredBy && adv._count?.campaigns === 1) {
           const driverId = adv.referredBy;
 
           // Delegar al servicio de referral para bonus idempotente (commission + ledger + wallet)
           await this.referralService.awardAdvertiserReferralBonus(
             driverId,
-            campaign.advertiserId,
+            campaign.advertiserId || "",
             campaign.id,
           );
           this.logger.log(
@@ -663,11 +669,11 @@ export class CampaignService {
     const asset = await this.prisma.mediaAsset.create({
       data: {
         campaignId,
-        type: dto.type,
+        type: dto.type ?? "",
         filename: dto.filename,
         url: dto.url,
         fileSize: Math.round(Number(dto.fileSize || 0)),
-        checksum: dto.checksum || "manual-upload",
+        checksum: dto.checksum ?? "manual-upload",
         duration: Math.round(Number(dto.duration || 30)),
         version: 1,
       },
@@ -680,23 +686,23 @@ export class CampaignService {
     });
 
     // Create FORCE_SYNC commands for assigned devices
-    let devicesToSync = [];
+    let devicesToSync: { deviceId: string }[] = [];
     if (campaign.targetAll || campaign.isGlobal) {
       devicesToSync = await this.prisma.device.findMany({
         where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true },
-      });
+      }).then((d) => d.map((dev) => ({ deviceId: dev.id })));
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: campaignId },
       });
-      devicesToSync = assignments.map((a) => ({ id: a.device_id }));
+      devicesToSync = assignments.map((a) => ({ deviceId: a.device_id }));
     }
 
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
         data: devicesToSync.map((d) => ({
-          deviceId: d.id,
+          deviceId: d.deviceId,
           commandType: "FORCE_SYNC",
           commandParams: JSON.stringify({
             reason: "media_asset_added",
@@ -711,7 +717,7 @@ export class CampaignService {
       // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
       // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
       const allActiveDevices = await this.prisma.device.findMany({
-        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE as any },
         select: { id: true },
       });
       if (allActiveDevices.length > 0) {
@@ -1091,7 +1097,7 @@ export class CampaignService {
     if (devicesToSync.length > 0) {
       await this.prisma.deviceCommand.createMany({
         data: devicesToSync.map((d) => ({
-          deviceId: d.id,
+          deviceId: d.deviceId,
           commandType: "FORCE_SYNC",
           commandParams: JSON.stringify({
             reason: "media_linked",

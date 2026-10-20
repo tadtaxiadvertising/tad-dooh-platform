@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 const content = fs.readFileSync('c:/Users/Arismendy/OneDrive/Escritorio/TAD PLASTFORM/tad-dooh-platform/admin-dashboard/pages/login.tsx', 'utf8');
 let openCount = 0;
 for (let i = 0; i < content.length; i++) {

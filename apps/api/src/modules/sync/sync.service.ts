@@ -103,10 +103,10 @@ export class SyncService {
       const sub = await this.prisma.subscription.findFirst({
         where: { deviceId },
       });
-      hasValidSubscription =
-        sub &&
-        sub.status === "ACTIVE" &&
-        (!sub.validUntil || new Date() <= sub.validUntil);
+      hasValidSubscription = false;
+      if (sub && sub.status === "ACTIVE") {
+        hasValidSubscription = !sub.validUntil || new Date() <= sub.validUntil;
+      }
     }
 
     // ── VULN #1 PATCH (v12.1.2): Kill-Switch Directive ──
@@ -345,8 +345,8 @@ export class SyncService {
 
     const schedules = activeCampaigns.map((c) => ({
       campaignId: c.id,
-      scheduleDays: safeJsonArray(c.scheduleDays as unknown as string | null),
-      scheduleHours: safeJsonArray(c.scheduleHours as unknown as string | null),
+      scheduleDays: safeJsonArray(c.scheduleDays),
+      scheduleHours: safeJsonArray(c.scheduleHours),
       frequencyCap: c.frequencyCap || 0,
     }));
 

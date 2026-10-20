@@ -76,7 +76,7 @@ async function cacheVideoRequest(request: Request): Promise<Response> {
 }
 
 async function trimVideoCache(cache: Cache): Promise<void> {
-  let requests = await cache.keys();
+  const requests = await cache.keys();
   if (requests.length <= MAX_VIDEO_CACHE_ITEMS) return;
 
   // Approximate per-entry size from the stored response's content-length header.
@@ -88,7 +88,8 @@ async function trimVideoCache(cache: Cache): Promise<void> {
       return { request, size };
     })
   );
-  for (const entry of entries) total += entry.size;
+
+for (const entry of entries) total += entry.size;
 
   // FIFO prune: Cache.keys() returns in insertion order (oldest first).
   let remaining = 0;

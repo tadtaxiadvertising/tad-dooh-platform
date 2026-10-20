@@ -12,8 +12,11 @@ COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
-# Scope install to API + shared packages (-w flags; lockfile stays in sync)
-RUN npm ci --workspace=apps/api --workspace=packages/impact-calculator
+# Scope install to API + shared packages (npm install --workspace; lockfile stays in sync)
+# npm install is used instead of npm ci --workspace because the latter fails on
+# nested transitive deps (e.g. google-auth-library under node_modules/@google-cloud/...)
+# and would abort the build before a single dep is installed.
+RUN npm install --workspace=apps/api --workspace=packages/impact-calculator --no-audit --no-fund
 
 # 2. Copy all source files
 COPY . .

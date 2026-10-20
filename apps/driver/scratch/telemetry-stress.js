@@ -1,4 +1,4 @@
-const http = require('http');
+import http from 'http';
 
 const API_URL = process.env.API_URL || 'http://localhost:3000/api/v1';
 const DRIVERS_TO_SIMULATE = 5;

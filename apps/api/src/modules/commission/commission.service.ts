@@ -403,7 +403,7 @@ export class CommissionService {
             netAmount: 0,
           });
         }
-        const ref = byReferent.get(key);
+        const ref = byReferent.get(key)!;
         ref.commissions.push({
           id: c.id,
           amount: c.amount,

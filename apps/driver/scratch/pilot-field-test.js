@@ -1,4 +1,4 @@
-const http = require('http');
+import http from 'http';
 
 /**
  * TAD DOOH PLATFORM - PILOT FIELD TEST SIMULATOR

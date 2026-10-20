@@ -291,4 +291,50 @@ export class PrismaService
       return { connected: false };
     }
   }
+
+  /** REGLA SRE: Añadido para compatibilidad con modelo notification_queue */
+  get notificationQueue(): any {
+    return this;
+  }
+
+  /** Upsert para notification_queue (usado por campaign-expiration) */
+  async upsertNotificationQueue(data: {
+    where: { type: string; category: string; entityId: string };
+    create: any;
+    update: any;
+  }): Promise<any> {
+    const { where, create, update } = data;
+    return this.$executeRawUnsafe(
+      `INSERT INTO notification_queue (type, category, entity_id, title, message, sent, sent_at, created_at)
+       VALUES (${where.type}, ${where.category}, ${where.entityId}, ${create.title}, ${create.message}, ${create.sent}, ${create.sent ? new Date(create.sentAt || new Date()) : null}, ${create.createdAt || new Date()})
+       ON CONFLICT (type, category, entity_id) DO UPDATE SET
+         title = EXCLUDED.title,
+         message = EXCLUDED.message,
+         sent = EXCLUDED.sent,
+         sent_at = EXCLUDED.sent_at,
+         created_at = EXCLUDED.created_at
+       RETURNING *`,
+    );
+  }
+
+  async findNotificationsQueue(where: any, orderBy?: any): Promise<any[]> {
+    let query = `SELECT * FROM notification_queue WHERE 1=1`;
+    const params: any[] = [];
+    if (where.sent !== undefined) {
+      query += ` AND sent = ${where.sent}`;
+    }
+    if (where.createdAt) {
+      query += ` AND created_at < ${where.createdAt}`;
+    }
+    return this.$queryRawUnsafe(query);
+  }
+
+  async updateNotificationQueue(
+    where: { id: string },
+    data: { sent: boolean; sentAt: Date },
+  ): Promise<any> {
+    return this.$executeRawUnsafe(
+      `UPDATE notification_queue SET sent = ${data.sent}, sent_at = ${data.sentAt} WHERE id = ${where.id} RETURNING *`,
+    );
+  }
 }

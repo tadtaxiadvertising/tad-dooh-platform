@@ -1,10 +1,14 @@
 {
-  "name": "@tad/types",
-  "version": "0.1.0",
-  "private": true,
-  "main": "index.ts",
-  "types": "index.ts",
-  "scripts": {
-    "build": "echo 'No build needed - consumed via tsconfig paths'"
-  }
+    "name": "@tad/types",
+    "version": "0.1.0",
+    "private": true,
+    "main": "index.ts",
+    "types": "index.ts",
+    "scripts": {
+        "build": "echo 'No build needed - consumed via tsconfig paths'"
+    },
+    "devDependencies": {
+        "eslint": "^9.39.5",
+        "eslint-config-next": "15.2.6"
+    }
 }

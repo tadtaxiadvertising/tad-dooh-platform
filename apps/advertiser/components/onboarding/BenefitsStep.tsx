@@ -1,7 +1,17 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Crosshair, MonitorPlay, BarChart3, ArrowRight, Sparkles, TrendingUp, Users, Store, Target } from 'lucide-react';
+import { motion } from "framer-motion";
+import {
+  Crosshair,
+  MonitorPlay,
+  BarChart3,
+  ArrowRight,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Store,
+  Target,
+} from "lucide-react";
 
 interface BenefitsStepProps {
   onNext: () => void;
@@ -10,37 +20,37 @@ interface BenefitsStepProps {
 const BENEFITS = [
   {
     icon: Crosshair,
-    title: 'Segmentación precisa',
-    copy: 'Dirige tu anuncio a las rutas exactas que transitan los taxis.',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'hover:border-emerald-500/40',
-    bar: 'bg-emerald-400',
+    title: "Segmentación precisa",
+    copy: "Dirige tu anuncio a las rutas exactas que transitan los taxis.",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "hover:border-emerald-500/40",
+    bar: "bg-emerald-400",
   },
   {
     icon: MonitorPlay,
-    title: 'Exposición exclusiva',
-    copy: 'Pantallas HD dedicadas que garantizan la atención del pasajero.',
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'hover:border-purple-500/40',
-    bar: 'bg-purple-400',
+    title: "Exposición exclusiva",
+    copy: "Pantallas HD dedicadas que garantizan la atención del pasajero.",
+    color: "text-purple-400",
+    bg: "bg-purple-500/10",
+    border: "hover:border-purple-500/40",
+    bar: "bg-purple-400",
   },
   {
     icon: BarChart3,
-    title: 'ROI medible',
-    copy: 'Analíticas detalladas de impresiones y frecuencia de tu campaña.',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'hover:border-blue-500/40',
-    bar: 'bg-blue-400',
+    title: "ROI medible",
+    copy: "Analíticas detalladas de impresiones y frecuencia de tu campaña.",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "hover:border-blue-500/40",
+    bar: "bg-blue-400",
   },
 ];
 
 const ANCHOR_STATS = [
-  { value: '3.4X', label: 'ROI promedio' },
-  { value: '500K+', label: 'Impactos mensuales' },
-  { value: '120+', label: 'Pantallas activas' },
+  { value: "3.4X", label: "ROI promedio" },
+  { value: "500K+", label: "Impactos mensuales" },
+  { value: "120+", label: "Pantallas activas" },
 ];
 
 export default function BenefitsStep({ onNext }: BenefitsStepProps) {
@@ -61,7 +71,12 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
           className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/[0.04] border border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#AAAAAA] mb-5"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+          transition={{
+            delay: 0.1,
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+          }}
         >
           <Sparkles className="w-3 h-3 text-[#FDCB01]" />
           Paso 1 de 4 · Beneficios
@@ -72,8 +87,7 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          Alcance local de{' '}
-          <br />
+          Alcance local de <br />
           <span className="text-[#FDCB01]">alto impacto</span>
         </motion.h1>
         <motion.p
@@ -99,10 +113,17 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
             className="bg-[#121212]/80 border border-white/10 rounded-xl px-2 py-3.5 sm:py-4 text-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 + i * 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+            transition={{
+              delay: 0.4 + i * 0.1,
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+            }}
             whileHover={{ scale: 1.05, y: -2 }}
           >
-            <p className="text-lg sm:text-2xl font-black tracking-tighter text-[#FDCB01]">{s.value}</p>
+            <p className="text-lg sm:text-2xl font-black tracking-tighter text-[#FDCB01]">
+              {s.value}
+            </p>
             <p className="mt-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-[#AAAAAA]">
               {s.label}
             </p>
@@ -125,7 +146,11 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
               className={`group bg-[#121212]/80 border border-white/10 ${b.border} rounded-xl p-6 transition-all duration-300 stitched-card`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 + i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                delay: 0.6 + i * 0.1,
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+              }}
               whileHover={{ y: -4, scale: 1.02 }}
             >
               <motion.div
@@ -153,13 +178,12 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
               <motion.div
                 className={`h-0.5 w-8 ${b.bar} rounded-full mt-5 opacity-70 group-hover:w-full group-hover:opacity-100 transition-all duration-500`}
                 initial={{ width: 0 }}
-                animate={{ width: '2rem' }}
+                animate={{ width: "2rem" }}
                 transition={{ delay: 0.8 + i * 0.1, duration: 0.6 }}
               />
             </motion.div>
           );
         })}
-
       </motion.div>
 
       {/* CTA */}
@@ -172,7 +196,10 @@ export default function BenefitsStep({ onNext }: BenefitsStepProps) {
         <motion.button
           onClick={onNext}
           className="w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
-          whileHover={{ scale: 1.02, boxShadow: '0 10px 50px rgba(253,203,1,0.4)' }}
+          whileHover={{
+            scale: 1.02,
+            boxShadow: "0 10px 50px rgba(253,203,1,0.4)",
+          }}
           whileTap={{ scale: 0.98 }}
         >
           <span>Simular mi campaña</span>

@@ -1,12 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { TaxiData } from '@/types/tracking';
-import { getDriverStatusInfo } from '@/utils/driverStatus';
-import { VehiclePopup } from '@/components/ui/VehiclePopup';
+import { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  CircleMarker,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { TaxiData } from "@/types/tracking";
+import { getDriverStatusInfo } from "@/utils/driverStatus";
+import { VehiclePopup } from "@/components/ui/VehiclePopup";
 
 interface MapLocation {
   id?: string;
@@ -45,8 +52,8 @@ interface MapViewProps {
   // New props from realtime.tsx
   locations?: any[];
   heatmapData?: any[];
-  mode?: 'normal' | 'heatmap' | 'live';
-  mapTheme?: 'light' | 'dark';
+  mode?: "normal" | "heatmap" | "live";
+  mapTheme?: "light" | "dark";
   heatmapIntensity?: number;
   heatmapRadius?: number;
   selectedId?: string | null;
@@ -59,21 +66,28 @@ interface MapViewProps {
 // ─────────────────────────────────────────────────────────────────────
 // 3-STATUS MARKER ICON (Green/Yellow/Red based on connection)
 // ─────────────────────────────────────────────────────────────────────
-const createStatusIcon = (isOnline: boolean, lastSeen?: string | null, isSelected?: boolean, taxiNumber?: string): L.DivIcon => {
+const createStatusIcon = (
+  isOnline: boolean,
+  lastSeen?: string | null,
+  isSelected?: boolean,
+  taxiNumber?: string,
+): L.DivIcon => {
   const statusInfo = getDriverStatusInfo(isOnline, lastSeen);
   const color = statusInfo.color;
   const shadowColor = statusInfo.shadowColor;
   const shortLabel = taxiNumber
-    ? taxiNumber.replace(/[^0-9]/g, '').slice(-3)
-    : '';
+    ? taxiNumber.replace(/[^0-9]/g, "").slice(-3)
+    : "";
 
   const scale = isSelected ? 1.15 : 1;
-  const pulse = isOnline ? `
+  const pulse = isOnline
+    ? `
     <div style="position:absolute;inset:-6px;border-radius:50%;border:2px solid ${color};opacity:0;animation:markerPulse 2s ease-out infinite;"></div>
-  ` : '';
+  `
+    : "";
 
   return L.divIcon({
-    className: 'custom-marker',
+    className: "custom-marker",
     html: `
       <div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;transform:scale(${scale});transition:transform 0.3s ease;">
         ${pulse}
@@ -121,13 +135,19 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
         ${count}
       </div>
     `,
-    className: 'custom-cluster',
+    className: "custom-cluster",
     iconSize: [size, size],
   });
 };
 
 // Component to update map view based on props
-function MapUpdater({ center, zoom }: { center?: [number, number]; zoom?: number }) {
+function MapUpdater({
+  center,
+  zoom,
+}: {
+  center?: [number, number];
+  zoom?: number;
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -146,23 +166,24 @@ export default function MapView({
   center = [-34.6037, -58.3816],
   zoom = 12,
   heatmapMode = false,
-  mode = 'normal',
-  mapTheme = 'dark',
+  mode = "normal",
+  mapTheme = "dark",
   heatmapIntensity = 0.5,
   heatmapRadius = 25,
   selectedId,
   recentPath = [],
   onClearSelection,
   onViewHistory,
-  onSyncCommand
+  onSyncCommand,
 }: MapViewProps) {
   const [isClient, setIsClient] = useState(false);
-  const [darkMode, setDarkMode] = useState(mapTheme === 'dark');
+  const [darkMode, setDarkMode] = useState(mapTheme === "dark");
 
   useEffect(() => {
     setIsClient(true);
-    const isDark = document.documentElement.classList.contains('dark') ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark =
+      document.documentElement.classList.contains("dark") ||
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
     setDarkMode(isDark);
   }, []);
 
@@ -175,8 +196,8 @@ export default function MapView({
   }
 
   const tileUrl = darkMode
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   const attribution = darkMode
     ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -184,13 +205,13 @@ export default function MapView({
 
   // Support both old (taxis) and new (locations) data format
   const dataToRender: MapLocation[] = locations || taxis || [];
-  const currentMode = mode === 'heatmap' || heatmapMode ? true : false;
+  const currentMode = mode === "heatmap" || heatmapMode ? true : false;
 
   return (
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: "100%", height: "100%" }}
       className="bg-[#07080d]"
     >
       <TileLayer url={tileUrl} attribution={attribution} />
@@ -199,7 +220,8 @@ export default function MapView({
       {dataToRender.map((item: MapLocation) => {
         // Support both TaxiData interface and generic location object
         const latitude = item.lastLat || item.latitude || item.lat;
-        const longitude = item.lastLng || item.longitude || item.lng || item.lon;
+        const longitude =
+          item.lastLng || item.longitude || item.lng || item.lon;
 
         if (!latitude || !longitude) return null;
 
@@ -214,7 +236,7 @@ export default function MapView({
         const isOnline =
           !!item.isOnline ||
           (item as any).online === true ||
-          String((item as any).status).toLowerCase() === 'online';
+          String((item as any).status).toLowerCase() === "online";
 
         if (currentMode) {
           // Heatmap mode: show density with circle markers using 3-color system
@@ -240,15 +262,20 @@ export default function MapView({
           <Marker
             key={item.deviceId || item.id}
             position={position}
-            icon={createStatusIcon(isOnline, item.lastSeen, isSelected, item.taxiNumber)}
+            icon={createStatusIcon(
+              isOnline,
+              item.lastSeen,
+              isSelected,
+              item.taxiNumber,
+            )}
             eventHandlers={{
-              click: () => onViewHistory?.(item)
+              click: () => onViewHistory?.(item),
             }}
           >
             <Popup className="popup-clean" maxWidth={400} minWidth={340}>
               <VehiclePopup
                 device={{
-                  deviceId: item.deviceId || 'N/A',
+                  deviceId: item.deviceId || "N/A",
                   taxiNumber: item.taxiNumber,
                   city: item.city,
                   batteryLevel: item.batteryLevel,
@@ -267,7 +294,7 @@ export default function MapView({
                   lastLng: item.lastLng,
                 }}
                 onViewHistory={() => onViewHistory?.(item)}
-                onSyncCommand={() => onSyncCommand?.(item.deviceId || '')}
+                onSyncCommand={() => onSyncCommand?.(item.deviceId || "")}
               />
             </Popup>
           </Marker>
@@ -276,28 +303,52 @@ export default function MapView({
 
       {/* Global Leaflet styles */}
       <style jsx global>{`
-        .leaflet-container { font-family: 'Inter', sans-serif !important; background: #07080d !important; }
-        .popup-clean .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
-        .popup-clean .leaflet-popup-content { margin: 0 !important; width: auto !important; }
-        .popup-clean .leaflet-popup-tip-container { display: none !important; }
-        .leaflet-control-zoom { border: none !important; margin: 24px !important; }
+        .leaflet-container {
+          font-family: "Inter", sans-serif !important;
+          background: #07080d !important;
+        }
+        .popup-clean .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+        }
+        .popup-clean .leaflet-popup-content {
+          margin: 0 !important;
+          width: auto !important;
+        }
+        .popup-clean .leaflet-popup-tip-container {
+          display: none !important;
+        }
+        .leaflet-control-zoom {
+          border: none !important;
+          margin: 24px !important;
+        }
         .leaflet-control-zoom a {
-          background: rgba(10,10,13,.9) !important;
+          background: rgba(10, 10, 13, 0.9) !important;
           color: #10b981 !important;
-          border: 1px solid rgba(255,255,255,.06) !important;
-          width: 40px !important; height: 40px !important; line-height: 40px !important;
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          width: 40px !important;
+          height: 40px !important;
+          line-height: 40px !important;
           border-radius: 10px !important;
           margin-bottom: 6px !important;
           font-weight: 900 !important;
-          transition: all .2s;
+          transition: all 0.2s;
         }
         .leaflet-control-zoom a:hover {
           background: #10b981 !important;
           color: #000 !important;
           transform: translateY(-2px);
         }
-        .custom-marker { background: none !important; border: none !important; }
-        .custom-cluster { background: none !important; border: none !important; }
+        .custom-marker {
+          background: none !important;
+          border: none !important;
+        }
+        .custom-cluster {
+          background: none !important;
+          border: none !important;
+        }
       `}</style>
     </MapContainer>
   );

@@ -7,9 +7,9 @@
  * (header X-Device-Id + timeout). Red simulada offline/3G.
  * Corrido por el proyecto '3g-slow' (playwright.config.ts).
  */
-import { test, expect, BrowserContext, Page } from '@playwright/test';
+import { test, expect, BrowserContext, Page } from "@playwright/test";
 
-test.describe('3G Sync — Telemetry flush on reconnect', () => {
+test.describe("3G Sync — Telemetry flush on reconnect", () => {
   let context: BrowserContext;
 
   test.beforeEach(async ({ browser }) => {
@@ -21,7 +21,7 @@ test.describe('3G Sync — Telemetry flush on reconnect', () => {
       // Con el SW activo, Playwright no puede interceptar las requests que el
       // SW reenvía (respondWith → fetch), así que lo bloqueamos para que los
       // POST del PlaybackQueue pasen por page.route de forma determinista.
-      serviceWorkers: 'block',
+      serviceWorkers: "block",
     });
   });
 
@@ -30,11 +30,13 @@ test.describe('3G Sync — Telemetry flush on reconnect', () => {
     await context.close();
   });
 
-  test('5.1 — Cola de PoP se descarga al recuperar red', async ({ browser }) => {
+  test("5.1 — Cola de PoP se descarga al recuperar red", async ({
+    browser,
+  }) => {
     const page = await context.newPage();
 
     await page.addInitScript(() => {
-      localStorage.setItem('TAD_DEVICE_ID', 'e2e-device');
+      localStorage.setItem("TAD_DEVICE_ID", "e2e-device");
     });
 
     // Interceptar el backend: sync "vacío" (sin kill-switch) y batch OK,
@@ -45,21 +47,25 @@ test.describe('3G Sync — Telemetry flush on reconnect', () => {
       headers: Record<string, string>;
     } | null = null;
 
-    await page.route('**/device/sync*', (route) =>
+    await page.route("**/device/sync*", (route) =>
       route.fulfill({
         status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ update: false, blocked: false, sync_hash: 'test' }),
+        contentType: "application/json",
+        body: JSON.stringify({
+          update: false,
+          blocked: false,
+          sync_hash: "test",
+        }),
       }),
     );
-    await page.route('**/sync/*', (route) =>
+    await page.route("**/sync/*", (route) =>
       route.fulfill({
         status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ etag: 'test', killSwitch: false, playlist: [] }),
+        contentType: "application/json",
+        body: JSON.stringify({ etag: "test", killSwitch: false, playlist: [] }),
       }),
     );
-    await page.route('**/telemetry/playback-batch', (route) => {
+    await page.route("**/telemetry/playback-batch", (route) => {
       batchReceived = {
         method: route.request().method(),
         body: route.request().postDataJSON?.() ?? null,
@@ -67,28 +73,47 @@ test.describe('3G Sync — Telemetry flush on reconnect', () => {
       };
       return route.fulfill({
         status: 201,
-        contentType: 'application/json',
+        contentType: "application/json",
         body: JSON.stringify({ success: true }),
       });
     });
 
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForTimeout(4000);
 
     // Sembrar 2 eventos PoP directamente en la cola (como haría PlaylistEngine).
     await page.evaluate(() => {
-      const open = indexedDB.open('tad_playback_queue', 1);
+      const open = indexedDB.open("tad_playback_queue", 1);
       open.onupgradeneeded = () => {
         const db = open.result;
-        if (!db.objectStoreNames.contains('events')) db.createObjectStore('events', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains("events"))
+          db.createObjectStore("events", { keyPath: "id" });
       };
       open.onsuccess = () => {
         const db = open.result;
-        const tx = db.transaction('events', 'readwrite');
-        const store = tx.objectStore('events');
+        const tx = db.transaction("events", "readwrite");
+        const store = tx.objectStore("events");
         const now = Date.now();
-        store.put({ id: 'vid1_' + now, device_id: 'e2e-device', video_id: 'vid1', event_type: 'play_confirm', timestamp: now, lat: 18.4861, lng: -69.9312, queuedAt: now });
-        store.put({ id: 'vid2_' + (now + 1), device_id: 'e2e-device', video_id: 'vid2', event_type: 'play_confirm', timestamp: now + 1, lat: 18.4862, lng: -69.9313, queuedAt: now + 1 });
+        store.put({
+          id: "vid1_" + now,
+          device_id: "e2e-device",
+          video_id: "vid1",
+          event_type: "play_confirm",
+          timestamp: now,
+          lat: 18.4861,
+          lng: -69.9312,
+          queuedAt: now,
+        });
+        store.put({
+          id: "vid2_" + (now + 1),
+          device_id: "e2e-device",
+          video_id: "vid2",
+          event_type: "play_confirm",
+          timestamp: now + 1,
+          lat: 18.4862,
+          lng: -69.9313,
+          queuedAt: now + 1,
+        });
       };
     });
 
@@ -99,24 +124,22 @@ test.describe('3G Sync — Telemetry flush on reconnect', () => {
 
     // El flush loop corre cada 5 min por defecto; el evento 'online' debe
     // dispararlo inmediatamente (SyncManager.setupNetworkListeners).
-    await expect
-      .poll(() => batchReceived, { timeout: 20_000 })
-      .not.toBeNull();
+    await expect.poll(() => batchReceived, { timeout: 20_000 }).not.toBeNull();
 
-    expect(batchReceived!.method).toBe('POST');
+    expect(batchReceived!.method).toBe("POST");
     const body = batchReceived!.body as { deviceId: string; videoId: string }[];
     expect(Array.isArray(body)).toBe(true);
     expect(body.length).toBe(2);
-    expect(batchReceived!.headers['x-device-id']).toBeDefined();
+    expect(batchReceived!.headers["x-device-id"]).toBeDefined();
 
     // La cola local debe quedar vacía tras un batch exitoso.
     const remaining = await page.evaluate(() => {
       return new Promise<number>((resolve) => {
-        const open = indexedDB.open('tad_playback_queue', 1);
+        const open = indexedDB.open("tad_playback_queue", 1);
         open.onsuccess = () => {
           const db = open.result;
-          const tx = db.transaction('events', 'readonly');
-          const count = tx.objectStore('events').count();
+          const tx = db.transaction("events", "readonly");
+          const count = tx.objectStore("events").count();
           count.onsuccess = () => resolve(count.result);
         };
         open.onerror = () => resolve(-1);

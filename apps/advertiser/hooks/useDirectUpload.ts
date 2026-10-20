@@ -93,11 +93,11 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
   }, []);
 
   const calculateHash = async (file: File): Promise<string> => {
-      const buffer = await file.arrayBuffer();
-      const hash = await crypto.subtle.digest("MD5", buffer);
-      const hashArray = Array.from(new Uint8Array(hash));
-      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    };
+    const buffer = await file.arrayBuffer();
+    const hash = await crypto.subtle.digest("MD5", buffer);
+    const hashArray = Array.from(new Uint8Array(hash));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
 
   const upload = async (file: File, campaignId?: string) => {
     // Validación cliente
@@ -134,13 +134,14 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
           },
-        }
+        },
       );
 
       if (!uploadUrlRes.ok) {
         const errData = await uploadUrlRes.json().catch(() => ({}));
         throw new Error(
-          errData.message || `Error obteniendo URL de subida: ${uploadUrlRes.status}`
+          errData.message ||
+            `Error obteniendo URL de subida: ${uploadUrlRes.status}`,
         );
       }
 
@@ -183,7 +184,7 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       if (!confirmRes.ok) {
         const errData = await confirmRes.json().catch(() => ({}));
         throw new Error(
-          errData.message || `Error confirmando subida: ${confirmRes.status}`
+          errData.message || `Error confirmando subida: ${confirmRes.status}`,
         );
       }
 
@@ -240,7 +241,7 @@ function getAuthToken(): string {
 async function uploadToSignedUrl(
   signedUrl: string,
   file: File,
-  onProgress: (loaded: number) => void
+  onProgress: (loaded: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();

@@ -620,7 +620,10 @@ export class FinanceController {
     try {
       return await this.advertiserBillingService.generateProformaInvoice(body);
     } catch (err) {
-      this.logger.error("Error al generar proforma", (err as Error)?.stack || err);
+      this.logger.error(
+        "Error al generar proforma",
+        (err as Error)?.stack || err,
+      );
       throw new InternalServerErrorException("Error al generar proforma");
     }
   }

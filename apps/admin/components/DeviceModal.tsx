@@ -1,23 +1,53 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Tablet, X, Check, AlertCircle, Save, Trash2, MapPin, Hash, User } from 'lucide-react';
-import { createDevice, updateDevice, deleteDevice, getDrivers } from '@tad/services';
-import { toast } from 'sonner';
-import { AntigravityButton, notifyChange } from '@tad/ui';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Tablet,
+  X,
+  Check,
+  AlertCircle,
+  Save,
+  Trash2,
+  MapPin,
+  Hash,
+  User,
+} from "lucide-react";
+import {
+  createDevice,
+  updateDevice,
+  deleteDevice,
+  getDrivers,
+} from "@tad/services";
+import { toast } from "sonner";
+import { AntigravityButton, notifyChange } from "@tad/ui";
 
 interface DeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  device?: { id?: string; device_id?: string; deviceId?: string; taxi_number?: string; taxiNumber?: string; city?: string; status?: string; driverId?: string; driver?: { id?: string } } | null;
+  device?: {
+    id?: string;
+    device_id?: string;
+    deviceId?: string;
+    taxi_number?: string;
+    taxiNumber?: string;
+    city?: string;
+    status?: string;
+    driverId?: string;
+    driver?: { id?: string };
+  } | null;
 }
 
-const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess, device }: DeviceModalProps) {
+const DeviceModal = React.memo(function DeviceModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  device,
+}: DeviceModalProps) {
   const [formData, setFormData] = useState({
-    deviceId: '',
-    taxiNumber: '',
-    city: 'Santiago',
-    status: 'ACTIVE',
-    driverId: ''
+    deviceId: "",
+    taxiNumber: "",
+    city: "Santiago",
+    status: "ACTIVE",
+    driverId: "",
   });
 
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -29,7 +59,7 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
       const data = await getDrivers();
       setDrivers(data || []);
     } catch (err) {
-      console.error('Error loading drivers:', err);
+      console.error("Error loading drivers:", err);
     }
   }, []);
 
@@ -37,19 +67,20 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
     if (isOpen) {
       if (device) {
         setFormData({
-          deviceId: device.device_id || device.deviceId || '',
-          taxiNumber: device.taxi_number || device.taxiNumber || '',
-          city: device.city || 'Santiago',
-          status: device.status === 'online' ? 'ACTIVE' : (device.status || 'ACTIVE'),
-          driverId: device.driverId || device.driver?.id || ''
+          deviceId: device.device_id || device.deviceId || "",
+          taxiNumber: device.taxi_number || device.taxiNumber || "",
+          city: device.city || "Santiago",
+          status:
+            device.status === "online" ? "ACTIVE" : device.status || "ACTIVE",
+          driverId: device.driverId || device.driver?.id || "",
         });
       } else {
         setFormData({
-          deviceId: '',
-          taxiNumber: '',
-          city: 'Santiago',
-          status: 'ACTIVE',
-          driverId: ''
+          deviceId: "",
+          taxiNumber: "",
+          city: "Santiago",
+          status: "ACTIVE",
+          driverId: "",
         });
       }
       loadDrivers();
@@ -66,22 +97,26 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
 
     try {
       if (device) {
-        const id = device.id || device.device_id || '';
-        if (!id) throw new Error('Identificador de dispositivo no encontrado');
+        const id = device.id || device.device_id || "";
+        if (!id) throw new Error("Identificador de dispositivo no encontrado");
         await updateDevice(id, formData);
-        toast.success('PANTALLA ACTUALIZADA: Configuración sincronizada.');
+        toast.success("PANTALLA ACTUALIZADA: Configuración sincronizada.");
       } else {
         await createDevice(formData);
-        toast.success('PANTALLA REGISTRADA: Nodo agregado al inventario.');
+        toast.success("PANTALLA REGISTRADA: Nodo agregado al inventario.");
       }
-      notifyChange('DEVICES');
+      notifyChange("DEVICES");
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error && 'response' in err
-        ? (err as { response: { data: { message: string } } }).response.data.message
-        : (err instanceof Error ? err.message : 'Error al procesar la solicitud');
-      setError(errorMessage || 'Error al procesar la solicitud');
+      const errorMessage =
+        err instanceof Error && "response" in err
+          ? (err as { response: { data: { message: string } } }).response.data
+              .message
+          : err instanceof Error
+            ? err.message
+            : "Error al procesar la solicitud";
+      setError(errorMessage || "Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
@@ -90,15 +125,17 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
   const handleDelete = async () => {
     setLoading(true);
     try {
-      const id = device?.id || device?.device_id || '';
-      if (!id) throw new Error('ID no encontrado');
+      const id = device?.id || device?.device_id || "";
+      if (!id) throw new Error("ID no encontrado");
       await deleteDevice(id);
-      toast.success('PANTALLA ELIMINADA: Hardware purgado del inventario.');
-      notifyChange('DEVICES');
+      toast.success("PANTALLA ELIMINADA: Hardware purgado del inventario.");
+      notifyChange("DEVICES");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error('FALLA DE ELIMINACIÓN: ' + (err.message || 'Error desconocido'));
+      toast.error(
+        "FALLA DE ELIMINACIÓN: " + (err.message || "Error desconocido"),
+      );
     } finally {
       setLoading(false);
     }
@@ -107,7 +144,6 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-zinc-900 border border-white/5 rounded-[2rem] w-full max-w-xl overflow-hidden shadow-2xl">
-
         {/* Header */}
         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-[#fad400]/10 to-transparent">
           <div className="flex items-center gap-3">
@@ -116,9 +152,11 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
             </div>
             <div>
               <h2 className="text-xl font-black uppercase tracking-tight text-white">
-                {device ? 'Editar Dispositivo' : 'Nuevo Dispositivo'}
+                {device ? "Editar Dispositivo" : "Nuevo Dispositivo"}
               </h2>
-              <p className="text-[10px] text-[#fad400] font-bold uppercase tracking-widest">Inventario de Hardware</p>
+              <p className="text-[10px] text-[#fad400] font-bold uppercase tracking-widest">
+                Inventario de Hardware
+              </p>
             </div>
           </div>
           <button
@@ -154,7 +192,12 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                   placeholder="Ej: TADSTI-001"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-[#fad400] transition-all disabled:opacity-50 text-sm"
                   value={formData.deviceId}
-                  onChange={e => setFormData({ ...formData, deviceId: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      deviceId: e.target.value.toUpperCase(),
+                    })
+                  }
                 />
               </div>
             </div>
@@ -171,7 +214,12 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                   placeholder="Ej: T-123"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none focus:border-[#fad400] transition-all text-sm"
                   value={formData.taxiNumber}
-                  onChange={e => setFormData({ ...formData, taxiNumber: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      taxiNumber: e.target.value.toUpperCase(),
+                    })
+                  }
                 />
               </div>
             </div>
@@ -188,7 +236,9 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                   aria-label="Seleccionar ciudad"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-[#fad400] transition-all appearance-none cursor-pointer text-sm"
                   value={formData.city}
-                  onChange={e => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
                 >
                   <option value="Santo Domingo">Santo Domingo</option>
                   <option value="Santiago">Santiago</option>
@@ -210,12 +260,14 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
                   aria-label="Asignar conductor"
                   className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-[#fad400] transition-all appearance-none cursor-pointer text-sm"
                   value={formData.driverId}
-                  onChange={e => setFormData({ ...formData, driverId: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, driverId: e.target.value })
+                  }
                 >
                   <option value="">-- Sin conductor asignado --</option>
-                  {drivers.map(d => (
+                  {drivers.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.fullName} {d.taxiNumber ? `(${d.taxiNumber})` : ''}
+                      {d.fullName} {d.taxiNumber ? `(${d.taxiNumber})` : ""}
                     </option>
                   ))}
                 </select>
@@ -238,14 +290,14 @@ const DeviceModal = React.memo(function DeviceModal({ isOpen, onClose, onSuccess
             <AntigravityButton
               actionName="save_hardware"
               onAsyncClick={async () => {
-                const e = { preventDefault: () => { } } as any;
+                const e = { preventDefault: () => {} } as any;
                 await handleSubmit(e);
               }}
               variant="primary"
               className="flex-1 h-16 rounded-2xl"
             >
               <Save className="h-5 w-5 mr-2" />
-              {device ? 'Guardar' : 'Registrar'}
+              {device ? "Guardar" : "Registrar"}
             </AntigravityButton>
           </div>
         </form>

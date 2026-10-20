@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import api from '@tad/services';
+import { useState, useEffect, useCallback } from "react";
+import api from "@tad/services";
 
 export interface DriverHubData {
   driverId: string;
@@ -23,10 +23,10 @@ export interface DriverHubData {
 const MAX_DRIVER_SLOTS = 15;
 
 const toNumber = (value: unknown, fallback = 0): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
@@ -37,29 +37,31 @@ const normalizeHubData = (raw: any): DriverHubData => {
   const activeAds = toNumber(raw?.activeAds, 0);
 
   return {
-    driverId: String(raw?.driverId || ''),
-    driverName: String(raw?.driverName || 'Conductor'),
+    driverId: String(raw?.driverId || ""),
+    driverName: String(raw?.driverName || "Conductor"),
     balance: toNumber(raw?.balance, 0),
     projectedEarnings: toNumber(raw?.projectedEarnings, 0),
     activeAds,
     activeSlots: Math.max(0, Math.min(MAX_DRIVER_SLOTS, activeAds)),
     maxSlots: MAX_DRIVER_SLOTS,
     subscriptionPaid: Boolean(raw?.subscriptionPaid),
-    subscriptionStatus: String(raw?.subscriptionStatus || 'UNKNOWN'),
+    subscriptionStatus: String(raw?.subscriptionStatus || "UNKNOWN"),
     deviceId: raw?.deviceId ? String(raw.deviceId) : null,
     gpsPoints: toNumber(raw?.gpsPoints, 0),
     adsPlayed: toNumber(raw?.adsPlayed, 0),
     contractAccepted: Boolean(raw?.contractAccepted),
-    agreementVersion: raw?.agreementVersion ? String(raw.agreementVersion) : null,
-    onboardingStatus: String(raw?.onboardingStatus || 'UNKNOWN'),
+    agreementVersion: raw?.agreementVersion
+      ? String(raw.agreementVersion)
+      : null,
+    onboardingStatus: String(raw?.onboardingStatus || "UNKNOWN"),
     bankAccountConfigured: Boolean(raw?.bankAccountConfigured),
   };
 };
 
-const HUB_CACHE_KEY = 'TAD_DRIVER_HUB_CACHE';
+const HUB_CACHE_KEY = "TAD_DRIVER_HUB_CACHE";
 
 const readHubCache = (): DriverHubData | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
 
   const cached = localStorage.getItem(HUB_CACHE_KEY);
   if (!cached) return null;
@@ -73,9 +75,24 @@ const readHubCache = (): DriverHubData | null => {
 };
 
 const isDnsResolutionError = (error: unknown): boolean => {
-  const payload = error as { message?: string; code?: string; response?: { data?: { message?: string } } };
-  const text = [payload?.message, payload?.code, payload?.response?.data?.message].filter(Boolean).join(' ').toUpperCase();
-  return text.includes('EAI_AGAIN') || text.includes('ENOTFOUND') || text.includes('DNS');
+  const payload = error as {
+    message?: string;
+    code?: string;
+    response?: { data?: { message?: string } };
+  };
+  const text = [
+    payload?.message,
+    payload?.code,
+    payload?.response?.data?.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
+  return (
+    text.includes("EAI_AGAIN") ||
+    text.includes("ENOTFOUND") ||
+    text.includes("DNS")
+  );
 };
 
 export function useDriverHub() {
@@ -87,17 +104,19 @@ export function useDriverHub() {
   const fetchHub = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/drivers/me/hub');
+      const res = await api.get("/drivers/me/hub");
       const normalized = normalizeHubData(res.data);
       setData(normalized);
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         localStorage.setItem(HUB_CACHE_KEY, JSON.stringify(normalized));
       }
       setError(null);
       setIsLocalMode(false);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Error al conectar con el servidor');
-      
+      setError(
+        err?.response?.data?.message || "Error al conectar con el servidor",
+      );
+
       // Circuit breaker DNS/offline-first: fallback inmediato al cache local
       const cached = readHubCache();
       const dnsResolutionError = isDnsResolutionError(err);
@@ -119,7 +138,7 @@ export function useDriverHub() {
       setData(cached);
       setLoading(false);
     }
-    
+
     fetchHub();
     // Refrescar cada 5 minutos
     const interval = setInterval(fetchHub, 300_000);

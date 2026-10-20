@@ -1,4 +1,5 @@
-export type PaymentMethod = 'card' | 'bank_transfer' | 'apple_pay' | 'google_pay' | 'paypal';
+export type PaymentMethod =
+  "card" | "bank_transfer" | "apple_pay" | "google_pay" | "paypal";
 
 export interface PaymentRequestPayload {
   accountId: string;
@@ -21,35 +22,35 @@ export interface PaymentMethodConfig {
 
 export const PAYMENT_METHODS: PaymentMethodConfig[] = [
   {
-    id: 'card',
-    label: 'Tarjeta de crédito/débito',
-    icon: '💳',
-    description: 'Visa, Mastercard, American Express',
+    id: "card",
+    label: "Tarjeta de crédito/débito",
+    icon: "💳",
+    description: "Visa, Mastercard, American Express",
   },
   {
-    id: 'bank_transfer',
-    label: 'Transferencia bancaria',
-    icon: '🏦',
-    description: 'Transferencia desde tu banco',
+    id: "bank_transfer",
+    label: "Transferencia bancaria",
+    icon: "🏦",
+    description: "Transferencia desde tu banco",
   },
   {
-    id: 'apple_pay',
-    label: 'Apple Pay',
-    icon: '',
-    description: 'Paga con tu dispositivo Apple',
+    id: "apple_pay",
+    label: "Apple Pay",
+    icon: "",
+    description: "Paga con tu dispositivo Apple",
   },
   {
-    id: 'google_pay',
-    label: 'Google Pay',
-    icon: '',
-    description: 'Paga con tu cuenta Google',
+    id: "google_pay",
+    label: "Google Pay",
+    icon: "",
+    description: "Paga con tu cuenta Google",
   },
   {
-    id: 'paypal',
-    label: 'PayPal',
-    icon: '',
-    description: 'Pago protegido por PayPal',
+    id: "paypal",
+    label: "PayPal",
+    icon: "",
+    description: "Pago protegido por PayPal",
   },
 ];
 
-export const TAD_ACCOUNT_ID = 'ad_acc_001_nexpay';
+export const TAD_ACCOUNT_ID = "ad_acc_001_nexpay";

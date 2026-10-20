@@ -8,10 +8,10 @@
  * Usa los datos del hub (useDriverHub) que ya están disponibles en el shell.
  * No monta su propio useTelemetry ni useDriverHub.
  */
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -19,11 +19,11 @@ import {
   Flame,
   Target,
   TrendingUp,
-} from 'lucide-react';
-import clsx from 'clsx';
-import api from '@tad/services';
-import type { DriverHubData } from '../../hooks/useDriverHub';
-import type { WalletState } from './DriverWalletCard';
+} from "lucide-react";
+import clsx from "clsx";
+import api from "@tad/services";
+import type { DriverHubData } from "../../hooks/useDriverHub";
+import type { WalletState } from "./DriverWalletCard";
 
 interface WalletTabProps {
   connectionStatus?: "online" | "offline" | "syncing";
@@ -37,14 +37,16 @@ export const WalletTab: React.FC<WalletTabProps> = ({
   walletState,
   isLocalMode,
 }) => {
-  const [transactions, setTransactions] = useState<{id:number;type:string;amount:number;date:string;desc:string}[]>([]);
+  const [transactions, setTransactions] = useState<
+    { id: number; type: string; amount: number; date: string; desc: string }[]
+  >([]);
   const [txLoading, setTxLoading] = useState(true);
 
   useEffect(() => {
     const loadTransactions = async () => {
       try {
         const txRes = await api
-          .get('/drivers/me/transactions')
+          .get("/drivers/me/transactions")
           .catch(() => ({ data: [] }));
         setTransactions(
           txRes.data?.length
@@ -52,24 +54,24 @@ export const WalletTab: React.FC<WalletTabProps> = ({
             : [
                 {
                   id: 1,
-                  type: 'EARNING',
+                  type: "EARNING",
                   amount: 1200,
-                  date: 'Hoy, 2:30 PM',
-                  desc: 'Bono Diario de Pauta',
+                  date: "Hoy, 2:30 PM",
+                  desc: "Bono Diario de Pauta",
                 },
                 {
                   id: 2,
-                  type: 'WITHDRAWAL',
+                  type: "WITHDRAWAL",
                   amount: -5000,
-                  date: 'Ayer, 10:15 AM',
-                  desc: 'Transferencia Bancaria',
+                  date: "Ayer, 10:15 AM",
+                  desc: "Transferencia Bancaria",
                 },
                 {
                   id: 3,
-                  type: 'EARNING',
+                  type: "EARNING",
                   amount: 300,
-                  date: 'Lun 8, 4:00 PM',
-                  desc: 'Bono por Referido',
+                  date: "Lun 8, 4:00 PM",
+                  desc: "Bono por Referido",
                 },
               ],
         );
@@ -85,13 +87,11 @@ export const WalletTab: React.FC<WalletTabProps> = ({
   const balance = hubData?.balance ?? walletState?.total ?? 0;
   const nextWithdrawal = 5000;
   const withdrawalProgress = Math.min(100, (balance / nextWithdrawal) * 100);
-  const streak = (hubData as {activeDaysStreak?: number})?.activeDaysStreak || 0;
+  const streak =
+    (hubData as { activeDaysStreak?: number })?.activeDaysStreak || 0;
 
   return (
-    <section
-      aria-labelledby="wallet-tab-title"
-      className="space-y-5"
-    >
+    <section aria-labelledby="wallet-tab-title" className="space-y-5">
       {/* Title */}
       <div>
         <h2
@@ -100,9 +100,7 @@ export const WalletTab: React.FC<WalletTabProps> = ({
         >
           Finanzas
         </h2>
-        <p className="mt-1 text-base font-bold text-zinc-300">
-          Mi Billetera
-        </p>
+        <p className="mt-1 text-base font-bold text-zinc-300">Mi Billetera</p>
       </div>
 
       {/* Offline banner */}
@@ -146,12 +144,10 @@ export const WalletTab: React.FC<WalletTabProps> = ({
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${withdrawalProgress}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
+              transition={{ duration: 1, ease: "easeOut" }}
               className={clsx(
-                'h-full rounded-full',
-                withdrawalProgress >= 100
-                  ? 'bg-emerald-500'
-                  : 'bg-[#FFD400]',
+                "h-full rounded-full",
+                withdrawalProgress >= 100 ? "bg-emerald-500" : "bg-[#FFD400]",
               )}
             />
           </div>
@@ -166,10 +162,10 @@ export const WalletTab: React.FC<WalletTabProps> = ({
         <button
           disabled={withdrawalProgress < 100}
           className={clsx(
-            'relative flex-1 py-4 px-5 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all w-full',
+            "relative flex-1 py-4 px-5 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all w-full",
             withdrawalProgress >= 100
-              ? 'bg-[#FFD400] text-black shadow-[0_10px_30px_rgba(255,212,0,0.2)] hover:scale-[1.02] active:scale-95'
-              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed',
+              ? "bg-[#FFD400] text-black shadow-[0_10px_30px_rgba(255,212,0,0.2)] hover:scale-[1.02] active:scale-95"
+              : "bg-zinc-800 text-zinc-600 cursor-not-allowed",
           )}
         >
           <ArrowUpRight className="w-4 h-4" />
@@ -181,22 +177,22 @@ export const WalletTab: React.FC<WalletTabProps> = ({
       <div className="grid grid-cols-3 gap-3">
         {[
           {
-            label: 'Este Mes',
+            label: "Este Mes",
             value: `RD$${(hubData?.projectedEarnings || 0).toLocaleString()}`,
             icon: TrendingUp,
-            color: 'text-emerald-400',
+            color: "text-emerald-400",
           },
           {
-            label: 'Referidos',
+            label: "Referidos",
             value: `RD$${((walletState?.referredDrivers ?? 0) * 500).toLocaleString()}`,
             icon: Target,
-            color: 'text-blue-400',
+            color: "text-blue-400",
           },
           {
-            label: 'Bonos',
+            label: "Bonos",
             value: `RD$${(walletState?.total || 0).toLocaleString()}`,
             icon: Flame,
-            color: 'text-orange-400',
+            color: "text-orange-400",
           },
         ].map((stat, i) => {
           const Icon = stat.icon;
@@ -205,7 +201,7 @@ export const WalletTab: React.FC<WalletTabProps> = ({
               key={i}
               className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center"
             >
-              <Icon className={clsx('w-4 h-4 mx-auto mb-2', stat.color)} />
+              <Icon className={clsx("w-4 h-4 mx-auto mb-2", stat.color)} />
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">
                 {stat.label}
               </p>
@@ -255,13 +251,13 @@ export const WalletTab: React.FC<WalletTabProps> = ({
               >
                 <div
                   className={clsx(
-                    'w-12 h-12 rounded-xl flex items-center justify-center',
-                    tx.type === 'EARNING'
-                      ? 'bg-emerald-500/10 text-emerald-500'
-                      : 'bg-rose-500/10 text-rose-500',
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    tx.type === "EARNING"
+                      ? "bg-emerald-500/10 text-emerald-500"
+                      : "bg-rose-500/10 text-rose-500",
                   )}
                 >
-                  {tx.type === 'EARNING' ? (
+                  {tx.type === "EARNING" ? (
                     <ArrowDownLeft className="w-5 h-5" />
                   ) : (
                     <ArrowUpRight className="w-5 h-5" />
@@ -276,11 +272,11 @@ export const WalletTab: React.FC<WalletTabProps> = ({
                 <div className="text-right">
                   <p
                     className={clsx(
-                      'text-sm font-black',
-                      tx.type === 'EARNING' ? 'text-emerald-500' : 'text-white',
+                      "text-sm font-black",
+                      tx.type === "EARNING" ? "text-emerald-500" : "text-white",
                     )}
                   >
-                    {tx.type === 'EARNING' ? '+' : ''}RD$
+                    {tx.type === "EARNING" ? "+" : ""}RD$
                     {Math.abs(tx.amount).toLocaleString()}
                   </p>
                 </div>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import type { GetServerSideProps } from 'next';
+import React, { useState, useEffect, useCallback } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import type { GetServerSideProps } from "next";
 import {
   DollarSign,
   Car,
@@ -21,16 +21,20 @@ import {
   Activity,
   ChevronRight,
   MapPin,
-} from 'lucide-react';
-import clsx from 'clsx';
-import { toast } from 'sonner';
-import { AntigravityButton } from '@tad/ui';
-import { StatusSemaphore } from '@tad/ui';
-import { getBiKpis, getReconciliationReport, getFleetHealth } from '@tad/services';
+} from "lucide-react";
+import clsx from "clsx";
+import { toast } from "sonner";
+import { AntigravityButton } from "@tad/ui";
+import { StatusSemaphore } from "@tad/ui";
+import {
+  getBiKpis,
+  getReconciliationReport,
+  getFleetHealth,
+} from "@tad/services";
 
 // ─── Dynamic Imports (SSR-safe) ───────────────────────────────────────────────
 const BiHeatmap = dynamic(
-  () => import('@/components/bi/BiHeatmap').then((m) => m.BiHeatmap),
+  () => import("@/components/bi/BiHeatmap").then((m) => m.BiHeatmap),
   {
     ssr: false,
     loading: () => (
@@ -38,7 +42,7 @@ const BiHeatmap = dynamic(
         <MapPin className="w-8 h-8 text-zinc-700 animate-bounce" />
       </div>
     ),
-  }
+  },
 );
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -82,32 +86,32 @@ function KpiCard({
   value: string;
   subtitle: string;
   icon: React.ElementType;
-  status: 'optimum' | 'warning' | 'critical';
+  status: "optimum" | "warning" | "critical";
   trend?: { value: string; positive: boolean };
   loading: boolean;
   highlight?: boolean;
 }) {
   const statusColor =
-    status === 'optimum'
-      ? 'bg-emerald-500'
-      : status === 'warning'
-        ? 'bg-yellow-400'
-        : 'bg-rose-500';
+    status === "optimum"
+      ? "bg-emerald-500"
+      : status === "warning"
+        ? "bg-yellow-400"
+        : "bg-rose-500";
 
   return (
     <div
       className={clsx(
-        'relative overflow-hidden rounded-2xl border p-6 group transition-all duration-300 hover:-translate-y-0.5',
+        "relative overflow-hidden rounded-2xl border p-6 group transition-all duration-300 hover:-translate-y-0.5",
         highlight
-          ? 'bg-zinc-900/60 border-tad-yellow/20 ring-1 ring-tad-yellow/10'
-          : 'bg-zinc-950/60 border-zinc-800/60 hover:border-zinc-700/60'
+          ? "bg-zinc-900/60 border-tad-yellow/20 ring-1 ring-tad-yellow/10"
+          : "bg-zinc-950/60 border-zinc-800/60 hover:border-zinc-700/60",
       )}
     >
       {/* Glow blob */}
       <div
         className={clsx(
-          'absolute -right-6 -top-6 w-24 h-24 blur-3xl opacity-10 transition-opacity duration-500 group-hover:opacity-20',
-          statusColor
+          "absolute -right-6 -top-6 w-24 h-24 blur-3xl opacity-10 transition-opacity duration-500 group-hover:opacity-20",
+          statusColor,
         )}
       />
 
@@ -136,8 +140,8 @@ function KpiCard({
         {trend && !loading && (
           <span
             className={clsx(
-              'flex items-center gap-0.5 text-[10px] font-bold',
-              trend.positive ? 'text-emerald-400' : 'text-rose-400'
+              "flex items-center gap-0.5 text-[10px] font-bold",
+              trend.positive ? "text-emerald-400" : "text-rose-400",
             )}
           >
             {trend.positive ? (
@@ -215,10 +219,10 @@ function StatBar({
       </p>
       <span
         className={clsx(
-          'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black',
+          "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black",
           trendUp
-            ? 'bg-emerald-500/10 text-emerald-400'
-            : 'bg-rose-500/10 text-rose-400'
+            ? "bg-emerald-500/10 text-emerald-400"
+            : "bg-rose-500/10 text-rose-400",
         )}
       >
         {trendUp ? (
@@ -233,7 +237,9 @@ function StatBar({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function BIDashboard() {
   const [loading, setLoading] = useState(true);
@@ -251,18 +257,18 @@ export default function BIDashboard() {
         getReconciliationReport(currentPeriod),
       ]);
 
-      if (kpiData.status === 'fulfilled') {
+      if (kpiData.status === "fulfilled") {
         setKpis(kpiData.value);
       }
-      if (reconcData.status === 'fulfilled') {
+      if (reconcData.status === "fulfilled") {
         const data = Array.isArray(reconcData.value) ? reconcData.value : [];
         setDiscrepancies(data.filter((r: any) => r.hasDiscrepancy).slice(0, 6));
       }
 
       setLastRefreshed(new Date());
     } catch (err) {
-      console.error('BI fetch error:', err);
-      toast.error('Error al cargar indicadores de negocio');
+      console.error("BI fetch error:", err);
+      toast.error("Error al cargar indicadores de negocio");
     } finally {
       setLoading(false);
     }
@@ -276,12 +282,12 @@ export default function BIDashboard() {
   // Derived values
   const fleetStatus =
     kpis?.criticalDevices && kpis.criticalDevices > 0
-      ? 'critical'
+      ? "critical"
       : kpis?.onlineDevices !== undefined &&
-        kpis?.totalDevices !== undefined &&
-        kpis.onlineDevices < kpis.totalDevices * 0.8
-        ? 'warning'
-        : 'optimum';
+          kpis?.totalDevices !== undefined &&
+          kpis.onlineDevices < kpis.totalDevices * 0.8
+        ? "warning"
+        : "optimum";
 
   const churnPct = ((kpis?.churnRate ?? 0) * 100).toFixed(1);
 
@@ -296,7 +302,6 @@ export default function BIDashboard() {
       </Head>
 
       <div className="max-w-[1400px] mx-auto space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
         {/* ── PAGE HEADER ─────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-zinc-800/60 pb-8">
           <div className="space-y-1">
@@ -330,7 +335,9 @@ export default function BIDashboard() {
               className="px-5 py-2.5 gap-2"
               actionName="refresh_bi_dashboard"
             >
-              <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
+              <RefreshCw
+                className={clsx("w-4 h-4", loading && "animate-spin")}
+              />
               Actualizar
             </AntigravityButton>
             <Link
@@ -350,8 +357,8 @@ export default function BIDashboard() {
             value={`RD$ ${(kpis?.mrr ?? 0).toLocaleString()}`}
             subtitle="Ingresos por suscripción (mes)"
             icon={DollarSign}
-            status={kpis?.mrr && kpis.mrr > 0 ? 'optimum' : 'warning'}
-            trend={{ value: '+8.3%', positive: true }}
+            status={kpis?.mrr && kpis.mrr > 0 ? "optimum" : "warning"}
+            trend={{ value: "+8.3%", positive: true }}
             loading={loading}
             highlight
           />
@@ -369,7 +376,7 @@ export default function BIDashboard() {
             subtitle="Ciclos confirmados en el mes"
             icon={PlayCircle}
             status="optimum"
-            trend={{ value: '+12.1%', positive: true }}
+            trend={{ value: "+12.1%", positive: true }}
             loading={loading}
           />
           <KpiCard
@@ -377,14 +384,17 @@ export default function BIDashboard() {
             value={(kpis?.discrepancyCount ?? 0).toString()}
             subtitle="Conciliaciones pendientes"
             icon={AlertTriangle}
-            status={kpis?.discrepancyCount && kpis.discrepancyCount > 0 ? 'critical' : 'optimum'}
+            status={
+              kpis?.discrepancyCount && kpis.discrepancyCount > 0
+                ? "critical"
+                : "optimum"
+            }
             loading={loading}
           />
         </div>
 
         {/* ── MAP + RECONCILIATION FEED ─────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
           {/* Heatmap */}
           <div className="lg:col-span-2 flex flex-col gap-2">
             <SectionHeading icon={MapPin} title="Hotspots de Impacto MTD" />
@@ -413,14 +423,15 @@ export default function BIDashboard() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-xs font-bold text-white group-hover:text-tad-yellow transition-colors tracking-tight truncate max-w-[160px]">
-                          {d.deviceId || 'S/N'}
+                          {d.deviceId || "S/N"}
                         </p>
                         <span className="text-[8px] bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded font-black tracking-tight shrink-0 ml-2">
-                          {(d.discrepancyType ?? '').replace(/_/g, ' ')}
+                          {(d.discrepancyType ?? "").replace(/_/g, " ")}
                         </span>
                       </div>
                       <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
-                        Período {d.period} · {d.totalPlaybacks} impactos · Balance RD${' '}
+                        Período {d.period} · {d.totalPlaybacks} impactos ·
+                        Balance RD${" "}
                         {(d.discrepancyAmount ?? 0).toLocaleString()}
                       </p>
                     </div>
@@ -449,7 +460,16 @@ export default function BIDashboard() {
 
         {/* ── INVESTOR INTELLIGENCE PRO ─────────────────────────────────────── */}
         <div className="space-y-5 pt-2">
-          <SectionHeading icon={BarChart3} title={<>Investor Intelligence <span className="text-tad-yellow">PRO</span></>} badge="v7.5" />
+          <SectionHeading
+            icon={BarChart3}
+            title={
+              <>
+                Investor Intelligence{" "}
+                <span className="text-tad-yellow">PRO</span>
+              </>
+            }
+            badge="v7.5"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatBar
@@ -472,8 +492,8 @@ export default function BIDashboard() {
               icon={RefreshCw}
               trend={
                 parseFloat(churnPct) > 10
-                  ? 'Por encima del umbral'
-                  : 'Dentro del rango óptimo'
+                  ? "Por encima del umbral"
+                  : "Dentro del rango óptimo"
               }
               trendUp={parseFloat(churnPct) <= 10}
             />
@@ -497,9 +517,9 @@ export default function BIDashboard() {
                   Calculadora de Crecimiento
                 </p>
                 <p className="text-[11px] text-zinc-500 font-medium max-w-lg leading-relaxed">
-                  Basado en el Yield actual, cada{' '}
+                  Basado en el Yield actual, cada{" "}
                   <span className="text-tad-yellow font-black">10</span> tablets
-                  nuevas incrementan el MRR en{' '}
+                  nuevas incrementan el MRR en{" "}
                   <span className="text-white font-bold">RD$ 60,000</span> con
                   costo de operación marginal.
                 </p>
@@ -538,25 +558,30 @@ export default function BIDashboard() {
             <div
               className="h-full rounded-full transition-all duration-1000"
               style={{
-                width: loading ? '0%' : `${Math.min(kpis?.deliveryRateAvg ?? 0, 100)}%`,
+                width: loading
+                  ? "0%"
+                  : `${Math.min(kpis?.deliveryRateAvg ?? 0, 100)}%`,
                 background:
                   (kpis?.deliveryRateAvg ?? 0) >= 90
-                    ? 'linear-gradient(90deg, #10b981, #22c55e)'
+                    ? "linear-gradient(90deg, #10b981, #22c55e)"
                     : (kpis?.deliveryRateAvg ?? 0) >= 70
-                      ? 'linear-gradient(90deg, #facc15, #fbbf24)'
-                      : 'linear-gradient(90deg, #ef4444, #f43f5e)',
+                      ? "linear-gradient(90deg, #facc15, #fbbf24)"
+                      : "linear-gradient(90deg, #ef4444, #f43f5e)",
               }}
             />
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">0%</span>
+            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
+              0%
+            </span>
             <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
               Objetivo: 95%
             </span>
-            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">100%</span>
+            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
+              100%
+            </span>
           </div>
         </div>
-
       </div>
     </>
   );

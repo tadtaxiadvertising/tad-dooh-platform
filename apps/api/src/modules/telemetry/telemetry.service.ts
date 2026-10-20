@@ -41,7 +41,8 @@ export class TelemetryService {
   private async pruneExpiredWindows() {
     const windowMs = 60_000; // Prune windows older than 1 minute
     const cutoff = new Date(Date.now() - windowMs);
-    await this.prisma.$executeRaw`DELETE FROM rate_limit_windows WHERE window_start < ${cutoff}`;
+    await this.prisma
+      .$executeRaw`DELETE FROM rate_limit_windows WHERE window_start < ${cutoff}`;
   }
 
   async checkPlaybackRateLimit(

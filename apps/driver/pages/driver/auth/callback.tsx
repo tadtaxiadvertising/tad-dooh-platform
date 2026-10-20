@@ -1,9 +1,11 @@
-import React from 'react';
-import { AuthCallback, ErrorBoundary } from '@tad/ui';
-import { PORTAL_CONFIGS } from '@tad/services';
-import type { GetServerSideProps } from 'next';
+import React from "react";
+import { AuthCallback, ErrorBoundary } from "@tad/ui";
+import { PORTAL_CONFIGS } from "@tad/services";
+import type { GetServerSideProps } from "next";
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function DriverAuthCallback() {
   return (

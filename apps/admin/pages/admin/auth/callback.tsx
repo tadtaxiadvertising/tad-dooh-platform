@@ -1,9 +1,11 @@
-import React from 'react';
-import type { GetServerSideProps } from 'next';
-import { AuthCallback, ErrorBoundary } from '@tad/ui';
-import { PORTAL_CONFIGS } from '@tad/services';
+import React from "react";
+import type { GetServerSideProps } from "next";
+import { AuthCallback, ErrorBoundary } from "@tad/ui";
+import { PORTAL_CONFIGS } from "@tad/services";
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function AdminAuthCallback() {
   return (

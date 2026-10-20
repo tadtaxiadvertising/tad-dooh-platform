@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
-import clsx from 'clsx';
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft } from "lucide-react";
+import clsx from "clsx";
 
 interface OnboardingWizardProps<T extends number> {
   step: T;
@@ -38,10 +38,15 @@ export function OnboardingWizard<T extends number>({
   stepLabels,
   className,
 }: OnboardingWizardProps<T>) {
-  const direction = step > (step - 1) ? 1 : -1;
+  const direction = step > step - 1 ? 1 : -1;
 
   return (
-    <div className={clsx('min-h-screen bg-[#0a0a0a] flex flex-col items-center relative overflow-hidden font-sans', className)}>
+    <div
+      className={clsx(
+        "min-h-screen bg-[#0a0a0a] flex flex-col items-center relative overflow-hidden font-sans",
+        className,
+      )}
+    >
       {/* Ambient Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-tad-yellow/[0.04] blur-[120px] rounded-full" />
@@ -51,7 +56,7 @@ export function OnboardingWizard<T extends number>({
       {/* Top Nav Bar */}
       <div className="w-full max-w-lg px-4 pt-4 pb-2 flex items-center justify-between relative z-10">
         <motion.button
-          onClick={() => step > 1 ? onPrev() : onClose()}
+          onClick={() => (step > 1 ? onPrev() : onClose())}
           className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -60,7 +65,10 @@ export function OnboardingWizard<T extends number>({
         </motion.button>
 
         {/* Progress Bar with layoutId */}
-        <motion.div className="flex items-center gap-1.5 flex-1 max-w-md mx-4" layout>
+        <motion.div
+          className="flex items-center gap-1.5 flex-1 max-w-md mx-4"
+          layout
+        >
           {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
             <motion.div
               key={i}
@@ -69,10 +77,10 @@ export function OnboardingWizard<T extends number>({
                 "h-1 rounded-full transition-all duration-500",
                 step >= i
                   ? "bg-[#FDCB01] w-8 shadow-[0_0_12px_rgba(253,203,1,0.4)]"
-                  : "bg-white/10 w-4"
+                  : "bg-white/10 w-4",
               )}
               initial={false}
-              animate={{ width: step >= i ? '2rem' : '1rem' }}
+              animate={{ width: step >= i ? "2rem" : "1rem" }}
             />
           ))}
         </motion.div>

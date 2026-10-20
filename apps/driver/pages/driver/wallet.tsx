@@ -6,35 +6,42 @@
  * el componente WalletTab compartido para consistencia visual.
  * La navegación principal del driver será vía los tabs internos del Dashboard.
  */
-import { useState, useEffect } from 'react';
-import type { GetServerSideProps } from 'next';
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-import api from '@tad/services';
-import { WalletTab } from '../../components/dashboard/WalletTab';
-import { calculateWalletTotal, type WalletState } from '../../components/dashboard/DriverWalletCard';
-import type { DriverHubData } from '../../hooks/useDriverHub';
+import { useState, useEffect } from "react";
+import type { GetServerSideProps } from "next";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import api from "@tad/services";
+import { WalletTab } from "../../components/dashboard/WalletTab";
+import {
+  calculateWalletTotal,
+  type WalletState,
+} from "../../components/dashboard/DriverWalletCard";
+import type { DriverHubData } from "../../hooks/useDriverHub";
 
 // Force dynamic rendering
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 function normalizeWalletHubData(raw: any): DriverHubData {
   return {
-    driverId: String(raw?.driverId || ''),
-    driverName: String(raw?.driverName || 'Conductor'),
+    driverId: String(raw?.driverId || ""),
+    driverName: String(raw?.driverName || "Conductor"),
     balance: Number(raw?.balance) || 0,
     projectedEarnings: Number(raw?.projectedEarnings) || 0,
     activeAds: Number(raw?.activeAds) || 0,
     activeSlots: Math.min(15, Number(raw?.activeSlots || raw?.activeAds || 0)),
     maxSlots: 15,
     subscriptionPaid: Boolean(raw?.subscriptionPaid),
-    subscriptionStatus: String(raw?.subscriptionStatus || 'UNKNOWN'),
+    subscriptionStatus: String(raw?.subscriptionStatus || "UNKNOWN"),
     deviceId: raw?.deviceId ? String(raw.deviceId) : null,
     gpsPoints: Number(raw?.gpsPoints) || 0,
     adsPlayed: Number(raw?.adsPlayed) || 0,
     contractAccepted: Boolean(raw?.contractAccepted),
-    agreementVersion: raw?.agreementVersion ? String(raw.agreementVersion) : null,
-    onboardingStatus: String(raw?.onboardingStatus || 'UNKNOWN'),
+    agreementVersion: raw?.agreementVersion
+      ? String(raw.agreementVersion)
+      : null,
+    onboardingStatus: String(raw?.onboardingStatus || "UNKNOWN"),
     bankAccountConfigured: Boolean(raw?.bankAccountConfigured),
   };
 }
@@ -46,10 +53,10 @@ export default function DriverWalletPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const hubRes = await api.get('/drivers/me/hub');
+        const hubRes = await api.get("/drivers/me/hub");
         setRawHubData(hubRes.data);
       } catch (error) {
-        console.error('Failed to load wallet data:', error);
+        console.error("Failed to load wallet data:", error);
       } finally {
         setLoading(false);
       }
@@ -101,7 +108,11 @@ export default function DriverWalletPage() {
       <main className="mx-auto max-w-md px-4 pt-4 pb-32">
         <WalletTab
           hubData={hubData}
-          connectionStatus={typeof navigator !== 'undefined' && navigator.onLine ? 'online' : 'offline'}
+          connectionStatus={
+            typeof navigator !== "undefined" && navigator.onLine
+              ? "online"
+              : "offline"
+          }
           walletState={walletState}
           isLocalMode={false}
         />

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
 import {
   Mail,
   Lock,
@@ -10,56 +10,60 @@ import {
   AlertCircle,
   Loader2,
   TrendingUp,
-} from 'lucide-react';
-import CityMapBackdrop from '../../components/advertiser/CityMapBackdrop';
-import { captureReferralCode, clearReferralCode } from '../../components/advertiser/referral';
-import { GoogleSignInButton } from '@tad/ui';
-import { PORTAL_CONFIGS } from '@tad/services';
+} from "lucide-react";
+import CityMapBackdrop from "../../components/advertiser/CityMapBackdrop";
+import {
+  captureReferralCode,
+  clearReferralCode,
+} from "../../components/advertiser/referral";
+import { GoogleSignInButton } from "@tad/ui";
+import { PORTAL_CONFIGS } from "@tad/services";
 
 export { captureReferralCode, clearReferralCode };
 
-type GatewayView = 'login' | 'forgot' | 'forgot-sent';
+type GatewayView = "login" | "forgot" | "forgot-sent";
 
-const GOLD = '#FDCB01';
+const GOLD = "#FDCB01";
 
-function persistSession(payload: Record<string, unknown>, fallbackEmail: string): void {
+function persistSession(
+  payload: Record<string, unknown>,
+  fallbackEmail: string,
+): void {
   const accessToken =
     payload?.access_token ||
     payload?.token ||
     (payload as any)?.session?.access_token;
-  if (!accessToken) throw new Error('El servidor no devolvió un token de acceso válido.');
+  if (!accessToken)
+    throw new Error("El servidor no devolvió un token de acceso válido.");
 
   const user = {
-    id:
-      payload?.advertiserId ||
-      (payload as any)?.user?.id ||
-      '',
+    id: payload?.advertiserId || (payload as any)?.user?.id || "",
     email: payload?.email || (payload as any)?.user?.email || fallbackEmail,
-    role: 'ADVERTISER',
+    role: "ADVERTISER",
     entityId: payload?.advertiserId || (payload as any)?.user?.entityId || null,
     name: payload?.name || payload?.companyName || fallbackEmail,
     // NUEVO: campos del backend para UX de onboarding/estados
-    status: payload?.status || 'ACTIVE',
+    status: payload?.status || "ACTIVE",
     category: payload?.category || null,
     phone: payload?.phone || null,
   };
 
-  const isSecure = window.location.protocol === 'https:';
-  document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+  const isSecure = window.location.protocol === "https:";
+  document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? "; Secure" : ""}`;
   // A7: NO guardar refresh token en localStorage. Access token en memoria via context.
-  localStorage.setItem('tad_advertiser_token', accessToken);
-  localStorage.setItem('tad_advertiser_user', JSON.stringify(user));
+  localStorage.setItem("tad_advertiser_token", accessToken);
+  localStorage.setItem("tad_advertiser_user", JSON.stringify(user));
 }
 
 export default function AdvertiserLoginPage() {
   const router = useRouter();
-  const [view, setView] = useState<GatewayView>('login');
+  const [view, setView] = useState<GatewayView>("login");
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -68,65 +72,74 @@ export default function AdvertiserLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!email.trim() || !password) {
-      setError('Ingresa tu correo corporativo y contraseña.');
+      setError("Ingresa tu correo corporativo y contraseña.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/proxy/advertisers/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/proxy/advertisers/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.message || 'Credenciales inválidas. Verifica e intenta de nuevo.');
+        throw new Error(
+          data?.message ||
+            "Credenciales inválidas. Verifica e intenta de nuevo.",
+        );
       }
 
       persistSession(data, email.trim());
-      router.replace('/advertiser/dashboard');
+      router.replace("/advertiser/dashboard");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
+      setError(
+        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
+      );
       setLoading(false);
     }
   };
 
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!email.trim()) {
-      setError('Ingresa el correo corporativo de tu cuenta.');
+      setError("Ingresa el correo corporativo de tu cuenta.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/proxy/advertisers/recover-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/proxy/advertisers/recover-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.message || 'No pudimos procesar la recuperación.');
+        throw new Error(
+          data?.message || "No pudimos procesar la recuperación.",
+        );
       }
-      setView('forgot-sent');
+      setView("forgot-sent");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
+      setError(
+        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const inputClass =
-    'w-full min-h-[48px] bg-black/60 border border-white/10 rounded-xl pl-11 pr-4 text-sm font-bold text-white placeholder:text-white/25 focus:outline-none focus:border-[#FDCB01]/70 transition-colors';
+    "w-full min-h-[48px] bg-black/60 border border-white/10 rounded-xl pl-11 pr-4 text-sm font-bold text-white placeholder:text-white/25 focus:outline-none focus:border-[#FDCB01]/70 transition-colors";
 
   return (
     <div className="relative min-h-screen bg-black overflow-x-hidden font-sans selection:bg-[#FDCB01] selection:text-black">
@@ -149,7 +162,9 @@ export default function AdvertiserLoginPage() {
         <div className="w-full max-w-md lg:w-[40%] lg:max-w-[480px] flex flex-col items-center">
           <div className="flex flex-col items-center text-center mb-8 sm:mb-10">
             <div className="w-14 h-14 sm:w-[72px] sm:h-[72px] bg-[#FDCB01] rounded-xl grid place-items-center shadow-[0_0_50px_rgba(253,203,1,0.25)] mb-5">
-              <span className="text-black font-black tracking-tighter text-xl sm:text-2xl">TAD</span>
+              <span className="text-black font-black tracking-tighter text-xl sm:text-2xl">
+                TAD
+              </span>
             </div>
             <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.35em] text-[#AAAAAA] mb-2">
               Portal de Anunciantes
@@ -159,9 +174,12 @@ export default function AdvertiserLoginPage() {
             </h1>
           </div>
 
-          {view !== 'forgot-sent' ? (
+          {view !== "forgot-sent" ? (
             <div className="w-[95%] sm:w-full mx-auto bg-[#121212]/90 border border-white/10 rounded-xl p-6 sm:p-8 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
-              <form onSubmit={view === 'login' ? handleLogin : handleRecover} noValidate>
+              <form
+                onSubmit={view === "login" ? handleLogin : handleRecover}
+                noValidate
+              >
                 {error && (
                   <div className="mb-4 p-3 bg-red-500/10 border border-red-500/25 rounded-lg flex items-center gap-2 text-red-400 animate-shake">
                     <AlertCircle className="w-4 h-4 shrink-0" />
@@ -190,7 +208,7 @@ export default function AdvertiserLoginPage() {
                   />
                 </div>
 
-                {view === 'login' && (
+                {view === "login" && (
                   <>
                     <label
                       htmlFor="adv-password"
@@ -204,7 +222,7 @@ export default function AdvertiserLoginPage() {
                       </div>
                       <input
                         id="adv-password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -216,9 +234,17 @@ export default function AdvertiserLoginPage() {
                         tabIndex={-1}
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-3.5 flex items-center text-white/30 hover:text-[#FDCB01] transition-colors"
-                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        aria-label={
+                          showPassword
+                            ? "Ocultar contraseña"
+                            : "Mostrar contraseña"
+                        }
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </>
@@ -231,7 +257,7 @@ export default function AdvertiserLoginPage() {
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : view === 'login' ? (
+                  ) : view === "login" ? (
                     <>
                       <span>Entrar al portal</span>
                       <ArrowRight className="w-4 h-4" />
@@ -241,12 +267,17 @@ export default function AdvertiserLoginPage() {
                   )}
                 </button>
 
-                {view === 'login' && (
+                {view === "login" && (
                   <>
                     {/* ─── OAuth Divider + Google Sign-In ─── */}
-                    <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+                    <div
+                      className="flex items-center gap-3 pt-1"
+                      aria-hidden="true"
+                    >
                       <div className="flex-1 h-px bg-white/10" />
-                      <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">o</span>
+                      <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">
+                        o
+                      </span>
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
 
@@ -256,13 +287,14 @@ export default function AdvertiserLoginPage() {
                     />
 
                     <p className="mt-4 text-center text-[11px] text-[#AAAAAA] leading-relaxed">
-                      Cada día sin presencia en la calle es alcance que captura tu competencia.
+                      Cada día sin presencia en la calle es alcance que captura
+                      tu competencia.
                     </p>
                     <button
                       type="button"
                       onClick={() => {
-                        setView('forgot');
-                        setError('');
+                        setView("forgot");
+                        setError("");
                       }}
                       className="block mx-auto mt-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-[#FDCB01] transition-colors"
                     >
@@ -271,12 +303,12 @@ export default function AdvertiserLoginPage() {
                   </>
                 )}
 
-                {view === 'forgot' && (
+                {view === "forgot" && (
                   <button
                     type="button"
                     onClick={() => {
-                      setView('login');
-                      setError('');
+                      setView("login");
+                      setError("");
                     }}
                     className="block mx-auto mt-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-white transition-colors"
                   >
@@ -294,14 +326,15 @@ export default function AdvertiserLoginPage() {
                 Revisa tu correo
               </h2>
               <p className="text-sm text-[#AAAAAA] leading-relaxed mb-6">
-                Si <span className="text-white font-bold">{email}</span> está registrado, recibirás
-                las instrucciones para restablecer tu contraseña en unos minutos.
+                Si <span className="text-white font-bold">{email}</span> está
+                registrado, recibirás las instrucciones para restablecer tu
+                contraseña en unos minutos.
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  setView('login');
-                  setError('');
+                  setView("login");
+                  setError("");
                 }}
                 className="w-full min-h-[48px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98]"
               >
@@ -324,12 +357,35 @@ export default function AdvertiserLoginPage() {
 
         <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[10px] font-medium tracking-wide text-white/25 px-4">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <span>© {new Date().getFullYear()} TAD Taxi Advertising S.R.L. · Red DOOH República Dominicana</span>
+            <span>
+              © {new Date().getFullYear()} TAD Taxi Advertising S.R.L. · Red
+              DOOH República Dominicana
+            </span>
             <span className="hidden sm:inline">·</span>
-            <a href="/politica-de-privacidad" className="hover:text-[#FDCB01] transition-colors">Privacidad</a>
-            <a href="/terminos-de-servicio" className="hover:text-[#FDCB01] transition-colors">Términos</a>
-            <a href="/politica-de-cookies" className="hover:text-[#FDCB01] transition-colors">Cookies</a>
-            <a href="/aviso-legal" className="hover:text-[#FDCB01] transition-colors">Aviso Legal</a>
+            <a
+              href="/politica-de-privacidad"
+              className="hover:text-[#FDCB01] transition-colors"
+            >
+              Privacidad
+            </a>
+            <a
+              href="/terminos-de-servicio"
+              className="hover:text-[#FDCB01] transition-colors"
+            >
+              Términos
+            </a>
+            <a
+              href="/politica-de-cookies"
+              className="hover:text-[#FDCB01] transition-colors"
+            >
+              Cookies
+            </a>
+            <a
+              href="/aviso-legal"
+              className="hover:text-[#FDCB01] transition-colors"
+            >
+              Aviso Legal
+            </a>
           </div>
         </footer>
       </main>

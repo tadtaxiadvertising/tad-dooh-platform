@@ -1,66 +1,102 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import type { GetServerSideProps } from 'next';
-import clsx from 'clsx';
-import { toast } from 'sonner';
-import { getDrivers, updateDriverSubscription, assignDeviceToDriver, unlinkDeviceFromDriver } from '@tad/services';
-import DriverModal from '@/components/DriverModal';
-import { useTabSync } from '@tad/ui';
-import { notifyChange } from '@tad/ui';
+import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import type { GetServerSideProps } from "next";
+import clsx from "clsx";
+import { toast } from "sonner";
 import {
-  Download, Plus, User, UserCheck, UserX, CreditCard, Search, Radio,
-  ExternalLink, Tablet, CheckCircle2, AlertTriangle, Smartphone, Navigation,
-  Lock, Unlock, ChevronDown, RefreshCw, Zap, ShieldCheck, Users, IdCard, X
-} from 'lucide-react';
-import { WhatsAppButton } from '@tad/ui';
-import { AntigravityButton } from '@tad/ui';
+  getDrivers,
+  updateDriverSubscription,
+  assignDeviceToDriver,
+  unlinkDeviceFromDriver,
+} from "@tad/services";
+import DriverModal from "@/components/DriverModal";
+import { useTabSync } from "@tad/ui";
+import { notifyChange } from "@tad/ui";
+import {
+  Download,
+  Plus,
+  User,
+  UserCheck,
+  UserX,
+  CreditCard,
+  Search,
+  Radio,
+  ExternalLink,
+  Tablet,
+  CheckCircle2,
+  AlertTriangle,
+  Smartphone,
+  Navigation,
+  Lock,
+  Unlock,
+  ChevronDown,
+  RefreshCw,
+  Zap,
+  ShieldCheck,
+  Users,
+  IdCard,
+  X,
+} from "lucide-react";
+import { WhatsAppButton } from "@tad/ui";
+import { AntigravityButton } from "@tad/ui";
 
 // Helper: obtiene la base URL del API de producción
 const getApiBase = () => {
-  if (typeof window === 'undefined') return '';
+  if (typeof window === "undefined") return "";
   // @ts-ignore
   const stored = (window as unknown as Record<string, string>).TAD_API_URL;
   if (stored) return stored;
   // En producción usa la URL del backend desplegado en EasyPanel
-  return process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://proyecto-ia-tad-api.rewvid.easypanel.host/api"
+  );
 };
 
 const getTelemetryUrl = (deviceId: string) => {
   // Points to the new tad-driver.html business hub, pre-filling the deviceId and server via URL
-  const base = process.env.NEXT_PUBLIC_PLAYER_URL || 'https://proyecto-ia-tad-player.rewvid.easypanel.host';
+  const base =
+    process.env.NEXT_PUBLIC_PLAYER_URL ||
+    "https://proyecto-ia-tad-player.rewvid.easypanel.host";
   const api = getApiBase();
   return `${base}/tad-driver.html?deviceId=${deviceId}&server=${encodeURIComponent(api)}`;
 };
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function DriversPage() {
-  const [drivers, setDrivers] = useState<{
-    id: string;
-    fullName: string;
-    phone?: string;
-    taxiPlate?: string;
-    taxiNumber?: string;
-    deviceId?: string;
-    status: string;
-    subscriptionPaid: boolean;
-    devices?: { deviceId: string }[];
-    activeAds?: number;
-    projectedEarnings?: number;
-    cedula?: string;
-    licensePlate?: string;
-    referralBonus?: number;
-    subscriptionEnd?: string;
-  }[]>([]);
+  const [drivers, setDrivers] = useState<
+    {
+      id: string;
+      fullName: string;
+      phone?: string;
+      taxiPlate?: string;
+      taxiNumber?: string;
+      deviceId?: string;
+      status: string;
+      subscriptionPaid: boolean;
+      devices?: { deviceId: string }[];
+      activeAds?: number;
+      projectedEarnings?: number;
+      cedula?: string;
+      licensePlate?: string;
+      referralBonus?: number;
+      subscriptionEnd?: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'active' | 'blocked' | 'unpaid'>('all');
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "blocked" | "unpaid">(
+    "all",
+  );
 
   // Recuperar filtros guardados al montar el componente
   useEffect(() => {
-    const savedSearch = localStorage.getItem('tad_drivers_search');
-    const savedFilter = localStorage.getItem('tad_drivers_filter');
+    const savedSearch = localStorage.getItem("tad_drivers_search");
+    const savedFilter = localStorage.getItem("tad_drivers_filter");
     if (savedSearch) setSearch(savedSearch);
     if (savedFilter) setFilter(savedFilter as any);
   }, []);
@@ -68,19 +104,19 @@ export default function DriversPage() {
   // Persistir cambios en filtros
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    localStorage.setItem('tad_drivers_search', val);
+    localStorage.setItem("tad_drivers_search", val);
   };
 
-  const handleFilterChange = (val: 'all' | 'active' | 'blocked' | 'unpaid') => {
+  const handleFilterChange = (val: "all" | "active" | "blocked" | "unpaid") => {
     setFilter(val);
-    localStorage.setItem('tad_drivers_filter', val);
+    localStorage.setItem("tad_drivers_filter", val);
   };
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAuditDriver, setSelectedAuditDriver] = useState<any>(null);
 
-  const [assigningDeviceId, setAssigningDeviceId] = useState<string>('');
+  const [assigningDeviceId, setAssigningDeviceId] = useState<string>("");
   const [savingDevice, setSavingDevice] = useState(false);
 
   const handleAssignDevice = async (driverId: string) => {
@@ -91,14 +127,18 @@ export default function DriversPage() {
     setSavingDevice(true);
     try {
       await assignDeviceToDriver(driverId, assigningDeviceId.trim());
-      toast.success("VINCULACIÓN COMPLETADA: Nodo de hardware asignado al socio.");
+      toast.success(
+        "VINCULACIÓN COMPLETADA: Nodo de hardware asignado al socio.",
+      );
       await loadDrivers();
-      notifyChange('TAD_DRIVERS');
+      notifyChange("TAD_DRIVERS");
     } catch (e: any) {
-      toast.error("FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message));
+      toast.error(
+        "FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message),
+      );
     } finally {
       setSavingDevice(false);
-      setAssigningDeviceId('');
+      setAssigningDeviceId("");
     }
   };
 
@@ -106,11 +146,15 @@ export default function DriversPage() {
     setSavingDevice(true);
     try {
       await unlinkDeviceFromDriver(driverId);
-      toast.warning("DESVINCULACIÓN EXITOSA: El nodo ha sido liberado de este socio.");
+      toast.warning(
+        "DESVINCULACIÓN EXITOSA: El nodo ha sido liberado de este socio.",
+      );
       await loadDrivers();
-      notifyChange('TAD_DRIVERS');
+      notifyChange("TAD_DRIVERS");
     } catch (e: any) {
-      toast.error("ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message));
+      toast.error(
+        "ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message),
+      );
     } finally {
       setSavingDevice(false);
     }
@@ -123,71 +167,106 @@ export default function DriversPage() {
       // Limpiar datos: limitar a 10 socios como parte de la fase piloto
       setDrivers(data ? data.slice(0, 10) : []);
     } catch (err: unknown) {
-      console.error('Error loading drivers:', err);
+      console.error("Error loading drivers:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useTabSync('TAD_DRIVERS', loadDrivers);
+  useTabSync("TAD_DRIVERS", loadDrivers);
 
   useEffect(() => {
     loadDrivers();
   }, [loadDrivers]);
 
-  const handleToggleStatus = async (driverId: string, currentPaidStatus: boolean) => {
+  const handleToggleStatus = async (
+    driverId: string,
+    currentPaidStatus: boolean,
+  ) => {
     try {
       const newStatus = !currentPaidStatus;
       await updateDriverSubscription(driverId, { paid: newStatus });
-      setDrivers(prev => prev.map(d => {
-        if (d.id === driverId) {
-          return { ...d, subscriptionPaid: newStatus, status: newStatus ? 'OPERATIVO' : 'BLOQUEADO' };
-        }
-        return d;
-      }));
-      notifyChange('TAD_DRIVERS');
-      toast.success(`ESTADO ACTUALIZADO: Socio ${newStatus ? 'HABILITADO' : 'INHIBIDO'} correctamente.`);
+      setDrivers((prev) =>
+        prev.map((d) => {
+          if (d.id === driverId) {
+            return {
+              ...d,
+              subscriptionPaid: newStatus,
+              status: newStatus ? "OPERATIVO" : "BLOQUEADO",
+            };
+          }
+          return d;
+        }),
+      );
+      notifyChange("TAD_DRIVERS");
+      toast.success(
+        `ESTADO ACTUALIZADO: Socio ${newStatus ? "HABILITADO" : "INHIBIDO"} correctamente.`,
+      );
     } catch (err: unknown) {
       console.error(err);
-      toast.error('FALLA DE SEGURIDAD: Error crítico en actualización de credenciales.');
+      toast.error(
+        "FALLA DE SEGURIDAD: Error crítico en actualización de credenciales.",
+      );
     }
   };
 
   const downloadCSV = () => {
-    const headers = ['ID Flota', 'Nombre', 'Teléfono', 'Placa', 'Estado', 'Suscripción'];
-    const rows = filtered.map(d => [
+    const headers = [
+      "ID Flota",
+      "Nombre",
+      "Teléfono",
+      "Placa",
+      "Estado",
+      "Suscripción",
+    ];
+    const rows = filtered.map((d) => [
       d.taxiNumber,
       `"${d.fullName}"`,
       d.phone,
       d.taxiPlate,
       d.status,
-      d.subscriptionPaid ? 'Pagado' : 'Pendiente'
+      d.subscriptionPaid ? "Pagado" : "Pendiente",
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      headers.join(",") +
+      "\n" +
+      rows.map((r) => r.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `RED_TAD_REPORT_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      "download",
+      `RED_TAD_REPORT_${new Date().toISOString().split("T")[0]}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const filtered = drivers.filter(d => {
-    const name = d.fullName || '';
-    const plate = d.taxiPlate || '';
-    const matchSearch = name.toLowerCase().includes(search.toLowerCase()) || plate.toLowerCase().includes(search.toLowerCase());
-    if (filter === 'active') return matchSearch && d.status === 'OPERATIVO';
-    if (filter === 'blocked') return matchSearch && (d.status === 'BLOQUEADO' || d.status === 'SUSPENDED' || d.status === 'INACTIVE');
-    if (filter === 'unpaid') return matchSearch && !d.subscriptionPaid;
+  const filtered = drivers.filter((d) => {
+    const name = d.fullName || "";
+    const plate = d.taxiPlate || "";
+    const matchSearch =
+      name.toLowerCase().includes(search.toLowerCase()) ||
+      plate.toLowerCase().includes(search.toLowerCase());
+    if (filter === "active") return matchSearch && d.status === "OPERATIVO";
+    if (filter === "blocked")
+      return (
+        matchSearch &&
+        (d.status === "BLOQUEADO" ||
+          d.status === "SUSPENDED" ||
+          d.status === "INACTIVE")
+      );
+    if (filter === "unpaid") return matchSearch && !d.subscriptionPaid;
     return matchSearch;
   });
 
   const stats = {
     total: drivers.length,
-    active: drivers.filter(d => d.status === 'OPERATIVO').length,
-    blocked: drivers.filter(d => d.status !== 'OPERATIVO').length,
-    revenue: drivers.filter(d => d.status === 'OPERATIVO').length * 6000,
+    active: drivers.filter((d) => d.status === "OPERATIVO").length,
+    blocked: drivers.filter((d) => d.status !== "OPERATIVO").length,
+    revenue: drivers.filter((d) => d.status === "OPERATIVO").length * 6000,
   };
 
   return (
@@ -201,7 +280,9 @@ export default function DriversPage() {
       {/* Page Context Transition */}
       <div className="flex items-center gap-3 mb-8 opacity-60">
         <div className="w-8 h-px bg-white/20" />
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Fleet Partners / Crew Management v4.2</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">
+          Fleet Partners / Crew Management v4.2
+        </p>
       </div>
 
       <div className="flex justify-end mb-10">
@@ -226,24 +307,75 @@ export default function DriversPage() {
       {/* Stats Cluster */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { label: 'Red Global', value: stats.total, icon: User, color: 'text-white', bgColor: 'bg-gray-800/80', border: 'border-gray-700' },
-          { label: 'Online / Activos', value: stats.active, icon: UserCheck, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-          { label: 'Escrutinio / Bloqueo', value: stats.blocked, icon: UserX, color: 'text-rose-400', bgColor: 'bg-rose-500/10', border: 'border-rose-500/20' },
-          { label: 'Proyección Anual', value: `RD$ ${stats.revenue.toLocaleString()}`, icon: CreditCard, color: 'text-tad-yellow', bgColor: 'bg-tad-yellow/10', border: 'border-tad-yellow/20' },
+          {
+            label: "Red Global",
+            value: stats.total,
+            icon: User,
+            color: "text-white",
+            bgColor: "bg-gray-800/80",
+            border: "border-gray-700",
+          },
+          {
+            label: "Online / Activos",
+            value: stats.active,
+            icon: UserCheck,
+            color: "text-emerald-400",
+            bgColor: "bg-emerald-500/10",
+            border: "border-emerald-500/20",
+          },
+          {
+            label: "Escrutinio / Bloqueo",
+            value: stats.blocked,
+            icon: UserX,
+            color: "text-rose-400",
+            bgColor: "bg-rose-500/10",
+            border: "border-rose-500/20",
+          },
+          {
+            label: "Proyección Anual",
+            value: `RD$ ${stats.revenue.toLocaleString()}`,
+            icon: CreditCard,
+            color: "text-tad-yellow",
+            bgColor: "bg-tad-yellow/10",
+            border: "border-tad-yellow/20",
+          },
         ].map((stat, i) => (
-          <div key={i} className={clsx("bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both driver-stat-card")}>
+          <div
+            key={i}
+            className={clsx(
+              "bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl group hover:border-gray-500 transition-all duration-300 relative flex flex-col justify-between shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both driver-stat-card",
+            )}
+          >
             <style jsx>{`
-                 .driver-stat-card { animation-delay: ${i * 50}ms; }
-               `}</style>
+              .driver-stat-card {
+                animation-delay: ${i * 50}ms;
+              }
+            `}</style>
             <div className="flex justify-between items-start mb-6">
-              <div className={clsx("p-3 rounded-2xl border transition-all duration-300 shadow-sm", stat.bgColor, stat.border, stat.color)}>
+              <div
+                className={clsx(
+                  "p-3 rounded-2xl border transition-all duration-300 shadow-sm",
+                  stat.bgColor,
+                  stat.border,
+                  stat.color,
+                )}
+              >
                 <stat.icon className="w-5 h-5" />
               </div>
               <div className="h-1.5 w-1.5 rounded-full bg-gray-600 group-hover:bg-tad-yellow transition-colors shadow-[0_0_8px_#fad400]" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className={clsx("text-3xl font-bold tracking-tight leading-none mt-1", stat.color)}>{stat.value}</h3>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                {stat.label}
+              </p>
+              <h3
+                className={clsx(
+                  "text-3xl font-bold tracking-tight leading-none mt-1",
+                  stat.color,
+                )}
+              >
+                {stat.value}
+              </h3>
             </div>
           </div>
         ))}
@@ -263,7 +395,7 @@ export default function DriversPage() {
             />
           </div>
           <div className="flex p-1 bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner overflow-x-auto">
-            {(['all', 'active', 'blocked', 'unpaid'] as const).map((f) => (
+            {(["all", "active", "blocked", "unpaid"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
@@ -271,10 +403,16 @@ export default function DriversPage() {
                   "px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                   filter === f
                     ? "bg-gray-700 text-white shadow-sm"
-                    : "text-gray-500 hover:text-white hover:bg-gray-800"
+                    : "text-gray-500 hover:text-white hover:bg-gray-800",
                 )}
               >
-                {f === 'all' ? 'All' : f === 'active' ? 'Active' : f === 'blocked' ? 'Blocked' : 'Unpaid'}
+                {f === "all"
+                  ? "All"
+                  : f === "active"
+                    ? "Active"
+                    : f === "blocked"
+                      ? "Blocked"
+                      : "Unpaid"}
               </button>
             ))}
           </div>
@@ -287,8 +425,12 @@ export default function DriversPage() {
             <Radio className="w-8 h-8 text-tad-yellow animate-pulse" />
             <div className="absolute inset-0 bg-tad-yellow/10 blur-xl animate-pulse -z-10" />
           </div>
-          <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Sincronizando Pantallas</h3>
-          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Descargando Base de Datos...</p>
+          <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">
+            Sincronizando Pantallas
+          </h3>
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">
+            Descargando Base de Datos...
+          </p>
         </div>
       ) : (
         <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg">
@@ -296,114 +438,297 @@ export default function DriversPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-900/40 border-b border-gray-700/50">
-                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Bio/Contacto</th>
-                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Identidad Vehicular</th>
-                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Hardware Core</th>
-                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Auditoría</th>
-                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Status</th>
+                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Bio/Contacto
+                  </th>
+                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Identidad Vehicular
+                  </th>
+                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">
+                    Hardware Core
+                  </th>
+                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Auditoría
+                  </th>
+                  <th className="px-8 py-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">
+                    Status
+                  </th>
                   <th className="px-8 py-6 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
                 {filtered.map((driver, idx) => (
                   <React.Fragment key={driver.id}>
-                    <tr className={clsx(
-                      "group hover:bg-gray-900/40 transition-all cursor-default",
-                      expandedId === driver.id && "bg-tad-yellow/[0.02]"
-                    )}>
+                    <tr
+                      className={clsx(
+                        "group hover:bg-gray-900/40 transition-all cursor-default",
+                        expandedId === driver.id && "bg-tad-yellow/[0.02]",
+                      )}
+                    >
                       <td className="px-8 py-6">
-                        <div className={"flex items-center gap-5 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                        <div
+                          className={
+                            "flex items-center gap-5 animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                            (idx === 0
+                              ? "delay-0"
+                              : idx === 1
+                                ? "delay-50"
+                                : idx === 2
+                                  ? "delay-100"
+                                  : idx === 3
+                                    ? "delay-150"
+                                    : "delay-200")
+                          }
+                        >
                           <div className="w-12 h-12 bg-gray-900/80 rounded-xl flex items-center justify-center border border-gray-700/50 group-hover:border-tad-yellow/40 transition-all shadow-sm group-hover:-translate-y-1">
-                            <span className="text-sm font-bold text-tad-yellow">#{driver.taxiNumber}</span>
+                            <span className="text-sm font-bold text-tad-yellow">
+                              #{driver.taxiNumber}
+                            </span>
                           </div>
                           <div>
-                            <p className="text-base font-bold text-white uppercase tracking-tight group-hover:text-tad-yellow transition-colors leading-none mb-1">{driver.fullName}</p>
+                            <p className="text-base font-bold text-white uppercase tracking-tight group-hover:text-tad-yellow transition-colors leading-none mb-1">
+                              {driver.fullName}
+                            </p>
                             <div className="flex items-center gap-2">
-                              <p className="text-xs text-gray-500 font-bold tracking-widest">{driver.phone}</p>
-                              <WhatsAppButton phone={driver.phone} name={driver.fullName} className="scale-75 origin-left ml-[-4px]" />
+                              <p className="text-xs text-gray-500 font-bold tracking-widest">
+                                {driver.phone}
+                              </p>
+                              <WhatsAppButton
+                                phone={driver.phone}
+                                name={driver.fullName}
+                                className="scale-75 origin-left ml-[-4px]"
+                              />
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <div className={"flex flex-col gap-1.5 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                          <span className="text-[10px] font-bold text-gray-300 bg-gray-900/50 px-3 py-1 rounded-lg border border-gray-700/50 w-fit uppercase tracking-widest shadow-inner">PLACA: {driver.taxiPlate}</span>
-                          <span className="text-[10px] font-mono font-bold text-gray-500 ml-1">ID: {driver.id.slice(0, 8).toUpperCase()}</span>
+                        <div
+                          className={
+                            "flex flex-col gap-1.5 animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                            (idx === 0
+                              ? "delay-0"
+                              : idx === 1
+                                ? "delay-50"
+                                : idx === 2
+                                  ? "delay-100"
+                                  : idx === 3
+                                    ? "delay-150"
+                                    : "delay-200")
+                          }
+                        >
+                          <span className="text-[10px] font-bold text-gray-300 bg-gray-900/50 px-3 py-1 rounded-lg border border-gray-700/50 w-fit uppercase tracking-widest shadow-inner">
+                            PLACA: {driver.taxiPlate}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-gray-500 ml-1">
+                            ID: {driver.id.slice(0, 8).toUpperCase()}
+                          </span>
                         </div>
                       </td>
                       <td className="px-8 py-6 text-center">
                         {driver.devices && driver.devices.length > 0 ? (
-                          <div className={"inline-flex flex-col items-center animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                          <div
+                            className={
+                              "inline-flex flex-col items-center animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                              (idx === 0
+                                ? "delay-0"
+                                : idx === 1
+                                  ? "delay-50"
+                                  : idx === 2
+                                    ? "delay-100"
+                                    : idx === 3
+                                      ? "delay-150"
+                                      : "delay-200")
+                            }
+                          >
                             <Link
                               href={`/fleet?search=${driver.devices[0].deviceId}`}
                               className="flex items-center gap-2 mb-1 px-3 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all group/link"
                               title={`Ver Pantallas (${driver.devices.length}) en Monitoreo`}
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] group-hover/link:bg-black" />
-                              <span className="text-[9px] font-bold uppercase">{driver.devices.length > 1 ? `${driver.devices.length} PANTALLAS` : 'ENLAZADO'}</span>
+                              <span className="text-[9px] font-bold uppercase">
+                                {driver.devices.length > 1
+                                  ? `${driver.devices.length} PANTALLAS`
+                                  : "ENLAZADO"}
+                              </span>
                               <ExternalLink className="w-2.5 h-2.5 ml-1" />
                             </Link>
-                            <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">{driver.devices[0].deviceId.slice(0, 10)}...</span>
+                            <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
+                              {driver.devices[0].deviceId.slice(0, 10)}...
+                            </span>
                           </div>
                         ) : (
-                          <div className={"flex flex-col items-center opacity-50 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                          <div
+                            className={
+                              "flex flex-col items-center opacity-50 animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                              (idx === 0
+                                ? "delay-0"
+                                : idx === 1
+                                  ? "delay-50"
+                                  : idx === 2
+                                    ? "delay-100"
+                                    : idx === 3
+                                      ? "delay-150"
+                                      : "delay-200")
+                            }
+                          >
                             <Tablet className="w-4 h-4 text-gray-600 mb-1" />
-                            <span className="text-[10px] font-bold text-gray-600 uppercase">SIN_HARDWARE</span>
+                            <span className="text-[10px] font-bold text-gray-600 uppercase">
+                              SIN_HARDWARE
+                            </span>
                           </div>
                         )}
                       </td>
                       <td className="px-8 py-6">
                         {(() => {
-                          const isExpired = driver.subscriptionPaid && driver.subscriptionEnd && new Date(driver.subscriptionEnd) < new Date();
-                          const isNearExpiry = driver.subscriptionPaid && driver.subscriptionEnd &&
-                            (new Date(driver.subscriptionEnd).getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000); // 7 days
+                          const isExpired =
+                            driver.subscriptionPaid &&
+                            driver.subscriptionEnd &&
+                            new Date(driver.subscriptionEnd) < new Date();
+                          const isNearExpiry =
+                            driver.subscriptionPaid &&
+                            driver.subscriptionEnd &&
+                            new Date(driver.subscriptionEnd).getTime() -
+                              new Date().getTime() <
+                              7 * 24 * 60 * 60 * 1000; // 7 days
 
                           if (driver.subscriptionPaid && !isExpired) {
                             return (
-                              <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                              <div
+                                className={
+                                  "space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                                  (idx === 0
+                                    ? "delay-0"
+                                    : idx === 1
+                                      ? "delay-50"
+                                      : idx === 2
+                                        ? "delay-100"
+                                        : idx === 3
+                                          ? "delay-150"
+                                          : "delay-200")
+                                }
+                              >
                                 <div className="flex items-center gap-2">
-                                  <CheckCircle2 className={clsx("w-4 h-4", isNearExpiry ? "text-amber-500 animate-pulse" : "text-emerald-500")} />
-                                  <span className={clsx("text-[10px] font-bold uppercase tracking-widest", isNearExpiry ? "text-amber-500" : "text-white")}>
-                                    {isNearExpiry ? 'Próximo a Vencer' : 'Suscripción Activa'}
+                                  <CheckCircle2
+                                    className={clsx(
+                                      "w-4 h-4",
+                                      isNearExpiry
+                                        ? "text-amber-500 animate-pulse"
+                                        : "text-emerald-500",
+                                    )}
+                                  />
+                                  <span
+                                    className={clsx(
+                                      "text-[10px] font-bold uppercase tracking-widest",
+                                      isNearExpiry
+                                        ? "text-amber-500"
+                                        : "text-white",
+                                    )}
+                                  >
+                                    {isNearExpiry
+                                      ? "Próximo a Vencer"
+                                      : "Suscripción Activa"}
                                   </span>
                                 </div>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">
-                                  Vence: {driver.subscriptionEnd ? new Date(driver.subscriptionEnd).toLocaleDateString('es-DO') : 'N/A'}
+                                  Vence:{" "}
+                                  {driver.subscriptionEnd
+                                    ? new Date(
+                                        driver.subscriptionEnd,
+                                      ).toLocaleDateString("es-DO")
+                                    : "N/A"}
                                 </p>
                               </div>
                             );
                           }
 
                           return (
-                            <div className={"space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                            <div
+                              className={
+                                "space-y-1 animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                                (idx === 0
+                                  ? "delay-0"
+                                  : idx === 1
+                                    ? "delay-50"
+                                    : idx === 2
+                                      ? "delay-100"
+                                      : idx === 3
+                                        ? "delay-150"
+                                        : "delay-200")
+                              }
+                            >
                               <div className="flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Suscripción Vencida</span>
+                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
+                                  Suscripción Vencida
+                                </span>
                               </div>
-                              <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">Acción Requerida</p>
+                              <p className="text-[10px] text-gray-500 font-bold uppercase ml-6">
+                                Acción Requerida
+                              </p>
                             </div>
                           );
                         })()}
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <div className={"flex flex-col items-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
-                          <div className={clsx(
-                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all",
-                            driver.status === 'OPERATIVO'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
-                          )}>
-                            <span className={clsx("w-1.5 h-1.5 rounded-full", driver.status === 'OPERATIVO' ? "bg-emerald-500" : "bg-rose-500")} />
-                            {driver.status === 'OPERATIVO' ? 'Operativo' : 'Inhibido'}
+                        <div
+                          className={
+                            "flex flex-col items-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                            (idx === 0
+                              ? "delay-0"
+                              : idx === 1
+                                ? "delay-50"
+                                : idx === 2
+                                  ? "delay-100"
+                                  : idx === 3
+                                    ? "delay-150"
+                                    : "delay-200")
+                          }
+                        >
+                          <div
+                            className={clsx(
+                              "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all",
+                              driver.status === "OPERATIVO"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                : "bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]",
+                            )}
+                          >
+                            <span
+                              className={clsx(
+                                "w-1.5 h-1.5 rounded-full",
+                                driver.status === "OPERATIVO"
+                                  ? "bg-emerald-500"
+                                  : "bg-rose-500",
+                              )}
+                            />
+                            {driver.status === "OPERATIVO"
+                              ? "Operativo"
+                              : "Inhibido"}
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <div className={"flex items-center gap-3 justify-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " + (idx === 0 ? "delay-0" : idx === 1 ? "delay-50" : idx === 2 ? "delay-100" : idx === 3 ? "delay-150" : "delay-200")}>
+                        <div
+                          className={
+                            "flex items-center gap-3 justify-end animate-in slide-in-from-left-4 duration-500 fill-mode-both " +
+                            (idx === 0
+                              ? "delay-0"
+                              : idx === 1
+                                ? "delay-50"
+                                : idx === 2
+                                  ? "delay-100"
+                                  : idx === 3
+                                    ? "delay-150"
+                                    : "delay-200")
+                          }
+                        >
                           {driver.devices && driver.devices.length > 0 && (
                             <>
                               <a
-                                href={getTelemetryUrl(driver.devices[0].deviceId)}
+                                href={getTelemetryUrl(
+                                  driver.devices[0].deviceId,
+                                )}
                                 target="_blank"
                                 rel="noreferrer"
                                 title="Ver Hub del Conductor (TAD DRIVE)"
@@ -428,32 +753,62 @@ export default function DriversPage() {
                             </>
                           )}
                           <AntigravityButton
-                            actionName={driver.status === 'OPERATIVO' ? 'lock_driver' : 'unlock_driver'}
-                            onAsyncClick={() => handleToggleStatus(driver.id, driver.subscriptionPaid)}
+                            actionName={
+                              driver.status === "OPERATIVO"
+                                ? "lock_driver"
+                                : "unlock_driver"
+                            }
+                            onAsyncClick={() =>
+                              handleToggleStatus(
+                                driver.id,
+                                driver.subscriptionPaid,
+                              )
+                            }
                             confirmMessage={
-                              driver.status === 'OPERATIVO'
+                              driver.status === "OPERATIVO"
                                 ? `¿BLOQUEAR SOCIO ${driver.fullName}? Se suspenderá su suscripción y hardware.`
                                 : `¿HABILITAR SOCIO ${driver.fullName}? Se reactivará su suscripción y hardware.`
                             }
                             className={clsx(
                               "!p-0 w-10 h-10 rounded-xl transition-all border shadow-sm flex items-center justify-center",
-                              driver.status === 'OPERATIVO'
+                              driver.status === "OPERATIVO"
                                 ? "text-rose-500 border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 hover:text-white"
-                                : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white"
+                                : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500 hover:text-white",
                             )}
-                            title={driver.status === 'OPERATIVO' ? 'Bloquear Socio' : 'Habilitar Socio'}
+                            title={
+                              driver.status === "OPERATIVO"
+                                ? "Bloquear Socio"
+                                : "Habilitar Socio"
+                            }
                           >
-                            {driver.status === 'OPERATIVO' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                            {driver.status === "OPERATIVO" ? (
+                              <Lock className="w-4 h-4" />
+                            ) : (
+                              <Unlock className="w-4 h-4" />
+                            )}
                           </AntigravityButton>
                           <button
-                            onClick={() => setExpandedId(expandedId === driver.id ? null : driver.id)}
-                            title={expandedId === driver.id ? "Contraer" : "Expandir"}
+                            onClick={() =>
+                              setExpandedId(
+                                expandedId === driver.id ? null : driver.id,
+                              )
+                            }
+                            title={
+                              expandedId === driver.id ? "Contraer" : "Expandir"
+                            }
                             className={clsx(
                               "p-2.5 rounded-xl transition-all border shadow-sm flex items-center justify-center group-hover:-translate-y-0.5",
-                              expandedId === driver.id ? "bg-tad-yellow text-black border-tad-yellow" : "bg-gray-900 border-gray-700/50 text-gray-400 hover:text-white"
+                              expandedId === driver.id
+                                ? "bg-tad-yellow text-black border-tad-yellow"
+                                : "bg-gray-900 border-gray-700/50 text-gray-400 hover:text-white",
                             )}
                           >
-                            <ChevronDown className={clsx("w-4 h-4 transition-transform duration-300", expandedId === driver.id ? "rotate-180" : "")} />
+                            <ChevronDown
+                              className={clsx(
+                                "w-4 h-4 transition-transform duration-300",
+                                expandedId === driver.id ? "rotate-180" : "",
+                              )}
+                            />
                           </button>
                         </div>
                       </td>
@@ -462,7 +817,10 @@ export default function DriversPage() {
                     {/* Expanded Detail Terminal */}
                     {expandedId === driver.id && (
                       <tr className="bg-black/20 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-500 shadow-inner">
-                        <td colSpan={6} className="p-0 border-b border-t border-gray-700/50 border-t-tad-yellow/10">
+                        <td
+                          colSpan={6}
+                          className="p-0 border-b border-t border-gray-700/50 border-t-tad-yellow/10"
+                        >
                           <div className="p-8 border-l-4 border-tad-yellow grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-tad-yellow/5 blur-[100px] -z-10" />
 
@@ -472,18 +830,27 @@ export default function DriversPage() {
                                 <div className="p-2 bg-tad-yellow/10 rounded-lg">
                                   <Tablet className="w-4 h-4 text-tad-yellow" />
                                 </div>
-                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Integración de Hardware</h4>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">
+                                  Integración de Hardware
+                                </h4>
                               </div>
                               <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">UUID del Dispositivo Principal</p>
-                                  {driver.devices && driver.devices.length > 0 ? (
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">
+                                    UUID del Dispositivo Principal
+                                  </p>
+                                  {driver.devices &&
+                                  driver.devices.length > 0 ? (
                                     <div className="flex gap-2">
-                                      <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">{driver.devices[0].deviceId}</p>
+                                      <p className="flex-1 text-white font-mono text-xs font-bold bg-gray-900 p-2.5 rounded-lg border border-gray-700/50">
+                                        {driver.devices[0].deviceId}
+                                      </p>
                                       <AntigravityButton
                                         actionName="unlink_device"
                                         confirmMessage="¿SEGURO QUE DESEAS DESVINCULAR ESTE NODO? El socio dejará de transmitir inmediatamente."
-                                        onAsyncClick={() => handleUnlinkDevice(driver.id)}
+                                        onAsyncClick={() =>
+                                          handleUnlinkDevice(driver.id)
+                                        }
                                         title="Desvincular Pantalla"
                                         className="!p-0 w-10 h-10 border-tad-yellow/20 bg-tad-yellow/5 text-tad-yellow hover:bg-tad-yellow hover:text-black transition-all rounded-xl shadow-sm"
                                       >
@@ -495,13 +862,19 @@ export default function DriversPage() {
                                       <input
                                         type="text"
                                         value={assigningDeviceId}
-                                        onChange={(e) => setAssigningDeviceId(e.target.value.toUpperCase())}
+                                        onChange={(e) =>
+                                          setAssigningDeviceId(
+                                            e.target.value.toUpperCase(),
+                                          )
+                                        }
                                         placeholder="TAD-XXXXX"
                                         className="flex-1 bg-gray-900 border border-gray-700/50 text-white font-mono text-xs p-2.5 rounded-lg focus:border-tad-yellow outline-none uppercase"
                                       />
                                       <AntigravityButton
                                         actionName="link_device"
-                                        onAsyncClick={() => handleAssignDevice(driver.id)}
+                                        onAsyncClick={() =>
+                                          handleAssignDevice(driver.id)
+                                        }
                                         disabled={!assigningDeviceId}
                                         className="px-4 text-[9px] h-10 rounded-lg"
                                       >
@@ -512,14 +885,21 @@ export default function DriversPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Estado</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">
+                                      Estado
+                                    </p>
                                     <p className="text-emerald-500 font-bold text-xs uppercase flex items-center gap-2">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> ONLINE
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{" "}
+                                      ONLINE
                                     </p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">Pérdida Pkt.</p>
-                                    <p className="text-white font-mono text-xs font-bold">0.00%</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 tracking-widest">
+                                      Pérdida Pkt.
+                                    </p>
+                                    <p className="text-white font-mono text-xs font-bold">
+                                      0.00%
+                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -531,27 +911,48 @@ export default function DriversPage() {
                                 <div className="p-2 bg-gray-800 rounded-lg">
                                   <Zap className="w-4 h-4 text-white" />
                                 </div>
-                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Rendimiento Operativo</h4>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">
+                                  Rendimiento Operativo
+                                </h4>
                               </div>
                               <div className="grid grid-cols-1 gap-4">
                                 <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 flex justify-between items-center group/item hover:border-gray-500 transition-colors">
                                   <div>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5 group-hover/item:text-gray-300 transition-colors">Anuncios Transmitidos</p>
-                                    <h5 className="text-xl font-bold text-white tracking-widest">--</h5>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5 group-hover/item:text-gray-300 transition-colors">
+                                      Anuncios Transmitidos
+                                    </p>
+                                    <h5 className="text-xl font-bold text-white tracking-widest">
+                                      --
+                                    </h5>
                                   </div>
                                   <ShieldCheck className="w-8 h-8 text-gray-700" />
                                 </div>
                                 <div className="bg-tad-yellow/5 p-5 rounded-2xl border border-tad-yellow/10 flex justify-between items-center group/item hover:border-tad-yellow/30 transition-colors">
                                   <div>
-                                    <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">Dinero Acumulado / Ingresos por Transmisión</p>
-                                    <h5 className="text-xl font-bold text-tad-yellow tracking-widest">RD$ {driver.projectedEarnings ? driver.projectedEarnings.toLocaleString() : '0'}</h5>
+                                    <p className="text-[10px] text-tad-yellow/60 uppercase font-bold tracking-widest mb-0.5">
+                                      Dinero Acumulado / Ingresos por
+                                      Transmisión
+                                    </p>
+                                    <h5 className="text-xl font-bold text-tad-yellow tracking-widest">
+                                      RD${" "}
+                                      {driver.projectedEarnings
+                                        ? driver.projectedEarnings.toLocaleString()
+                                        : "0"}
+                                    </h5>
                                   </div>
                                   <CreditCard className="w-8 h-8 text-tad-yellow/20" />
                                 </div>
                                 <div className="bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 flex justify-between items-center group/item hover:border-emerald-500/30 transition-colors">
                                   <div>
-                                    <p className="text-[10px] text-emerald-500/60 uppercase font-bold tracking-widest mb-0.5">Comisiones por Referir Anunciantes</p>
-                                    <h5 className="text-xl font-bold text-emerald-500 tracking-widest">RD$ {driver.referralBonus ? driver.referralBonus.toLocaleString() : '0'}</h5>
+                                    <p className="text-[10px] text-emerald-500/60 uppercase font-bold tracking-widest mb-0.5">
+                                      Comisiones por Referir Anunciantes
+                                    </p>
+                                    <h5 className="text-xl font-bold text-emerald-500 tracking-widest">
+                                      RD${" "}
+                                      {driver.referralBonus
+                                        ? driver.referralBonus.toLocaleString()
+                                        : "0"}
+                                    </h5>
                                   </div>
                                   <Users className="w-8 h-8 text-emerald-500/20" />
                                 </div>
@@ -564,14 +965,22 @@ export default function DriversPage() {
                                 <div className="p-2 bg-emerald-500/10 rounded-lg">
                                   <IdCard className="w-4 h-4 text-emerald-500" />
                                 </div>
-                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Cumplimiento / Legal</h4>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs">
+                                  Cumplimiento / Legal
+                                </h4>
                               </div>
                               <div className="bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 space-y-4">
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Expediente Digital</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">
+                                    Expediente Digital
+                                  </p>
                                   <div className="flex gap-2">
-                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Contrato</button>
-                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">Seguro</button>
+                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">
+                                      Contrato
+                                    </button>
+                                    <button className="flex-1 bg-gray-900 border border-gray-700 p-2 rounded-lg text-[9px] font-bold text-gray-400 uppercase tracking-widest hover:border-tad-yellow hover:text-white transition-all">
+                                      Seguro
+                                    </button>
                                   </div>
                                 </div>
                                 <button
@@ -599,7 +1008,7 @@ export default function DriversPage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           loadDrivers();
-          notifyChange('TAD_DRIVERS');
+          notifyChange("TAD_DRIVERS");
         }}
       />
 
@@ -607,7 +1016,6 @@ export default function DriversPage() {
       {selectedAuditDriver && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-zinc-950 border border-white/10 rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl relative">
-
             {/* Animated Header */}
             <div className="p-10 border-b border-white/5 bg-gradient-to-br from-tad-yellow/20 via-transparent to-transparent">
               <div className="flex justify-between items-start">
@@ -619,7 +1027,9 @@ export default function DriversPage() {
                     <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
                       Auditoría <span className="text-tad-yellow">TAD</span>
                     </h2>
-                    <p className="text-[12px] text-zinc-500 font-bold uppercase tracking-[0.4em] mt-2">Certificado de Cumplimiento Oficial</p>
+                    <p className="text-[12px] text-zinc-500 font-bold uppercase tracking-[0.4em] mt-2">
+                      Certificado de Cumplimiento Oficial
+                    </p>
                   </div>
                 </div>
                 <button
@@ -637,23 +1047,41 @@ export default function DriversPage() {
             <div className="p-10 space-y-8">
               <div className="grid grid-cols-2 gap-6">
                 <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">TAD DRIVER</p>
-                  <p className="text-xl font-black text-white uppercase italic">{selectedAuditDriver.fullName}</p>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">
+                    TAD DRIVER
+                  </p>
+                  <p className="text-xl font-black text-white uppercase italic">
+                    {selectedAuditDriver.fullName}
+                  </p>
                 </div>
                 <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl">
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">Estado de Transmisión</p>
-                  <p className="text-xl font-black text-emerald-500 uppercase italic">Activo y Operativo</p>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mb-2">
+                    Estado de Transmisión
+                  </p>
+                  <p className="text-xl font-black text-emerald-500 uppercase italic">
+                    Activo y Operativo
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">Desglose Mensual de Ingresos</h3>
+                <h3 className="text-xs font-black text-tad-yellow uppercase tracking-[0.3em] mb-4">
+                  Desglose Mensual de Ingresos
+                </h3>
                 <div className="space-y-3">
-                  <AuditLine label="Bono por Transmisión (Ads)" value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`} info={`${selectedAuditDriver.activeAds || 0} campañas activas`} />
-                  <AuditLine label="Comisión por Referidos (Socios TAD)" value={`RD$ ${((selectedAuditDriver.referralBonus || 0)).toLocaleString()}.00`} info={`${selectedAuditDriver.referralsCount || 0} conductores referidos activos`} />
+                  <AuditLine
+                    label="Bono por Transmisión (Ads)"
+                    value={`RD$ ${((selectedAuditDriver.activeAds || 0) * 500).toLocaleString()}.00`}
+                    info={`${selectedAuditDriver.activeAds || 0} campañas activas`}
+                  />
+                  <AuditLine
+                    label="Comisión por Referidos (Socios TAD)"
+                    value={`RD$ ${(selectedAuditDriver.referralBonus || 0).toLocaleString()}.00`}
+                    info={`${selectedAuditDriver.referralsCount || 0} conductores referidos activos`}
+                  />
                   <AuditLine
                     label="Comisión por Referir Anunciantes"
-                    value={`RD$ ${((selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}.00`}
+                    value={`RD$ ${(selectedAuditDriver.advertiserReferralBonus || 0).toLocaleString()}.00`}
                     info={`${selectedAuditDriver.advertiserReferralsCount || 0} anunciantes referidos`}
                     highlight
                   />
@@ -662,13 +1090,22 @@ export default function DriversPage() {
                 <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-end">
                   <div>
                     <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-loose">
-                      Estimado Mensual proyectado en base a la<br />integración de hardware actual.
+                      Estimado Mensual proyectado en base a la
+                      <br />
+                      integración de hardware actual.
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Total Proyectado</p>
+                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">
+                      Total Proyectado
+                    </p>
                     <p className="text-5xl font-black text-white italic">
-                      RD$ {((selectedAuditDriver.activeAds || 0) * 500 + (selectedAuditDriver.referralBonus || 0) + (selectedAuditDriver.advertiserReferralBonus || 0)).toLocaleString()}
+                      RD${" "}
+                      {(
+                        (selectedAuditDriver.activeAds || 0) * 500 +
+                        (selectedAuditDriver.referralBonus || 0) +
+                        (selectedAuditDriver.advertiserReferralBonus || 0)
+                      ).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -679,38 +1116,61 @@ export default function DriversPage() {
             <div className="p-10 bg-zinc-900/80 border-t border-white/5 flex items-center gap-4">
               <ShieldCheck className="w-6 h-6 text-emerald-500" />
               <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-loose max-w-sm">
-                Este reporte ha sido generado por el motor de inteligencia financiera de TAD PLATFORM.
-                El pago se liquida automáticamente el primer día de cada mes.
+                Este reporte ha sido generado por el motor de inteligencia
+                financiera de TAD PLATFORM. El pago se liquida automáticamente
+                el primer día de cada mes.
               </p>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
 
-function AuditLine({ label, value, info, highlight }: { label: string; value: string; info?: string; highlight?: boolean }) {
+function AuditLine({
+  label,
+  value,
+  info,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  info?: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className={clsx(
-      "flex items-center justify-between p-5 rounded-2xl border transition-all",
-      highlight ? "bg-tad-yellow/5 border-tad-yellow/20" : "bg-zinc-900 border-white/5"
-    )}>
+    <div
+      className={clsx(
+        "flex items-center justify-between p-5 rounded-2xl border transition-all",
+        highlight
+          ? "bg-tad-yellow/5 border-tad-yellow/20"
+          : "bg-zinc-900 border-white/5",
+      )}
+    >
       <div>
-        <p className={clsx("text-[11px] font-black uppercase tracking-widest", highlight ? "text-tad-yellow" : "text-white")}>{label}</p>
-        {info && <p className="text-[8px] text-zinc-600 font-bold uppercase mt-1 tracking-widest">{info}</p>}
+        <p
+          className={clsx(
+            "text-[11px] font-black uppercase tracking-widest",
+            highlight ? "text-tad-yellow" : "text-white",
+          )}
+        >
+          {label}
+        </p>
+        {info && (
+          <p className="text-[8px] text-zinc-600 font-bold uppercase mt-1 tracking-widest">
+            {info}
+          </p>
+        )}
       </div>
-      <p className={clsx("text-lg font-black italic", highlight ? "text-tad-yellow" : "text-white")}>{value}</p>
+      <p
+        className={clsx(
+          "text-lg font-black italic",
+          highlight ? "text-tad-yellow" : "text-white",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
-
-
-
-
-
-
-
-

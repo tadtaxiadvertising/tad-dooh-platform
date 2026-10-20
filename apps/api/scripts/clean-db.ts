@@ -1,13 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚮 Starting full database reset (non-system data)...');
+  console.log("🚮 Starting full database reset (non-system data)...");
 
   try {
     // 1. Delete transactional / secondary data first (to avoid FK issues)
-    console.log('Cleaning logs and events...');
+    console.log("Cleaning logs and events...");
     await prisma.analyticsEvent.deleteMany({});
     await prisma.campaignMetric.deleteMany({});
     await prisma.deviceCommand.deleteMany({});
@@ -30,7 +30,7 @@ async function main() {
     await prisma.wallet.deleteMany({});
 
     // 2. Delete media entries
-    console.log('Cleaning media vault...');
+    console.log("Cleaning media vault...");
     await prisma.video.deleteMany({});
     await prisma.mediaAsset.deleteMany({});
     await prisma.media.deleteMany({});
@@ -39,7 +39,7 @@ async function main() {
     await prisma.playlist.deleteMany({});
 
     // 4. Delete core business entities
-    console.log('Cleaning business entities...');
+    console.log("Cleaning business entities...");
     await prisma.campaign.deleteMany({});
     await prisma.advertiserSubscription.deleteMany({});
     await prisma.invoice.deleteMany({});
@@ -48,9 +48,9 @@ async function main() {
     await prisma.driver.deleteMany({});
     await prisma.fleet.deleteMany({});
 
-    console.log('✅ Database is now COMPLETELY CLEAN (Admins preserved).');
+    console.log("✅ Database is now COMPLETELY CLEAN (Admins preserved).");
   } catch (error) {
-    console.error('❌ Error cleaning database:', error);
+    console.error("❌ Error cleaning database:", error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

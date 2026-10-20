@@ -1,4 +1,9 @@
-import { calculateImpactLegacy, calculateImpact, ImpactInput, ImpactOutput } from '@tad/impact-calculator';
+import {
+  calculateImpactLegacy,
+  calculateImpact,
+  ImpactInput,
+  ImpactOutput,
+} from "@tad/impact-calculator";
 
 /**
  * @deprecated Legacy interface — mantener compatibilidad mientras migramos UI
@@ -35,7 +40,7 @@ export function estimateCampaign(config: CampaignConfig): CampaignEstimate {
     config.screens,
     config.months,
     config.frequencySeconds,
-    config.includeProduction
+    config.includeProduction,
   );
   return {
     screensCost: legacy.screensCost,
@@ -56,42 +61,50 @@ export function estimateCampaignDetailed(config: CampaignConfig): ImpactOutput {
     months: config.months,
     frequencySeconds: config.frequencySeconds,
     includeProduction: config.includeProduction,
-    mode: 'expected',
+    mode: "expected",
   });
 }
 
 /**
  * Helper para UI: formatea rango "X (Y–Z)"
  */
-export function formatRange(
-  r: { min: number; expected: number; max: number }
-): string {
+export function formatRange(r: {
+  min: number;
+  expected: number;
+  max: number;
+}): string {
   if (r.min === r.expected && r.expected === r.max) {
-    return r.expected.toLocaleString('es-DO');
+    return r.expected.toLocaleString("es-DO");
   }
-  return `${r.expected.toLocaleString('es-DO')} (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+  return `${r.expected.toLocaleString("es-DO")} (${r.min.toLocaleString("es-DO")}–${r.max.toLocaleString("es-DO")})`;
 }
 
 /**
  * Helper para UI: CPM string
  */
-export function formatCPM(
-  r: { min: number; expected: number; max: number }
-): string {
+export function formatCPM(r: {
+  min: number;
+  expected: number;
+  max: number;
+}): string {
   if (r.min === r.expected && r.expected === r.max) {
-    return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM`;
+    return `RD$ ${r.expected.toLocaleString("es-DO")}/CPM`;
   }
-  return `RD$ ${r.expected.toLocaleString('es-DO')}/CPM (${r.min.toLocaleString('es-DO')}–${r.max.toLocaleString('es-DO')})`;
+  return `RD$ ${r.expected.toLocaleString("es-DO")}/CPM (${r.min.toLocaleString("es-DO")}–${r.max.toLocaleString("es-DO")})`;
 }
 
 /**
  * Helper para UI: badge de fuente principal
  */
-export function getPrimarySource(): { label: string; tier: 'A' | 'B' | 'C' | 'D'; url?: string } {
+export function getPrimarySource(): {
+  label: string;
+  tier: "A" | "B" | "C" | "D";
+  url?: string;
+} {
   return {
-    label: 'IAB DOOH Guidelines + Geopath 2024',
-    tier: 'B',
-    url: 'https://iabtechlab.com/standards/digital-out-of-home-measurement-guidelines/',
+    label: "IAB DOOH Guidelines + Geopath 2024",
+    tier: "B",
+    url: "https://iabtechlab.com/standards/digital-out-of-home-measurement-guidelines/",
   };
 }
 
@@ -100,12 +113,13 @@ export function getPrimarySource(): { label: string; tier: 'A' | 'B' | 'C' | 'D'
  */
 export function getCalibrationBadge(): {
   label: string;
-  color: 'red' | 'amber' | 'green';
+  color: "red" | "amber" | "green";
   description: string;
 } {
   return {
-    label: 'Benchmark internacional (sin datos RD propios)',
-    color: 'amber',
-    description: 'Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.',
+    label: "Benchmark internacional (sin datos RD propios)",
+    color: "amber",
+    description:
+      "Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.",
   };
 }

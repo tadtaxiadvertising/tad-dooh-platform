@@ -1,27 +1,75 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import type { GetServerSideProps } from 'next';
-import { useRouter } from 'next/router';
-import Image from 'next/image';
-import useSWR from 'swr';
-import { QRCodeCanvas } from 'qrcode.react';
+import { useEffect, useState, useRef, useCallback } from "react";
+import type { GetServerSideProps } from "next";
+import { useRouter } from "next/router";
+import Image from "next/image";
+import useSWR from "swr";
+import { QRCodeCanvas } from "qrcode.react";
 
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
-import api, { getMedia, uploadMedia, getCampaigns, addVideoToCampaign, getMediaStatus, assignCampaignToDevices, updateMedia, deleteMedia } from '@tad/services';
-import { CloudUpload, Film, Zap, Calendar, Play, Activity, X, Eye, CheckCircle, AlertTriangle, HardDrive, ShieldCheck, Share2, Cpu, Trash2, Smartphone } from 'lucide-react';
-import { format } from 'date-fns';
-import { useTabSync } from '@tad/ui';
-import { notifyChange } from '@tad/ui';
-import { AntigravityButton } from '@tad/ui';
-import clsx from 'clsx';
-import { toast } from 'sonner';
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
+import api, {
+  getMedia,
+  uploadMedia,
+  getCampaigns,
+  addVideoToCampaign,
+  getMediaStatus,
+  assignCampaignToDevices,
+  updateMedia,
+  deleteMedia,
+} from "@tad/services";
+import {
+  CloudUpload,
+  Film,
+  Zap,
+  Calendar,
+  Play,
+  Activity,
+  X,
+  Eye,
+  CheckCircle,
+  AlertTriangle,
+  HardDrive,
+  ShieldCheck,
+  Share2,
+  Cpu,
+  Trash2,
+  Smartphone,
+} from "lucide-react";
+import { format } from "date-fns";
+import { useTabSync } from "@tad/ui";
+import { notifyChange } from "@tad/ui";
+import { AntigravityButton } from "@tad/ui";
+import clsx from "clsx";
+import { toast } from "sonner";
 
 // Fetcher for SWR
-const fetcher = (url: string) => api.get(url).then(res => res.data);
+const fetcher = (url: string) => api.get(url).then((res) => res.data);
 
 export default function MediaPage() {
-  const [media, setMedia] = useState<{ id: string; url: string; filename: string; originalFilename?: string; size?: number; mime?: string; qrUrl?: string; createdAt?: string; campaignId?: string }[]>([]);
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; mediaAssets?: { checksum: string; url: string }[] }[]>([]);
+  const [media, setMedia] = useState<
+    {
+      id: string;
+      url: string;
+      filename: string;
+      originalFilename?: string;
+      size?: number;
+      mime?: string;
+      qrUrl?: string;
+      createdAt?: string;
+      campaignId?: string;
+    }[]
+  >([]);
+  const [campaigns, setCampaigns] = useState<
+    {
+      id: string;
+      name: string;
+      advertiser: string;
+      active: boolean;
+      mediaAssets?: { checksum: string; url: string }[];
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -29,20 +77,26 @@ export default function MediaPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [previewTitle, setPreviewTitle] = useState<string>("");
   const [previewQr, setPreviewQr] = useState<string | null>(null);
-  const [previewCampaignId, setPreviewCampaignId] = useState<string | null>(null);
+  const [previewCampaignId, setPreviewCampaignId] = useState<string | null>(
+    null,
+  );
 
-  const [mediaStatus, setMediaStatus] = useState<Record<string, { active_devices?: string[] }>>({});
+  const [mediaStatus, setMediaStatus] = useState<
+    Record<string, { active_devices?: string[] }>
+  >({});
 
-  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
-  const [selectedCampaign, setSelectedCampaign] = useState('');
-  const [title, setTitle] = useState('');
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>(
+    {},
+  );
+  const [selectedCampaign, setSelectedCampaign] = useState("");
+  const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(30);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
-  const [qrUrl, setQrUrl] = useState('');
+  const [qrUrl, setQrUrl] = useState("");
   const [editingQr, setEditingQr] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,7 +106,7 @@ export default function MediaPage() {
     try {
       const [mediaData, campaignsData] = await Promise.all([
         getMedia(),
-        getCampaigns()
+        getCampaigns(),
       ]);
       setMedia(Array.isArray(mediaData) ? mediaData : []);
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
@@ -64,27 +118,33 @@ export default function MediaPage() {
     }
   }, []);
 
-  useTabSync('MEDIA', loadData);
-  useTabSync('DEVICES', loadData);
-  useTabSync('CAMPAIGNS', loadData);
+  useTabSync("MEDIA", loadData);
+  useTabSync("DEVICES", loadData);
+  useTabSync("CAMPAIGNS", loadData);
 
   // TAREA B: Frontend Refactor - SWR Implementation for Fleet Summary
   // Eliminates individual GET /api/device/:id/slots calls.
-  const { data: fleetSummary, error: swrError, isLoading: swrLoading } = useSWR('/fleet/summary', fetcher, {
+  const {
+    data: fleetSummary,
+    error: swrError,
+    isLoading: swrLoading,
+  } = useSWR("/fleet/summary", fetcher, {
     dedupingInterval: 60000,
-    revalidateOnFocus: false
+    revalidateOnFocus: false,
   });
 
   const devices = Array.isArray(fleetSummary) ? fleetSummary : [];
 
   const router = useRouter();
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Check URL query parameters for auto-opening modal and auto-selecting campaign
   useEffect(() => {
     if (router.isReady) {
-      if (router.query.openUpload === 'true') {
+      if (router.query.openUpload === "true") {
         setShowUploadModal(true);
       }
       if (router.query.campaignId) {
@@ -98,12 +158,16 @@ export default function MediaPage() {
     const fetchStatuses = async () => {
       const statusMap: Record<string, { active_devices?: string[] }> = {};
       const batch = media.slice(0, 10);
-      await Promise.all(batch.map(async (m) => {
-        try {
-          const status = await getMediaStatus(m.id);
-          statusMap[m.id] = status;
-        } catch { /* ignore */ }
-      }));
+      await Promise.all(
+        batch.map(async (m) => {
+          try {
+            const status = await getMediaStatus(m.id);
+            statusMap[m.id] = status;
+          } catch {
+            /* ignore */
+          }
+        }),
+      );
       setMediaStatus(statusMap);
     };
     fetchStatuses();
@@ -114,41 +178,55 @@ export default function MediaPage() {
   useEffect(() => {
     return () => {
       if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
-      Object.values(localPreviews).forEach(url => URL.revokeObjectURL(url));
+      Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url));
     };
   }, [filePreviewUrl, localPreviews]);
 
   const getPreviewUrlForFile = (file: { id: string; url: string }) => {
     if (localPreviews[file.id]) return localPreviews[file.id];
-    return file.url?.split('#')[0] || file.url;
+    return file.url?.split("#")[0] || file.url;
   };
 
-  const getDisplayName = (file: { originalFilename?: string; filename?: string }) => {
+  const getDisplayName = (file: {
+    originalFilename?: string;
+    filename?: string;
+  }) => {
     if (file.originalFilename) return file.originalFilename;
-    const basename = file.filename?.split('/').pop() || 'Untitled';
-    if (/^[0-9a-f]{8}-/.test(basename)) return `MEDIA-${basename.slice(0, 8)}.${basename.split('.').pop() || 'mp4'}`;
+    const basename = file.filename?.split("/").pop() || "Untitled";
+    if (/^[0-9a-f]{8}-/.test(basename))
+      return `MEDIA-${basename.slice(0, 8)}.${basename.split(".").pop() || "mp4"}`;
     return basename;
   };
 
   const getLinkedCampaigns = (mediaId: string, mediaUrl: string) => {
-    return campaigns.filter(c =>
-      c.mediaAssets?.some((a: any) =>
-        a.id === mediaId ||
-        a.checksum === mediaId ||
-        (mediaUrl && a.url && a.url.includes(mediaUrl.split('?')[0].split('/').pop() || ''))
-      )
+    return campaigns.filter((c) =>
+      c.mediaAssets?.some(
+        (a: any) =>
+          a.id === mediaId ||
+          a.checksum === mediaId ||
+          (mediaUrl &&
+            a.url &&
+            a.url.includes(mediaUrl.split("?")[0].split("/").pop() || "")),
+      ),
     );
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'video/mp4' && file.type !== 'video/webm') {
-      toast.error('ACCESO DENEGADO: Solo se permiten archivos de video en formato MP4 o WEBM.', {
-        style: { background: '#111', color: '#ef4444', border: '1px solid #ef4444' },
-        icon: <AlertTriangle className="w-4 h-4" />
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    if (file.type !== "video/mp4" && file.type !== "video/webm") {
+      toast.error(
+        "ACCESO DENEGADO: Solo se permiten archivos de video en formato MP4 o WEBM.",
+        {
+          style: {
+            background: "#111",
+            color: "#ef4444",
+            border: "1px solid #ef4444",
+          },
+          icon: <AlertTriangle className="w-4 h-4" />,
+        },
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setSelectedFile(file);
@@ -156,20 +234,23 @@ export default function MediaPage() {
     const blobUrl = URL.createObjectURL(file);
     setFilePreviewUrl(blobUrl);
     if (!title) {
-      const name = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      const name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
       setTitle(name.charAt(0).toUpperCase() + name.slice(1));
     }
   };
 
   const resetUploadForm = () => {
-    setTitle('');
-    setSelectedCampaign('');
+    setTitle("");
+    setSelectedCampaign("");
     setSelectedFile(null);
     setDuration(30);
     setSelectedDevices([]);
     setUploadProgress(0);
-    if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (filePreviewUrl) {
+      URL.revokeObjectURL(filePreviewUrl);
+      setFilePreviewUrl(null);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -186,35 +267,47 @@ export default function MediaPage() {
       uploadedData = await uploadMedia(selectedFile, selectedCampaign, qrUrl);
       setUploadProgress(60);
 
-      toast.info('Binario recibido por el servidor. Vinculando asset...', {
-        style: { background: '#111', color: '#FFD400', border: '1px solid #FFD400' }
+      toast.info("Binario recibido por el servidor. Vinculando asset...", {
+        style: {
+          background: "#111",
+          color: "#FFD400",
+          border: "1px solid #FFD400",
+        },
       });
 
       // FASE 2: Registro en la arquitectura de la campaña (Asset mapping)
       try {
         await addVideoToCampaign(selectedCampaign, {
-          type: 'VIDEO',
+          type: "VIDEO",
           filename: title,
           url: uploadedData.url,
           fileSize: uploadedData.fileSize,
           checksum: uploadedData.hashMd5 || uploadedData.id,
-          duration: Number(duration)
+          duration: Number(duration),
         });
         setUploadProgress(80);
-        toast.info('Asset vinculado. Desplegando a flota...', {
-          style: { background: '#111', color: '#FFD400', border: '1px solid #FFD400' }
+        toast.info("Asset vinculado. Desplegando a flota...", {
+          style: {
+            background: "#111",
+            color: "#FFD400",
+            border: "1px solid #FFD400",
+          },
         });
       } catch (assetError: any) {
-        console.warn('⚠️ ERROR_ASSET_LINKING:', assetError);
-        toast.warning('Video en la bóveda, enlace a campaña pendiente. Reintenta desde la página de campaña.', { duration: 6000 });
+        console.warn("⚠️ ERROR_ASSET_LINKING:", assetError);
+        toast.warning(
+          "Video en la bóveda, enlace a campaña pendiente. Reintenta desde la página de campaña.",
+          { duration: 6000 },
+        );
       }
 
       // FASE 3: Asignar campaña a todos los dispositivos activos de la flota (garantiza cobertura total)
       try {
-        const fleetRes = await api.get('/fleet/summary');
-        const allDevices: { device_id?: string; deviceId?: string }[] = Array.isArray(fleetRes.data) ? fleetRes.data : [];
+        const fleetRes = await api.get("/fleet/summary");
+        const allDevices: { device_id?: string; deviceId?: string }[] =
+          Array.isArray(fleetRes.data) ? fleetRes.data : [];
         const allDeviceIds = allDevices
-          .map(d => d.device_id || d.deviceId)
+          .map((d) => d.device_id || d.deviceId)
           .filter(Boolean) as string[];
 
         if (allDeviceIds.length > 0) {
@@ -223,31 +316,35 @@ export default function MediaPage() {
         setUploadProgress(95);
       } catch (assignErr: any) {
         // Non-fatal: devices may already be assigned or targetAll handles it
-        console.warn('⚠️ FASE_3_ASSIGN_WARN:', assignErr.message);
+        console.warn("⚠️ FASE_3_ASSIGN_WARN:", assignErr.message);
       }
 
       setUploadProgress(100);
-
 
       // Éxito total
       setTimeout(() => {
         setShowUploadModal(false);
         resetUploadForm();
         loadData();
-        toast.success('✅ ¡Contenido en flota! Las tablets recibirán el anuncio en el próximo ciclo de sync.', {
-          icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
-          duration: 5000
-        });
-        notifyChange('MEDIA');
-        notifyChange('CAMPAIGNS');
+        toast.success(
+          "✅ ¡Contenido en flota! Las tablets recibirán el anuncio en el próximo ciclo de sync.",
+          {
+            icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+            duration: 5000,
+          },
+        );
+        notifyChange("MEDIA");
+        notifyChange("CAMPAIGNS");
       }, 500);
-
     } catch (e: any) {
-      console.error('CRITICAL_INGEST_FAILURE:', e);
-      const errorMsg = e.response?.data?.message || e.message || 'Error desconocido';
+      console.error("CRITICAL_INGEST_FAILURE:", e);
+      const errorMsg =
+        e.response?.data?.message || e.message || "Error desconocido";
 
       if (e.response?.status === 401) {
-        toast.error("Credenciales expiradas. Por favor, inicie sesión nuevamente.");
+        toast.error(
+          "Credenciales expiradas. Por favor, inicie sesión nuevamente.",
+        );
       } else if (e.response?.status === 413) {
         toast.error("Archivo demasiado grande para el clúster actual.");
       } else {
@@ -255,7 +352,7 @@ export default function MediaPage() {
       }
 
       // Retroceder progreso para feedback visual de error
-      setUploadProgress(prev => Math.max(0, prev - 20));
+      setUploadProgress((prev) => Math.max(0, prev - 20));
     } finally {
       setUploading(false);
     }
@@ -263,16 +360,20 @@ export default function MediaPage() {
 
   const handleDelete = async (fileId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('¿Purgar permanentemente este activo de la bóveda?')) return;
+    if (!confirm("¿Purgar permanentemente este activo de la bóveda?")) return;
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/media/${fileId}/delete`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('tad_admin_token')}` }
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("tad_admin_token")}`,
+        },
       });
       await loadData();
-      toast.success('Activo purgado de la bóveda');
-      notifyChange('MEDIA');
-    } catch (err) { console.error(err); }
+      toast.success("Activo purgado de la bóveda");
+      notifyChange("MEDIA");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleUpdateQR = async (fileId: string, url: string) => {
@@ -280,10 +381,10 @@ export default function MediaPage() {
       await updateMedia(fileId, { qrUrl: url });
       setEditingQr(null);
       await loadData();
-      notifyChange('MEDIA');
+      notifyChange("MEDIA");
     } catch (err) {
       console.error(err);
-      toast.error('Error actualizando URL satelital');
+      toast.error("Error actualizando URL satelital");
     }
   };
 
@@ -298,7 +399,9 @@ export default function MediaPage() {
       {/* Page Context Transition */}
       <div className="flex items-center gap-3 mb-8 opacity-60">
         <div className="w-8 h-px bg-white/20" />
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Vault / Nexus Multimedia</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">
+          Vault / Nexus Multimedia
+        </p>
       </div>
 
       <div className="flex justify-end mb-6">
@@ -321,20 +424,61 @@ export default function MediaPage() {
       {/* Main Stats Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {[
-          { label: 'Activos en Bóveda', value: media.length, icon: Film, color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
-          { label: 'Puntos de Difusión', value: media.filter(m => getLinkedCampaigns(m.id, m.url).length > 0).length, icon: Share2, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
-          { label: 'Integridad Global', value: '100%', icon: ShieldCheck, color: 'text-emerald-500', borderColor: 'border-emerald-500/40', iconColor: 'text-emerald-500' }
+          {
+            label: "Activos en Bóveda",
+            value: media.length,
+            icon: Film,
+            color: "text-white",
+            borderColor: "border-white/20",
+            iconColor: "text-zinc-400",
+          },
+          {
+            label: "Puntos de Difusión",
+            value: media.filter(
+              (m) => getLinkedCampaigns(m.id, m.url).length > 0,
+            ).length,
+            icon: Share2,
+            color: "text-[#FFD400]",
+            borderColor: "border-[#FFD400]/40",
+            iconColor: "text-[#FFD400]",
+          },
+          {
+            label: "Integridad Global",
+            value: "100%",
+            icon: ShieldCheck,
+            color: "text-emerald-500",
+            borderColor: "border-emerald-500/40",
+            iconColor: "text-emerald-500",
+          },
         ].map((s, i) => (
-          <div key={i} className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300">
+          <div
+            key={i}
+            className="bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] relative overflow-hidden transition-all duration-300"
+          >
             <div className="flex justify-between items-start mb-6">
-              <div className={clsx("p-2.5 rounded-2xl border bg-transparent", s.borderColor, s.iconColor)}>
+              <div
+                className={clsx(
+                  "p-2.5 rounded-2xl border bg-transparent",
+                  s.borderColor,
+                  s.iconColor,
+                )}
+              >
                 <s.icon className="w-5 h-5" />
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
             </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-            <h3 className={clsx("text-4xl font-black tracking-tighter leading-none", s.color)}>
-              {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+              {s.label}
+            </p>
+            <h3
+              className={clsx(
+                "text-4xl font-black tracking-tighter leading-none",
+                s.color,
+              )}
+            >
+              {typeof s.value === "number" && s.value < 10
+                ? `0${s.value}`
+                : s.value}
             </h3>
           </div>
         ))}
@@ -344,7 +488,10 @@ export default function MediaPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
         {loading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="h-64 bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/30 flex flex-col p-5 gap-4 shadow-inner">
+            <div
+              key={`skeleton-${i}`}
+              className="h-64 bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-3xl border border-gray-700/30 flex flex-col p-5 gap-4 shadow-inner"
+            >
               <div className="aspect-video bg-gray-700/20 rounded-2xl w-full" />
               <div className="h-4 bg-gray-700/20 rounded-full w-3/4" />
               <div className="h-3 bg-gray-700/10 rounded-full w-1/2" />
@@ -356,15 +503,30 @@ export default function MediaPage() {
             const linkedCampaigns = getLinkedCampaigns(file.id, file.url);
             const videoUrl = getPreviewUrlForFile(file);
             const displayName = getDisplayName(file);
-            const isVideo = file.mime?.includes('video') || file.url?.includes('.mp4') || file.url?.includes('.webm');
-            const isActive = mediaStatus[file.id]?.active_devices && mediaStatus[file.id].active_devices!.length > 0;
+            const isVideo =
+              file.mime?.includes("video") ||
+              file.url?.includes(".mp4") ||
+              file.url?.includes(".webm");
+            const isActive =
+              mediaStatus[file.id]?.active_devices &&
+              mediaStatus[file.id].active_devices!.length > 0;
 
             return (
               <div
                 key={file.id}
                 className={clsx(
                   "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl overflow-hidden hover:border-tad-yellow/30 transition-all duration-500 shadow-sm hover:shadow-md hover:-translate-y-1 flex flex-col animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
+                  idx === 0
+                    ? "delay-0"
+                    : idx === 1
+                      ? "delay-50"
+                      : idx === 2
+                        ? "delay-100"
+                        : idx === 3
+                          ? "delay-150"
+                          : idx === 4
+                            ? "delay-200"
+                            : "delay-250",
                 )}
               >
                 {/* Preview Surface */}
@@ -374,7 +536,7 @@ export default function MediaPage() {
                     setPreviewUrl(videoUrl);
                     setPreviewTitle(displayName);
                     setPreviewQr(file.qrUrl || null);
-                    setPreviewCampaignId(file.campaignId || 'manual');
+                    setPreviewCampaignId(file.campaignId || "manual");
                   }}
                 >
                   {isVideo ? (
@@ -383,15 +545,23 @@ export default function MediaPage() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover/surface:scale-105"
                       preload="metadata"
                       muted
-                      onMouseOver={e => (e.target as HTMLVideoElement).play().catch(() => { })}
-                      onMouseOut={e => {
+                      onMouseOver={(e) =>
+                        (e.target as HTMLVideoElement).play().catch(() => {})
+                      }
+                      onMouseOut={(e) => {
                         const v = e.target as HTMLVideoElement;
-                        v.pause(); v.currentTime = 0;
+                        v.pause();
+                        v.currentTime = 0;
                       }}
                     />
                   ) : (
                     <div className="relative w-full h-full transition-transform duration-700 group-hover/surface:scale-105">
-                      <Image src={videoUrl} alt={displayName} fill className="object-cover" />
+                      <Image
+                        src={videoUrl}
+                        alt={displayName}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                   )}
 
@@ -424,7 +594,7 @@ export default function MediaPage() {
                     onAsyncClick={async () => await deleteMedia(file.id)}
                     onSuccess={() => {
                       loadData();
-                      notifyChange('MEDIA');
+                      notifyChange("MEDIA");
                     }}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -434,9 +604,13 @@ export default function MediaPage() {
                 {/* Information Surface */}
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="mb-4">
-                    <h4 className="text-sm font-bold text-white truncate mb-1.5 group-hover:text-tad-yellow transition-colors duration-300">{displayName}</h4>
+                    <h4 className="text-sm font-bold text-white truncate mb-1.5 group-hover:text-tad-yellow transition-colors duration-300">
+                      {displayName}
+                    </h4>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      <Cpu className="w-3 h-3 text-tad-yellow" /> {isVideo ? 'VIDEO' : 'STATIC'} • {(file.size ? file.size / 1024 / 1024 : 0).toFixed(2)} MB
+                      <Cpu className="w-3 h-3 text-tad-yellow" />{" "}
+                      {isVideo ? "VIDEO" : "STATIC"} •{" "}
+                      {(file.size ? file.size / 1024 / 1024 : 0).toFixed(2)} MB
                     </p>
                   </div>
 
@@ -447,14 +621,21 @@ export default function MediaPage() {
                     <div className="flex flex-wrap gap-2">
                       {linkedCampaigns.length > 0 ? (
                         linkedCampaigns.map((c) => (
-                          <div key={c.id} className="bg-gray-900/50 border border-gray-700/50 px-2 py-1.5 rounded-lg hover:border-tad-yellow/40 transition-all flex items-center gap-1.5 group/tag cursor-default">
+                          <div
+                            key={c.id}
+                            className="bg-gray-900/50 border border-gray-700/50 px-2 py-1.5 rounded-lg hover:border-tad-yellow/40 transition-all flex items-center gap-1.5 group/tag cursor-default"
+                          >
                             <div className="w-1.5 h-1.5 rounded-full bg-tad-yellow/50 group-hover/tag:bg-tad-yellow transition-colors" />
-                            <span className="text-[10px] font-bold text-gray-400 group-hover/tag:text-white transition-colors uppercase truncate max-w-[120px]">{c.name}</span>
+                            <span className="text-[10px] font-bold text-gray-400 group-hover/tag:text-white transition-colors uppercase truncate max-w-[120px]">
+                              {c.name}
+                            </span>
                           </div>
                         ))
                       ) : (
                         <div className="w-full py-3 text-center border border-dashed border-gray-700 rounded-xl bg-gray-900/20">
-                          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Sin Enlace</p>
+                          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                            Sin Enlace
+                          </p>
                         </div>
                       )}
                     </div>
@@ -476,19 +657,21 @@ export default function MediaPage() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          defaultValue={file.qrUrl || ''}
+                          defaultValue={file.qrUrl || ""}
                           autoFocus
                           aria-label="URL de destino para QR"
                           placeholder="https://..."
                           className="flex-1 bg-gray-800 border border-tad-yellow/30 rounded-lg px-3 py-1.5 text-[10px] text-white focus:outline-none focus:border-tad-yellow"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleUpdateQR(file.id, e.currentTarget.value);
-                            if (e.key === 'Escape') setEditingQr(null);
+                            if (e.key === "Enter")
+                              handleUpdateQR(file.id, e.currentTarget.value);
+                            if (e.key === "Escape") setEditingQr(null);
                           }}
                         />
                         <button
                           onClick={(e) => {
-                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                            const input = e.currentTarget
+                              .previousElementSibling as HTMLInputElement;
                             handleUpdateQR(file.id, input.value);
                           }}
                           title="Guardar URL QR"
@@ -504,7 +687,7 @@ export default function MediaPage() {
                         className="flex items-center justify-between cursor-pointer group-hover/qr:border-tad-yellow/20 border border-transparent rounded-lg transition-all"
                       >
                         <p className="text-[10px] font-bold text-gray-400 truncate max-w-[150px]">
-                          {file.qrUrl || 'Asignar destino...'}
+                          {file.qrUrl || "Asignar destino..."}
                         </p>
                         <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center opacity-0 group-hover/qr:opacity-100 transition-all border border-gray-700">
                           <Zap className="w-3 h-3 text-gray-500" />
@@ -519,21 +702,38 @@ export default function MediaPage() {
                         <Calendar className="w-3.5 h-3.5 text-gray-500 group-hover:text-tad-yellow" />
                       </div>
                       <div>
-                        <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest leading-none mb-1">Registro</p>
-                        <p className="text-[11px] font-bold text-gray-400">{file.createdAt ? format(new Date(file.createdAt), 'dd MMM yy') : 'ID'}</p>
+                        <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest leading-none mb-1">
+                          Registro
+                        </p>
+                        <p className="text-[11px] font-bold text-gray-400">
+                          {file.createdAt
+                            ? format(new Date(file.createdAt), "dd MMM yy")
+                            : "ID"}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex -space-x-2">
-                      {mediaStatus[file.id]?.active_devices?.slice(0, 3).map((id) => (
-                        <div key={id} title={id} className="w-8 h-8 rounded-full bg-gray-800 border-2 border-gray-900 flex items-center justify-center text-[8px] font-bold text-tad-yellow shadow-sm hover:z-10 hover:-translate-y-1 transition-transform cursor-help">
-                          {devices.find(d => d.device_id === id)?.taxiNumber?.replace('TAXI-', '') || 'ND'}
-                        </div>
-                      ))}
-                      {(!mediaStatus[file.id]?.active_devices || mediaStatus[file.id].active_devices!.length === 0) && (
+                      {mediaStatus[file.id]?.active_devices
+                        ?.slice(0, 3)
+                        .map((id) => (
+                          <div
+                            key={id}
+                            title={id}
+                            className="w-8 h-8 rounded-full bg-gray-800 border-2 border-gray-900 flex items-center justify-center text-[8px] font-bold text-tad-yellow shadow-sm hover:z-10 hover:-translate-y-1 transition-transform cursor-help"
+                          >
+                            {devices
+                              .find((d) => d.device_id === id)
+                              ?.taxiNumber?.replace("TAXI-", "") || "ND"}
+                          </div>
+                        ))}
+                      {(!mediaStatus[file.id]?.active_devices ||
+                        mediaStatus[file.id].active_devices!.length === 0) && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Seguro</span>
+                          <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
+                            Seguro
+                          </span>
                         </div>
                       )}
                     </div>
@@ -547,12 +747,17 @@ export default function MediaPage() {
             <div className="w-20 h-20 bg-gray-900 rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-sm border border-gray-700">
               <Film className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-4">Bóveda Vacía</h3>
+            <h3 className="text-2xl font-bold text-gray-400 uppercase tracking-widest leading-none mb-4">
+              Bóveda Vacía
+            </h3>
             <p className="text-gray-500 font-bold uppercase tracking-widest text-xs max-w-sm leading-relaxed mb-8 mx-auto">
               No se han detectado activos multimedia en el cluster central.
             </p>
             <button
-              onClick={() => { resetUploadForm(); setShowUploadModal(true); }}
+              onClick={() => {
+                resetUploadForm();
+                setShowUploadModal(true);
+              }}
               className="bg-gray-900 hover:bg-tad-yellow hover:text-black text-gray-400 px-8 py-3 rounded-xl border border-gray-700 hover:border-tad-yellow text-xs font-bold uppercase tracking-widest transition-all shadow-sm"
             >
               INICIAR INGESTA MULTIMEDIA
@@ -563,14 +768,21 @@ export default function MediaPage() {
       {/* Fullscreen Preview Modal */}
       {previewUrl && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={() => setPreviewUrl(null)} />
+          <div
+            className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+            onClick={() => setPreviewUrl(null)}
+          />
           <div className="relative w-full max-w-6xl animate-in zoom-in-95 duration-500">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-1.5 h-8 bg-tad-yellow rounded-full shadow-[0_0_10px_#fad400]" />
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">{previewTitle || 'EXPLORADOR DE ACTIVOS'}</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-2">Visualización de Master Digital v4.2</p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">
+                    {previewTitle || "EXPLORADOR DE ACTIVOS"}
+                  </h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-2">
+                    Visualización de Master Digital v4.2
+                  </p>
                 </div>
               </div>
               <button
@@ -582,7 +794,12 @@ export default function MediaPage() {
               </button>
             </div>
             <div className="bg-black rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl aspect-video relative group ring-1 ring-white/5">
-              <video src={previewUrl} controls autoPlay className="w-full h-full object-contain" />
+              <video
+                src={previewUrl}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
 
               {/* QR Code Overlay Simulation */}
               {previewQr && (
@@ -594,7 +811,9 @@ export default function MediaPage() {
                     includeMargin={false}
                     className="w-full h-full"
                   />
-                  <div className="absolute -top-3 -left-3 bg-tad-yellow text-black text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg border border-white/20">LIVE_QR</div>
+                  <div className="absolute -top-3 -left-3 bg-tad-yellow text-black text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg border border-white/20">
+                    LIVE_QR
+                  </div>
                 </div>
               )}
 
@@ -604,7 +823,9 @@ export default function MediaPage() {
             </div>
             <div className="flex justify-center mt-6">
               <div className="px-6 py-2 bg-gray-900/50 border border-gray-800 rounded-full backdrop-blur-md">
-                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.3em]">© TAD NEXUS SECURE PREVIEW SYSTEM</p>
+                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.3em]">
+                  © TAD NEXUS SECURE PREVIEW SYSTEM
+                </p>
               </div>
             </div>
           </div>
@@ -614,9 +835,11 @@ export default function MediaPage() {
       {/* Upload Nexus Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => !uploading && setShowUploadModal(false)} />
+          <div
+            className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+            onClick={() => !uploading && setShowUploadModal(false)}
+          />
           <div className="relative bg-gray-900 border border-gray-700/50 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 max-h-[95vh] flex flex-col">
-
             {uploading && (
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-800 z-50">
                 <div className="h-full bg-tad-yellow shadow-[0_0_15px_#fad400] transition-all duration-300 nexus-upload-progress" />
@@ -634,15 +857,21 @@ export default function MediaPage() {
                   <CloudUpload className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">Nueva <span className="text-tad-yellow">Ingesta</span></h3>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none">
+                    Nueva <span className="text-tad-yellow">Ingesta</span>
+                  </h3>
                   <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                    <Activity className="w-3 h-3 text-tad-yellow" /> Protocolo de Carga Nexus v4.2
+                    <Activity className="w-3 h-3 text-tad-yellow" /> Protocolo
+                    de Carga Nexus v4.2
                   </p>
                 </div>
               </div>
               {!uploading && (
                 <button
-                  onClick={() => { setShowUploadModal(false); resetUploadForm(); }}
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    resetUploadForm();
+                  }}
                   className="p-3 bg-gray-800 hover:bg-rose-500/10 border border-gray-700 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 rounded-xl transition-all shadow-sm"
                   aria-label="Cerrar modal"
                 >
@@ -651,24 +880,45 @@ export default function MediaPage() {
               )}
             </div>
 
-            <form onSubmit={handleUpload} className="p-8 space-y-8 overflow-y-auto custom-scrollbar bg-gray-900/50 flex-1">
+            <form
+              onSubmit={handleUpload}
+              className="p-8 space-y-8 overflow-y-auto custom-scrollbar bg-gray-900/50 flex-1"
+            >
               {/* File Drop Surface */}
               <div className="space-y-4">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Origen de Datos</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">
+                  Origen de Datos
+                </label>
                 {!selectedFile ? (
                   <div className="relative border-2 border-dashed border-gray-700/50 hover:border-tad-yellow/40 bg-gray-800/10 rounded-3xl p-16 transition-all duration-500 group/drop cursor-pointer flex flex-col items-center justify-center overflow-hidden">
                     <div className="absolute inset-0 bg-tad-yellow/[0.01] opacity-0 group-hover/drop:opacity-100 transition-opacity" />
-                    <input type="file" accept="video/mp4, video/webm" ref={fileInputRef} onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer z-10" title="Seleccionar archivo" />
+                    <input
+                      type="file"
+                      accept="video/mp4, video/webm"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      title="Seleccionar archivo"
+                    />
                     <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-700/50 group-hover/drop:border-tad-yellow/30 transition-all group-hover/drop:scale-110 shadow-sm relative z-10">
                       <Film className="w-10 h-10 text-gray-500 group-hover/drop:text-tad-yellow transition-colors" />
                     </div>
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest group-hover/drop:text-white transition-colors relative z-10">Seleccionar Master Digital</p>
-                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-[0.2em] relative z-10">MP4 / WEBM • Máximo 200MB</p>
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest group-hover/drop:text-white transition-colors relative z-10">
+                      Seleccionar Master Digital
+                    </p>
+                    <p className="text-[10px] text-gray-600 font-bold mt-2 uppercase tracking-[0.2em] relative z-10">
+                      MP4 / WEBM • Máximo 200MB
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in zoom-in-95 duration-500">
                     <div className="relative aspect-video rounded-3xl overflow-hidden border border-gray-700/50 bg-black shadow-2xl group/preview">
-                      <video src={filePreviewUrl || ''} controls className="w-full h-full" preload="metadata" />
+                      <video
+                        src={filePreviewUrl || ""}
+                        controls
+                        className="w-full h-full"
+                        preload="metadata"
+                      />
                       <div className="absolute top-6 left-6">
                         <span className="bg-tad-yellow text-black text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg backdrop-blur-md">
                           <Eye className="w-4 h-4" /> Preview Activo
@@ -681,11 +931,22 @@ export default function MediaPage() {
                           <Play className="w-5 h-5 text-tad-yellow" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-white uppercase truncate max-w-[300px]">{selectedFile?.name}</p>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{(selectedFile!.size / 1024 / 1024).toFixed(2)} MB • {selectedFile?.type.replace('video/', '').toUpperCase()}</p>
+                          <p className="text-sm font-bold text-white uppercase truncate max-w-[300px]">
+                            {selectedFile?.name}
+                          </p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                            {(selectedFile!.size / 1024 / 1024).toFixed(2)} MB •{" "}
+                            {selectedFile?.type
+                              .replace("video/", "")
+                              .toUpperCase()}
+                          </p>
                         </div>
                       </div>
-                      <button type="button" onClick={resetUploadForm} className="px-4 py-2 bg-gray-900 border border-gray-700 hover:border-tad-yellow text-gray-400 hover:text-tad-yellow text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm">
+                      <button
+                        type="button"
+                        onClick={resetUploadForm}
+                        className="px-4 py-2 bg-gray-900 border border-gray-700 hover:border-tad-yellow text-gray-400 hover:text-tad-yellow text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm"
+                      >
                         Purgar
                       </button>
                     </div>
@@ -696,22 +957,26 @@ export default function MediaPage() {
               {/* Metadata Cluster */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Nombre del Activo</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">
+                    Nombre del Activo
+                  </label>
                   <input
                     required
                     type="text"
                     value={title}
-                    onChange={e => setTitle(e.target.value)}
+                    onChange={(e) => setTitle(e.target.value)}
                     className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all placeholder:text-gray-600 shadow-inner"
                     placeholder="IDENTIFICADOR_COMERCIAL_V"
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Loop de Reproducción</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">
+                    Loop de Reproducción
+                  </label>
                   <select
                     required
                     value={duration}
-                    onChange={e => setDuration(Number(e.target.value))}
+                    onChange={(e) => setDuration(Number(e.target.value))}
                     className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all cursor-pointer shadow-inner appearance-none"
                     title="Duración del loop"
                   >
@@ -724,7 +989,9 @@ export default function MediaPage() {
 
               {/* Link QR Surface */}
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Call to Action (Enlace QR)</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">
+                  Call to Action (Enlace QR)
+                </label>
                 <div className="relative group/input">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
                     <Share2 className="w-5 h-5 text-gray-500 group-focus-within/input:text-tad-yellow transition-colors" />
@@ -732,7 +999,7 @@ export default function MediaPage() {
                   <input
                     type="url"
                     value={qrUrl}
-                    onChange={e => setQrUrl(e.target.value)}
+                    onChange={(e) => setQrUrl(e.target.value)}
                     className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl pl-14 pr-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none transition-all placeholder:text-gray-700 shadow-inner"
                     placeholder="https://destino-comercial.com/nexus"
                   />
@@ -741,27 +1008,35 @@ export default function MediaPage() {
 
               {/* Campaign Selection */}
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Campaña de Destino</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">
+                  Campaña de Destino
+                </label>
                 <select
                   required
                   value={selectedCampaign}
-                  onChange={e => setSelectedCampaign(e.target.value)}
+                  onChange={(e) => setSelectedCampaign(e.target.value)}
                   className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4 text-white text-sm font-bold focus:border-tad-yellow/50 outline-none cursor-pointer shadow-inner appearance-none"
                   title="Campaña objetivo"
                 >
-                  <option value="" disabled>-- VINCULAR A CLUSTER COMERCIAL --</option>
-                  {campaigns?.filter(c => c.active).map(c => (
-                    <option key={c.id} value={c.id}>{c.name.toUpperCase()} • {c.advertiser.toUpperCase()}</option>
-                  ))}
+                  <option value="" disabled>
+                    -- VINCULAR A CLUSTER COMERCIAL --
+                  </option>
+                  {campaigns
+                    ?.filter((c) => c.active)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name.toUpperCase()} • {c.advertiser.toUpperCase()}
+                      </option>
+                    ))}
                 </select>
               </div>
-
-
 
               {/* Action Section */}
               <div className="pt-6 pb-2">
                 <button
-                  disabled={uploading || !selectedFile || !selectedCampaign || !title}
+                  disabled={
+                    uploading || !selectedFile || !selectedCampaign || !title
+                  }
                   type="submit"
                   className="w-full bg-tad-yellow hover:bg-yellow-400 text-black font-black uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-[0_10px_30px_rgba(250,212,0,0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-4 active:scale-95 text-xs"
                 >
@@ -771,11 +1046,16 @@ export default function MediaPage() {
                       DISTRIBUYENDO ACTIVO {uploadProgress}%
                     </>
                   ) : (
-                    <><CloudUpload className="w-5 h-5" /> INICIAR PROTOCOLO DE INGESTA</>
+                    <>
+                      <CloudUpload className="w-5 h-5" /> INICIAR PROTOCOLO DE
+                      INGESTA
+                    </>
                   )}
                 </button>
                 <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-6 leading-relaxed">
-                  Al ejecutar el protocolo, el activo será vinculado a la campaña. Las pantallas de la red recibirán el contenido basado en la configuración de la campaña.
+                  Al ejecutar el protocolo, el activo será vinculado a la
+                  campaña. Las pantallas de la red recibirán el contenido basado
+                  en la configuración de la campaña.
                 </p>
               </div>
             </form>
@@ -785,11 +1065,3 @@ export default function MediaPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-

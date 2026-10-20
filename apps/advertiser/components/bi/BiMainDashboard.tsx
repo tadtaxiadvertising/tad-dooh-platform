@@ -1,5 +1,5 @@
-import React from 'react';
-import { LayoutDashboard } from 'lucide-react';
+import React from "react";
+import { LayoutDashboard } from "lucide-react";
 
 export function BiMainDashboard() {
   return (
@@ -12,12 +12,17 @@ export function BiMainDashboard() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Impresiones', value: '124,500' },
-          { label: 'Completions', value: '118,000' },
-          { label: 'Scans', value: '430' },
+          { label: "Impresiones", value: "124,500" },
+          { label: "Completions", value: "118,000" },
+          { label: "Scans", value: "430" },
         ].map((kpi) => (
-          <div key={kpi.label} className="bg-black/40 p-6 rounded-2xl border border-white/[0.02]">
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">{kpi.label}</p>
+          <div
+            key={kpi.label}
+            className="bg-black/40 p-6 rounded-2xl border border-white/[0.02]"
+          >
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">
+              {kpi.label}
+            </p>
             <p className="text-2xl font-black text-white">{kpi.value}</p>
           </div>
         ))}

@@ -12,4 +12,4 @@ export {
   useBackgroundTelemetry as useTelemetry,
   type ConnectionStatus,
   type TelemetryCoord,
-} from './useBackgroundTelemetry';
+} from "./useBackgroundTelemetry";

@@ -168,7 +168,7 @@ export const APP_PERMISSIONS = {
       DATA_CATEGORIES.CAMPAIGN,
       DATA_CATEGORIES.FINANCIAL,
     ] as DataCategoryKey[],
-    description 'Advertiser campaign management, creative uploads, billing, and performance reporting.',
+    description: 'Advertiser campaign management, creative uploads, billing, and performance reporting.',
     dataCollected: [
       // Essential
       'sb-access-token cookie (7-day expiry)',

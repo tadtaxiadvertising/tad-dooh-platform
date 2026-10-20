@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { CheckCircle2, Zap, ArrowRight, Building2, Calendar, Target, TrendingUp } from 'lucide-react';
+import { motion } from "framer-motion";
+import {
+  CheckCircle2,
+  Zap,
+  ArrowRight,
+  Building2,
+  Calendar,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 
 interface SuccessStepProps {
   onContinue: () => void;
@@ -14,7 +22,10 @@ interface SuccessStepProps {
   };
 }
 
-export default function SuccessStep({ onContinue, campaignData }: SuccessStepProps) {
+export default function SuccessStep({
+  onContinue,
+  campaignData,
+}: SuccessStepProps) {
   return (
     <motion.div
       className="flex-1 flex flex-col items-center justify-center text-center py-10"
@@ -27,18 +38,29 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
         <motion.div
           className="absolute inset-0 w-28 h-28 border-2 border-[#FDCB01]/25 rounded-full"
           animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
           className="absolute inset-0 w-28 h-28 border border-[#FDCB01]/15 rounded-full scale-125"
           animate={{ scale: [1.25, 1.5, 1.25], opacity: [0.3, 0, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear', delay: 0.5 }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "linear",
+            delay: 0.5,
+          }}
         />
         <motion.div
           className="w-28 h-28 bg-[#FDCB01]/10 rounded-full grid place-items-center"
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.3, duration: 0.8, type: 'spring', stiffness: 180, damping: 15 }}
+          transition={{
+            delay: 0.3,
+            duration: 0.8,
+            type: "spring",
+            stiffness: 180,
+            damping: 15,
+          }}
         >
           <CheckCircle2 className="w-14 h-14 text-[#FDCB01]" />
         </motion.div>
@@ -50,13 +72,12 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
         transition={{ delay: 0.5, duration: 0.5 }}
       >
         <h1 className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-tight mb-3">
-          Tu campaña{' '}
-          <br />
+          Tu campaña <br />
           <span className="text-[#FDCB01]">está asegurada</span>
         </h1>
         <p className="text-sm text-[#AAAAAA] max-w-[320px] leading-relaxed mb-8">
-          Registramos tu intención con éxito. Un consultor TAD activará tu plan y coordinará la
-          puesta en vía de tus pantallas.
+          Registramos tu intención con éxito. Un consultor TAD activará tu plan
+          y coordinará la puesta en vía de tus pantallas.
         </p>
       </motion.div>
 
@@ -80,7 +101,12 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
             className="bg-[#FDCB01]/10 text-[#FDCB01] text-[9px] px-2 py-1 rounded-full font-bold uppercase tracking-wider"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.8, type: 'spring', stiffness: 260, damping: 20 }}
+            transition={{
+              delay: 0.8,
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+            }}
           >
             Pendiente de pago
           </motion.span>
@@ -92,7 +118,7 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.4 }}
         >
-          {campaignData?.companyName || 'Empresa registrada'}
+          {campaignData?.companyName || "Empresa registrada"}
         </motion.p>
 
         <motion.p
@@ -101,8 +127,10 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.85, duration: 0.4 }}
         >
-          {campaignData?.screens || 0} pantallas · {campaignData?.months || 0} mes{campaignData?.months !== 1 ? 'es' : ''} ·{' '}
-          {campaignData?.impressions?.toLocaleString() || '0'} impactos estimados
+          {campaignData?.screens || 0} pantallas · {campaignData?.months || 0}{" "}
+          mes{campaignData?.months !== 1 ? "es" : ""} ·{" "}
+          {campaignData?.impressions?.toLocaleString() || "0"} impactos
+          estimados
         </motion.p>
 
         <motion.div
@@ -113,7 +141,7 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
         >
           <span className="text-xs text-[#AAAAAA]">Presupuesto estimado:</span>
           <span className="text-xl font-black text-white tabular-nums">
-            RD$ {campaignData?.budget?.toLocaleString() || '0'}
+            RD$ {campaignData?.budget?.toLocaleString() || "0"}
           </span>
         </motion.div>
 
@@ -143,20 +171,44 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
         </p>
         <div className="space-y-3 text-[11px] text-gray-300">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#FDCB01] text-black flex items-center justify-center text-[10px] font-black shrink-0">1</div>
-            <span>Contacto consultor TAD en <span className="font-bold text-white">24h</span></span>
+            <div className="w-5 h-5 rounded-full bg-[#FDCB01] text-black flex items-center justify-center text-[10px] font-black shrink-0">
+              1
+            </div>
+            <span>
+              Contacto consultor TAD en{" "}
+              <span className="font-bold text-white">24h</span>
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">2</div>
-            <span>Revisión y aprobación de creativos <span className="font-bold text-white">(48h)</span></span>
+            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">
+              2
+            </div>
+            <span>
+              Revisión y aprobación de creativos{" "}
+              <span className="font-bold text-white">(48h)</span>
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">3</div>
-            <span>Activación en <span className="font-bold text-[#22C55E]">pantallas en ruta</span></span>
+            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">
+              3
+            </div>
+            <span>
+              Activación en{" "}
+              <span className="font-bold text-[#22C55E]">
+                pantallas en ruta
+              </span>
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">4</div>
-            <span>Primer reporte de <span className="font-bold text-[#FDCB01]">impresiones reales</span></span>
+            <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">
+              4
+            </div>
+            <span>
+              Primer reporte de{" "}
+              <span className="font-bold text-[#FDCB01]">
+                impresiones reales
+              </span>
+            </span>
           </div>
         </div>
       </motion.div>
@@ -165,7 +217,10 @@ export default function SuccessStep({ onContinue, campaignData }: SuccessStepPro
       <motion.button
         onClick={onContinue}
         className="w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
-        whileHover={{ scale: 1.02, boxShadow: '0 10px 50px rgba(253,203,1,0.4)' }}
+        whileHover={{
+          scale: 1.02,
+          boxShadow: "0 10px 50px rgba(253,203,1,0.4)",
+        }}
         whileTap={{ scale: 0.98 }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -11,20 +11,14 @@
  * Totalmente estática (no requiere Leaflet ni librerías externas pesadas).
  * Los datos en vivo vienen del shell (useTelemetry).
  */
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import {
-  Navigation,
-  Signal,
-  MapPin,
-  Activity,
-  RefreshCw,
-} from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { Navigation, Signal, MapPin, Activity, RefreshCw } from "lucide-react";
 
 interface RoutesTabProps {
-  connectionStatus: 'online' | 'offline' | 'syncing';
+  connectionStatus: "online" | "offline" | "syncing";
   batchCount: number;
   offlineCount: number;
   isTracking: boolean;
@@ -40,8 +34,8 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
   onSync,
   syncingNow,
 }) => {
-  const isOffline = connectionStatus === 'offline';
-  const isSyncing = connectionStatus === 'syncing';
+  const isOffline = connectionStatus === "offline";
+  const isSyncing = connectionStatus === "syncing";
 
   return (
     <section aria-labelledby="routes-tab-title" className="space-y-5">
@@ -65,8 +59,8 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255,212,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,212,0,0.3) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
+              "linear-gradient(rgba(255,212,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,212,0,0.3) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
           }}
         />
 
@@ -89,20 +83,20 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
             <div
               className={`h-2 w-2 rounded-full ${
                 isOffline
-                  ? 'bg-red-500'
+                  ? "bg-red-500"
                   : isSyncing
-                    ? 'bg-[#FFD400] animate-pulse-soft'
-                    : 'bg-emerald-500'
+                    ? "bg-[#FFD400] animate-pulse-soft"
+                    : "bg-emerald-500"
               }`}
             />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400">
               {isOffline
-                ? 'Sin conexión'
+                ? "Sin conexión"
                 : isSyncing
-                  ? 'Sincronizando...'
+                  ? "Sincronizando..."
                   : isTracking
-                    ? 'Rastreo activo'
-                    : 'GPS detenido'}
+                    ? "Rastreo activo"
+                    : "GPS detenido"}
             </span>
           </div>
           <span className="text-[10px] font-mono text-zinc-600">
@@ -115,21 +109,21 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
       <div className="grid grid-cols-3 gap-3">
         {[
           {
-            label: 'Tracking',
-            value: isTracking ? 'ACTIVO' : 'INACTIVO',
-            color: isTracking ? 'text-emerald-400' : 'text-zinc-600',
+            label: "Tracking",
+            value: isTracking ? "ACTIVO" : "INACTIVO",
+            color: isTracking ? "text-emerald-400" : "text-zinc-600",
             icon: Activity,
           },
           {
-            label: 'Batch GPS',
+            label: "Batch GPS",
             value: `${batchCount}/10`,
-            color: 'text-[#FFD400]',
+            color: "text-[#FFD400]",
             icon: Signal,
           },
           {
-            label: 'Offline',
+            label: "Offline",
             value: `${offlineCount} pts`,
-            color: offlineCount > 0 ? 'text-amber-400' : 'text-emerald-400',
+            color: offlineCount > 0 ? "text-amber-400" : "text-emerald-400",
             icon: Navigation,
           },
         ].map((stat, i) => {
@@ -143,9 +137,7 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
               <p className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-600">
                 {stat.label}
               </p>
-              <p className={`text-xs font-black ${stat.color}`}>
-                {stat.value}
-              </p>
+              <p className={`text-xs font-black ${stat.color}`}>{stat.value}</p>
             </div>
           );
         })}
@@ -158,15 +150,13 @@ export const RoutesTab: React.FC<RoutesTabProps> = ({
         disabled={offlineCount === 0 || syncingNow}
         className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-5 py-4 text-sm font-black uppercase tracking-[0.15em] text-zinc-300 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <RefreshCw
-          className={`h-4 w-4 ${syncingNow ? 'animate-spin' : ''}`}
-        />
+        <RefreshCw className={`h-4 w-4 ${syncingNow ? "animate-spin" : ""}`} />
         <span>
           {syncingNow
-            ? 'Sincronizando...'
+            ? "Sincronizando..."
             : offlineCount > 0
               ? `Sincronizar ${offlineCount} puntos pendientes`
-              : 'Todo sincronizado ✓'}
+              : "Todo sincronizado ✓"}
         </span>
       </motion.button>
     </section>

@@ -1,20 +1,28 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-const LOGIN_PATH = '/advertiser/login';
-const DASHBOARD_PATH = '/advertiser/dashboard';
-const EXPECTED_ROLE = 'ADVERTISER';
-const PUBLIC_PATHS = [LOGIN_PATH, '/advertiser/auth/callback', '/advertiser/onboarding', '/check-in', '/login'];
+const LOGIN_PATH = "/advertiser/login";
+const DASHBOARD_PATH = "/advertiser/dashboard";
+const EXPECTED_ROLE = "ADVERTISER";
+const PUBLIC_PATHS = [
+  LOGIN_PATH,
+  "/advertiser/auth/callback",
+  "/advertiser/onboarding",
+  "/check-in",
+  "/login",
+];
 
 function decodeTokenRole(token: string): string {
   try {
-    const payloadBase64 = token.split('.')[1];
-    if (!payloadBase64) return 'GUEST';
-    const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-    return decoded.app_metadata?.role || decoded.role || 'GUEST';
+    const payloadBase64 = token.split(".")[1];
+    if (!payloadBase64) return "GUEST";
+    const decoded = JSON.parse(
+      atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return decoded.app_metadata?.role || decoded.role || "GUEST";
   } catch {
-    return 'GUEST';
+    return "GUEST";
   }
 }
 
@@ -25,25 +33,27 @@ function decodeTokenRole(token: string): string {
 function extractAccessToken(request: NextRequest): string | null {
   const canonical = request.cookies
     .getAll()
-    .find(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
+    .find((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
   if (canonical?.value) {
     try {
       const json = JSON.parse(
-        atob(canonical.value.replace(/-/g, '+').replace(/_/g, '/')),
+        atob(canonical.value.replace(/-/g, "+").replace(/_/g, "/")),
       );
       if (json?.access_token) return json.access_token;
-    } catch { /* fall through to legacy */ }
+    } catch {
+      /* fall through to legacy */
+    }
   }
-  return request.cookies.get('sb-access-token')?.value ?? null;
+  return request.cookies.get("sb-access-token")?.value ?? null;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionToken = extractAccessToken(request);
-  const quickRole = sessionToken ? decodeTokenRole(sessionToken) : 'GUEST';
+  const quickRole = sessionToken ? decodeTokenRole(sessionToken) : "GUEST";
 
   // 1. Root landing redirect
-  if (pathname === '/') {
+  if (pathname === "/") {
     if (quickRole === EXPECTED_ROLE) {
       return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
     }
@@ -51,22 +61,28 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. Auth routes
-  if (pathname === LOGIN_PATH || pathname === '/login') {
+  if (pathname === LOGIN_PATH || pathname === "/login") {
     if (quickRole === EXPECTED_ROLE) {
       // NUEVO: Verificar status del JWT claims para redirigir correctamente
-      let status = 'ACTIVE';
+      let status = "ACTIVE";
       try {
         if (sessionToken) {
-          const payloadBase64 = sessionToken.split('.')[1];
+          const payloadBase64 = sessionToken.split(".")[1];
           if (payloadBase64) {
-            const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-            status = decoded.app_metadata?.status || decoded.status || 'ACTIVE';
+            const decoded = JSON.parse(
+              atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/")),
+            );
+            status = decoded.app_metadata?.status || decoded.status || "ACTIVE";
           }
         }
-      } catch { /* fallback to ACTIVE */ }
-      
-      if (status === 'PENDING_REVIEW') {
-        return NextResponse.redirect(new URL('/advertiser/onboarding', request.url));
+      } catch {
+        /* fallback to ACTIVE */
+      }
+
+      if (status === "PENDING_REVIEW") {
+        return NextResponse.redirect(
+          new URL("/advertiser/onboarding", request.url),
+        );
       }
       return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
     }
@@ -74,17 +90,23 @@ export async function middleware(request: NextRequest) {
   }
 
   // 3. Static assets bypass
-  if (pathname.startsWith('/icons/') || pathname.startsWith('/_next/') || pathname === '/favicon.ico') {
+  if (
+    pathname.startsWith("/icons/") ||
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico"
+  ) {
     return NextResponse.next();
   }
 
   // 4. Auth Callback bypass
-  if (pathname.includes('/auth/callback')) {
+  if (pathname.includes("/auth/callback")) {
     return NextResponse.next();
   }
 
   // 5. Public paths (legal pages, onboarding)
-  if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+  if (
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  ) {
     return NextResponse.next();
   }
 
@@ -110,7 +132,9 @@ export async function middleware(request: NextRequest) {
               cookiesToSet.forEach(({ name, value }) =>
                 request.cookies.set(name, value),
               );
-              response = NextResponse.next({ request: { headers: request.headers } });
+              response = NextResponse.next({
+                request: { headers: request.headers },
+              });
               cookiesToSet.forEach(({ name, value, options }) =>
                 response.cookies.set(name, value, options),
               );
@@ -119,7 +143,7 @@ export async function middleware(request: NextRequest) {
         });
         const { data, error } = await supabase.auth.getUser();
         if (!error && data?.user) {
-          role = data.user.app_metadata?.role || data.user.role || 'GUEST';
+          role = data.user.app_metadata?.role || data.user.role || "GUEST";
         }
       } catch {
         // Network failure (offline driver, Supabase hiccup) → local decode
@@ -133,19 +157,29 @@ export async function middleware(request: NextRequest) {
   }
 
   // NUEVO: Redirigir a onboarding si status es PENDING_REVIEW y no están ya ahí
-  if (pathname === DASHBOARD_PATH || pathname.startsWith(DASHBOARD_PATH + '/')) {
+  if (
+    pathname === DASHBOARD_PATH ||
+    pathname.startsWith(DASHBOARD_PATH + "/")
+  ) {
     try {
       if (sessionToken) {
-        const payloadBase64 = sessionToken.split('.')[1];
+        const payloadBase64 = sessionToken.split(".")[1];
         if (payloadBase64) {
-          const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-          const status = decoded.app_metadata?.status || decoded.status || 'ACTIVE';
-          if (status === 'PENDING_REVIEW') {
-            return NextResponse.redirect(new URL('/advertiser/onboarding', request.url));
+          const decoded = JSON.parse(
+            atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/")),
+          );
+          const status =
+            decoded.app_metadata?.status || decoded.status || "ACTIVE";
+          if (status === "PENDING_REVIEW") {
+            return NextResponse.redirect(
+              new URL("/advertiser/onboarding", request.url),
+            );
           }
         }
       }
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   }
 
   return response;
@@ -155,6 +189,6 @@ export const config = {
   matcher: [
     // Excluir PWA Service Worker, Workbox assets, y recursos estáticos públicos
     // para evitar redirects que rompan el registro del SW (SecurityError).
-    '/((?!api|_next/static|_next/image|_next/data|favicon\\.svg|manifest\\.json|sw\\.js|service-worker\\.js|workbox-.*\\.js|icons/).*)',
+    "/((?!api|_next/static|_next/image|_next/data|favicon\\.svg|manifest\\.json|sw\\.js|service-worker\\.js|workbox-.*\\.js|icons/).*)",
   ],
 };

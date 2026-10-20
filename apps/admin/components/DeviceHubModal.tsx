@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Network } from 'lucide-react';
+import React from "react";
+import { X, Network } from "lucide-react";
 
 interface DeviceHubModalProps {
   isOpen: boolean;
@@ -7,7 +7,11 @@ interface DeviceHubModalProps {
   deviceId: string;
 }
 
-export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubModalProps) {
+export default function DeviceHubModal({
+  isOpen,
+  onClose,
+  deviceId,
+}: DeviceHubModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -20,15 +24,22 @@ export default function DeviceHubModal({ isOpen, onClose, deviceId }: DeviceHubM
               Hub de Dispositivo
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          >
             <X className="w-4 h-4 text-zinc-500" />
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 uppercase tracking-widest">
-          Device hub modal pending implementation — Device ID: {deviceId || 'N/A'}
+          Device hub modal pending implementation — Device ID:{" "}
+          {deviceId || "N/A"}
         </p>
         <div className="flex gap-4 pt-4">
-          <button onClick={onClose} className="flex-1 py-4 bg-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all border border-white/5">
+          <button
+            onClick={onClose}
+            className="flex-1 py-4 bg-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all border border-white/5"
+          >
             Cancelar
           </button>
         </div>

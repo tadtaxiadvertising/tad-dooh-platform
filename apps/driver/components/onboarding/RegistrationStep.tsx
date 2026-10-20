@@ -1,12 +1,25 @@
-'use client';
+"use client";
 
-import { FormEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Car, Phone, Shield, Eye, EyeOff, BadgeCheck, 
-  FileText, Building, UserCheck, ChevronDown, CreditCard, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft
-} from 'lucide-react';
-import clsx from 'clsx';
+import { FormEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Car,
+  Phone,
+  Shield,
+  Eye,
+  EyeOff,
+  BadgeCheck,
+  FileText,
+  Building,
+  UserCheck,
+  ChevronDown,
+  CreditCard,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
+import clsx from "clsx";
 
 interface RegistrationStepProps {
   onNext: () => void;
@@ -35,7 +48,7 @@ interface RegistrationData {
 }
 
 interface LegalDocument {
-  id: keyof RegistrationData['agreements'];
+  id: keyof RegistrationData["agreements"];
   icon: React.ElementType;
   title: string;
   description: string;
@@ -48,10 +61,11 @@ interface LegalDocument {
 
 const LEGAL_DOCUMENTS: LegalDocument[] = [
   {
-    id: 'representative',
+    id: "representative",
     icon: UserCheck,
-    title: 'Representante Legal',
-    description: 'Confirmo ser el representante autorizado del vehículo y/o flota registrada.',
+    title: "Representante Legal",
+    description:
+      "Confirmo ser el representante autorizado del vehículo y/o flota registrada.",
     fullText: `DECLARACIÓN DE REPRESENTANTE LEGAL
 
 Al marcar esta casilla, declaro bajo juramento que:
@@ -64,15 +78,16 @@ Al marcar esta casilla, declaro bajo juramento que:
 
 Esta declaración tiene carácter de declaración jurada ante las autoridades competentes de la República Dominicana.`,
     required: true,
-    color: 'text-[#FDCB01]',
-    bgColor: 'bg-[#FDCB01]/10',
-    borderColor: 'border-[#FDCB01]/30',
+    color: "text-[#FDCB01]",
+    bgColor: "bg-[#FDCB01]/10",
+    borderColor: "border-[#FDCB01]/30",
   },
   {
-    id: 'contract',
+    id: "contract",
     icon: FileText,
-    title: 'Contrato de Servicio',
-    description: 'Acepto los términos y condiciones del servicio de publicidad digital en pantalla vehicular.',
+    title: "Contrato de Servicio",
+    description:
+      "Acepto los términos y condiciones del servicio de publicidad digital en pantalla vehicular.",
     fullText: `CONTRATO DE SERVICIO TAD - PUBLICIDAD DIGITAL VEHICULAR
 
 ENTRE: TAD TECHNOLOGIES (en adelante "TAD") y el CONDUCTOR SOCIO.
@@ -101,15 +116,16 @@ CLÁUSULAS PRINCIPALES:
 
 7. JURISDICCIÓN: Tribunales de Santo Domingo, República Dominicana.`,
     required: true,
-    color: 'text-[#22C55E]',
-    bgColor: 'bg-[#22C55E]/10',
-    borderColor: 'border-[#22C55E]/30',
+    color: "text-[#22C55E]",
+    bgColor: "bg-[#22C55E]/10",
+    borderColor: "border-[#22C55E]/30",
   },
   {
-    id: 'hardware_liability',
+    id: "hardware_liability",
     icon: Shield,
-    title: 'Responsabilidad de Hardware',
-    description: 'Acepto cuidar el equipo (tablet, soporte, cableado) y la membresía anual de RD$6,000.',
+    title: "Responsabilidad de Hardware",
+    description:
+      "Acepto cuidar el equipo (tablet, soporte, cableado) y la membresía anual de RD$6,000.",
     fullText: `ACUERDO DE RESPONSABILIDAD DE HARDWARE Y MEMBRESÍA (HaaS)
 
 HARDWARE AS A SERVICE - STARTER KIT
@@ -139,15 +155,16 @@ COSTOS POR INCUMPLIMIENTO:
 
 La membresía de RD$6,000/año se factura al activar la pantalla y se renueva anualmente.`,
     required: true,
-    color: 'text-[#FF8C00]',
-    bgColor: 'bg-[#FF8C00]/10',
-    borderColor: 'border-[#FF8C00]/30',
+    color: "text-[#FF8C00]",
+    bgColor: "bg-[#FF8C00]/10",
+    borderColor: "border-[#FF8C00]/30",
   },
   {
-    id: 'membership',
+    id: "membership",
     icon: CreditCard,
-    title: 'Membresía Anual RD$6,000',
-    description: 'Confirmo entender la inversión de activación: RD$6,000/año por Starter Kit + Seguro.',
+    title: "Membresía Anual RD$6,000",
+    description:
+      "Confirmo entender la inversión de activación: RD$6,000/año por Starter Kit + Seguro.",
     fullText: `DETALLE DE INVERSIÓN DE ACTIVACIÓN - MEMBRESÍA FLOTA TAD
 
 CONCEPTO: Membresía Anual Flota + Seguro Hardware (HaaS)
@@ -188,33 +205,41 @@ FORMA DE PAGO:
 * El pago de la membresía cubre el Starter Kit completo y el seguro contra robo o averías.
 * Sin membresía activa, la pantalla no muestra anuncios y no genera ingresos.`,
     required: true,
-    color: 'text-[#E51636]',
-    bgColor: 'bg-[#E51636]/10',
-    borderColor: 'border-[#E51636]/30',
+    color: "text-[#E51636]",
+    bgColor: "bg-[#E51636]/10",
+    borderColor: "border-[#E51636]/30",
   },
 ];
 
-export default function RegistrationStep({ 
-  onNext, 
-  onPrev, 
-  onRegister, 
-  isLoading, 
-  error, 
-  formData, 
+export default function RegistrationStep({
+  onNext,
+  onPrev,
+  onRegister,
+  isLoading,
+  error,
+  formData,
   onFormChange,
   showPassword,
   setShowPassword,
 }: RegistrationStepProps) {
-  const [expandedDoc, setExpandedDoc] = useState<keyof RegistrationData['agreements'] | null>(null);
+  const [expandedDoc, setExpandedDoc] = useState<
+    keyof RegistrationData["agreements"] | null
+  >(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.fullName || !formData.phone || !formData.cedula || !formData.taxiPlate || !formData.password) {
+
+    if (
+      !formData.fullName ||
+      !formData.phone ||
+      !formData.cedula ||
+      !formData.taxiPlate ||
+      !formData.password
+    ) {
       return;
     }
 
-    const allAgreed = Object.values(formData.agreements).every(v => v);
+    const allAgreed = Object.values(formData.agreements).every((v) => v);
     if (!allAgreed) {
       return;
     }
@@ -226,7 +251,7 @@ export default function RegistrationStep({
     await onRegister(formData);
   };
 
-  const allAgreed = Object.values(formData.agreements).every(v => v);
+  const allAgreed = Object.values(formData.agreements).every((v) => v);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -262,11 +287,13 @@ export default function RegistrationStep({
               key="error"
               className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400"
               initial={{ opacity: 0, y: -10, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
               exit={{ opacity: 0, y: -10, height: 0 }}
             >
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <p className="text-[10px] font-bold uppercase tracking-wider">{error}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider">
+                {error}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -278,9 +305,17 @@ export default function RegistrationStep({
           transition={{ delay: 0.2, duration: 0.4 }}
         >
           {/* Personal Info Fields */}
-          <motion.div className="space-y-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             <div className="group">
-              <label htmlFor="ob-name" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors">
+              <label
+                htmlFor="ob-name"
+                className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors"
+              >
                 Nombre Completo
               </label>
               <div className="relative">
@@ -288,9 +323,11 @@ export default function RegistrationStep({
                   <Car className="w-4 h-4" />
                 </div>
                 <input
-                  id="ob-name" type="text" required
+                  id="ob-name"
+                  type="text"
+                  required
                   value={formData.fullName}
-                  onChange={e => onFormChange('fullName', e.target.value)}
+                  onChange={(e) => onFormChange("fullName", e.target.value)}
                   placeholder="Juan Pérez"
                   className="w-full bg-black/60 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-white text-sm font-bold placeholder:text-gray-700 focus:outline-none focus:border-[#FDCB01]/30 transition-all"
                 />
@@ -298,7 +335,10 @@ export default function RegistrationStep({
             </div>
 
             <div className="group">
-              <label htmlFor="ob-phone" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors">
+              <label
+                htmlFor="ob-phone"
+                className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors"
+              >
                 Teléfono Celular
               </label>
               <div className="relative">
@@ -306,9 +346,11 @@ export default function RegistrationStep({
                   <Phone className="w-4 h-4" />
                 </div>
                 <input
-                  id="ob-phone" type="tel" required
+                  id="ob-phone"
+                  type="tel"
+                  required
                   value={formData.phone}
-                  onChange={e => onFormChange('phone', e.target.value)}
+                  onChange={(e) => onFormChange("phone", e.target.value)}
                   placeholder="829-555-0001"
                   className="w-full bg-black/60 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-white text-sm font-bold placeholder:text-gray-700 focus:outline-none focus:border-[#FDCB01]/30 transition-all"
                 />
@@ -317,25 +359,33 @@ export default function RegistrationStep({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="group">
-                <label htmlFor="ob-ced" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors">
+                <label
+                  htmlFor="ob-ced"
+                  className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors"
+                >
                   Cédula
                 </label>
                 <input
-                  id="ob-ced" type="text"
+                  id="ob-ced"
+                  type="text"
                   value={formData.cedula}
-                  onChange={e => onFormChange('cedula', e.target.value)}
+                  onChange={(e) => onFormChange("cedula", e.target.value)}
                   placeholder="001-0000000-0"
                   className="w-full bg-black/60 border border-white/5 rounded-xl px-4 py-4 text-white text-sm font-bold placeholder:text-gray-700 focus:outline-none focus:border-[#FDCB01]/30 transition-all"
                 />
               </div>
               <div className="group">
-                <label htmlFor="ob-plate" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors">
+                <label
+                  htmlFor="ob-plate"
+                  className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors"
+                >
                   Placa del Taxi
                 </label>
                 <input
-                  id="ob-plate" type="text"
+                  id="ob-plate"
+                  type="text"
                   value={formData.taxiPlate}
-                  onChange={e => onFormChange('taxiPlate', e.target.value)}
+                  onChange={(e) => onFormChange("taxiPlate", e.target.value)}
                   placeholder="T-101"
                   className="w-full bg-black/60 border border-white/5 rounded-xl px-4 py-4 text-white text-sm font-bold placeholder:text-gray-700 focus:outline-none focus:border-[#FDCB01]/30 transition-all"
                 />
@@ -343,7 +393,10 @@ export default function RegistrationStep({
             </div>
 
             <div className="group">
-              <label htmlFor="ob-pass" className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors">
+              <label
+                htmlFor="ob-pass"
+                className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1.5 ml-1 group-focus-within:text-[#FDCB01] transition-colors"
+              >
                 Contraseña (mín. 6 caracteres)
               </label>
               <div className="relative">
@@ -351,17 +404,26 @@ export default function RegistrationStep({
                   <Shield className="w-4 h-4" />
                 </div>
                 <input
-                  id="ob-pass" type={showPassword ? 'text' : 'password'} required
+                  id="ob-pass"
+                  type={showPassword ? "text" : "password"}
+                  required
                   value={formData.password}
-                  onChange={e => onFormChange('password', e.target.value)}
-                  placeholder={showPassword ? 'MiClave123' : '••••••••'}
+                  onChange={(e) => onFormChange("password", e.target.value)}
+                  placeholder={showPassword ? "MiClave123" : "••••••••"}
                   className="w-full bg-black/60 border border-white/5 rounded-xl pl-12 pr-12 py-4 text-white text-sm font-bold placeholder:text-gray-700 focus:outline-none focus:border-[#FDCB01]/30 transition-all"
                 />
-                <motion.button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
+                <motion.button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
                   className="absolute inset-y-0 right-4 flex items-center text-gray-600 hover:text-[#FDCB01] transition-colors"
                   whileTap={{ scale: 0.9 }}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </motion.button>
               </div>
             </div>
@@ -379,25 +441,34 @@ export default function RegistrationStep({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              Documentos Legales <span className="text-[#FDCB00]">(Obligatorios)</span>
+              Documentos Legales{" "}
+              <span className="text-[#FDCB00]">(Obligatorios)</span>
             </motion.h3>
-            
+
             <AnimatePresence mode="wait">
               {LEGAL_DOCUMENTS.map((doc, index) => (
                 <motion.div
                   key={doc.id}
                   layout
                   initial={{ opacity: 0, height: 0, y: 20 }}
-                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -20 }}
-                  transition={{ delay: index * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{
+                    delay: index * 0.08,
+                    duration: 0.4,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
                 >
                   <LegalDocumentCard
                     doc={doc}
                     checked={formData.agreements[doc.id]}
-                    onChange={(checked) => onFormChange('agreements', { [doc.id]: checked })}
+                    onChange={(checked) =>
+                      onFormChange("agreements", { [doc.id]: checked })
+                    }
                     isExpanded={expandedDoc === doc.id}
-                    onToggleExpand={() => setExpandedDoc(expandedDoc === doc.id ? null : doc.id)}
+                    onToggleExpand={() =>
+                      setExpandedDoc(expandedDoc === doc.id ? null : doc.id)
+                    }
                   />
                 </motion.div>
               ))}
@@ -419,14 +490,22 @@ export default function RegistrationStep({
               "w-full font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50",
               allAgreed
                 ? "bg-[#FDCB01] hover:bg-white text-black shadow-[0_10px_40px_rgba(253,203,1,0.15)] active:scale-[0.97]"
-                : "bg-white/5 text-gray-600 cursor-not-allowed"
+                : "bg-white/5 text-gray-600 cursor-not-allowed",
             )}
-            whileHover={allAgreed ? { scale: 1.02, boxShadow: '0 15px 50px rgba(253,203,1,0.25)' } : {}}
+            whileHover={
+              allAgreed
+                ? { scale: 1.02, boxShadow: "0 15px 50px rgba(253,203,1,0.25)" }
+                : {}
+            }
             whileTap={allAgreed ? { scale: 0.98 } : {}}
           >
             {isLoading ? (
               <>
-                <motion.div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
+                <motion.div
+                  className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
                 <span>CREANDO CUENTA...</span>
               </>
             ) : (
@@ -470,35 +549,42 @@ function LegalDocumentCard({
 
   return (
     <motion.div
-      className={`relative stitched-card p-4 overflow-hidden ${checked ? 'ring-1' : ''} ${doc.borderColor}`}
-      whileHover={{ y: -2, boxShadow: '0 25px 50px rgba(0,0,0,0.5), 0 0 30px rgba(253,203,1,0.08)' }}
-      style={checked ? { boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(253,203,1,0.1), inset 0 1px 1px rgba(255,255,255,0.1)' } : {}}
+      className={`relative stitched-card p-4 overflow-hidden ${checked ? "ring-1" : ""} ${doc.borderColor}`}
+      whileHover={{
+        y: -2,
+        boxShadow: "0 25px 50px rgba(0,0,0,0.5), 0 0 30px rgba(253,203,1,0.08)",
+      }}
+      style={
+        checked
+          ? {
+              boxShadow:
+                "0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(253,203,1,0.1), inset 0 1px 1px rgba(255,255,255,0.1)",
+            }
+          : {}
+      }
     >
       <div className="flex items-start gap-3">
         {/* Checkbox/Toggle */}
-        <motion.div
-          className="flex-shrink-0 mt-0.5"
-          whileTap={{ scale: 0.9 }}
-        >
+        <motion.div className="flex-shrink-0 mt-0.5" whileTap={{ scale: 0.9 }}>
           <label className="cursor-pointer block">
             <input
               type="checkbox"
               checked={checked}
-              onChange={e => onChange(e.target.checked)}
+              onChange={(e) => onChange(e.target.checked)}
               className="sr-only peer"
             />
             <motion.div
               className="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 peer-checked:bg-[#FDCB01] peer-checked:border-[#FDCB01] peer-checked:text-black peer-focus-visible:ring-2 peer-focus-visible:ring-[#FDCB01]/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-black"
               animate={{
-                borderColor: checked ? '#FDCB01' : 'rgba(255,255,255,0.1)',
-                backgroundColor: checked ? '#FDCB01' : 'transparent',
+                borderColor: checked ? "#FDCB01" : "rgba(255,255,255,0.1)",
+                backgroundColor: checked ? "#FDCB01" : "transparent",
               }}
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
             >
               <motion.div
                 animate={{ scale: checked ? [1, 1.2, 1] : 0 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
                 <CheckCircle2 className="w-4 h-4 text-black" />
               </motion.div>
@@ -510,15 +596,21 @@ function LegalDocumentCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${doc.bgColor} ${doc.borderColor} ${doc.color}`}>
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${doc.bgColor} ${doc.borderColor} ${doc.color}`}
+              >
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-black text-white uppercase tracking-tight">{doc.title}</h4>
-                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{doc.description}</p>
+                <h4 className="text-sm font-black text-white uppercase tracking-tight">
+                  {doc.title}
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">
+                  {doc.description}
+                </p>
               </div>
             </div>
-            
+
             {/* Expand Button */}
             <motion.button
               type="button"
@@ -539,12 +631,14 @@ function LegalDocumentCard({
                 key="expanded"
                 className="mt-4 pt-4 border-t border-white/10"
                 initial={{ opacity: 0, height: 0, y: -10 }}
-                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="bg-black/40 rounded-xl p-4 max-h-64 overflow-y-auto custom-scrollbar">
-                  <pre className="text-[10px] text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">{doc.fullText}</pre>
+                  <pre className="text-[10px] text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
+                    {doc.fullText}
+                  </pre>
                 </div>
                 <motion.div
                   className="mt-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider"
@@ -552,7 +646,9 @@ function LegalDocumentCard({
                   animate={{ opacity: 1 }}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
-                  <span className="text-[#22C55E]">He leído y comprendo este documento</span>
+                  <span className="text-[#22C55E]">
+                    He leído y comprendo este documento
+                  </span>
                 </motion.div>
               </motion.div>
             )}
@@ -577,4 +673,4 @@ function LegalDocumentCard({
 }
 
 // Need to import useState
-import { useState } from 'react';
+import { useState } from "react";

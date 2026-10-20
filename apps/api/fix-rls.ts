@@ -1,11 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
   try {
-    console.log('[RLS Fix] Auditing and configuring PostGIS spatial_ref_sys and business tables...');
-    
+    console.log(
+      "[RLS Fix] Auditing and configuring PostGIS spatial_ref_sys and business tables...",
+    );
+
     // Restriction: DO NOT apply RLS on spatial_ref_sys (owned by supabase_admin).
     // Ensure postgres user has complete privileges on spatial_ref_sys without triggering 42501.
     await prisma.$executeRawUnsafe(`
@@ -17,7 +19,7 @@ async function main() {
           RAISE NOTICE 'Skipping direct grant on spatial_ref_sys: %', SQLERRM;
       END $$;
     `);
-    console.log('[RLS Fix] spatial_ref_sys privileges verified.');
+    console.log("[RLS Fix] spatial_ref_sys privileges verified.");
 
     // Enable RLS on all business tables owned by current user
     await prisma.$executeRawUnsafe(`
@@ -36,9 +38,9 @@ async function main() {
         END LOOP;
       END $$;
     `);
-    console.log('[RLS Fix] RLS enabled successfully on all business tables!');
+    console.log("[RLS Fix] RLS enabled successfully on all business tables!");
   } catch (error) {
-    console.error('[RLS Fix] Error configuring RLS:', error);
+    console.error("[RLS Fix] Error configuring RLS:", error);
   } finally {
     await prisma.$disconnect();
   }

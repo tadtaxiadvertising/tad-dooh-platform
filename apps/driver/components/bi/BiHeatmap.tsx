@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet.heat';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet.heat";
+import "leaflet/dist/leaflet.css";
 import { getBiHotspots } from "@tad/services";
 
 // Plugin component to handle the heat layer
@@ -18,11 +18,11 @@ const HeatLayer = ({ points }: { points: any[] }) => {
       blur: 15,
       maxZoom: 17,
       gradient: {
-        0.4: '#1e1b4b', // Deep indigo
-        0.6: '#4338ca', // Indigo
-        0.7: '#facc15', // TAD Yellow
-        1.0: '#fbbf24'  // Amber
-      }
+        0.4: "#1e1b4b", // Deep indigo
+        0.6: "#4338ca", // Indigo
+        0.7: "#facc15", // TAD Yellow
+        1.0: "#fbbf24", // Amber
+      },
     }).addTo(map);
 
     return () => {
@@ -43,7 +43,7 @@ export const BiHeatmap = () => {
         const data = await getBiHotspots();
         setPoints(data);
       } catch (error) {
-        console.error('Error fetching hotspots:', error);
+        console.error("Error fetching hotspots:", error);
       } finally {
         setLoading(false);
       }
@@ -58,11 +58,16 @@ export const BiHeatmap = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tad-yellow"></div>
         </div>
       )}
-      
-      <MapContainer 
+
+      <MapContainer
         center={[18.4861, -69.9312]} // Santo Domingo
-        zoom={12} 
-        style={{ height: '100%', width: '100%', filter: 'invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9)' }}
+        zoom={12}
+        style={{
+          height: "100%",
+          width: "100%",
+          filter:
+            "invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9)",
+        }}
         zoomControl={false}
       >
         <TileLayer
@@ -74,12 +79,10 @@ export const BiHeatmap = () => {
 
       {/* Overlay controls */}
       <div className="absolute bottom-4 left-4 z-[1000] bg-black/80 border border-zinc-800 px-3 py-1.5 rounded-lg backdrop-blur-md">
-        <p className="text-[9px] font-black tracking-widest text-zinc-400 uppercase">Hotspots de Impacto (MTD)</p>
+        <p className="text-[9px] font-black tracking-widest text-zinc-400 uppercase">
+          Hotspots de Impacto (MTD)
+        </p>
       </div>
     </div>
   );
 };
-
-
-
-

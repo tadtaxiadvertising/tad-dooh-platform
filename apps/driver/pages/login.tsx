@@ -1,20 +1,28 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { Shield, BarChart3, Car, ChevronRight, LayoutDashboard } from 'lucide-react';
-import clsx from 'clsx';
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
+import type { GetServerSideProps } from "next";
+import {
+  Shield,
+  BarChart3,
+  Car,
+  ChevronRight,
+  LayoutDashboard,
+} from "lucide-react";
+import clsx from "clsx";
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function LoginGateway() {
   const router = useRouter();
 
   useEffect(() => {
     const portalType = process.env.NEXT_PUBLIC_PORTAL_TYPE;
-    if (portalType === 'ADVERTISER') router.replace('/advertiser/login');
-    if (portalType === 'DRIVER') router.replace('/driver/login');
-    if (portalType === 'ADMIN') router.replace('/admin/login');
+    if (portalType === "ADVERTISER") router.replace("/advertiser/login");
+    if (portalType === "DRIVER") router.replace("/driver/login");
+    if (portalType === "ADMIN") router.replace("/admin/login");
   }, [router]);
 
   return (
@@ -34,7 +42,9 @@ export default function LoginGateway() {
           <h1 className="text-5xl font-black text-white tracking-widest uppercase mb-4">
             TAD <span className="text-tad-yellow">PLATFORM</span>
           </h1>
-          <p className="text-gray-500 font-bold uppercase tracking-[0.5em] text-xs">Access Management Gateway</p>
+          <p className="text-gray-500 font-bold uppercase tracking-[0.5em] text-xs">
+            Access Management Gateway
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -43,7 +53,7 @@ export default function LoginGateway() {
             subtitle="Central Command & Fleet Controls"
             icon={<Shield className="w-8 h-8 text-black" />}
             bgColor="bg-tad-yellow"
-            onClick={() => router.push('/admin/login')}
+            onClick={() => router.push("/admin/login")}
             delay="delay-0"
           />
 
@@ -52,7 +62,7 @@ export default function LoginGateway() {
             subtitle="Campaign Performance & Insights"
             icon={<BarChart3 className="w-8 h-8 text-white" />}
             bgColor="bg-zinc-800"
-            onClick={() => router.push('/advertiser/login')}
+            onClick={() => router.push("/advertiser/login")}
             delay="delay-75"
           />
 
@@ -61,7 +71,7 @@ export default function LoginGateway() {
             subtitle="Earnings & Device Status PWA"
             icon={<Car className="w-8 h-8 text-white" />}
             bgColor="bg-zinc-900"
-            onClick={() => router.push('/driver/login')}
+            onClick={() => router.push("/driver/login")}
             delay="delay-150"
           />
         </div>
@@ -82,28 +92,34 @@ function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
       onClick={onClick}
       className={clsx(
         "group p-1 rounded-[2.5rem] bg-white/5 border border-white/5 transition-all duration-500 hover:scale-[1.02] active:scale-95 text-left h-full",
-        delay
+        delay,
       )}
     >
       <div className="bg-zinc-900/50 backdrop-blur-3xl p-8 rounded-[2.3rem] h-full flex flex-col justify-between border border-transparent group-hover:border-white/10 transition-colors">
         <div>
-          <div className={clsx("w-16 h-16 rounded-3xl flex items-center justify-center mb-10 shadow-2xl group-hover:rotate-6 transition-transform duration-500", bgColor)}>
+          <div
+            className={clsx(
+              "w-16 h-16 rounded-3xl flex items-center justify-center mb-10 shadow-2xl group-hover:rotate-6 transition-transform duration-500",
+              bgColor,
+            )}
+          >
             {icon}
           </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">{title}</h2>
-          <p className="text-gray-500 text-xs font-bold leading-relaxed">{subtitle}</p>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-tad-yellow transition-colors">
+            {title}
+          </h2>
+          <p className="text-gray-500 text-xs font-bold leading-relaxed">
+            {subtitle}
+          </p>
         </div>
 
         <div className="mt-12 flex items-center gap-3 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Enter Portal</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">
+            Enter Portal
+          </span>
           <ChevronRight className="w-4 h-4 text-tad-yellow" />
         </div>
       </div>
     </button>
   );
 }
-
-
-
-
-

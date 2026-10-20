@@ -6,13 +6,13 @@
  *  - Mobile Chrome (Advertiser portal)
  *  - CI/CD en VPS con recursos limitados (Easypanel)
  */
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
 
 export default defineConfig({
   // Directorio raíz con todos los spec files
-  testDir: './tests/e2e',
+  testDir: "./tests/e2e",
 
   // Ejecución secuencial: evita saturar el VPS durante CI
   fullyParallel: false,
@@ -32,21 +32,21 @@ export default defineConfig({
   },
 
   reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['list'],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
+    ["list"],
   ],
 
   use: {
     baseURL: BASE_URL,
 
     // Captura de traza: muy útil para depurar fallos
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     // Capturas de pantalla sólo en fallo
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     // Video en fallo
-    video: 'retain-on-failure',
+    video: "retain-on-failure",
 
     // Timeout extendido
     actionTimeout: 30_000,
@@ -64,18 +64,18 @@ export default defineConfig({
   projects: [
     // ─── Proyecto Principal: Admin Desktop ────────────────────────────
     {
-      name: 'admin-desktop',
+      name: "admin-desktop",
       use: {
-        ...devices['Desktop Chrome'],
+        ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
       },
     },
 
     // ─── Proyecto Advertiser Mobile ──────────────────────────────────
     {
-      name: 'advertiser-mobile',
+      name: "advertiser-mobile",
       use: {
-        ...devices['Pixel 5'],
+        ...devices["Pixel 5"],
         viewport: { width: 393, height: 851 },
         isMobile: true,
         hasTouch: true,
@@ -84,9 +84,9 @@ export default defineConfig({
 
     // ─── Proyecto Tablet (para testing responsive) ────────────────────
     {
-      name: 'tablet',
+      name: "tablet",
       use: {
-        ...devices['iPad Pro'],
+        ...devices["iPad Pro"],
         viewport: { width: 1024, height: 1366 },
         isMobile: true,
         hasTouch: true,
@@ -96,11 +96,11 @@ export default defineConfig({
 
   // Levanta Next.js dev server automáticamente si no está corriendo
   webServer: {
-    command: 'npm run dev',
+    command: "npm run dev",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });

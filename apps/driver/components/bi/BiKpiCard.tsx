@@ -1,7 +1,7 @@
-import React from 'react';
-import { clsx } from 'clsx';
-import { LucideIcon } from 'lucide-react';
-import { StatusSemaphore, SemaphoreStatus } from '@tad/ui';
+import React from "react";
+import { clsx } from "clsx";
+import { LucideIcon } from "lucide-react";
+import { StatusSemaphore, SemaphoreStatus } from "@tad/ui";
 
 interface BiKpiCardProps {
   title: string;
@@ -25,21 +25,28 @@ export const BiKpiCard: React.FC<BiKpiCardProps> = ({
   status,
   trend,
   loading,
-  isHighlight
+  isHighlight,
 }) => {
   return (
-    <div className={clsx(
-      "bg-zinc-950/50 border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden group transition-all duration-500 hover:border-tad-yellow/30",
-      isHighlight && "bg-zinc-900/40 border-tad-yellow/10 ring-1 ring-tad-yellow/5",
-      loading && "animate-pulse"
-    )}>
+    <div
+      className={clsx(
+        "bg-zinc-950/50 border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden group transition-all duration-500 hover:border-tad-yellow/30",
+        isHighlight &&
+          "bg-zinc-900/40 border-tad-yellow/10 ring-1 ring-tad-yellow/5",
+        loading && "animate-pulse",
+      )}
+    >
       {/* Background Glow */}
-      <div className={clsx(
-        "absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-10 transition-opacity duration-700 group-hover:opacity-20",
-        status === 'optimum' ? 'bg-emerald-500' :
-        status === 'warning' ? 'bg-tad-yellow' :
-        'bg-rose-500'
-      )} />
+      <div
+        className={clsx(
+          "absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-10 transition-opacity duration-700 group-hover:opacity-20",
+          status === "optimum"
+            ? "bg-emerald-500"
+            : status === "warning"
+              ? "bg-tad-yellow"
+              : "bg-rose-500",
+        )}
+      />
 
       <div className="flex justify-between items-start mb-4">
         <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50 text-zinc-400 group-hover:text-tad-yellow transition-colors">
@@ -54,14 +61,17 @@ export const BiKpiCard: React.FC<BiKpiCardProps> = ({
         </h3>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-black text-white tracking-tighter">
-            {loading ? '---' : value}
+            {loading ? "---" : value}
           </span>
           {trend && !loading && (
-            <span className={clsx(
-              "text-[10px] font-bold",
-              trend.isPositive ? "text-emerald-500" : "text-rose-500"
-            )}>
-              {trend.isPositive ? '+' : '-'}{trend.value}%
+            <span
+              className={clsx(
+                "text-[10px] font-bold",
+                trend.isPositive ? "text-emerald-500" : "text-rose-500",
+              )}
+            >
+              {trend.isPositive ? "+" : "-"}
+              {trend.value}%
             </span>
           )}
         </div>
@@ -77,7 +87,3 @@ export const BiKpiCard: React.FC<BiKpiCardProps> = ({
     </div>
   );
 };
-
-
-
-

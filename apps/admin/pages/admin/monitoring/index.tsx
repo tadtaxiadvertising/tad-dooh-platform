@@ -1,6 +1,6 @@
-import React from 'react';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
+import React from "react";
+import Head from "next/head";
+import type { GetServerSideProps } from "next";
 import {
   ShieldCheck,
   Activity,
@@ -13,50 +13,53 @@ import {
   Lock,
   Globe,
   LayoutGrid,
-  BarChart3
-} from 'lucide-react';
-import clsx from 'clsx';
+  BarChart3,
+} from "lucide-react";
+import clsx from "clsx";
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function MonitoringPage() {
-  const UMAMI_ID = process.env.NEXT_PUBLIC_UMAMI_ID || "2a7c0085-87e5-473c-b959-8854ba785e87";
+  const UMAMI_ID =
+    process.env.NEXT_PUBLIC_UMAMI_ID || "2a7c0085-87e5-473c-b959-8854ba785e87";
   const SENTRY_URL = "https://sentry.io/";
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const services = [
     {
-      name: 'Sentry Error Tracking',
-      status: 'OPERATIONAL',
+      name: "Sentry Error Tracking",
+      status: "OPERATIONAL",
       icon: Activity,
-      desc: 'Monitoreo de bugs y excepciones en tiempo real.',
+      desc: "Monitoreo de bugs y excepciones en tiempo real.",
       link: SENTRY_URL,
-      color: 'text-purple-400'
+      color: "text-purple-400",
     },
     {
-      name: 'Umami Analytics',
-      status: 'ACTIVE',
+      name: "Umami Analytics",
+      status: "ACTIVE",
       icon: BarChart3,
-      desc: 'Analítica web privada y sin cookies.',
+      desc: "Analítica web privada y sin cookies.",
       link: `https://cloud.umami.is/`,
-      color: 'text-blue-400'
+      color: "text-blue-400",
     },
     {
-      name: 'Supabase DB & Auth',
-      status: 'OPERATIONAL',
+      name: "Supabase DB & Auth",
+      status: "OPERATIONAL",
       icon: Database,
-      desc: 'Motor de datos PostgreSQL y gestión de sesiones.',
+      desc: "Motor de datos PostgreSQL y gestión de sesiones.",
       link: `${SUPABASE_URL}`,
-      color: 'text-emerald-400'
+      color: "text-emerald-400",
     },
     {
-      name: 'EasyPanel / VPS',
-      status: 'HEALTHY',
+      name: "EasyPanel / VPS",
+      status: "HEALTHY",
       icon: Cloud,
-      desc: 'Infraestructura de hosting y despliegue automático.',
-      link: '#',
-      color: 'text-orange-400'
-    }
+      desc: "Infraestructura de hosting y despliegue automático.",
+      link: "#",
+      color: "text-orange-400",
+    },
   ];
 
   return (
@@ -72,13 +75,18 @@ export default function MonitoringPage() {
             <ShieldCheck className="w-10 h-10 text-tad-yellow" />
             AUDITORÍA & <span className="text-tad-yellow">SALUD</span>
           </h1>
-          <p className="text-zinc-500 mt-2 font-medium">Control unificado de herramientas externas y estabilidad del sistema.</p>
+          <p className="text-zinc-500 mt-2 font-medium">
+            Control unificado de herramientas externas y estabilidad del
+            sistema.
+          </p>
         </div>
 
         <div className="flex items-center gap-4 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-2xl">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-            <span className="text-sm font-bold text-zinc-300">PROTOCOLO ANTIGRAVITY v4.5 OK</span>
+            <span className="text-sm font-bold text-zinc-300">
+              PROTOCOLO ANTIGRAVITY v4.5 OK
+            </span>
           </div>
         </div>
       </div>
@@ -86,7 +94,10 @@ export default function MonitoringPage() {
       {/* SERVICE STATUS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {services.map((svc) => (
-          <div key={svc.name} className="card-premium p-6 flex flex-col justify-between group cursor-pointer">
+          <div
+            key={svc.name}
+            className="card-premium p-6 flex flex-col justify-between group cursor-pointer"
+          >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div className={clsx("p-3 rounded-2xl bg-white/5", svc.color)}>
@@ -98,7 +109,9 @@ export default function MonitoringPage() {
               </div>
               <div>
                 <h3 className="font-bold text-lg">{svc.name}</h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">{svc.desc}</p>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  {svc.desc}
+                </p>
               </div>
             </div>
             <a
@@ -136,7 +149,15 @@ export default function MonitoringPage() {
           <div className="flex-1 space-y-3">
             <h3 className="text-xl font-bold">Umami Analytics Cloud</h3>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
-              Las analíticas de uso de la plataforma se registran en Umami Cloud. Haz clic en el botón para abrirlas en una nueva pestaña. Asegúrate de que el <span className="text-white font-bold">Share Link</span> esté activado para el sitio <code className="bg-zinc-800 text-tad-yellow px-1 rounded text-xs">{UMAMI_ID}</code>.
+              Las analíticas de uso de la plataforma se registran en Umami
+              Cloud. Haz clic en el botón para abrirlas en una nueva pestaña.
+              Asegúrate de que el{" "}
+              <span className="text-white font-bold">Share Link</span> esté
+              activado para el sitio{" "}
+              <code className="bg-zinc-800 text-tad-yellow px-1 rounded text-xs">
+                {UMAMI_ID}
+              </code>
+              .
             </p>
             <div className="flex items-center gap-2 text-xs text-zinc-600 font-mono">
               <span className="text-emerald-400">●</span> Website ID: {UMAMI_ID}
@@ -165,7 +186,10 @@ export default function MonitoringPage() {
             </div>
             <div>
               <h3 className="text-xl font-bold">Rendimiento Técnico</h3>
-              <p className="text-zinc-500 text-sm">Latencia promedio: <span className="text-white font-bold">42ms</span></p>
+              <p className="text-zinc-500 text-sm">
+                Latencia promedio:{" "}
+                <span className="text-white font-bold">42ms</span>
+              </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -186,22 +210,20 @@ export default function MonitoringPage() {
             </div>
             <div>
               <h3 className="text-xl font-bold">Estado General</h3>
-              <p className="text-zinc-500 text-sm">Todos los pods operativos.</p>
+              <p className="text-zinc-500 text-sm">
+                Todos los pods operativos.
+              </p>
             </div>
           </div>
           <p className="text-sm text-zinc-400">
-            Última verificación de integridad automática: <span className="text-white font-bold text-xs bg-zinc-800 px-2 py-0.5 rounded">1 minuto atrás</span>.
-            Todos los micro-servicios responden bajo los 150ms.
+            Última verificación de integridad automática:{" "}
+            <span className="text-white font-bold text-xs bg-zinc-800 px-2 py-0.5 rounded">
+              1 minuto atrás
+            </span>
+            . Todos los micro-servicios responden bajo los 150ms.
           </p>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-

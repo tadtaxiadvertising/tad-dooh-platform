@@ -2,14 +2,20 @@
 // Manages the full sync cycle: manifest download, delta comparison,
 // heartbeat pulse, and Supabase Realtime WAKE_UP_CALL listener.
 
-import type { MediaAsset, DeviceSyncPayload, DeviceCommand, SyncManifest, CampaignSchedule } from './types';
-import { CacheManager } from './cache-manager';
-import { PlaybackQueue } from './playback-queue';
-import env from './config';
+import type {
+  MediaAsset,
+  DeviceSyncPayload,
+  DeviceCommand,
+  SyncManifest,
+  CampaignSchedule,
+} from "./types";
+import { CacheManager } from "./cache-manager";
+import { PlaybackQueue } from "./playback-queue";
+import env from "./config";
 
 export class SyncManager {
-  private deviceId: string = '';
-  private lastSyncHash: string = '';
+  private deviceId: string = "";
+  private lastSyncHash: string = "";
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private syncTimer: ReturnType<typeof setInterval> | null = null;
   private wakeUpDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -18,8 +24,12 @@ export class SyncManager {
   private playbackQueue: PlaybackQueue;
   private isOnline: boolean = navigator.onLine;
   private offlineLicenseExpiresAt: number | null = null;
-  private offlineLicenseCheckTimer: ReturnType<typeof setInterval> | null = null;
-  private onPlaylistUpdate: (assets: MediaAsset[], schedules: CampaignSchedule[]) => void;
+  private offlineLicenseCheckTimer: ReturnType<typeof setInterval> | null =
+    null;
+  private onPlaylistUpdate: (
+    assets: MediaAsset[],
+    schedules: CampaignSchedule[],
+  ) => void;
   private onKillSwitch: (reason: string) => void;
   private onCommands: (commands: DeviceCommand[]) => void;
 
@@ -27,10 +37,13 @@ export class SyncManager {
     cacheManager: CacheManager,
     playbackQueue: PlaybackQueue,
     callbacks: {
-      onPlaylistUpdate: (assets: MediaAsset[], schedules: CampaignSchedule[]) => void;
+      onPlaylistUpdate: (
+        assets: MediaAsset[],
+        schedules: CampaignSchedule[],
+      ) => void;
       onKillSwitch: (reason: string) => void;
       onCommands: (commands: DeviceCommand[]) => void;
-    }
+    },
   ) {
     this.cacheManager = cacheManager;
     this.playbackQueue = playbackQueue;
@@ -54,7 +67,8 @@ export class SyncManager {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     if (this.syncTimer) clearInterval(this.syncTimer);
     if (this.wakeUpDebounceTimer) clearTimeout(this.wakeUpDebounceTimer);
-    if (this.offlineLicenseCheckTimer) clearInterval(this.offlineLicenseCheckTimer);
+    if (this.offlineLicenseCheckTimer)
+      clearInterval(this.offlineLicenseCheckTimer);
     this.playbackQueue.destroy();
   }
 
@@ -66,14 +80,14 @@ export class SyncManager {
 
       // Kill-switch check
       if (payload.blocked) {
-        const reason = payload.reason || 'awaiting_approval';
+        const reason = payload.reason || "awaiting_approval";
         this.onKillSwitch(reason);
         return;
       }
 
       // Delta check — no update needed
       if (!payload.update) {
-        console.log('[SyncManager] Delta sync matches. No update needed.');
+        console.log("[SyncManager] Delta sync matches. No update needed.");
         return;
       }
 
@@ -82,7 +96,7 @@ export class SyncManager {
         this.onCommands(payload.commands);
         // Acknowledge commands
         for (const cmd of payload.commands) {
-          this.acknowledgeCommand(cmd.id).catch(() => { });
+          this.acknowledgeCommand(cmd.id).catch(() => {});
         }
       }
 
@@ -90,7 +104,9 @@ export class SyncManager {
       const assets = payload.media_assets || payload.videos || [];
       if (assets.length > 0) {
         const result = await this.cacheManager.cacheVideos(assets);
-        console.log(`[SyncManager] Cached ${result.cached}/${assets.length} assets (${result.failed} failed)`);
+        console.log(
+          `[SyncManager] Cached ${result.cached}/${assets.length} assets (${result.failed} failed)`,
+        );
         await this.cacheManager.evictStaleAssets(assets);
       }
 
@@ -105,7 +121,7 @@ export class SyncManager {
 
       this.onPlaylistUpdate(assets, []);
     } catch (err) {
-      console.error('[SyncManager] Full sync failed:', err);
+      console.error("[SyncManager] Full sync failed:", err);
     }
   }
 
@@ -120,20 +136,22 @@ export class SyncManager {
 
       // Kill-switch from manifest
       if (manifest.killSwitch) {
-        this.onKillSwitch(manifest.killSwitchReason || 'SUBSCRIPTION_UNPAID');
+        this.onKillSwitch(manifest.killSwitchReason || "SUBSCRIPTION_UNPAID");
         return;
       }
 
       // ETag comparison
       if (manifest.etag === this.lastSyncHash) {
-        console.log('[SyncManager] Manifest ETag matches. No update.');
+        console.log("[SyncManager] Manifest ETag matches. No update.");
         return;
       }
 
       const assets = manifest.playlist || [];
       if (assets.length > 0) {
         const result = await this.cacheManager.cacheVideos(assets);
-        console.log(`[SyncManager] Manifest cached ${result.cached}/${assets.length} assets`);
+        console.log(
+          `[SyncManager] Manifest cached ${result.cached}/${assets.length} assets`,
+        );
         await this.cacheManager.evictStaleAssets(assets);
       }
 
@@ -146,14 +164,14 @@ export class SyncManager {
 
       this.onPlaylistUpdate(assets, manifest.schedules || []);
     } catch (err) {
-      console.error('[SyncManager] Manifest sync failed:', err);
+      console.error("[SyncManager] Manifest sync failed:", err);
     }
   }
 
   private async postDeviceSync(): Promise<DeviceSyncPayload> {
     const response = await fetch(`${env.API_URL}/device/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         deviceId: this.deviceId,
         lastHash: this.lastSyncHash,
@@ -165,9 +183,9 @@ export class SyncManager {
       return {
         update: false,
         blocked: true,
-        sync_hash: '',
+        sync_hash: "",
         media_assets: [],
-        reason: 'subscription_unpaid',
+        reason: "subscription_unpaid",
       };
     }
 
@@ -177,16 +195,16 @@ export class SyncManager {
 
   private startHeartbeatLoop(): void {
     this.heartbeatTimer = setInterval(() => {
-      this.sendHeartbeat().catch(err => {
-        console.warn('[SyncManager] Heartbeat error:', err);
+      this.sendHeartbeat().catch((err) => {
+        console.warn("[SyncManager] Heartbeat error:", err);
       });
     }, env.HEARTBEAT_INTERVAL_MS);
   }
 
   private startSyncLoop(): void {
     this.syncTimer = setInterval(() => {
-      this.executeFullSync().catch(err => {
-        console.warn('[SyncManager] Sync loop error:', err);
+      this.executeFullSync().catch((err) => {
+        console.warn("[SyncManager] Sync loop error:", err);
       });
     }, env.SYNC_INTERVAL_MS);
   }
@@ -198,13 +216,17 @@ export class SyncManager {
       const payload = {
         device_id: this.deviceId,
         battery_level: await this.getBatteryLevel(),
-        player_status: (document.getElementById('tad-player') as HTMLVideoElement | null)?.paused ? 'paused' : 'playing',
+        player_status: (
+          document.getElementById("tad-player") as HTMLVideoElement | null
+        )?.paused
+          ? "paused"
+          : "playing",
         timestamp: new Date().toISOString(),
       };
 
       await fetch(`${env.API_URL}/device/heartbeat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     } catch {
@@ -215,67 +237,91 @@ export class SyncManager {
   private async acknowledgeCommand(commandId: string): Promise<void> {
     try {
       await fetch(`${env.API_URL}/device/command/${commandId}/ack`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ result: { acknowledged: true } }),
       });
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   }
 
   private setupNetworkListeners(): void {
-    window.addEventListener('online', () => {
+    window.addEventListener("online", () => {
       this.isOnline = true;
-      console.log('[SyncManager] Network online — triggering immediate sync');
+      console.log("[SyncManager] Network online — triggering immediate sync");
       this.executeFullSync();
       this.playbackQueue.flushQueue();
     });
 
-    window.addEventListener('offline', () => {
+    window.addEventListener("offline", () => {
       this.isOnline = false;
-      console.log('[SyncManager] Network offline — entering offline mode');
+      console.log("[SyncManager] Network offline — entering offline mode");
     });
   }
 
   private setupRealtimeListener(): void {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-      console.warn('[SyncManager] Supabase Realtime not configured — relying on poll-based sync only');
+      console.warn(
+        "[SyncManager] Supabase Realtime not configured — relying on poll-based sync only",
+      );
       return;
     }
 
     try {
       // Dynamic import to avoid bundling Supabase when not configured
-      import('@supabase/supabase-js').then(({ createClient }) => {
-        const client = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-        client
-          .channel('fleet_sync')
-          .on('broadcast', { event: 'WAKE_UP_CALL' }, (payload: Record<string, unknown>) => {
-            console.log('[SyncManager] WAKE_UP_CALL received:', payload);
+      import("@supabase/supabase-js")
+        .then(({ createClient }) => {
+          const client = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+          client
+            .channel("fleet_sync")
+            .on(
+              "broadcast",
+              { event: "WAKE_UP_CALL" },
+              (payload: Record<string, unknown>) => {
+                console.log("[SyncManager] WAKE_UP_CALL received:", payload);
 
-            // Fix #1: Filtrar por targets — solo sincronizar si este device está
-            // en la lista de destinatarios. Si no hay targets, es un broadcast global.
-            const targets = payload.targets as string[] | undefined;
-            if (targets && Array.isArray(targets) && targets.length > 0 && !targets.includes(this.deviceId)) {
-              console.log('[SyncManager] WAKE_UP_CALL filtered out — device not in targets');
-              return;
-            }
+                // Fix #1: Filtrar por targets — solo sincronizar si este device está
+                // en la lista de destinatarios. Si no hay targets, es un broadcast global.
+                const targets = payload.targets as string[] | undefined;
+                if (
+                  targets &&
+                  Array.isArray(targets) &&
+                  targets.length > 0 &&
+                  !targets.includes(this.deviceId)
+                ) {
+                  console.log(
+                    "[SyncManager] WAKE_UP_CALL filtered out — device not in targets",
+                  );
+                  return;
+                }
 
-            // Fix #2: Debounce de 5s — si llegan múltiples WAKE_UP_CALL en ráfaga
-            // (ej: campaign_updated + media_asset_added), solo ejecutar el último.
-            // Esto previbe saturar el API Gateway con peticiones duplicadas.
-            if (this.wakeUpDebounceTimer) clearTimeout(this.wakeUpDebounceTimer);
-            this.wakeUpDebounceTimer = setTimeout(() => {
-              this.executeFullSync();
-              this.wakeUpDebounceTimer = null;
-            }, this.WAKE_UP_DEBOUNCE_MS);
-          })
-          .subscribe((status: string) => {
-            console.log('[SyncManager] Realtime subscription status:', status);
-          });
-      }).catch(err => {
-        console.warn('[SyncManager] Supabase import failed, Realtime disabled:', err);
-      });
+                // Fix #2: Debounce de 5s — si llegan múltiples WAKE_UP_CALL en ráfaga
+                // (ej: campaign_updated + media_asset_added), solo ejecutar el último.
+                // Esto previbe saturar el API Gateway con peticiones duplicadas.
+                if (this.wakeUpDebounceTimer)
+                  clearTimeout(this.wakeUpDebounceTimer);
+                this.wakeUpDebounceTimer = setTimeout(() => {
+                  this.executeFullSync();
+                  this.wakeUpDebounceTimer = null;
+                }, this.WAKE_UP_DEBOUNCE_MS);
+              },
+            )
+            .subscribe((status: string) => {
+              console.log(
+                "[SyncManager] Realtime subscription status:",
+                status,
+              );
+            });
+        })
+        .catch((err) => {
+          console.warn(
+            "[SyncManager] Supabase import failed, Realtime disabled:",
+            err,
+          );
+        });
     } catch {
-      console.warn('[SyncManager] Realtime listener setup failed');
+      console.warn("[SyncManager] Realtime listener setup failed");
     }
   }
 
@@ -285,16 +331,21 @@ export class SyncManager {
   private persistOfflineLicense(token: string, expiresAt: string): void {
     try {
       const expiresAtMs = new Date(expiresAt).getTime();
-      localStorage.setItem('TAD_OFFLINE_LICENSE', JSON.stringify({
-        token,
-        expiresAt: expiresAtMs,
-        persistedAt: Date.now(),
-      }));
+      localStorage.setItem(
+        "TAD_OFFLINE_LICENSE",
+        JSON.stringify({
+          token,
+          expiresAt: expiresAtMs,
+          persistedAt: Date.now(),
+        }),
+      );
       this.offlineLicenseExpiresAt = expiresAtMs;
       this.startOfflineLicenseValidator();
-      console.log(`[SyncManager] Offline license persisted. Expires at: ${new Date(expiresAtMs).toISOString()}`);
+      console.log(
+        `[SyncManager] Offline license persisted. Expires at: ${new Date(expiresAtMs).toISOString()}`,
+      );
     } catch (err) {
-      console.warn('[SyncManager] Failed to persist offline license:', err);
+      console.warn("[SyncManager] Failed to persist offline license:", err);
     }
   }
 
@@ -302,17 +353,20 @@ export class SyncManager {
   // Si expira y la tablet está offline → activa KillSwitch (SELF_DESTRUCT anti-ghosting).
   // Si expira y la tablet está online → fuerza un sync inmediato para refrescar la licencia.
   private startOfflineLicenseValidator(): void {
-    if (this.offlineLicenseCheckTimer) clearInterval(this.offlineLicenseCheckTimer);
+    if (this.offlineLicenseCheckTimer)
+      clearInterval(this.offlineLicenseCheckTimer);
 
     // Cargar estado persistido al iniciar (si la tablet se reinicia offline)
     if (this.offlineLicenseExpiresAt === null) {
       try {
-        const stored = localStorage.getItem('TAD_OFFLINE_LICENSE');
+        const stored = localStorage.getItem("TAD_OFFLINE_LICENSE");
         if (stored) {
           const data = JSON.parse(stored);
           this.offlineLicenseExpiresAt = data.expiresAt || null;
         }
-      } catch { /* non-critical */ }
+      } catch {
+        /* non-critical */
+      }
     }
 
     this.offlineLicenseCheckTimer = setInterval(() => {
@@ -322,12 +376,16 @@ export class SyncManager {
       if (now >= this.offlineLicenseExpiresAt) {
         // Licencia expirada — determinar acción según conectividad
         if (this.isOnline) {
-          console.warn('[SyncManager] Offline license EXPIRED but online — refreshing sync');
+          console.warn(
+            "[SyncManager] Offline license EXPIRED but online — refreshing sync",
+          );
           this.executeFullSync();
         } else {
           // SELF_DESTRUCT: El conductor no puede reproducir contenido sin validar
-          console.error('[SyncManager] ⛔ Offline license EXPIRED and offline — activating SELF_DESTRUCT');
-          this.onKillSwitch('OFFLINE_LICENSE_EXPIRED');
+          console.error(
+            "[SyncManager] ⛔ Offline license EXPIRED and offline — activating SELF_DESTRUCT",
+          );
+          this.onKillSwitch("OFFLINE_LICENSE_EXPIRED");
         }
       }
     }, 300_000); // 5 min check interval
@@ -335,11 +393,13 @@ export class SyncManager {
 
   private async getBatteryLevel(): Promise<number | undefined> {
     try {
-      if ('getBattery' in navigator) {
+      if ("getBattery" in navigator) {
         const battery = await (navigator as any).getBattery();
         return Math.round(battery.level * 100);
       }
-    } catch { /* Battery API not available */ }
+    } catch {
+      /* Battery API not available */
+    }
     return undefined;
   }
 }

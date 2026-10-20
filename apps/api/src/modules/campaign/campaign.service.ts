@@ -688,10 +688,12 @@ export class CampaignService {
     // Create FORCE_SYNC commands for assigned devices
     let devicesToSync: { deviceId: string }[] = [];
     if (campaign.targetAll || campaign.isGlobal) {
-      devicesToSync = await this.prisma.device.findMany({
-        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
-        select: { id: true },
-      }).then((d) => d.map((dev) => ({ deviceId: dev.id })));
+      devicesToSync = await this.prisma.device
+        .findMany({
+          where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+          select: { id: true },
+        })
+        .then((d) => d.map((dev) => ({ deviceId: dev.id })));
     } else {
       const assignments = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: campaignId },

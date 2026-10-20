@@ -4,9 +4,9 @@
 // screen on/off, force reboot, and motion sensor management.
 // Ref: https://www.fully-kiosk.com/#webinterface
 
-import env from './config';
+import env from "./config";
 
-const KIOSK_BASE_URL = 'http://localhost:1312';
+const KIOSK_BASE_URL = "http://localhost:1312";
 
 interface KioskCommand {
   action: string;
@@ -42,115 +42,131 @@ export class FullyKioskBridge {
   // ── Screen Management ──
   async setScreenBrightness(level: number): Promise<boolean> {
     // Level: 0-255 (Android brightness scale)
-    return this.sendCommand({ action: 'setScreenBrightness', params: { level } });
+    return this.sendCommand({
+      action: "setScreenBrightness",
+      params: { level },
+    });
   }
 
   async screenOn(): Promise<boolean> {
-    return this.sendCommand({ action: 'screenOn' });
+    return this.sendCommand({ action: "screenOn" });
   }
 
   async screenOff(): Promise<boolean> {
-    return this.sendCommand({ action: 'screenOff' });
+    return this.sendCommand({ action: "screenOff" });
   }
 
   async keepScreenOn(enable: boolean): Promise<boolean> {
-    return this.sendCommand({ action: enable ? 'enableScreenOn' : 'disableScreenOn' });
+    return this.sendCommand({
+      action: enable ? "enableScreenOn" : "disableScreenOn",
+    });
   }
 
   // ── Volume Management ──
-  async setVolume(level: number, stream: string = 'music'): Promise<boolean> {
+  async setVolume(level: number, stream: string = "music"): Promise<boolean> {
     // Level: 0-15 (Android volume steps), stream: music/ring/alarm/notification
-    return this.sendCommand({ action: 'setAudioVolume', params: { level, stream } });
+    return this.sendCommand({
+      action: "setAudioVolume",
+      params: { level, stream },
+    });
   }
 
   async setMute(mute: boolean): Promise<boolean> {
-    return this.sendCommand({ action: mute ? 'setAudioMute' : 'setAudioUnmute' });
+    return this.sendCommand({
+      action: mute ? "setAudioMute" : "setAudioUnmute",
+    });
   }
 
   // ── Kiosk Lock Management ──
   async lockKiosk(): Promise<boolean> {
-    return this.sendCommand({ action: 'lockKiosk' });
+    return this.sendCommand({ action: "lockKiosk" });
   }
 
   async unlockKiosk(): Promise<boolean> {
-    return this.sendCommand({ action: 'unlockKiosk' });
+    return this.sendCommand({ action: "unlockKiosk" });
   }
 
   async isKioskLocked(): Promise<boolean> {
-    const result = await this.sendQuery('isKioskLocked');
-    return result === 'true';
+    const result = await this.sendQuery("isKioskLocked");
+    return result === "true";
   }
 
   // ── Device Management ──
   async forceReboot(): Promise<boolean> {
-    return this.sendCommand({ action: 'forceReboot' });
+    return this.sendCommand({ action: "forceReboot" });
   }
 
   async restartApp(): Promise<boolean> {
-    return this.sendCommand({ action: 'restartApp' });
+    return this.sendCommand({ action: "restartApp" });
   }
 
   async loadUrl(url: string): Promise<boolean> {
-    return this.sendCommand({ action: 'loadStartUrl', params: { url } });
+    return this.sendCommand({ action: "loadStartUrl", params: { url } });
   }
 
   // ── Motion Sensor (tablet proximity detection) ──
   async enableMotionSensor(): Promise<boolean> {
-    return this.sendCommand({ action: 'enableMotionDetection' });
+    return this.sendCommand({ action: "enableMotionDetection" });
   }
 
   async disableMotionSensor(): Promise<boolean> {
-    return this.sendCommand({ action: 'disableMotionDetection' });
+    return this.sendCommand({ action: "disableMotionDetection" });
   }
 
   async setMotionSensorSensitivity(level: number): Promise<boolean> {
     // Level: 0-100 (sensitivity scale)
-    return this.sendCommand({ action: 'setMotionDetectionSensitivity', params: { level } });
+    return this.sendCommand({
+      action: "setMotionDetectionSensitivity",
+      params: { level },
+    });
   }
 
   // ── Device Info Queries ──
   async getBatteryLevel(): Promise<number> {
-    const result = await this.sendQuery('getBatteryLevel');
+    const result = await this.sendQuery("getBatteryLevel");
     return Number(result) || 0;
   }
 
   async getDeviceId(): Promise<string> {
-    const result = await this.sendQuery('getDeviceId');
+    const result = await this.sendQuery("getDeviceId");
     return String(result);
   }
 
   async getNetworkInfo(): Promise<string> {
-    return await this.sendQuery('getNetworkInfo') || '';
+    return (await this.sendQuery("getNetworkInfo")) || "";
   }
 
   // ── Process DeviceCommands from Backend ──
-  async handleCommand(commandType: string, params: Record<string, unknown>): Promise<boolean> {
+  async handleCommand(
+    commandType: string,
+    params: Record<string, unknown>,
+  ): Promise<boolean> {
     switch (commandType) {
-      case 'FORCE_SYNC':
+      case "FORCE_SYNC":
         return true; // Handled by SyncManager, not by kiosk
-      case 'SCREEN_ON':
+      case "SCREEN_ON":
         return this.screenOn();
-      case 'SCREEN_OFF':
+      case "SCREEN_OFF":
         return this.screenOff();
-      case 'SET_BRIGHTNESS':
+      case "SET_BRIGHTNESS":
         return this.setScreenBrightness(Number(params.level || 128));
-      case 'SET_VOLUME':
+      case "SET_VOLUME":
         return this.setVolume(Number(params.level || 10));
-      case 'MUTE':
+      case "MUTE":
         return this.setMute(true);
-      case 'UNMUTE':
+      case "UNMUTE":
         return this.setMute(false);
-      case 'LOCK_KIOSK':
+      case "LOCK_KIOSK":
         return this.lockKiosk();
-      case 'UNLOCK_KIOSK':
+      case "UNLOCK_KIOSK":
         return this.unlockKiosk();
-      case 'REBOOT':
+      case "REBOOT":
         return this.forceReboot();
-      case 'RESTART_APP':
+      case "RESTART_APP":
         return this.restartApp();
-      case 'ENABLE_MOTION':
+      case "ENABLE_MOTION":
         return this.enableMotionSensor();
-      case 'DISABLE_MOTION':
+      case "DISABLE_MOTION":
         return this.disableMotionSensor();
       default:
         console.warn(`[FullyKiosk] Unknown command type: ${commandType}`);
@@ -164,7 +180,7 @@ export class FullyKioskBridge {
 
     try {
       const url = new URL(this.baseUrl);
-      url.searchParams.set('cmd', command.action);
+      url.searchParams.set("cmd", command.action);
       if (command.params) {
         for (const [key, value] of Object.entries(command.params)) {
           url.searchParams.set(key, String(value));
@@ -183,7 +199,7 @@ export class FullyKioskBridge {
 
     try {
       const url = new URL(this.baseUrl);
-      url.searchParams.set('cmd', action);
+      url.searchParams.set("cmd", action);
       const response = await fetch(url.toString());
       if (response.ok) {
         return await response.text();
@@ -202,17 +218,19 @@ export class FullyKioskBridge {
       });
       this.isAvailable = response.ok;
       if (this.isAvailable) {
-        console.log('[FullyKiosk] ✅ Detected — kiosk API available at ' + this.baseUrl);
+        console.log(
+          "[FullyKiosk] ✅ Detected — kiosk API available at " + this.baseUrl,
+        );
         // Acquire screen wake lock through kiosk
-        this.keepScreenOn(true).catch(() => { });
+        this.keepScreenOn(true).catch(() => {});
         // Enable motion sensor for proximity-based screen wake
-        this.enableMotionSensor().catch(() => { });
+        this.enableMotionSensor().catch(() => {});
       } else {
-        console.log('[FullyKiosk] ❌ Not detected — standard browser mode');
+        console.log("[FullyKiosk] ❌ Not detected — standard browser mode");
       }
     } catch {
       this.isAvailable = false;
-      console.log('[FullyKiosk] ❌ Not detected — standard browser mode');
+      console.log("[FullyKiosk] ❌ Not detected — standard browser mode");
     }
   }
 

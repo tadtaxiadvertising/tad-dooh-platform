@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { getDeviceSlots } from "@tad/services";
-import { Zap, AlertCircle, CheckCircle2 } from 'lucide-react';
-import clsx from 'clsx';
+import { Zap, AlertCircle, CheckCircle2 } from "lucide-react";
+import clsx from "clsx";
 
 interface SlotData {
   device_id: string;
@@ -11,24 +11,26 @@ interface SlotData {
   usage_percentage: number;
 }
 
-export default function DeviceSlotsInfo({ 
-  deviceId, 
-  slots, 
-  loading = false 
-}: { 
-  deviceId: string; 
+export default function DeviceSlotsInfo({
+  deviceId,
+  slots,
+  loading = false,
+}: {
+  deviceId: string;
   slots?: SlotData | null;
   loading?: boolean;
 }) {
-  if (loading) return (
-    <div className="w-full h-8 bg-zinc-900/50 animate-pulse rounded-full border border-white/5" />
-  );
+  if (loading)
+    return (
+      <div className="w-full h-8 bg-zinc-900/50 animate-pulse rounded-full border border-white/5" />
+    );
 
-  if (!slots) return (
-    <div className="flex flex-col gap-2 w-full opacity-30 italic text-[9px] text-zinc-500">
-       Información de Slots Pendiente... {deviceId}
-    </div>
-  );
+  if (!slots)
+    return (
+      <div className="flex flex-col gap-2 w-full opacity-30 italic text-[9px] text-zinc-500">
+        Información de Slots Pendiente... {deviceId}
+      </div>
+    );
 
   const isFull = slots.available_slots === 0;
   const isWarning = slots.usage_percentage >= 80;
@@ -37,24 +39,41 @@ export default function DeviceSlotsInfo({
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
         <span className="flex items-center gap-1.5 text-zinc-500">
-          <Zap className={clsx("w-3 h-3", isFull ? "text-red-500" : isWarning ? "text-tad-yellow" : "text-green-500")} />
+          <Zap
+            className={clsx(
+              "w-3 h-3",
+              isFull
+                ? "text-red-500"
+                : isWarning
+                  ? "text-tad-yellow"
+                  : "text-green-500",
+            )}
+          />
           Capacidad de Inventario
         </span>
-        <span className={clsx(
-          "font-mono",
-          isFull ? "text-red-500" : isWarning ? "text-tad-yellow" : "text-zinc-400"
-        )}>
+        <span
+          className={clsx(
+            "font-mono",
+            isFull
+              ? "text-red-500"
+              : isWarning
+                ? "text-tad-yellow"
+                : "text-zinc-400",
+          )}
+        >
           {slots.assigned_slots} / {slots.max_slots}
         </span>
       </div>
 
       <div className="relative h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5 shadow-inner">
-        <div 
+        <div
           className={clsx(
             "absolute top-0 left-0 h-full transition-all duration-1000 ease-out rounded-full progress-bar-width",
-            isFull ? "bg-gradient-to-r from-red-600 to-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]" :
-            isWarning ? "bg-gradient-to-r from-yellow-600 to-tad-yellow shadow-[0_0_10px_rgba(250,212,0,0.3)]" :
-            "bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+            isFull
+              ? "bg-gradient-to-r from-red-600 to-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]"
+              : isWarning
+                ? "bg-gradient-to-r from-yellow-600 to-tad-yellow shadow-[0_0_10px_rgba(250,212,0,0.3)]"
+                : "bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]",
           )}
         />
         <style jsx>{`
@@ -83,7 +102,3 @@ export default function DeviceSlotsInfo({
     </div>
   );
 }
-
-
-
-

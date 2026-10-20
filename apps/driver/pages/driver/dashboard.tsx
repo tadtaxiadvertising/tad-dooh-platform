@@ -1,22 +1,36 @@
 // apps/driver/pages/driver/dashboard.tsx
-import React, { useEffect } from 'react';
-import Head from 'next/head';
-import api, { supabase, getMyAdvertiserReferrals, getMyReferralCode } from '@tad/services';
-import { useBackgroundTelemetry } from '../../hooks/useBackgroundTelemetry';
-import { usePaymentStore } from '../../store/usePaymentStore';
-import { useDriverHub } from '../../hooks/useDriverHub';
-import { BankForm, getDriverBankPendingKey } from '../../components/BankForm';
-import { ChevronRight, CreditCard, Landmark, Phone, ShieldCheck, X } from 'lucide-react';
-import { DriverShell } from '../../components/dashboard/DriverShell';
-import { calculateWalletTotal, type WalletState } from "../../components/dashboard/DriverWalletCard";
+import React, { useEffect } from "react";
+import Head from "next/head";
+import api, {
+  supabase,
+  getMyAdvertiserReferrals,
+  getMyReferralCode,
+} from "@tad/services";
+import { useBackgroundTelemetry } from "../../hooks/useBackgroundTelemetry";
+import { usePaymentStore } from "../../store/usePaymentStore";
+import { useDriverHub } from "../../hooks/useDriverHub";
+import { BankForm, getDriverBankPendingKey } from "../../components/BankForm";
+import {
+  ChevronRight,
+  CreditCard,
+  Landmark,
+  Phone,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { DriverShell } from "../../components/dashboard/DriverShell";
+import {
+  calculateWalletTotal,
+  type WalletState,
+} from "../../components/dashboard/DriverWalletCard";
 
-const DRIVER_AGREEMENT_VERSION = '2.0 (HaaS)';
+const DRIVER_AGREEMENT_VERSION = "2.0 (HaaS)";
 const DRIVER_STARTER_KIT_FEE_RD = 6000;
 
-const DRIVER_REFERRAL_STORAGE_KEY = 'tad_driver_referrals_v1';
+const DRIVER_REFERRAL_STORAGE_KEY = "tad_driver_referrals_v1";
 
 function getReferralFinancialsFromStorage(): { referredDrivers: number } {
-  if (typeof window === 'undefined') return { referredDrivers: 0 };
+  if (typeof window === "undefined") return { referredDrivers: 0 };
 
   const raw = localStorage.getItem(DRIVER_REFERRAL_STORAGE_KEY);
   if (!raw) return { referredDrivers: 0 };
@@ -24,15 +38,16 @@ function getReferralFinancialsFromStorage(): { referredDrivers: number } {
   try {
     const parsed = JSON.parse(raw) as { referredDrivers?: number };
     return {
-      referredDrivers: Number.isFinite(parsed.referredDrivers) ? Math.max(0, parsed.referredDrivers ?? 0) : 0,
+      referredDrivers: Number.isFinite(parsed.referredDrivers)
+        ? Math.max(0, parsed.referredDrivers ?? 0)
+        : 0,
     };
   } catch {
     return { referredDrivers: 0 };
   }
 }
 
-
-type DriverOnboardingStage = 'contract' | 'bank' | 'payment' | 'ready';
+type DriverOnboardingStage = "contract" | "bank" | "payment" | "ready";
 
 type DriverReadinessData = {
   agreementVersion: string | null;
@@ -43,16 +58,17 @@ type DriverReadinessData = {
   subscriptionPaid: boolean;
 };
 
-const getDriverOnboardingStorageKey = (driverId: string) => `tad_driver_dashboard_onboarding_seen_v2_${driverId}`;
+const getDriverOnboardingStorageKey = (driverId: string) =>
+  `tad_driver_dashboard_onboarding_seen_v2_${driverId}`;
 
 const getDriverOnboardingStage = (
   hubData: DriverReadinessData | null,
   bankPendingSync: boolean,
 ): DriverOnboardingStage => {
-  if (!hubData?.contractAccepted) return 'contract';
-  if (!hubData.bankAccountConfigured && !bankPendingSync) return 'bank';
-  if (!hubData.subscriptionPaid) return 'payment';
-  return 'ready';
+  if (!hubData?.contractAccepted) return "contract";
+  if (!hubData.bankAccountConfigured && !bankPendingSync) return "bank";
+  if (!hubData.subscriptionPaid) return "payment";
+  return "ready";
 };
 
 function ReadinessItem({
@@ -67,12 +83,17 @@ function ReadinessItem({
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{label}</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+          {label}
+        </p>
         <span
-          className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${complete ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'
-            }`}
+          className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${
+            complete
+              ? "bg-emerald-500/10 text-emerald-400"
+              : "bg-amber-500/10 text-amber-300"
+          }`}
         >
-          {complete ? 'OK' : 'Pendiente'}
+          {complete ? "OK" : "Pendiente"}
         </span>
       </div>
       <p className="mt-2 text-sm text-zinc-300 leading-relaxed">{detail}</p>
@@ -94,7 +115,9 @@ function DriverReadinessCard({
   const contractReady = hubData.contractAccepted;
   const bankReady = hubData.bankAccountConfigured || bankPendingSync;
   const paymentReady = hubData.subscriptionPaid;
-  const completedCount = [contractReady, bankReady, paymentReady].filter(Boolean).length;
+  const completedCount = [contractReady, bankReady, paymentReady].filter(
+    Boolean,
+  ).length;
 
   if (completedCount === 3) {
     return null;
@@ -104,16 +127,25 @@ function DriverReadinessCard({
     <section className="rounded-[2rem] border border-[#FFD400]/15 bg-[#14110a] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#FFD400]">Onboarding radial</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-white">Tu unidad todavía no está 100% lista</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#FFD400]">
+            Onboarding radial
+          </p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+            Tu unidad todavía no está 100% lista
+          </h2>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            Completa contrato, cuenta bancaria y activación anual para operar sin fricción. La fórmula vigente sigue protegida:
-            hasta 15 slots y RD$500 por campaña activa.
+            Completa contrato, cuenta bancaria y activación anual para operar
+            sin fricción. La fórmula vigente sigue protegida: hasta 15 slots y
+            RD$500 por campaña activa.
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Avance</p>
-          <p className="mt-1 text-3xl font-black text-white">{completedCount}/3</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+            Avance
+          </p>
+          <p className="mt-1 text-3xl font-black text-white">
+            {completedCount}/3
+          </p>
         </div>
       </div>
 
@@ -123,8 +155,8 @@ function DriverReadinessCard({
           complete={contractReady}
           detail={
             contractReady
-              ? `Aceptado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ''}`
-              : 'Firma digital pendiente antes de pasar a la operación formal.'
+              ? `Aceptado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ""}`
+              : "Firma digital pendiente antes de pasar a la operación formal."
           }
         />
         <ReadinessItem
@@ -132,10 +164,10 @@ function DriverReadinessCard({
           complete={bankReady}
           detail={
             hubData.bankAccountConfigured
-              ? 'Cuenta registrada y confirmada por el backend.'
+              ? "Cuenta registrada y confirmada por el backend."
               : bankPendingSync
-                ? 'Guardada localmente. Se sincronizará automáticamente cuando vuelva la red.'
-                : 'Falta registrar banco, número de cuenta, tipo y cédula del titular.'
+                ? "Guardada localmente. Se sincronizará automáticamente cuando vuelva la red."
+                : "Falta registrar banco, número de cuenta, tipo y cédula del titular."
           }
         />
         <ReadinessItem
@@ -143,8 +175,8 @@ function DriverReadinessCard({
           complete={paymentReady}
           detail={
             paymentReady
-              ? 'Membresía anual operativa y sin bloqueo.'
-              : `Pendiente de pago por RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')} para evitar bloqueo 402.`
+              ? "Membresía anual operativa y sin bloqueo."
+              : `Pendiente de pago por RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString("es-DO")} para evitar bloqueo 402.`
           }
         />
       </div>
@@ -183,11 +215,15 @@ function DriverOnboardingModal({
       <div className="w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 shadow-[0_30px_120px_rgba(0,0,0,0.85)]">
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Driver Readiness</p>
-            <h3 className="text-lg font-black text-white">Preparación operativa del conductor</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">
+              Driver Readiness
+            </p>
+            <h3 className="text-lg font-black text-white">
+              Preparación operativa del conductor
+            </h3>
           </div>
           {/* X solo disponible en pasos no obligatorios (payment / ready) */}
-          {stage === 'payment' || stage === 'ready' ? (
+          {stage === "payment" || stage === "ready" ? (
             <button
               onClick={onClose}
               className="rounded-full bg-white/5 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
@@ -209,25 +245,39 @@ function DriverOnboardingModal({
 
         <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
           <div className="p-6 md:p-8">
-            {stage === 'contract' && (
+            {stage === "contract" && (
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#FFD400]/20 bg-[#FFD400]/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#FFD400]">
                   <ShieldCheck className="h-4 w-4" />
                   Contrato de servicio
                 </div>
                 <div>
-                  <h4 className="text-3xl font-black tracking-tight text-white">Acepta el acuerdo V2 antes de salir a pista</h4>
+                  <h4 className="text-3xl font-black tracking-tight text-white">
+                    Acepta el acuerdo V2 antes de salir a pista
+                  </h4>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Este paso deja formalizado el servicio, el uso del hardware y la continuidad del esquema de pagos.
-                    La operación mantiene el límite de 15 slots y la lógica de RD$500 por campaña activa.
+                    Este paso deja formalizado el servicio, el uso del hardware
+                    y la continuidad del esquema de pagos. La operación mantiene
+                    el límite de 15 slots y la lógica de RD$500 por campaña
+                    activa.
                   </p>
                 </div>
                 <div className="rounded-3xl border border-white/5 bg-white/[0.03] p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Resumen contractual</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                    Resumen contractual
+                  </p>
                   <ul className="mt-4 space-y-3 text-sm text-zinc-300">
-                    <li>Pago anual del Starter Kit: RD$6,000 con ITBIS integrado.</li>
-                    <li>El kill-switch 402 se activa automáticamente si la membresía queda morosa.</li>
-                    <li>La PWA sigue operando offline-first y sincroniza al volver la red.</li>
+                    <li>
+                      Pago anual del Starter Kit: RD$6,000 con ITBIS integrado.
+                    </li>
+                    <li>
+                      El kill-switch 402 se activa automáticamente si la
+                      membresía queda morosa.
+                    </li>
+                    <li>
+                      La PWA sigue operando offline-first y sincroniza al volver
+                      la red.
+                    </li>
                   </ul>
                 </div>
                 <button
@@ -235,56 +285,77 @@ function DriverOnboardingModal({
                   disabled={busy}
                   className="inline-flex items-center gap-3 rounded-2xl bg-[#FFD400] px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition hover:bg-[#ffe45c] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span>{busy ? 'Registrando acuerdo...' : 'Aceptar contrato y continuar'}</span>
+                  <span>
+                    {busy
+                      ? "Registrando acuerdo..."
+                      : "Aceptar contrato y continuar"}
+                  </span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-            {stage === 'bank' && (
+            {stage === "bank" && (
               <div className="space-y-5">
                 <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300">
                   <Landmark className="h-4 w-4" />
                   Cuenta de pagos
                 </div>
                 <div>
-                  <h4 className="text-3xl font-black tracking-tight text-white">Configura tu banco con modo offline-first</h4>
+                  <h4 className="text-3xl font-black tracking-tight text-white">
+                    Configura tu banco con modo offline-first
+                  </h4>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Si pierdes conectividad en ruta, los datos quedan guardados localmente y se reenvían por proxy seguro
-                    al recuperar la red. Nunca pasan por una ruta pesada ni se pierde el formulario.
+                    Si pierdes conectividad en ruta, los datos quedan guardados
+                    localmente y se reenvían por proxy seguro al recuperar la
+                    red. Nunca pasan por una ruta pesada ni se pierde el
+                    formulario.
                   </p>
                 </div>
-                <BankForm driverId={hubData.driverId} onSuccess={onBankSuccess} />
+                <BankForm
+                  driverId={hubData.driverId}
+                  onSuccess={onBankSuccess}
+                />
               </div>
             )}
 
-            {stage === 'payment' && (
+            {stage === "payment" && (
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">
                   <CreditCard className="h-4 w-4" />
                   Activación final
                 </div>
                 <div>
-                  <h4 className="text-3xl font-black tracking-tight text-white">Solo falta activar la anualidad del Starter Kit</h4>
+                  <h4 className="text-3xl font-black tracking-tight text-white">
+                    Solo falta activar la anualidad del Starter Kit
+                  </h4>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Contrato y cobro bancario ya están listos. El siguiente paso es regularizar el pago
-                    anual de{' '}
+                    Contrato y cobro bancario ya están listos. El siguiente paso
+                    es regularizar el pago anual de{" "}
                     <strong className="text-white">
-                      RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}
-                    </strong>{' '}
-                    <span className="text-zinc-500">(ITBIS 18% incluido)</span> para mantener la
-                    unidad fuera del bloqueo 402.
+                      RD${DRIVER_STARTER_KIT_FEE_RD.toLocaleString("es-DO")}
+                    </strong>{" "}
+                    <span className="text-zinc-500">(ITBIS 18% incluido)</span>{" "}
+                    para mantener la unidad fuera del bloqueo 402.
                   </p>
                 </div>
                 <div className="rounded-3xl border border-[#FFD400]/15 bg-[#FFD400]/5 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Estado actual</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                    Estado actual
+                  </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Onboarding</p>
-                      <p className="mt-1 text-2xl font-black text-white">{hubData.onboardingStatus}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                        Onboarding
+                      </p>
+                      <p className="mt-1 text-2xl font-black text-white">
+                        {hubData.onboardingStatus}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Slots máximos</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                        Slots máximos
+                      </p>
                       <p className="mt-1 text-2xl font-black text-white">15</p>
                     </div>
                   </div>
@@ -298,16 +369,19 @@ function DriverOnboardingModal({
               </div>
             )}
 
-            {stage === 'ready' && (
+            {stage === "ready" && (
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">
                   <ShieldCheck className="h-4 w-4" />
                   Unidad lista
                 </div>
                 <div>
-                  <h4 className="text-3xl font-black tracking-tight text-white">Tu operación quedó preparada</h4>
+                  <h4 className="text-3xl font-black tracking-tight text-white">
+                    Tu operación quedó preparada
+                  </h4>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Ya puedes seguir usando el dashboard con contrato, banco y anualidad completos.
+                    Ya puedes seguir usando el dashboard con contrato, banco y
+                    anualidad completos.
                   </p>
                 </div>
                 <button
@@ -321,15 +395,17 @@ function DriverOnboardingModal({
           </div>
 
           <div className="border-t border-white/5 bg-black/30 p-6 md:border-l md:border-t-0 md:p-8">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Checklist de continuidad</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">
+              Checklist de continuidad
+            </p>
             <div className="mt-5 space-y-3">
               <ReadinessItem
                 label="Contrato"
                 complete={hubData.contractAccepted}
                 detail={
                   hubData.contractAccepted
-                    ? `Firmado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ''}`
-                    : 'Falta firma electrónica'
+                    ? `Firmado${hubData.agreementVersion ? ` · ${hubData.agreementVersion}` : ""}`
+                    : "Falta firma electrónica"
                 }
               />
               <ReadinessItem
@@ -337,10 +413,10 @@ function DriverOnboardingModal({
                 complete={hubData.bankAccountConfigured || bankPendingSync}
                 detail={
                   hubData.bankAccountConfigured
-                    ? 'Configurado en backend'
+                    ? "Configurado en backend"
                     : bankPendingSync
-                      ? 'Pendiente de sincronización'
-                      : 'No configurado'
+                      ? "Pendiente de sincronización"
+                      : "No configurado"
                 }
               />
               <ReadinessItem
@@ -348,8 +424,8 @@ function DriverOnboardingModal({
                 complete={hubData.subscriptionPaid}
                 detail={
                   hubData.subscriptionPaid
-                    ? 'Operativa'
-                    : `Pendiente RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString('es-DO')}`
+                    ? "Operativa"
+                    : `Pendiente RD$${DRIVER_STARTER_KIT_FEE_RD.toLocaleString("es-DO")}`
                 }
               />
             </div>
@@ -385,26 +461,26 @@ function StatusBar({
   offlineCount,
   onLogout,
 }: {
-  connectionStatus: 'online' | 'offline' | 'syncing';
+  connectionStatus: "online" | "offline" | "syncing";
   batchCount: number;
   offlineCount: number;
   onLogout: () => void;
 }) {
-  const isOffline = connectionStatus === 'offline';
-  const isSyncing = connectionStatus === 'syncing';
+  const isOffline = connectionStatus === "offline";
+  const isSyncing = connectionStatus === "syncing";
 
   let batchLabel: string;
   let batchColor: string;
 
   if (isOffline) {
     batchLabel = `MODO LOCAL · ${offlineCount} pts`;
-    batchColor = '#ef4444'; // red-500 for attention
+    batchColor = "#ef4444"; // red-500 for attention
   } else if (isSyncing) {
     batchLabel = `SINCRONIZANDO...`;
-    batchColor = '#FFD400';
+    batchColor = "#FFD400";
   } else {
     batchLabel = `BATCH GPS: ${batchCount}/10`;
-    batchColor = '#FFD400';
+    batchColor = "#FFD400";
   }
 
   return (
@@ -420,7 +496,7 @@ function StatusBar({
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke={isOffline ? '#ef4444' : '#FFD400'}
+            stroke={isOffline ? "#ef4444" : "#FFD400"}
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -432,9 +508,9 @@ function StatusBar({
         </div>
         <span
           className="text-[10px] font-black uppercase tracking-[0.2em]"
-          style={{ color: isOffline ? '#ef4444' : '#FFD400' }}
+          style={{ color: isOffline ? "#ef4444" : "#FFD400" }}
         >
-          {isOffline ? 'Offline' : 'Tracking'}
+          {isOffline ? "Offline" : "Tracking"}
         </span>
       </div>
 
@@ -445,7 +521,10 @@ function StatusBar({
         aria-label="Estado del lote de telemetría"
       >
         {isSyncing && <PulseDot color="#FFD400" />}
-        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: batchColor }}>
+        <span
+          className="text-[10px] font-black tracking-widest uppercase"
+          style={{ color: batchColor }}
+        >
           {batchLabel}
         </span>
       </div>
@@ -458,15 +537,38 @@ function StatusBar({
           Salir
         </button>
         {/* Red Status */}
-        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center" aria-label={`Red: ${connectionStatus}`}>
+        <div
+          className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center"
+          aria-label={`Red: ${connectionStatus}`}
+        >
           {isOffline ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <line x1="1" y1="1" x2="23" y2="23" />
               <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
               <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M5 12.55a11 11 0 0 1 14.08 0" />
               <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
               <circle cx="12" cy="20" r="1" fill="currentColor" />
@@ -478,21 +580,20 @@ function StatusBar({
   );
 }
 
-
 /** Botones de acciones con hit-targets masivos */
 
 /** LockdownScreen — Paradoja 402 */
 function LockdownScreen({ message }: { message: string | null }) {
   const handleWhatsApp = () => {
     window.open(
-      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.')}`,
-      '_blank',
-      'noopener,noreferrer'
+      `https://wa.me/18495043872?text=${encodeURIComponent("Necesito regularizar mi pago de RD$6,000 para reactivar el servicio TAD.")}`,
+      "_blank",
+      "noopener,noreferrer",
     );
   };
 
   const handleCall = () => {
-    window.location.href = 'tel:+18495043872';
+    window.location.href = "tel:+18495043872";
   };
 
   return (
@@ -526,9 +627,10 @@ function LockdownScreen({ message }: { message: string | null }) {
 
         <h1
           className="text-white font-black tracking-tighter uppercase leading-tight mb-4"
-          style={{ fontSize: 'clamp(2rem, 10vw, 2.75rem)' }}
+          style={{ fontSize: "clamp(2rem, 10vw, 2.75rem)" }}
         >
-          Servicio<br />
+          Servicio
+          <br />
           <span className="text-red-500">Bloqueado</span>
         </h1>
 
@@ -536,8 +638,12 @@ function LockdownScreen({ message }: { message: string | null }) {
           Tu cuenta tiene un pago pendiente de
         </p>
         <div className="inline-block px-6 py-3 bg-white/5 border border-white/10 rounded-2xl mb-8">
-          <span className="text-white text-3xl font-black tabular-nums">RD$6,000</span>
-          <span className="text-neutral-500 text-xs font-bold block mt-1 uppercase tracking-widest">Cuota Anual (Hardware)</span>
+          <span className="text-white text-3xl font-black tabular-nums">
+            RD$6,000
+          </span>
+          <span className="text-neutral-500 text-xs font-bold block mt-1 uppercase tracking-widest">
+            Cuota Anual (Hardware)
+          </span>
         </div>
 
         {message && (
@@ -554,7 +660,9 @@ function LockdownScreen({ message }: { message: string | null }) {
             className="w-full h-20 bg-tad-yellow hover:bg-white text-black font-black text-lg uppercase tracking-tighter rounded-3xl transition-all shadow-2xl shadow-tad-yellow/10 flex items-center justify-center gap-3 active:scale-95"
           >
             <span>Pagar vía WhatsApp</span>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
           </button>
 
           <button
@@ -576,58 +684,73 @@ function LockdownScreen({ message }: { message: string | null }) {
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function DriverDashboard() {
-  const { connectionStatus, batchCount, offlineCount, syncPending, startTracking, stopTracking, isTracking } =
-    useBackgroundTelemetry();
-  const { data: hubData, loading: hubLoading, isLocalMode, refresh: refreshHub } = useDriverHub();
+  const {
+    connectionStatus,
+    batchCount,
+    offlineCount,
+    syncPending,
+    startTracking,
+    stopTracking,
+    isTracking,
+  } = useBackgroundTelemetry();
+  const {
+    data: hubData,
+    loading: hubLoading,
+    isLocalMode,
+    refresh: refreshHub,
+  } = useDriverHub();
   const { isLocked, message: lockMessage, setLock } = usePaymentStore();
   const [syncingNow, setSyncingNow] = React.useState(false);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [onboardingBusy, setOnboardingBusy] = React.useState(false);
   const [bankPendingSync, setBankPendingSync] = React.useState(false);
-  const [walletState, setWalletState] = React.useState<WalletState | null>(null);
-    const [referralData, setReferralData] = React.useState<{
-      referralCode: string;
-      url: string;
-      driverUrl: string;
-      qrPayload: string;
-    } | null>(null);
-    const [referralLoading, setReferralLoading] = React.useState(true);
-    const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
-      advertisers: Array<{
-        id: string;
-        companyName: string;
-        createdAt: string;
-        _count: { campaigns: number };
-        referrer?: { fullName: string } | null;
-      }>;
-      totalBonus: number;
-      count: number;
-    } | null>(null);
-    const [advertiserReferralsLoading, setAdvertiserReferralsLoading] = React.useState(true);
+  const [walletState, setWalletState] = React.useState<WalletState | null>(
+    null,
+  );
+  const [referralData, setReferralData] = React.useState<{
+    referralCode: string;
+    url: string;
+    driverUrl: string;
+    qrPayload: string;
+  } | null>(null);
+  const [referralLoading, setReferralLoading] = React.useState(true);
+  const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
+    advertisers: Array<{
+      id: string;
+      companyName: string;
+      createdAt: string;
+      _count: { campaigns: number };
+      referrer?: { fullName: string } | null;
+    }>;
+    totalBonus: number;
+    count: number;
+  } | null>(null);
+  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] =
+    React.useState(true);
 
-    // Iniciar tracking GPS al montar
-    useEffect(() => {
-      startTracking();
-      return () => stopTracking();
-
-    }, []);
+  // Iniciar tracking GPS al montar
+  useEffect(() => {
+    startTracking();
+    return () => stopTracking();
+  }, []);
 
   const hasClosedRef = React.useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !hubData?.driverId) return;
+    if (typeof window === "undefined" || !hubData?.driverId) return;
 
     if (hasClosedRef.current) return;
 
     const pendingKey = getDriverBankPendingKey(hubData.driverId);
     const onboardingKey = getDriverOnboardingStorageKey(hubData.driverId);
-    const pendingSync = localStorage.getItem(pendingKey) === '1';
-    const forceOnboarding = sessionStorage.getItem('tad_driver_force_onboarding') === '1';
-    const hasSeenOnboarding = localStorage.getItem(onboardingKey) === '1';
+    const pendingSync = localStorage.getItem(pendingKey) === "1";
+    const forceOnboarding =
+      sessionStorage.getItem("tad_driver_force_onboarding") === "1";
+    const hasSeenOnboarding = localStorage.getItem(onboardingKey) === "1";
 
     // Limpiar flag temporal de sessionStorage para evitar bucles en F5/refresh
     if (forceOnboarding) {
-      sessionStorage.removeItem('tad_driver_force_onboarding');
+      sessionStorage.removeItem("tad_driver_force_onboarding");
     }
 
     setBankPendingSync(pendingSync);
@@ -653,7 +776,11 @@ export default function DriverDashboard() {
     if (shouldOpen) {
       setShowOnboarding(true);
     }
-  }, [hubData?.driverId, hubData?.contractAccepted, hubData?.bankAccountConfigured]);
+  }, [
+    hubData?.driverId,
+    hubData?.contractAccepted,
+    hubData?.bankAccountConfigured,
+  ]);
 
   // Fetch real referral code from backend (replaces synthetic DRV-XXXXXX)
   useEffect(() => {
@@ -662,15 +789,14 @@ export default function DriverDashboard() {
       return;
     }
     let cancelled = false;
-    setReferralLoading(true);
-    getMyReferralCode()
-      .then((data) => {
+    setAdvertiserReferralsLoading(true);
+    getMyAdvertiserReferrals(hubData.driverId)
+      .then((data: any) => {
         if (!cancelled) {
-          setReferralData(data);
+          setAdvertiserReferrals(data);
         }
       })
       .catch(() => {
-        // Silently fail — fallback to synthetic values in UI
         if (!cancelled) {
           setReferralData(null);
         }
@@ -680,7 +806,9 @@ export default function DriverDashboard() {
           setReferralLoading(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [hubData?.driverId]);
 
   // Fetch advertiser referrals from backend
@@ -692,7 +820,7 @@ export default function DriverDashboard() {
     let cancelled = false;
     setAdvertiserReferralsLoading(true);
     getMyAdvertiserReferrals(hubData.driverId)
-      .then((data) => {
+      .then((data: any) => {
         if (!cancelled) {
           setAdvertiserReferrals(data);
         }
@@ -707,11 +835,13 @@ export default function DriverDashboard() {
           setAdvertiserReferralsLoading(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [hubData?.driverId]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !hubData?.driverId) return;
+    if (typeof window === "undefined" || !hubData?.driverId) return;
 
     if (hubData.bankAccountConfigured) {
       localStorage.removeItem(getDriverBankPendingKey(hubData.driverId));
@@ -725,7 +855,7 @@ export default function DriverDashboard() {
 
     if (hubData.subscriptionPaid === false) {
       if (!showOnboarding) {
-        setLock(true, 'Suscripción vencida. Pago de RD$6,000 requerido.');
+        setLock(true, "Suscripción vencida. Pago de RD$6,000 requerido.");
       } else {
         setLock(false, null);
       }
@@ -734,7 +864,6 @@ export default function DriverDashboard() {
     }
   }, [hubData?.subscriptionPaid, showOnboarding, setLock]);
 
-
   useEffect(() => {
     const referrals = getReferralFinancialsFromStorage();
     const ads = hubData?.activeSlots ?? 0;
@@ -742,7 +871,7 @@ export default function DriverDashboard() {
       ads,
       referredDrivers: referrals.referredDrivers,
       total: calculateWalletTotal(ads, referrals.referredDrivers),
-      isOffline: connectionStatus === 'offline',
+      isOffline: connectionStatus === "offline",
     };
 
     setWalletState(nextWallet);
@@ -751,17 +880,17 @@ export default function DriverDashboard() {
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleSupport = () => {
     window.open(
-      `https://wa.me/18495043872?text=${encodeURIComponent('Necesito soporte técnico con la app TAD Driver.')}`,
-      '_blank',
-      'noopener,noreferrer'
+      `https://wa.me/18495043872?text=${encodeURIComponent("Necesito soporte técnico con la app TAD Driver.")}`,
+      "_blank",
+      "noopener,noreferrer",
     );
   };
 
   const handleReportFalla = () => {
     window.open(
-      `https://wa.me/18495043872?text=${encodeURIComponent('Quiero reportar una falla en el dispositivo TAD.')}`,
-      '_blank',
-      'noopener,noreferrer'
+      `https://wa.me/18495043872?text=${encodeURIComponent("Quiero reportar una falla en el dispositivo TAD.")}`,
+      "_blank",
+      "noopener,noreferrer",
     );
   };
 
@@ -783,9 +912,12 @@ export default function DriverDashboard() {
 
     hasClosedRef.current = true;
 
-    if (typeof window !== 'undefined' && hubData?.driverId) {
-      localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
-      sessionStorage.removeItem('tad_driver_force_onboarding');
+    if (typeof window !== "undefined" && hubData?.driverId) {
+      localStorage.setItem(
+        getDriverOnboardingStorageKey(hubData.driverId),
+        "1",
+      );
+      sessionStorage.removeItem("tad_driver_force_onboarding");
     }
 
     setShowOnboarding(false);
@@ -799,16 +931,19 @@ export default function DriverDashboard() {
       await api.post(`/drivers/${hubData.driverId}/accept-agreement`, {
         version: DRIVER_AGREEMENT_VERSION,
       });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(getDriverOnboardingStorageKey(hubData.driverId), '1');
-        sessionStorage.removeItem('tad_driver_force_onboarding');
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          getDriverOnboardingStorageKey(hubData.driverId),
+          "1",
+        );
+        sessionStorage.removeItem("tad_driver_force_onboarding");
       }
       await refreshHub();
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
         error?.message ||
-        'No se pudo registrar la aceptación del contrato.';
+        "No se pudo registrar la aceptación del contrato.";
       alert(Array.isArray(message) ? message[0] : message);
     } finally {
       setOnboardingBusy(false);
@@ -816,44 +951,51 @@ export default function DriverDashboard() {
   };
 
   const handleBankSaved = async () => {
-    if (typeof window !== 'undefined' && hubData?.driverId) {
-      setBankPendingSync(localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === '1');
+    if (typeof window !== "undefined" && hubData?.driverId) {
+      setBankPendingSync(
+        localStorage.getItem(getDriverBankPendingKey(hubData.driverId)) === "1",
+      );
     }
 
     await refreshHub();
   };
 
   const handleLogout = async () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     // Clear ALL portal tokens
-    localStorage.removeItem('tad_admin_token');
-    localStorage.removeItem('tad_admin_user');
-    localStorage.removeItem('tad_advertiser_token');
-    localStorage.removeItem('tad_advertiser_user');
-    localStorage.removeItem('tad_driver_token');
-    localStorage.removeItem('tad_driver_user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('sb-access-token');
-    sessionStorage.removeItem('tad_driver_user');
-    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    localStorage.removeItem("tad_admin_token");
+    localStorage.removeItem("tad_admin_user");
+    localStorage.removeItem("tad_advertiser_token");
+    localStorage.removeItem("tad_advertiser_user");
+    localStorage.removeItem("tad_driver_token");
+    localStorage.removeItem("tad_driver_user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("sb-access-token");
+    sessionStorage.removeItem("tad_driver_user");
+    document.cookie =
+      "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     try {
       if (supabase) await supabase.auth.signOut();
-    } catch { /* no Supabase session — safe to ignore */ }
-    window.location.href = '/driver/login';
+    } catch {
+      /* no Supabase session — safe to ignore */
+    }
+    window.location.href = "/driver/login";
   };
 
   const handleReferir = () => {
     if (navigator.share) {
-      navigator.share({
-        title: 'Únete a TAD Driver',
-        text: 'Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:',
-        url: window.location.origin + '/driver/onboarding',
-      }).catch(() => undefined);
+      navigator
+        .share({
+          title: "Únete a TAD Driver",
+          text: "Gana hasta RD$7,500 al mes poniendo publicidad en tu taxi. Únete con mi enlace:",
+          url: window.location.origin + "/driver/onboarding",
+        })
+        .catch(() => undefined);
     } else {
       window.open(
-        `https://wa.me/?text=${encodeURIComponent('Gana hasta RD$7,500 al mes con TAD Driver: ' + window.location.origin + '/driver/onboarding')}`,
-        '_blank',
-        'noopener,noreferrer'
+        `https://wa.me/?text=${encodeURIComponent("Gana hasta RD$7,500 al mes con TAD Driver: " + window.location.origin + "/driver/onboarding")}`,
+        "_blank",
+        "noopener,noreferrer",
       );
     }
   };
@@ -862,8 +1004,14 @@ export default function DriverDashboard() {
     <>
       <Head>
         <title>TAD Driver | Monitor Operativo</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        <meta name="description" content="Panel de control operativo para conductores TAD DOOH" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+        />
+        <meta
+          name="description"
+          content="Panel de control operativo para conductores TAD DOOH"
+        />
       </Head>
 
       {/* DriverShell — maneja tabs internos + BottomNavigationBar */}
@@ -923,13 +1071,13 @@ export default function DriverDashboard() {
           hubData={
             hubData
               ? {
-                agreementVersion: hubData.agreementVersion,
-                bankAccountConfigured: hubData.bankAccountConfigured,
-                contractAccepted: hubData.contractAccepted,
-                driverId: hubData.driverId,
-                onboardingStatus: hubData.onboardingStatus,
-                subscriptionPaid: hubData.subscriptionPaid,
-              }
+                  agreementVersion: hubData.agreementVersion,
+                  bankAccountConfigured: hubData.bankAccountConfigured,
+                  contractAccepted: hubData.contractAccepted,
+                  driverId: hubData.driverId,
+                  onboardingStatus: hubData.onboardingStatus,
+                  subscriptionPaid: hubData.subscriptionPaid,
+                }
               : null
           }
           onAcceptAgreement={() => void handleAcceptAgreement()}

@@ -1,7 +1,16 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { RotateCcw, Calculator, ArrowRight, TrendingUp, BadgeCheck, Wifi, Clock, ShieldCheck } from 'lucide-react';
+import { motion } from "framer-motion";
+import {
+  RotateCcw,
+  Calculator,
+  ArrowRight,
+  TrendingUp,
+  BadgeCheck,
+  Wifi,
+  Clock,
+  ShieldCheck,
+} from "lucide-react";
 
 const REFERRAL_DRIVER_BONUS = 500;
 
@@ -23,7 +32,7 @@ interface SliderFieldProps {
   max: number;
   value: number;
   onChange: (value: number) => void;
-  color: 'yellow' | 'green' | 'orange';
+  color: "yellow" | "green" | "orange";
   icon: React.ElementType;
   ariaLabel: string;
   bonusText?: React.ReactNode;
@@ -43,13 +52,14 @@ function SliderField({
   description,
 }: SliderFieldProps) {
   const colorMap = {
-    yellow: 'tad-range-yellow',
-    green: 'tad-range-green',
-    orange: 'tad-range-orange',
+    yellow: "tad-range-yellow",
+    green: "tad-range-green",
+    orange: "tad-range-orange",
   };
   const sliderColorClass = colorMap[color];
   const pct = ((value - min) / (max - min)) * 100;
-  const bonusColor = color === 'green' ? '#22C55E' : color === 'orange' ? '#FF8C00' : '#FDCB01';
+  const bonusColor =
+    color === "green" ? "#22C55E" : color === "orange" ? "#FF8C00" : "#FDCB01";
 
   return (
     <motion.div
@@ -61,7 +71,9 @@ function SliderField({
       <div className="flex justify-between items-end gap-3 mb-1">
         <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider leading-snug">
           {label}
-          <span className="text-white/25 normal-case">({min} - {max})</span>
+          <span className="text-white/25 normal-case">
+            ({min} - {max})
+          </span>
         </span>
         <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
           {value}
@@ -86,7 +98,11 @@ function SliderField({
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px]`}
-          style={{ '--fill': `${Math.min(100, Math.max(0, pct))}%` } as React.CSSProperties}
+          style={
+            {
+              "--fill": `${Math.min(100, Math.max(0, pct))}%`,
+            } as React.CSSProperties
+          }
           aria-label={ariaLabel}
         />
         <motion.button
@@ -111,7 +127,7 @@ function SliderField({
           className="mt-2 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"
           style={{ color: bonusColor }}
           initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
+          animate={{ opacity: 1, height: "auto" }}
         >
           {Icon && <Icon className="w-3 h-3" />}
           {bonusText}
@@ -144,7 +160,12 @@ export default function EarningsCalculatorStep({
           className="inline-flex px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black text-[#FDCB01] uppercase tracking-[0.2em] mb-4"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+          transition={{
+            delay: 0.1,
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+          }}
         >
           <Calculator className="w-3 h-3" />
           Simulador de Ganancias
@@ -155,8 +176,7 @@ export default function EarningsCalculatorStep({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          Simula tus{' '}
-          <span className="text-[#FDCB01]">Ingresos</span>
+          Simula tus <span className="text-[#FDCB01]">Ingresos</span>
         </motion.h1>
         <motion.p
           className="text-xs text-gray-500 font-bold uppercase tracking-wider"
@@ -215,9 +235,7 @@ export default function EarningsCalculatorStep({
               </p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-bold text-[#AAAAAA]">RD$</span>
-                <motion.span
-                  className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums"
-                >
+                <motion.span className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums">
                   {projectedEarnings.toLocaleString()}
                 </motion.span>
               </div>
@@ -247,13 +265,17 @@ export default function EarningsCalculatorStep({
             {referredDrivers > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+                animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 className="flex justify-between gap-4 text-[#22C55E]"
               >
-                <span>Bonificación taxistas ({referredDrivers} × RD${REFERRAL_DRIVER_BONUS.toLocaleString()}):</span>
+                <span>
+                  Bonificación taxistas ({referredDrivers} × RD$
+                  {REFERRAL_DRIVER_BONUS.toLocaleString()}):
+                </span>
                 <span className="font-bold tabular-nums shrink-0">
-                  RD${(referredDrivers * REFERRAL_DRIVER_BONUS).toLocaleString()}
+                  RD$
+                  {(referredDrivers * REFERRAL_DRIVER_BONUS).toLocaleString()}
                 </span>
               </motion.div>
             )}
@@ -276,7 +298,8 @@ export default function EarningsCalculatorStep({
                 <span>RD$6,000 / año</span>
               </div>
               <p className="text-[10px] text-gray-500 leading-normal italic">
-                * El pago de la membresía cubre el Starter Kit (tablet, soporte, cableado) y seguro contra robo o averías.
+                * El pago de la membresía cubre el Starter Kit (tablet, soporte,
+                cableado) y seguro contra robo o averías.
               </p>
             </div>
           </motion.div>
@@ -287,7 +310,10 @@ export default function EarningsCalculatorStep({
           <motion.button
             onClick={onNext}
             className="w-full bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(253,203,1,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
-            whileHover={{ scale: 1.02, boxShadow: '0 15px 50px rgba(253,203,1,0.25)' }}
+            whileHover={{
+              scale: 1.02,
+              boxShadow: "0 15px 50px rgba(253,203,1,0.25)",
+            }}
             whileTap={{ scale: 0.98 }}
           >
             <span>QUIERO SOLICITAR MI PANTALLA</span>

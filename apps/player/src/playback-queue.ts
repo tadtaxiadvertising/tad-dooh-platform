@@ -3,17 +3,17 @@
 // Uses the validated /telemetry/playback endpoint (not the deprecated /device/playback).
 // Buffers events locally when offline, flushes on reconnect.
 
-import type { PlaybackEvent } from './types';
-import env from './config';
+import type { PlaybackEvent } from "./types";
+import env from "./config";
 
-const QUEUE_DB_NAME = 'tad_playback_queue';
+const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
-const QUEUE_STORE = 'events';
+const QUEUE_STORE = "events";
 
 export class PlaybackQueue {
   private dbReady: Promise<IDBDatabase>;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
-  private deviceId: string = '';
+  private deviceId: string = "";
 
   constructor() {
     this.dbReady = this.openDB();
@@ -25,9 +25,9 @@ export class PlaybackQueue {
     // Flush immediato al recuperar conectividad (item M4/R2): en 3G la red
     // cae/revive con frecuencia y no debemos esperar el timer largo antes
     // de entregar los Proofs of Play pendientes.
-    window.addEventListener('online', () => {
-      this.flushQueue().catch(err => {
-        console.error('[PlaybackQueue] Flush on reconnect error:', err);
+    window.addEventListener("online", () => {
+      this.flushQueue().catch((err) => {
+        console.error("[PlaybackQueue] Flush on reconnect error:", err);
       });
     });
   }
@@ -42,7 +42,7 @@ export class PlaybackQueue {
   async saveToQueue(event: PlaybackEvent): Promise<void> {
     const db = await this.dbReady;
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const tx = db.transaction(QUEUE_STORE, "readwrite");
       const store = tx.objectStore(QUEUE_STORE);
       const entry = {
         id: `${event.video_id}_${event.timestamp}`,
@@ -59,7 +59,7 @@ export class PlaybackQueue {
   async flushQueue(): Promise<{ sent: number; failed: number }> {
     const db = await this.dbReady;
     const events = await new Promise<PlaybackEvent[]>((resolve) => {
-      const tx = db.transaction(QUEUE_STORE, 'readonly');
+      const tx = db.transaction(QUEUE_STORE, "readonly");
       const store = tx.objectStore(QUEUE_STORE);
       const req = store.getAll();
       req.onsuccess = () => resolve(req.result || []);
@@ -82,20 +82,25 @@ export class PlaybackQueue {
     let failed = 0;
 
     try {
-      const payload = events.map(e => ({
+      const payload = events.map((e) => ({
         deviceId: e.device_id,
         videoId: e.video_id,
-        eventType: e.event_type === 'play_start' ? 'START' : e.event_type === 'play_confirm' ? 'END' : 'END',
+        eventType:
+          e.event_type === "play_start"
+            ? "START"
+            : e.event_type === "play_confirm"
+              ? "END"
+              : "END",
         lat: e.lat,
         lng: e.lng,
         clientTimestamp: new Date(e.timestamp).toISOString(),
       }));
 
       const response = await fetch(`${env.API_URL}/telemetry/playback-batch`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Device-Id': this.deviceId,
+          "Content-Type": "application/json",
+          "X-Device-Id": this.deviceId,
         },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(15_000),
@@ -109,11 +114,13 @@ export class PlaybackQueue {
         sent = events.length;
       } else {
         failed = events.length;
-        console.warn(`[PlaybackQueue] Batch flush failed: HTTP ${response.status}`);
+        console.warn(
+          `[PlaybackQueue] Batch flush failed: HTTP ${response.status}`,
+        );
       }
     } catch (err) {
       failed = events.length;
-      console.warn('[PlaybackQueue] Network error during flush:', err);
+      console.warn("[PlaybackQueue] Network error during flush:", err);
     }
 
     return { sent, failed };
@@ -121,16 +128,16 @@ export class PlaybackQueue {
 
   private startFlushLoop(): void {
     this.flushTimer = setInterval(() => {
-      this.flushQueue().catch(err => {
-        console.error('[PlaybackQueue] Flush error:', err);
+      this.flushQueue().catch((err) => {
+        console.error("[PlaybackQueue] Flush error:", err);
       });
     }, env.PLAYBACK_FLUSH_INTERVAL_MS);
   }
 
   private async removeEvent(id: string): Promise<void> {
     const db = await this.dbReady;
-    return new Promise(resolve => {
-      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+    return new Promise((resolve) => {
+      const tx = db.transaction(QUEUE_STORE, "readwrite");
       const store = tx.objectStore(QUEUE_STORE);
       const req = store.delete(id);
       req.onsuccess = () => resolve();
@@ -144,7 +151,7 @@ export class PlaybackQueue {
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(QUEUE_STORE)) {
-          db.createObjectStore(QUEUE_STORE, { keyPath: 'id' });
+          db.createObjectStore(QUEUE_STORE, { keyPath: "id" });
         }
       };
       request.onsuccess = () => resolve(request.result);

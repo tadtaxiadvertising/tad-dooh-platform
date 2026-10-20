@@ -15,7 +15,10 @@ export default function Document() {
       <Head>
         {/* ── Identidad de la App ── */}
         <meta name="application-name" content="TAD Driver" />
-        <meta name="description" content="Panel de control para conductores TAD DOOH. Telemetría GPS y monitoreo de ganancias en República Dominicana." />
+        <meta
+          name="description"
+          content="Panel de control para conductores TAD DOOH. Telemetría GPS y monitoreo de ganancias en República Dominicana."
+        />
 
         {/* ── PWA Android / Chrome ── */}
         <link rel="manifest" href="/manifest.json" />
@@ -24,7 +27,10 @@ export default function Document() {
 
         {/* ── PWA iOS / Safari ── */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="TAD Driver" />
         {/* Apple no lee el manifest.json — necesita estas etiquetas propias */}
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
@@ -37,7 +43,10 @@ export default function Document() {
         {process.env.NEXT_PUBLIC_UMAMI_ID && (
           <script
             async
-            src={process.env.NEXT_PUBLIC_UMAMI_URL || "https://cloud.umami.is/script.js"}
+            src={
+              process.env.NEXT_PUBLIC_UMAMI_URL ||
+              "https://cloud.umami.is/script.js"
+            }
             data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
           />
         )}

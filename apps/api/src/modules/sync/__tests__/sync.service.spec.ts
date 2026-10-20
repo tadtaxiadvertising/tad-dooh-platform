@@ -54,9 +54,9 @@ describe("SyncService", () => {
         service.getDeviceManifest("UNKNOWN-TAD-DEVICE"),
       ).rejects.toThrow(HttpException);
 
-      const err = await service.getDeviceManifest("UNKNOWN-TAD-DEVICE").catch(
-        (e) => e,
-      );
+      const err = await service
+        .getDeviceManifest("UNKNOWN-TAD-DEVICE")
+        .catch((e) => e);
       expect(err?.getStatus()).toBe(404);
       expect(mockNotifications.createAlert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -74,9 +74,9 @@ describe("SyncService", () => {
         driver: { id: "driver-1", fullName: "Test Driver" },
       });
 
-      await expect(
-        service.getDeviceManifest("TAD-001"),
-      ).rejects.toThrow(HttpException);
+      await expect(service.getDeviceManifest("TAD-001")).rejects.toThrow(
+        HttpException,
+      );
 
       const err = await service.getDeviceManifest("TAD-001").catch((e) => e);
       expect(err?.getStatus()).toBe(403);

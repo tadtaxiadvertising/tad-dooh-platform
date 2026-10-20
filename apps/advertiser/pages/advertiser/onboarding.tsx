@@ -1,29 +1,34 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import clsx from 'clsx';
-import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
-import BenefitsStep from '@/components/onboarding/BenefitsStep';
-import SimulatorStep, { SimulatorConfig } from '@/components/onboarding/SimulatorStep';
+import React, { useEffect, useState } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import clsx from "clsx";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import BenefitsStep from "@/components/onboarding/BenefitsStep";
+import SimulatorStep, {
+  SimulatorConfig,
+} from "@/components/onboarding/SimulatorStep";
 import CommitmentStep, {
   CommitmentAgreements,
   CommitmentForm,
-} from '@/components/onboarding/CommitmentStep';
-import SuccessStep from '@/components/onboarding/SuccessStep';
-import { estimateCampaign } from '../../components/advertiser/simulatorPricing';
-import { captureReferralCode, clearReferralCode } from '../../components/advertiser/referral';
+} from "@/components/onboarding/CommitmentStep";
+import SuccessStep from "@/components/onboarding/SuccessStep";
+import { estimateCampaign } from "../../components/advertiser/simulatorPricing";
+import {
+  captureReferralCode,
+  clearReferralCode,
+} from "../../components/advertiser/referral";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 
 const EMPTY_FORM: CommitmentForm = {
-  rnc: '',
-  repName: '',
-  companyName: '',
-  email: '',
-  phone: '',
-  password: '',
+  rnc: "",
+  repName: "",
+  companyName: "",
+  email: "",
+  phone: "",
+  password: "",
 };
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
@@ -47,7 +52,7 @@ export default function AdvertiserOnboarding() {
     data_processing: false,
   });
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [campaignData, setCampaignData] = useState<{
     companyName: string;
@@ -66,25 +71,30 @@ export default function AdvertiserOnboarding() {
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
   const prevStep = () => {
-    setError('');
+    setError("");
     setStep((s) => Math.max(s - 1, 1) as OnboardingStep);
   };
-  const goToLogin = () => router.push('/advertiser/login');
+  const goToLogin = () => router.push("/advertiser/login");
 
   const handleOnboardingComplete = async () => {
     try {
-      const advertiserId = localStorage.getItem('tad_adv_pending_onboarding_id');
+      const advertiserId = localStorage.getItem(
+        "tad_adv_pending_onboarding_id",
+      );
       if (advertiserId) {
-        await fetch('/api/proxy/onboarding/advertiser/' + advertiserId + '/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        localStorage.removeItem('tad_adv_pending_onboarding_id');
+        await fetch(
+          "/api/proxy/onboarding/advertiser/" + advertiserId + "/complete",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+        localStorage.removeItem("tad_adv_pending_onboarding_id");
       }
     } catch {
       // Silencioso — no bloquear el flujo si falla
     }
-    router.push('/advertiser/login');
+    router.push("/advertiser/login");
   };
 
   const validateCommitment = (): string => {
@@ -96,18 +106,23 @@ export default function AdvertiserOnboarding() {
       !form.phone.trim() ||
       !form.password
     ) {
-      return 'Todos los campos son obligatorios';
+      return "Todos los campos son obligatorios";
     }
     if (!EMAIL_RE.test(form.email.trim())) {
-      return 'Ingresa un correo corporativo válido';
+      return "Ingresa un correo corporativo válido";
     }
     if (form.password.length < 6) {
-      return 'La contraseña debe tener al menos 6 caracteres';
+      return "La contraseña debe tener al menos 6 caracteres";
     }
-    if (!agreements.representative || !agreements.terms || !agreements.content_policy || !agreements.data_processing) {
-      return 'Debes confirmar todas las casillas para continuar';
+    if (
+      !agreements.representative ||
+      !agreements.terms ||
+      !agreements.content_policy ||
+      !agreements.data_processing
+    ) {
+      return "Debes confirmar todas las casillas para continuar";
     }
-    return '';
+    return "";
   };
 
   const handleSubmit = async () => {
@@ -118,11 +133,11 @@ export default function AdvertiserOnboarding() {
     }
 
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const res = await fetch('/api/proxy/onboarding/advertiser', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/proxy/onboarding/advertiser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.repName.trim(),
           companyName: form.companyName.trim(),
@@ -132,7 +147,7 @@ export default function AdvertiserOnboarding() {
           password: form.password,
           budget: estimate.total,
           expectedScreens: simulator.screens,
-          targetCity: 'Santo Domingo',
+          targetCity: "Santo Domingo",
           campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
           includeProduction: simulator.includeProduction,
@@ -140,10 +155,14 @@ export default function AdvertiserOnboarding() {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      const serverMessage = Array.isArray(data?.message) ? data.message[0] : data?.message;
+      const serverMessage = Array.isArray(data?.message)
+        ? data.message[0]
+        : data?.message;
 
       if (!res.ok) {
-        throw new Error(serverMessage || 'No pudimos registrar tu campaña. Intenta de nuevo.');
+        throw new Error(
+          serverMessage || "No pudimos registrar tu campaña. Intenta de nuevo.",
+        );
       }
 
       clearReferralCode();
@@ -155,10 +174,12 @@ export default function AdvertiserOnboarding() {
         impressions: estimate.impressions,
       });
       // NUEVO: Guardar advertiserId para completar onboarding después
-      localStorage.setItem('tad_adv_pending_onboarding_id', data.advertiserId);
+      localStorage.setItem("tad_adv_pending_onboarding_id", data.advertiserId);
       setTimeout(() => setStep(4), 600);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
+      setError(
+        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
+      );
     } finally {
       setLoading(false);
     }
@@ -174,7 +195,9 @@ export default function AdvertiserOnboarding() {
         return (
           <SimulatorStep
             config={simulator}
-            onChange={(patch) => setSimulator((prev) => ({ ...prev, ...patch }))}
+            onChange={(patch) =>
+              setSimulator((prev) => ({ ...prev, ...patch }))
+            }
             onNext={nextStep}
             onPrev={prevStep}
           />
@@ -185,7 +208,9 @@ export default function AdvertiserOnboarding() {
             form={form}
             onFormChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
             agreements={agreements}
-            onAgreementsChange={(patch) => setAgreements((prev) => ({ ...prev, ...patch }))}
+            onAgreementsChange={(patch) =>
+              setAgreements((prev) => ({ ...prev, ...patch }))
+            }
             campaignSummary={{
               screens: simulator.screens,
               months: simulator.months,
@@ -198,7 +223,12 @@ export default function AdvertiserOnboarding() {
           />
         );
       case 4:
-        return <SuccessStep onContinue={handleOnboardingComplete} campaignData={campaignData || undefined} />;
+        return (
+          <SuccessStep
+            onContinue={handleOnboardingComplete}
+            campaignData={campaignData || undefined}
+          />
+        );
       default:
         return null;
     }
@@ -226,7 +256,7 @@ export default function AdvertiserOnboarding() {
         onNext={nextStep}
         onPrev={prevStep}
         onClose={goToLogin}
-        stepLabels={['Beneficios', 'Simulador', 'Compromiso', 'Éxito']}
+        stepLabels={["Beneficios", "Simulador", "Compromiso", "Éxito"]}
       >
         {renderStepContent()}
       </OnboardingWizard>

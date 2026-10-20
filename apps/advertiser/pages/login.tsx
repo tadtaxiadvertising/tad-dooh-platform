@@ -6,4 +6,4 @@
  * permanente 308 histórico /advertiser/login → /login cacheado en algunos
  * navegadores; un redirect aquí provocaría un bucle infinito.
  */
-export { default } from './advertiser/login';
+export { default } from "./advertiser/login";

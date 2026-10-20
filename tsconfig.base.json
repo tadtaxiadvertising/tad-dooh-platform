@@ -11,9 +11,6 @@
     "skipLibCheck": true,
     "jsx": "react",
     "types": ["react"],
-    "include": [
-      "./types/*.d.ts"
-    ],
     "paths": {
       "@tad/types": ["./packages/types/index.ts"],
       "@tad/types/*": ["./packages/types/*"],
@@ -28,5 +25,8 @@
       "@tad/impact-calculator": ["./packages/impact-calculator/index.ts"],
       "@tad/impact-calculator/*": ["./packages/impact-calculator/*"]
     }
-  }
+  },
+  "include": [
+    "./types/*.d.ts"
+  ]
 }

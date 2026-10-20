@@ -19,7 +19,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "src",
-    "types": ["node", "jest"],
+    "types": ["node", "jest", "react"],
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {

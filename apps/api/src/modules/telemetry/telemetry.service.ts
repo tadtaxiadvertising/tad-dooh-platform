@@ -41,9 +41,7 @@ export class TelemetryService {
   private async pruneExpiredWindows() {
     const windowMs = 60_000; // Prune windows older than 1 minute
     const cutoff = new Date(Date.now() - windowMs);
-    await this.prisma.$executeRawUnsafe(
-      `DELETE FROM rate_limit_windows WHERE window_start < ${cutoff.toISOString()}`,
-    );
+    await this.prisma.$executeRaw`DELETE FROM rate_limit_windows WHERE window_start < ${cutoff}`;
   }
 
   async checkPlaybackRateLimit(
@@ -56,13 +54,11 @@ export class TelemetryService {
     windowStart.setMilliseconds(0);
     windowStart.setSeconds(0);
 
-    const windowStartStr = windowStart.toISOString();
-
-    // Check existing count for this device in this window
-    const existing = await this.prisma.$executeRawUnsafe(
-      `SELECT count FROM rate_limit_windows
-       WHERE device_id = ${deviceId} AND window_start = ${windowStartStr}`,
-    );
+    // Check existing count for this device in this window (parameterized query)
+    const existing = await this.prisma.$queryRaw<{ count: number }[]>`
+      SELECT count FROM rate_limit_windows
+      WHERE device_id = ${deviceId} AND window_start = ${windowStart}
+    `;
 
     let currentCount = 0;
     if (existing && Array.isArray(existing) && existing.length > 0) {
@@ -75,13 +71,13 @@ export class TelemetryService {
       return false;
     }
 
-    // Increment or insert using atomic upsert
-    await this.prisma.$executeRawUnsafe(
-      `INSERT INTO rate_limit_windows (id, device_id, window_start, count)
-       VALUES (gen_random_uuid(), ${deviceId}, ${windowStartStr}, 1)
-       ON CONFLICT (device_id, window_start)
-       DO UPDATE SET count = rate_limit_windows.count + 1`,
-    );
+    // Increment or insert using atomic upsert (parameterized statement)
+    await this.prisma.$executeRaw`
+      INSERT INTO rate_limit_windows (id, device_id, window_start, count)
+      VALUES (gen_random_uuid(), ${deviceId}, ${windowStart}, 1)
+      ON CONFLICT (device_id, window_start)
+      DO UPDATE SET count = rate_limit_windows.count + 1
+    `;
 
     // Prune expired windows (handled by the DB constraint row TTL in production)
 

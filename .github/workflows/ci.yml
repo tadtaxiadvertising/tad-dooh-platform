@@ -79,7 +79,7 @@ jobs:
       - name: Root-level check
         run: npx tsc --noEmit -p tsconfig.base.json 2>&1 | head -30 || true
 
-  # ── 3. UNIT & INTEGRATION TESTS ──────────────────────────────────────────────
+  # ── 3. UNIT & INTEGRATION TESTS ─────────────────────────────────────────────
   test:
     name: Tests
     runs-on: ubuntu-24.04
@@ -146,7 +146,7 @@ jobs:
             fi
           done
 
-  # ── 5. SECURITY AUDIT ────────────────────────────────────────────────────────
+  # ── 5. SECURITY AUDIT ───────────────────────────────────────────────────────
   security:
     name: Security Audit
     runs-on: ubuntu-24.04
@@ -179,49 +179,36 @@ jobs:
             echo "TruffleHog not installed — skipping secret scan"
           fi
 
-  # ── 6. BUILD ALL IMAGES ──────────────────────────────────────────────────────
+  # ── 6. BUILD IMAGES IN ISOLATED RUNNERS ──────────────────────────────────────
+  # Docker builds do not consume the monorepo's installed node_modules. Each
+  # image gets a fresh runner so earlier image layers cannot exhaust the disk
+  # before the Player build starts.
   build:
-    name: Build Docker Images
+    name: Build Docker Image (${{ matrix.image }})
     runs-on: ubuntu-24.04
     needs: [format, typecheck, test, prisma, security]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: Dockerfile.api
+          - image: admin
+            dockerfile: Dockerfile.admin
+          - image: driver
+            dockerfile: Dockerfile.driver
+          - image: player
+            dockerfile: Dockerfile.player
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build API
+      - name: Inspect runner disk
         run: |
-          if [ -f Dockerfile.api ]; then
-            docker build -f Dockerfile.api -t tad-api:test .
-          fi
+          df -h
+          docker system df
 
-      - name: Build Admin
-        run: |
-          if [ -f Dockerfile.admin ]; then
-            docker build -f Dockerfile.admin -t tad-admin:test .
-          fi
-
-      - name: Build Driver
-        run: |
-          if [ -f Dockerfile.driver ]; then
-            docker build -f Dockerfile.driver -t tad-driver:test .
-          fi
-
-      - name: Build Player
-        run: |
-          if [ -f Dockerfile.player ]; then
-            docker build -f Dockerfile.player -t tad-player:test .
-          fi
+      - name: Build Docker image
+        run: docker build . --file "${{ matrix.dockerfile }}" --tag "tad-${{ matrix.image }}:test"
 
   # ── SUMMARY ──────────────────────────────────────────────────────────────────
   summary:

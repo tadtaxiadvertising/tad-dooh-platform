@@ -2,23 +2,33 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
-
+    name: Build Docker Image (${{ matrix.image }})
     runs-on: ubuntu-24.04
-
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: Dockerfile.api
+          - image: admin
+            dockerfile: Dockerfile.admin
+          - image: driver
+            dockerfile: Dockerfile.driver
+          - image: player
+            dockerfile: Dockerfile.player
     steps:
-    - uses: actions/checkout@v5
-    - name: Build the canonical API Dockerfile
-      run: docker build . --file Dockerfile.api --tag tad-api:test
-    - name: Build the canonical Admin Dockerfile
-      run: docker build . --file Dockerfile.admin --tag tad-admin:test
-    - name: Build the canonical Driver Dockerfile
-      run: docker build . --file Dockerfile.driver --tag tad-driver:test
-    - name: Build the canonical Player Dockerfile
-      run: docker build . --file Dockerfile.player --tag tad-player:test
+      - uses: actions/checkout@v5
+
+      - name: Inspect runner disk
+        run: |
+          df -h
+          docker system df
+
+      - name: Build canonical Docker image
+        run: docker build . --file "${{ matrix.dockerfile }}" --tag "tad-${{ matrix.image }}:test"

@@ -1,11 +1,14 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { CommissionService } from "../commission.service";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
+import {
+  CommissionService,
+  CommissionStatus,
+  CommissionSourceType,
+} from "../commission.service";
 import { PrismaService } from "../../prisma/prisma.service";
-import { CommissionStatus, CommissionSourceType } from "../commission.service";
 
 describe("CommissionService", () => {
   let service: CommissionService;
-  let prisma: PrismaService;
 
   const mockPrisma = {
     commission: {
@@ -18,6 +21,7 @@ describe("CommissionService", () => {
     },
     settlementBatch: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
@@ -41,22 +45,21 @@ describe("CommissionService", () => {
     }).compile();
 
     service = module.get<CommissionService>(CommissionService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
   describe("createIdempotent", () => {
     it("should create commission when reference does not exist", async () => {
-      mockPrisma.commission.findUnique.mockResolvedValue(null);
+      mockPrisma.driver.findUnique.mockResolvedValue({
+        id: "driver-1",
+        fullName: "Driver 1",
+      });
+      mockPrisma.commission.findFirst.mockResolvedValue(null);
       mockPrisma.commission.create.mockResolvedValue({
         id: "commission-1",
         reference: "REF-BONUS-123",
         amount: 500,
         status: CommissionStatus.PENDING,
-      });
-      mockPrisma.driver.findUnique.mockResolvedValue({
-        id: "driver-1",
-        fullName: "Driver 1",
       });
 
       const result = await service.createIdempotent({
@@ -68,6 +71,7 @@ describe("CommissionService", () => {
 
       expect(result).toBeDefined();
       expect(result.commission.reference).toBe("REF-BONUS-123");
+      expect(result.created).toBe(true);
       expect(mockPrisma.commission.create).toHaveBeenCalled();
     });
 
@@ -78,7 +82,7 @@ describe("CommissionService", () => {
         amount: 500,
         status: CommissionStatus.PENDING,
       };
-      mockPrisma.commission.findFirst.mockResolvedValue(existing as any);
+      mockPrisma.commission.findFirst.mockResolvedValue(existing);
 
       const result = await service.createIdempotent({
         driverId: "driver-1",
@@ -88,6 +92,7 @@ describe("CommissionService", () => {
       });
 
       expect(result.commission).toEqual(existing);
+      expect(result.created).toBe(false);
       expect(mockPrisma.commission.create).not.toHaveBeenCalled();
     });
   });
@@ -97,14 +102,23 @@ describe("CommissionService", () => {
       mockPrisma.settlementBatch.findUnique.mockResolvedValue({
         id: "batch-1",
         period: "2026-09",
+        referents: [],
+        grossTotal: 1000,
+        netTotal: 1000,
+        withholdings: 0,
         status: "APPROVED",
+        approvedAt: new Date(),
+        paidAt: null,
+        createdAt: new Date(),
       });
+      mockPrisma.commission.findMany.mockResolvedValue([]);
 
       const result = await service.generateMonthlySettlement({
         month: 9,
         year: 2026,
-        generatedBy: "admin-user",
+        generatedBy: "admin-1",
       });
+
       expect(result.status).toBe("APPROVED");
     });
 
@@ -114,16 +128,22 @@ describe("CommissionService", () => {
       mockPrisma.settlementBatch.create.mockResolvedValue({
         id: "batch-new",
         period: "2026-09",
-        status: "APPROVED",
+        referents: [],
         grossTotal: 0,
         netTotal: 0,
+        withholdings: 0,
+        status: "APPROVED",
+        approvedAt: new Date(),
+        paidAt: null,
+        createdAt: new Date(),
       });
 
       const result = await service.generateMonthlySettlement({
         month: 9,
         year: 2026,
-        generatedBy: "admin-user",
+        generatedBy: "admin-1",
       });
+
       expect(result.grossTotal).toBe(0);
     });
   });

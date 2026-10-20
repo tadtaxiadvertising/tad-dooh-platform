@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^10.46.0",
-    "@supabase/supabase-js": "^2.99.1",
-    "@tad/logging": "*",
     "@tad/services": "0.1.0",
-    "@tad/store": "0.1.0",
     "@tad/ui": "0.1.0",
+    "@tad/store": "0.1.0",
+    "@tad/logging": "*",
+    "@supabase/supabase-js": "^2.99.1",
     "@tailwindcss/postcss": "^4.2.1",
     "@tanstack/react-query": "^5.91.3",
     "@turf/turf": "^7.3.4",
@@ -36,7 +36,7 @@
     "leaflet.heat": "^0.2.0",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.475.0",
-    "next": "15.2.6",
+    "next": "15.5.24",
     "next-themes": "^0.4.6",
     "postcss": "^8.5.8",
     "qrcode.react": "^4.2.0",
@@ -50,8 +50,8 @@
     "swr": "^2.4.1",
     "tailwind-merge": "^3.0.0",
     "tailwindcss": "^4.0.0",
-    "zod": "^3.23.8",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -59,8 +59,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.0",
-    "eslint": "^9.39.5",
-    "eslint-config-next": "15.2.6",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "15.5.24",
     "typescript": "^5.7.0"
   }
 }

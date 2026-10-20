@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, jest } from "@jest/globals";
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { ReferralService } from "./referral.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
@@ -11,25 +11,25 @@ describe("ReferralService", () => {
   beforeEach(async () => {
     prisma = {
       driver: {
-        findUnique: jest.fn<any>(),
-        findMany: jest.fn<any>(),
-        count: jest.fn<any>(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
       },
       commission: {
-        aggregate: jest.fn<any>(),
-        findFirst: jest.fn<any>(),
-        create: jest.fn<any>(),
+        aggregate: jest.fn(),
+        findFirst: jest.fn(),
+        create: jest.fn(),
       },
       financialTransaction: {
-        upsert: jest.fn<any>(),
+        upsert: jest.fn(),
       },
       wallet: {
-        upsert: jest.fn<any>(),
+        upsert: jest.fn(),
       },
       advertiser: {
-        findMany: jest.fn<any>(),
+        findMany: jest.fn(),
       },
-      $transaction: jest.fn<any>((callback: any) => callback(prisma)),
+      $transaction: jest.fn((callback: any) => callback(prisma)),
     };
 
     const module: TestingModule = await Test.createTestingModule({

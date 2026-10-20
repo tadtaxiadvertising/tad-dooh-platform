@@ -1,10 +1,10 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { ConversationService } from "../conversation.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
 describe("ConversationService", () => {
   let service: ConversationService;
-  let prisma: PrismaService;
 
   const mockPrisma = {
     conversation: {
@@ -22,13 +22,6 @@ describe("ConversationService", () => {
   };
 
   beforeEach(async () => {
-    mockPrisma.conversation.findUnique.mockResolvedValue({
-      id: "conv-1",
-      threadId: "thread-123",
-      status: "OPEN",
-      messages: [],
-    });
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConversationService,
@@ -37,7 +30,6 @@ describe("ConversationService", () => {
     }).compile();
 
     service = module.get<ConversationService>(ConversationService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
@@ -46,19 +38,19 @@ describe("ConversationService", () => {
       const existing = {
         id: "conv-1",
         threadId: "thread-123",
+        contactPhone: "+18095551234",
         status: "OPEN",
-        contactPhone: "contact-1",
       };
       mockPrisma.conversation.findUnique.mockResolvedValue(existing);
 
       const result = await service.findOrCreateConversation({
         platform: "WHATSAPP",
         threadId: "thread-123",
-        contactPhone: "contact-1",
+        contactPhone: "+18095551234",
       });
 
-      expect(result).toHaveProperty("conversation");
       expect(result.conversation).toEqual(existing);
+      expect(result.created).toBe(false);
       expect(mockPrisma.conversation.create).not.toHaveBeenCalled();
     });
 
@@ -73,10 +65,10 @@ describe("ConversationService", () => {
       const result = await service.findOrCreateConversation({
         platform: "WHATSAPP",
         threadId: "thread-123",
-        contactPhone: "contact-1",
       });
 
       expect(result.conversation.threadId).toBe("thread-123");
+      expect(result.created).toBe(true);
       expect(mockPrisma.conversation.create).toHaveBeenCalled();
     });
   });
@@ -85,11 +77,8 @@ describe("ConversationService", () => {
     it("should add message to conversation", async () => {
       mockPrisma.conversation.findUnique.mockResolvedValue({
         id: "conv-1",
-        threadId: "thread-123",
         status: "OPEN",
-        messages: [],
       });
-
       mockPrisma.conversationMessage.create.mockResolvedValue({
         id: "msg-1",
         conversationId: "conv-1",

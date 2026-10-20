@@ -107,6 +107,36 @@ Restart Policy: unless-stopped
 
 ---
 
+### 2.3 Custom domains and HTTPS (mandatory production gate)
+
+DNS pointing to the VPS is **not sufficient**: each hostname must also be attached to its correct EasyPanel service so Traefik can route requests and issue a trusted TLS certificate.
+
+| Hostname | EasyPanel service | Internal port | Required check |
+| --- | --- | ---: | --- |
+| `tad.api.ibusiness.com.do` | `tad-api` | 3000 | `/api/health` returns HTTP 200 |
+| `tad.adm.ibusiness.com.do` | `tad-admin` | 3000 | Portal root redirects to login and ends in HTTP 200 |
+| `tad.driver.ibusiness.com.do` | `tad-driver` | 3000 | Portal root returns HTTP 200 |
+| `tad.drive.ibusiness.com.do` (alias) | `tad-driver` | 3000 | Same driver service; add as a second domain |
+| `tad.player.ibusiness.com.do` | `tad-player` | 80 | `/health` returns HTTP 200 |
+| `tad.anunciante.ibusiness.com.do` | `tad-advertiser` | 3000 | Portal root returns HTTP 200 |
+
+**Procedure**
+
+1. In the DNS provider, create/verify each host's A record pointing to the public IP shown by EasyPanel. For the optional `tad.drive` alias, use an A record to that same IP or a CNAME to `tad.driver.ibusiness.com.do` (only if no conflicting A/AAAA record exists).
+2. In EasyPanel, open the named service → **Domains** → add the exact hostname, path `/`, and internal port from the table. Enable HTTPS/automatic certificate provisioning.
+3. For `tad.drive`, attach the alias to the existing `tad-driver` service; a CORS allow-list entry alone does not create DNS or routing.
+4. Wait for certificate issuance and verify each domain with strict TLS validation. Do not use `curl -k` as a health check and do not disable certificate validation in browsers or clients.
+5. Redeploy only if the service configuration/build requires it; adding a domain should update the reverse-proxy route. Confirm the service is running and listening on the expected port before diagnosing the application.
+
+**Diagnostic signatures**
+
+- Certificate subject/issuer `CN=Easypanel` (self-signed): the custom host is receiving EasyPanel's default certificate, not a valid certificate for that hostname.
+- HTTP 404 when inspecting that endpoint with certificate validation bypassed: likely no matching domain router/service mapping; verify the host is attached to the correct service and port.
+- DNS resolution failure: add/fix the record at the DNS provider before retrying certificate issuance.
+- A trusted certificate and HTTP 200 prove only TLS/routing/HTTP reachability. Also test API health, CORS preflight, authentication and player-to-API communication.
+
+Use the official [EasyPanel custom service domain guide](https://easypanel.io/docs/guides/custom-service-domain) for DNS and domain assignment details.
+
 ## 3. DEPLOYMENT PROCEDURES
 
 ### 3.1 Deploy Routine (Standard)

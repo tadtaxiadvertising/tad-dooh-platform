@@ -73,7 +73,7 @@ import { HealthController } from "./health/health.controller";
           CORS_ORIGIN: zod
             .string()
             .default(
-              "https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.remotion.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do",
+              "https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do",
             ),
           UMAMI_API_TOKEN: zod.string().optional(),
           CDN_URL_PREFIX: zod.string().url().optional(),

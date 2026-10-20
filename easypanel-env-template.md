@@ -32,13 +32,17 @@ SUPABASE_JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>
 # JWT (hereda de SUPABASE_JWT_SECRET si no se define)
 JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>
 
+# Solo para bootstrap de usuarios nuevos; no cambia contraseñas existentes.
+# Configurar temporalmente si se usa /auth/bootstrap/sync-users y retirar después.
+AUTH_BOOTSTRAP_PASSWORD=
+
 # Servidor
 PORT=3000
 NODE_ENV=production
 NODE_OPTIONS="--max-old-space-size=512 --expose-gc"
 
 # CORS — NUEVOS DOMINIOS PRODUCCIÓN (ibusiness.com.do)
-CORS_ORIGIN=https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.remotion.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do
+CORS_ORIGIN=https://tad.adm.ibusiness.com.do,https://tad.anunciante.ibusiness.com.do,https://tad.driver.ibusiness.com.do,https://tad.drive.ibusiness.com.do,https://tad.player.ibusiness.com.do,https://tad.remotion.ibusiness.com.do,https://tad.simulator.ibusiness.com.do,https://tad.api.ibusiness.com.do
 
 # CDN / Storage
 CDN_URL_PREFIX=https://media.tad.do
@@ -117,7 +121,9 @@ NEXT_PUBLIC_SENTRY_DSN=
 # =============================================================================
 # EasyPanel Service Name: tad-driver
 # Dockerfile: Dockerfile.driver
-# Dominio: https://tad.driver.ibusiness.com.do
+# Dominio canónico: https://tad.driver.ibusiness.com.do
+# Alias opcional solicitado: https://tad.drive.ibusiness.com.do
+# Si se usa el alias, asígnalo también al servicio tad-driver en EasyPanel (puerto interno 3000).
 
 # API Gateway (público - para navegador)
 NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
@@ -263,6 +269,7 @@ NODE_ENV=production
 # curl -s https://tad.adm.ibusiness.com.do/ | head -5
 # curl -s https://tad.anunciante.ibusiness.com.do/ | head -5
 # curl -s https://tad.driver.ibusiness.com.do/ | head -5
+# curl -s https://tad.drive.ibusiness.com.do/ | head -5  # alias opcional
 # curl -s https://tad.player.ibusiness.com.do/health | jq .
 # curl -s https://tad.remotion.ibusiness.com.do/health | jq .
 #
@@ -280,6 +287,7 @@ NODE_ENV=production
 # A       tad.adm                   <IP_VPS_EASYPANEL>                Sí
 # A       tad.anunciante            <IP_VPS_EASYPANEL>                Sí
 # A       tad.driver                <IP_VPS_EASYPANEL>                Sí
+# A       tad.drive                 <IP_VPS_EASYPANEL>                Sí (alias opcional del portal Driver)
 # A       tad.player                <IP_VPS_EASYPANEL>                Sí
 # A       tad.remotion              <IP_VPS_EASYPANEL>                Sí
 # A       tad.simulator             <IP_VPS_EASYPANEL>                Sí

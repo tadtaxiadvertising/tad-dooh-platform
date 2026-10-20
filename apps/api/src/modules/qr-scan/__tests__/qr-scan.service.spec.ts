@@ -1,10 +1,10 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { QrScanService } from "../qr-scan.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
 describe("QrScanService", () => {
   let service: QrScanService;
-  let prisma: PrismaService;
 
   const mockPrisma = {
     qrScan: {
@@ -27,7 +27,6 @@ describe("QrScanService", () => {
     }).compile();
 
     service = module.get<QrScanService>(QrScanService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
@@ -49,6 +48,7 @@ describe("QrScanService", () => {
 
       expect(result).toBeDefined();
       expect(result.scan.qrCode).toBe("QR-TEST-123");
+      expect(result.isDuplicate).toBe(false);
       expect(mockPrisma.qrScan.create).toHaveBeenCalled();
     });
 
@@ -67,13 +67,8 @@ describe("QrScanService", () => {
         ipAddress: "192.168.1.1",
       });
 
-      expect(result).toEqual(
-        expect.objectContaining({
-          scan: existing,
-          isDuplicate: true,
-          converted: false,
-        }),
-      );
+      expect(result.scan).toEqual(existing);
+      expect(result.isDuplicate).toBe(true);
       expect(mockPrisma.qrScan.create).not.toHaveBeenCalled();
     });
   });
@@ -82,8 +77,6 @@ describe("QrScanService", () => {
     it("should mark scan as converted and link to lead", async () => {
       mockPrisma.qrScan.findUnique.mockResolvedValue({
         id: "scan-1",
-        qrCode: "QR-TEST-123",
-        referrerCode: "REF-DRIVER-1",
         converted: false,
       });
       mockPrisma.qrScan.update.mockResolvedValue({

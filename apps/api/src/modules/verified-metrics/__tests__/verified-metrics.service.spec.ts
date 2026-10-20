@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { VerifiedMetricsService } from "../verified-metrics.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
@@ -164,7 +165,7 @@ describe("VerifiedMetricsService", () => {
         {
           devices: [
             {
-              device_id: "device-1",
+              deviceId: "device-1",
               device: {
                 id: "device-1",
                 taxiNumber: "T-001",
@@ -172,7 +173,7 @@ describe("VerifiedMetricsService", () => {
               },
             },
             {
-              device_id: "device-2",
+              deviceId: "device-2",
               device: {
                 id: "device-2",
                 taxiNumber: "T-002",

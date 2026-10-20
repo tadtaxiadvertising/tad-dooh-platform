@@ -509,7 +509,7 @@ export class AuthService {
       throw new Error("Supabase service client not available");
     }
 
-    const DEFAULT_PASSWORD = "TadAdmin2026!";
+    const bootstrapPassword = process.env.AUTH_BOOTSTRAP_PASSWORD;
     const errors: string[] = [];
     let synced = 0;
 
@@ -526,45 +526,63 @@ export class AuthService {
       `🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`,
     );
 
-    // Helper to upsert a user in Supabase Auth
+    // Helper to upsert a user in Supabase Auth without resetting existing passwords.
     const upsertUser = async (
       email: string,
-      password: string,
+      password: string | undefined,
       appMeta: Record<string, any>,
     ) => {
       try {
-        // Try signup (idempotent: if user exists, Supabase returns 400 with "User already registered")
-        const { data, error } = await serviceClient.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          app_metadata: appMeta,
-        });
-
-        if (error) {
-          if (
-            error.message?.includes("already registered") ||
-            error.status === 400
-          ) {
-            // User exists — just update app_metadata
-            const { data: users } = await serviceClient.auth.admin.listUsers();
-            const existing = users?.users?.find((u: any) => u.email === email);
-            if (existing) {
-              await serviceClient.auth.admin.updateUserById(existing.id, {
-                app_metadata: appMeta,
-                password,
-              });
-              this.logger.debug(`✅ Updated existing auth user: ${email}`);
-              synced++;
-            }
-          } else {
-            errors.push(`${email}: ${error.message}`);
-            this.logger.warn(`⚠️ Failed to sync ${email}: ${error.message}`);
-          }
-        } else {
-          this.logger.debug(`✅ Created auth user: ${email}`);
-          synced++;
+        const { data: listedUsers, error: listError } =
+          await serviceClient.auth.admin.listUsers();
+        if (listError) {
+          throw new Error(`Failed to list Auth users: ${listError.message}`);
         }
+        const existing = listedUsers?.users?.find(
+          (u: any) => u.email === email,
+        );
+        if (existing) {
+          const { error: updateError } =
+            await serviceClient.auth.admin.updateUserById(existing.id, {
+              email_confirm: true,
+              app_metadata: appMeta,
+            });
+          if (updateError) {
+            throw new Error(
+              `Failed to update Auth metadata: ${updateError.message}`,
+            );
+          }
+          this.logger.debug(`✅ Updated existing auth user: ${email}`);
+          synced++;
+          return;
+        }
+
+        if (!password) {
+          errors.push(
+            `${email}: missing AUTH_BOOTSTRAP_PASSWORD for new Auth user`,
+          );
+          this.logger.warn(
+            `⚠️ Cannot create Auth user ${email}: AUTH_BOOTSTRAP_PASSWORD is not configured`,
+          );
+          return;
+        }
+
+        const { error: createError } =
+          await serviceClient.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            app_metadata: appMeta,
+          });
+        if (createError) {
+          errors.push(`${email}: ${createError.message}`);
+          this.logger.warn(
+            `⚠️ Failed to create Auth user ${email}: ${createError.message}`,
+          );
+          return;
+        }
+        this.logger.debug(`✅ Created auth user: ${email}`);
+        synced++;
       } catch (e: any) {
         errors.push(`${email}: ${e.message}`);
         this.logger.warn(`⚠️ Exception syncing ${email}: ${e.message}`);
@@ -574,7 +592,7 @@ export class AuthService {
     // 2. Sync admins
     for (const admin of admins) {
       if (!admin.email) continue;
-      await upsertUser(admin.email, DEFAULT_PASSWORD, {
+      await upsertUser(admin.email, bootstrapPassword, {
         role: admin.role || "ADMIN",
         entityId: admin.id,
       });
@@ -583,7 +601,7 @@ export class AuthService {
     // 3. Sync advertisers
     for (const adv of advertisers) {
       if (!adv.email) continue;
-      await upsertUser(adv.email, DEFAULT_PASSWORD, {
+      await upsertUser(adv.email, bootstrapPassword, {
         role: "ADVERTISER",
         entityId: adv.id,
       });
@@ -592,7 +610,7 @@ export class AuthService {
     // 4. Sync drivers (use phone@tad.driver as email proxy)
     for (const driver of drivers) {
       const driverEmail = `${driver.phone}@tad.driver`;
-      await upsertUser(driverEmail, DEFAULT_PASSWORD, {
+      await upsertUser(driverEmail, bootstrapPassword, {
         role: "DRIVER",
         entityId: driver.id,
       });
@@ -630,11 +648,10 @@ export class AuthService {
       throw new NotFoundException(`User ${email} not found in Supabase Auth`);
     }
 
-    // Confirm the user and set password
+    // Confirm the user without resetting or changing their password
     const { error: updateError } =
       await serviceClient.auth.admin.updateUserById(user.id, {
         email_confirm: true,
-        password: "TadAdmin2026!",
         app_metadata: { role: "ADMIN", entityId: user.id },
       });
 

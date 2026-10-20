@@ -7,6 +7,7 @@ import {
   Query,
   Res,
   HttpStatus,
+  Logger,
   UseGuards,
   Req,
   UseInterceptors,
@@ -48,6 +49,8 @@ const mediaSafeSelect = {
 @Controller("finance")
 @Roles(UserRole.ADMIN)
 export class FinanceController {
+  private readonly logger = new Logger(FinanceController.name);
+
   constructor(
     private readonly financeService: FinanceService,
     private readonly invoiceService: InvoiceService,
@@ -584,8 +587,12 @@ export class FinanceController {
         await this.advertiserBillingService.billSubscriptionNow(subscriptionId);
       return result;
     } catch (err) {
+      this.logger.error(
+        `Error al facturar suscripción ${subscriptionId}`,
+        (err as Error)?.stack || err,
+      );
       throw new InternalServerErrorException(
-        `Error al facturar suscripción ${subscriptionId}: ${err.message}`,
+        `Error al facturar suscripción ${subscriptionId}`,
       );
     }
   }
@@ -613,9 +620,8 @@ export class FinanceController {
     try {
       return await this.advertiserBillingService.generateProformaInvoice(body);
     } catch (err) {
-      throw new InternalServerErrorException(
-        `Error al generar proforma: ${err.message}`,
-      );
+      this.logger.error("Error al generar proforma", (err as Error)?.stack || err);
+      throw new InternalServerErrorException("Error al generar proforma");
     }
   }
 
@@ -631,8 +637,12 @@ export class FinanceController {
         invoiceId,
       );
     } catch (err) {
+      this.logger.error(
+        `Error al confirmar proforma ${invoiceId}`,
+        (err as Error)?.stack || err,
+      );
       throw new InternalServerErrorException(
-        `Error al confirmar proforma ${invoiceId}: ${err.message}`,
+        `Error al confirmar proforma ${invoiceId}`,
       );
     }
   }

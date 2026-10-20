@@ -124,7 +124,7 @@ export function AuthCallback({ config: externalConfig }: AuthCallbackProps) {
  * This prevents an OAuth callback URL from becoming an open redirect.
  */
 function safeInternalRedirect(candidate: string | null, fallback: string): string {
-  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\\\')) {
+  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
     return fallback;
   }
 

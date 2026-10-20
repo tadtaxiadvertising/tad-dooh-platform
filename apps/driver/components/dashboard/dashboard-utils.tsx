@@ -3,7 +3,7 @@
  * Dashboard utilities — extracted from pages/driver/dashboard.tsx
  * so they can be shared between the page and the DriverShell component.
  */
-import React from 'react';
+import React from "react";
 
 /** Indicador de punto pulsante */
 export function PulseDot({ color }: { color: string }) {

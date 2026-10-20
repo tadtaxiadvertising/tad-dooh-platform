@@ -9,6 +9,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "skipLibCheck": true,
+    "jsx": "react",
+    "types": ["react"],
+    "include": [
+      "./types/*.d.ts"
+    ],
     "paths": {
       "@tad/types": ["./packages/types/index.ts"],
       "@tad/types/*": ["./packages/types/*"],

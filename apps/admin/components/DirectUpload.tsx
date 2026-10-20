@@ -16,13 +16,7 @@ export function DirectUpload({
   className = "",
 }: DirectUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const {
-    upload,
-    isUploading,
-    progress,
-    error,
-    reset,
-  } = useDirectUpload({
+  const { upload, isUploading, progress, error, reset } = useDirectUpload({
     onSuccess: (result) => {
       onSuccess?.(result.url, result.filename);
       reset();
@@ -80,7 +74,8 @@ export function DirectUpload({
               />
             </div>
             <p className="text-[8px] text-zinc-600 uppercase tracking-widest mt-1 text-center">
-              {progress.percentage}% • {formatBytes(progress.loaded)} / {formatBytes(progress.total)}
+              {progress.percentage}% • {formatBytes(progress.loaded)} /{" "}
+              {formatBytes(progress.total)}
             </p>
           </div>
         </>

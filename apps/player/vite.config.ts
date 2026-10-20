@@ -1,24 +1,24 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: 'src',
-  base: '/',
+  root: "src",
+  base: "/",
   build: {
-    outDir: '../dist',
+    outDir: "../dist",
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: 'src/index.html',
-        sw: 'src/sw.ts',
+        main: "src/index.html",
+        sw: "src/sw.ts",
       },
       output: {
         entryFileNames: (chunkInfo) => {
           // Service Worker must be at root level as sw.js for navigator.serviceWorker.register()
-          if (chunkInfo.name === 'sw') return 'sw.js';
-          return 'assets/[name]-[hash].js';
+          if (chunkInfo.name === "sw") return "sw.js";
+          return "assets/[name]-[hash].js";
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
   },

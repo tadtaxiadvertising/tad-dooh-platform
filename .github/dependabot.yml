@@ -16,7 +16,7 @@ updates:
       time: "09:00"
       timezone: "UTC"
     open-pull-requests-limit: 10
-    draft: false
+
     reviewers:
       - "tad-team"
     assignees:
@@ -46,7 +46,7 @@ updates:
       time: "10:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
-    draft: false
+
     reviewers:
       - "tad-team"
     commit-message:
@@ -66,9 +66,8 @@ updates:
       interval: "weekly"
       day: "friday"
       time: "11:00"
-      timezone: "UTC"
     open-pull-requests-limit: 5
-    draft: false
+
     reviewers:
       - "tad-team"
     commit-message:

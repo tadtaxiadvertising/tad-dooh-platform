@@ -5,7 +5,7 @@ import {
   getCalibrationBadge,
   getPrimarySource,
   ImpactOutput,
-} from '@tad/impact-calculator';
+} from "@tad/impact-calculator";
 
 /**
  * Legacy interface — mantener compatibilidad con planner.tsx
@@ -27,9 +27,9 @@ export interface SimulationResultDetailed extends SimulationResult {
   cpmRange: { min: number; expected: number; max: number };
   warnings: string[];
   sourceLabel: string;
-  sourceTier: 'A' | 'B' | 'C' | 'D';
+  sourceTier: "A" | "B" | "C" | "D";
   calibrationLabel: string;
-  calibrationColor: 'red' | 'amber' | 'green';
+  calibrationColor: "red" | "amber" | "green";
   calibrationDescription: string;
 }
 
@@ -38,9 +38,9 @@ export interface SimulationResultDetailed extends SimulationResult {
  * (basado en densidad de flota real estimada por ciudad)
  */
 const CITY_SCREEN_FACTORS: Record<string, number> = {
-  'Santo Domingo': 1.0,
-  'Santiago': 0.65,
-  'Punta Cana': 0.35,
+  "Santo Domingo": 1.0,
+  Santiago: 0.65,
+  "Punta Cana": 0.35,
   Global: 0.8,
 };
 
@@ -51,14 +51,14 @@ const CITY_SCREEN_FACTORS: Record<string, number> = {
 export function simulateImpact(
   budget: number,
   city: string,
-  screenCount: number
+  screenCount: number,
 ): SimulationResult {
   const cityFactor = CITY_SCREEN_FACTORS[city] ?? 0.8;
   const baseCostPerScreen = 2500; // Alineado con nuevo tarifario
 
   const recommendedScreens = Math.min(
     Math.max(Math.floor(budget / baseCostPerScreen), 1),
-    Math.floor(screenCount * cityFactor)
+    Math.floor(screenCount * cityFactor),
   );
 
   const months = 1; // planner asume 1 mes
@@ -67,15 +67,18 @@ export function simulateImpact(
     months,
     frequencySeconds: 30,
     includeProduction: false,
-    mode: 'expected',
+    mode: "expected",
   });
 
   return {
     estimatedImpacts: detailed.totalImpressions.expected,
     recommendedScreens,
-    costPerImpact: detailed.totalImpressions.expected > 0
-      ? Math.round((detailed.totalCost / detailed.totalImpressions.expected) * 100) / 100
-      : 0,
+    costPerImpact:
+      detailed.totalImpressions.expected > 0
+        ? Math.round(
+            (detailed.totalCost / detailed.totalImpressions.expected) * 100,
+          ) / 100
+        : 0,
     estimatedCPM: detailed.cpm.expected,
   };
 }
@@ -86,14 +89,14 @@ export function simulateImpact(
 export function simulateImpactDetailed(
   budget: number,
   city: string,
-  screenCount: number
+  screenCount: number,
 ): SimulationResultDetailed {
   const cityFactor = CITY_SCREEN_FACTORS[city] ?? 0.8;
   const baseCostPerScreen = 2500;
 
   const recommendedScreens = Math.min(
     Math.max(Math.floor(budget / baseCostPerScreen), 1),
-    Math.floor(screenCount * cityFactor)
+    Math.floor(screenCount * cityFactor),
   );
 
   const months = 1;
@@ -102,7 +105,7 @@ export function simulateImpactDetailed(
     months,
     frequencySeconds: 30,
     includeProduction: false,
-    mode: 'expected',
+    mode: "expected",
   });
 
   const badge = getCalibrationBadge();
@@ -111,9 +114,12 @@ export function simulateImpactDetailed(
   return {
     estimatedImpacts: detailed.totalImpressions.expected,
     recommendedScreens,
-    costPerImpact: detailed.totalImpressions.expected > 0
-      ? Math.round((detailed.totalCost / detailed.totalImpressions.expected) * 100) / 100
-      : 0,
+    costPerImpact:
+      detailed.totalImpressions.expected > 0
+        ? Math.round(
+            (detailed.totalCost / detailed.totalImpressions.expected) * 100,
+          ) / 100
+        : 0,
     estimatedCPM: detailed.cpm.expected,
     estimatedImpactsRange: detailed.totalImpressions,
     uniqueReach: detailed.totalUniqueReach,
@@ -133,7 +139,7 @@ export function simulateImpactDetailed(
  */
 export function getUncertaintyBadge(): {
   label: string;
-  color: 'red' | 'amber' | 'green';
+  color: "red" | "amber" | "green";
   description: string;
 } {
   return getCalibrationBadge();
@@ -142,6 +148,10 @@ export function getUncertaintyBadge(): {
 /**
  * Helper para UI: fuentes primarias
  */
-export function getSources(): { label: string; tier: 'A' | 'B' | 'C' | 'D'; url?: string } {
+export function getSources(): {
+  label: string;
+  tier: "A" | "B" | "C" | "D";
+  url?: string;
+} {
   return getPrimarySource();
 }

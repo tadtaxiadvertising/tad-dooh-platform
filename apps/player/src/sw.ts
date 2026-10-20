@@ -6,9 +6,9 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'tad-player-v1';
-const VIDEO_CACHE = 'tad-player-videos-v1';
-const SHELL_CACHE = 'tad-player-shell-v1';
+const CACHE_NAME = "tad-player-v1";
+const VIDEO_CACHE = "tad-player-videos-v1";
+const SHELL_CACHE = "tad-player-shell-v1";
 
 // Límite de pieza publicitaria (55MB) — espejo de BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES.
 const MAX_VIDEO_SIZE_BYTES = 57_671_680;
@@ -22,37 +22,43 @@ const MAX_VIDEO_CACHE_TOTAL_BYTES = MAX_VIDEO_SIZE_BYTES * 8;
 // so we must NOT hardcode /assets/player.css here — it doesn't exist and
 // causes cache.addAll() to reject, breaking the SW install.
 // The fetch handler below caches hashed assets on-demand via SWR.
-const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-];
+const SHELL_ASSETS = ["/", "/index.html"];
 
 // Install: cache the shell assets. Use individual puts (not addAll) so that
 // a single 404 doesn't abort the entire install.
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener("install", (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then(cache =>
+    caches.open(SHELL_CACHE).then((cache) =>
       Promise.allSettled(
-        SHELL_ASSETS.map(asset =>
-          fetch(asset, { cache: 'no-cache' })
-            .then(resp => resp.ok ? cache.put(asset, resp.clone()) : null)
-            .catch(() => null) // tolerate transient failures
-        )
-      )
-    )
+        SHELL_ASSETS.map(
+          (asset) =>
+            fetch(asset, { cache: "no-cache" })
+              .then((resp) => (resp.ok ? cache.put(asset, resp.clone()) : null))
+              .catch(() => null), // tolerate transient failures
+        ),
+      ),
+    ),
   );
   self.skipWaiting();
 });
 
 // Activate: clean up old caches
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener("activate", (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME && key !== VIDEO_CACHE && key !== SHELL_CACHE)
-          .map(key => caches.delete(key))
-      )
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter(
+              (key) =>
+                key !== CACHE_NAME &&
+                key !== VIDEO_CACHE &&
+                key !== SHELL_CACHE,
+            )
+            .map((key) => caches.delete(key)),
+        ),
+      ),
   );
   self.clients.claim();
 });
@@ -66,7 +72,7 @@ async function cacheVideoRequest(request: Request): Promise<Response> {
 
   const response = await fetch(request);
   if (response.ok) {
-    const contentLength = Number(response.headers.get('content-length') || 0);
+    const contentLength = Number(response.headers.get("content-length") || 0);
     if (contentLength === 0 || contentLength <= MAX_VIDEO_SIZE_BYTES) {
       await cache.put(request, response.clone());
       await trimVideoCache(cache);
@@ -82,68 +88,84 @@ async function trimVideoCache(cache: Cache): Promise<void> {
   // Approximate per-entry size from the stored response's content-length header.
   let total = 0;
   const entries = await Promise.all(
-    requests.map(async request => {
+    requests.map(async (request) => {
       const stored = await cache.match(request);
-      const size = Number(stored?.headers.get('content-length') || 0) || 1;
+      const size = Number(stored?.headers.get("content-length") || 0) || 1;
       return { request, size };
-    })
+    }),
   );
 
-for (const entry of entries) total += entry.size;
+  for (const entry of entries) total += entry.size;
 
   // FIFO prune: Cache.keys() returns in insertion order (oldest first).
   let remaining = 0;
   for (const entry of entries) {
     remaining += 1;
-    if (remaining <= MAX_VIDEO_CACHE_ITEMS && total <= MAX_VIDEO_CACHE_TOTAL_BYTES) break;
+    if (
+      remaining <= MAX_VIDEO_CACHE_ITEMS &&
+      total <= MAX_VIDEO_CACHE_TOTAL_BYTES
+    )
+      break;
     await cache.delete(entry.request);
     total -= entry.size;
   }
 }
 
 // Fetch: stale-while-revalidate for shell, cache-first for videos
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener("fetch", (event: FetchEvent) => {
   const url = new URL(event.request.url);
 
   // Video assets — cache-first (long-term cache, immutable)
-  if (url.pathname.includes('/campaign-videos/') || url.pathname.endsWith('.mp4') || url.pathname.endsWith('.webm')) {
+  if (
+    url.pathname.includes("/campaign-videos/") ||
+    url.pathname.endsWith(".mp4") ||
+    url.pathname.endsWith(".webm")
+  ) {
     event.respondWith(cacheVideoRequest(event.request));
     return;
   }
 
   // Supabase Storage — cache-first
-  if (url.hostname.includes('supabase') && url.pathname.includes('/storage/')) {
+  if (url.hostname.includes("supabase") && url.pathname.includes("/storage/")) {
     event.respondWith(cacheVideoRequest(event.request));
     return;
   }
 
   // API calls — network-first with cache fallback
-  if (url.pathname.startsWith('/device/') || url.pathname.startsWith('/sync/') || url.pathname.startsWith('/telemetry/') || url.pathname.startsWith('/fleet/')) {
+  if (
+    url.pathname.startsWith("/device/") ||
+    url.pathname.startsWith("/sync/") ||
+    url.pathname.startsWith("/telemetry/") ||
+    url.pathname.startsWith("/fleet/")
+  ) {
     event.respondWith(
       fetch(event.request)
-        .then(response => {
+        .then((response) => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(event.request) as Promise<Response>)
+        .catch(() => caches.match(event.request) as Promise<Response>),
     );
     return;
   }
 
   // Shell assets — stale-while-revalidate
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request).then(response => {
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request).then((response) => {
         if (response.ok) {
-          caches.open(SHELL_CACHE).then(cache => cache.put(event.request, response.clone()));
+          caches
+            .open(SHELL_CACHE)
+            .then((cache) => cache.put(event.request, response.clone()));
         }
         return response;
       });
       return cached || fetchPromise;
-    })
+    }),
   );
 });
-

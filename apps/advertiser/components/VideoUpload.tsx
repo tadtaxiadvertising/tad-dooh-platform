@@ -1,11 +1,23 @@
 import React, { useRef, useState, useCallback } from "react";
-import { CloudUpload, AlertCircle, X, RefreshCw, CheckCircle2 } from "lucide-react";
+import {
+  CloudUpload,
+  AlertCircle,
+  X,
+  RefreshCw,
+  CheckCircle2,
+} from "lucide-react";
 import { useDirectUpload } from "@/hooks/useDirectUpload";
 
 // Reglas de negocio espejo del backend (validadas también en useDirectUpload)
 const MAX_SIZE_BYTES = 55 * 1024 * 1024; // 55MB
 const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".jpg", ".jpeg", ".png", ".webp"];
-const ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "image/jpeg", "image/png", "image/webp"];
+const ALLOWED_MIME_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 function extOf(name: string): string {
   const idx = name.lastIndexOf(".");
@@ -46,24 +58,21 @@ function verifyPlayableVideo(file: File): Promise<boolean> {
   });
 }
 
-export function VideoUpload({ onUploadComplete }: { onUploadComplete?: (media: any) => void }) {
+export function VideoUpload({
+  onUploadComplete,
+}: {
+  onUploadComplete?: (media: any) => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<File | null>(null);
 
-  const {
-    upload,
-    isUploading,
-    progress,
-    error,
-    retryCount,
-    reset,
-    cancel,
-  } = useDirectUpload({
-    onSuccess: (result) => {
-      onUploadComplete?.(result);
-    },
-  });
+  const { upload, isUploading, progress, error, retryCount, reset, cancel } =
+    useDirectUpload({
+      onSuccess: (result) => {
+        onUploadComplete?.(result);
+      },
+    });
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -94,7 +103,7 @@ export function VideoUpload({ onUploadComplete }: { onUploadComplete?: (media: a
         // El hook maneja error internamente
       }
     },
-    [upload]
+    [upload],
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +137,9 @@ export function VideoUpload({ onUploadComplete }: { onUploadComplete?: (media: a
     }
   };
 
-  const isVideo = fileInputRef.current?.type?.startsWith("video/") || fileInputRef.current?.name?.toLowerCase().endsWith(".mp4");
+  const isVideo =
+    fileInputRef.current?.type?.startsWith("video/") ||
+    fileInputRef.current?.name?.toLowerCase().endsWith(".mp4");
   const objectUrl = isVideo ? URL.createObjectURL(fileInputRef.current!) : null;
 
   return (
@@ -144,8 +155,8 @@ export function VideoUpload({ onUploadComplete }: { onUploadComplete?: (media: a
           dragActive
             ? "border-[#fad400]/50 bg-zinc-800/40"
             : isUploading
-            ? "border-zinc-700/50"
-            : "border-white/5 hover:border-[#fad400]/30 hover:bg-zinc-800/20"
+              ? "border-zinc-700/50"
+              : "border-white/5 hover:border-[#fad400]/30 hover:bg-zinc-800/20"
         }`}
       >
         {/* Preview o icono */}
@@ -160,11 +171,15 @@ export function VideoUpload({ onUploadComplete }: { onUploadComplete?: (media: a
           />
         ) : (
           <>
-            <CloudUpload className={`w-10 h-10 mb-4 transition-colors ${
-              isUploading ? "text-zinc-600" : "text-zinc-500"
-            }`} />
+            <CloudUpload
+              className={`w-10 h-10 mb-4 transition-colors ${
+                isUploading ? "text-zinc-600" : "text-zinc-500"
+              }`}
+            />
             <p className="text-xs font-black uppercase tracking-widest text-zinc-500">
-              {isUploading ? "Subiendo archivo..." : "Drag & Drop or Click to Upload"}
+              {isUploading
+                ? "Subiendo archivo..."
+                : "Drag & Drop or Click to Upload"}
             </p>
             <p className="text-[8px] text-zinc-600 uppercase tracking-widest mt-2">
               MP4 H.264, JPG, PNG — Max 55MB

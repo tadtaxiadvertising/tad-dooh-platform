@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import React, { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 // Fix for default marker icons in Leaflet + Next.js
 const DefaultIcon = L.icon({
-  iconUrl: '/markers/marker-icon.png',
-  shadowUrl: '/markers/marker-shadow.png',
+  iconUrl: "/markers/marker-icon.png",
+  shadowUrl: "/markers/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -19,19 +19,24 @@ const createGlassIcon = (device: Device, selected: boolean = false) => {
   const W = 52;
   const H = 64;
   const short = device.taxiNumber
-    ? device.taxiNumber.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3)
-    : device.deviceId.replace(/^TADSTI-?/i, '').substring(0, 3) || '?';
-  const safeId = device.deviceId.replace(/[^a-zA-Z0-9]/g, '');
+    ? device.taxiNumber
+        .replace(/^STI0/i, "")
+        .replace(/^STI/i, "")
+        .substring(0, 3)
+    : device.deviceId.replace(/^TADSTI-?/i, "").substring(0, 3) || "?";
+  const safeId = device.deviceId.replace(/[^a-zA-Z0-9]/g, "");
 
   // ── Color rules per spec ──────────────────────────────────────────────────
   // Number color: yellow (#eab308) = active | red (#dc2626) = offline
-  const numberColor = isActive ? '#eab308' : '#dc2626';
-  const textGlow    = isActive ? '0 0 10px rgba(234,179,8,0.7)' : '0 0 8px rgba(220,38,38,0.5)';
+  const numberColor = isActive ? "#eab308" : "#dc2626";
+  const textGlow = isActive
+    ? "0 0 10px rgba(234,179,8,0.7)"
+    : "0 0 8px rgba(220,38,38,0.5)";
 
   // Car Body: Use high-contrast dark/black body for Standard OSM light tiles
-  const bodyGrad = { from: '#1e293b', mid: '#0f172a', to: '#0a0a0b' };
-  const bodyStroke = '#374151';
-  const glassGrad = { from: '#1e293b', to: '#020617' };
+  const bodyGrad = { from: "#1e293b", mid: "#0f172a", to: "#0a0a0b" };
+  const bodyStroke = "#374151";
+  const glassGrad = { from: "#1e293b", to: "#020617" };
 
   const html = `
     <div style="
@@ -52,10 +57,10 @@ const createGlassIcon = (device: Device, selected: boolean = false) => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        transform: ${selected ? 'scale(1.15)' : 'scale(1)'};
+        transform: ${selected ? "scale(1.15)" : "scale(1)"};
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2;
-        filter: ${selected ? `drop-shadow(0 0 8px ${numberColor}80)` : 'none'};
+        filter: ${selected ? `drop-shadow(0 0 8px ${numberColor}80)` : "none"};
       ">
         <svg width="100%" height="100%" viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -95,7 +100,7 @@ const createGlassIcon = (device: Device, selected: boolean = false) => {
   `;
 
   return L.divIcon({
-    className: '',
+    className: "",
     html,
     iconSize: [W, H],
     iconAnchor: [W / 2, H / 2],
@@ -125,39 +130,45 @@ function ChangeView({ center }: { center: [number, number] }) {
 }
 
 export default function MonitoringMap({ devices }: MonitoringMapProps) {
-  const santiagoCoords: [number, number] = [19.4517, -70.6970];
+  const santiagoCoords: [number, number] = [19.4517, -70.697];
 
   return (
     <div className="h-full w-full rounded-xl overflow-hidden shadow-2xl border-4 border-slate-800/50 bg-slate-900">
-      <MapContainer 
-        center={santiagoCoords} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%' }}
+      <MapContainer
+        center={santiagoCoords}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
         className="z-10"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        
+
         {devices.map((device) => {
           if (!device.lastLat || !device.lastLng) return null;
-          
+
           return (
-            <Marker 
-              key={device.deviceId} 
+            <Marker
+              key={device.deviceId}
               position={[device.lastLat, device.lastLng]}
               icon={createGlassIcon(device)}
             >
               <Popup className="custom-popup">
                 <div className="p-2">
-                  <h3 className="font-bold text-slate-900 underline">{device.deviceId}</h3>
-                  <p className="text-sm text-slate-700">Taxi: {device.taxiNumber || '---'}</p>
+                  <h3 className="font-bold text-slate-900 underline">
+                    {device.deviceId}
+                  </h3>
+                  <p className="text-sm text-slate-700">
+                    Taxi: {device.taxiNumber || "---"}
+                  </p>
                   <p className="text-xs text-slate-500 mt-1">
                     Visto: {new Date(device.lastSeen).toLocaleTimeString()}
                   </p>
-                  <div className={`mt-2 text-xs font-bold ${device.isOnline ? 'text-green-600' : 'text-red-600'}`}>
-                    {device.isOnline ? '● ONLINE' : '● OFFLINE'}
+                  <div
+                    className={`mt-2 text-xs font-bold ${device.isOnline ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {device.isOnline ? "● ONLINE" : "● OFFLINE"}
                   </div>
                 </div>
               </Popup>
@@ -168,7 +179,3 @@ export default function MonitoringMap({ devices }: MonitoringMapProps) {
     </div>
   );
 }
-
-
-
-

@@ -16,19 +16,19 @@
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-export type NotificationPriority = 'CRITICAL' | 'OPERATIONAL' | 'INFO';
+export type NotificationPriority = "CRITICAL" | "OPERATIONAL" | "INFO";
 
 export type NotificationType =
-  | 'PAYMENT_LIQUIDATED'
-  | 'CAMPAIGN_ASSIGNED'
-  | 'SUBS_WARNING'
-  | 'SUBS_CRITICAL'
-  | 'DRIVER_STATUS'
-  | 'GPS_TRACKING_STARTED'
-  | 'GPS_TRACKING_STOPPED'
-  | 'OFFLINE_MODE'
-  | 'SYNC_COMPLETED'
-  | 'SYNC_FAILED';
+  | "PAYMENT_LIQUIDATED"
+  | "CAMPAIGN_ASSIGNED"
+  | "SUBS_WARNING"
+  | "SUBS_CRITICAL"
+  | "DRIVER_STATUS"
+  | "GPS_TRACKING_STARTED"
+  | "GPS_TRACKING_STOPPED"
+  | "OFFLINE_MODE"
+  | "SYNC_COMPLETED"
+  | "SYNC_FAILED";
 
 export interface NotificationItem {
   id: string;
@@ -51,39 +51,39 @@ type NotificationListener = (state: NotificationEngineState) => void;
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const DB_NAME = 'TADDriverNotifications';
-const STORE_NAME = 'notifications';
+const DB_NAME = "TADDriverNotifications";
+const STORE_NAME = "notifications";
 const MAX_HISTORY = 100;
 const AUTO_DISMISS_MS: Record<NotificationPriority, number> = {
-  CRITICAL: 0,      // No auto-dismiss — requiere ack manual
+  CRITICAL: 0, // No auto-dismiss — requiere ack manual
   OPERATIONAL: 5000,
   INFO: 3000,
 };
 
 const TYPE_PRIORITY: Record<NotificationType, NotificationPriority> = {
-  PAYMENT_LIQUIDATED: 'OPERATIONAL',
-  CAMPAIGN_ASSIGNED: 'INFO',
-  SUBS_WARNING: 'OPERATIONAL',
-  SUBS_CRITICAL: 'CRITICAL',
-  DRIVER_STATUS: 'OPERATIONAL',
-  GPS_TRACKING_STARTED: 'INFO',
-  GPS_TRACKING_STOPPED: 'INFO',
-  OFFLINE_MODE: 'OPERATIONAL',
-  SYNC_COMPLETED: 'INFO',
-  SYNC_FAILED: 'OPERATIONAL',
+  PAYMENT_LIQUIDATED: "OPERATIONAL",
+  CAMPAIGN_ASSIGNED: "INFO",
+  SUBS_WARNING: "OPERATIONAL",
+  SUBS_CRITICAL: "CRITICAL",
+  DRIVER_STATUS: "OPERATIONAL",
+  GPS_TRACKING_STARTED: "INFO",
+  GPS_TRACKING_STOPPED: "INFO",
+  OFFLINE_MODE: "OPERATIONAL",
+  SYNC_COMPLETED: "INFO",
+  SYNC_FAILED: "OPERATIONAL",
 };
 
 const TYPE_TITLE: Record<NotificationType, string> = {
-  PAYMENT_LIQUIDATED: 'Pago liquidado',
-  CAMPAIGN_ASSIGNED: 'Nueva campaña asignada',
-  SUBS_WARNING: 'Suscripción próxima a vencer',
-  SUBS_CRITICAL: 'Suscripción vencida',
-  DRIVER_STATUS: 'Estado del conductor',
-  GPS_TRACKING_STARTED: 'Tracking GPS activado',
-  GPS_TRACKING_STOPPED: 'Tracking GPS detenido',
-  OFFLINE_MODE: 'Sin conexión',
-  SYNC_COMPLETED: 'Sincronización completada',
-  SYNC_FAILED: 'Error de sincronización',
+  PAYMENT_LIQUIDATED: "Pago liquidado",
+  CAMPAIGN_ASSIGNED: "Nueva campaña asignada",
+  SUBS_WARNING: "Suscripción próxima a vencer",
+  SUBS_CRITICAL: "Suscripción vencida",
+  DRIVER_STATUS: "Estado del conductor",
+  GPS_TRACKING_STARTED: "Tracking GPS activado",
+  GPS_TRACKING_STOPPED: "Tracking GPS detenido",
+  OFFLINE_MODE: "Sin conexión",
+  SYNC_COMPLETED: "Sincronización completada",
+  SYNC_FAILED: "Error de sincronización",
 };
 
 // ─── IndexedDB Persistence ────────────────────────────────────────────────────
@@ -99,30 +99,35 @@ async function openNotificationDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result as IDBDatabase;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        db.createObjectStore(STORE_NAME, { keyPath: "id" });
       }
     };
 
     request.onsuccess = (event) => {
       dbInstance = (event.target as IDBOpenDBRequest).result as IDBDatabase;
       if (dbInstance) {
-        dbInstance.onclose = () => { dbInstance = null; };
+        dbInstance.onclose = () => {
+          dbInstance = null;
+        };
         dbInstance.onversionchange = () => {
-          if (dbInstance) { dbInstance.close(); }
+          if (dbInstance) {
+            dbInstance.close();
+          }
           dbInstance = null;
         };
       }
       resolve(dbInstance!);
     };
 
-    request.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
+    request.onerror = (event) =>
+      reject((event.target as IDBOpenDBRequest).error);
   });
 }
 
 async function persistItem(item: NotificationItem): Promise<void> {
   try {
     const db = await openNotificationDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     store.put(item);
   } catch {
@@ -133,7 +138,7 @@ async function persistItem(item: NotificationItem): Promise<void> {
 async function updateItemInDB(item: NotificationItem): Promise<void> {
   try {
     const db = await openNotificationDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     store.put(item);
   } catch {
@@ -144,7 +149,7 @@ async function updateItemInDB(item: NotificationItem): Promise<void> {
 async function loadHistoryFromDB(): Promise<NotificationItem[]> {
   try {
     const db = await openNotificationDB();
-    const tx = db.transaction(STORE_NAME, 'readonly');
+    const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
     return new Promise<NotificationItem[]>((resolve) => {
       const request = store.getAll();
@@ -164,7 +169,7 @@ async function loadHistoryFromDB(): Promise<NotificationItem[]> {
 async function pruneHistory(): Promise<void> {
   try {
     const db = await openNotificationDB();
-    const tx = db.transaction(STORE_NAME, 'readonly');
+    const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
     const allRequest = store.getAll();
 
@@ -175,7 +180,7 @@ async function pruneHistory(): Promise<void> {
         const toKeep = all.slice(0, MAX_HISTORY);
         const keepIds = new Set(toKeep.map((i) => i.id));
 
-        const deleteTx = db.transaction(STORE_NAME, 'readwrite');
+        const deleteTx = db.transaction(STORE_NAME, "readwrite");
         const deleteStore = deleteTx.objectStore(STORE_NAME);
         all.forEach((item) => {
           if (!keepIds.has(item.id)) deleteStore.delete(item.id);
@@ -197,8 +202,13 @@ const autoDismissTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 let initialized = false;
 
 function emitState(): void {
-  const unreadCount = engineItems.filter((i) => !i.dismissedAt && !i.acknowledged).length;
-  const state: NotificationEngineState = { unreadCount, items: [...engineItems] };
+  const unreadCount = engineItems.filter(
+    (i) => !i.dismissedAt && !i.acknowledged,
+  ).length;
+  const state: NotificationEngineState = {
+    unreadCount,
+    items: [...engineItems],
+  };
   listeners.forEach((fn) => fn(state));
 }
 
@@ -212,26 +222,38 @@ async function hydrateFromDB(): Promise<void> {
 /**
  * Registra un listener para recibir cambios de estado.
  */
-export function onNotificationEngineStateChange(fn: NotificationListener): () => void {
+export function onNotificationEngineStateChange(
+  fn: NotificationListener,
+): () => void {
   listeners.add(fn);
   // Emitir estado actual inmediatamente si ya está inicializado
   if (initialized) {
-    const unreadCount = engineItems.filter((i) => !i.dismissedAt && !i.acknowledged).length;
+    const unreadCount = engineItems.filter(
+      (i) => !i.dismissedAt && !i.acknowledged,
+    ).length;
     fn({ unreadCount, items: [...engineItems] });
   } else {
-    void hydrateFromDB().then(() => fn({
-      unreadCount: engineItems.filter((i) => !i.dismissedAt && !i.acknowledged).length,
-      items: [...engineItems],
-    }));
+    void hydrateFromDB().then(() =>
+      fn({
+        unreadCount: engineItems.filter(
+          (i) => !i.dismissedAt && !i.acknowledged,
+        ).length,
+        items: [...engineItems],
+      }),
+    );
   }
-  return () => { listeners.delete(fn); };
+  return () => {
+    listeners.delete(fn);
+  };
 }
 
 /**
  * Retorna el estado actual del engine.
  */
 export function getNotificationEngineState(): NotificationEngineState {
-  const unreadCount = engineItems.filter((i) => !i.dismissedAt && !i.acknowledged).length;
+  const unreadCount = engineItems.filter(
+    (i) => !i.dismissedAt && !i.acknowledged,
+  ).length;
   return { unreadCount, items: [...engineItems] };
 }
 
@@ -239,7 +261,7 @@ export function getNotificationEngineState(): NotificationEngineState {
  * Resuelve la prioridad para un tipo de notificación.
  */
 export function resolvePriority(type: NotificationType): NotificationPriority {
-  return TYPE_PRIORITY[type] ?? 'INFO';
+  return TYPE_PRIORITY[type] ?? "INFO";
 }
 
 /**
@@ -270,7 +292,11 @@ export function getAutoDismissMs(priority: NotificationPriority): number {
 export async function emitNotification(
   type: NotificationType,
   payload: Record<string, unknown> = {},
-  overrides?: { priority?: NotificationPriority; title?: string; description?: string }
+  overrides?: {
+    priority?: NotificationPriority;
+    title?: string;
+    description?: string;
+  },
 ): Promise<NotificationItem> {
   await hydrateFromDB();
 
@@ -307,14 +333,16 @@ export async function emitNotification(
   }
 
   // ─── CRITICAL: sonido + vibración ────────────────────────────────────────
-  if (priority === 'CRITICAL') {
+  if (priority === "CRITICAL") {
     try {
-      if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-    } catch {/* no-op — vibración no soportada */ }
+      if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+    } catch {
+      /* no-op — vibración no soportada */
+    }
   }
 
   // ─── CRITICAL: Push Notification si app no visible ───────────────────────
-  if (priority === 'CRITICAL' && document.visibilityState !== 'visible') {
+  if (priority === "CRITICAL" && document.visibilityState !== "visible") {
     tryPushNotification(item);
   }
 
@@ -369,10 +397,12 @@ export async function dismissAllNotifications(): Promise<void> {
   // Actualizar IndexedDB
   try {
     const db = await openNotificationDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     engineItems.forEach((item) => store.put(item));
-  } catch {/* graceful */ }
+  } catch {
+    /* graceful */
+  }
 
   emitState();
 }
@@ -381,17 +411,17 @@ export async function dismissAllNotifications(): Promise<void> {
 
 async function tryPushNotification(item: NotificationItem): Promise<void> {
   try {
-    if (!('Notification' in window)) return;
+    if (!("Notification" in window)) return;
     const permission = Notification.permission;
-    if (permission === 'granted') {
+    if (permission === "granted") {
       new Notification(item.title, {
-        body: item.description ?? '',
+        body: item.description ?? "",
         tag: item.id,
-        icon: '/icons/icon.svg',
-        requireInteraction: item.priority === 'CRITICAL',
-        silent: item.priority !== 'CRITICAL',
+        icon: "/icons/icon.svg",
+        requireInteraction: item.priority === "CRITICAL",
+        silent: item.priority !== "CRITICAL",
       });
-    } else if (permission === 'default') {
+    } else if (permission === "default") {
       // No solicitar permiso automáticamente — el user debe pedirlo
       // desde la UI (NotificationCenter) para no interrumpir
     }
@@ -405,9 +435,9 @@ async function tryPushNotification(item: NotificationItem): Promise<void> {
  */
 export async function requestPushPermission(): Promise<boolean> {
   try {
-    if (!('Notification' in window)) return false;
+    if (!("Notification" in window)) return false;
     const result = await Notification.requestPermission();
-    return result === 'granted';
+    return result === "granted";
   } catch {
     return false;
   }

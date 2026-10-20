@@ -1,36 +1,49 @@
 // admin-dashboard/components/MapView.tsx
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl, Polyline, CircleMarker } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { VehiclePopup } from './ui/VehiclePopup';
-import clsx from 'clsx';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  ZoomControl,
+  Polyline,
+  CircleMarker,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import { VehiclePopup } from "./ui/VehiclePopup";
+import clsx from "clsx";
+import dynamic from "next/dynamic";
 
-const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
-const HeatmapLayer = dynamic(() => import('./map/HeatmapLayer'), { ssr: false });
+const MarkerClusterGroup = dynamic(() => import("react-leaflet-cluster"), {
+  ssr: false,
+});
+const HeatmapLayer = dynamic(() => import("./map/HeatmapLayer"), {
+  ssr: false,
+});
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Status-driven number colors: yellow = on/active, red = off
-const NUMBER_COLOR_ACTIVE = '#eab308'; // Yellow — encendido
-const NUMBER_COLOR_OFFLINE = '#dc2626'; // Red   — apagado
+const NUMBER_COLOR_ACTIVE = "#eab308"; // Yellow — encendido
+const NUMBER_COLOR_OFFLINE = "#dc2626"; // Red   — apagado
 
 // Coordenadas aproximadas del Centro de Santiago (Monumento y alrededores)
 const POLIGONO_CENTRAL: [number, number][] = [
-  [19.4630, -70.7050], // Noroeste
-  [19.4650, -70.6750], // Noreste
-  [19.4400, -70.6780], // Sureste
-  [19.4380, -70.7020], // Suroeste
+  [19.463, -70.705], // Noroeste
+  [19.465, -70.675], // Noreste
+  [19.44, -70.678], // Sureste
+  [19.438, -70.702], // Suroeste
 ];
 
 /**
@@ -45,36 +58,39 @@ const POLIGONO_CENTRAL: [number, number][] = [
 const createIcon = (
   status: string,
   selected: boolean,
-  label = '',
+  label = "",
   lastSeen?: string | null,
-  deviceId = '',
-  mapTheme: 'dark' | 'light' = 'dark',
+  deviceId = "",
+  mapTheme: "dark" | "light" = "dark",
 ) => {
-  const isActive = status === 'active';
+  const isActive = status === "active";
   const W = 52;
   const H = 64;
-  const short = label ? label.replace(/^STI0/i, '').replace(/^STI/i, '').substring(0, 3) : '?';
-  const safeId = (deviceId || label || 'v').replace(/[^a-zA-Z0-9]/g, '');
+  const short = label
+    ? label.replace(/^STI0/i, "").replace(/^STI/i, "").substring(0, 3)
+    : "?";
+  const safeId = (deviceId || label || "v").replace(/[^a-zA-Z0-9]/g, "");
 
   // ── Number & headlight color: simple binary rule ─────────────────────────
   const numberColor = isActive ? NUMBER_COLOR_ACTIVE : NUMBER_COLOR_OFFLINE;
   const textGlow = isActive
-    ? '0 0 10px rgba(234,179,8,0.85)'
-    : '0 0 8px rgba(220,38,38,0.7)';
+    ? "0 0 10px rgba(234,179,8,0.85)"
+    : "0 0 8px rgba(220,38,38,0.7)";
 
   // ── Car body colors adapt to map theme ───────────────────────────────────
-  const bodyGrad = mapTheme === 'dark'
-    ? { from: '#f1f5f9', mid: '#ffffff', to: '#e2e8f0' }  // white body
-    : { from: '#1e293b', mid: '#0f172a', to: '#0a0a0b' }; // black body
+  const bodyGrad =
+    mapTheme === "dark"
+      ? { from: "#f1f5f9", mid: "#ffffff", to: "#e2e8f0" } // white body
+      : { from: "#1e293b", mid: "#0f172a", to: "#0a0a0b" }; // black body
 
-  const bodyStroke = mapTheme === 'dark' ? '#cbd5e1' : '#374151';
-  const screenFill = mapTheme === 'dark' ? '#f8fafc' : '#1e293b';
-  const screenStrok = mapTheme === 'dark' ? '#e2e8f0' : '#334155';
-  const shineStroke = mapTheme === 'dark' ? '#e2e8f0' : '#475569';
-  const shineOpacity = mapTheme === 'dark' ? '0.6' : '0.3';
-  const glassGrad = { from: '#1e293b', to: '#020617' };
+  const bodyStroke = mapTheme === "dark" ? "#cbd5e1" : "#374151";
+  const screenFill = mapTheme === "dark" ? "#f8fafc" : "#1e293b";
+  const screenStrok = mapTheme === "dark" ? "#e2e8f0" : "#334155";
+  const shineStroke = mapTheme === "dark" ? "#e2e8f0" : "#475569";
+  const shineOpacity = mapTheme === "dark" ? "0.6" : "0.3";
+  const glassGrad = { from: "#1e293b", to: "#020617" };
 
-  const pulseColor = isActive ? numberColor : 'transparent';
+  const pulseColor = isActive ? numberColor : "transparent";
 
   const html = `
     <div style="
@@ -88,10 +104,14 @@ const createIcon = (
       perspective: 1000px;
     ">
       <!-- Radar Pulse Ring (only when active) -->
-      ${isActive ? `
+      ${
+        isActive
+          ? `
         <div class="map-pulse-ring" style="border: 1.5px solid ${pulseColor}"></div>
         <div class="map-pulse-ring" style="border: 1.5px solid ${pulseColor}; animation-delay: 0.8s;"></div>
-      ` : ''}
+      `
+          : ""
+      }
 
       <!-- Car SVG Container -->
       <div style="
@@ -101,10 +121,10 @@ const createIcon = (
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        transform: ${selected ? 'scale(1.15)' : 'scale(1)'};
+        transform: ${selected ? "scale(1.15)" : "scale(1)"};
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2;
-        filter: ${selected ? `drop-shadow(0 0 8px ${numberColor}80)` : 'none'};
+        filter: ${selected ? `drop-shadow(0 0 8px ${numberColor}80)` : "none"};
       ">
         <svg width="100%" height="100%" viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -141,7 +161,9 @@ const createIcon = (
         </svg>
       </div>
 
-      ${selected ? `
+      ${
+        selected
+          ? `
         <div style="
           width: 2px;
           height: 12px;
@@ -151,7 +173,9 @@ const createIcon = (
           top: -20px;
           animation: map-float 1.5s infinite ease-in-out;
         "></div>
-      ` : ''}
+      `
+          : ""
+      }
 
       <style>
         .map-pulse-ring {
@@ -176,7 +200,7 @@ const createIcon = (
   `;
 
   return L.divIcon({
-    className: '',
+    className: "",
     html,
     iconSize: [W, H],
     iconAnchor: [W / 2, H / 2],
@@ -199,7 +223,7 @@ const createClusterIcon = (cluster: any) => {
         </style>
       </div>
     `,
-    className: '',
+    className: "",
     iconSize: L.point(size, size, true),
   });
 };
@@ -230,10 +254,10 @@ interface MapViewProps {
   heatmapData?: any[];
   center?: [number, number];
   zoom?: number;
-  mode?: 'live' | 'heatmap';
+  mode?: "live" | "heatmap";
   selectedId?: string | null;
   recentPath?: any[];
-  mapTheme?: 'dark' | 'light';
+  mapTheme?: "dark" | "light";
   heatmapIntensity?: number;
   heatmapRadius?: number;
   onClearSelection?: () => void;
@@ -244,12 +268,22 @@ interface MapViewProps {
 // ============================================
 // MAP CONTROLLER — handles camera + events
 // ============================================
-function MapController({ center, zoom, onMapClick }: { center: [number, number]; zoom: number; onMapClick: () => void }) {
+function MapController({
+  center,
+  zoom,
+  onMapClick,
+}: {
+  center: [number, number];
+  zoom: number;
+  onMapClick: () => void;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    map.on('click', onMapClick);
-    return () => { map.off('click', onMapClick); };
+    map.on("click", onMapClick);
+    return () => {
+      map.off("click", onMapClick);
+    };
   }, [map, onMapClick]);
 
   useEffect(() => {
@@ -269,10 +303,10 @@ function GeofenceLayer() {
     <Polyline
       positions={[...POLIGONO_CENTRAL, POLIGONO_CENTRAL[0]]}
       pathOptions={{
-        color: '#fad400',
+        color: "#fad400",
         weight: 1,
-        dashArray: '10, 10',
-        fillColor: '#fad400',
+        dashArray: "10, 10",
+        fillColor: "#fad400",
         fillOpacity: 0.03,
       }}
     />
@@ -284,10 +318,10 @@ const MapView: React.FC<MapViewProps> = ({
   heatmapData = [],
   center = [19.4544, -70.6923], // Santiago, RD
   zoom = 13,
-  mode = 'live',
+  mode = "live",
   selectedId = null,
   recentPath = [],
-  mapTheme = 'dark',
+  mapTheme = "dark",
   heatmapIntensity = 0.5,
   heatmapRadius = 28,
   onClearSelection,
@@ -303,34 +337,62 @@ const MapView: React.FC<MapViewProps> = ({
   // Función Ray-Casting para detectar punto en polígono
   const isPointInPolygon = useCallback((lat: number, lng: number) => {
     let intersect = false;
-    for (let i = 0, j = POLIGONO_CENTRAL.length - 1; i < POLIGONO_CENTRAL.length; j = i++) {
-      const xi = POLIGONO_CENTRAL[i][0], yi = POLIGONO_CENTRAL[i][1];
-      const xj = POLIGONO_CENTRAL[j][0], yj = POLIGONO_CENTRAL[j][1];
-      const intersectPoint = ((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+    for (
+      let i = 0, j = POLIGONO_CENTRAL.length - 1;
+      i < POLIGONO_CENTRAL.length;
+      j = i++
+    ) {
+      const xi = POLIGONO_CENTRAL[i][0],
+        yi = POLIGONO_CENTRAL[i][1];
+      const xj = POLIGONO_CENTRAL[j][0],
+        yj = POLIGONO_CENTRAL[j][1];
+      const intersectPoint =
+        yi > lng !== yj > lng &&
+        lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi;
       if (intersectPoint) intersect = !intersect;
     }
     return intersect;
   }, []);
 
   const liveMarkers = useMemo(() => {
-    if (mode !== 'live') return null;
+    if (mode !== "live") return null;
     return (
-      <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon} maxClusterRadius={50} showCoverageOnHover={false}>
+      <MarkerClusterGroup
+        chunkedLoading
+        iconCreateFunction={createClusterIcon}
+        maxClusterRadius={50}
+        showCoverageOnHover={false}
+      >
         {locations.map((loc, i) => {
           if (!loc.lastLat || !loc.lastLng) return null;
           const sel = selectedId === loc.deviceId;
-          const inFence = loc.lastLat && loc.lastLng ? isPointInPolygon(loc.lastLat, loc.lastLng) : true;
-          const status = !loc.isOnline ? 'offline' : loc.subscriptionStatus !== 'ACTIVE' ? 'unpaid' : 'active';
+          const inFence =
+            loc.lastLat && loc.lastLng
+              ? isPointInPolygon(loc.lastLat, loc.lastLng)
+              : true;
+          const status = !loc.isOnline
+            ? "offline"
+            : loc.subscriptionStatus !== "ACTIVE"
+              ? "unpaid"
+              : "active";
 
           // Si está fuera de rango y online, forzamos alerta
-          const markerStatus = (loc.isOnline && !inFence) ? 'unpaid' : status;
+          const markerStatus = loc.isOnline && !inFence ? "unpaid" : status;
 
-          const label = loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, '') || '?';
+          const label =
+            loc.taxiNumber || loc.deviceId?.replace(/TADSTI-?/i, "") || "?";
           return (
             <Marker
               key={loc.deviceId || i}
               position={[loc.lastLat, loc.lastLng]}
-              icon={createIcon(markerStatus, sel, label, loc.lastSeen, loc.deviceId, mapTheme)}
+              icon={createIcon(
+                markerStatus,
+                sel,
+                label,
+                loc.lastSeen,
+                loc.deviceId,
+                mapTheme,
+              )}
               zIndexOffset={sel ? 1000 : 0}
             >
               <Popup className="popup-clean" offset={[0, -12]}>
@@ -345,20 +407,32 @@ const MapView: React.FC<MapViewProps> = ({
         })}
       </MarkerClusterGroup>
     );
-  }, [mode, locations, selectedId, isPointInPolygon, onViewHistory, onSyncCommand, mapTheme]);
+  }, [
+    mode,
+    locations,
+    selectedId,
+    isPointInPolygon,
+    onViewHistory,
+    onSyncCommand,
+    mapTheme,
+  ]);
 
   const trail = useMemo(() => {
     if (!recentPath || recentPath.length < 2) return [];
     return recentPath.map((p) => [p.latitude, p.longitude] as [number, number]);
   }, [recentPath]);
 
-  const handleClear = useCallback(() => onClearSelection?.(), [onClearSelection]);
-
-  if (!ready) return (
-    <div className="w-full h-full bg-[#171719] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-tad-yellow/20 border-t-tad-yellow rounded-full animate-spin" />
-    </div>
+  const handleClear = useCallback(
+    () => onClearSelection?.(),
+    [onClearSelection],
   );
+
+  if (!ready)
+    return (
+      <div className="w-full h-full bg-[#171719] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-tad-yellow/20 border-t-tad-yellow rounded-full animate-spin" />
+      </div>
+    );
 
   return (
     <div className="w-full h-full relative">
@@ -367,15 +441,16 @@ const MapView: React.FC<MapViewProps> = ({
         zoom={zoom}
         maxZoom={18}
         minZoom={7}
-        style={{ height: '100%', width: '100%', background: '#0a0a0b' }}
+        style={{ height: "100%", width: "100%", background: "#0a0a0b" }}
         zoomControl={false}
       >
         <TileLayer
           key={mapTheme}
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={mapTheme === 'dark'
-            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url={
+            mapTheme === "dark"
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           }
           maxZoom={18}
         />
@@ -390,7 +465,13 @@ const MapView: React.FC<MapViewProps> = ({
         {selectedId && trail.length > 0 && (
           <Polyline
             positions={trail}
-            pathOptions={{ color: '#fad400', weight: 3, opacity: 0.7, dashArray: '6,8', lineCap: 'round' }}
+            pathOptions={{
+              color: "#fad400",
+              weight: 3,
+              opacity: 0.7,
+              dashArray: "6,8",
+              lineCap: "round",
+            }}
           />
         )}
 
@@ -398,35 +479,41 @@ const MapView: React.FC<MapViewProps> = ({
         {liveMarkers}
 
         {/* HEATMAP — Optimized Layer */}
-        {mode === 'heatmap' && heatmapData.length > 0 && (
+        {mode === "heatmap" && heatmapData.length > 0 && (
           <HeatmapLayer
-            points={heatmapData.map(p => [p.lat, p.lng, (p.count || 1) / 100])}
+            points={heatmapData.map((p) => [
+              p.lat,
+              p.lng,
+              (p.count || 1) / 100,
+            ])}
             radius={heatmapRadius}
             blur={Math.max(15, heatmapRadius * 0.7)}
             max={heatmapIntensity}
             gradient={{
-              0.2: 'rgba(250, 212, 0, 0.05)',
-              0.4: 'rgba(250, 212, 0, 0.25)',
-              0.6: 'rgba(250, 212, 0, 0.55)',
-              0.8: 'rgba(250, 212, 0, 0.85)',
-              1.0: '#ffffff'
+              0.2: "rgba(250, 212, 0, 0.05)",
+              0.4: "rgba(250, 212, 0, 0.25)",
+              0.6: "rgba(250, 212, 0, 0.55)",
+              0.8: "rgba(250, 212, 0, 0.85)",
+              1.0: "#ffffff",
             }}
           />
         )}
       </MapContainer>
 
       {/* NEW: HIGH-TECH OVERLAYS */}
-      <div className={clsx(
-        "absolute inset-0 pointer-events-none z-[1000] transition-opacity duration-700",
-        mapTheme === 'light' ? 'opacity-30' : 'opacity-100'
-      )}>
+      <div
+        className={clsx(
+          "absolute inset-0 pointer-events-none z-[1000] transition-opacity duration-700",
+          mapTheme === "light" ? "opacity-30" : "opacity-100",
+        )}
+      >
         {/* Vignette Blur / Fade to Dashboard (Softer centering) */}
         <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.95)] opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-25" />
 
         {/* Animated Scanline (Subtle) */}
-        {mapTheme === 'dark' && (
+        {mapTheme === "dark" && (
           <div className="absolute top-0 left-0 w-full h-[80px] bg-gradient-to-b from-transparent via-tad-yellow/5 to-transparent animate-map-scan" />
         )}
 
@@ -440,34 +527,65 @@ const MapView: React.FC<MapViewProps> = ({
       {/* MAP THEME TOGGLE is now managed by parent page — button removed from MapView */}
 
       <style jsx global>{`
-        .leaflet-container { font-family: 'Outfit', sans-serif !important; background: #0a0a0a !important; }
-        .leaflet-tile { border: none !important; opacity: 1 !important; outline: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-        .leaflet-tile-container { border: none !important; outline: none !important; }
-        .popup-clean .leaflet-popup-content-wrapper { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
-        .popup-clean .leaflet-popup-content { margin: 0 !important; width: auto !important; }
-        .popup-clean .leaflet-popup-tip-container { display: none !important; }
-        .leaflet-control-zoom { border: none !important; margin: 30px !important; }
+        .leaflet-container {
+          font-family: "Outfit", sans-serif !important;
+          background: #0a0a0a !important;
+        }
+        .leaflet-tile {
+          border: none !important;
+          opacity: 1 !important;
+          outline: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+        }
+        .leaflet-tile-container {
+          border: none !important;
+          outline: none !important;
+        }
+        .popup-clean .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .popup-clean .leaflet-popup-content {
+          margin: 0 !important;
+          width: auto !important;
+        }
+        .popup-clean .leaflet-popup-tip-container {
+          display: none !important;
+        }
+        .leaflet-control-zoom {
+          border: none !important;
+          margin: 30px !important;
+        }
         .leaflet-control-zoom a {
-          background: rgba(10,10,10,.9) !important;
+          background: rgba(10, 10, 10, 0.9) !important;
           color: #fad400 !important;
-          border: 1px solid rgba(255,255,255,.06) !important;
-          width: 44px !important; height: 44px !important; line-height: 44px !important;
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          width: 44px !important;
+          height: 44px !important;
+          line-height: 44px !important;
           border-radius: 12px !important;
           margin-bottom: 8px !important;
           font-weight: 900 !important;
-          transition: all .3s;
+          transition: all 0.3s;
           backdrop-filter: blur(10px);
         }
-        .leaflet-control-zoom a:hover { 
-          background: #fad400 !important; 
-          color: #000 !important; 
+        .leaflet-control-zoom a:hover {
+          background: #fad400 !important;
+          color: #000 !important;
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(250,212,0,0.3);
+          box-shadow: 0 10px 20px rgba(250, 212, 0, 0.3);
         }
-        
+
         @keyframes map-scan {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(800% ); }
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(800%);
+          }
         }
       `}</style>
     </div>
@@ -475,7 +593,3 @@ const MapView: React.FC<MapViewProps> = ({
 };
 
 export default MapView;
-
-
-
-

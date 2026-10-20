@@ -1,27 +1,25 @@
-import { PrismaClient } from '@prisma/client';
-import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
-import winston from 'winston';
+import { PrismaClient } from "@prisma/client";
+import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
+import winston from "winston";
 
 // Logger configuration
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    winston.format.json(),
   ),
-  transports: [
-    new winston.transports.Console(),
-  ],
+  transports: [new winston.transports.Console()],
 });
 
 // Types
 interface AgentTask {
   id: string;
-  type: 'systems' | 'marketing' | 'finance' | 'hr';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  type: "systems" | "marketing" | "finance" | "hr";
+  priority: "low" | "medium" | "high" | "critical";
   payload: Record<string, unknown>;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   createdAt: Date;
   updatedAt: Date;
   retries: number;
@@ -37,36 +35,57 @@ interface SystemHealth {
 }
 
 interface FinanceOperation {
-  type: 'earnings_calculation' | 'payout_processing' | 'invoice_generation' | 'revenue_report';
+  type:
+    | "earnings_calculation"
+    | "payout_processing"
+    | "invoice_generation"
+    | "revenue_report";
   idempotencyKey: string;
   payload: Record<string, unknown>;
 }
 
 interface MarketingAction {
-  type: 'campaign_optimization' | 'advertiser_outreach' | 'performance_analysis' | 'budget_reallocation';
+  type:
+    | "campaign_optimization"
+    | "advertiser_outreach"
+    | "performance_analysis"
+    | "budget_reallocation";
   payload: Record<string, unknown>;
 }
 
 interface HRAction {
-  type: 'driver_onboarding' | 'performance_review' | 'shift_optimization' | 'compliance_check';
+  type:
+    | "driver_onboarding"
+    | "performance_review"
+    | "shift_optimization"
+    | "compliance_check";
   payload: Record<string, unknown>;
 }
 
 // Configuration
 const CONFIG = {
-  ORCHESTRATOR_INTERVAL_MS: parseInt(process.env.ORCHESTRATOR_INTERVAL_MS || '60000', 10), // 1 minute default
-  MAX_CONCURRENT_TASKS: parseInt(process.env.MAX_CONCURRENT_TASKS || '3', 10),
-  TASK_TIMEOUT_MS: parseInt(process.env.TASK_TIMEOUT_MS || '300000', 10), // 5 minutes
-  HEALTH_CHECK_INTERVAL_MS: parseInt(process.env.HEALTH_CHECK_INTERVAL_MS || '30000', 10),
-  INTERNAL_API_URL: process.env.INTERNAL_API_URL || 'http://api:3000',
-  SYSTEM_AGENT_TOKEN: process.env.SYSTEM_AGENT_TOKEN || '',
-  FREE_TIER_API_KEY: process.env.FREE_TIER_API_KEY || '',
-  DATABASE_URL: process.env.DATABASE_URL || '',
+  ORCHESTRATOR_INTERVAL_MS: parseInt(
+    process.env.ORCHESTRATOR_INTERVAL_MS || "60000",
+    10,
+  ), // 1 minute default
+  MAX_CONCURRENT_TASKS: parseInt(process.env.MAX_CONCURRENT_TASKS || "3", 10),
+  TASK_TIMEOUT_MS: parseInt(process.env.TASK_TIMEOUT_MS || "300000", 10), // 5 minutes
+  HEALTH_CHECK_INTERVAL_MS: parseInt(
+    process.env.HEALTH_CHECK_INTERVAL_MS || "30000",
+    10,
+  ),
+  INTERNAL_API_URL: process.env.INTERNAL_API_URL || "http://api:3000",
+  SYSTEM_AGENT_TOKEN: process.env.SYSTEM_AGENT_TOKEN || "",
+  FREE_TIER_API_KEY: process.env.FREE_TIER_API_KEY || "",
+  DATABASE_URL: process.env.DATABASE_URL || "",
 };
 
 // Initialize Prisma Client (Read-only for agents)
 const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log:
+    process.env.NODE_ENV === "development"
+      ? ["query", "error", "warn"]
+      : ["error"],
 });
 
 // Internal API client with system agent authentication
@@ -74,16 +93,17 @@ const internalApi = axios.create({
   baseURL: CONFIG.INTERNAL_API_URL,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${CONFIG.SYSTEM_AGENT_TOKEN}`,
-    'X-Agent-Type': 'system_orchestrator',
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${CONFIG.SYSTEM_AGENT_TOKEN}`,
+    "X-Agent-Type": "system_orchestrator",
   },
 });
 
 // Add idempotency key to mutating requests
-internalApi.interceptors.request.use((config) => {
-  if (['post', 'put', 'patch', 'delete'].includes(config.method || '')) {
-    config.headers['Idempotency-Key'] = config.headers['Idempotency-Key'] || uuidv4();
+internalApi.interceptors.request.use((config: axios.AxiosRequestConfig) => {
+  if (["post", "put", "patch", "delete"].includes(config.method || "")) {
+    config.headers["Idempotency-Key"] =
+      config.headers["Idempotency-Key"] || uuidv4();
   }
   return config;
 });
@@ -98,7 +118,7 @@ class AgentOrchestrator {
   private orchestratorInterval: NodeJS.Timeout | null = null;
 
   async start() {
-    logger.info('🚀 Starting TAD Autonomous Agents Orchestrator');
+    logger.info("🚀 Starting TAD Autonomous Agents Orchestrator");
 
     // Validate critical environment variables
     this.validateEnvironment();
@@ -118,37 +138,44 @@ class AgentOrchestrator {
     // Handle graceful shutdown
     this.setupGracefulShutdown();
 
-    logger.info('✅ Orchestrator started successfully');
+    logger.info("✅ Orchestrator started successfully");
   }
 
   private validateEnvironment() {
-    const required = ['DATABASE_URL', 'INTERNAL_API_URL', 'SYSTEM_AGENT_TOKEN', 'FREE_TIER_API_KEY'];
-    const missing = required.filter(key => !process.env[key]);
+    const required = [
+      "DATABASE_URL",
+      "INTERNAL_API_URL",
+      "SYSTEM_AGENT_TOKEN",
+      "FREE_TIER_API_KEY",
+    ];
+    const missing = required.filter((key) => !process.env[key]);
 
     if (missing.length > 0) {
-      logger.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+      logger.error(
+        `❌ Missing required environment variables: ${missing.join(", ")}`,
+      );
       process.exit(1);
     }
 
-    logger.info('✅ Environment validation passed');
+    logger.info("✅ Environment validation passed");
   }
 
   private async testDatabaseConnection() {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      logger.info('✅ Database connection established (read-only mode)');
+      logger.info("✅ Database connection established (read-only mode)");
     } catch (error) {
-      logger.error('❌ Database connection failed:', error);
+      logger.error("❌ Database connection failed:", error);
       process.exit(1);
     }
   }
 
   private async testInternalApiConnection() {
     try {
-      const response = await internalApi.get('/api/health');
+      const response = await internalApi.get("/api/health");
       logger.info(`✅ Internal API connection established: ${response.status}`);
     } catch (error) {
-      logger.error('❌ Internal API connection failed:', error);
+      logger.error("❌ Internal API connection failed:", error);
       process.exit(1);
     }
   }
@@ -157,14 +184,14 @@ class AgentOrchestrator {
     this.healthCheckInterval = setInterval(async () => {
       try {
         const health = await this.checkSystemHealth();
-        logger.debug('System health check', health);
+        logger.debug("System health check", health);
 
         // Alert if system is under stress
         if (health.cpuUsage > 80 || health.memoryUsage > 85) {
-          logger.warn('⚠️ System under high resource usage', health);
+          logger.warn("⚠️ System under high resource usage", health);
         }
       } catch (error) {
-        logger.error('Health check failed:', error);
+        logger.error("Health check failed:", error);
       }
     }, CONFIG.HEALTH_CHECK_INTERVAL_MS);
   }
@@ -176,7 +203,7 @@ class AgentOrchestrator {
       const [errorCount, totalErrors] = await Promise.all([
         prisma.systemError.count({
           where: {
-            severity: { in: ['ERROR', 'CRITICAL'] },
+            severity: { in: ["ERROR", "CRITICAL"] },
             createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 minutes
           },
         }),
@@ -212,14 +239,14 @@ class AgentOrchestrator {
       try {
         await this.runOrchestrationCycle();
       } catch (error) {
-        logger.error('Orchestration cycle failed:', error);
+        logger.error("Orchestration cycle failed:", error);
       }
     }, CONFIG.ORCHESTRATOR_INTERVAL_MS);
   }
 
   private async runOrchestrationCycle() {
     isProcessing = true;
-    logger.debug('🔄 Starting orchestration cycle');
+    logger.debug("🔄 Starting orchestration cycle");
 
     try {
       // 1. Evaluate system state and identify tasks
@@ -230,7 +257,6 @@ class AgentOrchestrator {
 
       // 3. Clean up completed/failed tasks
       this.cleanupTasks();
-
     } finally {
       isProcessing = false;
     }
@@ -270,22 +296,22 @@ class AgentOrchestrator {
       // Check for recent errors that need investigation
       const recentErrors = await prisma.systemError.findMany({
         where: {
-          severity: { in: ['ERROR', 'CRITICAL'] },
+          severity: { in: ["ERROR", "CRITICAL"] },
           resolved: false,
           createdAt: { gte: new Date(Date.now() - 15 * 60 * 1000) }, // Last 15 minutes
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 10,
       });
 
       if (recentErrors.length > 5) {
         tasks.push({
           id: uuidv4(),
-          type: 'systems',
-          priority: 'high',
+          type: "systems",
+          priority: "high",
           payload: {
-            action: 'error_analysis',
-            errors: recentErrors.map(e => ({
+            action: "error_analysis",
+            errors: recentErrors.map((e) => ({
               source: e.source,
               severity: e.severity,
               message: e.message,
@@ -294,7 +320,7 @@ class AgentOrchestrator {
               timestamp: e.createdAt,
             })),
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -302,7 +328,7 @@ class AgentOrchestrator {
         });
       }
     } catch (error) {
-      logger.error('Failed to evaluate systems tasks:', error);
+      logger.error("Failed to evaluate systems tasks:", error);
     }
 
     return tasks;
@@ -315,7 +341,7 @@ class AgentOrchestrator {
       // Check campaigns that need optimization (low delivery rate)
       const underperformingCampaigns = await prisma.campaign.findMany({
         where: {
-          status: 'ACTIVE',
+          status: "ACTIVE",
           endDate: { gte: new Date() },
           active: true,
         },
@@ -325,11 +351,11 @@ class AgentOrchestrator {
       if (underperformingCampaigns.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'marketing',
-          priority: 'medium',
+          type: "marketing",
+          priority: "medium",
           payload: {
-            action: 'campaign_optimization',
-            campaigns: underperformingCampaigns.map(c => ({
+            action: "campaign_optimization",
+            campaigns: underperformingCampaigns.map((c) => ({
               id: c.id,
               name: c.name,
               budget: c.budget,
@@ -339,7 +365,7 @@ class AgentOrchestrator {
               targetCities: c.targetCities,
             })),
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -350,7 +376,7 @@ class AgentOrchestrator {
       // Check for advertisers with expiring campaigns
       const expiringCampaigns = await prisma.campaign.findMany({
         where: {
-          status: 'ACTIVE',
+          status: "ACTIVE",
           endDate: {
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next 7 days
             gte: new Date(),
@@ -362,18 +388,18 @@ class AgentOrchestrator {
       if (expiringCampaigns.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'marketing',
-          priority: 'low',
+          type: "marketing",
+          priority: "low",
           payload: {
-            action: 'advertiser_outreach',
-            campaigns: expiringCampaigns.map(c => ({
+            action: "advertiser_outreach",
+            campaigns: expiringCampaigns.map((c) => ({
               id: c.id,
               name: c.name,
               advertiserId: c.advertiserId,
               endDate: c.endDate,
             })),
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -381,7 +407,7 @@ class AgentOrchestrator {
         });
       }
     } catch (error) {
-      logger.error('Failed to evaluate marketing tasks:', error);
+      logger.error("Failed to evaluate marketing tasks:", error);
     }
 
     return tasks;
@@ -394,7 +420,7 @@ class AgentOrchestrator {
       // Check for pending payroll payments that need processing
       const pendingPayouts = await prisma.payrollPayment.findMany({
         where: {
-          status: 'PENDING',
+          status: "PENDING",
           amount: { gt: 0 },
         },
         take: 50,
@@ -403,14 +429,14 @@ class AgentOrchestrator {
       if (pendingPayouts.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'finance',
-          priority: 'high',
+          type: "finance",
+          priority: "high",
           payload: {
-            action: 'payout_processing',
-            payrollPaymentIds: pendingPayouts.map(e => e.id),
+            action: "payout_processing",
+            payrollPaymentIds: pendingPayouts.map((e) => e.id),
             idempotencyKey: `payout_batch_${Date.now()}`,
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -421,7 +447,7 @@ class AgentOrchestrator {
       // Check for invoices that need generation
       const pendingInvoices = await prisma.advertiserSubscription.findMany({
         where: {
-          status: 'ACTIVE',
+          status: "ACTIVE",
           nextBillingDate: { lte: new Date() },
         },
         take: 20,
@@ -430,14 +456,14 @@ class AgentOrchestrator {
       if (pendingInvoices.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'finance',
-          priority: 'medium',
+          type: "finance",
+          priority: "medium",
           payload: {
-            action: 'invoice_generation',
-            subscriptionIds: pendingInvoices.map(s => s.id),
+            action: "invoice_generation",
+            subscriptionIds: pendingInvoices.map((s) => s.id),
             idempotencyKey: `invoice_batch_${Date.now()}`,
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -445,7 +471,7 @@ class AgentOrchestrator {
         });
       }
     } catch (error) {
-      logger.error('Failed to evaluate finance tasks:', error);
+      logger.error("Failed to evaluate finance tasks:", error);
     }
 
     return tasks;
@@ -458,7 +484,7 @@ class AgentOrchestrator {
       // Check for drivers needing onboarding completion
       const incompleteOnboarding = await prisma.driver.findMany({
         where: {
-          onboardingStatus: 'IN_PROGRESS',
+          onboardingStatus: "IN_PROGRESS",
           updatedAt: { lte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Stalled > 24h
         },
         take: 20,
@@ -467,13 +493,13 @@ class AgentOrchestrator {
       if (incompleteOnboarding.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'hr',
-          priority: 'medium',
+          type: "hr",
+          priority: "medium",
           payload: {
-            action: 'driver_onboarding_followup',
-            driverIds: incompleteOnboarding.map(d => d.id),
+            action: "driver_onboarding_followup",
+            driverIds: incompleteOnboarding.map((d) => d.id),
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -495,18 +521,18 @@ class AgentOrchestrator {
       if (expiringContracts.length > 0) {
         tasks.push({
           id: uuidv4(),
-          type: 'hr',
-          priority: 'low',
+          type: "hr",
+          priority: "low",
           payload: {
-            action: 'compliance_check',
-            contracts: expiringContracts.map(c => ({
+            action: "compliance_check",
+            contracts: expiringContracts.map((c) => ({
               id: c.id,
               driverId: c.driverId,
               version: c.version,
               timestamp: c.timestamp,
             })),
           },
-          status: 'pending',
+          status: "pending",
           createdAt: new Date(),
           updatedAt: new Date(),
           retries: 0,
@@ -514,38 +540,40 @@ class AgentOrchestrator {
         });
       }
     } catch (error) {
-      logger.error('Failed to evaluate HR tasks:', error);
+      logger.error("Failed to evaluate HR tasks:", error);
     }
 
     return tasks;
   }
 
   private async processTasks(tasks: AgentTask[]) {
-    const pendingTasks = taskQueue.filter(t => t.status === 'pending');
-    const processingCount = taskQueue.filter(t => t.status === 'processing').length;
+    const pendingTasks = taskQueue.filter((t) => t.status === "pending");
+    const processingCount = taskQueue.filter(
+      (t) => t.status === "processing",
+    ).length;
     const availableSlots = CONFIG.MAX_CONCURRENT_TASKS - processingCount;
 
     if (availableSlots <= 0) {
-      logger.debug('No available slots for task processing');
+      logger.debug("No available slots for task processing");
       return;
     }
 
     // Sort by priority
     const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-    const sortedTasks = [...pendingTasks].sort((a, b) =>
-      priorityOrder[a.priority] - priorityOrder[b.priority]
+    const sortedTasks = [...pendingTasks].sort(
+      (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority],
     );
 
     const tasksToProcess = sortedTasks.slice(0, availableSlots);
 
     for (const task of tasksToProcess) {
-      task.status = 'processing';
+      task.status = "processing";
       task.updatedAt = new Date();
 
       // Process asynchronously with timeout
-      this.processTaskWithTimeout(task).catch(error => {
+      this.processTaskWithTimeout(task).catch((error) => {
         logger.error(`Task ${task.id} failed:`, error);
-        task.status = 'failed';
+        task.status = "failed";
         task.updatedAt = new Date();
       });
     }
@@ -553,16 +581,16 @@ class AgentOrchestrator {
 
   private async processTaskWithTimeout(task: AgentTask): Promise<void> {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Task timeout')), CONFIG.TASK_TIMEOUT_MS);
+      setTimeout(
+        () => reject(new Error("Task timeout")),
+        CONFIG.TASK_TIMEOUT_MS,
+      );
     });
 
     try {
-      await Promise.race([
-        this.executeTask(task),
-        timeoutPromise,
-      ]);
+      await Promise.race([this.executeTask(task), timeoutPromise]);
 
-      task.status = 'completed';
+      task.status = "completed";
       task.updatedAt = new Date();
       logger.info(`✅ Task ${task.id} (${task.type}) completed`);
     } catch (error) {
@@ -570,27 +598,33 @@ class AgentOrchestrator {
       task.updatedAt = new Date();
 
       if (task.retries >= task.maxRetries) {
-        task.status = 'failed';
-        logger.error(`❌ Task ${task.id} failed after ${task.maxRetries} retries:`, error);
+        task.status = "failed";
+        logger.error(
+          `❌ Task ${task.id} failed after ${task.maxRetries} retries:`,
+          error,
+        );
       } else {
-        task.status = 'pending';
-        logger.warn(`⚠️ Task ${task.id} failed, retry ${task.retries}/${task.maxRetries}:`, error);
+        task.status = "pending";
+        logger.warn(
+          `⚠️ Task ${task.id} failed, retry ${task.retries}/${task.maxRetries}:`,
+          error,
+        );
       }
     }
   }
 
   private async executeTask(task: AgentTask): Promise<void> {
     switch (task.type) {
-      case 'systems':
+      case "systems":
         await this.executeSystemsTask(task);
         break;
-      case 'marketing':
+      case "marketing":
         await this.executeMarketingTask(task);
         break;
-      case 'finance':
+      case "finance":
         await this.executeFinanceTask(task);
         break;
-      case 'hr':
+      case "hr":
         await this.executeHRTask(task);
         break;
     }
@@ -600,9 +634,11 @@ class AgentOrchestrator {
     const { action, ...payload } = task.payload;
 
     switch (action) {
-      case 'error_analysis':
+      case "error_analysis":
         // Analyze errors and create GitHub issues or alert developers
-        logger.info('Analyzing system errors', { errorCount: (payload.errors as unknown[])?.length });
+        logger.info("Analyzing system errors", {
+          errorCount: (payload.errors as unknown[])?.length,
+        });
         // In production: call LLM to analyze errors and suggest fixes
         break;
     }
@@ -612,12 +648,16 @@ class AgentOrchestrator {
     const { action, ...payload } = task.payload;
 
     switch (action) {
-      case 'campaign_optimization':
-        logger.info('Optimizing campaigns', { campaignCount: (payload.campaigns as unknown[])?.length });
+      case "campaign_optimization":
+        logger.info("Optimizing campaigns", {
+          campaignCount: (payload.campaigns as unknown[])?.length,
+        });
         // In production: call LLM to suggest budget reallocation, targeting changes
         break;
-      case 'advertiser_outreach':
-        logger.info('Preparing advertiser outreach', { campaignCount: (payload.campaigns as unknown[])?.length });
+      case "advertiser_outreach":
+        logger.info("Preparing advertiser outreach", {
+          campaignCount: (payload.campaigns as unknown[])?.length,
+        });
         // In production: generate personalized emails for advertisers
         break;
     }
@@ -627,25 +667,33 @@ class AgentOrchestrator {
     const { action, ...payload } = task.payload;
 
     switch (action) {
-      case 'payout_processing': {
-        const { payrollPaymentIds, idempotencyKey } = payload as { payrollPaymentIds: string[]; idempotencyKey: string };
-        logger.info('Processing payouts', { count: payrollPaymentIds?.length });
+      case "payout_processing": {
+        const { payrollPaymentIds, idempotencyKey } = payload as {
+          payrollPaymentIds: string[];
+          idempotencyKey: string;
+        };
+        logger.info("Processing payouts", { count: payrollPaymentIds?.length });
 
         // CRITICAL: Must use internal API with idempotency key (R8 compliance)
-        await internalApi.post('/api/v1/finance/process-payouts',
+        await internalApi.post(
+          "/api/v1/finance/process-payouts",
           { payrollPaymentIds },
-          { headers: { 'Idempotency-Key': idempotencyKey } }
+          { headers: { "Idempotency-Key": idempotencyKey } },
         );
         break;
       }
-      case 'invoice_generation': {
-        const { subscriptionIds, idempotencyKey } = payload as { subscriptionIds: string[]; idempotencyKey: string };
-        logger.info('Generating invoices', { count: subscriptionIds?.length });
+      case "invoice_generation": {
+        const { subscriptionIds, idempotencyKey } = payload as {
+          subscriptionIds: string[];
+          idempotencyKey: string;
+        };
+        logger.info("Generating invoices", { count: subscriptionIds?.length });
 
         // CRITICAL: Must use internal API with idempotency key (R8 compliance)
-        await internalApi.post('/api/v1/finance/generate-invoices',
+        await internalApi.post(
+          "/api/v1/finance/generate-invoices",
           { subscriptionIds },
-          { headers: { 'Idempotency-Key': idempotencyKey } }
+          { headers: { "Idempotency-Key": idempotencyKey } },
         );
         break;
       }
@@ -656,12 +704,16 @@ class AgentOrchestrator {
     const { action, ...payload } = task.payload;
 
     switch (action) {
-      case 'driver_onboarding_followup':
-        logger.info('Following up on driver onboarding', { driverCount: (payload.driverIds as unknown[])?.length });
+      case "driver_onboarding_followup":
+        logger.info("Following up on driver onboarding", {
+          driverCount: (payload.driverIds as unknown[])?.length,
+        });
         // In production: send reminders, escalate to support
         break;
-      case 'compliance_check':
-        logger.info('Checking compliance', { contractCount: (payload.contracts as unknown[])?.length });
+      case "compliance_check":
+        logger.info("Checking compliance", {
+          contractCount: (payload.contracts as unknown[])?.length,
+        });
         // In production: notify drivers of expiring contracts
         break;
     }
@@ -676,7 +728,7 @@ class AgentOrchestrator {
     for (let i = taskQueue.length - 1; i >= 0; i--) {
       const task = taskQueue[i];
       if (
-        (task.status === 'completed' || task.status === 'failed') &&
+        (task.status === "completed" || task.status === "failed") &&
         now - task.updatedAt.getTime() > maxAge
       ) {
         taskQueue.splice(i, 1);
@@ -696,26 +748,30 @@ class AgentOrchestrator {
       if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
 
       // Wait for processing tasks to complete (with timeout)
-      const processingTasks = taskQueue.filter(t => t.status === 'processing');
+      const processingTasks = taskQueue.filter(
+        (t) => t.status === "processing",
+      );
       if (processingTasks.length > 0) {
-        logger.info(`Waiting for ${processingTasks.length} tasks to complete...`);
-        await new Promise(resolve => setTimeout(resolve, 10000)); // 10s max wait
+        logger.info(
+          `Waiting for ${processingTasks.length} tasks to complete...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // 10s max wait
       }
 
       await prisma.$disconnect();
-      logger.info('✅ Orchestrator shutdown complete');
+      logger.info("✅ Orchestrator shutdown complete");
       process.exit(0);
     };
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   }
 }
 
 // Start the orchestrator
 const orchestrator = new AgentOrchestrator();
-orchestrator.start().catch(error => {
-  logger.error('Failed to start orchestrator:', error);
+orchestrator.start().catch((error) => {
+  logger.error("Failed to start orchestrator:", error);
   process.exit(1);
 });
 

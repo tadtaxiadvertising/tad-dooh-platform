@@ -45,7 +45,7 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     const allowedTypes = ["video/mp4", "image/jpeg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
       const err = new Error(
-        `Tipo de archivo no permitido: ${file.type}. Solo MP4, JPG, PNG.`
+        `Tipo de archivo no permitido: ${file.type}. Solo MP4, JPG, PNG.`,
       );
       setError(err.message);
       options.onError?.(err);
@@ -69,19 +69,20 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
       const uploadUrlRes = await fetch(
         `${apiBase}/media/upload-url?fileName=${encodeURIComponent(
-          file.name
+          file.name,
         )}&fileType=${encodeURIComponent(file.type)}`,
         {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,
           },
-        }
+        },
       );
 
       if (!uploadUrlRes.ok) {
         const errData = await uploadUrlRes.json().catch(() => ({}));
         throw new Error(
-          errData.message || `Error obteniendo URL de subida: ${uploadUrlRes.status}`
+          errData.message ||
+            `Error obteniendo URL de subida: ${uploadUrlRes.status}`,
         );
       }
 
@@ -123,7 +124,7 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       if (!confirmRes.ok) {
         const errData = await confirmRes.json().catch(() => ({}));
         throw new Error(
-          errData.message || `Error confirmando subida: ${confirmRes.status}`
+          errData.message || `Error confirmando subida: ${confirmRes.status}`,
         );
       }
 
@@ -182,7 +183,7 @@ function getAuthToken(): string {
 async function uploadToSignedUrl(
   signedUrl: string,
   file: File,
-  onProgress: (loaded: number) => void
+  onProgress: (loaded: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();

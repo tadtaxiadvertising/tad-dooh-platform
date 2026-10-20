@@ -1,25 +1,65 @@
-import { useEffect, useState, useCallback } from 'react';
-import type { GetServerSideProps } from 'next';
-import { getCampaigns, deleteCampaign } from '@tad/services';
-import { PlusCircle, Megaphone, Zap, Film, ChevronRight, Clock, Trash2, Calendar, Target, Activity, Share2, AlertCircle, Sparkles, Download, RefreshCcw, MapPin } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import type { GetServerSideProps } from "next";
+import { getCampaigns, deleteCampaign } from "@tad/services";
+import {
+  PlusCircle,
+  Megaphone,
+  Zap,
+  Film,
+  ChevronRight,
+  Clock,
+  Trash2,
+  Calendar,
+  Target,
+  Activity,
+  Share2,
+  AlertCircle,
+  Sparkles,
+  Download,
+  RefreshCcw,
+  MapPin,
+} from "lucide-react";
 
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
-import Link from 'next/link';
-import { format } from 'date-fns';
-import clsx from 'clsx';
-import DeviceSelectorModal from '@/components/DeviceSelectorModal';
-import { CampaignModal } from '@/components/CampaignModal';
-import { useTabSync } from '@tad/ui';
-import { notifyChange } from '@tad/ui';
-import { AntigravityButton } from '@tad/ui';
-import { toast } from 'sonner';
-import { getMedia } from '@tad/services';
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
+import Link from "next/link";
+import { format } from "date-fns";
+import clsx from "clsx";
+import DeviceSelectorModal from "@/components/DeviceSelectorModal";
+import { CampaignModal } from "@/components/CampaignModal";
+import { useTabSync } from "@tad/ui";
+import { notifyChange } from "@tad/ui";
+import { AntigravityButton } from "@tad/ui";
+import { toast } from "sonner";
+import { getMedia } from "@tad/services";
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; advertiser: string; active: boolean; startDate?: string; start_date?: string; endDate?: string; end_date?: string; mediaAssets?: { duration?: number }[]; media?: { id: string }[]; devices?: string[]; category?: string; targetCity?: string; target_city?: string }[]>([]);
+  const [campaigns, setCampaigns] = useState<
+    {
+      id: string;
+      name: string;
+      advertiser: string;
+      active: boolean;
+      startDate?: string;
+      start_date?: string;
+      endDate?: string;
+      end_date?: string;
+      mediaAssets?: { duration?: number }[];
+      media?: { id: string }[];
+      devices?: string[];
+      category?: string;
+      targetCity?: string;
+      target_city?: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCampaign, setSelectedCampaign] = useState<{ id: string; name: string; devices?: string[] } | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<{
+    id: string;
+    name: string;
+    devices?: string[];
+  } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -34,7 +74,7 @@ export default function CampaignsPage() {
     }
   }, []);
 
-  useTabSync('CAMPAIGNS', loadData);
+  useTabSync("CAMPAIGNS", loadData);
 
   useEffect(() => {
     loadData();
@@ -53,7 +93,9 @@ export default function CampaignsPage() {
       {/* Page Context Transition */}
       <div className="flex items-center gap-3 mb-8 opacity-60">
         <div className="w-8 h-px bg-white/20" />
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Broadcasting / Campaign Orchestrator</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">
+          Broadcasting / Campaign Orchestrator
+        </p>
       </div>
 
       <div className="flex justify-between items-center mb-6">
@@ -61,12 +103,16 @@ export default function CampaignsPage() {
           <button
             onClick={() => {
               loadData();
-              toast.success('SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.');
+              toast.success("SINCRONIZACIÓN GLOBAL DE RED ACTIVADA.");
             }}
             className="p-2.5 bg-gray-900 border border-gray-700 rounded-xl hover:border-[#FFD400] hover:text-[#FFD400] transition-all text-gray-500 shadow-sm flex items-center gap-2 group"
           >
-            <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Revalidar Clúster</span>
+            <RefreshCcw
+              className={clsx("w-4 h-4", loading && "animate-spin")}
+            />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">
+              Revalidar Clúster
+            </span>
           </button>
         </div>
         <Link
@@ -81,28 +127,77 @@ export default function CampaignsPage() {
       {/* Primary IQ Metrics Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
-          { icon: Megaphone, label: 'Campañas Globales', value: campaigns.length, color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
-          { icon: Zap, label: 'Impactos Activos', value: campaigns.filter(c => c.active).length, color: 'text-[#FFD400]', borderColor: 'border-[#FFD400]/40', iconColor: 'text-[#FFD400]' },
-          { icon: Target, label: 'Alcance Red', value: '4.2M+', color: 'text-emerald-500', borderColor: 'border-emerald-500/40', iconColor: 'text-emerald-500' },
-          { icon: Activity, label: 'Integridad Link', value: 'Nominal', color: 'text-white', borderColor: 'border-white/20', iconColor: 'text-zinc-400' },
+          {
+            icon: Megaphone,
+            label: "Campañas Globales",
+            value: campaigns.length,
+            color: "text-white",
+            borderColor: "border-white/20",
+            iconColor: "text-zinc-400",
+          },
+          {
+            icon: Zap,
+            label: "Impactos Activos",
+            value: campaigns.filter((c) => c.active).length,
+            color: "text-[#FFD400]",
+            borderColor: "border-[#FFD400]/40",
+            iconColor: "text-[#FFD400]",
+          },
+          {
+            icon: Target,
+            label: "Alcance Red",
+            value: "4.2M+",
+            color: "text-emerald-500",
+            borderColor: "border-emerald-500/40",
+            iconColor: "text-emerald-500",
+          },
+          {
+            icon: Activity,
+            label: "Integridad Link",
+            value: "Nominal",
+            color: "text-white",
+            borderColor: "border-white/20",
+            iconColor: "text-zinc-400",
+          },
         ].map((s, i) => (
           <div
             key={i}
             className={clsx(
               "bg-[#111317] border border-white/[0.05] p-6 rounded-[24px] group relative overflow-hidden transition-all duration-300 shadow-sm flex flex-col justify-between hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both",
-              i === 0 ? 'delay-0' : i === 1 ? 'delay-50' : i === 2 ? 'delay-100' : 'delay-150'
+              i === 0
+                ? "delay-0"
+                : i === 1
+                  ? "delay-50"
+                  : i === 2
+                    ? "delay-100"
+                    : "delay-150",
             )}
           >
             <div className="flex justify-between items-start mb-6">
-              <div className={clsx("p-2.5 rounded-2xl border bg-transparent", s.borderColor, s.iconColor)}>
+              <div
+                className={clsx(
+                  "p-2.5 rounded-2xl border bg-transparent",
+                  s.borderColor,
+                  s.iconColor,
+                )}
+              >
                 <s.icon className="w-5 h-5" />
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-slate-600/50" />
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-              <h3 className={clsx("text-4xl font-black tracking-tighter leading-none mt-1", s.color)}>
-                {typeof s.value === 'number' && s.value < 10 ? `0${s.value}` : s.value}
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                {s.label}
+              </p>
+              <h3
+                className={clsx(
+                  "text-4xl font-black tracking-tighter leading-none mt-1",
+                  s.color,
+                )}
+              >
+                {typeof s.value === "number" && s.value < 10
+                  ? `0${s.value}`
+                  : s.value}
               </h3>
             </div>
           </div>
@@ -113,7 +208,10 @@ export default function CampaignsPage() {
       <div className="space-y-6">
         {loading ? (
           [1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-[120px] bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/30 flex items-center p-6 gap-8 shadow-inner">
+            <div
+              key={i}
+              className="h-[120px] bg-gray-800/20 backdrop-blur-xl animate-pulse rounded-2xl border border-gray-700/30 flex items-center p-6 gap-8 shadow-inner"
+            >
               <div className="w-16 h-16 bg-gray-700/20 rounded-2xl shrink-0" />
               <div className="flex-1 space-y-3">
                 <div className="h-5 bg-gray-700/20 rounded-full w-1/3" />
@@ -127,35 +225,54 @@ export default function CampaignsPage() {
           ))
         ) : campaigns.length > 0 ? (
           campaigns.map((camp, idx) => {
-            const startDate = new Date(camp.startDate || camp.start_date || '');
-            const endDate = new Date(camp.endDate || camp.end_date || '');
+            const startDate = new Date(camp.startDate || camp.start_date || "");
+            const endDate = new Date(camp.endDate || camp.end_date || "");
             const isLive = camp.active && now >= startDate && now <= endDate;
-            const assetCount = (camp.mediaAssets?.length || 0) + (camp.media?.length || 0);
-            const totalDuration = (camp.mediaAssets || []).reduce((sum: number, a: { duration?: number }) => sum + (a.duration || 0), 0);
+            const assetCount =
+              (camp.mediaAssets?.length || 0) + (camp.media?.length || 0);
+            const totalDuration = (camp.mediaAssets || []).reduce(
+              (sum: number, a: { duration?: number }) =>
+                sum + (a.duration || 0),
+              0,
+            );
 
             return (
               <div
                 key={camp.id}
                 className={clsx(
                   "group relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden hover:border-tad-yellow/40 transition-all duration-500 shadow-md hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-8 fill-mode-both hover:shadow-lg",
-                  idx === 0 ? 'delay-0' : idx === 1 ? 'delay-50' : idx === 2 ? 'delay-100' : idx === 3 ? 'delay-150' : idx === 4 ? 'delay-200' : 'delay-250'
+                  idx === 0
+                    ? "delay-0"
+                    : idx === 1
+                      ? "delay-50"
+                      : idx === 2
+                        ? "delay-100"
+                        : idx === 3
+                          ? "delay-150"
+                          : idx === 4
+                            ? "delay-200"
+                            : "delay-250",
                 )}
               >
                 {/* Visual Status Glow */}
-                <div className={clsx(
-                  "absolute -top-10 -right-10 w-48 h-48 blur-[60px] transition-all duration-1000 opacity-0 group-hover:opacity-10",
-                  isLive ? "bg-tad-yellow" : "bg-emerald-500"
-                )} />
+                <div
+                  className={clsx(
+                    "absolute -top-10 -right-10 w-48 h-48 blur-[60px] transition-all duration-1000 opacity-0 group-hover:opacity-10",
+                    isLive ? "bg-tad-yellow" : "bg-emerald-500",
+                  )}
+                />
 
                 <div className="p-6 flex flex-col xl:flex-row xl:items-center gap-8 relative z-10">
                   {/* Branding & identity Zone */}
                   <div className="flex items-center gap-6 flex-1 min-w-0">
-                    <div className={clsx(
-                      "w-16 h-16 rounded-2xl border transition-all duration-500 flex items-center justify-center shrink-0",
-                      isLive
-                        ? "bg-tad-yellow text-black border-tad-yellow shadow-[0_0_15px_rgba(255,212,0,0.3)] group-hover:scale-105"
-                        : "bg-gray-900 border-gray-700 text-gray-500"
-                    )}>
+                    <div
+                      className={clsx(
+                        "w-16 h-16 rounded-2xl border transition-all duration-500 flex items-center justify-center shrink-0",
+                        isLive
+                          ? "bg-tad-yellow text-black border-tad-yellow shadow-[0_0_15px_rgba(255,212,0,0.3)] group-hover:scale-105"
+                          : "bg-gray-900 border-gray-700 text-gray-500",
+                      )}
+                    >
                       <Sparkles className="w-8 h-8 group-hover:animate-pulse" />
                     </div>
                     <div className="min-w-0">
@@ -165,20 +282,28 @@ export default function CampaignsPage() {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/50 rounded-lg border border-gray-700">
                           <span className="w-1.5 h-1.5 rounded-full bg-tad-yellow" />
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{camp.advertiser}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                            {camp.advertiser}
+                          </p>
                         </div>
                         <div className="h-3 w-px bg-gray-600" />
                         <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
                           <Target className="w-3 h-3 text-tad-yellow" />
-                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{camp.category || 'GENERAL'}</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                            {camp.category || "GENERAL"}
+                          </p>
                         </div>
                         <div className="h-3 w-px bg-gray-600" />
                         <div className="flex items-center gap-2 px-3 py-1 bg-gray-900/40 rounded-lg border border-gray-800">
                           <MapPin className="w-3 h-3 text-zinc-500" />
-                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{camp.targetCity || camp.target_city || 'GLOBAL'}</p>
+                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                            {camp.targetCity || camp.target_city || "GLOBAL"}
+                          </p>
                         </div>
                         <div className="h-3 w-px bg-gray-600" />
-                        <p className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">ID: {camp.id.slice(0, 8)}</p>
+                        <p className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
+                          ID: {camp.id.slice(0, 8)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -186,40 +311,69 @@ export default function CampaignsPage() {
                   {/* Operational Metrics Cluster */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 shrink-0 xl:w-[400px]">
                     <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50 hover:bg-gray-800 transition-all">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Vault</p>
+                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">
+                        Vault
+                      </p>
                       <div className="flex items-center gap-2">
                         <Film className="w-4 h-4 text-tad-yellow" />
-                        <span className="text-sm font-black text-white">{assetCount} ASSETS</span>
+                        <span className="text-sm font-black text-white">
+                          {assetCount} ASSETS
+                        </span>
                       </div>
                     </div>
                     <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50 hover:bg-gray-800 transition-all">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Loop Time</p>
+                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">
+                        Loop Time
+                      </p>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-black text-white">{totalDuration} SEC</span>
+                        <span className="text-sm font-black text-white">
+                          {totalDuration} SEC
+                        </span>
                       </div>
                     </div>
                     <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50 hover:bg-gray-800 transition-all hidden md:block">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Ventana</p>
+                      <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">
+                        Ventana
+                      </p>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-blue-400" />
-                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">{format(startDate, 'dd-MMM')} / {format(endDate, 'dd-MMM')}</span>
+                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">
+                          {format(startDate, "dd-MMM")} /{" "}
+                          {format(endDate, "dd-MMM")}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Actions & Status Conduit */}
                   <div className="flex flex-col gap-4 shrink-0 xl:w-64">
-                    <div className={clsx(
-                      "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-500",
-                      isLive ? "bg-tad-yellow/10 border-tad-yellow/30 text-tad-yellow" : camp.active ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-rose-500/10 border-rose-500/30 text-rose-500"
-                    )}>
-                      <div className={clsx(
-                        "w-2 h-2 rounded-full",
-                        isLive ? "bg-tad-yellow animate-pulse shadow-[0_0_8px_#fad400]" : camp.active ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-rose-500"
-                      )} />
+                    <div
+                      className={clsx(
+                        "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-500",
+                        isLive
+                          ? "bg-tad-yellow/10 border-tad-yellow/30 text-tad-yellow"
+                          : camp.active
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
+                            : "bg-rose-500/10 border-rose-500/30 text-rose-500",
+                      )}
+                    >
+                      <div
+                        className={clsx(
+                          "w-2 h-2 rounded-full",
+                          isLive
+                            ? "bg-tad-yellow animate-pulse shadow-[0_0_8px_#fad400]"
+                            : camp.active
+                              ? "bg-emerald-500 shadow-[0_0_8px_#10b981]"
+                              : "bg-rose-500",
+                        )}
+                      />
                       <span className="text-[10px] font-bold uppercase tracking-widest">
-                        {isLive ? 'Transmisión Regional' : camp.active ? 'Ciclo Programado' : 'Offline'}
+                        {isLive
+                          ? "Transmisión Regional"
+                          : camp.active
+                            ? "Ciclo Programado"
+                            : "Offline"}
                       </span>
                     </div>
                     <div className="flex gap-3">
@@ -250,7 +404,7 @@ export default function CampaignsPage() {
                         onAsyncClick={async () => await deleteCampaign(camp.id)}
                         onSuccess={() => {
                           loadData();
-                          notifyChange('CAMPAIGNS');
+                          notifyChange("CAMPAIGNS");
                         }}
                       >
                         <Trash2 className="w-5 h-5" />
@@ -266,9 +420,12 @@ export default function CampaignsPage() {
             <div className="w-20 h-20 bg-gray-900 border border-gray-700 rounded-2xl flex items-center justify-center mb-8 shadow-sm group-hover:shadow-[0_0_20px_rgba(255,212,0,0.15)] transition-shadow duration-500 group-hover:-translate-y-1">
               <Megaphone className="w-10 h-10 text-gray-500 transition-colors duration-500 group-hover:text-tad-yellow" />
             </div>
-            <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tight leading-none mb-3 transition-colors duration-500 group-hover:text-white">Red Inactiva</h3>
+            <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tight leading-none mb-3 transition-colors duration-500 group-hover:text-white">
+              Red Inactiva
+            </h3>
             <p className="text-gray-500 font-bold uppercase tracking-wider text-[11px] max-w-md leading-relaxed mb-8">
-              El clúster regional no tiene campañas activas. Inicie un nuevo protocolo de inyección creativa.
+              El clúster regional no tiene campañas activas. Inicie un nuevo
+              protocolo de inyección creativa.
             </p>
             <Link
               href="/admin/campaigns/new"
@@ -288,22 +445,26 @@ export default function CampaignsPage() {
           campaignName={selectedCampaign.name}
           onSuccess={() => {
             loadData();
-            notifyChange('CAMPAIGNS');
-            toast.success(`"${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`);
+            notifyChange("CAMPAIGNS");
+            toast.success(
+              `"${selectedCampaign.name.toUpperCase()}" SINCRONIZADA.`,
+            );
           }}
         />
       )}
-
 
       {/* Terminal Footer Info */}
       <div className="mt-16 pt-10 border-t border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-col items-center md:items-start gap-2 opacity-60 group hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-3">
             <Activity className="w-5 h-5 text-gray-400" />
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CLUSTER_ORCHESTRATOR_v4.2</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              CLUSTER_ORCHESTRATOR_v4.2
+            </p>
           </div>
           <p className="text-xs text-gray-500 max-w-sm">
-            Orquestación de impactos verificados bajo protocolos de handshake regional. Auditoría de loops 100% activa.
+            Orquestación de impactos verificados bajo protocolos de handshake
+            regional. Auditoría de loops 100% activa.
           </p>
         </div>
         <div className="flex gap-4">
@@ -344,11 +505,3 @@ export default function CampaignsPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-

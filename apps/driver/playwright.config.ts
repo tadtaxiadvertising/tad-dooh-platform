@@ -6,13 +6,13 @@
  *  - Entornos con conectividad inestable (3G, offline-first)
  *  - CI/CD en VPS con recursos limitados (Easypanel)
  */
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3004';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3004";
 
 export default defineConfig({
   // Directorio raíz con todos los spec files
-  testDir: './tests/e2e',
+  testDir: "./tests/e2e",
 
   // Ejecución secuencial: evita saturar el VPS durante CI
   fullyParallel: false,
@@ -32,21 +32,21 @@ export default defineConfig({
   },
 
   reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['list'],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
+    ["list"],
   ],
 
   use: {
     baseURL: BASE_URL,
 
     // Captura de traza: muy útil para depurar fallos de red/Service Worker
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     // Capturas de pantalla sólo en fallo
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     // Video en fallo (crítico para depurar comportamiento en kiosco sin acceso físico)
-    video: 'retain-on-failure',
+    video: "retain-on-failure",
 
     // Timeout extendido: redes 3G pueden ser lentas al cargar el SW
     actionTimeout: 30_000,
@@ -57,13 +57,13 @@ export default defineConfig({
     isMobile: true,
     hasTouch: true,
     userAgent:
-      'Mozilla/5.0 (Linux; Android 13; Generic Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 FullyKiosk/3.0',
+      "Mozilla/5.0 (Linux; Android 13; Generic Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 FullyKiosk/3.0",
 
     // Permisos necesarios para GPS y notificaciones
-    permissions: ['geolocation'],
+    permissions: ["geolocation"],
     geolocation: { latitude: 18.4861, longitude: -69.9312 }, // Santo Domingo, RD
-    locale: 'es-DO',
-    timezoneId: 'America/Santo_Domingo',
+    locale: "es-DO",
+    timezoneId: "America/Santo_Domingo",
 
     // Ignora errores de cert en entorno dev/staging
     ignoreHTTPSErrors: true,
@@ -72,21 +72,21 @@ export default defineConfig({
   projects: [
     // ─── Proyecto Principal: Kiosco Android ────────────────────────────
     {
-      name: 'android-kiosk',
+      name: "android-kiosk",
       use: {
         viewport: { width: 1280, height: 800 },
         isMobile: true,
         hasTouch: true,
         userAgent:
-          'Mozilla/5.0 (Linux; Android 13; Generic Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 FullyKiosk/3.0',
+          "Mozilla/5.0 (Linux; Android 13; Generic Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 FullyKiosk/3.0",
       },
     },
 
     // ─── Proyecto Desktop Admin (Para el Admin Dashboard) ──────────────
     {
-      name: 'admin-desktop',
+      name: "admin-desktop",
       use: {
-        ...devices['Desktop Chrome'],
+        ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
       },
     },
@@ -94,7 +94,7 @@ export default defineConfig({
     // ─── Proyecto Offline Stress Test ──────────────────────────────────
     // Solo se usa para las pruebas de resiliencia offline
     {
-      name: 'offline-resilience',
+      name: "offline-resilience",
       use: {
         viewport: { width: 1280, height: 800 },
         isMobile: true,
@@ -103,18 +103,17 @@ export default defineConfig({
         actionTimeout: 20_000,
         navigationTimeout: 45_000,
       },
-      testMatch: '**/offline-resilience.spec.ts',
+      testMatch: "**/offline-resilience.spec.ts",
     },
   ],
 
   // Levanta Next.js dev server automáticamente si no está corriendo
   webServer: {
-    command: 'npm run dev',
+    command: "npm run dev",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });
-

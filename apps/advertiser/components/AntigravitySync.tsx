@@ -1,4 +1,4 @@
-import { useAntigravity } from '@tad/ui';
+import { useAntigravity } from "@tad/ui";
 
 export default function AntigravitySync() {
   useAntigravity();

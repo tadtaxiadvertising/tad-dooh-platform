@@ -28,18 +28,16 @@ const withPWA = withPWAInit({
     runtimeCaching: [
       {
         urlPattern: ({ url, request }: { url: URL; request: any }) =>
-          request.method === 'GET' &&
-          (
-            url.pathname.startsWith('/driver/dashboard') ||
-            url.pathname.startsWith('/_next/static/') ||
-            request.destination === 'script' ||
-            request.destination === 'style' ||
-            request.destination === 'image' ||
-            request.destination === 'font'
-          ),
-        handler: 'StaleWhileRevalidate',
+          request.method === "GET" &&
+          (url.pathname.startsWith("/driver/dashboard") ||
+            url.pathname.startsWith("/_next/static/") ||
+            request.destination === "script" ||
+            request.destination === "style" ||
+            request.destination === "image" ||
+            request.destination === "font"),
+        handler: "StaleWhileRevalidate",
         options: {
-          cacheName: 'tad-driver-dashboard-assets',
+          cacheName: "tad-driver-dashboard-assets",
           expiration: {
             maxEntries: 160,
             maxAgeSeconds: 60 * 60 * 24 * 7,
@@ -63,7 +61,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  outputFileTracingRoot: path.join(process.cwd(), '../../'),
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado
@@ -75,7 +73,7 @@ const nextConfig: NextConfig = {
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.join(__dirname, './'),
+      "@": path.join(__dirname, "./"),
     };
     return config;
   },
@@ -87,14 +85,14 @@ const nextConfig: NextConfig = {
   // si ya hay sesión DRIVER). Los redirects de next.config se ejecutan
   // ANTES que el middleware y rompen el flujo del portal driver.
   async redirects() {
-        return [
-          {
-            source: '/p/advertiser/:path*',
-            destination: 'https://tad.anunciante.ibusiness.com.do',
-            permanent: false,
-          },
-        ];
+    return [
+      {
+        source: "/p/advertiser/:path*",
+        destination: "https://tad.anunciante.ibusiness.com.do",
+        permanent: false,
       },
+    ];
+  },
 };
 
 export default withSentryConfig(withPWA(nextConfig), {
@@ -103,7 +101,7 @@ export default withSentryConfig(withPWA(nextConfig), {
   org: "o4511114332143616",
   project: "admin-dashboard",
   sentryUrl: "https://sentry.io/",
-  
+
   // Provide the auth token for source maps upload
   authToken: process.env.SENTRY_AUTH_TOKEN,
 
@@ -122,6 +120,6 @@ export default withSentryConfig(withPWA(nextConfig), {
 
   // Removes uploaded source maps from the production bundle to reduce bundle size
   sourcemaps: {
-     deleteSourcemapsAfterUpload: true,
+    deleteSourcemapsAfterUpload: true,
   },
 });

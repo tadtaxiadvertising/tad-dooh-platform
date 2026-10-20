@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { useEffect } from "react";
+import { useMap } from "react-leaflet";
+import L from "leaflet";
 
 // leaflet.heat is a side-effect plugin that adds L.heatLayer
 // We import it this way to ensure it only runs in the browser
-import 'leaflet.heat';
+import "leaflet.heat";
 
 interface HeatmapLayerProps {
   points: [number, number, number][]; // [lat, lng, intensity]
@@ -14,18 +14,18 @@ interface HeatmapLayerProps {
   gradient?: { [key: string]: string };
 }
 
-const HeatmapLayer: React.FC<HeatmapLayerProps> = ({ 
-  points, 
-  radius = 18, 
-  blur = 15, 
+const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
+  points,
+  radius = 18,
+  blur = 15,
   max = 0.5,
   gradient = {
-    0.2: 'rgba(250, 212, 0, 0.1)',
-    0.4: 'rgba(250, 212, 0, 0.3)',
-    0.6: 'rgba(250, 212, 0, 0.6)',
-    0.9: 'rgba(250, 212, 0, 1)',
-    1.0: '#ffffff'
-  }
+    0.2: "rgba(250, 212, 0, 0.1)",
+    0.4: "rgba(250, 212, 0, 0.3)",
+    0.6: "rgba(250, 212, 0, 0.6)",
+    0.9: "rgba(250, 212, 0, 1)",
+    1.0: "#ffffff",
+  },
 }) => {
   const map = useMap();
 
@@ -37,7 +37,7 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
       radius,
       blur,
       max,
-      gradient
+      gradient,
     });
 
     heatLayer.addTo(map);
@@ -53,7 +53,3 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
 };
 
 export default HeatmapLayer;
-
-
-
-

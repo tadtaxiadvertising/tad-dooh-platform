@@ -1,8 +1,18 @@
-import { useState, useEffect } from 'react';
-import { X, Building2, User, Mail, Phone, Globe, Instagram, MessageCircle, Shield } from 'lucide-react';
-import clsx from 'clsx';
-import { createAdvertiser, updateAdvertiser } from '@tad/services';
-import { AntigravityButton } from '@tad/ui';
+import { useState, useEffect } from "react";
+import {
+  X,
+  Building2,
+  User,
+  Mail,
+  Phone,
+  Globe,
+  Instagram,
+  MessageCircle,
+  Shield,
+} from "lucide-react";
+import clsx from "clsx";
+import { createAdvertiser, updateAdvertiser } from "@tad/services";
+import { AntigravityButton } from "@tad/ui";
 
 interface AdvertiserModalProps {
   isOpen: boolean;
@@ -21,38 +31,38 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    companyName: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    whatsapp: '',
-    websiteUrl: '',
-    instagram: '',
-    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+    companyName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    whatsapp: "",
+    websiteUrl: "",
+    instagram: "",
+    status: "ACTIVE" as "ACTIVE" | "INACTIVE",
   });
 
   useEffect(() => {
     if (initialData) {
       setForm({
-        companyName: initialData.companyName || '',
-        contactName: initialData.contactName || '',
-        email: initialData.email || '',
-        phone: initialData.phone || '',
-        whatsapp: initialData.whatsapp || '',
-        websiteUrl: initialData.websiteUrl || '',
-        instagram: initialData.instagram || '',
-        status: initialData.status || 'ACTIVE',
+        companyName: initialData.companyName || "",
+        contactName: initialData.contactName || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        whatsapp: initialData.whatsapp || "",
+        websiteUrl: initialData.websiteUrl || "",
+        instagram: initialData.instagram || "",
+        status: initialData.status || "ACTIVE",
       });
     } else {
       setForm({
-        companyName: '',
-        contactName: '',
-        email: '',
-        phone: '',
-        whatsapp: '',
-        websiteUrl: '',
-        instagram: '',
-        status: 'ACTIVE',
+        companyName: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        whatsapp: "",
+        websiteUrl: "",
+        instagram: "",
+        status: "ACTIVE",
       });
     }
     setError(null);
@@ -66,7 +76,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
 
   const handleSubmit = async () => {
     if (!form.companyName.trim()) {
-      setError('El nombre de la compañía es obligatorio.');
+      setError("El nombre de la compañía es obligatorio.");
       return;
     }
     setError(null);
@@ -79,13 +89,15 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Error al guardar.');
+      setError(
+        err.response?.data?.message || err.message || "Error al guardar.",
+      );
     }
   };
 
   const inputClass = clsx(
-    'w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold tracking-wider outline-none transition-all placeholder:text-zinc-700',
-    'focus:border-tad-yellow/30'
+    "w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold tracking-wider outline-none transition-all placeholder:text-zinc-700",
+    "focus:border-tad-yellow/30",
   );
 
   return (
@@ -106,7 +118,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">
-                {isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'}
+                {isEditing ? "Editar Cuenta" : "Nueva Cuenta"}
               </h3>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                 Socio Estratégico
@@ -137,7 +149,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
             <input
               type="text"
               value={form.companyName}
-              onChange={(e) => handleChange('companyName', e.target.value)}
+              onChange={(e) => handleChange("companyName", e.target.value)}
               placeholder="Nombre de la empresa"
               className={inputClass}
             />
@@ -151,7 +163,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
             <input
               type="text"
               value={form.contactName}
-              onChange={(e) => handleChange('contactName', e.target.value)}
+              onChange={(e) => handleChange("contactName", e.target.value)}
               placeholder="Persona de contacto"
               className={inputClass}
             />
@@ -165,7 +177,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
             <input
               type="email"
               value={form.email}
-              onChange={(e) => handleChange('email', e.target.value)}
+              onChange={(e) => handleChange("email", e.target.value)}
               placeholder="correo@empresa.com"
               className={inputClass}
             />
@@ -180,7 +192,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
               <input
                 type="text"
                 value={form.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
+                onChange={(e) => handleChange("phone", e.target.value)}
                 placeholder="+1 809 000 0000"
                 className={inputClass}
               />
@@ -192,7 +204,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
               <input
                 type="text"
                 value={form.whatsapp}
-                onChange={(e) => handleChange('whatsapp', e.target.value)}
+                onChange={(e) => handleChange("whatsapp", e.target.value)}
                 placeholder="+1 809 000 0000"
                 className={inputClass}
               />
@@ -208,7 +220,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
               <input
                 type="text"
                 value={form.websiteUrl}
-                onChange={(e) => handleChange('websiteUrl', e.target.value)}
+                onChange={(e) => handleChange("websiteUrl", e.target.value)}
                 placeholder="https://empresa.com"
                 className={inputClass}
               />
@@ -220,7 +232,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
               <input
                 type="text"
                 value={form.instagram}
-                onChange={(e) => handleChange('instagram', e.target.value)}
+                onChange={(e) => handleChange("instagram", e.target.value)}
                 placeholder="@empresa"
                 className={inputClass}
               />
@@ -229,23 +241,25 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
 
           {/* Status */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+              Estado
+            </label>
             <div className="flex gap-3">
-              {(['ACTIVE', 'INACTIVE'] as const).map((s) => (
+              {(["ACTIVE", "INACTIVE"] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
-                  onClick={() => handleChange('status', s)}
+                  onClick={() => handleChange("status", s)}
                   className={clsx(
-                    'flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border',
+                    "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
                     form.status === s
-                      ? s === 'ACTIVE'
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
-                        : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400'
-                      : 'bg-white/5 border-white/5 text-zinc-600 hover:text-zinc-400'
+                      ? s === "ACTIVE"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
+                        : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
+                      : "bg-white/5 border-white/5 text-zinc-600 hover:text-zinc-400",
                   )}
                 >
-                  {s === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                  {s === "ACTIVE" ? "Activo" : "Inactivo"}
                 </button>
               ))}
             </div>
@@ -261,11 +275,11 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
             Cancelar
           </button>
           <AntigravityButton
-            actionName={isEditing ? 'update_advertiser' : 'create_advertiser'}
+            actionName={isEditing ? "update_advertiser" : "create_advertiser"}
             onAsyncClick={handleSubmit}
             className="flex-1 py-4"
           >
-            {isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
+            {isEditing ? "Guardar Cambios" : "Crear Cuenta"}
           </AntigravityButton>
         </div>
       </div>

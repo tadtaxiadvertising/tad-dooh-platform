@@ -430,8 +430,13 @@ export class MediaService {
 
     const cdnPrefix = String(this.config.get("CDN_URL_PREFIX"));
     let finalCdnUrl = publicUrl;
-    if (cdnPrefix && publicUrl.includes(String(this.config.get("SUPABASE_URL") ?? ""))) {
-      finalCdnUrl = publicUrl.split(String(this.config.get("SUPABASE_URL") ?? "")).join(cdnPrefix);
+    if (
+      cdnPrefix &&
+      publicUrl.includes(String(this.config.get("SUPABASE_URL") ?? ""))
+    ) {
+      finalCdnUrl = publicUrl
+        .split(String(this.config.get("SUPABASE_URL") ?? ""))
+        .join(cdnPrefix);
     }
 
     // 8. Crear registro en BD

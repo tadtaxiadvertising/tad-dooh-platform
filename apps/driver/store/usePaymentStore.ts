@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface PaymentState {
   isLocked: boolean;
@@ -11,4 +11,3 @@ export const usePaymentStore = create<PaymentState>((set) => ({
   message: null,
   setLock: (isLocked, message = null) => set({ isLocked, message }),
 }));
-

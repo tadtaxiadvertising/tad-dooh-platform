@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 
 interface MapViewProps {
   locations?: any[];
   heatmapData?: any[];
-  mode?: 'live' | 'heatmap';
+  mode?: "live" | "heatmap";
   center?: [number, number];
   zoom?: number;
   selectedId?: string | null;
   recentPath?: any[];
-  mapTheme?: 'dark' | 'light';
+  mapTheme?: "dark" | "light";
   onClearSelection?: () => void;
   onViewHistory?: (v: any) => void;
 }
@@ -36,7 +36,7 @@ export default function MapView({
           Leaflet map integration pending implementation
         </p>
         <p className="text-[8px] text-zinc-700 mt-1">
-          {locations?.length || 0} locations loaded • Mode: {mode || 'live'}
+          {locations?.length || 0} locations loaded • Mode: {mode || "live"}
         </p>
       </div>
     </div>

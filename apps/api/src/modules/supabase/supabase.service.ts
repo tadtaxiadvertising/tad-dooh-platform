@@ -146,11 +146,13 @@ export class SupabaseService {
 
     if (error) throw error;
 
-    return data.map((file: { name: string; id?: string | null | undefined }) => ({
-      ...file,
-      id: file.id ?? "",
-      url: this.getPublicUrl(file.name, bucket),
-    }));
+    return data.map(
+      (file: { name: string; id?: string | null | undefined }) => ({
+        ...file,
+        id: file.id ?? "",
+        url: this.getPublicUrl(file.name, bucket),
+      }),
+    );
   }
 
   getClient() {

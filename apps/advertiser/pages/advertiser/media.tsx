@@ -18,21 +18,32 @@ import { AdvertiserLayout } from "@/components/layout/AdvertiserLayout";
 import { VideoUpload } from "@/components/VideoUpload";
 import type { GetServerSideProps } from "next";
 
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 export default function AdvertiserMedia() {
   const { session } = useAuth();
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [renameModal, setRenameModal] = useState<{ open: boolean; media: any; newName: string }>({
+  const [renameModal, setRenameModal] = useState<{
+    open: boolean;
+    media: any;
+    newName: string;
+  }>({
     open: false,
     media: null,
     newName: "",
   });
   const [saving, setSaving] = useState(false);
-  const [linkModal, setLinkModal] = useState<{ open: boolean; media: any }>({ open: false, media: null });
-  const [unlinkModal, setUnlinkModal] = useState<{ open: boolean; media: any }>({ open: false, media: null });
+  const [linkModal, setLinkModal] = useState<{ open: boolean; media: any }>({
+    open: false,
+    media: null,
+  });
+  const [unlinkModal, setUnlinkModal] = useState<{ open: boolean; media: any }>(
+    { open: false, media: null },
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchMedia = useCallback(async () => {
@@ -103,8 +114,14 @@ export default function AdvertiserMedia() {
       }
       setMediaLibrary((prev) =>
         prev.map((m: any) =>
-          m.id === media.id ? { ...m, filename: newName.trim(), originalFilename: newName.trim() } : m
-        )
+          m.id === media.id
+            ? {
+                ...m,
+                filename: newName.trim(),
+                originalFilename: newName.trim(),
+              }
+            : m,
+        ),
       );
       setRenameModal({ open: false, media: null, newName: "" });
     } catch (e) {
@@ -147,7 +164,11 @@ export default function AdvertiserMedia() {
         throw new Error(err.message || "No se pudo desvincular el archivo");
       }
       setMediaLibrary((prev) =>
-        prev.map((m: any) => (m.id === media.id ? { ...m, campaign_id: undefined, campaign: null } : m))
+        prev.map((m: any) =>
+          m.id === media.id
+            ? { ...m, campaign_id: undefined, campaign: null }
+            : m,
+        ),
       );
       setUnlinkModal({ open: false, media: null });
     } catch (e) {
@@ -156,7 +177,11 @@ export default function AdvertiserMedia() {
   };
 
   const openRename = (media: any) => {
-    setRenameModal({ open: true, media, newName: media.filename || media.originalFilename || "" });
+    setRenameModal({
+      open: true,
+      media,
+      newName: media.filename || media.originalFilename || "",
+    });
   };
 
   const isVideo = (m: any) =>
@@ -167,7 +192,12 @@ export default function AdvertiserMedia() {
   const isImage = (m: any) =>
     !!(m.mimeType && m.mimeType.startsWith("image/")) ||
     !!(m.mime_type && m.mime_type.startsWith("image/")) ||
-    !!(m.filename && (m.filename.toLowerCase().endsWith(".jpg") || m.filename.toLowerCase().endsWith(".jpeg") || m.filename.toLowerCase().endsWith(".png")));
+    !!(
+      m.filename &&
+      (m.filename.toLowerCase().endsWith(".jpg") ||
+        m.filename.toLowerCase().endsWith(".jpeg") ||
+        m.filename.toLowerCase().endsWith(".png"))
+    );
 
   return (
     <AdvertiserLayout title="Librería de Media" subtitle="Gestión de Activos">
@@ -211,7 +241,8 @@ export default function AdvertiserMedia() {
             No hay archivos aún
           </h3>
           <p className="text-sm text-zinc-600 max-w-xs">
-            Sube tus primeros videos o imágenes para comenzar a crear campañas publicitarias.
+            Sube tus primeros videos o imágenes para comenzar a crear campañas
+            publicitarias.
           </p>
         </div>
       )}
@@ -294,7 +325,9 @@ export default function AdvertiserMedia() {
                     <div className="flex items-center gap-1 border-t border-white/5 pt-3 mt-1">
                       {item.campaign && item.campaign.active ? (
                         <button
-                          onClick={() => setUnlinkModal({ open: true, media: item })}
+                          onClick={() =>
+                            setUnlinkModal({ open: true, media: item })
+                          }
                           className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-rose-400 transition-colors rounded-lg hover:bg-zinc-800/50"
                         >
                           <Unlink className="w-3 h-3" />
@@ -302,7 +335,9 @@ export default function AdvertiserMedia() {
                         </button>
                       ) : (
                         <button
-                          onClick={() => setLinkModal({ open: true, media: item })}
+                          onClick={() =>
+                            setLinkModal({ open: true, media: item })
+                          }
                           className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#fad400] transition-colors rounded-lg hover:bg-zinc-800/50"
                         >
                           <Link2 className="w-3 h-3" />
@@ -335,7 +370,12 @@ export default function AdvertiserMedia() {
       <AnimatePresence>
         {renameModal.open && renameModal.media && (
           <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setRenameModal({ open: false, media: null, newName: "" })} />
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() =>
+                setRenameModal({ open: false, media: null, newName: "" })
+              }
+            />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -352,17 +392,22 @@ export default function AdvertiserMedia() {
                 <input
                   type="text"
                   value={renameModal.newName}
-                  onChange={(e) => setRenameModal({ ...renameModal, newName: e.target.value })}
+                  onChange={(e) =>
+                    setRenameModal({ ...renameModal, newName: e.target.value })
+                  }
                   className="w-full bg-zinc-800/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#fad400]/50 mb-4"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !saving) handleRename();
-                    if (e.key === "Escape") setRenameModal({ open: false, media: null, newName: "" });
+                    if (e.key === "Escape")
+                      setRenameModal({ open: false, media: null, newName: "" });
                   }}
                 />
                 <div className="flex items-center justify-end gap-3">
                   <button
-                    onClick={() => setRenameModal({ open: false, media: null, newName: "" })}
+                    onClick={() =>
+                      setRenameModal({ open: false, media: null, newName: "" })
+                    }
                     className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
                   >
                     Cancelar
@@ -392,7 +437,10 @@ export default function AdvertiserMedia() {
       <AnimatePresence>
         {linkModal.open && linkModal.media && (
           <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setLinkModal({ open: false, media: null })} />
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() => setLinkModal({ open: false, media: null })}
+            />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -407,11 +455,17 @@ export default function AdvertiserMedia() {
                   {linkModal.media.filename}
                 </p>
                 <p className="text-sm text-zinc-400 mb-6">
-                  Esta funcionalidad vincula el archivo multimedia con una campaña activa mediante la API /campaigns. Requiere integración con el módulo de campañas.
+                  Esta funcionalidad vincula el archivo multimedia con una
+                  campaña activa mediante la API /campaigns. Requiere
+                  integración con el módulo de campañas.
                 </p>
                 <div className="flex gap-2 mb-3">
-                  <span className="px-2 py-0.5 bg-[#fad400]/10 text-[#fad400] text-[9px] font-black uppercase tracking-widest rounded-md">Campaña activa</span>
-                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-md">Compatible</span>
+                  <span className="px-2 py-0.5 bg-[#fad400]/10 text-[#fad400] text-[9px] font-black uppercase tracking-widest rounded-md">
+                    Campaña activa
+                  </span>
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-md">
+                    Compatible
+                  </span>
                 </div>
                 <div className="flex items-center justify-end gap-3">
                   <button
@@ -431,7 +485,10 @@ export default function AdvertiserMedia() {
       <AnimatePresence>
         {unlinkModal.open && unlinkModal.media && (
           <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setUnlinkModal({ open: false, media: null })} />
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() => setUnlinkModal({ open: false, media: null })}
+            />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -447,7 +504,10 @@ export default function AdvertiserMedia() {
                 </p>
                 <p className="text-sm text-zinc-400 mb-6">
                   ¿Confirmas que deseas desvincular este archivo de{" "}
-                  <span className="text-white font-bold">{unlinkModal.media.campaign?.name}</span>?
+                  <span className="text-white font-bold">
+                    {unlinkModal.media.campaign?.name}
+                  </span>
+                  ?
                 </p>
                 <div className="flex items-center justify-end gap-3">
                   <button

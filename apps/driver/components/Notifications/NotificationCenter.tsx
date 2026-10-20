@@ -1,34 +1,59 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useNotifications } from '../../contexts/NotificationContext';
-import { Bell, Check, X, Trash2, Volume2, VolumeX } from 'lucide-react';
-import type { NotificationItem, NotificationPriority } from '../../lib/notificationEngine';
+import React, { useState, useRef, useEffect } from "react";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { Bell, Check, X, Trash2, Volume2, VolumeX } from "lucide-react";
+import type {
+  NotificationItem,
+  NotificationPriority,
+} from "../../lib/notificationEngine";
 
 // ─── Priority Styles ──────────────────────────────────────────────────────────
 
-const PRIORITY_STYLES: Record<NotificationPriority, { bg: string; border: string; text: string; iconColor: string }> = {
-  CRITICAL: { bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-400', iconColor: '#ef4444' },
-  OPERATIONAL: { bg: 'bg-[#FFD400]/10', border: 'border-[#FFD400]/20', text: 'text-[#FFD400]', iconColor: '#FFD400' },
-  INFO: { bg: 'bg-white/5', border: 'border-white/10', text: 'text-zinc-400', iconColor: '#71717a' },
+const PRIORITY_STYLES: Record<
+  NotificationPriority,
+  { bg: string; border: string; text: string; iconColor: string }
+> = {
+  CRITICAL: {
+    bg: "bg-red-500/10",
+    border: "border-red-500/20",
+    text: "text-red-400",
+    iconColor: "#ef4444",
+  },
+  OPERATIONAL: {
+    bg: "bg-[#FFD400]/10",
+    border: "border-[#FFD400]/20",
+    text: "text-[#FFD400]",
+    iconColor: "#FFD400",
+  },
+  INFO: {
+    bg: "bg-white/5",
+    border: "border-white/10",
+    text: "text-zinc-400",
+    iconColor: "#71717a",
+  },
 };
 
 const PRIORITY_LABELS: Record<NotificationPriority, string> = {
-  CRITICAL: 'URGENTE',
-  OPERATIONAL: 'Operativo',
-  INFO: 'Info',
+  CRITICAL: "URGENTE",
+  OPERATIONAL: "Operativo",
+  INFO: "Info",
 };
 
 function formatTimeAgo(ts: number): string {
   const now = Date.now();
   const diff = now - ts;
-  if (diff < 60_000) return 'ahora';
+  if (diff < 60_000) return "ahora";
   if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3600_000)}h`;
   return `${Math.floor(diff / 86_400_000)}d`;
 }
 
-function NotificationCard({ item, onAck, onDismiss }: {
+function NotificationCard({
+  item,
+  onAck,
+  onDismiss,
+}: {
   item: NotificationItem;
   onAck: (id: string) => void;
   onDismiss: (id: string) => void;
@@ -39,7 +64,7 @@ function NotificationCard({ item, onAck, onDismiss }: {
   return (
     <div
       className={`group rounded-2xl border ${style.border} ${style.bg} p-4 transition-all ${
-        isUnread ? 'ring-1 ring-white/5' : 'opacity-60'
+        isUnread ? "ring-1 ring-white/5" : "opacity-60"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -55,18 +80,28 @@ function NotificationCard({ item, onAck, onDismiss }: {
             </span>
             {isUnread && (
               <span className="relative inline-flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50" style={{ backgroundColor: style.iconColor }} />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: style.iconColor }} />
+                <span
+                  className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+                  style={{ backgroundColor: style.iconColor }}
+                />
+                <span
+                  className="relative inline-flex rounded-full h-1.5 w-1.5"
+                  style={{ backgroundColor: style.iconColor }}
+                />
               </span>
             )}
           </div>
-          <p className="mt-1.5 text-sm font-bold text-white truncate">{item.title}</p>
+          <p className="mt-1.5 text-sm font-bold text-white truncate">
+            {item.title}
+          </p>
           {item.description && (
-            <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">{item.description}</p>
+            <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">
+              {item.description}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {item.priority === 'CRITICAL' && isUnread && (
+          {item.priority === "CRITICAL" && isUnread && (
             <button
               onClick={() => onAck(item.id)}
               className="rounded-full bg-emerald-500/10 p-1.5 text-emerald-400 transition hover:bg-emerald-500/20"
@@ -91,7 +126,15 @@ function NotificationCard({ item, onAck, onDismiss }: {
 // ─── NotificationCenter ────────────────────────────────────────────────────────
 
 export function NotificationCenter() {
-  const { items, unreadCount, dismiss, acknowledge, dismissAll, pushPermissionGranted, requestPush } = useNotifications();
+  const {
+    items,
+    unreadCount,
+    dismiss,
+    acknowledge,
+    dismissAll,
+    pushPermissionGranted,
+    requestPush,
+  } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -103,18 +146,18 @@ export function NotificationCenter() {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === "Escape") setIsOpen(false);
     };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
   const unreadItems = items.filter((i) => !i.dismissedAt && !i.acknowledged);
@@ -126,12 +169,12 @@ export function NotificationCenter() {
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className="relative flex items-center justify-center w-10 h-10 rounded-2xl border border-white/10 bg-white/5 transition hover:bg-white/10 hover:border-white/20"
-        aria-label={`Notificaciones${unreadCount > 0 ? ` (${unreadCount} sin leer)` : ''}`}
+        aria-label={`Notificaciones${unreadCount > 0 ? ` (${unreadCount} sin leer)` : ""}`}
       >
         <Bell className="h-5 w-5 text-zinc-300" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#FFD400] text-black text-[9px] font-black px-1">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
@@ -146,9 +189,13 @@ export function NotificationCenter() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Notificaciones</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                Notificaciones
+              </p>
               {unreadCount > 0 && (
-                <p className="text-xs text-zinc-300 mt-0.5">{unreadCount} sin leer</p>
+                <p className="text-xs text-zinc-300 mt-0.5">
+                  {unreadCount} sin leer
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -188,14 +235,18 @@ export function NotificationCenter() {
               <div className="text-center py-8">
                 <Bell className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
                 <p className="text-sm text-zinc-500">Sin notificaciones</p>
-                <p className="text-xs text-zinc-600 mt-1">Las alertas operativas aparecerán aquí</p>
+                <p className="text-xs text-zinc-600 mt-1">
+                  Las alertas operativas aparecerán aquí
+                </p>
               </div>
             )}
 
             {/* Unread Section */}
             {unreadItems.length > 0 && (
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2">Sin leer</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2">
+                  Sin leer
+                </p>
                 <div className="space-y-2">
                   {unreadItems.slice(0, 20).map((item) => (
                     <NotificationCard
@@ -212,7 +263,9 @@ export function NotificationCenter() {
             {/* Read Section */}
             {dismissedItems.length > 0 && (
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 mb-2">Anteriores</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 mb-2">
+                  Anteriores
+                </p>
                 <div className="space-y-2">
                   {dismissedItems.slice(0, 10).map((item) => (
                     <NotificationCard

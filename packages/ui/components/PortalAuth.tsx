@@ -159,7 +159,10 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
       const circuitBreaker = getAuthCircuitBreaker();
 
       // Execute through Circuit Breaker to prevent Silent Fails
-      const { data, error: authError } = await circuitBreaker.execute(() =>
+      const { data, error: authError } = await circuitBreaker.execute<{
+        data: { session: any; user: any };
+        error: Error | null;
+      }>(() =>
         supabase.auth.signInWithPassword({
           email: result.data.email,
           password: result.data.password,
@@ -316,7 +319,10 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-      const { error: authError } = await circuitBreaker.execute(() =>
+      const { error: authError } = await circuitBreaker.execute<{
+        data: { email: string };
+        error: Error | null;
+      }>(() =>
         supabase.auth.resetPasswordForEmail(result.data.email, {
           redirectTo: `${origin}${config.callbackPath}?next=${encodeURIComponent(config.updatePasswordPath)}`,
         })

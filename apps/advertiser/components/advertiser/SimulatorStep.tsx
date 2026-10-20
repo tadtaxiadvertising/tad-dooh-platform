@@ -1,6 +1,23 @@
-import React, { useState } from 'react';
-import { ArrowRight, Calculator, TrendingUp, RotateCcw, Check, Users, Store, Info } from 'lucide-react';
-import { estimateCampaign, estimateCampaignDetailed, formatRange, getCalibrationBadge, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from './simulatorPricing';
+import React, { useState } from "react";
+import {
+  ArrowRight,
+  Calculator,
+  TrendingUp,
+  RotateCcw,
+  Check,
+  Users,
+  Store,
+  Info,
+} from "lucide-react";
+import {
+  estimateCampaign,
+  estimateCampaignDetailed,
+  formatRange,
+  getCalibrationBadge,
+  SCREEN_MONTHLY_RATE,
+  PRODUCTION_FEE,
+  FIXED_FREQUENCY_SECONDS,
+} from "./simulatorPricing";
 
 export interface SimulatorConfig {
   screens: number;
@@ -17,7 +34,11 @@ interface SimulatorStepProps {
 
 const SCREEN_PRESETS = [1, 2, 3, 4, 5];
 
-export default function SimulatorStep({ config, onChange, onNext }: SimulatorStepProps) {
+export default function SimulatorStep({
+  config,
+  onChange,
+  onNext,
+}: SimulatorStepProps) {
   const [customScreens, setCustomScreens] = useState(6);
   const isCustomScreens = config.screens > 5;
 
@@ -48,7 +69,8 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
           Simulador en vivo · 2 de 4
         </div>
         <h1 className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2">
-          Simula tu impacto<br />y presupuesto
+          Simula tu impacto
+          <br />y presupuesto
         </h1>
         <p className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-[#AAAAAA]">
           <TrendingUp className="w-3 h-3 text-[#FDCB01]" />
@@ -76,8 +98,8 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
                 onClick={() => handleScreenSelect(n)}
                 className={`w-12 h-12 rounded-xl font-black text-lg transition-all select-none flex items-center justify-center ${
                   config.screens === n
-                    ? 'bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30'
-                    : 'bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                    ? "bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30"
+                    : "bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20"
                 }`}
               >
                 {n}
@@ -85,14 +107,18 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
             ))}
             <div className="w-1.5 h-1.5 bg-white/15 rounded-full my-auto" />
             <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2">
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">Más</span>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">
+                Más
+              </span>
               <input
                 type="number"
                 min={6}
                 max={100}
                 value={customScreens}
                 onChange={(e) => handleCustomScreensChange(e.target.value)}
-                onBlur={() => handleCustomScreensChange(customScreens.toString())}
+                onBlur={() =>
+                  handleCustomScreensChange(customScreens.toString())
+                }
                 className="w-16 bg-transparent border-none outline-none text-white font-black text-base text-center"
                 aria-label="Número de pantallas personalizado"
               />
@@ -112,7 +138,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               <span className="text-white/25 normal-case">(1 - 12 meses)</span>
             </span>
             <span className="text-base font-black tabular-nums shrink-0 text-[#E51636]">
-              {config.months} mes{config.months > 1 ? 'es' : ''}
+              {config.months} mes{config.months > 1 ? "es" : ""}
               <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider bg-[#E51636] text-white rounded">
                 POR MES
               </span>
@@ -136,12 +162,18 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               value={config.months}
               onChange={(e) => handleMonthsChange(Number(e.target.value))}
               className="tad-slider tad-range-yellow flex-1 min-h-[32px] animate-fill"
-              style={{ '--fill': `${((config.months - 1) / 11) * 100}%` } as React.CSSProperties}
+              style={
+                {
+                  "--fill": `${((config.months - 1) / 11) * 100}%`,
+                } as React.CSSProperties
+              }
               aria-label="Duración de la campaña en meses"
             />
             <button
               type="button"
-              onClick={() => handleMonthsChange(Math.min(12, config.months + 1))}
+              onClick={() =>
+                handleMonthsChange(Math.min(12, config.months + 1))
+              }
               aria-label="Aumentar meses"
               className="tad-stepper"
             >
@@ -157,7 +189,7 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               <span className="text-white/25 normal-case">(opcional)</span>
             </span>
             <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
-              {config.includeProduction ? 'Incluida' : 'No incluida'}
+              {config.includeProduction ? "Incluida" : "No incluida"}
             </span>
           </div>
 
@@ -165,11 +197,18 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
             <input
               type="checkbox"
               checked={config.includeProduction}
-              onChange={(e) => onChange({ includeProduction: e.target.checked } as Partial<SimulatorConfig>)}
+              onChange={(e) =>
+                onChange({
+                  includeProduction: e.target.checked,
+                } as Partial<SimulatorConfig>)
+              }
               className="mt-0.5 w-5 h-5 shrink-0 accent-[#FDCB01]"
             />
             <span className="text-[11px] text-[#AAAAAA] leading-relaxed group-hover/check:text-white/80 transition-colors">
-              Incluir producción creativa profesional <span className="text-[#FDCB01] font-bold">(RD$ {PRODUCTION_FEE.toLocaleString()})</span>
+              Incluir producción creativa profesional{" "}
+              <span className="text-[#FDCB01] font-bold">
+                (RD$ {PRODUCTION_FEE.toLocaleString()})
+              </span>
             </span>
           </label>
         </div>
@@ -188,34 +227,39 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
               </div>
             </div>
             <div className="text-right shrink-0">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
-                            Impactos est.
-                          </p>
-                          <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
-                            {estimate.impressions.toLocaleString()}
-                          </span>
-                          <p className="text-[9px] text-white/40 tabular-nums mt-0.5">
-                            {formatRange(detailed.totalImpressions)}
-                          </p>
-                        </div>
-                      </div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
+                Impactos est.
+              </p>
+              <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
+                {estimate.impressions.toLocaleString()}
+              </span>
+              <p className="text-[9px] text-white/40 tabular-nums mt-0.5">
+                {formatRange(detailed.totalImpressions)}
+              </p>
+            </div>
+          </div>
 
-                      {/* Badge de fuente / calibración */}
-                      <div className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2">
-                        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
-                        <div className="text-[9px] leading-snug text-[#AAAAAA]">
-                          <span className="font-black text-[#FDCB01] uppercase tracking-wider">
-                            {calibration.label}
-                          </span>
-                          <span className="block text-white/45 mt-0.5">
-                            Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024 · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
-                          </span>
-                        </div>
-                      </div>
+          {/* Badge de fuente / calibración */}
+          <div className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
+            <div className="text-[9px] leading-snug text-[#AAAAAA]">
+              <span className="font-black text-[#FDCB01] uppercase tracking-wider">
+                {calibration.label}
+              </span>
+              <span className="block text-white/45 mt-0.5">
+                Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024
+                · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
+              </span>
+            </div>
+          </div>
 
           <div className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]">
             <div className="flex justify-between gap-4">
-              <span>Pantallas ({config.screens} × {config.months} mes{config.months > 1 ? 'es' : ''} × RD${SCREEN_MONTHLY_RATE.toLocaleString()}):</span>
+              <span>
+                Pantallas ({config.screens} × {config.months} mes
+                {config.months > 1 ? "es" : ""} × RD$
+                {SCREEN_MONTHLY_RATE.toLocaleString()}):
+              </span>
               <span className="text-white font-bold tabular-nums shrink-0">
                 RD${estimate.screensCost.toLocaleString()}
               </span>
@@ -231,7 +275,8 @@ export default function SimulatorStep({ config, onChange, onNext }: SimulatorSte
           </div>
 
           <p className="mt-4 pt-4 border-t border-white/[0.06] text-[10px] font-bold leading-relaxed text-[#FDCB01]/90">
-            * Disponibilidad limitada de pantallas en rutas clave. Resérvalo ahora.
+            * Disponibilidad limitada de pantallas en rutas clave. Resérvalo
+            ahora.
           </p>
         </div>
       </div>

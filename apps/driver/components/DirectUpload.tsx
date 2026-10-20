@@ -3,7 +3,14 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { AntigravityButton } from "@tad/ui";
-import { UploadCloud, FileVideo, X, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import {
+  UploadCloud,
+  FileVideo,
+  X,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 import { useDirectUpload } from "@/hooks/useDirectUpload";
 
 interface DirectUploadProps {
@@ -12,13 +19,7 @@ interface DirectUploadProps {
 
 export function DirectUpload({ onSuccess }: DirectUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const {
-    upload,
-    isUploading,
-    progress,
-    error,
-    reset,
-  } = useDirectUpload({
+  const { upload, isUploading, progress, error, reset } = useDirectUpload({
     onSuccess: (result) => {
       toast.success("Video subido y verificado exitosamente.");
       onSuccess(result.url, result.filename);
@@ -67,14 +68,29 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
               <UploadCloud className="w-8 h-8 text-[#FFD400]" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white text-center">Cargar Nuevo Contenido</h3>
-              <p className="text-sm text-zinc-400 text-center">Solo formato MP4 permitido • Máx 100MB</p>
+              <h3 className="text-lg font-medium text-white text-center">
+                Cargar Nuevo Contenido
+              </h3>
+              <p className="text-sm text-zinc-400 text-center">
+                Solo formato MP4 permitido • Máx 100MB
+              </p>
             </div>
             <label className="cursor-pointer">
-              <AntigravityButton actionName="Select_Video" variant="secondary" onAsyncClick={async () => {}} className="pointer-events-none">
+              <AntigravityButton
+                actionName="Select_Video"
+                variant="secondary"
+                onAsyncClick={async () => {}}
+                className="pointer-events-none"
+              >
                 Seleccionar Video
               </AntigravityButton>
-              <input type="file" className="hidden" accept="video/mp4" onChange={handleFileChange} disabled={isUploading} />
+              <input
+                type="file"
+                className="hidden"
+                accept="video/mp4"
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
             </label>
           </>
         ) : (
@@ -82,8 +98,12 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
             <div className="flex items-center space-x-3 bg-white/5 p-4 rounded-xl w-full border border-white/10">
               <FileVideo className="w-8 h-8 text-[#FFD400]" />
               <div className="flex-1 truncate">
-                <p className="text-sm font-medium text-white truncate">{selectedFile.name}</p>
-                <p className="text-xs text-zinc-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-sm font-medium text-white truncate">
+                  {selectedFile.name}
+                </p>
+                <p className="text-xs text-zinc-400">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
               <button
                 onClick={(e) => {
@@ -128,7 +148,9 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
               <AntigravityButton
                 actionName="Upload_Video"
                 variant="primary"
-                onAsyncClick={async () => { await handleUpload(); }}
+                onAsyncClick={async () => {
+                  await handleUpload();
+                }}
                 className="w-full sm:w-auto"
                 disabled={isUploading}
               >

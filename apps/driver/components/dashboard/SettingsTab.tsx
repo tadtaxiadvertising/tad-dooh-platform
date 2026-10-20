@@ -12,10 +12,10 @@
  * Reemplaza los ActionButton del dashboard original con un layout
  * tipo "settings list" optimizado para móvil (hitboxes grandes, 48px+).
  */
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 import {
   MessageCircle,
   AlertTriangle,
@@ -25,10 +25,10 @@ import {
   Info,
   Smartphone,
   Wifi,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface SettingsTabProps {
-  connectionStatus: 'online' | 'offline' | 'syncing';
+  connectionStatus: "online" | "offline" | "syncing";
   batchCount: number;
   offlineCount: number;
   isTracking: boolean;
@@ -55,7 +55,7 @@ function SettingsItem({
   sublabel,
   onClick,
   disabled = false,
-  color = 'text-zinc-400',
+  color = "text-zinc-400",
 }: SettingsItemProps) {
   return (
     <motion.button
@@ -84,11 +84,7 @@ function SettingsItem({
         stroke="currentColor"
         strokeWidth={2}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 5l7 7-7 7"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
     </motion.button>
   );
@@ -106,7 +102,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   onLogout,
   syncingNow,
 }) => {
-  const isOffline = connectionStatus === 'offline';
+  const isOffline = connectionStatus === "offline";
 
   return (
     <section aria-labelledby="settings-tab-title" className="space-y-5">
@@ -129,19 +125,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
               isOffline
-                ? 'border-red-500/20 bg-red-500/5 text-red-400'
-                : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+                ? "border-red-500/20 bg-red-500/5 text-red-400"
+                : "border-emerald-500/20 bg-emerald-500/5 text-emerald-400"
             }`}
           >
             <Wifi className="h-5 w-5" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-black text-white">
-              {isOffline ? 'Sin conexión' : 'Conectado'}
+              {isOffline ? "Sin conexión" : "Conectado"}
             </p>
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">
-              {isTracking ? 'GPS activo' : 'GPS detenido'} · Batch {batchCount}
-              /10 · {offlineCount > 0 ? `${offlineCount} pts offline` : '0 pts pendientes'}
+              {isTracking ? "GPS activo" : "GPS detenido"} · Batch {batchCount}
+              /10 ·{" "}
+              {offlineCount > 0
+                ? `${offlineCount} pts offline`
+                : "0 pts pendientes"}
             </p>
           </div>
         </div>
@@ -168,14 +167,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         <SettingsItem
           icon={
             <RefreshCw
-              className={`h-5 w-5 ${syncingNow ? 'animate-spin' : ''}`}
+              className={`h-5 w-5 ${syncingNow ? "animate-spin" : ""}`}
             />
           }
           label="Sincronizar datos"
           sublabel={
             offlineCount > 0
               ? `${offlineCount} puntos offline pendientes`
-              : 'Todo al día'
+              : "Todo al día"
           }
           onClick={onSync}
           disabled={offlineCount === 0 || syncingNow}
@@ -207,16 +206,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             TAD Driver Portal v12.0.0
           </p>
           <p className="mt-0.5 text-[9px] font-mono text-zinc-800">
-            GPS: {isTracking ? 'ACTIVO' : 'INACTIVO'} · Red:{' '}
-            {connectionStatus.toUpperCase()} · Build:{' '}
-            {process.env.NEXT_PUBLIC_BUILD_HASH || 'dev'}
+            GPS: {isTracking ? "ACTIVO" : "INACTIVO"} · Red:{" "}
+            {connectionStatus.toUpperCase()} · Build:{" "}
+            {process.env.NEXT_PUBLIC_BUILD_HASH || "dev"}
           </p>
         </div>
         <Smartphone className="h-4 w-4 shrink-0 text-zinc-800" />
       </div>
 
       {/* Debug trigger (dev only) */}
-      {process.env.NODE_ENV !== 'production' && (
+      {process.env.NODE_ENV !== "production" && (
         <p className="pt-2 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-800">
           Debug: usa el botón en la vista Inicio para forzar bloqueo 402
         </p>

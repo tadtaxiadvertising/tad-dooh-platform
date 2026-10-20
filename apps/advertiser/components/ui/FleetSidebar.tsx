@@ -1,6 +1,6 @@
-import React from 'react';
-import clsx from 'clsx';
-import { X, Search } from 'lucide-react';
+import React from "react";
+import clsx from "clsx";
+import { X, Search } from "lucide-react";
 
 interface FleetSidebarProps {
   isOpen: boolean;
@@ -9,8 +9,8 @@ interface FleetSidebarProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onSelectVehicle: (v: any) => void;
-  filter: 'all' | 'active' | 'offline' | 'unpaid';
-  onFilterChange: (f: 'all' | 'active' | 'offline' | 'unpaid') => void;
+  filter: "all" | "active" | "offline" | "unpaid";
+  onFilterChange: (f: "all" | "active" | "offline" | "unpaid") => void;
 }
 
 export function FleetSidebar({
@@ -29,8 +29,13 @@ export function FleetSidebar({
     <div className="h-full bg-zinc-950/95 backdrop-blur-3xl border-l border-white/5 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-6 border-b border-white/5 flex items-center justify-between">
-        <h3 className="text-xs font-black uppercase tracking-widest text-white">Fleet Sidebar</h3>
-        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+        <h3 className="text-xs font-black uppercase tracking-widest text-white">
+          Fleet Sidebar
+        </h3>
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+        >
           <X className="w-4 h-4 text-zinc-500" />
         </button>
       </div>
@@ -51,13 +56,15 @@ export function FleetSidebar({
 
       {/* Filter buttons */}
       <div className="px-4 pb-4 flex gap-2">
-        {(['all', 'active', 'offline', 'unpaid'] as const).map((f) => (
+        {(["all", "active", "offline", "unpaid"] as const).map((f) => (
           <button
             key={f}
             onClick={() => onFilterChange(f)}
             className={clsx(
               "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
-              filter === f ? "bg-[#fad400] text-black border-[#fad400]" : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/10"
+              filter === f
+                ? "bg-[#fad400] text-black border-[#fad400]"
+                : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/10",
             )}
           >
             {f}
@@ -83,7 +90,7 @@ export function FleetSidebar({
                   {v.taxiNumber || v.deviceId || `Unit ${i + 1}`}
                 </p>
                 <p className="text-[8px] text-zinc-500 uppercase tracking-widest">
-                  {v.isOnline ? 'Online' : 'Offline'}
+                  {v.isOnline ? "Online" : "Offline"}
                 </p>
               </button>
             ))}

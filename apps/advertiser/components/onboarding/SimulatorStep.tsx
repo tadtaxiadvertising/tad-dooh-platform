@@ -1,9 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { ArrowRight, Calculator, TrendingUp, RotateCcw, Users, Store, Check, Target, Minus, Plus, Info } from 'lucide-react';
-import { estimateCampaign, estimateCampaignDetailed, formatRange, getCalibrationBadge, SCREEN_MONTHLY_RATE, PRODUCTION_FEE, FIXED_FREQUENCY_SECONDS } from '../../components/advertiser/simulatorPricing';
+import { useState } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
+import {
+  ArrowRight,
+  Calculator,
+  TrendingUp,
+  RotateCcw,
+  Users,
+  Store,
+  Check,
+  Target,
+  Minus,
+  Plus,
+  Info,
+} from "lucide-react";
+import {
+  estimateCampaign,
+  estimateCampaignDetailed,
+  formatRange,
+  getCalibrationBadge,
+  SCREEN_MONTHLY_RATE,
+  PRODUCTION_FEE,
+  FIXED_FREQUENCY_SECONDS,
+} from "../../components/advertiser/simulatorPricing";
 
 export interface SimulatorConfig {
   screens: number;
@@ -21,7 +41,12 @@ interface SimulatorStepProps {
 
 const SCREEN_PRESETS = [1, 2, 3, 4, 5];
 
-export default function SimulatorStep({ config, onChange, onNext, onPrev }: SimulatorStepProps) {
+export default function SimulatorStep({
+  config,
+  onChange,
+  onNext,
+  onPrev,
+}: SimulatorStepProps) {
   const [customScreens, setCustomScreens] = useState(6);
   const isCustomScreens = config.screens > 5;
 
@@ -61,7 +86,12 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
           className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#FDCB01] mb-5"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+          transition={{
+            delay: 0.1,
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+          }}
         >
           <Calculator className="w-3 h-3" />
           Simulador en vivo · 2 de 4
@@ -72,8 +102,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          Simula tu impacto{' '}
-          <br />
+          Simula tu impacto <br />
           <span className="text-[#FDCB01]">y presupuesto</span>
         </motion.h1>
         <motion.p
@@ -105,7 +134,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
               <span className="text-white/25 normal-case">(1 - 100)</span>
             </span>
             <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
-              {config.screens} taxi{config.screens !== 1 ? 's' : ''}
+              {config.screens} taxi{config.screens !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -117,8 +146,8 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
                 onClick={() => handleScreenSelect(n)}
                 className={`w-12 h-12 rounded-xl font-black text-lg transition-all select-none flex items-center justify-center ${
                   config.screens === n
-                    ? 'bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30'
-                    : 'bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                    ? "bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30"
+                    : "bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20"
                 }`}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
@@ -129,16 +158,20 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
             <div className="w-1.5 h-1.5 bg-white/15 rounded-full my-auto" />
             <motion.div
               className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2"
-              whileHover={{ borderColor: 'rgba(253,203,1,0.5)' }}
+              whileHover={{ borderColor: "rgba(253,203,1,0.5)" }}
             >
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">Más</span>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">
+                Más
+              </span>
               <input
                 type="number"
                 min={6}
                 max={100}
                 value={customScreens}
                 onChange={(e) => handleCustomScreensChange(e.target.value)}
-                onBlur={() => handleCustomScreensChange(customScreens.toString())}
+                onBlur={() =>
+                  handleCustomScreensChange(customScreens.toString())
+                }
                 className="w-16 bg-transparent border-none outline-none text-white font-black text-base text-center"
                 aria-label="Número de pantallas personalizado"
               />
@@ -168,7 +201,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
               <span className="text-white/25 normal-case">(1 - 12 meses)</span>
             </span>
             <span className="text-base font-black tabular-nums shrink-0 text-[#FF8C00]">
-              {config.months} mes{config.months > 1 ? 'es' : ''}
+              {config.months} mes{config.months > 1 ? "es" : ""}
               <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider bg-[#FF8C00] text-white rounded">
                 POR MES
               </span>
@@ -194,12 +227,18 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
               value={config.months}
               onChange={(e) => handleMonthsChange(Number(e.target.value))}
               className="tad-slider tad-range-yellow flex-1 min-h-[32px] animate-fill"
-              style={{ '--fill': `${((config.months - 1) / 11) * 100}%` } as React.CSSProperties}
+              style={
+                {
+                  "--fill": `${((config.months - 1) / 11) * 100}%`,
+                } as React.CSSProperties
+              }
               aria-label="Duración de la campaña en meses"
             />
             <motion.button
               type="button"
-              onClick={() => handleMonthsChange(Math.min(12, config.months + 1))}
+              onClick={() =>
+                handleMonthsChange(Math.min(12, config.months + 1))
+              }
               aria-label="Aumentar meses"
               className="tad-stepper"
               whileHover={{ scale: 1.08 }}
@@ -222,23 +261,29 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
               <span className="text-white/25 normal-case">(opcional)</span>
             </span>
             <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
-              {config.includeProduction ? 'Incluida' : 'No incluida'}
+              {config.includeProduction ? "Incluida" : "No incluida"}
             </span>
           </div>
 
           <motion.label
             className="flex items-center gap-3 cursor-pointer group/check p-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors"
-            whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+            whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
           >
             <input
               type="checkbox"
               checked={config.includeProduction}
-              onChange={(e) => onChange({ includeProduction: e.target.checked } as Partial<SimulatorConfig>)}
+              onChange={(e) =>
+                onChange({
+                  includeProduction: e.target.checked,
+                } as Partial<SimulatorConfig>)
+              }
               className="mt-0.5 w-5 h-5 shrink-0 accent-[#FDCB01]"
             />
             <span className="text-[11px] text-[#AAAAAA] leading-relaxed group-hover/check:text-white/80 transition-colors">
-              Incluir producción creativa profesional{' '}
-              <span className="text-[#FDCB01] font-bold">(RD$ {PRODUCTION_FEE.toLocaleString()})</span>
+              Incluir producción creativa profesional{" "}
+              <span className="text-[#FDCB01] font-bold">
+                (RD$ {PRODUCTION_FEE.toLocaleString()})
+              </span>
             </span>
           </motion.label>
         </motion.div>
@@ -262,9 +307,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
               </p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-bold text-[#AAAAAA]">RD$</span>
-                <motion.span
-                  className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums"
-                >
+                <motion.span className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums">
                   {estimate.total.toLocaleString()}
                 </motion.span>
               </div>
@@ -274,36 +317,37 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
                 Impactos est.
               </p>
               <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
-                              {estimate.impressions.toLocaleString()}
-                            </span>
-                            <motion.p
-                              className="text-[9px] text-white/40 tabular-nums mt-0.5"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.9, duration: 0.4 }}
-                            >
-                              {formatRange(detailed.totalImpressions)}
-                            </motion.p>
-                          </div>
-                        </motion.div>
+                {estimate.impressions.toLocaleString()}
+              </span>
+              <motion.p
+                className="text-[9px] text-white/40 tabular-nums mt-0.5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9, duration: 0.4 }}
+              >
+                {formatRange(detailed.totalImpressions)}
+              </motion.p>
+            </div>
+          </motion.div>
 
-                        {/* Badge de fuente / calibración */}
-                        <motion.div
-                          className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2"
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 1.05, duration: 0.4 }}
-                        >
-                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
-                          <div className="text-[9px] leading-snug text-[#AAAAAA]">
-                            <span className="font-black text-[#FDCB01] uppercase tracking-wider">
-                              {calibration.label}
-                            </span>
-                            <span className="block text-white/45 mt-0.5">
-                              Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024 · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
-                            </span>
-                          </div>
-                        </motion.div>
+          {/* Badge de fuente / calibración */}
+          <motion.div
+            className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.05, duration: 0.4 }}
+          >
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
+            <div className="text-[9px] leading-snug text-[#AAAAAA]">
+              <span className="font-black text-[#FDCB01] uppercase tracking-wider">
+                {calibration.label}
+              </span>
+              <span className="block text-white/45 mt-0.5">
+                Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024
+                · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
+              </span>
+            </div>
+          </motion.div>
 
           <motion.div
             className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]"
@@ -312,7 +356,11 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
             transition={{ delay: 1.0, duration: 0.4 }}
           >
             <div className="flex justify-between gap-4">
-              <span>Pantallas ({config.screens} × {config.months} mes{config.months > 1 ? 'es' : ''} × RD${SCREEN_MONTHLY_RATE.toLocaleString()}):</span>
+              <span>
+                Pantallas ({config.screens} × {config.months} mes
+                {config.months > 1 ? "es" : ""} × RD$
+                {SCREEN_MONTHLY_RATE.toLocaleString()}):
+              </span>
               <span className="text-white font-bold tabular-nums shrink-0">
                 RD${estimate.screensCost.toLocaleString()}
               </span>
@@ -320,7 +368,7 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
             {config.includeProduction && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+                animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
               >
                 <div className="flex justify-between gap-4">
@@ -339,7 +387,8 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
             animate={{ opacity: 1 }}
             transition={{ delay: 1.1 }}
           >
-            * Disponibilidad limitada de pantallas en rutas clave. Resérvalo ahora.
+            * Disponibilidad limitada de pantallas en rutas clave. Resérvalo
+            ahora.
           </motion.p>
         </motion.div>
       </motion.div>
@@ -355,16 +404,25 @@ export default function SimulatorStep({ config, onChange, onNext, onPrev }: Simu
           type="button"
           onClick={onPrev}
           className="order-2 sm:order-1 w-full min-h-[48px] py-3 bg-white/[0.04] border border-white/10 text-[#AAAAAA] hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.08)' }}
+          whileHover={{
+            scale: 1.02,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
           whileTap={{ scale: 0.98 }}
         >
-          <ArrowRight className="w-4 h-4" style={{ transform: 'rotate(180deg)' }} />
+          <ArrowRight
+            className="w-4 h-4"
+            style={{ transform: "rotate(180deg)" }}
+          />
           Ajustar simulación
         </motion.button>
         <motion.button
           onClick={onNext}
           className="order-1 sm:order-2 w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
-          whileHover={{ scale: 1.02, boxShadow: '0 10px 50px rgba(253,203,1,0.4)' }}
+          whileHover={{
+            scale: 1.02,
+            boxShadow: "0 10px 50px rgba(253,203,1,0.4)",
+          }}
           whileTap={{ scale: 0.98 }}
         >
           <span>Asegurar este plan</span>

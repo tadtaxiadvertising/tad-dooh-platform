@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
+import { useEffect, useState, useMemo } from "react";
+import Head from "next/head";
+import Link from "next/link";
 import { getAdvertiserHub } from "@tad/services";
-import type { Advertiser } from '@tad/types';
+import type { Advertiser } from "@tad/types";
 import {
   ShoppingBag,
   Utensils,
@@ -17,26 +17,28 @@ import {
   Activity,
   Zap,
   LayoutGrid,
-  MapPin
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import clsx from 'clsx';
-import type { GetServerSideProps } from 'next';
+  MapPin,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import clsx from "clsx";
+import type { GetServerSideProps } from "next";
 // Force dynamic rendering — prevents "No QueryClient set" SSR errors
-export const getServerSideProps: GetServerSideProps = async () => ({ props: {} });
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
 
 const CATEGORY_ICONS: Record<string, any> = {
-  'Gastronomía': Utensils,
-  'Retail': ShoppingBag,
-  'Servicios': Briefcase,
-  'Entretenimiento': Sparkles,
-  'General': Zap
+  Gastronomía: Utensils,
+  Retail: ShoppingBag,
+  Servicios: Briefcase,
+  Entretenimiento: Sparkles,
+  General: Zap,
 };
 
 export default function AdvertiserHub() {
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,14 +49,20 @@ export default function AdvertiserHub() {
   }, []);
 
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(advertisers.map(a => a.category || 'General')));
+    const cats = Array.from(
+      new Set(advertisers.map((a) => a.category || "General")),
+    );
     return cats.sort();
   }, [advertisers]);
 
   const filtered = useMemo(() => {
-    return advertisers.filter(a => {
-      const matchesSearch = a.companyName.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = selectedCategory ? a.category === selectedCategory : true;
+    return advertisers.filter((a) => {
+      const matchesSearch = a.companyName
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesCategory = selectedCategory
+        ? a.category === selectedCategory
+        : true;
       return matchesSearch && matchesCategory;
     });
   }, [advertisers, search, selectedCategory]);
@@ -63,7 +71,10 @@ export default function AdvertiserHub() {
     <div className="min-h-screen bg-[#0B0F1A] text-slate-100 font-sans selection:bg-tad-cyan selection:text-black overflow-x-hidden">
       <Head>
         <title>TAD NEXUS | High-Traffic Brand Ecosystem</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+        />
       </Head>
 
       {/* Hero Section: High-End Visuals */}
@@ -79,7 +90,9 @@ export default function AdvertiserHub() {
             className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
           >
             <div className="w-2 h-2 rounded-full bg-tad-cyan shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-tad-cyan">Nexus System v4.5 Active</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-tad-cyan">
+              Nexus System v4.5 Active
+            </span>
           </motion.div>
 
           <motion.h1
@@ -96,7 +109,8 @@ export default function AdvertiserHub() {
             transition={{ delay: 0.2 }}
             className="text-slate-400 text-sm font-bold uppercase tracking-tight max-w-sm mx-auto leading-relaxed"
           >
-            Conecta con los aliados de la red. <br /> Beneficios exclusivos en tiempo real.
+            Conecta con los aliados de la red. <br /> Beneficios exclusivos en
+            tiempo real.
           </motion.p>
         </div>
       </section>
@@ -127,12 +141,12 @@ export default function AdvertiserHub() {
                 "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
                 !selectedCategory
                   ? "bg-tad-cyan border-tad-cyan text-black shadow-[0_0_20px_rgba(0,229,255,0.3)]"
-                  : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200"
+                  : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200",
               )}
             >
               All Brands
             </button>
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -140,7 +154,7 @@ export default function AdvertiserHub() {
                   "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
                   selectedCategory === cat
                     ? "bg-white text-black border-white shadow-xl"
-                    : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200"
+                    : "bg-white/[0.03] border-white/5 text-slate-500 hover:text-slate-200",
                 )}
               >
                 {cat}
@@ -164,7 +178,9 @@ export default function AdvertiserHub() {
                 <div className="w-12 h-12 border-4 border-tad-cyan/10 border-t-tad-cyan rounded-full animate-spin" />
                 <div className="absolute inset-0 bg-tad-cyan/20 blur-2xl animate-pulse rounded-full" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-tad-cyan animate-pulse">Initializing Nexus...</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-tad-cyan animate-pulse">
+                Initializing Nexus...
+              </p>
             </motion.div>
           ) : filtered.length === 0 ? (
             <motion.div
@@ -176,16 +192,14 @@ export default function AdvertiserHub() {
                 <Search className="w-10 h-10 text-slate-800" />
               </div>
               <p className="text-slate-500 font-black uppercase tracking-widest text-[10px] leading-relaxed">
-                Null results detected. <br /> Try adjusting your targeting filters.
+                Null results detected. <br /> Try adjusting your targeting
+                filters.
               </p>
             </motion.div>
           ) : (
-            <motion.div
-              layout
-              className="space-y-6"
-            >
+            <motion.div layout className="space-y-6">
               {filtered.map((adv) => {
-                const Icon = CATEGORY_ICONS[adv.category || 'General'] || Zap;
+                const Icon = CATEGORY_ICONS[adv.category || "General"] || Zap;
                 return (
                   <motion.div
                     layout
@@ -206,12 +220,19 @@ export default function AdvertiserHub() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <div className="w-1 h-3 bg-tad-cyan rounded-full" />
-                            <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.2em]">{adv.category || 'Partner'}</p>
+                            <p className="text-[10px] font-black text-tad-cyan uppercase tracking-[0.2em]">
+                              {adv.category || "Partner"}
+                            </p>
                           </div>
-                          <h3 className="text-xl font-black tracking-tight text-white">{adv.companyName}</h3>
+                          <h3 className="text-xl font-black tracking-tight text-white">
+                            {adv.companyName}
+                          </h3>
                         </div>
                       </div>
-                      <Link href={`/p/${adv.id}`} className="w-12 h-12 bg-white/[0.03] hover:bg-tad-cyan border border-white/5 hover:border-tad-cyan rounded-2xl transition-all flex items-center justify-center group/btn">
+                      <Link
+                        href={`/p/${adv.id}`}
+                        className="w-12 h-12 bg-white/[0.03] hover:bg-tad-cyan border border-white/5 hover:border-tad-cyan rounded-2xl transition-all flex items-center justify-center group/btn"
+                      >
                         <ChevronRight className="w-5 h-5 text-slate-500 group-hover/btn:text-black transition-colors" />
                       </Link>
                     </div>
@@ -225,18 +246,22 @@ export default function AdvertiserHub() {
                           className="flex items-center justify-center gap-3 py-3 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl transition-all"
                         >
                           <MessageCircle className="w-4 h-4 text-emerald-500" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Contact</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                            Contact
+                          </span>
                         </a>
                       )}
                       {adv.instagram && (
                         <a
-                          href={`https://instagram.com/${adv.instagram.replace('@', '')}`}
+                          href={`https://instagram.com/${adv.instagram.replace("@", "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-3 py-3 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10 rounded-2xl transition-all"
                         >
                           <Instagram className="w-4 h-4 text-pink-500" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-pink-500">IG Live</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-pink-500">
+                            IG Live
+                          </span>
                         </a>
                       )}
                     </div>
@@ -252,12 +277,16 @@ export default function AdvertiserHub() {
       <footer className="px-6 py-16 border-t border-white/5 text-center space-y-8 bg-zinc-950/20">
         <div className="flex items-center justify-center gap-1.5">
           <LayoutGrid className="w-4 h-4 text-tad-cyan" />
-          <span className="text-[10px] font-black text-white uppercase tracking-[0.5em]">TAD NEXUS</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-[0.5em]">
+            TAD NEXUS
+          </span>
         </div>
         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest leading-loose">
           TAD Taxi Advertising Dominicana <br />
           Digital Out-of-Home Network &copy; 2026 <br />
-          <span className="text-slate-800 mt-2 block">Santiago • Santo Domingo</span>
+          <span className="text-slate-800 mt-2 block">
+            Santiago • Santo Domingo
+          </span>
         </p>
       </footer>
     </div>

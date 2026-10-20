@@ -4,7 +4,7 @@ export interface TaxiData {
   license_plate?: string;
   latitude: number;
   longitude: number;
-  status: 'online' | 'offline' | 'idle';
+  status: "online" | "offline" | "idle";
   speed?: number;
   last_update?: string | Date;
 }

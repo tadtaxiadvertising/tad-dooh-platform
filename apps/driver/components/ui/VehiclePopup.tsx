@@ -1,12 +1,27 @@
 // admin-dashboard/components/ui/VehiclePopup.tsx
-import React from 'react';
+import React from "react";
 import {
-  Battery, Signal, Smartphone, Clock,
-  MapPin, Navigation, User, CreditCard, ShieldCheck, XCircle,
-  Gauge as SpeedIcon, Phone, Calendar, AlertTriangle, Car,
-  Hash, Wifi, WifiOff, Circle
-} from 'lucide-react';
-import clsx from 'clsx';
+  Battery,
+  Signal,
+  Smartphone,
+  Clock,
+  MapPin,
+  Navigation,
+  User,
+  CreditCard,
+  ShieldCheck,
+  XCircle,
+  Gauge as SpeedIcon,
+  Phone,
+  Calendar,
+  AlertTriangle,
+  Car,
+  Hash,
+  Wifi,
+  WifiOff,
+  Circle,
+} from "lucide-react";
+import clsx from "clsx";
 
 interface VehiclePopupProps {
   device: {
@@ -28,39 +43,65 @@ interface VehiclePopupProps {
   onSyncCommand?: () => void;
 }
 
-export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistory, onSyncCommand }) => {
+export const VehiclePopup: React.FC<VehiclePopupProps> = ({
+  device,
+  onViewHistory,
+  onSyncCommand,
+}) => {
   const isOnline = device.isOnline;
-  const isPaid = device.subscriptionStatus === 'ACTIVE';
-  const isExpired = device.subscriptionStatus === 'EXPIRED';
+  const isPaid = device.subscriptionStatus === "ACTIVE";
+  const isExpired = device.subscriptionStatus === "EXPIRED";
   const speed = device.speed || 0;
   const battery = device.batteryLevel ?? 0;
-  const driverStatus = device.driverStatus || 'PENDIENTE_PAGO';
+  const driverStatus = device.driverStatus || "PENDIENTE_PAGO";
 
   const driverStatusLabel =
-    driverStatus === 'OPERATIVO' ? 'ACTIVO' :
-      driverStatus === 'BLOQUEADO' ? 'BLOQUEADO' :
-        driverStatus === 'PENDIENTE_PAGO' ? 'PENDIENTE PAGO' :
-          driverStatus;
+    driverStatus === "OPERATIVO"
+      ? "ACTIVO"
+      : driverStatus === "BLOQUEADO"
+        ? "BLOQUEADO"
+        : driverStatus === "PENDIENTE_PAGO"
+          ? "PENDIENTE PAGO"
+          : driverStatus;
 
-  const subscriptionLabel = isPaid ? 'ACTIVA' : isExpired ? 'EXPIRADA' : 'PENDIENTE';
+  const subscriptionLabel = isPaid
+    ? "ACTIVA"
+    : isExpired
+      ? "EXPIRADA"
+      : "PENDIENTE";
 
   return (
     <div className="w-[340px] bg-[#0c0c0c]/95 backdrop-blur-2xl border border-white/5 rounded-3xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-300 origin-bottom">
       {/* ── Status Header Bar ── */}
-      <div className={clsx(
-        "h-1.5 relative overflow-hidden",
-        !isOnline ? "bg-zinc-800" : isPaid ? "bg-emerald-500 shadow-[0_0_15px_#10b981]" : "bg-tad-yellow shadow-[0_0_15px_#fad400]"
-      )} />
+      <div
+        className={clsx(
+          "h-1.5 relative overflow-hidden",
+          !isOnline
+            ? "bg-zinc-800"
+            : isPaid
+              ? "bg-emerald-500 shadow-[0_0_15px_#10b981]"
+              : "bg-tad-yellow shadow-[0_0_15px_#fad400]",
+        )}
+      />
 
       <div className="p-5">
         {/* ── Driver Identity ── */}
         <div className="flex items-start gap-4 mb-5">
           <div className="relative shrink-0">
-            <div className={clsx(
-              "w-14 h-14 rounded-2xl border flex items-center justify-center transition-all bg-black shadow-inner",
-              isOnline ? "border-tad-yellow/20 text-tad-yellow" : "border-white/5 text-zinc-800"
-            )}>
-              <User className={clsx("w-8 h-8", isOnline ? "opacity-60" : "opacity-10")} />
+            <div
+              className={clsx(
+                "w-14 h-14 rounded-2xl border flex items-center justify-center transition-all bg-black shadow-inner",
+                isOnline
+                  ? "border-tad-yellow/20 text-tad-yellow"
+                  : "border-white/5 text-zinc-800",
+              )}
+            >
+              <User
+                className={clsx(
+                  "w-8 h-8",
+                  isOnline ? "opacity-60" : "opacity-10",
+                )}
+              />
             </div>
             {isOnline ? (
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-[#0c0c0c] rounded-full animate-pulse shadow-lg" />
@@ -78,7 +119,9 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
             {(device as any).isOutsideFence && (
               <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-500 animate-pulse">
                 <XCircle className="w-3 h-3" />
-                <span className="text-[8px] font-black uppercase tracking-widest">Fuera de Rango</span>
+                <span className="text-[8px] font-black uppercase tracking-widest">
+                  Fuera de Rango
+                </span>
               </div>
             )}
 
@@ -103,10 +146,17 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
         {/* ── Telemetry Grid ── */}
         <div className="grid grid-cols-3 gap-2.5 mb-4">
           <TelemetryCard
-            icon={<Battery className={clsx("w-3.5 h-3.5", battery < 20 ? "text-rose-500" : "text-emerald-500")} />}
+            icon={
+              <Battery
+                className={clsx(
+                  "w-3.5 h-3.5",
+                  battery < 20 ? "text-rose-500" : "text-emerald-500",
+                )}
+              />
+            }
             label="Batería"
             value={`${battery}%`}
-            statusColor={battery < 20 ? 'text-rose-400' : 'text-emerald-400'}
+            statusColor={battery < 20 ? "text-rose-400" : "text-emerald-400"}
           />
           <TelemetryCard
             icon={<SpeedIcon className="w-3.5 h-3.5 text-tad-yellow" />}
@@ -117,9 +167,11 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
           />
           <TelemetryCard
             icon={
-              isOnline
-                ? <Wifi className="w-3.5 h-3.5 text-emerald-500" />
-                : <WifiOff className="w-3.5 h-3.5 text-zinc-700" />
+              isOnline ? (
+                <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <WifiOff className="w-3.5 h-3.5 text-zinc-700" />
+              )
             }
             label="Enlace"
             value={isOnline ? "ONLINE" : "OFFLINE"}
@@ -129,32 +181,49 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
 
         {/* ── Driver Status & Subscription ── */}
         <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <div className={clsx(
-            "px-3 py-2.5 rounded-2xl border flex items-center gap-2.5 backdrop-blur-md",
-            driverStatus === 'OPERATIVO'
-              ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
-              : driverStatus === 'BLOQUEADO'
-                ? "bg-rose-500/5 border-rose-500/10 text-rose-500"
-                : "bg-amber-500/5 border-amber-500/10 text-amber-400"
-          )}>
-            {driverStatus === 'OPERATIVO' ? <ShieldCheck className="w-3.5 h-3.5" /> :
-              driverStatus === 'BLOQUEADO' ? <XCircle className="w-3.5 h-3.5" /> :
-                <AlertTriangle className="w-3.5 h-3.5" />}
+          <div
+            className={clsx(
+              "px-3 py-2.5 rounded-2xl border flex items-center gap-2.5 backdrop-blur-md",
+              driverStatus === "OPERATIVO"
+                ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
+                : driverStatus === "BLOQUEADO"
+                  ? "bg-rose-500/5 border-rose-500/10 text-rose-500"
+                  : "bg-amber-500/5 border-amber-500/10 text-amber-400",
+            )}
+          >
+            {driverStatus === "OPERATIVO" ? (
+              <ShieldCheck className="w-3.5 h-3.5" />
+            ) : driverStatus === "BLOQUEADO" ? (
+              <XCircle className="w-3.5 h-3.5" />
+            ) : (
+              <AlertTriangle className="w-3.5 h-3.5" />
+            )}
             <div className="flex flex-col">
-              <span className="text-[7px] font-black uppercase tracking-[0.2em] opacity-60">Driver</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.1em]">{driverStatusLabel}</span>
+              <span className="text-[7px] font-black uppercase tracking-[0.2em] opacity-60">
+                Driver
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.1em]">
+                {driverStatusLabel}
+              </span>
             </div>
           </div>
 
-          <div className={clsx(
-            "px-3 py-2.5 rounded-2xl border flex items-center gap-2.5 backdrop-blur-md",
-            isPaid ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
-              : "bg-rose-500/5 border-rose-500/10 text-rose-500"
-          )}>
+          <div
+            className={clsx(
+              "px-3 py-2.5 rounded-2xl border flex items-center gap-2.5 backdrop-blur-md",
+              isPaid
+                ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
+                : "bg-rose-500/5 border-rose-500/10 text-rose-500",
+            )}
+          >
             <CreditCard className="w-3.5 h-3.5" />
             <div className="flex flex-col">
-              <span className="text-[7px] font-black uppercase tracking-[0.2em] opacity-60">Suscripción</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.1em]">{subscriptionLabel}</span>
+              <span className="text-[7px] font-black uppercase tracking-[0.2em] opacity-60">
+                Suscripción
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.1em]">
+                {subscriptionLabel}
+              </span>
             </div>
           </div>
         </div>
@@ -164,9 +233,13 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
           <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-white/[0.02] border border-white/5 rounded-2xl">
             <Calendar className="w-3 h-3 text-zinc-500" />
             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-              Vence:{' '}
+              Vence:{" "}
               <span className="text-zinc-300 ml-1">
-                {new Date(device.subscriptionEnd).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {new Date(device.subscriptionEnd).toLocaleDateString("es-DO", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </span>
             </span>
           </div>
@@ -176,11 +249,17 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
         <div className="flex items-center justify-between mb-5 px-3 py-2 bg-white/[0.02] border border-white/5 rounded-2xl">
           <div className="flex items-center gap-2">
             <Clock className="w-3 h-3 text-zinc-500" />
-            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Último Sync</span>
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+              Último Sync
+            </span>
           </div>
           <span className="text-[10px] font-mono font-black text-zinc-400">
             {device.lastSeen
-              ? new Date(device.lastSeen).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+              ? new Date(device.lastSeen).toLocaleTimeString("es-DO", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })
               : "---"}
           </span>
         </div>
@@ -223,7 +302,13 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({ device, onViewHistor
   );
 };
 
-const TelemetryCard = ({ icon, label, value, sub, statusColor }: {
+const TelemetryCard = ({
+  icon,
+  label,
+  value,
+  sub,
+  statusColor,
+}: {
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -233,11 +318,15 @@ const TelemetryCard = ({ icon, label, value, sub, statusColor }: {
   <div className="bg-black/40 border border-white/5 p-2.5 rounded-2xl flex flex-col gap-1 hover:border-white/10 transition-colors">
     <div className="flex items-center gap-1.5 text-zinc-600">
       {icon}
-      <span className="text-[7px] font-black uppercase tracking-widest">{label}</span>
+      <span className="text-[7px] font-black uppercase tracking-widest">
+        {label}
+      </span>
     </div>
     <p className={clsx("text-[12px] font-black leading-none", statusColor)}>
       {value}
-      {sub && <span className="text-[7px] font-bold text-zinc-600 ml-0.5">{sub}</span>}
+      {sub && (
+        <span className="text-[7px] font-bold text-zinc-600 ml-0.5">{sub}</span>
+      )}
     </p>
   </div>
 );

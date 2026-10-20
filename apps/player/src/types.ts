@@ -81,4 +81,5 @@ export interface CachedVideo {
   size: number;
 }
 
-export type PlayerStatus = 'idle' | 'playing' | 'intermission' | 'error' | 'killswitch';
+export type PlayerStatus =
+  "idle" | "playing" | "intermission" | "error" | "killswitch";

@@ -10,7 +10,8 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import type { QrScanService, RecordQrScanInput } from "./qr-scan.service";
+import { QrScanService } from "./qr-scan.service";
+import type { RecordQrScanInput } from "./qr-scan.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 

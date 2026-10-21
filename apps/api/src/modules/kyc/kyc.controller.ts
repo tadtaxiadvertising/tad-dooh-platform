@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
-import type { KYCService, KYCSubmission } from "./kyc.service";
+import { KYCService } from "./kyc.service";
+import type { KYCSubmission } from "./kyc.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";

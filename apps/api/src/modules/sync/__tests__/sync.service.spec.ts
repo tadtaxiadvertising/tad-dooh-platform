@@ -3,6 +3,7 @@ import { HttpException } from "@nestjs/common";
 import { SyncService } from "../sync.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../../notifications/notifications.service";
+
 import { BUSINESS_RULES } from "../../../../src/common/constants/business-rules";
 
 // Mockear variables de entorno requeridas
@@ -70,7 +71,7 @@ describe("SyncService", () => {
     it("should throw 403 for non-ACTIVE device (offline-first invariant)", async () => {
       mockPrisma.device.findUnique.mockResolvedValue({
         deviceId: "TAD-001",
-        status: BUSINESS_RULES.STATUS.DEVICE.PENDING_APPROVAL,
+        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
         driver: { id: "driver-1", fullName: "Test Driver" },
       });
 

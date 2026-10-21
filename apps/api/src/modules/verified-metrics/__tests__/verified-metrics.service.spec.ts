@@ -3,11 +3,21 @@ import { Test } from "@nestjs/testing";
 import { VerifiedMetricsService } from "../verified-metrics.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
+// Type annotation for mockPrisma to avoid circular reference
+interface MockPrisma {
+  campaign: { findUnique: any; findMany: any };
+  mediaAsset: { findMany: any };
+  playbackEvent: { findMany: any; count: any; groupBy: any; updateMany: any };
+  driver: { findUnique: any };
+  device: { findMany: any };
+  $transaction: any;
+}
+
 describe("VerifiedMetricsService", () => {
   let service: VerifiedMetricsService;
   let prisma: PrismaService;
 
-  const mockPrisma = {
+  const mockPrisma: MockPrisma = {
     campaign: {
       findUnique: jest.fn(),
       findMany: jest.fn(),

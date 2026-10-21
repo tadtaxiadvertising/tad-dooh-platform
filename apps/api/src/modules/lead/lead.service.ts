@@ -236,7 +236,9 @@ export class LeadService {
     status: "CONFIRMED" | "REJECTED" | "REFUNDED",
     reviewerNotes?: string,
     verificationMethod:
-      "MANUAL_REVIEW" | "WEBHOOK" | "AUTOMATED" = "MANUAL_REVIEW",
+      | "MANUAL_REVIEW"
+      | "WEBHOOK"
+      | "AUTOMATED" = "MANUAL_REVIEW",
   ) {
     const paymentIntent = await this.prisma.paymentIntent.findUnique({
       where: { id: paymentIntentId },

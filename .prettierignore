@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+.next
+out
+*.tsbuildinfo
+
+# Generated files
+*.d.ts
+*.js
+*.js.map
+*.map
+
+# Environment
+.env
+.env.local

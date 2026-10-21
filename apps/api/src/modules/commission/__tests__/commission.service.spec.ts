@@ -7,10 +7,37 @@ import {
 } from "../commission.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
+// Type annotation for mockPrisma to avoid circular reference
+interface MockPrisma {
+  commission: {
+    findUnique: any;
+    findFirst: any;
+    create: any;
+    update: any;
+    findMany: any;
+    count: any;
+  };
+  settlementBatch: {
+    findUnique: any;
+    findFirst: any;
+    create: any;
+    update: any;
+    findMany: any;
+  };
+  financialTransaction: {
+    create: any;
+    findMany: any;
+  };
+  driver: {
+    findUnique: any;
+  };
+  $transaction: any;
+}
+
 describe("CommissionService", () => {
   let service: CommissionService;
 
-  const mockPrisma = {
+  const mockPrisma: MockPrisma = {
     commission: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),

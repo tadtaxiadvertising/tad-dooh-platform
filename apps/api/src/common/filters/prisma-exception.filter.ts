@@ -8,23 +8,29 @@ import {
 import { Prisma } from "@prisma/client";
 import { Response } from "express";
 
-@Catch(
-  Prisma.PrismaClientKnownRequestError,
-  Prisma.PrismaClientUnknownRequestError,
-  Prisma.PrismaClientValidationError,
-  Prisma.PrismaClientInitializationError,
-)
+export function isPrismaClientKnownError(
+  e: unknown,
+): e is Prisma.PrismaClientKnownRequestError {
+  return (
+    e instanceof Error &&
+    Object.prototype.hasOwnProperty.call(e, "code") &&
+    typeof (e as any).code === "string"
+  );
+}
+
+export function isPrismaClientValidationError(
+  e: unknown,
+): e is Prisma.PrismaClientValidationError {
+  return (
+    e instanceof Error && Object.prototype.hasOwnProperty.call(e, "validation")
+  );
+}
+
+@Catch()
 export class PrismaClientExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaClientExceptionFilter.name);
 
-  catch(
-    exception:
-      | Prisma.PrismaClientKnownRequestError
-      | Prisma.PrismaClientUnknownRequestError
-      | Prisma.PrismaClientValidationError
-      | Prisma.PrismaClientInitializationError,
-    host: ArgumentsHost,
-  ) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
@@ -32,7 +38,7 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
     let message = "Error interno de base de datos.";
     let errorCode = "UNKNOWN";
 
-    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+    if (isPrismaClientKnownError(exception)) {
       this.logger.error(
         `Prisma Known Error [${exception.code}]: ${exception.message}`,
       );
@@ -54,19 +60,12 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
           message = "Registro no encontrado.";
           break;
       }
-    } else if (exception instanceof Prisma.PrismaClientValidationError) {
+    } else if (isPrismaClientValidationError(exception)) {
       this.logger.error(`Prisma Validation Error: ${exception.message}`);
       status = HttpStatus.BAD_REQUEST;
-      message =
-        "Error de validación de datos: Verifique el formato de fechas o IDs.";
-      errorCode = "VALIDATION_ERROR";
-    } else {
-      // PrismaClientUnknownRequestError, PrismaClientInitializationError
-      this.logger.error(
-        `Prisma Unknown/Initialization Error: ${exception.message}`,
-      );
       message = exception.message;
-      errorCode = "DB_ERROR";
+    } else {
+      this.logger.error(exception);
     }
 
     response.status(status).json({

@@ -1,27 +1,22 @@
-# Single-stage Dockerfile para tad-driver optimizado para Easypanel Free Tier
-# Node >=22 required by @supabase/supabase-js (deprecation warning on Node 20)
-FROM node:22-alpine
+# Driver Portal - Next.js static export with deploy-ready configuration
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --no-audit --no-fund
+
+COPY apps/driver ./apps/driver
+COPY packages/ ./packages/
+RUN pnpm run build -w apps/driver
+
+# Production stage with env vars injected at build time
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Runtime deps
-RUN apk add --no-cache openssl curl
-
-# Archivos core del monorepo
-COPY package.json package-lock.json ./
-COPY tsconfig.base.json ./
-COPY packages ./packages
-COPY apps/driver ./apps/driver
-
-# Instalar dependencias con lockfile (builds reproducibles). Sin el lockfile,
-# npm re-resuelve las ultimas versiones y puede fallar (ej: una dependencia
-# transitoria pide una version yanked de @typescript-eslint/scope-manager).
-RUN npm install --legacy-peer-deps --no-audit --no-fund
-
-# Build-time public env vars (client-baked por Next.js).
-# Defaults solo para builds de CI / standalone. La clave y la URL reales se
-# inyectan con el despliegue (EasyPanel) a partir de la plantilla
-# easypanel-env-template.md (NEXT_PUBLIC_SUPABASE_ANON_KEY y NEXT_PUBLIC_API_URL).
+# Build-time public env vars (client-baked by Next.js).
+# Defaults only for builds of CI / standalone. Real keys and URL are injected
+# at deploy time (EasyPanel) from easypanel-env-template.md.
 ARG NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=REPLACE_WITH_REAL_ANON_KEY
 # NEXT_PUBLIC_SUPABASE_ANON_KEY is required at build time
@@ -35,19 +30,19 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app/apps/driver
-RUN npm run build
+RUN pnpm run build
 
 WORKDIR /app
 
-# Copiar standalone al lugar correcto y asegurar archivos estáticos
+# Copy standalone to correct location and ensure static files exist
 RUN cp -r apps/driver/.next/standalone/* ./ || true
 RUN mkdir -p apps/driver/.next/static && cp -r apps/driver/.next/static/* ./apps/driver/.next/static/ 2>/dev/null || true
 RUN cp -r apps/driver/public ./public 2>/dev/null || true
 
-# NO hacer npm prune --production: mata @tad/services,@tad/ui (son workspaces locales)
-# El prune elimina symlinks de los packages locales y el standalone no puede resolverlos.
+# Note: Do NOT run npm prune --production: this removes symlinks from local
+# workspace packages (tad/services, tad/ui) that the standalone cannot resolve.
 
-# Usuario no-root
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs nextjs && \
     chown -R nextjs:nodejs /app
@@ -59,11 +54,11 @@ ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
 
-# Healthcheck: usa PORT del entorno (Easypanel pasa 80) o default 3000
+# Healthcheck: uses PORT env var (EasyPanel passes 80) or default 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
   CMD curl -f -s -o /dev/null "http://127.0.0.1:${PORT:-3000}/" || exit 1
 
-# ENTRYPOINT wrapper: señal-safe + exec en Alpine, compatible con JSON args
+# ENTRYPOINT wrapper: signal-safe + exec on Alpine, compatible with JSON args
 COPY --chmod=0755 apps/driver/docker-entrypoint.sh /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["node", "apps/driver/server.js"]

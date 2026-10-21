@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards, Req, ForbiddenException } from "@nestjs/common";
 import { KYCService } from "./kyc.service";
 import type { KYCSubmission } from "./kyc.service";
-import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
 
@@ -12,8 +11,17 @@ export class KYCController {
   constructor(private readonly kycService: KYCService) {}
 
   @Post("submit")
-  @Public()
-  async submit(@Body() body: KYCSubmission) {
+  async submit(@Req() req: any, @Body() body: KYCSubmission) {
+    const userRole = req.user?.role;
+    const isDriver = userRole === UserRole.DRIVER || userRole === "driver";
+    if (isDriver) {
+      const entityId = req.user?.entityId;
+      if (!entityId || entityId !== body.driverId) {
+        throw new ForbiddenException(
+          "No tienes permiso para enviar documentos KYC para otro conductor",
+        );
+      }
+    }
     return this.kycService.submit(body);
   }
 

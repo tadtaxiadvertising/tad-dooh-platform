@@ -297,11 +297,10 @@ export default async function handler(
     const serverSetCookie = backendResponse.headers.get("set-cookie");
     if (serverSetCookie) {
       const existingCookies = res.getHeader("set-cookie");
-      const cookiesArray = Array.isArray(existingCookies) ? existingCookies : [existingCookies];
-      res.setHeader(
-        "set-cookie",
-        [...cookiesArray, serverSetCookie],
-      );
+      const cookiesArray = Array.isArray(existingCookies)
+        ? existingCookies
+        : [existingCookies];
+      res.setHeader("set-cookie", [...cookiesArray, serverSetCookie]);
     }
 
     const contentType = backendResponse.headers.get("content-type");

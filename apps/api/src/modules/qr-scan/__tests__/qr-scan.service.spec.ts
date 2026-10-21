@@ -3,10 +3,23 @@ import { Test } from "@nestjs/testing";
 import { QrScanService } from "../qr-scan.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
+// Type annotation for mockPrisma to avoid circular reference
+interface MockPrisma {
+  qrScan: {
+    findFirst: any;
+    findUnique: any;
+    create: any;
+    findMany: any;
+    count: any;
+    update: any;
+  };
+  $transaction: any;
+}
+
 describe("QrScanService", () => {
   let service: QrScanService;
 
-  const mockPrisma = {
+  const mockPrisma: MockPrisma = {
     qrScan: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),

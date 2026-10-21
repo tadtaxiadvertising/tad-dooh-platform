@@ -1,5 +1,9 @@
 export type PaymentMethod =
-  "card" | "bank_transfer" | "apple_pay" | "google_pay" | "paypal";
+  | "card"
+  | "bank_transfer"
+  | "apple_pay"
+  | "google_pay"
+  | "paypal";
 
 export interface PaymentRequestPayload {
   accountId: string;

@@ -3,10 +3,23 @@ import { Test } from "@nestjs/testing";
 import { ConversationService } from "../conversation.service";
 import { PrismaService } from "../../prisma/prisma.service";
 
+// Type annotation for mockPrisma to avoid circular reference
+interface MockPrisma {
+  conversation: {
+    findUnique: any;
+    create: any;
+    update: any;
+    findMany: any;
+    count: any;
+  };
+  conversationMessage: { create: any; findMany: any };
+  $transaction: any;
+}
+
 describe("ConversationService", () => {
   let service: ConversationService;
 
-  const mockPrisma = {
+  const mockPrisma: MockPrisma = {
     conversation: {
       findUnique: jest.fn(),
       create: jest.fn(),

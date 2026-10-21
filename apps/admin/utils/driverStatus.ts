@@ -6,7 +6,9 @@ import {
 } from "date-fns";
 
 export type DriverConnectionStatus =
-  "online" | "recent_offline" | "long_offline";
+  | "online"
+  | "recent_offline"
+  | "long_offline";
 
 export interface DriverStatusInfo {
   status: DriverConnectionStatus;

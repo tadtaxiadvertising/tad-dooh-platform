@@ -6,48 +6,39 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 
 # 1. Install ALL deps for API + impact-calculator first (cached layer)
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
-# Scope install to API + shared packages (npm install --workspace; lockfile stays in sync)
-# npm install is used instead of npm ci --workspace because the latter fails on
-# nested transitive deps (e.g. google-auth-library under node_modules/@google-cloud/...)
-# and would abort the build before a single dep is installed.
-RUN npm install --workspace=apps/api --workspace=packages/impact-calculator --no-audit --no-fund
+# Scope install to API + shared packages (pnpm install --workspace; lockfile stays in sync)
+RUN pnpm install --workspace=apps/api --workspace=packages/impact-calculator --no-audit --no-fund
 
 # 2. Copy all source files
 COPY . .
 
 # 3. Build shared packages first (using source files just copied)
-RUN npm run build --workspace=packages/impact-calculator
+RUN pnpm run build --workspace=packages/impact-calculator
 
 # 4. Build API
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
-RUN npm run build -w apps/api
+RUN pnpm run build -w apps/api
 
 # 5. Prune devDependencies (but keep node_modules structure)
-RUN npm prune --omit=dev --workspace=apps/api
+RUN pnpm prune --omit=dev --workspace=apps/api
 
-# 4. Runtime config
+# Runtime config
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"
 ENV PORT=3000
 
-# 5. Security: non-root user
+# Security: non-root user
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nestjs && \
-    chown -R nestjs:nodejs /app
-USER nestjs
+    adduser --system --uid 1001 --ingroup nodejs --home /app --shell /sbin/nologin nodejs
+
+USER nodejs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-  CMD wget -qO- "http://127.0.0.1:3000/api/health" >/dev/null || exit 1
-
-WORKDIR /app/apps/api
-COPY --chown=nestjs:nodejs apps/api/docker-entrypoint.sh docker-entrypoint.sh
-RUN chmod +x docker-entrypoint.sh
-ENTRYPOINT ["/bin/sh", "-c", "exec /app/apps/api/docker-entrypoint.sh"]
+CMD ["node", "dist/main.js"]

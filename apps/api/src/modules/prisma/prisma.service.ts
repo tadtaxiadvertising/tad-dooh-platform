@@ -291,5 +291,4 @@ export class PrismaService
       return { connected: false };
     }
   }
-
 }

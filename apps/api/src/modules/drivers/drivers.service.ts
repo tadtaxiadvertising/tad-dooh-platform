@@ -399,7 +399,8 @@ export class DriversService {
           (err as Record<string, unknown>).code === "P2002"
         ) {
           const meta = (err as Record<string, unknown>).meta as
-            Record<string, unknown> | undefined;
+            | Record<string, unknown>
+            | undefined;
           const target = meta?.target || "campo único";
           throw new BadRequestException(
             `Ya existe un conductor con ese valor (${target}). Verifica teléfono/cédula/placa.`,

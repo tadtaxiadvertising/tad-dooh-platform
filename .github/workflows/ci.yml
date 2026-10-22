@@ -18,9 +18,9 @@ jobs:
     name: Format & Lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -50,9 +50,9 @@ jobs:
     name: TypeScript Check
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -84,9 +84,9 @@ jobs:
     name: Tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -116,9 +116,9 @@ jobs:
     name: Prisma Validation
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -151,9 +151,9 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -200,7 +200,7 @@ jobs:
           - image: player
             dockerfile: Dockerfile.player
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Inspect runner disk
         run: |

@@ -23,7 +23,7 @@ jobs:
           - image: player
             dockerfile: Dockerfile.player
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Inspect runner disk
         run: |

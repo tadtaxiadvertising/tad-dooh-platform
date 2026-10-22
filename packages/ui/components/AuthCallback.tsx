@@ -157,19 +157,33 @@ async function exchangeWithBackend(
       throw new Error('Supabase no devolvió sesión tras OAuth.');
     }
 
-    const apiBase =
-      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
-      'https://tad.api.ibusiness.com.do/api/v1';
-
-    const res = await fetch(`${apiBase}/auth/oauth/exchange`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token || '',
-        intended_role: config.role,
-      }),
+    const exchangePayload = JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token || '',
+      intended_role: config.role,
     });
+
+    let res: Response;
+    try {
+      res = await fetch('/api/proxy/auth/oauth/exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: exchangePayload,
+      });
+      if (res.status === 404) {
+        throw new Error('Proxy endpoint not found');
+      }
+    } catch {
+      const rawApi =
+        (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
+        'https://tad.api.ibusiness.com.do/api';
+      const apiBase = rawApi.endsWith('/v1') ? rawApi : `${rawApi.replace(/\/$/, '')}/v1`;
+      res = await fetch(`${apiBase}/auth/oauth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: exchangePayload,
+      });
+    }
 
     if (!res.ok) {
       let msg = 'No se pudo validar tu cuenta.';

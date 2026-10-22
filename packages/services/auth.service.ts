@@ -211,7 +211,7 @@ export const isPublicPath = (currentPath: string): boolean => {
 
 export const API_BASE_URL =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
-  'https://proyecto-ia-tad-api.rewvid.easypanel.host/api';
+  'https://tad.api.ibusiness.com.do/api';
 
 export type LoginResponse = {
   access_token: string;

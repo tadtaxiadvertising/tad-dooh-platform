@@ -11,8 +11,8 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
+import { ConversationService } from "./conversation.service";
 import type {
-  ConversationService,
   CreateConversationInput,
   AddMessageInput,
   UpdateConversationInput,

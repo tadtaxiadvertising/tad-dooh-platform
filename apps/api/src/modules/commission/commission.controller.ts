@@ -11,13 +11,15 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import type {
+import {
   CommissionService,
+  CommissionSourceType,
+} from "./commission.service";
+import type {
   CreateCommissionInput,
   CommissionStatus,
   MonthlySettlementInput,
 } from "./commission.service";
-import { CommissionSourceType } from "./commission.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 

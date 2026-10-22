@@ -236,15 +236,27 @@ export default function MapView({
 
       {dataToRender.map((item: MapLocation) => {
         // Support both TaxiData interface and generic location object
-        const latitude = item.lastLat || item.latitude || item.lat;
+        // API payloads can contain numeric strings; normalize before validating.
+        // Nullish checks preserve valid zero coordinates.
+        const rawLatitude = item.lastLat ?? item.latitude ?? item.lat;
+        const rawLongitude =
+          item.lastLng ?? item.longitude ?? item.lng ?? item.lon;
+        const latitude =
+          rawLatitude === null || rawLatitude === undefined || rawLatitude === ""
+            ? NaN
+            : Number(rawLatitude);
         const longitude =
-          item.lastLng || item.longitude || item.lng || item.lon;
+          rawLongitude === null || rawLongitude === undefined || rawLongitude === ""
+            ? NaN
+            : Number(rawLongitude);
 
         if (
           !Number.isFinite(latitude) ||
           !Number.isFinite(longitude) ||
-          latitude == null ||
-          longitude == null
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
         ) return null;
 
         const position: [number, number] = [latitude, longitude];
@@ -255,10 +267,20 @@ export default function MapView({
         // and status: SystemStatus (OPERATIVO | PENDIENTE_PAGO | BLOQUEADO),
         // NEVER status: 'online'. The previous version evaluated
         // item.status === 'online', which was false for all records.
+        const lastSeenMs = item.lastSeen ? new Date(item.lastSeen).getTime() : NaN;
+        const pingMs = (item as any)._lastPingAt
+          ? new Date((item as any)._lastPingAt).getTime()
+          : NaN;
+        const freshnessMs = Math.min(
+          Number.isFinite(lastSeenMs) ? Math.max(0, Date.now() - lastSeenMs) : Infinity,
+          Number.isFinite(pingMs) ? Math.max(0, Date.now() - pingMs) : Infinity,
+        );
+        // Fresh telemetry is authoritative; stale backend flags cannot keep
+        // an inactive device green indefinitely.
         const isOnline =
-          !!item.isOnline ||
-          (item as any).online === true ||
-          String((item as any).status).toLowerCase() === "online";
+          freshnessMs <= 180_000 ||
+          (!!item.isOnline && Number.isFinite(lastSeenMs) &&
+            Date.now() - lastSeenMs <= 15 * 60_000);
 
         if (currentMode) {
           // Heatmap mode: show density with circle markers using 3-color system
@@ -332,11 +354,15 @@ export default function MapView({
           outline: none;
         }
         .tad-map.tad-map-dark.leaflet-container {
-          background: #101923 !important;
+          background: #000 !important;
         }
-        /* OSM tiles stay free; only the raster layer is filtered, never markers/popups. */
-        .tad-map.tad-map-dark .leaflet-tile-pane .leaflet-layer {
-          filter: invert(100%) hue-rotate(180deg) brightness(0.82) contrast(0.88) saturate(0.72);
+        /* Black/charcoal basemap. Filter raster tiles only; device markers
+           remain vivid green/yellow/red and keep their original contrast. */
+        .tad-map.tad-map-dark .leaflet-tile-pane {
+          background: #000 !important;
+        }
+        .tad-map.tad-map-dark .leaflet-tile {
+          filter: grayscale(1) invert(1) brightness(0.22) contrast(1.35);
         }
         .tad-map .leaflet-control-attribution {
           background: rgba(255,255,255,0.82) !important;

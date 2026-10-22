@@ -400,6 +400,7 @@ export class DriversController {
   /**
    * POST /api/drivers/:id/active-ads — Vincular anuncio activo (V12)
    */
+  @Roles(UserRole.ADMIN)
   @Post(":id/active-ads")
   async linkActiveAd(
     @Param("id") id: string,

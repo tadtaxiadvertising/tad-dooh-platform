@@ -25,9 +25,6 @@ RUN pnpm --filter @tad/impact-calculator run build
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
 RUN pnpm --filter api run build
 
-# 5. Prune devDependencies (but keep node_modules structure)
-RUN pnpm prune --prod
-
 # Runtime config
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"

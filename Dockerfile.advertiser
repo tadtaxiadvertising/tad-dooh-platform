@@ -1,68 +1,69 @@
 # ============================================
-# TAD DOOH Dashboard - Production Monorepo Dockerfile
+# TAD DOOH Advertiser Dashboard - Monorepo Dockerfile
 # ============================================
 FROM node:22-alpine AS builder
 
 WORKDIR /app
+RUN npm install -g pnpm
 
-# Archivos core del monorepo
-COPY package.json package-lock.json ./
+# Core monorepo configuration & lockfiles
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 COPY tsconfig.base.json ./
 
-# Copiar configuración de workspaces
-COPY packages ./packages
-COPY apps/advertiser ./apps/advertiser
+# Internal packages & app files must be copied before install for workspace:* resolution
+COPY packages/ ./packages/
+COPY apps/advertiser/ ./apps/advertiser/
 
-# Instalar con lockfile (builds reproducibles). El rm -rf del lockfile rompia
-# la reproducibilidad: cada build Docker podia resolver versiones distintas de
-# tailwindcss/postcss y silenciosamente cambiar el output de CSS.
-RUN npm install
+# Install dependencies preserving lockfile integrity
+RUN pnpm install --frozen-lockfile
 
-# Build shared packages first (impact-calculator is required by advertiser)
-RUN npm run build --workspace=packages/impact-calculator
+# Build shared packages required by advertiser
+RUN pnpm --filter @tad/impact-calculator run build
 
-# INYECCIÓN CRÍTICA DE IDENTIDAD ADVERTISER
-# Build-time public env vars (client-baked por Next.js).
-# Defaults solo para builds de CI / standalone. La clave y la URL reales se
-# inyectan con el despliegue (EasyPanel) a partir de la plantilla
-# easypanel-env-template.md (NEXT_PUBLIC_SUPABASE_ANON_KEY y NEXT_PUBLIC_API_URL).
+# Build-time public env vars (client-baked by Next.js)
 ARG NEXT_PUBLIC_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=REPLACE_WITH_REAL_ANON_KEY
 ARG NEXT_PUBLIC_API_URL=https://tad.api.ibusiness.com.do/api
+ARG BACKEND_INTERNAL_URL=http://tad-api:3000
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADVERTISER
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build específico para advertiser
-WORKDIR /app/apps/advertiser
-RUN npm run build
+# Build advertiser portal (Next.js standalone mode)
+RUN pnpm --filter @tad/advertiser run build
 
-# ---- Runner (Production) ----
+# ---- Production Standalone Runner ----
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+RUN apk add --no-cache curl
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=384"
+ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"
 ENV NEXT_PUBLIC_PORTAL_TYPE=ADVERTISER
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nextjs
 
-# Copiar los assets de output standalone con los permisos correctos
+# Copy standalone output and static assets
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/.next/static ./apps/advertiser/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/public ./apps/advertiser/public
-# FIX: Copiar public a la raíz para compatibilidad con el servidor standalone
 COPY --from=builder --chown=nextjs:nodejs /app/apps/advertiser/public ./public
 
 USER nextjs
 
-EXPOSE 80
-ENV PORT=80
-ENV HOSTNAME="0.0.0.0"
+EXPOSE 3000
 
-# Importante: standalone server queda bajo la ruta apps/advertiser/server.js
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+  CMD curl -f -s -o /dev/null "http://127.0.0.1:${PORT:-3000}/" || exit 1
+
 CMD ["node", "apps/advertiser/server.js"]

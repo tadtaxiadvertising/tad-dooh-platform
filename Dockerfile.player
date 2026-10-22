@@ -1,16 +1,37 @@
-# Player - Next.js static export
+# ============================================
+# TAD DOOH Player - Monorepo Dockerfile (Vite + Nginx)
+# ============================================
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 RUN npm install -g pnpm
+
+# Core monorepo configuration & lockfiles
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
-RUN pnpm install
+COPY tsconfig.base.json ./
 
-COPY apps/player ./apps/player
+# Internal packages & app files must be copied before install for workspace:* resolution
 COPY packages/ ./packages/
-RUN pnpm run build -w apps/player
+COPY apps/player/ ./apps/player/
 
+# Install dependencies preserving lockfile integrity
+RUN pnpm install --frozen-lockfile
+
+# Build-time Vite public env vars
+ARG VITE_API_URL=https://tad.api.ibusiness.com.do/api
+ARG VITE_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
+ARG VITE_SUPABASE_ANON_KEY=REPLACE_WITH_REAL_ANON_KEY
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
+# Build Vite player app (outputs to apps/player/dist)
+RUN pnpm --filter tad-player run build
+
+# ---- Production Nginx Runner ----
 FROM nginx:alpine AS runner
-COPY --from=builder /app/apps/player/out /usr/share/nginx/html
+COPY --from=builder /app/apps/player/dist /usr/share/nginx/html
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

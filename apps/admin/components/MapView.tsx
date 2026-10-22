@@ -163,7 +163,7 @@ export default function MapView({
   taxis,
   locations,
   heatmapData,
-  center = [-34.6037, -58.3816],
+  center = [18.4861, -69.9312],
   zoom = 12,
   heatmapMode = false,
   mode = "normal",
@@ -195,13 +195,11 @@ export default function MapView({
     );
   }
 
-  const tileUrl = darkMode
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-
-  const attribution = darkMode
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // Use OpenStreetMap's public raster tiles so the admin map does not
+  // depend on CARTO's legacy basemap endpoint or an API key.
+  const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // Support both old (taxis) and new (locations) data format
   const dataToRender: MapLocation[] = locations || taxis || [];
@@ -214,7 +212,11 @@ export default function MapView({
       style={{ width: "100%", height: "100%" }}
       className="bg-[#07080d]"
     >
-      <TileLayer url={tileUrl} attribution={attribution} />
+      <TileLayer
+        url={tileUrl}
+        attribution={attribution}
+        className={darkMode ? "map-tiles-dark" : ""}
+      />
       <MapUpdater center={center} zoom={zoom} />
 
       {dataToRender.map((item: MapLocation) => {
@@ -306,6 +308,10 @@ export default function MapView({
         .leaflet-container {
           font-family: "Inter", sans-serif !important;
           background: #07080d !important;
+        }
+        /* Preserve the dark admin-map appearance while using free OSM tiles. */
+        .map-tiles-dark {
+          filter: invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
         }
         .popup-clean .leaflet-popup-content-wrapper {
           background: transparent !important;

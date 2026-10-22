@@ -71,13 +71,15 @@ const createStatusIcon = (
   lastSeen?: string | null,
   isSelected?: boolean,
   taxiNumber?: string,
+  deviceId?: string,
 ): L.DivIcon => {
   const statusInfo = getDriverStatusInfo(isOnline, lastSeen);
   const color = statusInfo.color;
   const shadowColor = statusInfo.shadowColor;
-  const shortLabel = taxiNumber
-    ? taxiNumber.replace(/[^0-9]/g, "").slice(-3)
-    : "";
+  const shortLabel = (taxiNumber || deviceId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-3)
+    .toUpperCase();
 
   const scale = isSelected ? 1.15 : 1;
   const pulse = isOnline
@@ -276,6 +278,7 @@ export default function MapView({
               item.lastSeen,
               isSelected,
               item.taxiNumber,
+              item.deviceId || item.id,
             )}
             eventHandlers={{
               click: () => onViewHistory?.(item),

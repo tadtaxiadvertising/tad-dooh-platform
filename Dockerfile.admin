@@ -1,16 +1,29 @@
-# Admin Dashboard - Next.js static export
+# Admin Dashboard - Next.js standalone runtime
 FROM node:22-alpine AS builder
 
 WORKDIR /app
+
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
-RUN pnpm install
 
-COPY apps/admin ./apps/admin
+# pnpm must see every workspace package manifest before resolving workspace:*.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/ ./apps/
 COPY packages/ ./packages/
-RUN pnpm run build -w apps/admin
 
-FROM nginx:alpine AS runner
-COPY --from=builder /app/apps/admin/out /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter admin build
+
+# The app uses Next.js output: "standalone", not static export.
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=builder /app/apps/admin/.next/standalone ./
+COPY --from=builder /app/apps/admin/.next/static ./apps/admin/.next/static
+COPY --from=builder /app/apps/admin/public ./apps/admin/public
+
+EXPOSE 3000
+CMD ["node", "apps/admin/server.js"]

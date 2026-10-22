@@ -33,6 +33,7 @@ ENV PORT=3000
 # Security: non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs --home /app nestjs && \
+    sed -i 's/\r$//' /app/apps/api/docker-entrypoint.sh && \
     chmod +x /app/apps/api/docker-entrypoint.sh && \
     chown -R nestjs:nodejs /app
 

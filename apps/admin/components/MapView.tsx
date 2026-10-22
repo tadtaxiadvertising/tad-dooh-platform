@@ -142,6 +142,20 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
   });
 };
 
+// Synchronize theme classes imperatively because Leaflet's MapContainer
+// does not update its options after initial creation.
+function MapThemeController({ darkMode }: { darkMode: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    container.classList.toggle("tad-map-dark", darkMode);
+    map.invalidateSize({ pan: false });
+  }, [darkMode, map]);
+
+  return null;
+}
+
 // Component to update map view based on props
 function MapUpdater({
   center,
@@ -214,13 +228,10 @@ export default function MapView({
       center={center}
       zoom={zoom}
       style={{ width: "100%", height: "100%" }}
-      className={darkMode ? "tad-map tad-map-dark" : "tad-map tad-map-light"}
+      className="tad-map"
     >
-      <TileLayer
-        url={tileUrl}
-        attribution={attribution}
-        className={darkMode ? "map-tiles-dark" : ""}
-      />
+      <TileLayer url={tileUrl} attribution={attribution} />
+      <MapThemeController darkMode={darkMode} />
       <MapUpdater center={center} zoom={zoom} />
 
       {dataToRender.map((item: MapLocation) => {
@@ -320,11 +331,11 @@ export default function MapView({
           background: #e8eef3 !important;
           outline: none;
         }
-        .tad-map-dark.leaflet-container {
+        .tad-map.tad-map-dark.leaflet-container {
           background: #101923 !important;
         }
         /* OSM tiles stay free; only the raster layer is filtered, never markers/popups. */
-        .map-tiles-dark {
+        .tad-map.tad-map-dark .leaflet-tile-pane .leaflet-layer {
           filter: invert(100%) hue-rotate(180deg) brightness(0.82) contrast(0.88) saturate(0.72);
         }
         .tad-map .leaflet-control-attribution {
@@ -334,7 +345,7 @@ export default function MapView({
           padding: 3px 7px !important;
           font-size: 10px !important;
         }
-        .tad-map-dark .leaflet-control-attribution {
+        .tad-map.tad-map-dark .leaflet-control-attribution {
           background: rgba(15,23,42,0.82) !important;
           color: #cbd5e1 !important;
         }
@@ -373,7 +384,7 @@ export default function MapView({
           font-weight: 900 !important;
           transition: all 0.2s;
         }
-        .tad-map-dark .leaflet-control-zoom a {
+        .tad-map.tad-map-dark .leaflet-control-zoom a {
           background: rgba(15, 23, 42, 0.94) !important;
           color: #5eead4 !important;
           border-color: rgba(255, 255, 255, 0.12) !important;

@@ -3,30 +3,30 @@
 FROM node:22-alpine
 
 WORKDIR /app
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl && npm install -g pnpm
 
 # 1. Install ALL deps for API + impact-calculator first (cached layer)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma/ ./apps/api/prisma/
 COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
-# Scope install to API + shared packages (pnpm install --workspace; lockfile stays in sync)
-RUN pnpm install --workspace=apps/api --workspace=packages/impact-calculator --no-audit --no-fund
+# Scope install to API + shared packages
+RUN pnpm install --filter api... --filter @tad/impact-calculator... --no-audit --no-fund
 
 # 2. Copy all source files
 COPY . .
 
 # 3. Build shared packages first (using source files just copied)
-RUN pnpm run build --workspace=packages/impact-calculator
+RUN pnpm --filter @tad/impact-calculator run build
 
 # 4. Build API
 RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
-RUN pnpm run build -w apps/api
+RUN pnpm --filter api run build
 
 # 5. Prune devDependencies (but keep node_modules structure)
-RUN pnpm prune --omit=dev --workspace=apps/api
+RUN pnpm prune --prod
 
 # Runtime config
 ENV NODE_ENV=production
@@ -35,10 +35,13 @@ ENV PORT=3000
 
 # Security: non-root user
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 --ingroup nodejs --home /app --shell /sbin/nologin nodejs
+    adduser --system --uid 1001 --ingroup nodejs --home /app nestjs && \
+    chmod +x /app/apps/api/docker-entrypoint.sh && \
+    chown -R nestjs:nodejs /app
 
-USER nodejs
+USER nestjs
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+WORKDIR /app/apps/api
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/apps/api/docker-entrypoint.sh"]

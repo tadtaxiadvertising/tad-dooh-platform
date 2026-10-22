@@ -5,6 +5,25 @@ WORKDIR /app
 
 RUN npm install -g pnpm
 
+# Public/runtime build configuration supplied by Easypanel as build args.
+# Never pass SUPABASE_SERVICE_ROLE_KEY or other privileged secrets to this image.
+ARG NEXT_PUBLIC_PORTAL_TYPE
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL
+ARG BACKEND_INTERNAL_URL
+ARG GIT_SHA
+ARG NODE_OPTIONS=--max-old-space-size=384
+
+ENV NEXT_PUBLIC_PORTAL_TYPE=${NEXT_PUBLIC_PORTAL_TYPE} \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL} \
+    GIT_SHA=${GIT_SHA} \
+    NODE_OPTIONS=${NODE_OPTIONS} \
+    NODE_ENV=production
+
 # pnpm must see every workspace package manifest before resolving workspace:*.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/ ./apps/

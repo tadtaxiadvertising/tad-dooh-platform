@@ -362,7 +362,9 @@ export default function MapView({
           background: #000 !important;
         }
         .tad-map.tad-map-dark .leaflet-tile {
-          filter: grayscale(1) invert(1) brightness(0.22) contrast(1.35);
+          /* Keep inverted OSM streets and labels visible instead of crushing
+             the raster detail into near-black. */
+          filter: grayscale(1) invert(1) brightness(0.82) contrast(0.9);
         }
         .tad-map .leaflet-control-attribution {
           background: rgba(255,255,255,0.82) !important;

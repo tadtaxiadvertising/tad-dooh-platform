@@ -312,12 +312,12 @@ export default function MapView({
 
       {/* Global Leaflet styles */}
       <style jsx global>{`
-        .tad-map .leaflet-container {
+        .tad-map.leaflet-container {
           font-family: "Inter", sans-serif !important;
           background: #e8eef3 !important;
           outline: none;
         }
-        .tad-map-dark .leaflet-container {
+        .tad-map-dark.leaflet-container {
           background: #101923 !important;
         }
         /* OSM tiles stay free; only the raster layer is filtered, never markers/popups. */

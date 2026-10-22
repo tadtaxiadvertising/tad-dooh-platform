@@ -71,13 +71,15 @@ const createStatusIcon = (
   lastSeen?: string | null,
   isSelected?: boolean,
   taxiNumber?: string,
+  deviceId?: string,
 ): L.DivIcon => {
   const statusInfo = getDriverStatusInfo(isOnline, lastSeen);
   const color = statusInfo.color;
   const shadowColor = statusInfo.shadowColor;
-  const shortLabel = taxiNumber
-    ? taxiNumber.replace(/[^0-9]/g, "").slice(-3)
-    : "";
+  const shortLabel = (taxiNumber || deviceId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-3)
+    .toUpperCase();
 
   const scale = isSelected ? 1.15 : 1;
   const pulse = isOnline
@@ -140,6 +142,20 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
   });
 };
 
+// Synchronize theme classes imperatively because Leaflet's MapContainer
+// does not update its options after initial creation.
+function MapThemeController({ darkMode }: { darkMode: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    container.classList.toggle("tad-map-dark", darkMode);
+    map.invalidateSize({ pan: false });
+  }, [darkMode, map]);
+
+  return null;
+}
+
 // Component to update map view based on props
 function MapUpdater({
   center,
@@ -181,11 +197,13 @@ export default function MapView({
 
   useEffect(() => {
     setIsClient(true);
-    const isDark =
-      document.documentElement.classList.contains("dark") ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDarkMode(isDark);
   }, []);
+
+  // The map has its own explicit theme control. Do not override it with the
+  // document/system theme; keep the raster tiles and controls in sync with props.
+  useEffect(() => {
+    setDarkMode(mapTheme === "dark");
+  }, [mapTheme]);
 
   if (!isClient) {
     return (
@@ -210,13 +228,10 @@ export default function MapView({
       center={center}
       zoom={zoom}
       style={{ width: "100%", height: "100%" }}
-      className="bg-[#07080d]"
+      className="tad-map"
     >
-      <TileLayer
-        url={tileUrl}
-        attribution={attribution}
-        className={darkMode ? "map-tiles-dark" : ""}
-      />
+      <TileLayer url={tileUrl} attribution={attribution} />
+      <MapThemeController darkMode={darkMode} />
       <MapUpdater center={center} zoom={zoom} />
 
       {dataToRender.map((item: MapLocation) => {
@@ -225,7 +240,12 @@ export default function MapView({
         const longitude =
           item.lastLng || item.longitude || item.lng || item.lon;
 
-        if (!latitude || !longitude) return null;
+        if (
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude) ||
+          latitude == null ||
+          longitude == null
+        ) return null;
 
         const position: [number, number] = [latitude, longitude];
         const isSelected = selectedId === (item.deviceId || item.id);
@@ -269,6 +289,7 @@ export default function MapView({
               item.lastSeen,
               isSelected,
               item.taxiNumber,
+              item.deviceId || item.id,
             )}
             eventHandlers={{
               click: () => onViewHistory?.(item),
@@ -305,13 +326,34 @@ export default function MapView({
 
       {/* Global Leaflet styles */}
       <style jsx global>{`
-        .leaflet-container {
+        .tad-map.leaflet-container {
           font-family: "Inter", sans-serif !important;
-          background: #07080d !important;
+          background: #e8eef3 !important;
+          outline: none;
         }
-        /* Preserve the dark admin-map appearance while using free OSM tiles. */
-        .map-tiles-dark {
-          filter: invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+        .tad-map.tad-map-dark.leaflet-container {
+          background: #101923 !important;
+        }
+        /* OSM tiles stay free; only the raster layer is filtered, never markers/popups. */
+        .tad-map.tad-map-dark .leaflet-tile-pane .leaflet-layer {
+          filter: invert(100%) hue-rotate(180deg) brightness(0.82) contrast(0.88) saturate(0.72);
+        }
+        .tad-map .leaflet-control-attribution {
+          background: rgba(255,255,255,0.82) !important;
+          color: #334155 !important;
+          border-radius: 8px 0 0 0;
+          padding: 3px 7px !important;
+          font-size: 10px !important;
+        }
+        .tad-map.tad-map-dark .leaflet-control-attribution {
+          background: rgba(15,23,42,0.82) !important;
+          color: #cbd5e1 !important;
+        }
+        .tad-map .leaflet-control-attribution a {
+          color: #0f766e !important;
+        }
+        .tad-map-dark .leaflet-control-attribution a {
+          color: #5eead4 !important;
         }
         .popup-clean .leaflet-popup-content-wrapper {
           background: transparent !important;
@@ -331,9 +373,9 @@ export default function MapView({
           margin: 24px !important;
         }
         .leaflet-control-zoom a {
-          background: rgba(10, 10, 13, 0.9) !important;
-          color: #10b981 !important;
-          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          background: rgba(255, 255, 255, 0.94) !important;
+          color: #0f766e !important;
+          border: 1px solid rgba(15, 23, 42, 0.12) !important;
           width: 40px !important;
           height: 40px !important;
           line-height: 40px !important;
@@ -341,6 +383,11 @@ export default function MapView({
           margin-bottom: 6px !important;
           font-weight: 900 !important;
           transition: all 0.2s;
+        }
+        .tad-map.tad-map-dark .leaflet-control-zoom a {
+          background: rgba(15, 23, 42, 0.94) !important;
+          color: #5eead4 !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
         }
         .leaflet-control-zoom a:hover {
           background: #10b981 !important;

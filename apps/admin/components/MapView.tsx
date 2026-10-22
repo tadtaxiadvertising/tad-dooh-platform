@@ -163,7 +163,7 @@ export default function MapView({
   taxis,
   locations,
   heatmapData,
-  center = [-34.6037, -58.3816],
+  center = [18.4861, -69.9312],
   zoom = 12,
   heatmapMode = false,
   mode = "normal",

@@ -251,7 +251,7 @@ export default function DriverLoginPage() {
               href="/driver/onboarding"
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-yellow-400/10 active:scale-[0.98] text-sm flex items-center justify-center gap-2 mt-2 focus:outline-none focus:ring-2 focus:ring-yellow-400/40 focus:ring-offset-2"
             >
-              Ir al onboarding
+              Crear cuenta
             </Link>
           </p>
 

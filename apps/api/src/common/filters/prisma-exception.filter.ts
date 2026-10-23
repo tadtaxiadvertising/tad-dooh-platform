@@ -63,7 +63,7 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
     } else if (isPrismaClientValidationError(exception)) {
       this.logger.error(`Prisma Validation Error: ${exception.message}`);
       status = HttpStatus.BAD_REQUEST;
-      message = exception.message;
+      message = "Error de validación en la solicitud.";
     } else {
       this.logger.error(exception);
     }

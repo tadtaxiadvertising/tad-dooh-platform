@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { DollarSign, Store, Users, Sparkles, ArrowRight, Zap } from "lucide-react";
 
 const REFERRAL_DRIVER_BONUS = 500;
@@ -14,6 +15,7 @@ const BENEFITS = [
   {
     icon: DollarSign,
     title: "Ingreso por Comisión de Campañas Vendidas",
+    subtitle: "Ingreso por Comisión: Gana RD$500 mensuales por cada campaña vendida.",
     desc: "Gana RD$500 mensuales por cada campaña activa en tu pantalla, por cada campaña vendida.",
     color: "text-[#22C55E]",
     bg: "bg-[#22C55E]/10",
@@ -30,6 +32,7 @@ const BENEFITS = [
   {
     icon: Zap,
     title: "Transmisión de Campañas",
+    subtitle: "Transmisión de Campañas: 1 a 15",
     desc: "Gana RD$500 mensuales adicionales por cada campaña que transmitas activa en tu pantalla.",
     color: "text-[#FDCB01]",
     bg: "bg-[#FDCB01]/10",
@@ -38,6 +41,25 @@ const BENEFITS = [
 ];
 
 export default function ValuePropStep({ onNext }: ValuePropStepProps) {
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      raf = requestAnimationFrame(() => {
+        const doc = document.documentElement;
+        const win = window;
+        const progress = doc.scrollTop / (doc.scrollHeight - win.innerHeight);
+        setScrollProgress(Math.min(1, Math.max(0, progress)));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Hero */}
@@ -111,6 +133,11 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
                 <h3 className="text-sm font-black text-white uppercase tracking-tight">
                   {b.title}
                 </h3>
+                {b.subtitle && (
+                  <p className="text-[10px] font-bold text-gray-500/70 mt-0.5 uppercase tracking-wider leading-tight">
+                    {b.subtitle}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                   {b.desc}
                 </p>
@@ -140,6 +167,17 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
           <ArrowRight className="w-5 h-5" />
         </motion.button>
       </motion.div>
+
+      {/* Scroll Progress Bar */}
+      <div className="w-full px-4">
+        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-[#FDCB01]"
+            style={{ width: `${scrollProgress * 100}%` }}
+            animate={{ width: `${scrollProgress * 100}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

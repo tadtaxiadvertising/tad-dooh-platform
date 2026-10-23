@@ -136,10 +136,8 @@ EQUIPO INCLUIDO:
 - Cableado de alimentación y datos certificado
 - Instalación profesional incluida
 
-SEGURO INCLUIDO (RD$6,000 / año):
-✓ Cobertura total contra robo del dispositivo
-✓ Cobertura contra fallos de fabricación
-✓ Reemplazo express en 48 horas (zonas urbanas)
+NO APLICA SEGURO INTEGRAL: la nueva membresía cubre el canal y el soporte;
+reporta cualquier incidencia en < 24 h vía app Driver.
 
 RESPONSABILIDADES DEL SOCIO:
 1. Custodia diligente: El equipo debe permanecer en el vehículo durante horas de operación.
@@ -162,12 +160,12 @@ La membresía de RD$6,000/año se factura al activar la pantalla y se renueva an
   {
     id: "membership",
     icon: CreditCard,
-    title: "Membresía Anual RD$6,000",
+    title: "Membresía, Canal y Soporte",
     description:
-      "Confirmo entender la inversión de activación: RD$6,000/año por Starter Kit + Seguro.",
+      "Confirmo entender la inversión de activación: RD$6,000/año por Membresía, Canal y Soporte.",
     fullText: `DETALLE DE INVERSIÓN DE ACTIVACIÓN - MEMBRESÍA FLOTA TAD
 
-CONCEPTO: Membresía Anual Flota + Seguro Hardware (HaaS)
+CONCEPTO: Membresía, Canal y Soporte (HaaS)
 MONTO: RD$6,000.00 (Seis Mil Pesos Dominicanos) / AÑO
 VIGENCIA: 12 meses desde activación de pantalla
 RENOVACIÓN: Automática salvo cancelación 30 días antes
@@ -180,11 +178,10 @@ QUÉ INCLUYE TU INVERSIÓN:
    • Cableado blindado 12V/5V con protector de picos
    • Instalación certificada por técnico TAD (incluida)
 
-🛡️ SEGURO INTEGRAL (Valor comercial: RD$8,000/año)
-   • Robo total del dispositivo
-   • Daños accidentales (caídas, impactos, líquidos)
-   • Fallos electrónicos post-garantía fabricante
-   • Reemplazo express 48h (Gran Santo Domingo)
+📡 CANAL DE DISTRIBUCIÓN
+   • Acceso a horarios y espacios publicitarios programados por TAD
+   • Rotación de anuncios según la programación TAD (cada 30 segundos)
+   • Posicionamiento en rutas prioritarias de Santo Domingo Metro
 
 🔧 SOPORTE Y MANTENIMIENTO
    • Actualizaciones OTA automáticas de software
@@ -202,7 +199,7 @@ FORMA DE PAGO:
 • Opción: Transferencia bancaria / Efectivo en oficinas TAD
 • Factura fiscal emitida (NCF B01 - Gastos deducibles)
 
-* El pago de la membresía cubre el Starter Kit completo y el seguro contra robo o averías.
+* El pago de la membresía cubre el canal de distribución y el soporte técnico.
 * Sin membresía activa, la pantalla no muestra anuncios y no genera ingresos.`,
     required: true,
     color: "text-[#E51636]",

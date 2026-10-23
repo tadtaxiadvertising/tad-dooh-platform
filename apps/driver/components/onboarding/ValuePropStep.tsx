@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { DollarSign, Store, Users, Sparkles, ArrowRight } from "lucide-react";
+import { DollarSign, Store, Users, Sparkles, ArrowRight, Zap } from "lucide-react";
 
 const REFERRAL_DRIVER_BONUS = 500;
 const REFERRAL_BUSINESS_BONUS = 500;
@@ -22,10 +22,18 @@ const BENEFITS = [
   {
     icon: Users,
     title: "Invitar Compañeros",
-    desc: `Gana un bono de RD$${REFERRAL_DRIVER_BONUS.toLocaleString()} por cada compañero taxista que refieras cuando instale su pantalla.`,
+    desc: `Gana un bono de RD$${REFERRAL_DRIVER_BONUS.toLocaleString()} por cada compañero taxista que refieras y recibe comisión por venta/referido de campañas.`,
     color: "text-[#22C55E]",
     bg: "bg-[#22C55E]/10",
     border: "border-[#22C55E]/20",
+  },
+  {
+    icon: Zap,
+    title: "Transmisión de Campañas",
+    desc: "Gana RD$500 mensuales adicionales por cada campaña que transmitas activa en tu pantalla.",
+    color: "text-[#FDCB01]",
+    bg: "bg-[#FDCB01]/10",
+    border: "border-[#FDCB01]/20",
   },
 ];
 

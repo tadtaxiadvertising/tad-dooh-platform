@@ -156,7 +156,7 @@ export default function SuccessStep({
         <div className="flex items-center gap-2 pt-2 border-t border-white/5">
           <Zap className="w-3 h-3 text-[#FDCB01]" />
           <span className="text-[9px] font-black text-white uppercase tracking-widest font-sans">
-            TAD Flota Dominicana
+            Proyecto TAD (Taxi Advertising) · IBUSIN3SS SRL
           </span>
         </div>
       </motion.div>

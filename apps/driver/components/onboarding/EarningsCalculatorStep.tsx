@@ -218,7 +218,6 @@ export default function EarningsCalculatorStep({
           color="green"
           icon={BadgeCheck}
           ariaLabel="Compañeros taxistas invitados"
-          bonusText={`Bonificación RD$ ${REFERRAL_DRIVER_BONUS.toLocaleString()} c/u · Descuento en tu factura`}
         />
 
         {/* Earnings Display */}
@@ -241,12 +240,24 @@ export default function EarningsCalculatorStep({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#FDCB01] mb-1">
-                Impactos est.
-              </p>
-              <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
-                {Math.round(campaigns * 30 * 10 * 7 * 4 * 0.4).toLocaleString()}
-              </span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                    Fórmula mensual
+                  </span>
+                  <span className="text-[10px] font-black text-[#FDCB01] tabular-nums">
+                    RD$500 × {campaigns} + RD$500 × {referredDrivers} = RD${projectedEarnings.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                    ROI estimado · año 1
+                  </span>
+                  <span className="text-xs font-black text-[#22C55E] tabular-nums">
+                    {Math.round((projectedEarnings * 12) / 6000 * 100)}%
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -294,7 +305,7 @@ export default function EarningsCalculatorStep({
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between font-bold text-zinc-300">
-                <span>Membresía Flota y Seguro de Hardware</span>
+                <span>Membresía, Canal y Soporte</span>
                 <span>RD$6,000 / año</span>
               </div>
               <p className="text-[10px] text-gray-500 leading-normal italic">

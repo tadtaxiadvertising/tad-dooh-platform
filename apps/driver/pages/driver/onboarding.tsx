@@ -185,15 +185,20 @@ export default function DriverOnboarding() {
   };
 
   return (
-    <OnboardingWizard
-      step={step}
-      totalSteps={TOTAL_STEPS}
-      onNext={nextStep}
-      onPrev={prevStep}
-      onClose={goToLogin}
-      stepLabels={["Bienvenida", "Simulador", "Registro", "Éxito"]}
-    >
-      {renderStepContent()}
-    </OnboardingWizard>
+    <>
+      <OnboardingWizard
+        step={step}
+        totalSteps={TOTAL_STEPS}
+        onNext={nextStep}
+        onPrev={prevStep}
+        onClose={goToLogin}
+        stepLabels={["Bienvenida", "Simulador", "Registro", "Éxito"]}
+      >
+        {renderStepContent()}
+      </OnboardingWizard>
+      <p className="text-[9px] text-zinc-600 font-mono tracking-widest mt-4">
+        Proyecto TAD (Taxi Advertising) · IBUSIN3SS SRL
+      </p>
+    </>
   );
 }

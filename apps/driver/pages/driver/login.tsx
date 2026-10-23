@@ -249,7 +249,7 @@ export default function DriverLoginPage() {
             ¿Quieres unirte a la red TAD?{" "}
             <Link
               href="/driver/onboarding"
-              className="text-yellow-400 hover:text-yellow-300 font-semibold"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-yellow-400/10 active:scale-[0.98] text-sm flex items-center justify-center gap-2 mt-2 focus:outline-none focus:ring-2 focus:ring-yellow-400/40 focus:ring-offset-2"
             >
               Ir al onboarding
             </Link>
@@ -258,7 +258,7 @@ export default function DriverLoginPage() {
           <footer className="mt-8 text-center text-[10px] text-zinc-500">
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
               <span>
-                © {new Date().getFullYear()} TAD Taxi Advertising S.R.L.
+                © {new Date().getFullYear()} Proyecto TAD (Taxi Advertising) · IBUSIN3SS SRL
               </span>
               <span className="hidden sm:inline">·</span>
               <Link

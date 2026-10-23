@@ -198,8 +198,8 @@ export default function EarningsCalculatorStep({
         {/* Campaigns Slider */}
         <SliderField
           label="1. Anuncios en tu Pantalla"
-          min={1}
-          max={15}
+          min={0}
+          max={100}
           value={campaigns}
           onChange={setCampaigns}
           color="yellow"

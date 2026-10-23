@@ -13,8 +13,8 @@ interface ValuePropStepProps {
 const BENEFITS = [
   {
     icon: DollarSign,
-    title: "Pagos por Campaña",
-    desc: "Recibe RD$500 mensuales por cada anuncio activo en tu pantalla (hasta 15 anuncios simultáneos).",
+    title: "Ingreso por Comisión de Campañas Vendidas",
+    desc: "Gana RD$500 mensuales por cada campaña activa en tu pantalla, por cada campaña vendida.",
     color: "text-[#22C55E]",
     bg: "bg-[#22C55E]/10",
     border: "border-[#22C55E]/20",

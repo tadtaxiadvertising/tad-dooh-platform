@@ -17,6 +17,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { VehiclePopup } from "./ui/VehiclePopup";
 import clsx from "clsx";
 import dynamic from "next/dynamic";
+import { getCartoTileUrl, getCartoAttribution } from "@tad/ui";
 
 const MarkerClusterGroup = dynamic(() => import("react-leaflet-cluster"), {
   ssr: false,
@@ -446,12 +447,8 @@ const MapView: React.FC<MapViewProps> = ({
       >
         <TileLayer
           key={mapTheme}
-          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={
-            mapTheme === "dark"
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          }
+          attribution={getCartoAttribution()}
+          url={getCartoTileUrl(mapTheme)}
           maxZoom={18}
         />
 

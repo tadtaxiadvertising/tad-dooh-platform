@@ -14,6 +14,7 @@ import L from "leaflet";
 import { TaxiData } from "@/types/tracking";
 import { getDriverStatusInfo } from "@/utils/driverStatus";
 import { VehiclePopup } from "@/components/ui/VehiclePopup";
+import { getCartoTileUrl, getCartoAttribution } from "@tad/ui";
 
 interface MapLocation {
   id?: string;
@@ -195,13 +196,9 @@ export default function MapView({
     );
   }
 
-  const tileUrl = darkMode
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const tileUrl = getCartoTileUrl(darkMode ? "dark" : "light");
 
-  const attribution = darkMode
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  const attribution = getCartoAttribution();
 
   // Support both old (taxis) and new (locations) data format
   const dataToRender: MapLocation[] = locations || taxis || [];

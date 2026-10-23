@@ -2,6 +2,7 @@ import React from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import HeatmapLayer from "./HeatmapLayer";
+import { getCartoTileUrl, getCartoAttribution } from "@tad/ui";
 
 interface AdvertiserMapProps {
   points: [number, number, number][]; // [lat, lng, intensity]
@@ -19,7 +20,10 @@ export default function AdvertiserMap({ points }: AdvertiserMapProps) {
       zoomControl={false}
       attributionControl={false}
     >
-      <TileLayer url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png" />
+      <TileLayer
+        url={getCartoTileUrl("dark")}
+        attribution={getCartoAttribution()}
+      />
       {points && points.length > 0 && <HeatmapLayer points={points} />}
     </MapContainer>
   );

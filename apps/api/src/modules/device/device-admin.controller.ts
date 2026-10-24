@@ -302,7 +302,6 @@ export class DeviceAdminController {
       );
       return {
         error: "Excepción interna al procesar el perfil",
-        message: error.message,
       };
     }
   }

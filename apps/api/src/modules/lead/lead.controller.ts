@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
   Request,
   ValidationPipe,
 } from "@nestjs/common";
@@ -88,6 +87,7 @@ export class LeadController {
    * GET /lead/:id
    */
   @Get(":id")
+  @Roles(UserRole.ADMIN)
   async getLead(@Param("id") id: string) {
     return this.leadService.getLead(id);
   }
@@ -97,6 +97,7 @@ export class LeadController {
    * PATCH /lead/:id/status
    */
   @Patch(":id/status")
+  @Roles(UserRole.ADMIN)
   async updateLeadStatus(
     @Param("id") id: string,
     @Body(new ValidationPipe()) dto: z.infer<typeof UpdateLeadStatusDto>,
@@ -114,6 +115,7 @@ export class LeadController {
    * POST /lead/evidence
    */
   @Post("evidence")
+  @Roles(UserRole.ADMIN)
   async registerPaymentEvidence(
     @Body(new ValidationPipe()) dto: z.infer<typeof RegisterEvidenceDto>,
     @Request() req: any,
@@ -136,6 +138,7 @@ export class LeadController {
    * POST /lead/verify
    */
   @Post("verify")
+  @Roles(UserRole.ADMIN)
   async verifyPayment(
     @Body(new ValidationPipe()) dto: z.infer<typeof VerifyPaymentDto>,
     @Request() req: any,
@@ -152,6 +155,7 @@ export class LeadController {
    * GET /lead?type=DRIVER&status=CONFIRMED&referentId=xxx
    */
   @Get()
+  @Roles(UserRole.ADMIN)
   async getLeads(
     @Query()
     filters: {

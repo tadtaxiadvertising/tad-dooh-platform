@@ -18,7 +18,7 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 - **Impacto:** errores reales podían quedar ocultos y el resumen de CI podía producir una señal de confianza incorrecta.
 - **Severidad:** P1.
 - **Corrección aplicada en la rama de auditoría:** se cambió Node de 20 a 22 para alinearlo con el Dockerfile de API; lint/typecheck/tests/Prisma/audit ya no suprimen los fallos de comandos principales, y los workspaces sin tsconfig se omiten explícitamente. El lint ahora recorre cada workspace que contiene `eslint.config.mjs` usando su configuración local; el resumen informa cada resultado por separado y falla si cualquier gate no termina en `success`. La ausencia de TruffleHog genera un warning explícito en vez de fingir un escaneo exitoso.
-- **Estado:** parche escrito y releído en GitHub; **pendiente de ejecutar CI**. Es posible que revele fallos previamente ocultos, lo cual es intencional.
+- **Estado:** el workflow se ejecutó en GitHub Actions (CI Quality Gates run #194 y Docker Image CI run #321) contra el commit del PR y ambos terminaron en `failure`. La herramienta disponible devuelve los jobs como fallidos, pero no entrega logs ni pasos; por eso aún no se puede atribuir la causa raíz. No declarar verificado ni integrar hasta obtener logs y reparar los fallos.
 
 ### TAD-LOOP-007 — ESLint se ejecutaba desde la raíz sin seleccionar configuraciones de workspace
 
@@ -110,6 +110,7 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 ## Evidencia y límites
 
 - Revisados en GitHub: `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/prisma/schema.prisma`, `Dockerfile.api`, `README.md`, `docs/qa/audit-2026-10-14/README.md` y `docs/qa/audit-2026-10-14/07-remediation-backlog.md`.
+- GitHub Actions: run **194** (`CI Quality Gates`) y run **321** (`Docker Image CI`) terminaron en `failure` para el HEAD consultado del PR #128. El conector devuelve los estados de los jobs, pero el endpoint de logs respondió `BlobNotFound` y los resúmenes de pasos llegaron vacíos; la causa raíz de los fallos sigue sin evidencia suficiente. Revisar los logs en la pestaña Actions del repositorio antes de modificar más gates.
 - No se imprimieron secretos ni se consultaron valores de variables sensibles.
 - No se modificó el esquema de base de datos ni se ejecutó despliegue.
 - La integración GitHub permite inspección/edición de archivos, pero no proporciona aquí un checkout local con Node, Docker y un entorno de pruebas aislado; por ello no se afirma que `npx tsc --noEmit` o los builds hayan pasado.

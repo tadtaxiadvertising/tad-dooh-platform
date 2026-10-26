@@ -98,7 +98,7 @@ jobs:
       - name: Run API tests
         run: |
           set -euo pipefail
-          pnpm --filter api test -- --runInBand
+          pnpm --filter api test --runInBand
 
       - name: Run e2e tests
         run: |

@@ -12,6 +12,14 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 
 ## Hallazgos
 
+### TAD-LOOP-006 — CI reportaba éxito aunque fallaran gates críticos
+
+- **Evidencia:** el workflow original `.github/workflows/ci.yml` terminaba pasos de Prettier, ESLint, TypeScript, tests API/E2E, auditoría de dependencias y TruffleHog con `|| true`, filtros o `head/tail` sin garantizar propagación del código de salida. El typecheck también intentaba ejecutar proyectos que solo tenían `package.json` aunque no tuvieran `tsconfig.json`.
+- **Impacto:** errores reales podían quedar ocultos y el resumen de CI podía producir una señal de confianza incorrecta.
+- **Severidad:** P1.
+- **Corrección aplicada en la rama de auditoría:** se cambió Node de 20 a 22 para alinearlo con el Dockerfile de API; lint/typecheck/tests/Prisma/audit ya no suprimen los fallos de comandos principales, y los workspaces sin tsconfig se omiten explícitamente. La ausencia de TruffleHog ahora genera un warning explícito en vez de fingir un escaneo exitoso.
+- **Estado:** parche escrito y releído en GitHub; **pendiente de ejecutar CI**. Es posible que revele fallos previamente ocultos, lo cual es intencional.
+
 ### TAD-LOOP-001 — Comandos Prisma permiten pérdida de datos
 
 - **Evidencia:** `apps/api/package.json` define `start:migrate` como `prisma db push --accept-data-loss --skip-generate && node dist/main.js` y `deploy:migrate` como `prisma db push --accept-data-loss --skip-generate`.
@@ -19,7 +27,8 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 - **Causa:** scripts operativos que usan `db push` con la opción de aceptar pérdida de datos.
 - **Severidad:** P1 (potencial P0 si se ejecuta y produce pérdida real).
 - **Recomendación:** retirar el uso rutinario de `--accept-data-loss`; usar migraciones versionadas con `prisma migrate deploy` solo después de comprobar que el historial de migraciones representa fielmente el esquema desplegado y de validar backup/rollback. No ejecutar migraciones en producción desde esta auditoría.
-- **Estado:** confirmado por inspección estática; ejecución/impacto real no medido.
+- **Mitigación aplicada en esta rama:** se retiró `--accept-data-loss` de `start:migrate` y `deploy:migrate`. `prisma db push` puede fallar si detecta cambios destructivos, evitando aceptarlos automáticamente. **Esto no convierte `db push` en una estrategia de migración versionada**; la sustitución por `prisma migrate deploy` queda bloqueada hasta validar la historia de migraciones, porque no se encontró `migration_lock.toml` y hay migraciones SQL manuales/no estándar. No se ejecutó contra ninguna base de datos.
+- **Estado:** riesgo destructivo mitigado parcialmente en código; ejecución/impacto real no medido; pendiente verificar el comportamiento de Prisma en CI.
 
 ### TAD-LOOP-002 — Estrategia de gestor de paquetes inconsistente
 
@@ -75,6 +84,13 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 5. **P1 — Offline-first:** validar 48 h de reproducción, persistencia de cola y sincronización idempotente después de reconexión.
 6. **P2 — Documentación:** actualizar los documentos canónicos solo después de que los resultados ejecutables confirmen las versiones y comandos correctos.
 
+## Cambios realizados en esta rama
+
+- `.github/workflows/ci.yml`: quality gates más estrictos, Node 22 y eliminación de varios `|| true`/pipelines que ocultaban errores.
+- `apps/api/package.json`: retirada de `--accept-data-loss` de los scripts Prisma operativos; cambio de mitigación, aún pendiente de verificación ejecutable.
+- Este informe: hallazgos estáticos, estado de verificación y plan de remediación.
+- No se cambiaron los scripts de migración Prisma ni se modificó el esquema: el historial y el estado real de la base aún deben reconciliarse antes de elegir entre `migrate deploy` y `db push`.
+
 ## Evidencia y límites
 
 - Revisados en GitHub: `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/prisma/schema.prisma`, `Dockerfile.api`, `README.md`, `docs/qa/audit-2026-10-14/README.md` y `docs/qa/audit-2026-10-14/07-remediation-backlog.md`.
@@ -84,4 +100,4 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 
 ## Criterio de cierre
 
-La auditoría solo puede pasar a **VERIFICADA** cuando los gates pertinentes se ejecuten contra un SHA identificado, los fallos tengan pruebas de regresión y R1–R9 se validen en sus límites reales. Cualquier migración de producción requiere revisión separada, backup comprobado y autorización de despliegue.
+La auditoría solo puede pasar a **VERIFICADA** cuando los gates pertinentes se ejecuten contra un SHA identificado, los fallos tengan pruebas de regresión y R1–R9 se validen en sus límites reales. El endurecimiento de CI está implementado en la rama de auditoría, pero no se ha ejecutado todavía y puede exponer fallos existentes. Cualquier migración de producción requiere revisión separada, backup comprobado y autorización de despliegue.

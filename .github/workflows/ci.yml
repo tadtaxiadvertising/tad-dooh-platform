@@ -8,7 +8,7 @@ on:
 
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
   PNPM_VERSION: "9"
   PRISMA_SCHEMA: "apps/api/prisma/schema.prisma"
 
@@ -34,16 +34,16 @@ jobs:
 
       - name: Format check (prettier)
         run: |
-          if [ -f packages/ui/package.json ]; then
-            pnpm dlx prettier --check "packages/ui/src/**/*.{ts,tsx}" 2>/dev/null || true
+          set -euo pipefail
+          if [ -d packages/ui/src ]; then
+            pnpm dlx prettier --check "packages/ui/src/**/*.{ts,tsx}"
           fi
-          pnpm dlx prettier --check "apps/**/*.{ts,tsx}" 2>/dev/null || true
+          pnpm dlx prettier --check "apps/**/*.{ts,tsx}"
 
       - name: Lint (ESLint)
         run: |
-          pnpm lint --max-warnings 0 2>/dev/null || \
-          npx eslint "apps/**/*.ts" "apps/**/*.tsx" "packages/**/*.ts" "packages/**/*.tsx" 2>/dev/null || \
-          echo "ESLint not configured at root — skipping"
+          set -euo pipefail
+          pnpm exec eslint "apps/**/*.ts" "apps/**/*.tsx" "packages/**/*.ts" "packages/**/*.tsx" --max-warnings 0
 
   # ── 2. TYPECHECK ─────────────────────────────────────────────────────────────
   typecheck:
@@ -66,18 +66,15 @@ jobs:
 
       - name: TypeScript check (all workspaces)
         run: |
+          set -euo pipefail
           for pkg in apps/* packages/*; do
-            if [ -f "$pkg/tsconfig.json" ] || [ -f "$pkg/package.json" ]; then
+            if [ -f "$pkg/tsconfig.json" ]; then
               echo "🔍 Typecheck: $pkg"
-              npx tsc --noEmit --project "$pkg/tsconfig.json" 2>&1 | \
-                grep -v "no lib file" | \
-                grep -v "type declaration" | \
-                head -20 || true
+              pnpm exec tsc --noEmit --project "$pkg/tsconfig.json"
+            elif [ -f "$pkg/package.json" ]; then
+              echo "ℹ️ Typecheck skipped (no tsconfig.json): $pkg"
             fi
           done
-
-      - name: Root-level check
-        run: npx tsc --noEmit -p tsconfig.base.json 2>&1 | head -30 || true
 
   # ── 3. UNIT & INTEGRATION TESTS ─────────────────────────────────────────────
   test:
@@ -100,15 +97,16 @@ jobs:
 
       - name: Run API tests
         run: |
-          if [ -d apps/api ]; then
-            cd apps/api
-            pnpm test 2>&1 | tail -30 || true
-          fi
+          set -euo pipefail
+          pnpm --filter api test --runInBand
 
       - name: Run e2e tests
         run: |
+          set -euo pipefail
           if [ -d tests/e2e ]; then
-            npx playwright test --reporter=dot 2>&1 | tail -20 || true
+            pnpm exec playwright test --reporter=dot
+          else
+            echo "No tests/e2e directory; Playwright E2E suite is not configured here."
           fi
 
   # ── 4. PRISMA SCHEMA VALIDATION ──────────────────────────────────────────────
@@ -134,17 +132,14 @@ jobs:
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ci_test_db"
         run: |
-          if [ -f "$PRISMA_SCHEMA" ]; then
-            npx prisma validate -s "$PRISMA_SCHEMA" 2>&1 | tail -10
-          fi
+          set -euo pipefail
+          test -f "$PRISMA_SCHEMA"
+          pnpm exec prisma validate --schema "$PRISMA_SCHEMA"
 
       - name: Prisma generate clients
         run: |
-          for schema in apps/api/prisma/schema.prisma; do
-            if [ -f "$schema" ]; then
-              npx prisma generate --schema="$schema" 2>&1 | tail -5
-            fi
-          done
+          set -euo pipefail
+          pnpm exec prisma generate --schema="$PRISMA_SCHEMA"
 
   # ── 5. SECURITY AUDIT ───────────────────────────────────────────────────────
   security:
@@ -167,16 +162,16 @@ jobs:
 
       - name: npm audit (high severity only)
         run: |
-          pnpm audit --audit-level=high --json 2>&1 | \
-            npx jq -r '.metadata.vulnerabilities // {}' | \
-            grep -E "high|critical" || true
+          set -euo pipefail
+          pnpm audit --audit-level=high
 
       - name: TruffleHog secret scan
         run: |
+          set -euo pipefail
           if command -v trufflehog &> /dev/null; then
-            trufflehog git file://. --no-verification --fail 2>&1 | tail -5 || true
+            trufflehog git file://. --no-verification --fail
           else
-            echo "TruffleHog not installed — skipping secret scan"
+            echo "::warning::TruffleHog is not installed; secret scanning was not performed."
           fi
 
   # ── 6. BUILD IMAGES IN ISOLATED RUNNERS ──────────────────────────────────────

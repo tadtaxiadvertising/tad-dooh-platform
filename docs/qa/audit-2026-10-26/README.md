@@ -27,7 +27,8 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 - **Causa:** scripts operativos que usan `db push` con la opción de aceptar pérdida de datos.
 - **Severidad:** P1 (potencial P0 si se ejecuta y produce pérdida real).
 - **Recomendación:** retirar el uso rutinario de `--accept-data-loss`; usar migraciones versionadas con `prisma migrate deploy` solo después de comprobar que el historial de migraciones representa fielmente el esquema desplegado y de validar backup/rollback. No ejecutar migraciones en producción desde esta auditoría.
-- **Estado:** confirmado por inspección estática; ejecución/impacto real no medido.
+- **Mitigación aplicada en esta rama:** se retiró `--accept-data-loss` de `start:migrate` y `deploy:migrate`. `prisma db push` puede fallar si detecta cambios destructivos, evitando aceptarlos automáticamente. **Esto no convierte `db push` en una estrategia de migración versionada**; la sustitución por `prisma migrate deploy` queda bloqueada hasta validar la historia de migraciones, porque no se encontró `migration_lock.toml` y hay migraciones SQL manuales/no estándar. No se ejecutó contra ninguna base de datos.
+- **Estado:** riesgo destructivo mitigado parcialmente en código; ejecución/impacto real no medido; pendiente verificar el comportamiento de Prisma en CI.
 
 ### TAD-LOOP-002 — Estrategia de gestor de paquetes inconsistente
 
@@ -86,6 +87,7 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 ## Cambios realizados en esta rama
 
 - `.github/workflows/ci.yml`: quality gates más estrictos, Node 22 y eliminación de varios `|| true`/pipelines que ocultaban errores.
+- `apps/api/package.json`: retirada de `--accept-data-loss` de los scripts Prisma operativos; cambio de mitigación, aún pendiente de verificación ejecutable.
 - Este informe: hallazgos estáticos, estado de verificación y plan de remediación.
 - No se cambiaron los scripts de migración Prisma ni se modificó el esquema: el historial y el estado real de la base aún deben reconciliarse antes de elegir entre `migrate deploy` y `db push`.
 

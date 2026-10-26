@@ -227,17 +227,32 @@ jobs:
     if: always()
     steps:
       - name: Report results
+        env:
+          FORMAT_RESULT: ${{ needs.format.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          PRISMA_RESULT: ${{ needs.prisma.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
         run: |
-          echo "## 🚀 CI Quality Gates Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          for job in format typecheck test prisma security build; do
-            status=$(echo "${{ needs[job] }}" | tr '[:upper:]' '[:lower:]')
-            echo "- **${job}**: ($status)" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ contains(fromJSON(toJSON(needs.*.result)), 'failure') }}" == "true" ]; then
-            echo "❌ **Some gates failed** — review logs before merging." >> $GITHUB_STEP_SUMMARY
+          set -euo pipefail
+          echo "## 🚀 CI Quality Gates Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' \
+            "- **format**: $FORMAT_RESULT" \
+            "- **typecheck**: $TYPECHECK_RESULT" \
+            "- **test**: $TEST_RESULT" \
+            "- **prisma**: $PRISMA_RESULT" \
+            "- **security**: $SECURITY_RESULT" \
+            "- **build**: $BUILD_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$FORMAT_RESULT" != "success" ] || \
+             [ "$TYPECHECK_RESULT" != "success" ] || \
+             [ "$TEST_RESULT" != "success" ] || \
+             [ "$PRISMA_RESULT" != "success" ] || \
+             [ "$SECURITY_RESULT" != "success" ] || \
+             [ "$BUILD_RESULT" != "success" ]; then
+            echo "❌ **One or more quality gates did not succeed** — review logs before merging." >> "$GITHUB_STEP_SUMMARY"
             exit 1
-          else
-            echo "✅ **All quality gates passed** — safe to merge." >> $GITHUB_STEP_SUMMARY
           fi
+          echo "✅ **All quality gates passed.**" >> "$GITHUB_STEP_SUMMARY"

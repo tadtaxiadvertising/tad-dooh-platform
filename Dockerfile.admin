@@ -12,7 +12,7 @@ COPY tsconfig.base.json ./
 
 # Internal packages & app files must be copied before install for workspace:* resolution
 COPY packages/ ./packages/
-COPY apps/admin/ ./apps/admin/
+COPY apps/ ./apps/
 
 # Install dependencies preserving lockfile integrity
 RUN pnpm install --frozen-lockfile

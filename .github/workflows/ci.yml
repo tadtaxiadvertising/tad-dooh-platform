@@ -43,7 +43,21 @@ jobs:
       - name: Lint (ESLint)
         run: |
           set -euo pipefail
-          pnpm exec eslint "apps/**/*.ts" "apps/**/*.tsx" "packages/**/*.ts" "packages/**/*.tsx" --max-warnings 0
+          found_config=false
+          for pkg in apps/* packages/*; do
+            if [ -f "$pkg/eslint.config.mjs" ]; then
+              found_config=true
+              echo "🔍 Lint: $pkg"
+              (
+                cd "$pkg"
+                ESLINT_USE_FLAT_CONFIG=true pnpm exec eslint --config eslint.config.mjs . --max-warnings 0
+              )
+            fi
+          done
+          if [ "$found_config" = false ]; then
+            echo "::error::No workspace eslint.config.mjs files found."
+            exit 1
+          fi
 
   # ── 2. TYPECHECK ─────────────────────────────────────────────────────────────
   typecheck:

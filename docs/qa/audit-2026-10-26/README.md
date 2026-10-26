@@ -17,8 +17,24 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 - **Evidencia:** el workflow original `.github/workflows/ci.yml` terminaba pasos de Prettier, ESLint, TypeScript, tests API/E2E, auditoría de dependencias y TruffleHog con `|| true`, filtros o `head/tail` sin garantizar propagación del código de salida. El typecheck también intentaba ejecutar proyectos que solo tenían `package.json` aunque no tuvieran `tsconfig.json`.
 - **Impacto:** errores reales podían quedar ocultos y el resumen de CI podía producir una señal de confianza incorrecta.
 - **Severidad:** P1.
-- **Corrección aplicada en la rama de auditoría:** se cambió Node de 20 a 22 para alinearlo con el Dockerfile de API; lint/typecheck/tests/Prisma/audit ya no suprimen los fallos de comandos principales, y los workspaces sin tsconfig se omiten explícitamente. La ausencia de TruffleHog ahora genera un warning explícito en vez de fingir un escaneo exitoso.
-- **Estado:** parche escrito y releído en GitHub; **pendiente de ejecutar CI**. Es posible que revele fallos previamente ocultos, lo cual es intencional.
+- **Corrección aplicada en la rama de auditoría:** se cambió Node de 20 a 22 para alinearlo con el Dockerfile de API; lint/typecheck/tests/Prisma/audit ya no suprimen los fallos de comandos principales, y los workspaces sin tsconfig se omiten explícitamente. El lint ahora recorre cada workspace que contiene `eslint.config.mjs` usando su configuración local; el resumen informa cada resultado por separado y falla si cualquier gate no termina en `success`. La ausencia de TruffleHog genera un warning explícito en vez de fingir un escaneo exitoso.
+- **Estado:** el workflow se ejecutó en GitHub Actions (CI Quality Gates run #194 y Docker Image CI run #321) contra el commit del PR y ambos terminaron en `failure`. La herramienta disponible devuelve los jobs como fallidos, pero no entrega logs ni pasos; por eso aún no se puede atribuir la causa raíz. No declarar verificado ni integrar hasta obtener logs y reparar los fallos.
+
+### TAD-LOOP-007 — ESLint se ejecutaba desde la raíz sin seleccionar configuraciones de workspace
+
+- **Evidencia:** los `eslint.config.mjs` están distribuidos en `apps/*` y `packages/*`; la raíz no tiene una configuración equivalente. El comando previo de CI invocaba `pnpm exec eslint` desde la raíz con globs globales, lo que podía no cargar las configuraciones por workspace y usar un binario ESLint distinto del declarado por cada paquete.
+- **Impacto:** el lint puede fallar por configuración no encontrada o no evaluar los archivos con las reglas esperadas.
+- **Severidad:** P1 para confiabilidad del gate.
+- **Corrección aplicada:** el workflow ahora itera por workspaces con `eslint.config.mjs`, entra a cada directorio y ejecuta ESLint usando esa configuración.
+- **Estado:** corrección estática revisada; pendiente de ejecución en GitHub Actions.
+
+### TAD-LOOP-008 — El resumen de CI no mostraba resultados de forma fiable
+
+- **Evidencia:** el resumen anterior interpolaba `needs[job]` como objeto dentro de un bucle de shell, en vez de pasar explícitamente el resultado de cada job.
+- **Impacto:** el resumen podía mostrar estados no útiles y la condición de éxito no expresaba de forma directa que todos los jobs debían terminar en `success`.
+- **Severidad:** P2.
+- **Corrección aplicada:** se pasan los seis resultados mediante variables de entorno y el resumen falla si cualquier job está fallido, cancelado o saltado.
+- **Estado:** corrección estática revisada; pendiente de ejecución en GitHub Actions.
 
 ### TAD-LOOP-001 — Comandos Prisma permiten pérdida de datos
 
@@ -86,7 +102,7 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 
 ## Cambios realizados en esta rama
 
-- `.github/workflows/ci.yml`: quality gates más estrictos, Node 22 y eliminación de varios `|| true`/pipelines que ocultaban errores.
+- `.github/workflows/ci.yml`: quality gates más estrictos, Node 22, lint por configuración de workspace y resumen explícito de resultados; eliminación de varios `|| true`/pipelines que ocultaban errores.
 - `apps/api/package.json`: retirada de `--accept-data-loss` de los scripts Prisma operativos; cambio de mitigación, aún pendiente de verificación ejecutable.
 - Este informe: hallazgos estáticos, estado de verificación y plan de remediación.
 - No se cambiaron los scripts de migración Prisma ni se modificó el esquema: el historial y el estado real de la base aún deben reconciliarse antes de elegir entre `migrate deploy` y `db push`.
@@ -94,6 +110,7 @@ La evidencia estática confirma inconsistencias de configuración y un comando d
 ## Evidencia y límites
 
 - Revisados en GitHub: `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/prisma/schema.prisma`, `Dockerfile.api`, `README.md`, `docs/qa/audit-2026-10-14/README.md` y `docs/qa/audit-2026-10-14/07-remediation-backlog.md`.
+- GitHub Actions: run **194** (`CI Quality Gates`) y run **321** (`Docker Image CI`) terminaron en `failure` para el HEAD consultado del PR #128. El conector devuelve los estados de los jobs, pero el endpoint de logs respondió `BlobNotFound` y los resúmenes de pasos llegaron vacíos; la causa raíz de los fallos sigue sin evidencia suficiente. Revisar los logs en la pestaña Actions del repositorio antes de modificar más gates.
 - No se imprimieron secretos ni se consultaron valores de variables sensibles.
 - No se modificó el esquema de base de datos ni se ejecutó despliegue.
 - La integración GitHub permite inspección/edición de archivos, pero no proporciona aquí un checkout local con Node, Docker y un entorno de pruebas aislado; por ello no se afirma que `npx tsc --noEmit` o los builds hayan pasado.

@@ -771,11 +771,13 @@ model Telemetry {
   timestamp DateTime                              @default(now())
   driver    Driver                                @relation("DriverTelemetry", fields: [driverId], references: [id])
 
-  // V12.1.3 (B7 PATCH): UNIQUE constraint requerido por
-  // `telemetry.service.ts:sync()` que hace `ON CONFLICT (driver_id, timestamp)`.
-  // Sin UNIQUE, Postgres rechaza el batch entero (`there is no unique or exclusion
-  // constraint matching the ON CONFLICT specification`). La migración previa
-  // `20260110_telemetry_unique_constraint` ejecuta un dedupe y luego crea el índice.
+  // NOTE (Prisma schema vs DB): The database applies a COMPUTED unique constraint
+  // on (driver_id, date_trunc('second', timestamp)) — see migration
+  // `20261012_telemetry_gps_burst_fix` (constraint `telemetry_driver_timestamp_sec_unique`).
+  // Prisma does not support computed expressions inside @@unique, so this client-side
+  // model keeps only the legacy composite @@unique for reference. Runtime enforcement
+  // comes from raw SQL `ON CONFLICT (driver_id, date_trunc('second', timestamp))`
+  // in telemetry.service.ts:sync(), which matches the DB constraint exactly.
   @@unique([driverId, timestamp], name: "telemetry_driver_timestamp_unique")
   @@index([driverId, timestamp(sort: Desc)], map: "idx_telemetry_driver_time")
   @@map("telemetry")

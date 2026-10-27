@@ -14,11 +14,16 @@ const withPWA = withPWAInit({
   register: false,
   cacheOnFrontEndNav: false,
   reloadOnOnline: false,
-  buildExcludes: [
-    /middleware-manifest\.json$/,
+  // NOTE (next-pwa v10+): `buildExcludes` is deprecated since v10; it now uses
+  // `exclude` inside `swConfig` for the PWA precache. `middleware-manifest.json`
+  // and `app-build-manifest.json` cannot be excluded because Next.js 15 needs them
+  // at runtime (`.next/server/middleware-manifest.json` is required). Keeping them
+  // in the precache is safe: the service worker only caches URLs listed in
+  // runtimeCaching. The `exclude` below targets only the PWA manifest files.
+  exclude: [
     /app-build-manifest\.json$/,
     /dynamic-css-manifest\.json$/,
-    /_next\/data\/.+\/.+\.json$/,
+    /_next\/data\/.+\/.+\/manifest\.json$/,
     /_next\/.*manifest.*\.json$/,
   ],
   workboxOptions: {

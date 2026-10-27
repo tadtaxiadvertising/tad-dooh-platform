@@ -1,8 +1,11 @@
 module.exports = [
   {
+    plugins: {
+      "@typescript-eslint": require("@typescript-eslint/eslint-plugin"),
+    },
     files: ["permissions-matrix.ts"],
     languageOptions: {
-      parser: require("typescript-eslint-parser"),
+      parser: require("@typescript-eslint/parser"),
       parserOptions: {
         project: "./tsconfig.json",
         ecmaVersion: 2022,

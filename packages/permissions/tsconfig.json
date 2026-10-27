@@ -11,10 +11,10 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@tad/permissions": ["../../packages/permissions/src/index.ts"],
-      "@tad/permissions/*": ["../../packages/permissions/src/*"]
+      "@tad/permissions": ["permissions-matrix.ts"],
+      "@tad/permissions/*": ["permissions-matrix.ts"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "permissions-matrix.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -6,6 +6,7 @@
     "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
+    "types": ["react", "node"],
     "baseUrl": ".",
     "paths": {
       "@tad/services": ["../../packages/services/index.ts"],

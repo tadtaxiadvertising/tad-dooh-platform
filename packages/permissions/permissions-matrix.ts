@@ -113,6 +113,8 @@ export const DATA_CATEGORIES = {
 
 export type DataCategoryKey = keyof typeof DATA_CATEGORIES
 
+export type DataCategory = typeof DATA_CATEGORIES[DataCategoryKey]
+
 // Per-app data collection configuration
 export const APP_PERMISSIONS = {
   ADMIN: {
@@ -123,7 +125,7 @@ export const APP_PERMISSIONS = {
       DATA_CATEGORIES.FUNCTIONAL,
       DATA_CATEGORIES.ADMINISTRATIVE,
       DATA_CATEGORIES.FINANCIAL,
-    ] as DataCategoryKey[],
+    ] as DataCategory[],
     description: 'Full platform administration, user management, system configuration, and analytics oversight.',
     dataCollected: [
       // Essential
@@ -167,7 +169,7 @@ export const APP_PERMISSIONS = {
       DATA_CATEGORIES.FUNCTIONAL,
       DATA_CATEGORIES.CAMPAIGN,
       DATA_CATEGORIES.FINANCIAL,
-    ] as DataCategoryKey[],
+    ] as DataCategory[],
     description: 'Advertiser campaign management, creative uploads, billing, and performance reporting.',
     dataCollected: [
       // Essential
@@ -214,7 +216,7 @@ export const APP_PERMISSIONS = {
       DATA_CATEGORIES.FUNCTIONAL,
       DATA_CATEGORIES.LOCATION,
       DATA_CATEGORIES.FINANCIAL,
-    ] as DataCategoryKey[],
+    ] as DataCategory[],
     description: 'Driver trip tracking, earnings monitoring, vehicle status, and fleet telemetry.',
     dataCollected: [
       // Essential

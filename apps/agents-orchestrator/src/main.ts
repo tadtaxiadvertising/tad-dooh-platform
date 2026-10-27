@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
+import type { AxiosRequestConfig } from "axios";
 import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
 
@@ -100,7 +102,7 @@ const internalApi = axios.create({
 });
 
 // Add idempotency key to mutating requests
-internalApi.interceptors.request.use((config: axios.AxiosRequestConfig) => {
+internalApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (["post", "put", "patch", "delete"].includes(config.method || "")) {
     config.headers["Idempotency-Key"] =
       config.headers["Idempotency-Key"] || uuidv4();

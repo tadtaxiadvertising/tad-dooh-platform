@@ -13,6 +13,14 @@ import { CacheManager } from "./cache-manager";
 import { PlaybackQueue } from "./playback-queue";
 import env from "./config";
 
+// ─── Browser Battery API (W3C) ───
+// The W3C Battery Status API is not part of the installed lib.dom.d.ts.
+// Add a minimal local augmentation so `"getBattery" in navigator` guards
+// can cast to a typed proxy without resorting to `as any`.
+interface NavigatorWithBattery extends Navigator {
+  getBattery: () => Promise<{ level: number }>;
+}
+
 export class SyncManager {
   private deviceId: string = "";
   private lastSyncHash: string = "";
@@ -394,7 +402,7 @@ export class SyncManager {
   private async getBatteryLevel(): Promise<number | undefined> {
     try {
       if ("getBattery" in navigator) {
-        const battery = await (navigator as any).getBattery();
+        const battery = await (navigator as NavigatorWithBattery).getBattery();
         return Math.round(battery.level * 100);
       }
     } catch {

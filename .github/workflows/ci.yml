@@ -9,7 +9,7 @@ on:
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "11"
+  PNPM_VERSION: "10"
   PRISMA_SCHEMA: "apps/api/prisma/schema.prisma"
 
 jobs:

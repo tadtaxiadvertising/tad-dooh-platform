@@ -209,21 +209,18 @@ export class TelemetryService {
         ? new Date(data.clientTimestamp)
         : new Date();
 
-      const result = await this.prisma.$executeRawUnsafe(
-        `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5,
-                 date_trunc('minute', $6::timestamp),
-                 false, $7)
-         ON CONFLICT (device_id, video_id, timestamp)
-         DO NOTHING`,
-        data.deviceId,
-        data.eventType,
-        data.videoId,
-        data.lat ?? null,
-        data.lng ?? null,
-        timestamp,
-        data.verified ?? false,
-      );
+      const lat = data.lat ?? null;
+      const lng = data.lng ?? null;
+      const verified = data.verified ?? false;
+
+      const result = await this.prisma.$executeRaw`
+        INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
+        VALUES (gen_random_uuid(), ${data.deviceId}, ${data.eventType}, ${data.videoId}, ${lat}, ${lng},
+                date_trunc('minute', ${timestamp}::timestamp),
+                false, ${verified})
+        ON CONFLICT (device_id, video_id, timestamp)
+        DO NOTHING
+      `;
 
       if (result === 0) {
         this.logger.warn(

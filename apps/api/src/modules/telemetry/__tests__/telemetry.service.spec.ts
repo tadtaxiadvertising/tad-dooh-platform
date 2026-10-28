@@ -40,4 +40,18 @@ describe("TelemetryService Security & Rate Limit", () => {
     expect(mockPrismaService.$queryRaw).toHaveBeenCalled();
     expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
   });
+
+  it("should use parameterized $executeRaw for recordPlayback to prevent SQL injection", async () => {
+    mockPrismaService.$executeRaw.mockResolvedValue(1);
+
+    const result = await service.recordPlayback({
+      deviceId: "dev-123'; DROP TABLE playback_events; --",
+      videoId: "vid-456",
+      eventType: "START",
+      verified: true,
+    });
+
+    expect(result).toEqual({ success: true, verified: true });
+    expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
+  });
 });

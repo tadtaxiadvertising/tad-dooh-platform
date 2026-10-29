@@ -1,5 +1,5 @@
 // apps/api/src/modules/onboarding/onboarding.controller.ts
-import { Controller, Post, Body, Param } from "@nestjs/common";
+import { Controller, Post, Body, ForbiddenException } from "@nestjs/common";
 import { OnboardingService } from "./onboarding.service";
 import { Public } from "../auth/decorators/public.decorator";
 
@@ -15,9 +15,8 @@ export class OnboardingController {
     return this.onboardingService.onboardAdvertiser(data);
   }
 
-  @Public()
   @Post("advertiser/:id/complete")
-  async complete(@Param("id") id: string) {
-    return this.onboardingService.completeOnboarding(id);
+  async complete(): Promise<never> {
+    throw new ForbiddenException("La activación requiere revisión autorizada.");
   }
 }

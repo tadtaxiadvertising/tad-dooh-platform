@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   ConflictException,
+  BadRequestException,
   InternalServerErrorException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -33,6 +34,10 @@ export class OnboardingService {
       fileMetadata,
     } = data;
 
+    if (typeof password !== "string" || password.length < 8) {
+      throw new BadRequestException("La contraseña debe tener al menos 8 caracteres.");
+    }
+
     // Check if email already exists
     const existing = await this.prisma.advertiser.findUnique({
       where: { email },
@@ -46,7 +51,7 @@ export class OnboardingService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         // 1. Create Advertiser
-        const hashedPassword = await bcrypt.hash(password ?? "", BCRYPT_ROUNDS);
+        const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const advertiser = await tx.advertiser.create({
           data: {
             companyName,

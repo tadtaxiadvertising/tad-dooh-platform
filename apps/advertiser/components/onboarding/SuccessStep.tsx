@@ -72,12 +72,12 @@ export default function SuccessStep({
         transition={{ delay: 0.5, duration: 0.5 }}
       >
         <h1 className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-tight mb-3">
-          Tu campaña <br />
-          <span className="text-[#FDCB01]">está asegurada</span>
+          Tu solicitud <br />
+          <span className="text-[#FDCB01]">fue registrada</span>
         </h1>
         <p className="text-sm text-[#AAAAAA] max-w-[320px] leading-relaxed mb-8">
-          Registramos tu intención con éxito. Un consultor TAD activará tu plan
-          y coordinará la puesta en vía de tus pantallas.
+          Registramos tu solicitud. Tu cuenta está pendiente de revisión y tu campaña
+          permanecerá inactiva hasta completar las aprobaciones y el pago correspondiente.
         </p>
       </motion.div>
 
@@ -108,7 +108,7 @@ export default function SuccessStep({
               damping: 20,
             }}
           >
-            Pendiente de pago
+            Pendiente de revisión y pago
           </motion.span>
         </motion.div>
 
@@ -175,8 +175,7 @@ export default function SuccessStep({
               1
             </div>
             <span>
-              Contacto consultor TAD en{" "}
-              <span className="font-bold text-white">24h</span>
+              Revisión de la solicitud por el equipo TAD
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -184,8 +183,7 @@ export default function SuccessStep({
               2
             </div>
             <span>
-              Revisión y aprobación de creativos{" "}
-              <span className="font-bold text-white">(48h)</span>
+              Validación de creatividades y confirmación de pago
             </span>
           </div>
           <div className="flex items-center gap-2">

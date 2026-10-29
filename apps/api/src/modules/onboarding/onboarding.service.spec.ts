@@ -63,6 +63,7 @@ describe("OnboardingService password safety", () => {
     await service.onboardAdvertiser(validRequest);
     expect(createUser).toHaveBeenCalledWith({
       email: validRequest.email, password: validRequest.password, email_confirm: false,
+      app_metadata: { role: "ADVERTISER" },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(deleteUser).not.toHaveBeenCalled();

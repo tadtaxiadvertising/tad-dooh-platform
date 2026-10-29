@@ -50,4 +50,28 @@ describe("AuthService login fails closed on database outage", () => {
     });
     expect(supabase.getClient).not.toHaveBeenCalled();
   });
+  it("rejects a user with missing admin role without issuing claims", async () => {
+    jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ id: "user-1", role: null });
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    prisma.driver.findFirst.mockResolvedValue(null);
+    anonClient.auth.signInWithPassword.mockResolvedValue({
+      data: {
+        user: { id: "auth-1", email: "user@example.com" },
+        session: { access_token: "access", refresh_token: "refresh" },
+      },
+      error: null,
+    });
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, {
+      prisma,
+      supabaseService: supabase,
+      logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() },
+    });
+    await expect(service.login({
+      email: "user@example.com", password: "password123",
+    })).rejects.toMatchObject({ status: 403 });
+    expect(supabase.getClient).not.toHaveBeenCalled();
+  });
+
 });

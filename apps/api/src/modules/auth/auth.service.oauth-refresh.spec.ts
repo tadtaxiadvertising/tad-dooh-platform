@@ -78,4 +78,35 @@ describe("OAuth exchange claims refresh", () => {
     expect(updateUserById).not.toHaveBeenCalled();
     expect(refreshSession).not.toHaveBeenCalled();
   });
+  it("denies admin portal access to a Prisma user without ADMIN role", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "auth-1", email: "staff@example.com", app_metadata: {} } },
+      error: null,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: "staff-1", email: "staff@example.com", role: "ADVERTISER",
+    });
+    await expect(service().exchangeOAuth({
+      access_token: "staff-token", intended_role: OAuthPortalRole.ADMIN,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(updateUserById).not.toHaveBeenCalled();
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
+  it("allows a verified ADMIN account to receive ADMIN claims", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "auth-admin", email: "admin@example.com",
+        app_metadata: { role: "ADMIN", entityId: null } } },
+      error: null,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: "admin-1", email: "admin@example.com", role: "ADMIN",
+    });
+    const result = await service().exchangeOAuth({
+      access_token: "admin-token", intended_role: OAuthPortalRole.ADMIN,
+    });
+    expect(result.access_token).toBe("admin-token");
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
 });

@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { SupabaseService } from "../supabase/supabase.service";
 import * as bcrypt from "bcrypt";
 import {
   BCRYPT_ROUNDS,
@@ -20,7 +21,10 @@ import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private supabaseService: SupabaseService,
+  ) {}
 
   async onboardAdvertiser(data: OnboardAdvertiserDto) {
     const {
@@ -56,8 +60,24 @@ export class OnboardingService {
       );
     }
 
+    // Create a unique Supabase Auth identity before the Prisma transaction.
+    // Never reuse or overwrite an existing identity: this is a public endpoint.
+    const { data: provisioned, error: provisionError } =
+      await this.supabaseService.getClient().auth.admin.createUser({
+        email,
+        password,
+        email_confirm: false,
+      });
+    if (provisionError || !provisioned.user?.id) {
+      this.logger.warn("Advertiser Auth provisioning failed");
+      throw new ConflictException(
+        "No se pudo crear la identidad. Verifica si el correo ya está registrado.",
+      );
+    }
+    const createdAuthUserId = provisioned.user.id;
+
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         // 1. Create Advertiser
         const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const advertiser = await tx.advertiser.create({
@@ -113,10 +133,16 @@ export class OnboardingService {
           companyName: advertiser.companyName,
         };
       });
+      return result;
     } catch (error) {
-      this.logger.error(
-        `❌ Error en transacción de onboarding: ${error.message}`,
-      );
+      // Compensate only the Auth identity created by this request.
+      // If cleanup fails, preserve the error for operational reconciliation.
+      const { error: cleanupError } = await this.supabaseService
+        .getClient().auth.admin.deleteUser(createdAuthUserId);
+      if (cleanupError) {
+        this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+      }
+      this.logger.error("Advertiser onboarding transaction failed");
       if (error instanceof ConflictException) throw error;
       throw new InternalServerErrorException(
         "Error al procesar el registro. Intente de nuevo.",

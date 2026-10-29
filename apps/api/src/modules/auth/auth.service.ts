@@ -500,7 +500,7 @@ export class AuthService {
       throw new Error("Supabase service client not available");
     }
 
-    const bootstrapPassword = process.env.AUTH_BOOTSTRAP_PASSWORD;
+    // Legacy shared bootstrap password is intentionally not used.
     const errors: string[] = [];
     let synced = 0;
 
@@ -517,66 +517,50 @@ export class AuthService {
       `🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`,
     );
 
-    // Helper to upsert a user in Supabase Auth without resetting existing passwords.
+    // Fetch all Auth identities once, paging through the complete result set.
+    // A partial listing must never be treated as proof that a user is absent.
+    const authUsers: Array<{ id: string; email?: string }> = [];
+    const pageSize = 1000;
+    for (let page = 1; ; page++) {
+      const { data, error } = await serviceClient.auth.admin.listUsers({
+        page,
+        perPage: pageSize,
+      });
+      if (error) {
+        throw new Error(`Failed to list Auth users on page ${page}: ${error.message}`);
+      }
+      const batch = data?.users ?? [];
+      authUsers.push(...batch);
+      if (batch.length < pageSize) break;
+    }
+    const authUsersByEmail = new Map(
+      authUsers.filter((user) => user.email).map((user) => [user.email!.toLowerCase(), user]),
+    );
+
+    // Only update existing identities. Creating accounts with a shared bootstrap
+    // password gives multiple users the same credential and is not safe.
     const upsertUser = async (
       email: string,
-      password: string | undefined,
+      _password: string | undefined,
       appMeta: Record<string, any>,
     ) => {
       try {
-        const { data: listedUsers, error: listError } =
-          await serviceClient.auth.admin.listUsers();
-        if (listError) {
-          throw new Error(`Failed to list Auth users: ${listError.message}`);
-        }
-        const existing = listedUsers?.users?.find(
-          (u: any) => u.email === email,
-        );
-        if (existing) {
-          const { error: updateError } =
-            await serviceClient.auth.admin.updateUserById(existing.id, {
-              email_confirm: true,
-              app_metadata: appMeta,
-            });
-          if (updateError) {
-            throw new Error(
-              `Failed to update Auth metadata: ${updateError.message}`,
-            );
-          }
-          this.logger.debug(`✅ Updated existing auth user: ${email}`);
-          synced++;
+        const existing = authUsersByEmail.get(email.toLowerCase());
+        if (!existing) {
+          errors.push(`${email}: Auth identity missing; requires individual provisioning`);
           return;
         }
-
-        if (!password) {
-          errors.push(
-            `${email}: missing AUTH_BOOTSTRAP_PASSWORD for new Auth user`,
-          );
-          this.logger.warn(
-            `⚠️ Cannot create Auth user ${email}: AUTH_BOOTSTRAP_PASSWORD is not configured`,
-          );
-          return;
-        }
-
-        const { error: createError } =
-          await serviceClient.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
+        const { error: updateError } =
+          await serviceClient.auth.admin.updateUserById(existing.id, {
             app_metadata: appMeta,
           });
-        if (createError) {
-          errors.push(`${email}: ${createError.message}`);
-          this.logger.warn(
-            `⚠️ Failed to create Auth user ${email}: ${createError.message}`,
-          );
-          return;
+        if (updateError) {
+          throw new Error(`Failed to update Auth metadata: ${updateError.message}`);
         }
-        this.logger.debug(`✅ Created auth user: ${email}`);
         synced++;
       } catch (e: any) {
         errors.push(`${email}: ${e.message}`);
-        this.logger.warn(`⚠️ Exception syncing ${email}: ${e.message}`);
+        this.logger.warn(`Exception syncing ${email}: ${e.message}`);
       }
     };
 

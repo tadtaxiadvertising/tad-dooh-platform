@@ -38,6 +38,14 @@ function generateTemporaryPassword(): string {
   return out;
 }
 
+function toPublicDriver<T extends { password?: unknown }>(
+  driver: T,
+): Omit<T, "password"> {
+  const { password: passwordHash, ...publicDriver } = driver;
+  void passwordHash;
+  return publicDriver;
+}
+
 @Injectable()
 export class DriversService {
   private readonly logger = new Logger(DriversService.name);
@@ -270,7 +278,7 @@ export class DriversService {
           ).length
         : 0;
 
-      return {
+      return toPublicDriver({
         ...driver,
         activeAds: activeAdsCount,
         // FIX M-2: Usar constantes en lugar de magic numbers
@@ -286,7 +294,7 @@ export class DriversService {
         advertiserReferralsCount: driver.referredAdvertisers?.length || 0,
         // NUEVO: onboardingStatus visible para admin
         onboardingStatus: driver.onboardingStatus || "UNKNOWN",
-      };
+      });
     });
   }
 
@@ -294,13 +302,15 @@ export class DriversService {
    * Buscar un chofer por ID
    */
   async findOne(id: string) {
-    return this.prisma.driver.findUnique({
+    const driver = await this.prisma.driver.findUnique({
       where: { id },
       include: {
         devices: true,
         subscriptions: { orderBy: { startDate: "desc" } },
       },
     });
+
+    return driver ? toPublicDriver(driver) : null;
   }
 
   /**
@@ -425,10 +435,7 @@ export class DriversService {
       }
     }
 
-    return {
-      ...driver,
-      generatedPassword: data.password ? null : plainPassword,
-    };
+    return toPublicDriver(driver);
   }
 
   async login(phone: string, pass: string) {

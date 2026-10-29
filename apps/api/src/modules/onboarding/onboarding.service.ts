@@ -67,6 +67,7 @@ export class OnboardingService {
         email,
         password,
         email_confirm: false,
+        app_metadata: { role: "ADVERTISER" },
       });
     if (provisionError || !provisioned.user?.id) {
       this.logger.warn("Advertiser Auth provisioning failed");

@@ -119,7 +119,10 @@ export class AuthService {
         });
       if (updateError) {
         this.logger.error(
-          `⚠️ Error inyectando metadata en Supabase: ${updateError.message}`,
+          `No se pudieron actualizar claims de autorización para ${email}: ${updateError.message}`,
+        );
+        throw new ForbiddenException(
+          "No se pudo establecer una sesión autorizada. Intenta nuevamente.",
         );
       }
 

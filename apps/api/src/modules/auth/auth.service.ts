@@ -372,55 +372,47 @@ export class AuthService {
       );
     }
 
-    if (
+    const claimsChanged =
       payload?.app_metadata?.role !== resolvedRole ||
-      payload?.app_metadata?.entityId !== entityId
-    ) {
+      payload?.app_metadata?.entityId !== entityId;
+    if (claimsChanged) {
       const { error: updateError } = await this.supabaseService
         .getClient()
         .auth.admin.updateUserById(userId, {
           app_metadata: { role: resolvedRole, entityId },
         });
       if (updateError) {
-        this.logger.warn(
-          `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
-        );
-      } else {
-        this.logger.debug(
-          `💉 app_metadata injected for ${email}: role=${resolvedRole}`,
-        );
+        this.logger.error(`Failed to set OAuth authorization claims for ${email}`);
+        throw new ForbiddenException("No se pudo establecer una sesión autorizada.");
       }
     }
 
-    // Reissue tokens so the returned access_token carries app_metadata.role.
-    // The OAuth token was signed BEFORE the metadata injection and its claims
-    // are immutable — returning it would give SSR/middleware decoders a GUEST
-    // role and instantly logout the user. Refresh against GoTrue (anon scope)
-    // and return the freshly minted, role-bearing token pair instead.
+    // A token issued before a claims update cannot carry the new permissions.
+    // Never return stale tokens if the refresh fails or is unavailable.
     let accessToken = dto.access_token;
     let refreshToken = dto.refresh_token || "";
-    const anonClient = this.supabaseService.getAnonClient();
-    if (anonClient && dto.refresh_token) {
+    if (claimsChanged) {
+      if (!dto.refresh_token) {
+        throw new ForbiddenException("Se requiere renovar la sesión autorizada.");
+      }
+      const anonClient = this.supabaseService.getAnonClient();
+      if (!anonClient) {
+        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
+      }
       try {
         const { data: refreshed, error: refreshError } =
-          await anonClient.auth.refreshSession({
-            refresh_token: dto.refresh_token,
-          });
-        if (!refreshError && refreshed.session?.access_token) {
-          accessToken = refreshed.session.access_token;
-          refreshToken = refreshed.session.refresh_token || refreshToken;
-          this.logger.debug(
-            `✅ Reissued role-bearing access_token for ${email}`,
-          );
-        } else {
-          this.logger.warn(
-            `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
-          );
+          await anonClient.auth.refreshSession({ refresh_token: dto.refresh_token });
+        if (
+          refreshError ||
+          !refreshed.session?.access_token ||
+          !refreshed.session?.refresh_token
+        ) {
+          throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
         }
-      } catch (e: any) {
-        this.logger.warn(
-          `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
-        );
+        accessToken = refreshed.session.access_token;
+        refreshToken = refreshed.session.refresh_token;
+      } catch {
+        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
       }
     }
 

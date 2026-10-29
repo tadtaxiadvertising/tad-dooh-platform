@@ -44,7 +44,7 @@ export class AuthController {
       sameSite: "lax",
       domain: cookieDomain,
       path: cookiePath,
-      maxAge: 3600 * 24 * 7, // 7 days (aprox)
+      maxAge: 1000 * 60 * 60 * 24 * 7, // Express maxAge is milliseconds (7 days)
       partitionable: true,
     });
 

@@ -74,3 +74,7 @@ If the test command's argument forwarding differs for the installed pnpm/Jest ve
 3. Verify duplicate and concurrent registrations, compensation failure, retry, and orphan reconciliation without claiming existing OAuth identities.
 4. Require passing Jest, typecheck, lint, Prisma validation, security scan, and relevant Docker builds. Inspect failed job logs before changing unrelated code.
 5. Obtain review before merging PR #146. Do not deploy or mutate production in this audit.
+
+### CI root-cause refinement (same day)
+
+A read of the Actions jobs API for [main run 40829466235](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/40829466235) confirms **every independent job failed within about two seconds, with `runner_id: 0` and `steps: []`**. PR #146 [run 40830093254](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/40830093254) has the same signature. These failures occurred before checkout or tests, and therefore do **not** demonstrate that Jest, TypeScript, lint or Prisma code failed. The exact runner/provisioning cause requires GitHub Actions administration access. Tracked in [issue #147](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/147). Do not change source or weaken gates based on these non-executed jobs.

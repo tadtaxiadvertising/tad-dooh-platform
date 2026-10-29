@@ -183,7 +183,6 @@ export class AuthService {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: "Error interno en el proceso de autenticación",
-          details: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

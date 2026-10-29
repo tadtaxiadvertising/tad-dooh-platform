@@ -72,4 +72,43 @@ describe("AuthService bootstrap confirmation authorization", () => {
     ).rejects.toMatchObject({ status: 403 });
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
+  it("finds an authorized admin beyond the first Auth page", async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: "prisma-admin-1", role: "ADMIN" });
+    const firstPage = Array.from({ length: 1000 }, (_, i) => ({
+      id: `auth-${i}`, email: `other-${i}@example.com`,
+    }));
+    listUsers
+      .mockResolvedValueOnce({ data: { users: firstPage }, error: null })
+      .mockResolvedValueOnce({
+        data: { users: [{ id: "supabase-1", email: "admin@example.com" }] },
+        error: null,
+      });
+    await expect(
+      service().confirmUserByEmail("admin@example.com", "test-only-secret"),
+    ).resolves.toEqual({ confirmed: true });
+    expect(listUsers).toHaveBeenCalledTimes(2);
+    expect(updateUserById).toHaveBeenCalledWith(
+      "supabase-1",
+      expect.objectContaining({
+        app_metadata: { role: "ADMIN", entityId: "prisma-admin-1" },
+      }),
+    );
+  });
+
+  it("fails closed if a later Auth page cannot be listed", async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: "prisma-admin-1", role: "ADMIN" });
+    listUsers
+      .mockResolvedValueOnce({
+        data: { users: Array.from({ length: 1000 }, (_, i) => ({
+          id: `auth-${i}`, email: `other-${i}@example.com`,
+        })) },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: null, error: new Error("page unavailable") });
+    await expect(
+      service().confirmUserByEmail("admin@example.com", "test-only-secret"),
+    ).rejects.toThrow("Failed to list users on page 2");
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
 });

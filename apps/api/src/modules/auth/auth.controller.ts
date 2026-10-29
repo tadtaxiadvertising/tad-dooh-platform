@@ -29,7 +29,8 @@ export class AuthController {
 
     // A7-HTTPONLY: Enviar access_token en cookie HttpOnly + Secure para producción
     const isProduction = process.env.NODE_ENV === "production";
-    const cookieDomain = process.env.COOKIE_DOMAIN || "tad.do";
+    // Host-only by default; set COOKIE_DOMAIN explicitly only when sharing across subdomains.
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
     const cookiePath = "/";
 
     // El token de Supabase (GoTrue) incluye su propio refresh_token en la cookie
@@ -42,7 +43,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: cookieDomain,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
       path: cookiePath,
       maxAge: 1000 * 60 * 60 * 24 * 7, // Express maxAge is milliseconds (7 days)
       partitionable: true,

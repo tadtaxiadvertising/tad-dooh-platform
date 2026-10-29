@@ -567,7 +567,7 @@ export class AuthService {
     // 2. Sync admins
     for (const admin of admins) {
       if (!admin.email) continue;
-      await upsertUser(admin.email, bootstrapPassword, {
+      await upsertUser(admin.email, undefined, {
         role: admin.role || "ADMIN",
         entityId: admin.id,
       });
@@ -576,7 +576,7 @@ export class AuthService {
     // 3. Sync advertisers
     for (const adv of advertisers) {
       if (!adv.email) continue;
-      await upsertUser(adv.email, bootstrapPassword, {
+      await upsertUser(adv.email, undefined, {
         role: "ADVERTISER",
         entityId: adv.id,
       });
@@ -585,7 +585,7 @@ export class AuthService {
     // 4. Sync drivers (use phone@tad.driver as email proxy)
     for (const driver of drivers) {
       const driverEmail = `${driver.phone}@tad.driver`;
-      await upsertUser(driverEmail, bootstrapPassword, {
+      await upsertUser(driverEmail, undefined, {
         role: "DRIVER",
         entityId: driver.id,
       });

@@ -626,6 +626,12 @@ export class AuthService {
       throw new ForbiddenException("Invalid bootstrap secret");
     }
 
+    // This maintenance action is admin-only: never elevate an arbitrary Auth user.
+    const admin = await this.prisma.user.findUnique({ where: { email } });
+    if (!admin || admin.role !== "ADMIN") {
+      throw new ForbiddenException("Bootstrap confirmation is restricted to administrators");
+    }
+
     const serviceClient = this.supabaseService.getClient();
     const { data: users, error: listError } =
       await serviceClient.auth.admin.listUsers();
@@ -643,7 +649,7 @@ export class AuthService {
     const { error: updateError } =
       await serviceClient.auth.admin.updateUserById(user.id, {
         email_confirm: true,
-        app_metadata: { role: "ADMIN", entityId: user.id },
+        app_metadata: { role: "ADMIN", entityId: admin.id },
       });
 
     if (updateError) {

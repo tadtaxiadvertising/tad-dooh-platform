@@ -4,10 +4,10 @@
   "updatedAt": "2026-10-29T12:38:00-04:00",
   "branch": "feat/tad-ux-conversion-v1",
   "baseCommit": "bac24190e41ecc0e1eb062128aed1d1dbfa32cdb",
-  "headCommit": "5a573ccd5a72284713bbb8ace0d05a0875b4289a",
-  "lastVerifiedCommit": "5a573ccd5a72284713bbb8ace0d05a0875b4289a",
-  "phase": "01",
-  "task": "driver-register-public-routing",
+  "headCommit": "10ad717a",
+  "lastVerifiedCommit": "10ad717a",
+  "phase": "02",
+  "task": "driver-registration-wizard",
   "status": "IN_PROGRESS",
   "completed": [
     "required-document-review",
@@ -19,7 +19,9 @@
     "driver-build",
     "advertiser-build",
     "route-inventory",
-    "ux-work-cards"
+    "ux-work-cards",
+    "driver-register-public-routing",
+    "shared-design-primitives"
   ],
   "activeCards": [
     "make-driver-register-public",
@@ -27,7 +29,8 @@
     "driver-register-wizard",
     "driver-v12-estimator",
     "advertiser-onboarding-safe-completion",
-    "responsive-accessibility-qa"
+    "responsive-accessibility-qa",
+    "advertiser-playwright-harness"
   ],
   "protectedSurfaces": [
     "driver-service-worker",
@@ -53,13 +56,15 @@
   "tests": [
     "api security: 8/8 passed",
     "driver destructive-route: 1/1 passed",
-    "driver build: passed",
-    "advertiser build: passed"
+    "driver build: passed before shared primitives",
+    "advertiser build: passed before shared primitives",
+    "driver route: 3/3 passed",
+    "shared primitives strict tsc: passed"
   ],
   "blockers": [
     "preexisting shared Supabase response type errors",
     "preexisting advertiser Playwright type dependency gap",
     "external credential rotation"
   ],
-  "nextAction": "Make /register publicly reachable without weakening private Driver routes."
+  "nextAction": "Implement the three-step Driver registration wizard with the existing proxy payload."
 }

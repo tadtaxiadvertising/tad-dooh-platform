@@ -1,5 +1,7 @@
 // test-e2e.js — Quick E2E test of all critical endpoints
 const BASE = 'http://localhost:3000/api';
+const TEST_ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL?.trim();
+const TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD?.trim();
 
 async function test() {
   console.log('=== TAD E2E Test Suite (Localhost) ===\n');
@@ -29,14 +31,24 @@ async function test() {
   
   // 4. Auth Login (to get JWT for protected routes)
   console.log('\n4. POST /auth/login');
+  if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+    console.log(
+      '   Skipped protected routes: configure TEST_ADMIN_EMAIL and ' +
+      'TEST_ADMIN_PASSWORD in an isolated E2E environment.'
+    );
+    return;
+  }
   res = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@tad.do', password: 'TadAdmin2026!' })
+    body: JSON.stringify({
+      email: TEST_ADMIN_EMAIL,
+      password: TEST_ADMIN_PASSWORD,
+    })
   });
   data = await res.json();
   const token = data.access_token;
-  console.log('   Status:', res.status, '| Token:', token ? token.substring(0, 20) + '...' : 'NONE');
+  console.log('   Status:', res.status, '| Authenticated:', Boolean(token));
   
   if (!token) {
     console.log('\n⚠️ No JWT token available. Skipping protected route tests.');

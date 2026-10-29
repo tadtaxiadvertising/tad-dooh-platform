@@ -10,8 +10,8 @@ Guía rápida para probar todos los servicios y validar que funcionan correctame
 
 ```
 URL: http://localhost:3001/login
-Email: admin@tad.do
-Password: TadAdmin2026!
+Email: variable `TEST_ADMIN_EMAIL`
+Password: variable `TEST_ADMIN_PASSWORD`
 ```
 
 **Verificar:**
@@ -39,10 +39,7 @@ copy(logger.exportLogs())
 # Terminal:
 curl -X POST http://localhost:3000/api/auth/verify \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@tad.do",
-    "password": "TadAdmin2026!"
-  }'
+  -d "{\"email\":\"${TEST_ADMIN_EMAIL}\",\"password\":\"${TEST_ADMIN_PASSWORD}\"}"
 
 # Esperado:
 # { "valid": true, "role": "ADMIN", "token": "eyJ..." }
@@ -55,7 +52,7 @@ curl -X POST http://localhost:3000/api/auth/verify \
 ### Admin Console
 
 - [ ] **Login**
-  - [ ] Email: `admin@tad.do` / Password: `TadAdmin2026!`
+  - [ ] Configurar `TEST_ADMIN_EMAIL` y `TEST_ADMIN_PASSWORD` fuera del repositorio
   - [ ] Sin splash screen (redirección inmediata)
   - [ ] Dashboard carga correctamente
 
@@ -72,7 +69,7 @@ curl -X POST http://localhost:3000/api/auth/verify \
 ### Driver App
 
 - [ ] **Login**
-  - [ ] Email: `driver@tad.do` / Password: `TadDriver2026!`
+  - [ ] Configurar `TEST_DRIVER_EMAIL` y `TEST_DRIVER_PASSWORD` fuera del repositorio
   - [ ] Muestra dispositivos asignados
 
 - [ ] **GPS/Mapa**
@@ -83,7 +80,7 @@ curl -X POST http://localhost:3000/api/auth/verify \
 ### Advertiser Dashboard
 
 - [ ] **Login**
-  - [ ] Email: `advertiser@tad.do` / Password: `TadAdvertiser2026!`
+  - [ ] Configurar `TEST_ADVERTISER_EMAIL` y `TEST_ADVERTISER_PASSWORD` fuera del repositorio
   - [ ] Muestra campañas
 
 - [ ] **Crear Campaña**
@@ -243,8 +240,7 @@ ipconfig             # Windows
 # 2. Abre en dispositivo
 http://[TU_IP]:3001
 
-# 3. Login con credenciales
-# admin@tad.do / TadAdmin2026!
+# 3. Login con las credenciales E2E inyectadas mediante variables de entorno
 ```
 
 ---

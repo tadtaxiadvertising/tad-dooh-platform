@@ -1,4 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { getAdminCredentials } from "./helpers/auth.helper";
+
+const hasAdminCredentials = Boolean(
+  process.env.TEST_ADMIN_EMAIL?.trim() &&
+    process.env.TEST_ADMIN_PASSWORD?.trim(),
+);
 
 /**
  * TAD DOOH Platform — Final Audit Report 2026 (E2E)
@@ -6,14 +12,17 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("AUDITORÍA END-TO-END DE TAD DOOH PLATFORM (2026)", () => {
+  test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+
   test.beforeEach(async ({ page }) => {
     // 1. Initial Access & Login
     await page.goto("/");
 
     // Check if we are redirected to login
     if (page.url().includes("/login")) {
-      await page.fill('input[type="email"]', "admin@tad.do");
-      await page.fill('input[type="password"]', "TadAdmin2026!");
+      const credentials = getAdminCredentials();
+      await page.fill('input[type="email"]', credentials.email);
+      await page.fill('input[type="password"]', credentials.password);
       await page.click('button[type="submit"]');
       await page.waitForURL(
         /\/(dashboard|fleet|campaigns|finance|tracking|$)/,

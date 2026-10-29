@@ -1,4 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { getAdminCredentials } from "./helpers/auth.helper";
+
+const hasAdminCredentials = Boolean(
+  process.env.TEST_ADMIN_EMAIL?.trim() &&
+    process.env.TEST_ADMIN_PASSWORD?.trim(),
+);
 
 /**
  * TAD CRITICAL FLOW TEST
@@ -14,9 +20,10 @@ test.describe("TAD Platform - Critical Path", () => {
   test("Debe permitir login de admin y mostrar el Dashboard", async ({
     page,
   }) => {
-    // Usamos credenciales de 02_reglas_negocio_stack.md
-    await page.fill('input[type="email"]', "admin@tad.do");
-    await page.fill('input[type="password"]', "TadAdmin2026!");
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    const credentials = getAdminCredentials();
+    await page.fill('input[type="email"]', credentials.email);
+    await page.fill('input[type="password"]', credentials.password);
     await page.click('button:has-text("Entrar")');
 
     // Validar que entramos al dashboard (buscamos el spotlight o mapa)
@@ -28,9 +35,10 @@ test.describe("TAD Platform - Critical Path", () => {
   test("Debe aplicar Kill-Switch si el backend devuelve 402 (Manejo de Morosidad)", async ({
     page,
   }) => {
-    // Login rápido
-    await page.fill('input[type="email"]', "admin@tad.do");
-    await page.fill('input[type="password"]', "TadAdmin2026!");
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    const credentials = getAdminCredentials();
+    await page.fill('input[type="email"]', credentials.email);
+    await page.fill('input[type="password"]', credentials.password);
     await page.click('button:has-text("Entrar")');
 
     // Interceptamos la llamada de tracking para simular falta de pago (RD$6k)

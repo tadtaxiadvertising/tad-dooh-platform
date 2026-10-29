@@ -76,24 +76,9 @@ export default function AdvertiserOnboarding() {
   };
   const goToLogin = () => router.push("/advertiser/login");
 
-  const handleOnboardingComplete = async () => {
-    try {
-      const advertiserId = localStorage.getItem(
-        "tad_adv_pending_onboarding_id",
-      );
-      if (advertiserId) {
-        await fetch(
-          "/api/proxy/onboarding/advertiser/" + advertiserId + "/complete",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-        localStorage.removeItem("tad_adv_pending_onboarding_id");
-      }
-    } catch {
-      // Silencioso — no bloquear el flujo si falla
-    }
+  // La finalización visual del wizard no autoriza activar la cuenta.
+  // El anunciante permanece PENDING_REVIEW hasta aprobación del servidor.
+  const handleOnboardingComplete = () => {
     router.push("/advertiser/login");
   };
 
@@ -173,8 +158,6 @@ export default function AdvertiserOnboarding() {
         budget: estimate.total,
         impressions: estimate.impressions,
       });
-      // NUEVO: Guardar advertiserId para completar onboarding después
-      localStorage.setItem("tad_adv_pending_onboarding_id", data.advertiserId);
       setTimeout(() => setStep(4), 600);
     } catch (err: unknown) {
       setError(

@@ -74,4 +74,24 @@ describe("AuthService login fails closed on database outage", () => {
     expect(supabase.getClient).not.toHaveBeenCalled();
   });
 
+  it("does not return a locally signed token after driver registration", async () => {
+    const driverPrisma = {
+      driver: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: "driver-1", phone: "8095550000" }),
+      },
+    };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, { prisma: driverPrisma });
+    const result = await service.registerDriver({
+      name: "Driver", phone: "8095550000", password: "password123",
+    });
+    expect(result).toEqual({
+      success: true,
+      message: "Registro completado. Inicia sesión para continuar.",
+      driverId: "driver-1",
+    });
+    expect(result).not.toHaveProperty("access_token");
+  });
+
 });

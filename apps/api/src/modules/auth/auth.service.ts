@@ -135,30 +135,28 @@ export class AuthService {
       // was signed BEFORE the injection and its claims are immutable, so
       // returning it would give SSR/middleware decoders a GUEST role →
       // instant logout. Refresh against GoTrue and use the new tokens.
-      let accessToken = data.session.access_token;
-      let refreshToken = data.session.refresh_token;
-      if (anonClient) {
-        try {
-          const { data: refreshed, error: refreshError } =
-            await anonClient.auth.refreshSession({
-              refresh_token: data.session.refresh_token,
-            });
-          if (!refreshError && refreshed.session?.access_token) {
-            accessToken = refreshed.session.access_token;
-            refreshToken = refreshed.session.refresh_token || refreshToken;
-            this.logger.debug(
-              `✅ Reissued role-bearing access_token for ${email}`,
-            );
-          } else {
-            this.logger.warn(
-              `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
-            );
-          }
-        } catch (e: any) {
-          this.logger.warn(
-            `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
-          );
+      // Never return tokens issued before the authorization claims were updated.
+      let accessToken: string;
+      let refreshToken: string;
+      try {
+        const { data: refreshed, error: refreshError } =
+          await anonClient.auth.refreshSession({
+            refresh_token: data.session.refresh_token,
+          });
+        if (
+          refreshError ||
+          !refreshed.session?.access_token ||
+          !refreshed.session?.refresh_token
+        ) {
+          throw new Error("Authorization token refresh failed");
         }
+        accessToken = refreshed.session.access_token;
+        refreshToken = refreshed.session.refresh_token;
+      } catch {
+        this.logger.error("No se pudo renovar la sesión autorizada");
+        throw new ForbiddenException(
+          "No se pudo establecer una sesión autorizada. Intenta nuevamente.",
+        );
       }
 
       return {

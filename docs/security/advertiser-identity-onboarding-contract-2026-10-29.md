@@ -34,3 +34,43 @@ Do not merge the temporary deny-all mitigation as the final fix. Do not touch pa
 ## Verification
 
 Static inspection confirmed. No local typecheck, Jest, e2e or production checks performed.
+
+## Follow-up audit — 2026-10-29 (PR #146)
+
+Source inspection of the proposed branch shows Supabase Auth `auth.admin.createUser` before the Prisma advertiser/campaign transaction, with best-effort deletion of the newly created Auth identity on transaction failure. Registration is **not yet production-ready**:
+
+- `createUser({ email_confirm: false })` does not establish that a verification email was sent. The current backend contains no signup confirmation dispatch in this path. A verified delivery-and-resend contract is required before release.
+- The existing `EmailService` can return `success: true` in mock mode; it must not be used as evidence of delivered verification messages.
+- Cross-system provisioning is not atomic. A timeout or failed compensation can leave an orphaned Supabase identity. Define a reconciliation job with a bounded, auditable retry and never delete an existing user on an ambiguous result.
+- Email input is now normalized and validated in the proposed branch, and a regression assertion verifies the new Auth identity receives the `ADVERTISER` role. No role or account should be activated merely by completing the frontend wizard.
+- Concurrent same-email registrations, existing OAuth identities, and duplicate responses need integration tests in staging.
+
+### CI evidence
+
+For PR #146 head `9df89f7d`, GitHub Actions reported failures on **2026-10-29**:
+
+- [CI Quality Gates run 40829810616](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/40829810616): Format & Lint, TypeScript Check, Tests, Prisma Validation, Security Audit failed; downstream Docker matrix was skipped.
+- [Docker Image CI run 40829810937](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/40829810937): API, Admin, Driver, Player image builds failed.
+- The GitHub connector returned `BlobNotFound` (HTTP 404) when fetching job logs, so root causes are **not confirmed**. Job conclusions alone are not sufficient to attribute the failures to this PR.
+- A subsequent head `b8530a76` also had failed CI runs. The branch has since advanced; recheck the latest head's gates before any merge.
+
+### Required verification commands
+
+Use the repository's Node 22 / pnpm 10 toolchain and an isolated test environment. Do not run migrations against production.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --filter api test -- --runInBand onboarding.service.spec.ts
+pnpm exec tsc --noEmit --project apps/api/tsconfig.json
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ci_test_db pnpm exec prisma validate --schema apps/api/prisma/schema.prisma
+```
+
+If the test command's argument forwarding differs for the installed pnpm/Jest versions, use `pnpm --filter api exec jest onboarding.service.spec.ts --runInBand`.
+
+### Release gates
+
+1. Demonstrate a real signup verification email and successful confirmation using staging Supabase SMTP; never rely on mock `sendEmail`.
+2. Verify sign-in after confirmation, role/claim refresh, pending review/payment status, and no unauthorized activation.
+3. Verify duplicate and concurrent registrations, compensation failure, retry, and orphan reconciliation without claiming existing OAuth identities.
+4. Require passing Jest, typecheck, lint, Prisma validation, security scan, and relevant Docker builds. Inspect failed job logs before changing unrelated code.
+5. Obtain review before merging PR #146. Do not deploy or mutate production in this audit.

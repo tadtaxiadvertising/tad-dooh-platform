@@ -14,6 +14,7 @@ import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { OAuthExchangeDto } from "./dto/oauth-exchange.dto";
 import { Public } from "./decorators/public.decorator";
+import { Roles, UserRole } from "./decorators/roles.decorator";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -83,13 +84,12 @@ export class AuthController {
   }
 
   @Post("pairing-token")
+  @Roles(UserRole.DRIVER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Generate a 5-minute JWT token for hardware pairing QR",
   })
   async generatePairingToken(@Request() req: any) {
-    // Only DRIVER should generate pairing token, or maybe ADMIN on their behalf.
-    // For now we assume the driver generates it from their portal to scan on the tablet.
     return this.authService.generatePairingToken(req.user.id);
   }
 

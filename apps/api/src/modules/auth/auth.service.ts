@@ -87,8 +87,8 @@ export class AuthService {
       let role = "GUEST";
       let entityId: string | null = null;
 
-      if (adminUser) {
-        role = adminUser.role || "ADMIN";
+      if (adminUser?.role === "ADMIN") {
+        role = "ADMIN";
         this.logger.debug(`Found Admin User with role: ${role}`);
       } else if (advertiser) {
         role = "ADVERTISER";

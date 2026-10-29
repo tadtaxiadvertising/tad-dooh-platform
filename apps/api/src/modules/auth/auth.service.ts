@@ -71,25 +71,16 @@ export class AuthService {
       // 2. Buscar rol en base de datos local
       this.logger.debug(`🔍 Buscando rol para ${email} en base de datos...`);
 
+      // A database failure must not be interpreted as an absent identity.
+      // Otherwise a partial outage can silently change role resolution.
       const [adminUser, advertiser, driver] = await Promise.all([
-        this.prisma.user.findUnique({ where: { email } }).catch((e) => {
-          this.logger.error(`Error buscando adminUser: ${e.message}`);
-          return null;
+        this.prisma.user.findUnique({ where: { email } }),
+        this.prisma.advertiser.findUnique({ where: { email } }),
+        this.prisma.driver.findFirst({
+          where: {
+            OR: [{ phone: email.split("@")[0] }, { phone: email }],
+          },
         }),
-        this.prisma.advertiser.findUnique({ where: { email } }).catch((e) => {
-          this.logger.error(`Error buscando advertiser: ${e.message}`);
-          return null;
-        }),
-        this.prisma.driver
-          .findFirst({
-            where: {
-              OR: [{ phone: email.split("@")[0] }, { phone: email }],
-            },
-          })
-          .catch((e) => {
-            this.logger.error(`Error buscando driver: ${e.message}`);
-            return null;
-          }),
       ]);
 
       // Determinar rol e ID de entidad

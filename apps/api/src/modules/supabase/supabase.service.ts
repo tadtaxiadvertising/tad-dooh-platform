@@ -34,7 +34,7 @@ export class SupabaseService {
       });
 
       this.logger.log(
-        `SupabaseService initialized | URL: ${url.substring(0, 30)}... | Key: ***${key.slice(-6)}`,
+        "SupabaseService initialized (credentials configured)",
       );
     } catch (error) {
       this.logger.error(

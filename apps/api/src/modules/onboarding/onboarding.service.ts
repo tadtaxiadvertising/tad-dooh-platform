@@ -38,6 +38,14 @@ export class OnboardingService {
       throw new BadRequestException("La contraseña debe tener al menos 8 caracteres.");
     }
 
+    // Also validate at the service boundary (jobs/internal callers bypass HTTP DTO validation).
+    if (typeof budget !== "number" || !Number.isFinite(budget) || budget <= 0) {
+      throw new BadRequestException("El presupuesto debe ser un número positivo.");
+    }
+    if (typeof expectedScreens !== "number" || !Number.isInteger(expectedScreens) || expectedScreens < 1) {
+      throw new BadRequestException("La cantidad de pantallas debe ser un entero positivo.");
+    }
+
     // Check if email already exists
     const existing = await this.prisma.advertiser.findUnique({
       where: { email },

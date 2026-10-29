@@ -6,6 +6,8 @@ import {
   IsOptional,
   MinLength,
   IsNumber,
+  Min,
+  IsInt,
   IsObject,
   ValidateNested,
 } from "class-validator";
@@ -46,10 +48,12 @@ export class OnboardAdvertiserDto {
   @MinLength(8)
   password: string;
 
-  @IsNumber()
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0.01)
   budget: number;
 
-  @IsNumber()
+  @IsInt()
+  @Min(1)
   expectedScreens: number;
 
   @IsString()

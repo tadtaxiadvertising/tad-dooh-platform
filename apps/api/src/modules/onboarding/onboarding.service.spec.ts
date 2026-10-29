@@ -69,6 +69,27 @@ describe("OnboardingService password safety", () => {
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
+  it("normalizes email for both Prisma lookup and Supabase identity", async () => {
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    createUser.mockResolvedValue({ data: { user: { id: "auth-created-2" } }, error: null });
+    prisma.$transaction.mockResolvedValue({ advertiserId: "adv-2", campaignId: "camp-2" });
+    await service.onboardAdvertiser({ ...validRequest, email: "  NEW@Example.COM  " });
+    expect(prisma.advertiser.findUnique).toHaveBeenCalledWith({
+      where: { email: "new@example.com" },
+    });
+    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      email: "new@example.com",
+      app_metadata: { role: "ADVERTISER" },
+    }));
+  });
+
+  it("rejects malformed email before touching either identity store", async () => {
+    await expect(service.onboardAdvertiser({ ...validRequest, email: "not-an-email" }))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.advertiser.findUnique).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
   it("does not write Prisma data when Auth provisioning fails", async () => {
     prisma.advertiser.findUnique.mockResolvedValue(null);
     createUser.mockResolvedValue({ data: { user: null }, error: new Error("duplicate") });

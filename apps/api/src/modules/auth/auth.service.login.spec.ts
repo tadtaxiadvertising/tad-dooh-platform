@@ -94,4 +94,19 @@ describe("AuthService login fails closed on database outage", () => {
     expect(result).not.toHaveProperty("access_token");
   });
 
+  it.each([
+    { name: "", phone: "8095550000", password: "password123" },
+    { name: "Driver", phone: " ", password: "password123" },
+    { name: "Driver", phone: "8095550000", password: "short" },
+  ])("rejects invalid driver registration before database access: %p", async (data) => {
+    const driverPrisma = {
+      driver: { findUnique: jest.fn(), create: jest.fn() },
+    };
+    const service = Object.create(AuthService.prototype) as AuthService;
+    Object.assign(service, { prisma: driverPrisma });
+    await expect(service.registerDriver(data)).rejects.toMatchObject({ status: 400 });
+    expect(driverPrisma.driver.findUnique).not.toHaveBeenCalled();
+    expect(driverPrisma.driver.create).not.toHaveBeenCalled();
+  });
+
 });

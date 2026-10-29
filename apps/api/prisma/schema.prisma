@@ -341,6 +341,7 @@ model Driver {
   fullName                   String       @map("full_name")
   cedula                     String?      @unique
   phone                      String       @unique
+  authUserId                String?      @unique @map("auth_user_id")
   licensePlate               String?      @map("license_plate")
   taxiPlate                  String?      @unique @map("taxi_plate")
   taxiNumber                 String?      @map("taxi_number")

@@ -111,8 +111,8 @@ export default function AdvertiserOnboarding() {
     if (!EMAIL_RE.test(form.email.trim())) {
       return "Ingresa un correo corporativo válido";
     }
-    if (form.password.length < 6) {
-      return "La contraseña debe tener al menos 6 caracteres";
+    if (form.password.length < 8) {
+      return "La contraseña debe tener al menos 8 caracteres";
     }
     if (
       !agreements.representative ||

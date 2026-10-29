@@ -541,7 +541,6 @@ export class AuthService {
     // password gives multiple users the same credential and is not safe.
     const upsertUser = async (
       email: string,
-      _password: string | undefined,
       appMeta: Record<string, any>,
     ) => {
       try {
@@ -567,7 +566,7 @@ export class AuthService {
     // 2. Sync admins
     for (const admin of admins) {
       if (!admin.email) continue;
-      await upsertUser(admin.email, undefined, {
+      await upsertUser(admin.email, {
         role: admin.role || "ADMIN",
         entityId: admin.id,
       });
@@ -576,7 +575,7 @@ export class AuthService {
     // 3. Sync advertisers
     for (const adv of advertisers) {
       if (!adv.email) continue;
-      await upsertUser(adv.email, undefined, {
+      await upsertUser(adv.email, {
         role: "ADVERTISER",
         entityId: adv.id,
       });
@@ -585,7 +584,7 @@ export class AuthService {
     // 4. Sync drivers (use phone@tad.driver as email proxy)
     for (const driver of drivers) {
       const driverEmail = `${driver.phone}@tad.driver`;
-      await upsertUser(driverEmail, undefined, {
+      await upsertUser(driverEmail, {
         role: "DRIVER",
         entityId: driver.id,
       });

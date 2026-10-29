@@ -620,6 +620,12 @@ export class AuthService {
     vehicleModel?: string;
     licensePlate?: string;
   }) {
+    // Validate at the service boundary; the public controller uses a plain object DTO.
+    if (typeof data.name !== "string" || !data.name.trim() ||
+        typeof data.phone !== "string" || !data.phone.trim() ||
+        typeof data.password !== "string" || data.password.length < 8) {
+      throw new BadRequestException("Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.");
+    }
     const existingDriver = await this.prisma.driver.findUnique({
       where: { phone: data.phone },
     });

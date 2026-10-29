@@ -16,9 +16,7 @@ import * as bcrypt from "bcrypt";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
-  JWT_EXPIRY,
 } from "../../common/constants/business-rules";
-import * as jwt from "jsonwebtoken";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
 
 @Injectable()
@@ -647,30 +645,11 @@ export class AuthService {
       },
     });
 
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      return {
-        success: true,
-        message: "Registro completado. Inicia sesión para continuar.",
-        driverId: driver.id,
-      };
-    }
-
-    const token = jwt.sign(
-      {
-        sub: driver.id,
-        phone: driver.phone,
-        role: "DRIVER",
-        app_metadata: { role: "DRIVER", entityId: driver.id },
-      },
-      jwtSecret,
-      { expiresIn: JWT_EXPIRY },
-    );
-
+    // Registration does not create a Supabase Auth session. Never issue a local
+    // JWT that JwtStrategy will subsequently reject via Supabase getUser().
     return {
       success: true,
-      message: "Registro completado exitosamente.",
-      access_token: token,
+      message: "Registro completado. Inicia sesión para continuar.",
       driverId: driver.id,
     };
   }

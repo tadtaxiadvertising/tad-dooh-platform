@@ -137,10 +137,14 @@ export class OnboardingService {
     } catch (error) {
       // Compensate only the Auth identity created by this request.
       // If cleanup fails, preserve the error for operational reconciliation.
-      const { error: cleanupError } = await this.supabaseService
-        .getClient().auth.admin.deleteUser(createdAuthUserId);
-      if (cleanupError) {
-        this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+      try {
+        const { error: cleanupError } = await this.supabaseService
+          .getClient().auth.admin.deleteUser(createdAuthUserId);
+        if (cleanupError) {
+          this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+        }
+      } catch {
+        this.logger.error("CRITICAL: Auth cleanup unavailable; manual reconciliation required");
       }
       this.logger.error("Advertiser onboarding transaction failed");
       if (error instanceof ConflictException) throw error;

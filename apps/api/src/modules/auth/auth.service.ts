@@ -332,8 +332,8 @@ export class AuthService {
 
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
       const adminUser = await this.prisma.user.findUnique({ where: { email } });
-      if (adminUser) {
-        resolvedRole = adminUser.role || "ADMIN";
+      if (adminUser?.role === "ADMIN") {
+        resolvedRole = "ADMIN";
         profile = { ...adminUser, role: resolvedRole };
       }
     } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {

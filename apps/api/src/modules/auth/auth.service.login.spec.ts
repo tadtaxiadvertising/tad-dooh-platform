@@ -29,11 +29,7 @@ describe("AuthService login fails closed on database outage", () => {
     });
 
     // Only the dependencies used by login are needed for this regression.
-    const service = Object.create(AuthService.prototype) as AuthService & {
-      prisma: typeof prisma;
-      supabaseService: typeof supabase;
-      logger: { log: jest.Mock; error: jest.Mock; debug: jest.Mock };
-    };
+    const service = Object.create(AuthService.prototype) as AuthService;
     Object.assign(service, {
       prisma,
       supabaseService: supabase,

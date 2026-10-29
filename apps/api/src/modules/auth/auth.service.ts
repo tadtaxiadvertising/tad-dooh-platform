@@ -298,57 +298,23 @@ export class AuthService {
   async exchangeOAuth(dto: OAuthExchangeDto) {
     this.logger.log(`🔐 OAuth exchange attempt → role=${dto.intended_role}`);
 
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new HttpException(
-        "Server JWT secret not configured.",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    // Verify every OAuth token against the configured Supabase Auth project.
+    // A generic application JWT_SECRET must never authorize a Supabase identity.
+    const anonClient = this.supabaseService.getAnonClient();
+    if (!anonClient) {
+      throw new UnauthorizedException("Autenticación de Supabase no disponible.");
     }
-
-    let payload: any;
-    try {
-      payload = jwt.verify(dto.access_token, jwtSecret, {
-        algorithms: ["HS256"],
-      });
-    } catch (err: any) {
-      // Supabase projects that use asymmetric signing (for example ES256) do
-      // not share an HS256 signing secret with this API. Do not reject those
-      // valid OAuth tokens merely because local verification is unavailable;
-      // ask GoTrue to verify the token with the project's configured keys.
-      const anonClient = this.supabaseService.getAnonClient();
-      if (!anonClient) {
-        this.logger.warn(
-          `🚫 No public Supabase client available to verify OAuth token: ${err.message}`,
-        );
-        throw new UnauthorizedException(
-          "Token de Supabase inválido o expirado.",
-        );
-      }
-
-      const { data, error } = await anonClient.auth.getUser(dto.access_token);
-      if (error || !data.user?.id || !data.user.email) {
-        this.logger.warn(
-          `🚫 Invalid Supabase token presented to /oauth/exchange: ${error?.message || err.message}`,
-        );
-        throw new UnauthorizedException(
-          "Token de Supabase inválido o expirado.",
-        );
-      }
-
-      payload = {
-        sub: data.user.id,
-        email: data.user.email,
-        name:
-          data.user.user_metadata?.full_name ||
-          data.user.user_metadata?.name ||
-          data.user.email,
-        app_metadata: data.user.app_metadata,
-      };
-      this.logger.debug(
-        `✅ OAuth token verified by Supabase after local verification failed: ${data.user.email}`,
-      );
+    const { data, error } = await anonClient.auth.getUser(dto.access_token);
+    if (error || !data.user?.id || !data.user.email) {
+      throw new UnauthorizedException("Token de Supabase inválido o expirado.");
     }
+    const payload = {
+      sub: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.full_name ||
+        data.user.user_metadata?.name || data.user.email,
+      app_metadata: data.user.app_metadata,
+    };
 
     const email: string | undefined = payload?.email;
     const userId: string | undefined = payload?.sub;

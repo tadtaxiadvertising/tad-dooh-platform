@@ -7,6 +7,16 @@ describe("AuthController login cookie", () => {
   };
   const controller = new AuthController(authService as unknown as AuthService);
 
+  const originalCookieDomain = process.env.COOKIE_DOMAIN;
+
+  afterEach(() => {
+    if (originalCookieDomain === undefined) {
+      delete process.env.COOKIE_DOMAIN;
+    } else {
+      process.env.COOKIE_DOMAIN = originalCookieDomain;
+    }
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     authService.login.mockResolvedValue({
@@ -32,5 +42,27 @@ describe("AuthController login cookie", () => {
       }),
     );
     expect(user).toEqual({ id: "test-user" });
+  });
+  it("uses a host-only cookie when COOKIE_DOMAIN is absent", async () => {
+    delete process.env.COOKIE_DOMAIN;
+    const res = { cookie: jest.fn() };
+    await controller.login(
+      { email: "test@example.com", password: "test-password" },
+      res,
+    );
+    expect(res.cookie.mock.calls[0][2]).not.toHaveProperty("domain");
+  });
+
+  it("respects an explicitly configured shared cookie domain", async () => {
+    process.env.COOKIE_DOMAIN = ".ibusiness.com.do";
+    const res = { cookie: jest.fn() };
+    await controller.login(
+      { email: "test@example.com", password: "test-password" },
+      res,
+    );
+    expect(res.cookie.mock.calls[0][2]).toHaveProperty(
+      "domain",
+      ".ibusiness.com.do",
+    );
   });
 });

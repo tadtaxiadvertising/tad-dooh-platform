@@ -16,9 +16,7 @@ import * as bcrypt from "bcrypt";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
-  JWT_EXPIRY,
 } from "../../common/constants/business-rules";
-import * as jwt from "jsonwebtoken";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
 
 @Injectable()

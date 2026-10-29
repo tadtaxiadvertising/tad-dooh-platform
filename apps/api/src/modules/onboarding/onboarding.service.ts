@@ -9,6 +9,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import * as bcrypt from "bcrypt";
+import { isEmail } from "class-validator";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
@@ -30,13 +31,21 @@ export class OnboardingService {
     const {
       name,
       companyName,
-      email,
       phone,
       password,
       budget,
       expectedScreens,
       fileMetadata,
     } = data;
+
+    // Normalize identity consistently across Prisma and Supabase Auth.
+    // This also protects internal callers that bypass DTO validation.
+    const email = typeof data.email === "string"
+      ? data.email.trim().toLowerCase()
+      : "";
+    if (!isEmail(email)) {
+      throw new BadRequestException("El correo electrónico no es válido.");
+    }
 
     if (typeof password !== "string" || password.length < 8) {
       throw new BadRequestException("La contraseña debe tener al menos 8 caracteres.");
@@ -69,7 +78,7 @@ export class OnboardingService {
         email_confirm: false,
         app_metadata: { role: "ADVERTISER" },
       });
-    if (provisionError || !provisioned.user?.id) {
+    if (provisionError || !provisioned?.user?.id) {
       this.logger.warn("Advertiser Auth provisioning failed");
       throw new ConflictException(
         "No se pudo crear la identidad. Verifica si el correo ya está registrado.",

@@ -84,4 +84,20 @@ describe("OnboardingService password safety", () => {
     expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
   });
 
+  it("does not delete an existing identity when the email is already registered", async () => {
+    prisma.advertiser.findUnique.mockResolvedValue({ id: "existing-advertiser" });
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 409 });
+    expect(createUser).not.toHaveBeenCalled();
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("preserves the registration failure if Auth compensation is unavailable", async () => {
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
+    prisma.$transaction.mockRejectedValue(new Error("database unavailable"));
+    deleteUser.mockRejectedValue(new Error("network unavailable"));
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 500 });
+    expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
+  });
+
 });

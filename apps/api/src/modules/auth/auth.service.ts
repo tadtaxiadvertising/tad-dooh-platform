@@ -574,16 +574,22 @@ export class AuthService {
     }
 
     const serviceClient = this.supabaseService.getClient();
-    const { data: users, error: listError } =
-      await serviceClient.auth.admin.listUsers();
-
-    if (listError) {
-      throw new Error(`Failed to list users: ${listError.message}`);
+    // listUsers is paginated: a single page cannot establish user absence.
+    // Stop on the first match, but fail closed if any page cannot be fetched.
+    let user: { id: string; email?: string } | undefined;
+    const pageSize = 1000;
+    for (let page = 1; ; page++) {
+      const { data, error: listError } =
+        await serviceClient.auth.admin.listUsers({ page, perPage: pageSize });
+      if (listError) {
+        throw new Error(`Failed to list users on page ${page}: ${listError.message}`);
+      }
+      const batch = data?.users ?? [];
+      user = batch.find((candidate) => candidate.email?.toLowerCase() === email.toLowerCase());
+      if (user || batch.length < pageSize) break;
     }
-
-    const user = users?.users?.find((u: any) => u.email === email);
     if (!user) {
-      throw new NotFoundException(`User ${email} not found in Supabase Auth`);
+      throw new NotFoundException("User not found in Supabase Auth");
     }
 
     // Confirm the user without resetting or changing their password

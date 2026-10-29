@@ -7,6 +7,7 @@ import {
   Put,
   Body,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -299,11 +300,11 @@ export class DeviceAdminController {
     } catch (error: any) {
       this.logger.error(
         `❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`,
+        error?.stack,
       );
-      return {
-        error: "Excepción interna al procesar el perfil",
-        message: error.message,
-      };
+      throw new InternalServerErrorException(
+        "Excepción interna al procesar el perfil",
+      );
     }
   }
 

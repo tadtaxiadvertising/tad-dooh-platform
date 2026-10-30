@@ -6,6 +6,7 @@ echo "[entrypoint] PORT=$PORT"
 echo "[entrypoint] JWT_SECRET=$([ -n "$JWT_SECRET" ] && echo 'SET' || echo 'MISSING')"
 echo "[entrypoint] DATABASE_URL=$([ -n "$DATABASE_URL" ] && echo 'SET' || echo 'MISSING')"
 echo "[entrypoint] SUPABASE_URL=$([ -n "$SUPABASE_URL" ] && echo 'SET' || echo 'MISSING')"
+echo "[entrypoint] DIRECT_URL=$([ -n "${DIRECT_URL:-}" ] && echo 'SET' || echo 'MISSING')"
 
 # JWT_SECRET is REQUIRED - no ephemeral fallback
 if [ -z "$JWT_SECRET" ]; then
@@ -15,7 +16,11 @@ if [ -z "$JWT_SECRET" ]; then
 fi
 
 echo "[entrypoint] Applying Prisma migrations..."
-pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
+if [ -z "${DIRECT_URL:-}" ]; then
+  echo "[entrypoint] 🚨 FATAL: DIRECT_URL is required for Prisma migrations. Configure the Supabase direct/session URL, not the transaction pooler on :6543."
+  exit 1
+fi
+DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
 echo "[entrypoint] Prisma migrations applied."
 
 echo "[entrypoint] Starting node dist/main.js ..."

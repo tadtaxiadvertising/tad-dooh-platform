@@ -46,7 +46,9 @@ describe("DeviceAdminController", () => {
         id: "uuid-123",
         deviceId: "HW-123",
       });
-      const internalDbError = new Error("FATAL DB ERROR: pg_stat_activity deadlock in table devices_rel");
+      const internalDbError = new Error(
+        "FATAL DB ERROR: pg_stat_activity deadlock in table devices_rel",
+      );
       mockPrismaService.$transaction.mockRejectedValue(internalDbError);
 
       await expect(controller.deleteDevice("HW-123")).rejects.toThrow(
@@ -65,7 +67,9 @@ describe("DeviceAdminController", () => {
 
   describe("getDeviceProfile", () => {
     it("should throw InternalServerErrorException without leaking internal error details on failure", async () => {
-      const internalDbError = new Error("PrismaClientKnownRequestError: Table missing in catalog");
+      const internalDbError = new Error(
+        "PrismaClientKnownRequestError: Table missing in catalog",
+      );
       mockPrismaService.device.findFirst.mockRejectedValue(internalDbError);
 
       await expect(controller.getDeviceProfile("HW-123")).rejects.toThrow(

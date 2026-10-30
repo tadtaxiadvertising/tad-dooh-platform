@@ -230,7 +230,9 @@ export class DeviceAdminController {
       });
     } catch (error: any) {
       this.logger.error(`❌ Failed to delete device ${hwId}: ${error.message}`);
-      throw new InternalServerErrorException("Error al eliminar el dispositivo");
+      throw new InternalServerErrorException(
+        "Error al eliminar el dispositivo",
+      );
     }
   }
 
@@ -301,7 +303,9 @@ export class DeviceAdminController {
       this.logger.error(
         `❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`,
       );
-      throw new InternalServerErrorException("Error al obtener el perfil del dispositivo");
+      throw new InternalServerErrorException(
+        "Error al obtener el perfil del dispositivo",
+      );
     }
   }
 

@@ -10,10 +10,12 @@ describe("AuthService bootstrap confirmation authorization", () => {
     })),
   };
   const previousSecret = process.env.BOOTSTRAP_SECRET;
+  const previousEnabled = process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.BOOTSTRAP_SECRET = "test-only-secret";
+    process.env.BOOTSTRAP_MAINTENANCE_ENABLED = "true";
     listUsers.mockResolvedValue({
       data: { users: [{ id: "supabase-1", email: "admin@example.com" }] },
       error: null,
@@ -22,6 +24,8 @@ describe("AuthService bootstrap confirmation authorization", () => {
   });
 
   afterAll(() => {
+    if (previousEnabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+    else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = previousEnabled;
     if (previousSecret === undefined) delete process.env.BOOTSTRAP_SECRET;
     else process.env.BOOTSTRAP_SECRET = previousSecret;
   });
@@ -109,6 +113,15 @@ describe("AuthService bootstrap confirmation authorization", () => {
       service().confirmUserByEmail("admin@example.com", "test-only-secret"),
     ).rejects.toThrow("Failed to list users on page 2");
     expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "false", "TRUE"])("rejects maintenance when feature flag is %s before DB or Auth access", async (enabled) => {
+    if (enabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+    else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = enabled;
+    await expect(service().confirmUserByEmail("admin@example.com", "test-only-secret"))
+      .rejects.toMatchObject({ status: 403 });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(supabase.getClient).not.toHaveBeenCalled();
   });
 
 });

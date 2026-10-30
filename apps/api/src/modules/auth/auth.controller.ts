@@ -14,6 +14,7 @@ import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { OAuthExchangeDto } from "./dto/oauth-exchange.dto";
 import { Public } from "./decorators/public.decorator";
+import { Roles, UserRole } from "./decorators/roles.decorator";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -29,7 +30,8 @@ export class AuthController {
 
     // A7-HTTPONLY: Enviar access_token en cookie HttpOnly + Secure para producción
     const isProduction = process.env.NODE_ENV === "production";
-    const cookieDomain = process.env.COOKIE_DOMAIN || "tad.do";
+    // Host-only by default; set COOKIE_DOMAIN explicitly only when sharing across subdomains.
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
     const cookiePath = "/";
 
     // El token de Supabase (GoTrue) incluye su propio refresh_token en la cookie
@@ -42,9 +44,9 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: cookieDomain,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
       path: cookiePath,
-      maxAge: 3600 * 24 * 7, // 7 days (aprox)
+      maxAge: 1000 * 60 * 60 * 24 * 7, // Express maxAge is milliseconds (7 days)
       partitionable: true,
     });
 
@@ -82,13 +84,12 @@ export class AuthController {
   }
 
   @Post("pairing-token")
+  @Roles(UserRole.DRIVER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Generate a 5-minute JWT token for hardware pairing QR",
   })
   async generatePairingToken(@Request() req: any) {
-    // Only DRIVER should generate pairing token, or maybe ADMIN on their behalf.
-    // For now we assume the driver generates it from their portal to scan on the tablet.
     return this.authService.generatePairingToken(req.user.id);
   }
 

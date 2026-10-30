@@ -279,7 +279,7 @@ export class MediaService {
    * y actualiza filename + originalFilename en la BD.
    */
   async renameFile(id: string, newFilename: string) {
-    if (!newFilename || newFilename.trim().length === 0) {
+    if (!newFilename || typeof newFilename !== "string" || newFilename.trim().length === 0) {
       throw new BadRequestException(
         "El nombre del archivo no puede estar vacío.",
       );
@@ -366,6 +366,17 @@ export class MediaService {
   }) {
     const { path, campaignId, expectedSize, expectedHashMd5, filename, qrUrl } =
       data;
+
+    // SEC-04: Prevent Path Traversal in storage path
+    if (
+      !path ||
+      typeof path !== "string" ||
+      path.includes("..") ||
+      path.startsWith("/") ||
+      path.includes("\\")
+    ) {
+      throw new BadRequestException("Ruta de archivo inválida");
+    }
 
     // 1. Verificar que el archivo existe en Supabase y obtener metadata
     const { data: fileData, error: statError } = await this.supabase.storage

@@ -3,10 +3,13 @@ import {
   Injectable,
   Logger,
   ConflictException,
+  BadRequestException,
   InternalServerErrorException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { SupabaseService } from "../supabase/supabase.service";
 import * as bcrypt from "bcrypt";
+import { isEmail } from "class-validator";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
@@ -19,19 +22,42 @@ import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private supabaseService: SupabaseService,
+  ) {}
 
   async onboardAdvertiser(data: OnboardAdvertiserDto) {
     const {
       name,
       companyName,
-      email,
       phone,
       password,
       budget,
       expectedScreens,
       fileMetadata,
     } = data;
+
+    // Normalize identity consistently across Prisma and Supabase Auth.
+    // This also protects internal callers that bypass DTO validation.
+    const email = typeof data.email === "string"
+      ? data.email.trim().toLowerCase()
+      : "";
+    if (!isEmail(email)) {
+      throw new BadRequestException("El correo electrónico no es válido.");
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      throw new BadRequestException("La contraseña debe tener al menos 8 caracteres.");
+    }
+
+    // Also validate at the service boundary (jobs/internal callers bypass HTTP DTO validation).
+    if (typeof budget !== "number" || !Number.isFinite(budget) || budget <= 0) {
+      throw new BadRequestException("El presupuesto debe ser un número positivo.");
+    }
+    if (typeof expectedScreens !== "number" || !Number.isInteger(expectedScreens) || expectedScreens < 1) {
+      throw new BadRequestException("La cantidad de pantallas debe ser un entero positivo.");
+    }
 
     // Check if email already exists
     const existing = await this.prisma.advertiser.findUnique({
@@ -43,10 +69,27 @@ export class OnboardingService {
       );
     }
 
+    // Create a unique Supabase Auth identity before the Prisma transaction.
+    // Never reuse or overwrite an existing identity: this is a public endpoint.
+    const { data: provisioned, error: provisionError } =
+      await this.supabaseService.getClient().auth.admin.createUser({
+        email,
+        password,
+        email_confirm: false,
+        app_metadata: { role: "ADVERTISER" },
+      });
+    if (provisionError || !provisioned?.user?.id) {
+      this.logger.warn("Advertiser Auth provisioning failed");
+      throw new ConflictException(
+        "No se pudo crear la identidad. Verifica si el correo ya está registrado.",
+      );
+    }
+    const createdAuthUserId = provisioned.user.id;
+
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         // 1. Create Advertiser
-        const hashedPassword = await bcrypt.hash(password ?? "", BCRYPT_ROUNDS);
+        const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const advertiser = await tx.advertiser.create({
           data: {
             companyName,
@@ -100,10 +143,20 @@ export class OnboardingService {
           companyName: advertiser.companyName,
         };
       });
+      return result;
     } catch (error) {
-      this.logger.error(
-        `❌ Error en transacción de onboarding: ${error.message}`,
-      );
+      // Compensate only the Auth identity created by this request.
+      // If cleanup fails, preserve the error for operational reconciliation.
+      try {
+        const { error: cleanupError } = await this.supabaseService
+          .getClient().auth.admin.deleteUser(createdAuthUserId);
+        if (cleanupError) {
+          this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+        }
+      } catch {
+        this.logger.error("CRITICAL: Auth cleanup unavailable; manual reconciliation required");
+      }
+      this.logger.error("Advertiser onboarding transaction failed");
       if (error instanceof ConflictException) throw error;
       throw new InternalServerErrorException(
         "Error al procesar el registro. Intente de nuevo.",

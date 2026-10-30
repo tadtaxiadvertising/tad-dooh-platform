@@ -179,8 +179,13 @@ export default async function handler(
     // getRawBody está disponible en Next.js (next/dist/compiled/raw-body).
     if (req.method !== "GET" && req.method !== "HEAD") {
       try {
-        // @ts-ignore module has no declaration file
-        const { getRawBody } = await import("next/dist/compiled/raw-body");
+        // Next.js ships raw-body as a CommonJS callable export; dynamic-import
+        // namespace destructuring can yield an undefined function in production.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const getRawBody = require("next/dist/compiled/raw-body") as (
+          stream: NextApiRequest,
+          options: { length?: string | number; limit: string },
+        ) => Promise<Buffer>;
         const rawBody = await getRawBody(req, {
           length: req.headers["content-length"],
           limit: "5mb",

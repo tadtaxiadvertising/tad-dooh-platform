@@ -16,9 +16,7 @@ import * as bcrypt from "bcrypt";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
-  JWT_EXPIRY,
 } from "../../common/constants/business-rules";
-import * as jwt from "jsonwebtoken";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
 
 @Injectable()
@@ -71,33 +69,24 @@ export class AuthService {
       // 2. Buscar rol en base de datos local
       this.logger.debug(`🔍 Buscando rol para ${email} en base de datos...`);
 
+      // A database failure must not be interpreted as an absent identity.
+      // Otherwise a partial outage can silently change role resolution.
       const [adminUser, advertiser, driver] = await Promise.all([
-        this.prisma.user.findUnique({ where: { email } }).catch((e) => {
-          this.logger.error(`Error buscando adminUser: ${e.message}`);
-          return null;
+        this.prisma.user.findUnique({ where: { email } }),
+        this.prisma.advertiser.findUnique({ where: { email } }),
+        this.prisma.driver.findFirst({
+          where: {
+            OR: [{ phone: email.split("@")[0] }, { phone: email }],
+          },
         }),
-        this.prisma.advertiser.findUnique({ where: { email } }).catch((e) => {
-          this.logger.error(`Error buscando advertiser: ${e.message}`);
-          return null;
-        }),
-        this.prisma.driver
-          .findFirst({
-            where: {
-              OR: [{ phone: email.split("@")[0] }, { phone: email }],
-            },
-          })
-          .catch((e) => {
-            this.logger.error(`Error buscando driver: ${e.message}`);
-            return null;
-          }),
       ]);
 
       // Determinar rol e ID de entidad
       let role = "GUEST";
       let entityId: string | null = null;
 
-      if (adminUser) {
-        role = adminUser.role || "ADMIN";
+      if (adminUser?.role === "ADMIN") {
+        role = "ADMIN";
         this.logger.debug(`Found Admin User with role: ${role}`);
       } else if (advertiser) {
         role = "ADVERTISER";
@@ -128,7 +117,10 @@ export class AuthService {
         });
       if (updateError) {
         this.logger.error(
-          `⚠️ Error inyectando metadata en Supabase: ${updateError.message}`,
+          `No se pudieron actualizar claims de autorización para ${email}: ${updateError.message}`,
+        );
+        throw new ForbiddenException(
+          "No se pudo establecer una sesión autorizada. Intenta nuevamente.",
         );
       }
 
@@ -141,30 +133,28 @@ export class AuthService {
       // was signed BEFORE the injection and its claims are immutable, so
       // returning it would give SSR/middleware decoders a GUEST role →
       // instant logout. Refresh against GoTrue and use the new tokens.
-      let accessToken = data.session.access_token;
-      let refreshToken = data.session.refresh_token;
-      if (anonClient) {
-        try {
-          const { data: refreshed, error: refreshError } =
-            await anonClient.auth.refreshSession({
-              refresh_token: data.session.refresh_token,
-            });
-          if (!refreshError && refreshed.session?.access_token) {
-            accessToken = refreshed.session.access_token;
-            refreshToken = refreshed.session.refresh_token || refreshToken;
-            this.logger.debug(
-              `✅ Reissued role-bearing access_token for ${email}`,
-            );
-          } else {
-            this.logger.warn(
-              `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
-            );
-          }
-        } catch (e: any) {
-          this.logger.warn(
-            `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
-          );
+      // Never return tokens issued before the authorization claims were updated.
+      let accessToken: string;
+      let refreshToken: string;
+      try {
+        const { data: refreshed, error: refreshError } =
+          await anonClient.auth.refreshSession({
+            refresh_token: data.session.refresh_token,
+          });
+        if (
+          refreshError ||
+          !refreshed.session?.access_token ||
+          !refreshed.session?.refresh_token
+        ) {
+          throw new Error("Authorization token refresh failed");
         }
+        accessToken = refreshed.session.access_token;
+        refreshToken = refreshed.session.refresh_token;
+      } catch {
+        this.logger.error("No se pudo renovar la sesión autorizada");
+        throw new ForbiddenException(
+          "No se pudo establecer una sesión autorizada. Intenta nuevamente.",
+        );
       }
 
       return {
@@ -192,7 +182,6 @@ export class AuthService {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: "Error interno en el proceso de autenticación",
-          details: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -307,57 +296,23 @@ export class AuthService {
   async exchangeOAuth(dto: OAuthExchangeDto) {
     this.logger.log(`🔐 OAuth exchange attempt → role=${dto.intended_role}`);
 
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new HttpException(
-        "Server JWT secret not configured.",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    // Verify every OAuth token against the configured Supabase Auth project.
+    // A generic application JWT_SECRET must never authorize a Supabase identity.
+    const anonClient = this.supabaseService.getAnonClient();
+    if (!anonClient) {
+      throw new UnauthorizedException("Autenticación de Supabase no disponible.");
     }
-
-    let payload: any;
-    try {
-      payload = jwt.verify(dto.access_token, jwtSecret, {
-        algorithms: ["HS256"],
-      });
-    } catch (err: any) {
-      // Supabase projects that use asymmetric signing (for example ES256) do
-      // not share an HS256 signing secret with this API. Do not reject those
-      // valid OAuth tokens merely because local verification is unavailable;
-      // ask GoTrue to verify the token with the project's configured keys.
-      const anonClient = this.supabaseService.getAnonClient();
-      if (!anonClient) {
-        this.logger.warn(
-          `🚫 No public Supabase client available to verify OAuth token: ${err.message}`,
-        );
-        throw new UnauthorizedException(
-          "Token de Supabase inválido o expirado.",
-        );
-      }
-
-      const { data, error } = await anonClient.auth.getUser(dto.access_token);
-      if (error || !data.user?.id || !data.user.email) {
-        this.logger.warn(
-          `🚫 Invalid Supabase token presented to /oauth/exchange: ${error?.message || err.message}`,
-        );
-        throw new UnauthorizedException(
-          "Token de Supabase inválido o expirado.",
-        );
-      }
-
-      payload = {
-        sub: data.user.id,
-        email: data.user.email,
-        name:
-          data.user.user_metadata?.full_name ||
-          data.user.user_metadata?.name ||
-          data.user.email,
-        app_metadata: data.user.app_metadata,
-      };
-      this.logger.debug(
-        `✅ OAuth token verified by Supabase after local verification failed: ${data.user.email}`,
-      );
+    const { data, error } = await anonClient.auth.getUser(dto.access_token);
+    if (error || !data.user?.id || !data.user.email) {
+      throw new UnauthorizedException("Token de Supabase inválido o expirado.");
     }
+    const payload = {
+      sub: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.full_name ||
+        data.user.user_metadata?.name || data.user.email,
+      app_metadata: data.user.app_metadata,
+    };
 
     const email: string | undefined = payload?.email;
     const userId: string | undefined = payload?.sub;
@@ -375,8 +330,8 @@ export class AuthService {
 
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
       const adminUser = await this.prisma.user.findUnique({ where: { email } });
-      if (adminUser) {
-        resolvedRole = adminUser.role || "ADMIN";
+      if (adminUser?.role === "ADMIN") {
+        resolvedRole = "ADMIN";
         profile = { ...adminUser, role: resolvedRole };
       }
     } else if (dto.intended_role === OAuthPortalRole.ADVERTISER) {
@@ -415,55 +370,47 @@ export class AuthService {
       );
     }
 
-    if (
+    const claimsChanged =
       payload?.app_metadata?.role !== resolvedRole ||
-      payload?.app_metadata?.entityId !== entityId
-    ) {
+      payload?.app_metadata?.entityId !== entityId;
+    if (claimsChanged) {
       const { error: updateError } = await this.supabaseService
         .getClient()
         .auth.admin.updateUserById(userId, {
           app_metadata: { role: resolvedRole, entityId },
         });
       if (updateError) {
-        this.logger.warn(
-          `⚠️ Failed to refresh app_metadata for ${email}: ${updateError.message}`,
-        );
-      } else {
-        this.logger.debug(
-          `💉 app_metadata injected for ${email}: role=${resolvedRole}`,
-        );
+        this.logger.error(`Failed to set OAuth authorization claims for ${email}`);
+        throw new ForbiddenException("No se pudo establecer una sesión autorizada.");
       }
     }
 
-    // Reissue tokens so the returned access_token carries app_metadata.role.
-    // The OAuth token was signed BEFORE the metadata injection and its claims
-    // are immutable — returning it would give SSR/middleware decoders a GUEST
-    // role and instantly logout the user. Refresh against GoTrue (anon scope)
-    // and return the freshly minted, role-bearing token pair instead.
+    // A token issued before a claims update cannot carry the new permissions.
+    // Never return stale tokens if the refresh fails or is unavailable.
     let accessToken = dto.access_token;
     let refreshToken = dto.refresh_token || "";
-    const anonClient = this.supabaseService.getAnonClient();
-    if (anonClient && dto.refresh_token) {
+    if (claimsChanged) {
+      if (!dto.refresh_token) {
+        throw new ForbiddenException("Se requiere renovar la sesión autorizada.");
+      }
+      const anonClient = this.supabaseService.getAnonClient();
+      if (!anonClient) {
+        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
+      }
       try {
         const { data: refreshed, error: refreshError } =
-          await anonClient.auth.refreshSession({
-            refresh_token: dto.refresh_token,
-          });
-        if (!refreshError && refreshed.session?.access_token) {
-          accessToken = refreshed.session.access_token;
-          refreshToken = refreshed.session.refresh_token || refreshToken;
-          this.logger.debug(
-            `✅ Reissued role-bearing access_token for ${email}`,
-          );
-        } else {
-          this.logger.warn(
-            `⚠️ Token reissue failed for ${email}; returning original tokens: ${refreshError?.message}`,
-          );
+          await anonClient.auth.refreshSession({ refresh_token: dto.refresh_token });
+        if (
+          refreshError ||
+          !refreshed.session?.access_token ||
+          !refreshed.session?.refresh_token
+        ) {
+          throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
         }
-      } catch (e: any) {
-        this.logger.warn(
-          `⚠️ Exception reissuing tokens for ${email}: ${e.message}`,
-        );
+        accessToken = refreshed.session.access_token;
+        refreshToken = refreshed.session.refresh_token;
+      } catch {
+        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
       }
     }
 
@@ -509,7 +456,7 @@ export class AuthService {
       throw new Error("Supabase service client not available");
     }
 
-    const bootstrapPassword = process.env.AUTH_BOOTSTRAP_PASSWORD;
+    // Legacy shared bootstrap password is intentionally not used.
     const errors: string[] = [];
     let synced = 0;
 
@@ -526,73 +473,56 @@ export class AuthService {
       `🔄 Sync: ${admins.length} admins, ${advertisers.length} advertisers, ${drivers.length} drivers`,
     );
 
-    // Helper to upsert a user in Supabase Auth without resetting existing passwords.
+    // Fetch all Auth identities once, paging through the complete result set.
+    // A partial listing must never be treated as proof that a user is absent.
+    const authUsers: Array<{ id: string; email?: string }> = [];
+    const pageSize = 1000;
+    for (let page = 1; ; page++) {
+      const { data, error } = await serviceClient.auth.admin.listUsers({
+        page,
+        perPage: pageSize,
+      });
+      if (error) {
+        throw new Error(`Failed to list Auth users on page ${page}: ${error.message}`);
+      }
+      const batch = data?.users ?? [];
+      authUsers.push(...batch);
+      if (batch.length < pageSize) break;
+    }
+    const authUsersByEmail = new Map(
+      authUsers.filter((user) => user.email).map((user) => [user.email!.toLowerCase(), user]),
+    );
+
+    // Only update existing identities. Creating accounts with a shared bootstrap
+    // password gives multiple users the same credential and is not safe.
     const upsertUser = async (
       email: string,
-      password: string | undefined,
       appMeta: Record<string, any>,
     ) => {
       try {
-        const { data: listedUsers, error: listError } =
-          await serviceClient.auth.admin.listUsers();
-        if (listError) {
-          throw new Error(`Failed to list Auth users: ${listError.message}`);
-        }
-        const existing = listedUsers?.users?.find(
-          (u: any) => u.email === email,
-        );
-        if (existing) {
-          const { error: updateError } =
-            await serviceClient.auth.admin.updateUserById(existing.id, {
-              email_confirm: true,
-              app_metadata: appMeta,
-            });
-          if (updateError) {
-            throw new Error(
-              `Failed to update Auth metadata: ${updateError.message}`,
-            );
-          }
-          this.logger.debug(`✅ Updated existing auth user: ${email}`);
-          synced++;
+        const existing = authUsersByEmail.get(email.toLowerCase());
+        if (!existing) {
+          errors.push(`${email}: Auth identity missing; requires individual provisioning`);
           return;
         }
-
-        if (!password) {
-          errors.push(
-            `${email}: missing AUTH_BOOTSTRAP_PASSWORD for new Auth user`,
-          );
-          this.logger.warn(
-            `⚠️ Cannot create Auth user ${email}: AUTH_BOOTSTRAP_PASSWORD is not configured`,
-          );
-          return;
-        }
-
-        const { error: createError } =
-          await serviceClient.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
+        const { error: updateError } =
+          await serviceClient.auth.admin.updateUserById(existing.id, {
             app_metadata: appMeta,
           });
-        if (createError) {
-          errors.push(`${email}: ${createError.message}`);
-          this.logger.warn(
-            `⚠️ Failed to create Auth user ${email}: ${createError.message}`,
-          );
-          return;
+        if (updateError) {
+          throw new Error(`Failed to update Auth metadata: ${updateError.message}`);
         }
-        this.logger.debug(`✅ Created auth user: ${email}`);
         synced++;
       } catch (e: any) {
         errors.push(`${email}: ${e.message}`);
-        this.logger.warn(`⚠️ Exception syncing ${email}: ${e.message}`);
+        this.logger.warn(`Exception syncing ${email}: ${e.message}`);
       }
     };
 
     // 2. Sync admins
     for (const admin of admins) {
       if (!admin.email) continue;
-      await upsertUser(admin.email, bootstrapPassword, {
+      await upsertUser(admin.email, {
         role: admin.role || "ADMIN",
         entityId: admin.id,
       });
@@ -601,7 +531,7 @@ export class AuthService {
     // 3. Sync advertisers
     for (const adv of advertisers) {
       if (!adv.email) continue;
-      await upsertUser(adv.email, bootstrapPassword, {
+      await upsertUser(adv.email, {
         role: "ADVERTISER",
         entityId: adv.id,
       });
@@ -610,7 +540,7 @@ export class AuthService {
     // 4. Sync drivers (use phone@tad.driver as email proxy)
     for (const driver of drivers) {
       const driverEmail = `${driver.phone}@tad.driver`;
-      await upsertUser(driverEmail, bootstrapPassword, {
+      await upsertUser(driverEmail, {
         role: "DRIVER",
         entityId: driver.id,
       });
@@ -635,24 +565,36 @@ export class AuthService {
       throw new ForbiddenException("Invalid bootstrap secret");
     }
 
-    const serviceClient = this.supabaseService.getClient();
-    const { data: users, error: listError } =
-      await serviceClient.auth.admin.listUsers();
-
-    if (listError) {
-      throw new Error(`Failed to list users: ${listError.message}`);
+    // This maintenance action is admin-only: never elevate an arbitrary Auth user.
+    const admin = await this.prisma.user.findUnique({ where: { email } });
+    if (!admin || admin.role !== "ADMIN") {
+      throw new ForbiddenException("Bootstrap confirmation is restricted to administrators");
     }
 
-    const user = users?.users?.find((u: any) => u.email === email);
+    const serviceClient = this.supabaseService.getClient();
+    // listUsers is paginated: a single page cannot establish user absence.
+    // Stop on the first match, but fail closed if any page cannot be fetched.
+    let user: { id: string; email?: string } | undefined;
+    const pageSize = 1000;
+    for (let page = 1; ; page++) {
+      const { data, error: listError } =
+        await serviceClient.auth.admin.listUsers({ page, perPage: pageSize });
+      if (listError) {
+        throw new Error(`Failed to list users on page ${page}: ${listError.message}`);
+      }
+      const batch = data?.users ?? [];
+      user = batch.find((candidate) => candidate.email?.toLowerCase() === email.toLowerCase());
+      if (user || batch.length < pageSize) break;
+    }
     if (!user) {
-      throw new NotFoundException(`User ${email} not found in Supabase Auth`);
+      throw new NotFoundException("User not found in Supabase Auth");
     }
 
     // Confirm the user without resetting or changing their password
     const { error: updateError } =
       await serviceClient.auth.admin.updateUserById(user.id, {
         email_confirm: true,
-        app_metadata: { role: "ADMIN", entityId: user.id },
+        app_metadata: { role: "ADMIN", entityId: admin.id },
       });
 
     if (updateError) {
@@ -678,6 +620,12 @@ export class AuthService {
     vehicleModel?: string;
     licensePlate?: string;
   }) {
+    // Validate at the service boundary; the public controller uses a plain object DTO.
+    if (typeof data.name !== "string" || !data.name.trim() ||
+        typeof data.phone !== "string" || !data.phone.trim() ||
+        typeof data.password !== "string" || data.password.length < 8) {
+      throw new BadRequestException("Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.");
+    }
     const existingDriver = await this.prisma.driver.findUnique({
       where: { phone: data.phone },
     });
@@ -703,30 +651,11 @@ export class AuthService {
       },
     });
 
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      return {
-        success: true,
-        message: "Registro completado. Inicia sesión para continuar.",
-        driverId: driver.id,
-      };
-    }
-
-    const token = jwt.sign(
-      {
-        sub: driver.id,
-        phone: driver.phone,
-        role: "DRIVER",
-        app_metadata: { role: "DRIVER", entityId: driver.id },
-      },
-      jwtSecret,
-      { expiresIn: JWT_EXPIRY },
-    );
-
+    // Registration does not create a Supabase Auth session. Never issue a local
+    // JWT that JwtStrategy will subsequently reject via Supabase getUser().
     return {
       success: true,
-      message: "Registro completado exitosamente.",
-      access_token: token,
+      message: "Registro completado. Inicia sesión para continuar.",
       driverId: driver.id,
     };
   }

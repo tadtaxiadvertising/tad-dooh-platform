@@ -1,3 +1,5 @@
+import { AUTH_COOKIE_MAX_AGE, readAccessTokenCookie } from "@tad/services/session-cookies";
+import { isPublicLegalPath } from "@tad/services/cookie-consent";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -31,24 +33,12 @@ function decodeTokenRole(token: string): string {
  * (sb-<ref>-auth-token, base64url JSON) first, then the legacy sb-access-token.
  */
 function extractAccessToken(request: NextRequest): string | null {
-  const canonical = request.cookies
-    .getAll()
-    .find((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
-  if (canonical?.value) {
-    try {
-      const json = JSON.parse(
-        atob(canonical.value.replace(/-/g, "+").replace(/_/g, "/")),
-      );
-      if (json?.access_token) return json.access_token;
-    } catch {
-      /* fall through to legacy */
-    }
-  }
-  return request.cookies.get("sb-access-token")?.value ?? null;
+  return readAccessTokenCookie(request.cookies.getAll());
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (isPublicLegalPath(pathname)) return NextResponse.next();
   const sessionToken = extractAccessToken(request);
   const quickRole = sessionToken ? decodeTokenRole(sessionToken) : "GUEST";
 
@@ -136,7 +126,7 @@ export async function middleware(request: NextRequest) {
                 request: { headers: request.headers },
               });
               cookiesToSet.forEach(({ name, value, options }) =>
-                response.cookies.set(name, value, options),
+                response.cookies.set(name, value, { ...options, maxAge: value ? AUTH_COOKIE_MAX_AGE : 0, sameSite: "lax", secure: process.env.NODE_ENV === "production" || request.nextUrl.protocol === "https:" }),
               );
             },
           },

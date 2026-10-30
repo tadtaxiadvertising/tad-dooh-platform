@@ -3,6 +3,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from "@tad/services";
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { isPublicLegalPath } from '@tad/services/cookie-consent';
+import { clearAuthCookies, writeAccessTokenCookie, writeSsrSessionCookie } from '@tad/services/session-cookies';
 
 const PUBLIC_PATHS = ['/login', '/register', '/admin/login', '/advertiser/login', '/advertiser/onboarding', '/driver/login', '/driver/onboarding', '/check-in'];
 
@@ -109,6 +111,7 @@ function loginRouteFor(portal: 'admin' | 'advertiser' | 'driver' | null): string
 }
 
 function clearPortalTokens(): void {
+  clearAuthCookies();
   localStorage.removeItem('tad_admin_token');
   localStorage.removeItem('tad_admin_user');
   localStorage.removeItem('tad_advertiser_token');
@@ -132,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const getLivePath = () =>
         typeof window !== 'undefined' ? window.location.pathname : '/';
       const livePath = getLivePath();
-      const isPublic = PUBLIC_PATHS.includes(livePath) || livePath.startsWith('/p');
+      const isPublic = isPublicLegalPath(livePath) || PUBLIC_PATHS.includes(livePath) || livePath.startsWith('/p');
 
       if (!activeSession) {
         // Browse only tokens for the current portal family. Mixing scope
@@ -166,8 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ?.split('=')[1];
 
         if (currentCookie !== activeSession.access_token) {
-          const isSecure = window.location.protocol === 'https:';
-          document.cookie = `sb-access-token=${activeSession.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+          writeAccessTokenCookie(activeSession.access_token);
         }
       }
 
@@ -209,6 +211,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, sbSession: Session | null) => {
+        if (_event === 'TOKEN_REFRESHED' && sbSession
+          && PORTAL_BY_ROLE[roleOfSession(sbSession)] === portalFromPath(window.location.pathname)) {
+          writeAccessTokenCookie(sbSession.access_token);
+          writeSsrSessionCookie(sbSession);
+          setSession(sbSession);
+        }
         if (_event === 'SIGNED_IN' && sbSession) {
           // Guard with a LIVE path: reject a session whose role does not
           // belong to the portal currently being served. The onAuthStateChange
@@ -253,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const getLivePath = () =>
             typeof window !== 'undefined' ? window.location.pathname : '/';
           const livePath = getLivePath();
-          router.replace(loginRouteFor(portalFromPath(livePath)));
+          if (!isPublicLegalPath(livePath)) router.replace(loginRouteFor(portalFromPath(livePath)));
         }
       });
 
@@ -265,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isPublicPage = PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
+  const isPublicPage = isPublicLegalPath(router.pathname) || PUBLIC_PATHS.includes(router.pathname) || router.pathname.startsWith('/p');
   if (loading && !isPublicPage) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-black gap-4">

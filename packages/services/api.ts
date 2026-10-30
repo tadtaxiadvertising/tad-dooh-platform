@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { supabase } from './supabase';
-import { writeSsrSessionCookie } from './session-cookies';
+import { writeSsrSessionCookie, writeAccessTokenCookie, clearAuthCookies } from './session-cookies';
 import {
   getValidSession,
   getLocalStorageToken,
@@ -183,8 +183,7 @@ export const login = (email: string, password: string) =>
     
     // Inject cookie for middleware — conditional Secure so it works on http (local) too
     if (typeof window !== 'undefined') {
-      const isSecure = window.location.protocol === 'https:';
-      document.cookie = `sb-access-token=${access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+      writeAccessTokenCookie(access_token);
     }
     
     return res.data;
@@ -216,7 +215,7 @@ export const logout = async () => {
   
   // Clear middleware cookie
   try {
-    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    clearAuthCookies();
   } catch (e) {
     console.warn('⚠️ Cookie clear failed:', e);
   }

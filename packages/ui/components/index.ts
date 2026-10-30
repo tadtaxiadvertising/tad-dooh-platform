@@ -21,3 +21,5 @@ export * from './TadInput';
 export * from './TadCard';
 export * from './TadProgress';
 export { default as CookieBanner } from './CookieBanner';
+export * from './ConsentAnalytics';
+export * from './CookiePolicy';

@@ -1,4 +1,6 @@
 'use client';
+import { hasCookieConsent, trackAnalyticsEvent } from '@tad/services/cookie-consent';
+import { writeAccessTokenCookie } from '@tad/services/session-cookies';
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@tad/services';
@@ -101,8 +103,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
       entityId: payload.entityId || payload.advertiserId || payload.user?.entityId || null,
     };
 
-    const isSecure = window.location.protocol === 'https:';
-    document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+    writeAccessTokenCookie(accessToken);
     localStorage.setItem(config.tokenKey, accessToken);
     localStorage.setItem(config.userKey, JSON.stringify(user));
 
@@ -144,8 +145,8 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
         persistApiSession(payload, result.data.email);
         clearRateLimit(result.data.email);
 
-        if (typeof window !== 'undefined' && (window as any).umami) {
-          (window as any).umami.track('auth_login_attempt', { status: 'success', portal: config.role });
+        if (hasCookieConsent('analytics')) {
+          trackAnalyticsEvent('auth_login_attempt', { status: 'success', portal: config.role });
         }
 
         toast.success('Acceso autorizado', { description: `Bienvenido al ${config.name}` });
@@ -188,13 +189,12 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
       clearRateLimit(result.data.email);
 
       // Umami Analytics Tracking
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('auth_login_attempt', { status: 'success', portal: config.role });
+      if (hasCookieConsent('analytics')) {
+        trackAnalyticsEvent('auth_login_attempt', { status: 'success', portal: config.role });
       }
 
       // Save Local Tokens
-      const isSecure = window.location.protocol === 'https:';
-      document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+      writeAccessTokenCookie(data.session.access_token);
       localStorage.setItem(config.tokenKey, data.session.access_token);
       localStorage.setItem(config.userKey, JSON.stringify(data.user));
 
@@ -222,8 +222,8 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
           : msg);
       }
 
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('auth_login_attempt', { status: 'error', portal: config.role });
+      if (hasCookieConsent('analytics')) {
+        trackAnalyticsEvent('auth_login_attempt', { status: 'error', portal: config.role });
       }
     } finally {
       setLoading(false);
@@ -279,8 +279,8 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
         sessionStorage.removeItem('tad_adv_referral_code');
       }
 
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('advertiser_registered', { portal: config.role, referred: Boolean(referralCode) });
+      if (hasCookieConsent('analytics')) {
+        trackAnalyticsEvent('advertiser_registered', { portal: config.role, referred: Boolean(referralCode) });
       }
 
       registration.onCreated?.(payload);
@@ -319,10 +319,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-      const { error: authError } = await circuitBreaker.execute<{
-        data: { email: string };
-        error: Error | null;
-      }>(() =>
+      const { error: authError } = await circuitBreaker.execute(() =>
         supabase.auth.resetPasswordForEmail(result.data.email, {
           redirectTo: `${origin}${config.callbackPath}?next=${encodeURIComponent(config.updatePasswordPath)}`,
         })
@@ -331,8 +328,8 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
       if (authError) throw authError;
 
       // Umami Analytics Tracking
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('auth_recovery_requested', { portal: config.role });
+      if (hasCookieConsent('analytics')) {
+        trackAnalyticsEvent('auth_recovery_requested', { portal: config.role });
       }
 
       setView('forgot-sent');

@@ -1,4 +1,17 @@
 import type { Session } from '@supabase/supabase-js';
+import { createChunks, stringToBase64URL, stringFromBase64URL, isChunkLike } from '@supabase/ssr';
+
+export const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+const cookieAttributes = (maxAge: number) => `; path=/; max-age=${maxAge}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+function browserCookieNames(): string[] {
+  return document.cookie.split(';').map(pair => pair.trim().split('=')[0]).filter(Boolean);
+}
+
+/** Host-only: never share a portal session with sibling subdomains. */
+export function writeAccessTokenCookie(token: string): void {
+  if (typeof window === 'undefined' || !token) return;
+  document.cookie = `sb-access-token=${encodeURIComponent(token)}${cookieAttributes(AUTH_COOKIE_MAX_AGE)}`;
+}
 
 /**
  * SSR cookie helpers for the Pages Router OAuth flow.
@@ -29,10 +42,7 @@ export function extractSupabaseRef(): string | null {
 
 /** base64url (URL-safe, no padding) — same encoding used by @supabase/ssr. */
 export function encodeBase64Url(value: string): string {
-  return btoa(value)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  return stringToBase64URL(value);
 }
 
 /** Compose the canonical @supabase/ssr cookie name for a given project ref. */
@@ -63,9 +73,13 @@ export function writeSsrSessionCookie(session: Session | null): void {
     user: session.user,
   };
 
-  const encoded = encodeBase64Url(JSON.stringify(payload));
-  const isSecure = window.location.protocol === 'https:';
-  document.cookie = `${ssrSessionCookieName(ref)}=${encoded}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+  const name = ssrSessionCookieName(ref);
+  const chunks = createChunks(name, `base64-${encodeBase64Url(JSON.stringify(payload))}`);
+  const retained = new Set(chunks.map(chunk => chunk.name));
+  browserCookieNames().filter(key => isChunkLike(key, name) && !retained.has(key)).forEach(key => {
+    document.cookie = `${key}=${cookieAttributes(0)}`;
+  });
+  chunks.forEach(chunk => { document.cookie = `${chunk.name}=${chunk.value}${cookieAttributes(AUTH_COOKIE_MAX_AGE)}`; });
 }
 
 /** Clear the canonical @supabase/ssr cookie, if any. */
@@ -73,5 +87,45 @@ export function clearSsrSessionCookie(): void {
   if (typeof window === 'undefined') return;
   const ref = extractSupabaseRef();
   if (!ref) return;
-  document.cookie = `${ssrSessionCookieName(ref)}=; path=/; max-age=0; SameSite=Lax`;
+  const name = ssrSessionCookieName(ref);
+  new Set([name, ...browserCookieNames().filter(key => isChunkLike(key, name))]).forEach(key => {
+    document.cookie = `${key}=${cookieAttributes(0)}`;
+  });
+}
+
+/** Remove auth only; preserve consent and offline queues. */
+export function clearAuthCookies(): void {
+  if (typeof window === 'undefined') return;
+  document.cookie = `sb-access-token=${cookieAttributes(0)}`;
+  clearSsrSessionCookie();
+  const ref = extractSupabaseRef();
+  if (ref) {
+    const verifier = `${ssrSessionCookieName(ref)}-code-verifier`;
+    browserCookieNames().filter(key => isChunkLike(key, verifier)).forEach(key => {
+      document.cookie = `${key}=${cookieAttributes(0)}`;
+    });
+  }
+}
+
+/** Read old unprefixed cookies and current SDK base64/chunk format. */
+export function readAccessTokenCookie(cookies: { name: string; value: string }[]): string | null {
+  const ref = extractSupabaseRef();
+  const name = ref ? ssrSessionCookieName(ref) : cookies.find(c => /^sb-.+-auth-token(?:\.0)?$/.test(c.name))?.name.replace(/\.0$/, '');
+  if (name) {
+    let value = cookies.find(c => c.name === name)?.value;
+    if (!value) {
+      const parts: string[] = [];
+      for (let i = 0; i < cookies.length; i++) {
+        const part = cookies.find(c => c.name === `${name}.${i}`)?.value;
+        if (!part) break;
+        parts.push(part);
+      }
+      value = parts.join('');
+    }
+    if (value) try {
+      const payload = JSON.parse(stringFromBase64URL(value.startsWith('base64-') ? value.slice(7) : value));
+      if (typeof payload.access_token === 'string' && payload.access_token) return payload.access_token;
+    } catch { /* Existing local JWT flows use the legacy cookie. */ }
+  }
+  return cookies.find(c => c.name === 'sb-access-token')?.value ?? null;
 }

@@ -16,4 +16,8 @@ export * from './LegalLayout';
 export * from './AuthCallback';
 export * from './UpdatePassword';
 export * from './ComingSoonScreen';
+export * from './TadButton';
+export * from './TadInput';
+export * from './TadCard';
+export * from './TadProgress';
 export { default as CookieBanner } from './CookieBanner';

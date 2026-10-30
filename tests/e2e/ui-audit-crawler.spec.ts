@@ -9,9 +9,8 @@ import * as path from 'path';
 // login. NO se hace ningún click mutativo (ni subir campañas, ni pagos, ni
 // transferencias). Sin clicks a ciegas sobre botones de acción.
 //
-// R9 (RBAC): Únicamente las credenciales documentadas de staging. Sin
-// credenciales de advertiser documentadas => el portal Advertiser se audita
-// SOLO en superficie (página de login), sin autenticar.
+// R9 (RBAC): Las credenciales se reciben únicamente mediante variables de
+// entorno de un entorno E2E aislado. Nunca hay fallbacks en el repositorio.
 //
 // Ejecución controlada (1 worker, 1 proyecto, 0 retries) para no agotar el
 // pool de conexiones de Prisma ni provocar OOM en contenedores de 512MB.
@@ -19,36 +18,30 @@ import * as path from 'path';
 
 const REPORT_PATH = path.resolve(process.cwd(), 'ui-audit-report.md');
 
-// Objetivos VPS (staging/documentado). Puertos internos equivalentes:
-// Admin=3002, Driver=3004, Advertiser=3000.
+// Los destinos también deben configurarse explícitamente para impedir que una
+// ejecución local apunte por accidente a producción.
 const ROLES = [
   {
     name: 'Admin',
-    url:
-      process.env.TAD_AUDIT_ADMIN_URL ||
-      'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host/admin/login',
-    user: process.env.TAD_AUDIT_ADMIN_USER || 'admin@tad.do',
-    pass: process.env.TAD_AUDIT_ADMIN_PASS || 'TadAdmin2026!',
+    url: process.env.TAD_AUDIT_ADMIN_URL?.trim() || null,
+    user: process.env.TAD_AUDIT_ADMIN_USER?.trim() || null,
+    pass: process.env.TAD_AUDIT_ADMIN_PASS?.trim() || null,
     // PortalAuth (admin): email + password
     phone: false,
     dashboardRegex: /\/admin\/dashboard/,
   },
   {
     name: 'Driver',
-    url:
-      process.env.TAD_AUDIT_DRIVER_URL ||
-      'https://proyecto-ia-tad-driver.rewvid.easypanel.host/driver/login',
-    user: process.env.TAD_AUDIT_DRIVER_USER || '8090000000',
-    pass: process.env.TAD_AUDIT_DRIVER_PASS || 'tad123',
+    url: process.env.TAD_AUDIT_DRIVER_URL?.trim() || null,
+    user: process.env.TAD_AUDIT_DRIVER_USER?.trim() || null,
+    pass: process.env.TAD_AUDIT_DRIVER_PASS?.trim() || null,
     // Driver: input type="tel" + password
     phone: true,
     dashboardRegex: /\/driver\/dashboard/,
   },
   {
     name: 'Advertiser',
-    url:
-      process.env.TAD_AUDIT_ADVERTISER_URL ||
-      'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host/advertiser/login',
+    url: process.env.TAD_AUDIT_ADVERTISER_URL?.trim() || null,
     user: null,
     pass: null,
     // Sin credenciales documentadas (R9): sólo mapeo de superficie.
@@ -72,6 +65,10 @@ test.describe('Autómata de Auditoría de UI', () => {
 
   for (const role of ROLES) {
     test(`Mapeo de UI para el rol: ${role.name}`, async ({ page }) => {
+      if (!role.url) {
+        test.skip(true, `Configure TAD_AUDIT_${role.name.toUpperCase()}_URL.`);
+        return;
+      }
       const errors: string[] = [];
       const pageErrors: string[] = [];
 

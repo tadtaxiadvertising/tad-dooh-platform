@@ -7,6 +7,7 @@ const DASHBOARD_PATH = "/driver/dashboard";
 const EXPECTED_ROLE = "DRIVER";
 const PUBLIC_PATHS = [
   LOGIN_PATH,
+  "/register",
   "/driver/auth/callback",
   "/driver/onboarding",
   "/check-in",

@@ -18,7 +18,15 @@
  *  ⚠️  KIOSK_002: Scroll habilitado (permite al pasajero navegar fuera del player)
  */
 import { test, expect, Page } from "@playwright/test";
-import { loginAsAdmin } from "./helpers/auth.helper";
+import {
+  getAdminCredentials,
+  loginAsAdmin,
+} from "./helpers/auth.helper";
+
+const hasAdminCredentials = Boolean(
+  process.env.TEST_ADMIN_EMAIL?.trim() &&
+    process.env.TEST_ADMIN_PASSWORD?.trim(),
+);
 
 // ──────────────────────────────────────────────────────────────────
 // TEST #3.1 — AUTENTICACIÓN SUPABASE
@@ -27,6 +35,8 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
   test("3.1 — Login exitoso con credenciales válidas y redirección al dashboard", async ({
     page,
   }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    const credentials = getAdminCredentials();
     // Capturamos hydration errors de Next.js 15
     const hydrationErrors: string[] = [];
     page.on("console", (msg) => {
@@ -70,8 +80,8 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
     }
 
     // Rellenamos el formulario
-    await page.fill('input[type="email"]', "admin@tad.do");
-    await page.fill('input[type="password"]', "TadAdmin2026!");
+    await page.fill('input[type="email"]', credentials.email);
+    await page.fill('input[type="password"]', credentials.password);
     await page.click('button[type="submit"]');
 
     // Esperamos redirección (Supabase puede tardar en validar)
@@ -99,8 +109,14 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
     await page.goto("/login");
     await page.waitForSelector('button[type="submit"]', { state: "visible" });
 
-    await page.fill('input[type="email"]', "noexiste@tad.do");
-    await page.fill('input[type="password"]', "WrongPassword123!");
+    await page.fill(
+      'input[type="email"]',
+      "nobody-" + Date.now() + "@example.invalid",
+    );
+    await page.fill(
+      'input[type="password"]',
+      "invalid-" + crypto.randomUUID(),
+    );
     await page.click('button[type="submit"]');
 
     // La página NO debe redirigir
@@ -138,6 +154,7 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
   test("3.3 — Sesión Supabase persiste tras F5 (refresh token no expira silenciosamente)", async ({
     page,
   }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     // Login
     await loginAsAdmin(page);
     const urlAfterLogin = page.url();
@@ -179,6 +196,8 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
 // TEST #3.2 — KILL-SWITCH (Regla de Negocio 402)
 // ──────────────────────────────────────────────────────────────────
 test.describe("Kill-Switch — Regla de Negocio 402 (RD$6,000)", () => {
+  test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+
   test("3.5 — Kill-Switch activa overlay al recibir 402 del backend", async ({
     page,
   }) => {
@@ -298,6 +317,7 @@ test.describe("Modo Kiosco — Comportamiento FullyKiosk Android", () => {
   test("3.7 — La UI ocupa el 100% de la pantalla en viewport 1280x800", async ({
     page,
   }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     await loginAsAdmin(page);
 
     // ✅ Verificamos que body y html tienen height: 100% y overflow: hidden
@@ -338,6 +358,7 @@ test.describe("Modo Kiosco — Comportamiento FullyKiosk Android", () => {
   test("3.8 — No hay elementos fijos del browser sobreponiendo la UI (navegación, scrollbars)", async ({
     page,
   }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     await loginAsAdmin(page);
 
     // Verificamos que no hay scrollbars visibles (kiosco debe tener overflow: hidden)

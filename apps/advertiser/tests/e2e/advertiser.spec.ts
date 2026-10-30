@@ -9,18 +9,26 @@ import { test, expect, Page } from "@playwright/test";
 // ──────────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────────
-async function loginAsAdvertiser(
-  page: Page,
-  email = "advertiser@tad.do",
-  password = "Advertiser2026!",
-) {
+const advertiserEmail = process.env.TEST_ADVERTISER_EMAIL?.trim();
+const advertiserPassword = process.env.TEST_ADVERTISER_PASSWORD?.trim();
+const hasAdvertiserCredentials = Boolean(
+  advertiserEmail && advertiserPassword,
+);
+
+async function loginAsAdvertiser(page: Page) {
+  if (!advertiserEmail || !advertiserPassword) {
+    throw new Error(
+      "Missing TEST_ADVERTISER_EMAIL or TEST_ADVERTISER_PASSWORD. " +
+        "Configure isolated E2E credentials outside source control.",
+    );
+  }
   await page.goto("/login");
   await page.waitForSelector('button[type="submit"]', {
     state: "visible",
     timeout: 15_000,
   });
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
+  await page.fill('input[type="email"]', advertiserEmail);
+  await page.fill('input[type="password"]', advertiserPassword);
   await page.click('button[type="submit"]');
   await expect(page).toHaveURL(/\/p\//, { timeout: 25_000 });
 }
@@ -30,6 +38,10 @@ async function loginAsAdvertiser(
 // ──────────────────────────────────────────────────────────────────
 test.describe("Advertiser Portal — Autenticación", () => {
   test("Login exitoso redirige al portal de anunciantes", async ({ page }) => {
+    test.skip(
+      !hasAdvertiserCredentials,
+      "Configure isolated advertiser E2E credentials.",
+    );
     await loginAsAdvertiser(page);
     await expect(
       page.locator('h1, [data-testid="advertiser-dashboard"]'),
@@ -39,8 +51,14 @@ test.describe("Advertiser Portal — Autenticación", () => {
   test("Login fallido muestra error", async ({ page }) => {
     await page.goto("/login");
     await page.waitForSelector('button[type="submit"]', { state: "visible" });
-    await page.fill('input[type="email"]', "wrong@tad.do");
-    await page.fill('input[type="password"]', "WrongPass123!");
+    await page.fill(
+      'input[type="email"]',
+      "nobody-" + Date.now() + "@example.invalid",
+    );
+    await page.fill(
+      'input[type="password"]',
+      "invalid-" + crypto.randomUUID(),
+    );
     await page.click('button[type="submit"]');
     await page.waitForTimeout(3000);
     expect(page.url()).toContain("/login");
@@ -53,6 +71,11 @@ test.describe("Advertiser Portal — Autenticación", () => {
 });
 
 test.describe("Advertiser Portal — Dashboard", () => {
+  test.skip(
+    !hasAdvertiserCredentials,
+    "Configure isolated advertiser E2E credentials.",
+  );
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdvertiser(page);
   });
@@ -86,6 +109,11 @@ test.describe("Advertiser Portal — Dashboard", () => {
 });
 
 test.describe("Advertiser Portal — Creación de Campaña", () => {
+  test.skip(
+    !hasAdvertiserCredentials,
+    "Configure isolated advertiser E2E credentials.",
+  );
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdvertiser(page);
   });
@@ -146,6 +174,11 @@ test.describe("Advertiser Portal — Creación de Campaña", () => {
 });
 
 test.describe("Advertiser Portal — Responsive Mobile", () => {
+  test.skip(
+    !hasAdvertiserCredentials,
+    "Configure isolated advertiser E2E credentials.",
+  );
+
   test("Portal funciona correctamente en viewport móvil", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 851 });
     await loginAsAdvertiser(page);

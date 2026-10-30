@@ -16,6 +16,7 @@ import { CookieBanner } from "@tad/ui";
 
 const PUBLIC_PAGES = [
   "/login",
+  "/register",
   "/admin/login",
   "/advertiser/login",
   "/driver/login",

@@ -9,18 +9,24 @@ import { test, expect, Page } from "@playwright/test";
 // ──────────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────────
-async function loginAsAdmin(
-  page: Page,
-  email = "admin@tad.do",
-  password = "TadAdmin2026!",
-) {
+const adminEmail = process.env.TEST_ADMIN_EMAIL?.trim();
+const adminPassword = process.env.TEST_ADMIN_PASSWORD?.trim();
+const hasAdminCredentials = Boolean(adminEmail && adminPassword);
+
+async function loginAsAdmin(page: Page) {
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      "Missing TEST_ADMIN_EMAIL or TEST_ADMIN_PASSWORD. " +
+        "Configure isolated E2E credentials outside source control.",
+    );
+  }
   await page.goto("/login");
   await page.waitForSelector('button[type="submit"]', {
     state: "visible",
     timeout: 15_000,
   });
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
+  await page.fill('input[type="email"]', adminEmail);
+  await page.fill('input[type="password"]', adminPassword);
   await page.click('button[type="submit"]');
   await expect(page).toHaveURL(/\/(dashboard|fleet|campaigns|finance)/, {
     timeout: 25_000,
@@ -32,6 +38,7 @@ async function loginAsAdmin(
 // ──────────────────────────────────────────────────────────────────
 test.describe("Admin Dashboard — Autenticación", () => {
   test("Login exitoso con credenciales válidas", async ({ page }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     const hydrationErrors: string[] = [];
     page.on("console", (msg) => {
       if (
@@ -53,8 +60,14 @@ test.describe("Admin Dashboard — Autenticación", () => {
   test("Login fallido muestra mensaje de error", async ({ page }) => {
     await page.goto("/login");
     await page.waitForSelector('button[type="submit"]', { state: "visible" });
-    await page.fill('input[type="email"]', "wrong@tad.do");
-    await page.fill('input[type="password"]', "WrongPass123!");
+    await page.fill(
+      'input[type="email"]',
+      "nobody-" + Date.now() + "@example.invalid",
+    );
+    await page.fill(
+      'input[type="password"]',
+      "invalid-" + crypto.randomUUID(),
+    );
     await page.click('button[type="submit"]');
     await page.waitForTimeout(3000);
     expect(page.url()).toContain("/login");
@@ -71,6 +84,7 @@ test.describe("Admin Dashboard — Autenticación", () => {
   });
 
   test("Sesión persiste tras refresh (F5)", async ({ page }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     await loginAsAdmin(page);
     const urlAfterLogin = page.url();
     await page.reload({ waitUntil: "networkidle" });
@@ -84,6 +98,7 @@ test.describe("Admin Dashboard — Autenticación", () => {
   test("Login escribe cookie canónica @supabase/ssr (sb-<ref>-auth-token)", async ({
     page,
   }) => {
+    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
     // REGRESIÓN: tras autenticarse, el middleware SSR debe poder leer una
     // sesión server-side (getUser). Sin esta cookie, createServerClient no
     // puede validar/refrescar la sesión y el flujo rompe tras F5
@@ -125,6 +140,8 @@ test.describe("Admin Dashboard — Autenticación", () => {
 });
 
 test.describe("Admin Dashboard — Navegación y Layout", () => {
+  test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

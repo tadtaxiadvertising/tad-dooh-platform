@@ -15,10 +15,12 @@ describe("AuthService bootstrap sync", () => {
     })),
   };
   const originalSecret = process.env.BOOTSTRAP_SECRET;
+  const previousEnabled = process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.BOOTSTRAP_SECRET = "test-secret";
+    process.env.BOOTSTRAP_MAINTENANCE_ENABLED = "true";
     prisma.user.findMany.mockResolvedValue([]);
     prisma.advertiser.findMany.mockResolvedValue([
       { id: "adv-1", email: "advertiser@example.com" },
@@ -28,6 +30,8 @@ describe("AuthService bootstrap sync", () => {
   });
 
   afterAll(() => {
+    if (previousEnabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+    else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = previousEnabled;
     if (originalSecret === undefined) delete process.env.BOOTSTRAP_SECRET;
     else process.env.BOOTSTRAP_SECRET = originalSecret;
   });
@@ -70,4 +74,14 @@ describe("AuthService bootstrap sync", () => {
     });
     expect(listUsers).not.toHaveBeenCalled();
   });
+  it.each([undefined, "false", "TRUE"])("rejects sync when maintenance flag is %s before DB or Auth access", async (enabled) => {
+    if (enabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+    else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = enabled;
+    await expect(service().syncUsersToSupabaseAuth("test-secret"))
+      .rejects.toMatchObject({ status: 403 });
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
+    expect(prisma.advertiser.findMany).not.toHaveBeenCalled();
+    expect(supabase.getClient).not.toHaveBeenCalled();
+  });
+
 });

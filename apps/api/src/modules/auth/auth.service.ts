@@ -446,6 +446,11 @@ export class AuthService {
   async syncUsersToSupabaseAuth(
     bootstrapSecret: string,
   ): Promise<{ synced: number; errors: string[] }> {
+    // Public legacy maintenance routes are disabled unless an operator explicitly
+    // enables them. The shared secret alone must not expose Auth admin actions.
+    if (process.env.BOOTSTRAP_MAINTENANCE_ENABLED !== "true") {
+      throw new ForbiddenException("Bootstrap maintenance is disabled");
+    }
     const expectedSecret = process.env.BOOTSTRAP_SECRET;
     if (!expectedSecret || bootstrapSecret !== expectedSecret) {
       throw new ForbiddenException("Invalid bootstrap secret");
@@ -560,6 +565,11 @@ export class AuthService {
     email: string,
     bootstrapSecret: string,
   ): Promise<{ confirmed: boolean }> {
+    // Public legacy maintenance routes are disabled unless an operator explicitly
+    // enables them. The shared secret alone must not expose Auth admin actions.
+    if (process.env.BOOTSTRAP_MAINTENANCE_ENABLED !== "true") {
+      throw new ForbiddenException("Bootstrap maintenance is disabled");
+    }
     const expectedSecret = process.env.BOOTSTRAP_SECRET;
     if (!expectedSecret || bootstrapSecret !== expectedSecret) {
       throw new ForbiddenException("Invalid bootstrap secret");

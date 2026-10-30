@@ -45,27 +45,62 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
       errorCode = exception.code;
 
       switch (exception.code) {
+        case "P2000": {
+          status = HttpStatus.BAD_REQUEST;
+          const field = (exception.meta?.column_name as string) || "campo";
+          message = `Valor demasiado largo para: ${field}.`;
+          break;
+        }
+        case "P2001": {
+          status = HttpStatus.NOT_FOUND;
+          message = "Registro no encontrado para la operación solicitada.";
+          break;
+        }
         case "P2002": {
           status = HttpStatus.CONFLICT;
           const target = (exception.meta?.target as string[]) || [];
           message = `Ya existe un registro con este/a: ${target.join(", ")}.`;
           break;
         }
-        case "P2003":
+        case "P2003": {
           status = HttpStatus.BAD_REQUEST;
-          message = `Error de relación: Verifique que el ID vinculado exista (ej: ID Tablet).`;
+          message = `Error de relación: verifique que el ID vinculado exista.`;
           break;
-        case "P2025":
+        }
+        case "P2004": {
+          status = HttpStatus.BAD_REQUEST;
+          message = "Error de restricción en la base de datos.";
+          break;
+        }
+        case "P2011": {
+          status = HttpStatus.BAD_REQUEST;
+          const field = (exception.meta?.field as string) || "campo";
+          message = `Campo obligatorio faltante: ${field}.`;
+          break;
+        }
+        case "P2014": {
+          status = HttpStatus.BAD_REQUEST;
+          message = "Error de relación: el registro referenciado no existe.";
+          break;
+        }
+        case "P2025": {
           status = HttpStatus.NOT_FOUND;
           message = "Registro no encontrado.";
           break;
+        }
+        default: {
+          status = HttpStatus.INTERNAL_SERVER_ERROR;
+          message = `Error de base de datos: ${exception.code}.`;
+        }
       }
     } else if (isPrismaClientValidationError(exception)) {
       this.logger.error(`Prisma Validation Error: ${exception.message}`);
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;
     } else {
-      this.logger.error(exception);
+      // No es error de Prisma: log y deja que GlobalExceptionFilter lo maneje
+      this.logger.error("Non-Prisma exception in Prisma filter", exception);
+      throw exception;
     }
 
     response.status(status).json({

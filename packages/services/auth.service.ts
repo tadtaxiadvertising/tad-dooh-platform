@@ -1,3 +1,4 @@
+import { clearAuthCookies } from './session-cookies';
 /**
  * Auth Service - Centralized session and token management
  * Follows Single Responsibility Principle
@@ -183,7 +184,7 @@ export const performLogout = async (currentPath: string): Promise<void> => {
 
   // Clear access token cookie (middleware)
   try {
-    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    clearAuthCookies();
   } catch (e) {
     console.warn('⚠️ Cookie clear failed:', e);
   }

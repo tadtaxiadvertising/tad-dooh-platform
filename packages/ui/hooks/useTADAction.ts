@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { hasCookieConsent } from '@tad/services/cookie-consent';
 
 interface ActionOptions {
   onSuccess?: () => void;
@@ -21,6 +22,7 @@ async function logTelemetry(
   status: 'SUCCESS' | 'FAILURE',
   errorMsg?: string
 ) {
+  if (!hasCookieConsent('analytics')) return;
   try {
     // Lazy import: supabase is only resolved when telemetry is actually needed.
     // This prevents a missing/invalid NEXT_PUBLIC_SUPABASE_URL from crashing
@@ -29,7 +31,7 @@ async function logTelemetry(
     const { error } = await supabase.from('analytics_events').insert([{
       event_type: 'CRITICAL_ACTION',
       device_id: 'ADMIN_CONSOLE',
-      event_data: { action: actionName, status, ...(errorMsg ? { error: errorMsg } : {}) },
+      event_data: { action: actionName, status },
       occurred_at: new Date().toISOString(),
       received_at: new Date().toISOString(),
     }]);

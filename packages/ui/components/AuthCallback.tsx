@@ -1,8 +1,10 @@
 'use client';
+import { hasCookieConsent, trackAnalyticsEvent } from '@tad/services/cookie-consent';
+import { writeAccessTokenCookie, clearAuthCookies } from '@tad/services/session-cookies';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { ShieldCheck, Loader2, AlertTriangle } from 'lucide-react';
-import { PortalConfig, getPortalConfig, supabase, writeSsrSessionCookie, clearSsrSessionCookie } from '@tad/services';
+import { PortalConfig, getPortalConfig, supabase, writeSsrSessionCookie } from '@tad/services';
 
 interface AuthCallbackProps {
   config?: PortalConfig;
@@ -205,8 +207,7 @@ async function exchangeWithBackend(
       entityId: null,
     };
 
-    const isSecure = window.location.protocol === 'https:';
-    document.cookie = `sb-access-token=${token}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+    writeAccessTokenCookie(token);
     localStorage.setItem(config.tokenKey, token);
     localStorage.setItem(config.userKey, JSON.stringify(user));
     if (refresh) {
@@ -243,8 +244,8 @@ async function exchangeWithBackend(
     }
 
     // Track success for analytics
-    if (typeof window !== 'undefined' && (window as any).umami) {
-      (window as any).umami.track('auth_login_attempt', {
+    if (hasCookieConsent('analytics')) {
+      trackAnalyticsEvent('auth_login_attempt', {
         status: 'success',
         portal: config.role,
         method: 'google',
@@ -266,8 +267,7 @@ async function exchangeWithBackend(
       try { localStorage.removeItem(key); } catch {}
     });
     // Clear sb-access-token and canonical SSR cookies
-    try { document.cookie = 'sb-access-token=; path=/; max-age=0; SameSite=Lax'; } catch {}
-    try { clearSsrSessionCookie(); } catch {}
+    try { clearAuthCookies(); } catch {}
     router.replace(`${config.loginPath}?error=${encodeURIComponent(message)}`);
   }
 }

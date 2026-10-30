@@ -1,3 +1,4 @@
+import { writeAccessTokenCookie } from '@tad/services/session-cookies';
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -48,8 +49,7 @@ function persistSession(
     phone: payload?.phone || null,
   };
 
-  const isSecure = window.location.protocol === "https:";
-  document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+  writeAccessTokenCookie(accessToken);
   // A7: NO guardar refresh token en localStorage. Access token en memoria via context.
   localStorage.setItem("tad_advertiser_token", accessToken);
   localStorage.setItem("tad_advertiser_user", JSON.stringify(user));

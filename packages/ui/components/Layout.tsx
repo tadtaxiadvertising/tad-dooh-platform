@@ -1,4 +1,5 @@
 'use client';
+import { clearAuthCookies } from '@tad/services/session-cookies';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
@@ -194,7 +195,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('tad_driver_user');
 
     // 2. Kill middleware cookie
-    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    clearAuthCookies();
 
     // 3. Sign out from Supabase (may fail if session was JWT-only, so wrap in try-catch)
     try {

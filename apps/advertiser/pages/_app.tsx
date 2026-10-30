@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { logger } from "@tad/logging";
 import { PaymentLockOverlay } from "@tad/ui";
-import { CookieBanner } from "@tad/ui";
+import { CookieBanner, ConsentAnalytics } from "@tad/ui";
 
 // Client-only: avoids useQueryClient() during SSR prerendering
 const AntigravitySync = dynamic(() => import("../components/AntigravitySync"), {
@@ -76,29 +76,14 @@ export default function App(props: AppProps) {
       }),
   );
 
-  // Check for cookie preferences on client mount
-  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("tad_cookie_preferences");
-      setHasShownCookieBanner(!!stored);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AntigravitySync />
       <AppWrapper {...props} queryClient={queryClient} />
       <ToasterClient richColors position="top-right" theme="dark" />
       <PaymentLockOverlay />
-      {typeof window !== "undefined" && !hasShownCookieBanner && (
-        <CookieBanner
-          basePath="/advertiser"
-          onAccept={() => setHasShownCookieBanner(true)}
-          onReject={() => setHasShownCookieBanner(true)}
-        />
-      )}
+      <CookieBanner />
+      <ConsentAnalytics />
     </QueryClientProvider>
   );
 }

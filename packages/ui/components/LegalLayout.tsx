@@ -136,9 +136,6 @@ export function LegalLayout({
 
             <div className="mt-10 pt-6 border-t border-white/5 text-center text-[11px] text-white/30">
               <p>© {new Date().getFullYear()} TAD Taxi Advertising S.R.L. — Todos los derechos reservados.</p>
-              <p className="mt-1">
-                RNC: [Tu-RNC] · Av. [Tu-Dirección], Santo Domingo, República Dominicana
-              </p>
             </div>
           </footer>
         </main>

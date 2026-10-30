@@ -1,3 +1,4 @@
+import { writeAccessTokenCookie } from '@tad/services/session-cookies';
 import React, { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -65,7 +66,7 @@ export default function DriverLoginPage() {
         if (!accessToken) {
           throw new Error("El servidor no devolvió un token de acceso válido.");
         }
-        const isSecure = window.location.protocol === "https:";
+
         const storedUser = {
           id: payload.driverId || payload.entityId || payload.user?.id || "",
           email: payload.email || phone,
@@ -84,7 +85,7 @@ export default function DriverLoginPage() {
           bankAccountConfigured: Boolean(payload.bankAccountConfigured),
         };
 
-        document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+        writeAccessTokenCookie(accessToken);
         // A7: NO guardar refresh token en localStorage. Access token en memoria via context.
         localStorage.setItem("tad_driver_token", accessToken);
         localStorage.setItem("tad_driver_user", JSON.stringify(storedUser));

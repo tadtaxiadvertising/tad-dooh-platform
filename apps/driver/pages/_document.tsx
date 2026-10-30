@@ -39,17 +39,7 @@ export default function Document() {
         <meta name="format-detection" content="telephone=no" />
         <link rel="shortcut icon" href="/favicon.svg" />
 
-        {/* ── Umami Analytics (Privacy-first, solo si está configurado) ── */}
-        {process.env.NEXT_PUBLIC_UMAMI_ID && (
-          <script
-            async
-            src={
-              process.env.NEXT_PUBLIC_UMAMI_URL ||
-              "https://cloud.umami.is/script.js"
-            }
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
-          />
-        )}
+
       </Head>
       <body className="antialiased bg-[#0a0a0a]">
         <Main />

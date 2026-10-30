@@ -47,10 +47,7 @@ export function UpdatePassword({ config: externalConfig }: UpdatePasswordProps) 
     const circuitBreaker = getAuthCircuitBreaker();
 
     try {
-      const { error: authError } = await circuitBreaker.execute<{
-        data: { id: string; email: string; password: string };
-        error: Error | null;
-      }>(() =>
+      const { error: authError } = await circuitBreaker.execute(() =>
         supabase.auth.updateUser({ password: result.data.password })
       );
 

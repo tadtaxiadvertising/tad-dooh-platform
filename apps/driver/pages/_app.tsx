@@ -12,7 +12,7 @@ import { logger } from "@tad/logging";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { NotificationToast } from "@/components/Notifications/NotificationToast";
 import { NotificationCenter } from "@/components/Notifications/NotificationCenter";
-import { CookieBanner } from "@tad/ui";
+import { CookieBanner, ConsentAnalytics } from "@tad/ui";
 
 const PUBLIC_PAGES = [
   "/login",
@@ -99,26 +99,12 @@ export default function App(props: AppProps) {
       }),
   );
 
-  const [hasShownCookieBanner, setHasShownCookieBanner] = useState(true);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("tad_cookie_preferences");
-      setHasShownCookieBanner(!!stored);
-    }
-  }, []);
-
   return (
     <RootProviders queryClient={queryClient}>
       <AppWrapper {...props} />
       <Toaster richColors position="top-right" theme="dark" />
-      {typeof window !== "undefined" && !hasShownCookieBanner && (
-        <CookieBanner
-          basePath="/driver"
-          onAccept={() => setHasShownCookieBanner(true)}
-          onReject={() => setHasShownCookieBanner(true)}
-        />
-      )}
+      <CookieBanner />
+      <ConsentAnalytics />
     </RootProviders>
   );
 }

@@ -7,6 +7,7 @@ export * from './supabase';
 export * from './mobile-gateway';
 export * from './auth-schemas';
 export * from './session-cookies';
+export * from './cookie-consent';
 export * from './circuit-breaker';
 export * from './rate-limiter';
 export default api;

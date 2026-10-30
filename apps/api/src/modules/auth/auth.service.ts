@@ -614,49 +614,66 @@ export class AuthService {
   }
 
   async registerDriver(data: {
-    name: string;
-    phone: string;
-    password: string;
-    vehicleModel?: string;
-    licensePlate?: string;
-  }) {
-    // Validate at the service boundary; the public controller uses a plain object DTO.
-    if (typeof data.name !== "string" || !data.name.trim() ||
-        typeof data.phone !== "string" || !data.phone.trim() ||
-        typeof data.password !== "string" || data.password.length < 8) {
-      throw new BadRequestException("Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.");
-    }
-    const existingDriver = await this.prisma.driver.findUnique({
-      where: { phone: data.phone },
-    });
-    if (existingDriver) {
-      throw new HttpException(
-        "Ya existe un chofer con ese teléfono",
-        HttpStatus.CONFLICT,
-      );
-    }
+      name: string;
+      phone: string;
+      password: string;
+      vehicleModel?: string;
+      licensePlate?: string;
+    }) {
+      // Validate at the service boundary; the public controller uses a plain object DTO.
+      if (typeof data.name !== "string" || !data.name.trim() ||
+          typeof data.phone !== "string" || !data.phone.trim() ||
+          typeof data.password !== "string" || data.password.length < 8) {
+        throw new BadRequestException("Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.");
+      }
+      const existingDriver = await this.prisma.driver.findUnique({
+        where: { phone: data.phone },
+      });
+      if (existingDriver) {
+        throw new HttpException(
+          "Ya existe un chofer con ese teléfono",
+          HttpStatus.CONFLICT,
+        );
+      }
 
-    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    const driver = await this.prisma.driver.create({
-      data: {
-        fullName: data.name,
-        phone: data.phone,
-        taxiPlate: data.vehicleModel || null,
-        licensePlate: data.licensePlate || null,
-        password: hashedPassword,
-        status: BUSINESS_RULES.STATUS.DRIVER.INITIAL,
-        subscriptionPaid: false,
-        contractAccepted: false,
-        onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
-      },
-    });
+      let hashedPassword: string;
+      try {
+        hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+      } catch (err) {
+        this.logger.error("bcrypt.hash failed", err);
+        throw new HttpException(
+          "Error procesando la contraseña. Intente nuevamente.",
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
 
-    // Registration does not create a Supabase Auth session. Never issue a local
-    // JWT that JwtStrategy will subsequently reject via Supabase getUser().
-    return {
-      success: true,
-      message: "Registro completado. Inicia sesión para continuar.",
-      driverId: driver.id,
-    };
-  }
+      let driver;
+      try {
+        driver = await this.prisma.driver.create({
+          data: {
+            fullName: data.name,
+            phone: data.phone,
+            taxiPlate: data.vehicleModel || null,
+            licensePlate: data.licensePlate || null,
+            password: hashedPassword,
+            status: BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+            subscriptionPaid: false,
+            contractAccepted: false,
+            onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
+          },
+        });
+      } catch (err) {
+        // Log completo para diagnóstico; el filtro Prisma mapeará P2002/P2003/P2025
+        this.logger.error("prisma.driver.create failed", err);
+        throw err;
+      }
+
+      // Registration does not create a Supabase Auth session. Never issue a local
+      // JWT that JwtStrategy will subsequently reject via Supabase getUser().
+      return {
+        success: true,
+        message: "Registro completado. Inicia sesión para continuar.",
+        driverId: driver.id,
+      };
+    }
 }

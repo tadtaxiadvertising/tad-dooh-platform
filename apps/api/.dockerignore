@@ -6,6 +6,7 @@ error_logs.json
 *_output.txt
 *.mp4
 *.sql
+!prisma/migrations/**/*.sql
 *.js
 !src/**/*.js
 !prisma/**/*.js

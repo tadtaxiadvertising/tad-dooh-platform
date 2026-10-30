@@ -1,5 +1,5 @@
 #!/bin/sh
-set +e
+set -eu
 echo "[entrypoint] === TAD API ENTRYPOINT ==="
 echo "[entrypoint] NODE_ENV=$NODE_ENV"
 echo "[entrypoint] PORT=$PORT"
@@ -13,6 +13,10 @@ if [ -z "$JWT_SECRET" ]; then
   echo "[entrypoint] 🚨 Container will not start without a persistent JWT_SECRET."
   exit 1
 fi
+
+echo "[entrypoint] Applying Prisma migrations..."
+pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
+echo "[entrypoint] Prisma migrations applied."
 
 echo "[entrypoint] Starting node dist/main.js ..."
 exec node --expose-gc dist/main.js

@@ -17,6 +17,9 @@ RUN pnpm install --filter api... --filter @tad/impact-calculator...
 # 2. Copy all source files
 COPY . .
 
+# Fail the image build if Prisma migrations were omitted from the Docker context.
+RUN test -f ./apps/api/prisma/migrations/20261030_add_driver_auth_user_id/migration.sql
+
 # 3. Build shared packages first (using source files just copied)
 RUN pnpm --filter @tad/impact-calculator run build
 

@@ -133,6 +133,28 @@ El asesor posterior de Supabase solo añadió avisos informativos de RLS sin pol
 - **Base de datos:** estrategia de avance correctivo. Conservar las tablas nuevas, `auth_user_id` y datos que se creen después; un revert de Git no elimina ni revierte SQL. El parche GPS conserva los índices originales, y la prueba verifica preservación de filas incluso cuando el índice nuevo no puede crearse.
 - **Historial:** usar Prisma CLI y conservar los registros de intentos. No falsificar una finalización para arrancar la API.
 - **Seguridad:** no cambiar secretos, permisos de acceso de usuarios, pagos ni políticas de otras tablas. RLS de las tablas nuevas limita las operaciones a los roles privilegiados del backend.
-- **Dependencias externas:** la recuperación de base de datos y el arranque quedaron verificados. El parche fuente se conserva en la rama de entrega para usar los SQL y el modelo corregidos en próximos builds; no se verificó una imagen nueva reconstruida con esos archivos. `tad.api.ibusiness.com.do` sigue presentando un certificado inválido; la API por EasyPanel y el proxy Driver sí pasaron TLS y HTTP 200.
+- **Dependencias externas:** la recuperación de base de datos y el arranque quedaron verificados. El parche fuente se conserva en la rama de entrega para usar los SQL y el modelo corregidos en próximos builds; no se verificó una imagen nueva reconstruida con esos archivos. El dominio personalizado se corrigió y verificó posteriormente, según la evidencia siguiente.
 
-**Estado final:** VERIFICADO para el incidente de arranque P3009/502 y el servicio de registro. El POST válido no se dejó persistir por HTTP; se probó el servicio real en transacción revertida. El dominio/certificado alternativo y la distribución del parche fuente son seguimientos separados.
+## Seguimiento: dominio y certificado de la API
+
+Verificado el **30 de octubre de 2026, 13:20 (America/La_Paz)**, después de que el usuario autorizara continuar y abriera su sesión de EasyPanel en `https://ibusiness.com.do/`.
+
+**Causa confirmada en el panel:** el servicio `proyecto_ia / tad-api` solo tenía asociado `proyecto-ia-tad-api.rewvid.easypanel.host`. El registro A de `tad.api.ibusiness.com.do` ya resolvía a `213.199.55.181`, igual que Driver, pero faltaba la ruta para ese hostname. La comprobación previa fallaba con validación TLS normal.
+
+**Cambio aplicado:** añadir un dominio al mismo servicio, host `tad.api.ibusiness.com.do`, HTTPS activado, ruta pública `/`, destino HTTP al puerto `3000`, ruta interna `/`. Se mantuvieron el dominio generado, su condición de dominio principal y el emisor de certificados predeterminado. No se cambió DNS, entorno, imagen ni configuración de los otros servicios; no fue necesario reiniciar la API.
+
+| Comprobación posterior | Resultado observado |
+| --- | --- |
+| TLS con validación de cadena y hostname habilitada | Autorizado; CN y SAN `tad.api.ibusiness.com.do`; emisor Let's Encrypt YR2; vence el 28 de enero de 2027 a las 16:20:50 UTC |
+| `https://tad.api.ibusiness.com.do/api/health` | HTTP 200, `status: UP` |
+| `https://tad.api.ibusiness.com.do/api/v1/health/full` | HTTP 200, `db.connected: true` |
+| Dominio generado de EasyPanel, `/api/health` | HTTP 200 |
+| Proxy Driver, `/api/proxy/health/full` | HTTP 200, `db.connected: true` |
+| Preflight OPTIONS de registro con origen Driver | HTTP 204; origen Driver y método POST permitidos |
+| POST de registro con cuerpo vacío en el dominio personalizado | HTTP 400 de validación, sin crear cuentas |
+
+El certificado tardó unos segundos en emitirse después de guardar el dominio: la primera sonda todavía fallaba TLS y las siguientes pasaron con validación estricta. Un helper de lectura del certificado falló al consultarlo después de cerrar la respuesta; se corrigió para capturarlo al recibirla. No se desactivó la validación TLS para estas comprobaciones.
+
+**Reversión:** quitar únicamente el dominio recién añadido desde `tad-api → Domains`, conservando el dominio generado y el proxy interno. Esto restablecería el fallo del dominio personalizado, por lo que solo procede si se necesita retirar esa asociación. La renovación automática queda a cargo de EasyPanel/Traefik.
+
+**Estado final:** VERIFICADO para el incidente de arranque P3009/502, el servicio de registro y el dominio HTTPS personalizado. El POST válido no se dejó persistir por HTTP; se probó previamente el servicio real en transacción revertida. El parche fuente se publicó en `d28ff3cc`; reconstruir y verificar una imagen con ese código sigue fuera de lo comprobado en esta recuperación.

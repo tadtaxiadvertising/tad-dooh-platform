@@ -167,7 +167,7 @@ DNS pointing to the VPS is **not sufficient**: each hostname must also be attach
 - DNS resolution failure: add/fix the record at the DNS provider before retrying certificate issuance.
 - A trusted certificate and HTTP 200 prove only TLS/routing/HTTP reachability. Also test API health, CORS preflight, authentication and player-to-API communication.
 
-Use the official [EasyPanel custom service domain guide](https://easypanel.io/docs/guides/custom-service-domain) for DNS and domain assignment details.
+Use the official [EasyPanel App service Domains guide](https://easypanel.io/docs/services/app#domains) for hostname, internal protocol, port and HTTPS settings. The separate Custom Service Domain feature controls automatic service hostname assignment.
 
 ## 3. DEPLOYMENT PROCEDURES
 

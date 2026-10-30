@@ -26,7 +26,7 @@ const rawBackendUrl =
   process.env.BACKEND_INTERNAL_URL ||
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://proyecto-ia-tad-api.rewvid.easypanel.host";
+  "https://tad.api.ibusiness.com.do/api/v1";
 
 // Strip any trailing /api, /api/v1, or / to get a clean base
 const BACKEND_BASE = rawBackendUrl
@@ -228,7 +228,7 @@ export default async function handler(
           BACKEND_BASE.includes("localhost"))
       ) {
         const publicFallback =
-          "https://proyecto-ia-tad-api.rewvid.easypanel.host/api/v1";
+          "https://tad.api.ibusiness.com.do/api/v1";
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         console.warn(
           `[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage} -> ${fallbackUrl}`,

@@ -19,7 +19,7 @@
 -- =============================================================================
 
 -- 1) Crear tabla de rate limiting con índice único
-CREATE TABLE IF NOT EXISTS rate_limit_windows (
+CREATE TABLE IF NOT EXISTS public.rate_limit_windows (
   id              TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   device_id       TEXT NOT NULL,
   window_start    TIMESTAMPTZ NOT NULL,
@@ -28,9 +28,12 @@ CREATE TABLE IF NOT EXISTS rate_limit_windows (
     UNIQUE (device_id, window_start)
 );
 
+-- Estado interno del backend: las claves públicas no pueden modificar contadores.
+ALTER TABLE public.rate_limit_windows ENABLE ROW LEVEL SECURITY;
+
 -- Índice de apoyo para queries por device_id
 CREATE INDEX IF NOT EXISTS idx_rate_limit_device_window
-  ON rate_limit_windows (device_id, window_start);
+  ON public.rate_limit_windows (device_id, window_start);
 
 -- 2. (Opcional) Insertar fila de seed para un device de prueba
 --    (Solo si hay necesidad de pre-seeds; normalmente el código inserta dinámicamente)

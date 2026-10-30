@@ -45,7 +45,7 @@ Todas las credenciales están centralizadas en EasyPanel bajo **Secrets**. **NUN
 | Secret | Service | Description |
 | --- | --- | --- |
 | `DATABASE_URL` | tad-api | Connection Pool (puerto 6543) + `?pgbouncer=true&connection_limit=5` |
-| `DIRECT_URL` | tad-api | Direct Connection (puerto 5432) para migraciones |
+| `DIRECT_URL` | tad-api | Obligatoria al arrancar Docker: Session pooler o Direct Connection (puerto 5432) para migraciones |
 | `SUPABASE_SERVICE_ROLE_KEY` | tad-api | JWT bypass RLS — **SOLO Backend** |
 | `SUPABASE_ANON_KEY` | Frontend services | Public anon key para client-side |
 | `NEXT_PUBLIC_API_URL` | Frontend services | URL del API Gateway |
@@ -54,6 +54,38 @@ Todas las credenciales están centralizadas en EasyPanel bajo **Secrets**. **NUN
 | `TABLET_HUB_KEY` | tad-api | Header `x-tablet-key` para hub data |
 | `NEXT_TELEMETRY_DISABLED` | tad-dashboard | `1` — Desactivar telemetría Vercel |
 | `NODE_OPTIONS` | ALL | `--max_old_space_size=256` (Frontend) / `--max_old_space_size=512` (API) |
+
+#### Recuperación de `DIRECT_URL=MISSING`
+
+El entrypoint de `Dockerfile.api` detiene el contenedor antes de ejecutar Prisma si falta `DIRECT_URL`. Un rebuild no crea esta variable.
+
+1. En Supabase → **Connect**, copiar la cadena **Session pooler**, puerto `5432`, del mismo proyecto de `DATABASE_URL`. Conservar el host y usuario exactos (`postgres.<project-ref>` si se usa el rol postgres); codificar los caracteres especiales de la contraseña. Direct Connection también sirve si el VPS tiene conectividad al endpoint.
+2. Preparar `DIRECT_URL` en **EasyPanel → tad-api → Environment**, como variable runtime del servicio. Un secreto de proyecto debe estar referenciado por el servicio para llegar al contenedor. No usar el Transaction pooler `:6543` para migraciones.
+3. Antes de activar el despliegue, contrastar `_prisma_migrations` con las migraciones versionadas y verificar backup/rollback. El arranque ejecuta **todas** las migraciones pendientes. Hay migraciones históricas con borrados de duplicados y columnas; no se ha demostrado que estén pendientes en producción. No usar `migrate reset`, `db push` ni `migrate resolve` para eludir esta comprobación.
+4. Tras validar el historial, guardar y volver a desplegar `tad-api`. Confirmar `DIRECT_URL=SET`, `Prisma migrations applied.` y `Starting node dist/main.js ...`; después verificar `https://tad.api.ibusiness.com.do/api/health`.
+
+La variable `DATABASE_URL` solo se sustituye por `DIRECT_URL` durante `prisma migrate deploy`; la API sigue usando la conexión runtime original. Revertir los cambios de código o de entorno no revierte SQL que ya se haya aplicado.
+
+Referencia: [Supabase — Prisma](https://supabase.com/docs/guides/database/prisma). Incidente diagnosticado el 2026-10-30 contra `680604c4`; la recuperación de producción requiere validación tras el despliegue.
+
+Si aparece `DIRECT_URL=SET` seguido de `P1013: invalid domain character`, la variable ya existe, pero su valor no es una conexión válida. Los textos entre `< >` o `[ ]` son marcadores y deben reemplazarse por valores reales. Revisar también espacios, comillas introducidas como parte del valor y caracteres especiales de la contraseña; codificar solo los componentes que lo requieran, no la URL completa. No compartir la contraseña para diagnosticarlo. [Prisma — Connection URLs](https://www.prisma.io/docs/orm/reference/connection-urls).
+
+Si `DATABASE_URL` ya contiene una conexión **válida al pooler compartido de Supabase** en `:6543`, se puede copiar su valor a `DIRECT_URL`, cambiar únicamente el puerto a `:5432` y retirar `pgbouncer=true`, conservando host, usuario, contraseña codificada, base de datos y los demás parámetros aplicables. Esto no aplica a endpoints de otros proveedores o poolers dedicados. Contrastar el resultado con **Connect → Session pooler** antes de desplegar.
+
+**Comprobación externa del 2026-10-30, 02:49 (America/La_Paz):**
+
+| Comprobación | Resultado observado | Alcance |
+| --- | --- | --- |
+| HTTPS público `/api/health` | Falla validación de nombre y cadena; certificado `CN=Easypanel`, autofirmado | El HTTPS público no está operativo |
+| Mismo endpoint omitiendo validación solo para diagnóstico | HTTP 404, página HTML de EasyPanel | No confirma respuesta de NestJS ni salud de la base de datos |
+| `https://proyecto-ia-tad-api.rewvid.easypanel.host/health` con validación TLS | HTTP 502, HTML | El proxy no entrega una respuesta saludable del backend; causa exacta pendiente de logs/configuración |
+| Supabase MCP `get_project` para `ltdcdhqixvbpdcitthqf` | `ACTIVE_HEALTHY`, región `us-west-2` | Metadatos del proveedor; no verifica credenciales del contenedor ni historial Prisma |
+
+Los logs aportados durante esta comprobación incluyen el bloqueo inicial `DIRECT_URL=MISSING` y también `P1013` / `DIRECT_URL=SET`. Sin marcas temporales no se establece el orden exacto de todos los reinicios. No se ejecutaron migraciones ni se modificó configuración de producción durante el diagnóstico. La corrección del dominio/certificado y la validación del arranque siguen pendientes.
+
+#### Recuperación de P3009 durante el arranque
+
+El 2026-10-30 se confirmó en `_prisma_migrations` que `20261012_campaign_notification_dedup` falló por SQL inválido y bloqueaba el inicio de Node. La recuperación autorizada completó las cuatro migraciones pendientes y reconcilió su historial con Prisma CLI, tras respaldo cifrado, restauración aislada y prueba transaccional en PostgreSQL 17. Resultado: 18 aplicadas, 0 fallidas activas, API y proxy Driver con HTTP 200. El [informe del incidente](docs/qa/incident-2026-10-30-api-startup/README.md) contiene la secuencia ejecutada y sus límites; no repetirla contra el estado ya recuperado ni ejecutar `resolve --applied` sin verificar todos los efectos SQL.
 
 ### 2.2 Configuración por Servicio en EasyPanel
 
@@ -73,8 +105,8 @@ Build: nixpacks build
 Start: node dist/main
 
 # O con Dockerfile personalizado:
-Build: docker build -t tad-api .
-Start: node dist/main.js  # ⚠️ Migrations NOT run on startup — must run manually
+Build: docker build -f Dockerfile.api -t tad-api .
+Start: # Dejar el comando predeterminado de la imagen; entrypoint migra y luego inicia Node.
 ```
 
 #### tad-dashboard (Next.js Admin)
@@ -308,16 +340,16 @@ async function bootstrap() {
 ### 6.2 Connection Pool Configuration
 
 ```
-# DATABASE_URL format:
-postgresql://user:pass@db.supabase.co:6543/postgres?pgbouncer=true&connection_limit=5
+# DATABASE_URL format (Transaction pooler; host exacto de Supabase -> Connect):
+postgresql://postgres.<PROJECT_REF>:<URL_ENCODED_PASSWORD>@<POOLER_HOST>:6543/postgres?pgbouncer=true&connection_limit=5
 
-# DIRECT_URL format (migrations only):
-postgresql://user:pass@db.supabase.co:5432/postgres
+# DIRECT_URL format (Session pooler, migrations only):
+postgresql://postgres.<PROJECT_REF>:<URL_ENCODED_PASSWORD>@<POOLER_HOST>:5432/postgres
 ```
 
 **Rules:**
 - `DATABASE_URL` = Runtime queries (always use pooler)
-- `DIRECT_URL` = Migrations only (direct connection, no pgbouncer)
+- `DIRECT_URL` = Migrations only (Session pooler o Direct Connection; sin `pgbouncer=true`)
 - `connection_limit=5` = Maximum 5 Prisma connections per API instance
 
 ### 6.3 Thundering Herd Prevention

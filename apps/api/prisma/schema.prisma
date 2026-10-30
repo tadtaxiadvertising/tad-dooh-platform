@@ -564,39 +564,39 @@ model Notification {
 /// mensajes enviados por el CRON de caducidad de campañas.
 /// Constraint única evita notificaciones duplicadas por retry/race.
 model NotificationQueue {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   type      String
   category  String
-  entityId  String
+  entityId  String   @map("entity_id")
   title     String
   message   String
   sent      Boolean  @default(false)
   sentAt    DateTime? @map("sent_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([type, category, entityId], name: "notification_queue_unique")
-  @@index([sent])
-  @@index([createdAt])
+  @@unique([type, category, entityId], name: "notification_queue_unique", map: "notification_queue_unique")
+  @@index([sent], map: "idx_notification_queue_sent")
+  @@index([createdAt], map: "idx_notification_queue_created_at")
   @@map("notification_queue")
 }
 
 /// V12.1.4 (B4 PATCH): Registro de campañas que expirarán pronto para
 /// disparar notificaciones de caducidad a anunciantes.
 model CampaignExpiration {
-  id                 String    @id @default(uuid())
-  campaignId         String
-  advertiserId       String
-  driverId           String?
-  remainingDays      Int
-  notificationSent   Boolean   @default(false)
+  id                 String    @id @default(uuid()) @db.Uuid
+  campaignId         String    @map("campaign_id")
+  advertiserId       String    @map("advertiser_id")
+  driverId           String?   @map("driver_id")
+  remainingDays      Int       @map("remaining_days")
+  notificationSent   Boolean   @default(false) @map("notification_sent")
   scheduledFor       DateTime  @map("scheduled_for")
   notifiedAt         DateTime? @map("notified_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  @@unique([campaignId], name: "campaign_expiration_campaign_unique")
-  @@index([remainingDays])
-  @@index([scheduledFor])
+  @@unique([campaignId], name: "campaign_expiration_campaign_unique", map: "campaign_expiration_campaign_unique")
+  @@index([remainingDays], map: "idx_campaign_expirations_remaining_days")
+  @@index([scheduledFor], map: "idx_campaign_expirations_scheduled_for")
   @@map("campaign_expirations")
 }
 
@@ -772,11 +772,11 @@ model Telemetry {
   timestamp DateTime                              @default(now())
   driver    Driver                                @relation("DriverTelemetry", fields: [driverId], references: [id])
 
-  // NOTE (Prisma schema vs DB): The database applies a COMPUTED unique constraint
+  // NOTE (Prisma schema vs DB): The database applies a COMPUTED unique index
   // on (driver_id, date_trunc('second', timestamp)) — see migration
-  // `20261012_telemetry_gps_burst_fix` (constraint `telemetry_driver_timestamp_sec_unique`).
+  // `20261012_telemetry_gps_burst_fix` (index `telemetry_driver_timestamp_sec_unique`).
   // Prisma does not support computed expressions inside @@unique, so this client-side
-  // model keeps only the legacy composite @@unique for reference. Runtime enforcement
+  // model keeps the legacy full-timestamp @@unique, which remains in the database. Runtime enforcement
   // comes from raw SQL `ON CONFLICT (driver_id, date_trunc('second', timestamp))`
   // in telemetry.service.ts:sync(), which matches the DB constraint exactly.
   @@unique([driverId, timestamp], name: "telemetry_driver_timestamp_unique")

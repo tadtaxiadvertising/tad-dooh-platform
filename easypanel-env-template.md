@@ -4,6 +4,7 @@
 # Instrucciones:
 # 1. Copia este archivo y renómbralo a .env.easypanel.local
 # 2. Rellena los valores marcados con <TU_VALOR>
+#    Los marcadores <...> NO son valores válidos; no importar el ejemplo sin reemplazarlos.
 # 3. En EasyPanel → Cada Servicio → Environment Variables → Importar desde este archivo
 # 4. REDEPLOY cada servicio después de guardar
 #
@@ -18,9 +19,15 @@
 # Dockerfile: Dockerfile.api
 # Dominio: https://tad.api.ibusiness.com.do
 
-# Base de datos (Supabase Pooler - puerto 6543)
-DATABASE_URL=postgresql://postgres:<TU_PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?connection_limit=5
-DIRECT_URL=postgresql://postgres:<TU_PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+# Base de datos: copiar host y usuario exactos de Supabase -> Connect.
+# <TU_POOLER_HOST> incluye la región real; no asumirla ni usar db.<ref>.supabase.co aquí.
+# El usuario del pooler incluye el project ref. Codificar caracteres especiales del password en la URL.
+# Runtime: Transaction pooler, puerto 6543.
+DATABASE_URL=postgresql://postgres.<TU_PROJECT_REF>:<TU_PASSWORD_URL_ENCODED>@<TU_POOLER_HOST>:6543/postgres?pgbouncer=true&connection_limit=5
+# OBLIGATORIA en el entorno de tad-api: Session pooler, puerto 5432 (compatible con IPv4).
+# Alternativa: Direct connection del MISMO proyecto si el servidor tiene conectividad IPv6/IPv4 add-on.
+# El arranque ejecuta migrate deploy: revisar historial y backup antes de activar migraciones pendientes.
+DIRECT_URL=postgresql://postgres.<TU_PROJECT_REF>:<TU_PASSWORD_URL_ENCODED>@<TU_POOLER_HOST>:5432/postgres
 
 # Supabase
 SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
@@ -217,8 +224,9 @@ NODE_ENV=production
 # SUPABASE_JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>
 
 # Database
-# DATABASE_URL=postgresql://postgres:<PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?connection_limit=5
-# DIRECT_URL=postgresql://postgres:<PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+# DATABASE_URL=postgresql://postgres.<TU_PROJECT_REF>:<TU_PASSWORD_URL_ENCODED>@<TU_POOLER_HOST>:6543/postgres?pgbouncer=true&connection_limit=5
+# DIRECT_URL=postgresql://postgres.<TU_PROJECT_REF>:<TU_PASSWORD_URL_ENCODED>@<TU_POOLER_HOST>:5432/postgres
+# Verificar que ambos secretos estén inyectados en el entorno runtime de tad-api.
 
 # JWT
 # JWT_SECRET=<TU_JWT_SECRET_32_CHARS_MIN>

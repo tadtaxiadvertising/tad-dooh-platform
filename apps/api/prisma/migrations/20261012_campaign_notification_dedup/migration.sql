@@ -3,7 +3,7 @@
 -- 2. Tabla campaign_expirations para rastrear campañas que expirarán próximamente
 
 -- Tabla de cola de notificaciones
-CREATE TABLE IF NOT EXISTS notification_queue (
+CREATE TABLE IF NOT EXISTS public.notification_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type VARCHAR NOT NULL,
     category VARCHAR NOT NULL,
@@ -16,15 +16,25 @@ CREATE TABLE IF NOT EXISTS notification_queue (
 );
 
 -- Constraint única para evitar duplicados
-ALTER TABLE notification_queue
-ADD CONSTRAINT notification_queue_unique UNIQUE (type, category, entity_id);
+DO $notification_constraint$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'public.notification_queue'::regclass
+          AND conname = 'notification_queue_unique'
+    ) THEN
+        ALTER TABLE public.notification_queue
+        ADD CONSTRAINT notification_queue_unique UNIQUE (type, category, entity_id);
+    END IF;
+END
+$notification_constraint$;
 
 -- Índices de ayuda
-CREATE INDEX IF NOT EXISTS idx_notification_queue_sent ON notification_queue(sent);
-CREATE INDEX IF NOT EXISTS idx_notification_queue_created_at ON notification_queue(created_at);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_sent ON public.notification_queue(sent);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_created_at ON public.notification_queue(created_at);
 
 -- Tabla de campañas que expirarán próximamente
-CREATE TABLE IF NOT EXISTS campaign_expirations (
+CREATE TABLE IF NOT EXISTS public.campaign_expirations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     campaign_id VARCHAR NOT NULL,
     advertiser_id VARCHAR NOT NULL,
@@ -38,44 +48,58 @@ CREATE TABLE IF NOT EXISTS campaign_expirations (
 );
 
 -- Constraint única para campaña
-ALTER TABLE campaign_expirations
-ADD CONSTRAINT campaign_expiration_campaign_unique UNIQUE (campaign_id);
+DO $campaign_constraint$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'public.campaign_expirations'::regclass
+          AND conname = 'campaign_expiration_campaign_unique'
+    ) THEN
+        ALTER TABLE public.campaign_expirations
+        ADD CONSTRAINT campaign_expiration_campaign_unique UNIQUE (campaign_id);
+    END IF;
+END
+$campaign_constraint$;
 
 -- Índices de ayuda
-CREATE INDEX IF NOT EXISTS idx_campaign_expirations_remaining_days ON campaign_expirations(remaining_days);
-CREATE INDEX IF NOT EXISTS idx_campaign_expirations_scheduled_for ON campaign_expirations(scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_campaign_expirations_remaining_days ON public.campaign_expirations(remaining_days);
+CREATE INDEX IF NOT EXISTS idx_campaign_expirations_scheduled_for ON public.campaign_expirations(scheduled_for);
 
--- Agregar columna updated_at a campaign_expirations si no existe (postgres 12+ no soporta DEFAULT)
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'campaign_expirations' AND column_name = 'updated_at'
-    ) THEN
-        ALTER TABLE campaign_expirations ADD COLUMN updated_at TIMESTAMP;
-    END IF;
-END $$;
+-- Permite reintentar una ejecución parcial sin borrar tablas ni filas.
+ALTER TABLE public.campaign_expirations
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+-- Tablas internas: solo el backend privilegiado gestiona esta cola.
+ALTER TABLE public.notification_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.campaign_expirations ENABLE ROW LEVEL SECURITY;
 
 -- Trigger para actualizar updated_at automáticamente
-DO $$
+-- El cuerpo de la función usa un delimitador distinto al bloque del trigger.
+CREATE OR REPLACE FUNCTION public.update_campaign_expirations_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = pg_catalog, public
+AS $function$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$function$;
+
+DO $campaign_trigger$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM pg_trigger WHERE tgname = 'update_campaign_expirations_updated_at'
+        SELECT 1 FROM pg_trigger
+        WHERE tgrelid = 'public.campaign_expirations'::regclass
+          AND tgname = 'update_campaign_expirations_updated_at'
     ) THEN
-        CREATE OR REPLACE FUNCTION update_campaign_expirations_updated_at()
-        RETURNS TRIGGER AS $$
-        BEGIN
-            NEW.updated_at = NOW();
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
-
         CREATE TRIGGER update_campaign_expirations_updated_at
-        BEFORE UPDATE ON campaign_expirations
+        BEFORE UPDATE ON public.campaign_expirations
         FOR EACH ROW
-        EXECUTE FUNCTION update_campaign_expirations_updated_at();
+        EXECUTE FUNCTION public.update_campaign_expirations_updated_at();
     END IF;
-END $$;
+END
+$campaign_trigger$;
 
 -- Consulta de migración para aplicar código genérico
 SELECT '20261012_campaign_notification_dedup' AS migration_name, 1 as applied;

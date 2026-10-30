@@ -7,6 +7,7 @@ import {
   Put,
   Body,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -229,7 +230,7 @@ export class DeviceAdminController {
       });
     } catch (error: any) {
       this.logger.error(`❌ Failed to delete device ${hwId}: ${error.message}`);
-      throw new Error(`Error al eliminar nodo: ${error.message}`);
+      throw new InternalServerErrorException("Error al eliminar el dispositivo");
     }
   }
 
@@ -300,10 +301,7 @@ export class DeviceAdminController {
       this.logger.error(
         `❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`,
       );
-      return {
-        error: "Excepción interna al procesar el perfil",
-        message: error.message,
-      };
+      throw new InternalServerErrorException("Error al obtener el perfil del dispositivo");
     }
   }
 

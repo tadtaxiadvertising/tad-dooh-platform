@@ -1,4 +1,4 @@
-const axios = import'axios');
+import axios from 'axios';
 
 async function test() {
   try {

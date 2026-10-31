@@ -1,5 +1,5 @@
 // apps/driver/pages/_document.tsx
-import { Html, Head, Main, NextScript } from "next/document";
+import { Html, Head, Main, NextScript, type DocumentProps } from "next/document";
 
 /**
  * _document.tsx — Configuración global del documento HTML
@@ -9,16 +9,16 @@ import { Html, Head, Main, NextScript } from "next/document";
  *  - Meta theme-color para la barra del sistema
  *  - Sin scripts de analytics en el documento base (se inyectan via _app)
  */
-export default function Document() {
+export default function Document({ __NEXT_DATA__ }: DocumentProps) {
   return (
     <Html lang="es-DO">
       <Head>
         {/* ── Identidad de la App ── */}
         <meta name="application-name" content="TAD Driver" />
-        <meta
+        {__NEXT_DATA__.page !== "/" && <meta
           name="description"
           content="Panel de control para conductores TAD DOOH. Telemetría GPS y monitoreo de ganancias en República Dominicana."
-        />
+        />}
 
         {/* ── PWA Android / Chrome ── */}
         <link rel="manifest" href="/manifest.json" />

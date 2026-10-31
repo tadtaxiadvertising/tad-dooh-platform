@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "strict": true, "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "app/page.tsx",
+    "app/layout.tsx",
+    "components/landing/**/*.tsx",
+    "lib/landing/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

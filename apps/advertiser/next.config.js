@@ -15,11 +15,6 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-      {
         source: '/api/v1/:path*',
         destination: '/api/proxy/:path*',
         permanent: true,

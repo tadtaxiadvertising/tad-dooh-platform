@@ -1,0 +1,83 @@
+.experience {
+  --fleet-yellow: #ffd400;
+  --fleet-border: #ffffff18;
+  min-width: 0;
+  border: 1px solid var(--fleet-border);
+  border-radius: 24px;
+  padding: clamp(18px, 3vw, 30px);
+  color: #f0f2eb;
+  background: linear-gradient(145deg, #1d211c, #131614 52%);
+}
+
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.eyebrow { margin: 0 0 9px; color: #c7cfbf; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.header h4 { max-width: 340px; margin: 0; color: #f5f7f0; font-size: clamp(23px, 2.8vw, 34px); line-height: 1.15; letter-spacing: -.04em; }
+.demoBadge { display: inline-block; padding: 7px 10px; border: 1px solid #ffd40040; border-radius: 999px; color: #ffe56a; background: #ffd4000a; font-size: 10px; font-weight: 700; line-height: 1.35; }
+.intro { margin: 16px 0 20px; max-width: 600px; color: #bdc5b9; font-size: 13px; line-height: 1.7; }
+.citySwitch { display: flex; gap: 8px; padding: 5px; border: 1px solid var(--fleet-border); border-radius: 12px; background: #0d100e; }
+.citySwitch button { flex: 1; min-height: 44px; padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #d6dcd1; font: inherit; font-size: 12px; cursor: pointer; }
+.citySwitch button[aria-pressed="true"] { border-color: #ffd40050; color: var(--fleet-yellow); background: #ffd4000e; }
+.citySwitch button:hover { background: #ffffff09; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 18px 0; }
+.summary > div { padding: 12px 8px; border: 1px solid var(--fleet-border); border-radius: 12px; background: #ffffff03; }
+.summary dt { color: #bbc3b4; font-size: 10px; line-height: 1.5; }
+.summary dd { display: flex; align-items: center; gap: 9px; margin: 5px 0 0; font-size: 29px; font-weight: 700; line-height: 1.2; }
+.dot { display: inline-block; flex: 0 0 8px; width: 8px; height: 8px; border: 1px solid #ffffff2b; border-radius: 50%; }
+.map { position: relative; overflow: hidden; margin: 0; border: 1px solid var(--fleet-border); border-radius: 14px; background: #131717; }
+.map svg { display: block; width: 100%; height: auto; }
+.map figcaption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--fleet-border); background: #141916; font-size: 10px; }
+.map figcaption strong { color: #e1e6d8; font-size: 12px; }
+.map figcaption span { color: #aebaa7; }
+.legend { display: flex; flex-wrap: wrap; gap: 9px 14px; padding: 0; margin: 14px 0 24px; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 7px; color: #bdc5b9; font-size: 10px; line-height: 1.6; }
+.deviceHeading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.deviceHeading h5 { margin: 0; color: #f0f2eb; font-size: 15px; font-weight: 600; }
+.deviceHeading > span { color: #b2bca9; font-size: 10px; }
+.deviceList { padding: 0; margin: 0; list-style: none; }
+.deviceList li + li { margin-top: 6px; }
+.deviceList button { display: grid; grid-template-columns: 102px minmax(0, 1fr) 14px; gap: 8px; align-items: center; width: 100%; min-height: 60px; padding: 10px 12px; border: 1px solid var(--fleet-border); border-radius: 10px; background: #ffffff02; color: #dce4d5; text-align: left; font: inherit; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease; }
+.deviceList button:hover { background: #ffffff07; }
+.deviceList button[aria-pressed="true"] { border-color: #ffd40080; background: #ffd40008; }
+.deviceName { display: flex; align-items: center; gap: 8px; font-size: 11px; white-space: nowrap; }
+.deviceSignal { display: flex; flex-direction: column; gap: 4px; font-size: 11px; line-height: 1.35; }
+.deviceSignal small { color: #aeb9a7; font-size: 10px; }
+.inspectArrow { color: #c8cfbf; font-size: 18px; }
+.deviceList button[aria-pressed="true"] .inspectArrow { color: var(--fleet-yellow); }
+.inspector { margin-top: 18px; padding: 18px; border: 1px solid #ffffff1f; border-radius: 14px; background: #0e120f; }
+.deviceFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; margin: 14px 0; }
+.deviceFacts > div:last-child { grid-column: 1 / -1; }
+.deviceFacts dt { margin-bottom: 7px; color: #adb9a5; font-size: 10px; line-height: 1.5; }
+.deviceFacts dd { display: flex; align-items: center; gap: 7px; width: fit-content; margin: 0; color: #edf1e6; font-size: 12px; line-height: 1.5; }
+.deviceFacts .financeBadge { padding: 4px 8px; border: 1px solid #9aa68f40; border-radius: 5px; background: #a9b69e0a; color: #c7d1be; font-size: 10px; }
+.financeNote { margin: 0 0 22px; color: #b5c0ad; font-size: 10px; line-height: 1.65; }
+.challenge { min-width: 0; margin: 0; padding: 0; border: 0; }
+.challenge legend { padding: 0; color: var(--fleet-yellow); font-size: 17px; font-weight: 600; line-height: 1.4; letter-spacing: -.02em; }
+.challenge > p { margin: 8px 0 12px; color: #c9d1c0; font-size: 12px; line-height: 1.6; }
+.answers { display: flex; flex-direction: column; gap: 8px; }
+.answers button { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #ffffff20; border-radius: 8px; background: #ffffff03; color: #dce5d3; text-align: left; font: inherit; font-size: 12px; line-height: 1.5; cursor: pointer; }
+.answers button:hover { background: #ffffff09; }
+.answers button[aria-pressed="true"] { border-color: #ffd40080; background: #ffd4000a; color: #ffe66b; }
+.feedback { min-height: 103px; padding: 12px 0 0; color: #c0cdb5; font-size: 11px; line-height: 1.65; }
+.feedback strong { color: #edf2e8; }
+.feedback span { display: block; margin-top: 7px; color: #aebba4; font-size: 10px; }
+.noScript { margin: 16px 0 0; color: #d0d9c7; font-size: 12px; line-height: 1.7; }
+.experience button:focus-visible { outline: 3px solid var(--fleet-yellow); outline-offset: 3px; }
+
+@media (max-width: 390px) {
+  .experience { border-radius: 18px; padding: 14px; }
+  .header h4 { font-size: 25px; }
+  .summary { gap: 5px; }
+  .summary > div { padding: 10px 6px; }
+  .summary dt { font-size: 9px; }
+  .summary dd { font-size: 25px; }
+  .deviceList button { grid-template-columns: 91px minmax(0, 1fr) 10px; gap: 5px; padding: 10px 8px; }
+  .deviceName { gap: 6px; font-size: 10px; }
+  .deviceSignal { font-size: 10px; }
+  .deviceSignal small { font-size: 9px; }
+  .inspector { padding: 14px; }
+  .deviceFacts { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deviceList button { transition: none; }
+}

@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
     if (quickRole === EXPECTED_ROLE) {
       return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
     }
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    return NextResponse.next();
   }
 
   // 2. Auth routes
@@ -63,6 +63,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/icons/") ||
     pathname.startsWith("/_next/") ||
+    pathname === "/tad-logo-dark-mode.svg" ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();

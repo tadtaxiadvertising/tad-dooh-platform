@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
   // Esa ruta la atiende pages/api/proxy/[...path].ts para preservar
   // fallback, auth forwarding y diagnóstico (_proxy_health).
   // NOTA: No definir redirect de '/' aquí. El middleware de la app
-  // driver redirige '/' -> '/driver/login' (y a '/driver/dashboard'
+  // driver permite la landing pública en '/' (y dirige a '/driver/dashboard'
   // si ya hay sesión DRIVER). Los redirects de next.config se ejecutan
   // ANTES que el middleware y rompen el flujo del portal driver.
   async redirects() {

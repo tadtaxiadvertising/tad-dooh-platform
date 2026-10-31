@@ -1,0 +1,4 @@
+interface:
+  display_name: "TAD Landing Experience V3"
+  short_description: "Landing TAD interactiva, rápida y multirol"
+  default_prompt: "Usa $tad-landing-experience-multirol-v3 para diseñar, implementar y verificar la experiencia pública TAD para anunciantes, taxistas y flotas."

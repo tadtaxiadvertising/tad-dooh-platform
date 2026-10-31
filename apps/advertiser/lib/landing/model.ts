@@ -1,10 +1,9 @@
-export type LandingRole = "advertiser" | "driver" | "fleet";
+export type LandingRole = "advertiser" | "driver";
 export type DemoCity = "sd" | "stgo";
 
 export const ROLES: { id: LandingRole; label: string; detail: string }[] = [
   { id: "advertiser", label: "Anunciante", detail: "Haz visible tu marca" },
   { id: "driver", label: "Conductor", detail: "Explora una oportunidad" },
-  { id: "fleet", label: "Flota", detail: "Conoce el control operativo" },
 ];
 
 export const CITIES: Record<DemoCity, string> = { sd: "Santo Domingo", stgo: "Santiago" };
@@ -35,7 +34,6 @@ export function referralCodeFromSearch(search: string): string | null {
 
 const PORTALS = {
   driver: "https://tad.driver.ibusiness.com.do",
-  admin: "https://tad.adm.ibusiness.com.do",
 };
 
 /** Build-time public origins only; never accept a redirect query parameter. */
@@ -52,28 +50,12 @@ export function portalOrigin(value: string | undefined, portal: keyof typeof POR
 export function landingLinks() {
   const local = process.env.NODE_ENV !== "production";
   const driver = portalOrigin(process.env.NEXT_PUBLIC_DRIVER_URL, "driver", local);
-  const admin = portalOrigin(process.env.NEXT_PUBLIC_ADMIN_URL, "admin", local);
   return {
     advertiser: "/advertiser/login",
     driver: `${driver}/driver/login`,
     driverLanding: `${driver}/`,
-    fleet: `${admin}/admin/login`,
     advertiserSignup: "/advertiser/onboarding",
     driverSignup: `${driver}/driver/onboarding`,
     signupEnabled: process.env.NEXT_PUBLIC_LANDING_SIGNUP_ENABLED === "true",
   };
 }
-
-export type DemoStatus = "online" | "recent_offline" | "long_offline";
-export function demoConnectionStatus(online: boolean, hoursSinceSignal: number | null): DemoStatus {
-  if (online) return "online";
-  return hoursSinceSignal !== null && Number.isFinite(hoursSinceSignal) && hoursSinceSignal >= 0 && hoursSinceSignal < 24
-    ? "recent_offline" : "long_offline";
-}
-
-export const DEMO_VEHICLES = [
-  { id: "DEMO-01", x: 22, y: 35, online: true, hours: 0 },
-  { id: "DEMO-02", x: 44, y: 62, online: true, hours: 0 },
-  { id: "DEMO-03", x: 68, y: 28, online: false, hours: 4 },
-  { id: "DEMO-04", x: 78, y: 68, online: false, hours: 25 },
-] as const;

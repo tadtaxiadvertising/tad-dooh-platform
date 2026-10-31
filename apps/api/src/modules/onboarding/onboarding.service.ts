@@ -145,16 +145,39 @@ export class OnboardingService {
       });
       return result;
     } catch (error) {
-      // Compensate only the Auth identity created by this request.
-      // If cleanup fails, preserve the error for operational reconciliation.
+      // A rejected transaction may already have committed (e.g. a network
+      // timeout after COMMIT). Never delete an Auth identity until Prisma
+      // confirms that no advertiser was persisted for this email.
+      let confirmedAbsent = false;
       try {
-        const { error: cleanupError } = await this.supabaseService
-          .getClient().auth.admin.deleteUser(createdAuthUserId);
-        if (cleanupError) {
-          this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+        const persisted = await this.prisma.advertiser.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        confirmedAbsent = persisted === null;
+        if (!confirmedAbsent) {
+          this.logger.error(
+            "CRITICAL: advertiser transaction outcome ambiguous; Auth identity retained for reconciliation",
+          );
         }
       } catch {
-        this.logger.error("CRITICAL: Auth cleanup unavailable; manual reconciliation required");
+        this.logger.error(
+          "CRITICAL: advertiser persistence check unavailable; Auth identity retained for reconciliation",
+        );
+      }
+
+      if (confirmedAbsent) {
+        // Compensate only the Auth identity created by this request.
+        // Never clean up when the database outcome cannot be verified.
+        try {
+          const { error: cleanupError } = await this.supabaseService
+            .getClient().auth.admin.deleteUser(createdAuthUserId);
+          if (cleanupError) {
+            this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+          }
+        } catch {
+          this.logger.error("CRITICAL: Auth cleanup unavailable; manual reconciliation required");
+        }
       }
       this.logger.error("Advertiser onboarding transaction failed");
       if (error instanceof ConflictException) throw error;

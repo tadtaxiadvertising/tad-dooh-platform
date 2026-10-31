@@ -7,7 +7,6 @@ import { trackAnalyticsEvent } from "@tad/services/cookie-consent";
 import { CITIES, ROLES, estimateDriverEarnings, formatRD, landingLinks, normalizeBudget, referralCodeFromSearch, type DemoCity, type LandingRole } from "../../lib/landing/model";
 import { OBJECTIVES, ROLE_CONTENT, ROLE_FAQS, type DemoObjective } from "../../lib/landing/content";
 import CampaignJourney from "./CampaignJourney";
-import FleetExperience from "./FleetExperience";
 import CityScene from "./CityScene";
 import LandingAnalytics from "./LandingAnalytics";
 import styles from "./landing.module.css";
@@ -28,7 +27,7 @@ export default function LandingPage() {
   const content = ROLE_CONTENT[role];
   const earnings = estimateDriverEarnings(slots, cpa);
   const advertiserDestination = referral ? `${links.advertiser}?ref=${encodeURIComponent(referral)}` : links.advertiser;
-  const mainDestination = role === "driver" ? links.driverLanding : role === "advertiser" ? advertiserDestination : links.fleet;
+  const mainDestination = role === "driver" ? links.driverLanding : advertiserDestination;
   const signupDestination = role === "advertiser" ? links.advertiserSignup : links.driverSignup;
   const referredSignup = referral ? `${signupDestination}?ref=${encodeURIComponent(referral)}` : signupDestination;
   const destinationName = role === "driver" ? "driver_landing" : `${role}_login`;
@@ -48,7 +47,6 @@ export default function LandingPage() {
   const selectRole = (next: LandingRole) => {
     if (next !== role) {
       trackAnalyticsEvent("perspective_selected", { role: next });
-      if (next === "fleet") trackAnalyticsEvent("fleet_demo_opened", { action: "perspective" });
     }
     setRole(next);
   };
@@ -81,7 +79,7 @@ export default function LandingPage() {
         <CityScene role={role} />
       </section>
       <p className="landing-sr-only" role="status" aria-live="polite">Perspectiva: {ROLES.find(item => item.id === role)?.label}. {content.title}</p>
-      <noscript><p className="landing-wrap landing-noscript">Los ejemplos interactivos necesitan JavaScript. Puedes conocer los tres perfiles y acceder a sus portales más abajo.</p></noscript>
+      <noscript><p className="landing-wrap landing-noscript">Los ejemplos interactivos necesitan JavaScript. Puedes conocer ambos perfiles y acceder a sus portales más abajo.</p></noscript>
       <div className="landing-strip"><div className="landing-wrap"><span><CarFront size={18} aria-hidden="true" /> Pantallas en taxis</span><span><MapPin size={18} aria-hidden="true" /> Contexto urbano</span><span><ChartNoAxesCombined size={18} aria-hidden="true" /> Reportes con contexto</span><span><ShieldCheck size={18} aria-hidden="true" /> Acceso por perfil</span></div></div>
       <div id="como-funciona" className="landing-wrap landing-story-wrap"><CampaignJourney onStepView={step => trackAnalyticsEvent("story_step_viewed", { step })} /></div>
 
@@ -94,7 +92,7 @@ export default function LandingPage() {
             <ul>{content.benefits.map(item => <li key={item}><Check size={16} aria-hidden="true" />{item}</li>)}</ul>
             <a href={mainDestination} className="landing-button landing-button-light" onClick={() => cta(destinationName)}>{content.cta}<ArrowUpRight size={18} aria-hidden="true" /></a>
             {role === "driver" && <a className="landing-signup" href={links.driver} onClick={() => cta("driver_login")}>Ingresar como conductor <ArrowRight size={16} aria-hidden="true" /></a>}
-            {links.signupEnabled && role !== "fleet" && <a className="landing-signup" href={referredSignup} onClick={() => cta(`${role}_signup`)}>Solicitar registro <ArrowRight size={16} aria-hidden="true" /></a>}
+            {links.signupEnabled && <a className="landing-signup" href={referredSignup} onClick={() => cta(`${role}_signup`)}>Solicitar registro <ArrowRight size={16} aria-hidden="true" /></a>}
           </div>
           {role === "advertiser" && <div className="landing-preview">
             <div className="landing-card-top"><span><Radio size={13} aria-hidden="true" /> TU IDEA DE CAMPAÑA</span><span className="landing-badge">EJEMPLO</span></div>
@@ -117,7 +115,6 @@ export default function LandingPage() {
             <p className="landing-total-label">Total bruto del ejemplo</p><output id="driver-total" className="landing-large-number" htmlFor="driver-slots driver-cpa">{formatRD(earnings.totalRD)}</output>
             <p className="landing-disclaimer">No es una nómina ni un saldo. No garantiza ingresos. Sujeto a elegibilidad, actividad verificada, ajustes y contrato. Un referido pendiente no es un CPA validado. El máximo de 100 CPA es solo un límite de esta demo.</p>
           </div>}
-          {role === "fleet" && <FleetExperience onDemoUsed={action => trackAnalyticsEvent("fleet_demo_opened", { action })} />}
         </div>
         {role === "driver" && <ol className="landing-driver-path" aria-label="Camino de participación del conductor">{["Conoce las condiciones", "Revisa los requisitos", "Solicita evaluación cuando esté habilitada", "Participa tras la aprobación"].map((step, index) => <li key={step}><span>0{index + 1}</span>{step}</li>)}</ol>}
       </section>
@@ -131,8 +128,8 @@ export default function LandingPage() {
         ].map((item, index) => <article key={item.title}><div><span>0{index + 1}</span><item.icon size={22} aria-hidden="true" /></div><h3>{item.title}</h3><p>{item.body}</p></article>)}</div>
       </section>
       <section id="perfiles" className="landing-profiles landing-wrap" aria-labelledby="profiles-title">
-        <div className="landing-section-heading"><div><p className="landing-eyebrow">TRES CAMINOS. UN PUNTO DE ENCUENTRO.</p><h2 id="profiles-title">Encuentra <span>tu lugar.</span></h2></div><p>También puedes ir directo a tu perfil.</p></div>
-        <div className="landing-profile-grid">{ROLES.map((item, index) => <article key={item.id}><span className="landing-profile-index">0{index + 1} / {item.label}</span><h3>{ROLE_CONTENT[item.id].title}</h3><p>{ROLE_CONTENT[item.id].description}</p><a href={item.id === "driver" ? links.driverLanding : item.id === "advertiser" ? advertiserDestination : links.fleet} onClick={() => cta(item.id === "driver" ? "driver_landing" : `${item.id}_login`, item.id)}>{ROLE_CONTENT[item.id].cta}<MoveUpRight size={17} aria-hidden="true" /></a></article>)}</div>
+        <div className="landing-section-heading"><div><p className="landing-eyebrow">DOS CAMINOS. UN PUNTO DE ENCUENTRO.</p><h2 id="profiles-title">Encuentra <span>tu lugar.</span></h2></div><p>También puedes ir directo a tu perfil.</p></div>
+        <div className="landing-profile-grid">{ROLES.map((item, index) => <article key={item.id}><span className="landing-profile-index">0{index + 1} / {item.label}</span><h3>{ROLE_CONTENT[item.id].title}</h3><p>{ROLE_CONTENT[item.id].description}</p><a href={item.id === "driver" ? links.driverLanding : advertiserDestination} onClick={() => cta(item.id === "driver" ? "driver_landing" : `${item.id}_login`, item.id)}>{ROLE_CONTENT[item.id].cta}<MoveUpRight size={17} aria-hidden="true" /></a></article>)}</div>
       </section>
       <section id="preguntas" className="landing-faq landing-wrap" aria-labelledby="faq-title">
         <div><p className="landing-eyebrow">CON LA INFORMACIÓN CLARA</p><h2 id="faq-title">Preguntas desde<br /><span>tu perspectiva.</span></h2><p>{ROLES.find(item => item.id === role)?.label}: lo que conviene saber antes de dar el siguiente paso.</p></div>

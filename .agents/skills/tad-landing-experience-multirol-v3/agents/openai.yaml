@@ -1,0 +1,4 @@
+interface:
+  display_name: "TAD Landing Experience V3.1 · Anunciante + Conductor"
+  short_description: "Landing de conversión interactiva, ligera y segura para dos públicos"
+  default_prompt: "Usa $tad-landing-experience-multirol-v3 para implementar y verificar la landing pública de TAD enfocada EXCLUSIVAMENTE en Anunciante y Conductor; reutiliza onboarding oficial, conserva RBAC y verifica rendimiento."

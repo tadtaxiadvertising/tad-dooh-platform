@@ -291,7 +291,7 @@ export default function DriverLandingPage() {
         <footer className={styles.footer}>
           <div className={`${styles.container} ${styles.footerInner}`}>
             <div><strong>TAD<span> PARA TAXISTAS</span></strong><p>Publicidad digital. Conexiones en movimiento.</p></div>
-            <nav aria-label="Enlaces legales"><a href="/aviso-legal">Aviso legal</a><a href="/politica-de-cookies">Política de cookies</a><a href="/politica-de-privacidad">Privacidad</a><a href="/terminos-de-servicio">Términos</a><a href="/driver/login">Portal de conductor</a></nav>
+            <nav aria-label="Enlaces legales"><a href="/aviso-legal">Aviso legal</a><a href="/politica-de-cookies">Política de cookies</a><a href="/politica-de-privacidad">Privacidad</a><a href="/terminos-de-servicio">Términos</a><a href="/driver/login">Portal de conductor</a><a href="https://tad.anunciante.ibusiness.com.do/">Soy anunciante</a></nav>
           </div>
         </footer>
       </div>

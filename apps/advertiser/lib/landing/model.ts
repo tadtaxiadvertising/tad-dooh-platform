@@ -55,7 +55,7 @@ export function landingLinks() {
     driver: `${driver}/driver/login`,
     driverLanding: `${driver}/`,
     advertiserSignup: "/advertiser/onboarding",
-    driverSignup: `${driver}/driver/onboarding`,
+    driverSignup: `${driver}/register`,
     signupEnabled: process.env.NEXT_PUBLIC_LANDING_SIGNUP_ENABLED === "true",
   };
 }

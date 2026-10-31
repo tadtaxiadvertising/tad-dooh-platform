@@ -11,7 +11,13 @@ describe("OnboardingService password safety", () => {
   const supabase = { getClient: jest.fn(() => ({ auth: { admin: { createUser, deleteUser } } })) };
   const service = new OnboardingService(prisma as never, supabase as never);
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.advertiser.findUnique.mockReset();
+    prisma.$transaction.mockReset();
+    createUser.mockReset();
+    deleteUser.mockReset();
+  });
 
   it.each([undefined, "", "1234567"])(
     "rejects invalid password before any database access (%s)",
@@ -98,12 +104,45 @@ describe("OnboardingService password safety", () => {
   });
 
   it("deletes only the newly created Auth identity if Prisma transaction fails", async () => {
-    prisma.advertiser.findUnique.mockResolvedValue(null);
+    prisma.advertiser.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
     prisma.$transaction.mockRejectedValue(new Error("database unavailable"));
     deleteUser.mockResolvedValue({ error: null });
     await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 500 });
     expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
+  });
+
+  it("retains the created Auth identity if the rejected transaction already committed", async () => {
+    prisma.advertiser.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "adv-committed" });
+    createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
+    prisma.$transaction.mockRejectedValue(new Error("connection dropped after commit"));
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 500 });
+    expect(prisma.advertiser.findUnique).toHaveBeenCalledWith({
+      where: { email: validRequest.email }, select: { id: true },
+    });
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("retains the created Auth identity when transaction outcome cannot be queried", async () => {
+    prisma.advertiser.findUnique
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error("database still unavailable"));
+    createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
+    prisma.$transaction.mockRejectedValue(new Error("transaction result unknown"));
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 500 });
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("fails closed if the post-transaction lookup returns an indeterminate value", async () => {
+    prisma.advertiser.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(undefined);
+    createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
+    prisma.$transaction.mockRejectedValue(new Error("transaction result unknown"));
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject({ status: 500 });
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("does not delete an existing identity when the email is already registered", async () => {
@@ -114,7 +153,7 @@ describe("OnboardingService password safety", () => {
   });
 
   it("preserves the registration failure if Auth compensation is unavailable", async () => {
-    prisma.advertiser.findUnique.mockResolvedValue(null);
+    prisma.advertiser.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createUser.mockResolvedValue({ data: { user: { id: "auth-created-1" } }, error: null });
     prisma.$transaction.mockRejectedValue(new Error("database unavailable"));
     deleteUser.mockRejectedValue(new Error("network unavailable"));

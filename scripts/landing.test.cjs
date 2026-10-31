@@ -30,7 +30,14 @@ function loadTs(relativePath, options = {}) {
 const modelPath = 'apps/advertiser/lib/landing/model.ts';
 const model = loadTs(modelPath);
 const DRIVER_ORIGIN = 'https://tad.driver.ibusiness.com.do';
-const ADMIN_ORIGIN = 'https://tad.adm.ibusiness.com.do';
+
+test('public marketing offers exactly two perspectives without an admin destination', () => {
+  assert.deepEqual(model.ROLES.map(role => role.id), ['advertiser', 'driver']);
+  const content = loadTs('apps/advertiser/lib/landing/content.ts');
+  assert.deepEqual(Object.keys(content.ROLE_CONTENT).sort(), ['advertiser', 'driver']);
+  assert.deepEqual(Object.keys(content.ROLE_FAQS).sort(), ['advertiser', 'driver']);
+  assert.equal(Object.hasOwn(model.landingLinks(), 'fleet'), false);
+});
 
 test('multirole driver experience links the dedicated taxi landing and keeps login separate', () => {
   let stateIndex = 0;
@@ -48,7 +55,6 @@ test('multirole driver experience links the dedicated taxi landing and keeps log
     '../../lib/landing/model': model,
     '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
     './CampaignJourney': { __esModule: true, default: () => null },
-    './FleetExperience': { __esModule: true, default: () => null },
     './CityScene': { __esModule: true, default: () => null },
     './LandingAnalytics': { __esModule: true, default: () => null },
     './landing.module.css': { __esModule: true, default: { landing: 'landing' } },
@@ -107,8 +113,6 @@ test('campaign budget clamps and rounds to the declared RD$5000 steps', () => {
 test('portal overrides use only the canonical origin for the requested portal', () => {
   assert.equal(model.portalOrigin(undefined, 'driver'), DRIVER_ORIGIN);
   assert.equal(model.portalOrigin(`${DRIVER_ORIGIN}/`, 'driver'), DRIVER_ORIGIN);
-  assert.equal(model.portalOrigin(ADMIN_ORIGIN, 'admin'), ADMIN_ORIGIN);
-  assert.equal(model.portalOrigin(ADMIN_ORIGIN, 'driver'), DRIVER_ORIGIN);
   for (const override of [
     'https://example.invalid', 'https://tad.driver.ibusiness.com.do.example.invalid',
     'https://other.tad.driver.ibusiness.com.do', 'http://tad.driver.ibusiness.com.do',
@@ -133,31 +137,20 @@ test('local portal origins require allowLocal and reject credentials, paths, que
 test('landing links retain relative advertiser login and gate onboarding explicitly', () => {
   const production = loadTs(modelPath, { env: {
     NODE_ENV: 'production', NEXT_PUBLIC_DRIVER_URL: 'http://localhost:3004',
-    NEXT_PUBLIC_ADMIN_URL: 'http://localhost:3002',
   } }).landingLinks();
   assert.equal(production.advertiser, '/advertiser/login');
   assert.equal(production.driver, `${DRIVER_ORIGIN}/driver/login`);
   assert.equal(production.driverLanding, `${DRIVER_ORIGIN}/`);
-  assert.equal(production.fleet, `${ADMIN_ORIGIN}/admin/login`);
   assert.equal(production.signupEnabled, false);
   const development = loadTs(modelPath, { env: {
     NODE_ENV: 'development', NEXT_PUBLIC_DRIVER_URL: 'http://localhost:3004',
-    NEXT_PUBLIC_ADMIN_URL: 'http://localhost:3002', NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: 'true',
+    NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: 'true',
   } }).landingLinks();
   assert.equal(development.driver, 'http://localhost:3004/driver/login');
   assert.equal(development.driverLanding, 'http://localhost:3004/');
-  assert.equal(development.fleet, 'http://localhost:3002/admin/login');
   assert.equal(development.signupEnabled, true);
   assert.equal(loadTs(modelPath, { env: { NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: 'TRUE' } })
     .landingLinks().signupEnabled, false);
-});
-
-test('demo connection boundary is strictly below 24h; unknown or invalid signal is long offline', () => {
-  for (const hours of [0, 1, 23, 23.999]) assert.equal(model.demoConnectionStatus(false, hours), 'recent_offline');
-  for (const hours of [24, 24.001, 25, null, NaN, Infinity, -Infinity, -1]) {
-    assert.equal(model.demoConnectionStatus(false, hours), 'long_offline');
-    assert.equal(model.demoConnectionStatus(true, hours), 'online');
-  }
 });
 
 function middlewareHarness() {

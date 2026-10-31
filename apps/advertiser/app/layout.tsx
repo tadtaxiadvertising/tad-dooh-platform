@@ -3,7 +3,7 @@ import "../styles/globals.css";
 
 export const metadata: Metadata = {
   title: "TAD | Tu ciudad se mueve. Tu marca también.",
-  description: "Conoce la publicidad en pantallas de taxis de TAD: explora campañas, oportunidades para conductores y oportunidades para conductores.",
+  description: "Conoce la publicidad en pantallas de taxis de TAD: explora campañas y descubre oportunidades para conductores.",
   metadataBase: new URL("https://tad.anunciante.ibusiness.com.do"),
   alternates: { canonical: "/" },
   openGraph: {

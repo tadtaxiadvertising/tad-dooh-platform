@@ -6,12 +6,27 @@ area: frontend
 tags: [tad/reference, tad/area/frontend]
 ---
 
-# Sistema visual y accesibilidad
+# Sistema visual, movimiento y accesibilidad
 
-Se extiende la estética TAD existente: fondo carbón/verde, acento amarillo, bordes finos, tarjetas con relieve moderado y titulares amplios. CSS Modules limita el alcance a las landings. La escena taxi/tablet usa CSS, el comando de flota SVG local y los iconos Lucide ya instalados. No hay fotos remotas, fuentes nuevas, vídeos automáticos ni efectos WebGL.
+Estética TAD: fondo carbón, amarillo institucional `#FFD400`,
+titulares editoriales, tarjetas profundas y glassmorphism moderado.
+CSS Modules y tokens compartidos evitan efectos globales nuevos.
+La escena taxi/tablet usa CSS/SVG local e iconos Lucide instalados.
+No se introducen fotos de red, mapas, tiles, fuentes nuevas, vídeos
+automáticos ni WebGL.
 
-Ritmo: hero editorial, recorrido de cuatro pasos, demo útil, explicación breve, tres historias, preguntas y conversión. Grillas se apilan en móvil; controles con alto mínimo de 44 px, etiquetas asociadas y números tabulares. El color se acompaña siempre de texto. Los cambios anuncian un resumen breve mediante `aria-live`, sin convertir toda la página en una región viva.
+Ritmo: hero con **2 opciones**, recorrido de cuatro pasos,
+laboratorios de presupuesto y R6, educación de métricas,
+**dos historias**, FAQs y conversión. Las tarjetas utilizan
+grillas de dos columnas en escritorio y apilado en móvil.
+Controles táctiles >=44 px, etiqueta y foco visibles, moneda
+legible, contraste y números tabulares.
 
-Se utilizan botones con `aria-pressed`, `details/summary` para FAQs, enlaces nativos, skip link y foco visible. Los controles conservan acceso por teclado; no se depende de hover. Sin JavaScript los contenidos editoriales y destinos permanecen visibles. `prefers-reduced-motion` elimina animaciones/transiciones y desplazamiento suave.
+El selector usa botones con `aria-pressed`, FAQ con `details/summary`,
+skip link y enlaces nativos. Sin JS los destinos siguen utilizables.
+`prefers-reduced-motion` elimina movimientos no esenciales y scroll
+suave. No depender de hover, ni de color como único indicador.
 
-Comprobar visualmente 320, 390, 768 y 1440 px, desbordamiento, foco y contraste. La inspección manual y el smoke complementan las pruebas de lógica; no sustituyen una auditoría completa WCAG con tecnologías de asistencia.
+Inspección visual requerida en 320, 390, 768 y 1440 px,
+desbordamiento, foco, flujo de lectura y contraste; el smoke no
+sustituye auditoría completa WCAG con lectores de pantalla.

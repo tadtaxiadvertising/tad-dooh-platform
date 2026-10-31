@@ -141,6 +141,7 @@ test('landing links retain relative advertiser login and gate onboarding explici
   assert.equal(production.advertiser, '/advertiser/login');
   assert.equal(production.driver, `${DRIVER_ORIGIN}/driver/login`);
   assert.equal(production.driverLanding, `${DRIVER_ORIGIN}/`);
+  assert.equal(production.driverSignup, `${DRIVER_ORIGIN}/register`);
   assert.equal(production.signupEnabled, false);
   const development = loadTs(modelPath, { env: {
     NODE_ENV: 'development', NEXT_PUBLIC_DRIVER_URL: 'http://localhost:3004',
@@ -148,6 +149,7 @@ test('landing links retain relative advertiser login and gate onboarding explici
   } }).landingLinks();
   assert.equal(development.driver, 'http://localhost:3004/driver/login');
   assert.equal(development.driverLanding, 'http://localhost:3004/');
+  assert.equal(development.driverSignup, 'http://localhost:3004/register');
   assert.equal(development.signupEnabled, true);
   assert.equal(loadTs(modelPath, { env: { NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: 'TRUE' } })
     .landingLinks().signupEnabled, false);

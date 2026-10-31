@@ -197,5 +197,7 @@ test('driver landing uses native links so hovering cannot prefetch private pages
   for (const destination of ['/driver/login', '/politica-de-privacidad', '/terminos-de-servicio', '/politica-de-cookies', '/aviso-legal']) {
     assert.ok(linkedNodes.some(node => node.props.href === destination), destination);
   }
+  assert.ok(linkedNodes.some(node => node.props.href === 'https://tad.anunciante.ibusiness.com.do/'),
+    'Drivers can reach the advertiser experience without a third public profile.');
   assert.equal(linkedNodes.some(node => node.props.href === '/register'), false);
 });

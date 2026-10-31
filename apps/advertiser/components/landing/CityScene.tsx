@@ -3,9 +3,7 @@ import type { LandingRole } from "../../lib/landing/model";
 export default function CityScene({ role = "advertiser" }: { role?: LandingRole }) {
   const scene = role === "driver"
     ? { label: "TU RECORRIDO ABRE POSIBILIDADES", tag: "UN NUEVO CAMINO", title: <>tu taxi.<br /><em>tu recorrido.</em></>, note: <>Participa con<br />condiciones claras.</> }
-    : role === "fleet"
-      ? { label: "CADA PANTALLA CUENTA UNA HISTORIA", tag: "VISIÓN DE OPERACIÓN", title: <>una red.<br /><em>más contexto.</em></>, note: <>Conectividad.<br />Actividad. Contexto.</> }
-      : { label: "LA CIUDAD ES TU ESCENARIO", tag: "EL PRÓXIMO DESTINO", title: <>puede ser<br /><em>tu marca.</em></>, note: <>Una pantalla.<br />Muchas posibilidades.</> };
+    : { label: "LA CIUDAD ES TU ESCENARIO", tag: "EL PRÓXIMO DESTINO", title: <>puede ser<br /><em>tu marca.</em></>, note: <>Una pantalla.<br />Muchas posibilidades.</> };
   return <div className="landing-scene" data-perspective={role} aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}`} role="img">
     <div className="landing-scene-grid" />
     <div className="landing-scene-label"><span /> {scene.label}</div>
@@ -22,7 +20,7 @@ export default function CityScene({ role = "advertiser" }: { role?: LandingRole 
       <strong>{scene.title}</strong>
       <div className="landing-screen-footer"><span>TAD<span className="landing-brand-dot">.</span></span><span>PUBLICIDAD EN MOVIMIENTO ↗</span></div>
     </div></div>
-    <div className="landing-scene-note"><span>{role === "advertiser" ? "01" : role === "driver" ? "02" : "03"} /</span>{scene.note}</div>
+    <div className="landing-scene-note"><span>{role === "advertiser" ? "01" : "02"} /</span>{scene.note}</div>
     <span className="landing-scene-caption">REPRESENTACIÓN ILUSTRATIVA · SIN DATOS EN VIVO</span>
   </div>;
 }

@@ -27,8 +27,10 @@ Destinos explícitos sin input arbitrario:
 `/advertiser/login` (login),
 dominio Driver `/` (información) y `/driver/login` (acceso existente).
 Si `NEXT_PUBLIC_LANDING_SIGNUP_ENABLED=true` tras verificación de identidad,
-se permite el onboarding `/advertiser/onboarding` y el registro canónico
-Driver (confirmar `/register` frente a `/driver/onboarding`).
+se permite el onboarding `/advertiser/onboarding` y el registro público
+Driver `/register`, utilizado por su landing propia. El flujo distinto
+`/driver/onboarding` se conserva para revisión separada; no se fusionan
+contratos sin validar el aprovisionamiento de identidad.
 Los hosts de configuración son allowlist; localhost solo en desarrollo.
 El código de referido, si existe, debe ser acotado y compatible con la ruta.
 

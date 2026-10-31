@@ -13,7 +13,7 @@ const { execFileSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
-const ROLE_LABELS = ['Anunciante', 'Conductor', 'Flota'];
+const ROLE_LABELS = ['Anunciante', 'Conductor'];
 
 function localBaseUrl(raw) {
   assert.ok(raw, 'Set LANDING_BASE_URL explicitly to an already running local landing.');
@@ -168,8 +168,9 @@ async function assertProfileLinks(page, base) {
     'An indexable advertiser login link must survive without JavaScript.');
   assert.ok(links.some(link => destination(link.href).origin === 'https://tad.driver.ibusiness.com.do'
     && destination(link.href).pathname === '/'), 'The driver landing must be linked canonically.');
-  assert.ok(links.some(link => destination(link.href).origin === 'https://tad.adm.ibusiness.com.do'
-    && destination(link.href).pathname === '/admin/login'), 'A safe admin login link must be indexable.');
+  assert.equal(links.length, 2, 'Only advertiser and driver profile cards should render.');
+  assert.equal(links.some(link => /tad\.adm\.ibusiness\.com\.do|\/admin\/login/.test(link.href)), false,
+    'Public marketing must not advertise the admin portal.');
   assert.equal(links.some(link => /onboarding/.test(link.href)), false,
     'This smoke expects the default signup gate to remain disabled.');
 }
@@ -222,8 +223,8 @@ async function main() {
         titles.add(await page.locator('#hero-title').innerText());
         questions.add(await page.locator('#preguntas summary').first().innerText());
       }
-      assert.equal(titles.size, 3, 'Hero must tell a distinct story for each perspective.');
-      assert.equal(questions.size, 3, 'The first FAQ must reflect the active perspective.');
+      assert.equal(titles.size, 2, 'Hero must tell a distinct story for each perspective.');
+      assert.equal(questions.size, 2, 'The first FAQ must reflect the active perspective.');
       await selectRole(panel, 'Anunciante', true);
       assert.equal(await hero.getByRole('button', { name: 'Anunciante', exact: true })
         .getAttribute('aria-pressed'), 'true');
@@ -300,37 +301,6 @@ async function main() {
       await panel.getByText('No es una nómina ni un saldo', { exact: false }).waitFor({ state: 'visible' });
     });
 
-    await check('Fleet demo stays synthetic, has two city scenarios and a local map', async () => {
-      await selectRole(panel, 'Flota');
-      await panel.getByText('Datos de demostración', { exact: false }).first().waitFor({ state: 'visible' });
-      await panel.getByText('Esquema ilustrativo · sin GPS real', { exact: true }).waitFor({ state: 'visible' });
-      for (const city of ['Santiago', 'Santo Domingo']) {
-        const button = panel.getByRole('button', { name: city, exact: true });
-        await button.click();
-        assert.equal(await button.getAttribute('aria-pressed'), 'true');
-      }
-      await panel.getByText('un pago pendiente no cambia el color de conexión', { exact: false })
-        .waitFor({ state: 'visible' });
-      const devices = panel.getByRole('list', { name: 'Selecciona un dispositivo de demostración', exact: true });
-      assert.equal(await devices.getByRole('button').count(), 5);
-      for (const [device, answer, explanation] of [
-        ['DEMO-01', 'Tiene una señal válida', /verde/],
-        ['DEMO-02', 'Lleva menos de 24 h sin conexión', /amarillo/],
-        ['DEMO-03', 'Pasaron 24 h o falta un dato válido', /Desde las 24 h/],
-        ['DEMO-04', 'Pasaron 24 h o falta un dato válido', /No hay registro/],
-        ['DEMO-05', 'Pasaron 24 h o falta un dato válido', /fecha.*no es válida/],
-      ]) {
-        await devices.getByRole('button', { name: new RegExp(device) }).click();
-        await panel.getByRole('button', { name: answer, exact: true }).click();
-        const feedback = await panel.locator('fieldset').getByRole('status').innerText();
-        assert.match(feedback, /^Correcto\./);
-        assert.match(feedback, explanation);
-      }
-      await panel.getByRole('button', { name: 'Santiago', exact: true }).click();
-      assert.equal(await panel.locator('fieldset button[aria-pressed="true"]').count(), 0,
-        'Changing city must reset the previous diagnosis.');
-    });
-
     await check('Measurement education and contextual FAQ are accessible', async () => {
       assert.equal(await page.locator('#medicion article').count(), 3);
       const question = page.locator('#preguntas summary').first();
@@ -377,11 +347,11 @@ async function main() {
         'Leaving an unchanged slider must not duplicate the event.');
       await page.getByRole('button', { name: 'Configuración de cookies', exact: true }).click();
       await rejectCookies(page);
-      await selectRole(panel, 'Flota');
+      await selectRole(panel, 'Anunciante');
       assert.equal(await page.evaluate(() => window.__landingEvents.length), count);
     });
 
-    await check('All perspectives fit 320, 390, 768 and 1440 pixel viewports', async () => {
+    await check('Both perspectives fit 320, 390, 768 and 1440 pixel viewports', async () => {
       for (const width of [320, 390, 768, 1440]) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         for (const role of ROLE_LABELS) {
@@ -408,7 +378,7 @@ async function main() {
       assert.equal(moving, 0);
     });
 
-    await check('Without JavaScript, all three profiles retain copy and safe links', async () => {
+    await check('Without JavaScript, both profiles retain copy and safe links', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       const noJsEvidence = evidenceCollector();
@@ -417,10 +387,10 @@ async function main() {
       const response = await staticPage.goto(base.href, { waitUntil: 'load', timeout: 60_000 });
       assert.equal(response.status(), 200);
       await staticPage.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
-      assert.equal(await staticPage.locator('#perfiles article').count(), 3);
+      assert.equal(await staticPage.locator('#perfiles article').count(), 2);
       await assertProfileLinks(staticPage, base);
       const profiles = await staticPage.locator('#perfiles').innerText();
-      for (const term of [/anunciant/i, /conductor|taxista/i, /flota/i]) assert.match(profiles, term);
+      for (const term of [/anunciant/i, /conductor|taxista/i]) assert.match(profiles, term);
       assert.equal(await staticPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await assertNoSideEffects(noJs, noJsEvidence);
       await noJs.close();

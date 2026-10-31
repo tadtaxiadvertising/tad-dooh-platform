@@ -6,18 +6,26 @@ area: frontend
 tags: [tad/reference, tad/area/frontend]
 ---
 
-# Selección de componentes y coste
+# Componentes gratuitos y coste — alcance dual
 
-Se revisaron los manifiestos, estilos, componentes y calculador de impacto disponibles en el repositorio. No se necesita instalar un catálogo para las interacciones seleccionadas.
+Antes de instalar componentes de catálogo, se inspeccionaron
+React 19, Next 15, Tailwind v4, CSS Modules, Lucide, el modelo
+de landing y `@tad/impact-calculator`. El alcance de dos públicos
+no necesita una dependencia pesada adicional.
 
-| Necesidad | Elección y motivo |
-| --- | --- |
-| Hero/perspectiva/tablet | React, CSS Modules y Lucide existentes; arte nativo que responde al perfil y conserva SSR. |
-| Recorrido | `CampaignJourney`, cuatro botones y panel local. Evita librería de carrusel, autoplay y contenido oculto para SEO. |
-| Rangos económicos | Controles HTML nativos y modelo puro; entrada normalizada y salida educativa. |
-| Flota/ciudad | `FleetExperience`, SVG y fixtures propios. No hay proveedor de tiles aprobado; no solicita claves, permisos ni datos reales. |
-| FAQ | `details/summary`, funcional sin JavaScript y sin dependencia de acordeón. |
-| Consentimiento | CookieBanner y helper compartidos; adaptador App Router sin dependencia de `next/router`. |
-| Impacto compartido | Inspeccionado `simulatorPricing.ts`/`@tad/impact-calculator`; requiere pantallas, meses, frecuencia y calibración. Se omite una conversión presupuesto→alcance sin contrato público verificable. |
+| Necesidad | Elección | Razón |
+| --- | --- | --- |
+| Hero / selector dual / tablet | React, CSS Modules y Lucide existentes | Ligereza, SSR y control visual |
+| Recorrido educativo | `CampaignJourney` local | 4 pasos, teclado, sin autoplay ni carrusel dependiente |
+| Presupuesto y R6 | Controles HTML `range`, `output`, modelo TypeScript puro | Accesible, validable y sin backend público |
+| FAQ | `details/summary` | Funciona sin JS ni otra librería |
+| Consentimiento | `CookieBanner` + cookie-consent compartido | Evita tracking previo al consentimiento |
+| Onboarding | Enlaces a rutas canónicas de cada portal | No duplicar identidad, contrato ni pagos |
+| Impacto publicitario | Simulador de dominio solo tras contrato verificable | No fingir impresiones derivadas de RD$ |
 
-No se incorporó código externo nuevo; no hay licencias de componentes adicionales que revisar. No se instalaron mapas, Recharts, GSAP ni kits visuales. El coste de JS se debe medir sobre los chunks del build, sin sumar doble los compartidos. Meta de incremento: ≤60 kB gzip frente a baseline equivalente; si no existe captura previa comparable, registrar esa limitación y el total actual sin inventar delta.
+No se añaden kits, mapas, GSAP, WebGL, animadores masivos ni
+servicios de terceros. React Bits, Embla y shadcn/ui son opciones
+futuras sujetas a licencia y medición, **no dependencias requeridas**.
+Objetivo de incremento sobre baseline comparable: <=60 KiB gzip.
+Registrar coste del bundle y no atribuir datos de laboratorio a
+Core Web Vitals de producción.

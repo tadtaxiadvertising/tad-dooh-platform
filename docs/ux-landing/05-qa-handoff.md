@@ -77,7 +77,8 @@ se permite en desarrollo loopback.
 - Ninguna llamada a API de campaña anónima; ningún dato
   financiero real o promesa de retorno. R6 con máximo 15 slots.
 - Controles funcionales en móvil, teclado y reduced-motion.
-- Enlaces a Driver y login Advertiser preservados y verificables.
+- Enlaces a Driver `/`, Driver `/register` (solo con gate), y login Advertiser
+  preservados; la landing Driver permite navegar de vuelta a Anunciante.
 - Registro real solo si identidad/aprobación están comprobadas
   en staging y el gate está habilitado.
 - Si CI no arranca por billing/cupo, informar como **infraestructura

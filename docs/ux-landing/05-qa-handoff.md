@@ -37,7 +37,9 @@ El paquete de skill conserva las instrucciones del usuario. Único ajuste de emp
 | Muestras de rendimiento | 3 contextos Chromium nuevos, localhost desarrollo, 150 ms / 200 KBps / CPU×4 | LCP 2,184 / 2,380 / 3,252 ms; mediana 2,380 ms. CLS 0 / 0 / 0. `runtimeMatchesBuild=false` explícito: el gzip usa build aislado y el navegador usa desarrollo. No certifica umbral productivo, Lighthouse, INP o p75 de campo. |
 | Documentación local | `knowledge-view.cjs render/check`, `docs-tool.cjs generate/check`, `git diff --check` | PASS: 30 documentos mantenidos, 1 Canvas, 17 nodos, 96 relaciones. Los seis documentos UX son referencias de esta entrega; no se copian los inventarios/documentos ajenos al PR. |
 
-Publicación del PR: pendiente al actualizar esta nota. Las capturas y logs detallados están fuera de Git bajo la carpeta de evidencias `landing-v3`; informes `landing-v3-smoke.log`, `landing-v3-final-measure.json` y `landing-v3-final-bundle-provenance.json`. No atribuir el gzip compilado al checkout del navegador: cada informe conserva su procedencia.
+Entrega publicada como [PR #168 en borrador](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/168), rama `codex/landing-experience-v3`. Commit de producto y evidencia `53c0a17cfb9f5bdeedc8bd82c2fd86e4159d5641`, padre main `a55d987a78e494503e0a887b09c874ffa2037f5b`; un commit documental posterior enlaza esta entrega. 37 archivos acotados. Los checks remotos son independientes de los PASS locales y deben consultarse en el PR.
+
+Las capturas y logs detallados están fuera de Git bajo la carpeta de evidencias `landing-v3`; informes `landing-v3-smoke.log`, `landing-v3-final-measure.json` y `landing-v3-final-bundle-provenance.json`. No atribuir el gzip compilado al checkout del navegador: cada informe conserva su procedencia. Los procesos de desarrollo propios se detuvieron tras la comprobación.
 
 ## Reproducir sin servicios reales
 

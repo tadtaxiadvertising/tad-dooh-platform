@@ -25,15 +25,6 @@ export const ROLE_CONTENT = {
     cta: "Conocer TAD para taxistas", finalTitle: "Conoce el siguiente paso para tu taxi.",
     finalCopy: "Revisa beneficios, requisitos y condiciones en la página para conductores.",
   },
-  fleet: {
-    eyebrow: "CADA SEÑAL TIENE UN CONTEXTO", headline: ["Una flota en movimiento.", "Una visión más clara."],
-    lead: "Acércate a la operación de una red de pantallas. Inspecciona una flota ficticia y aprende qué dice su conexión.",
-    heroCta: "Explorar la flota demo", title: "Mira la señal. Entiende el estado.",
-    description: "Cambia de ciudad, selecciona una pantalla y resuelve un pequeño diagnóstico. Todo ocurre con dispositivos sintéticos, sin telemetría real.",
-    benefits: ["Inspección sin exponer datos personales", "Conexión separada del estado financiero", "Operación real con acceso autorizado"],
-    cta: "Acceso administrativo", finalTitle: "Más contexto para operar mejor.",
-    finalCopy: "La operación y los datos de tu flota pertenecen al portal autorizado.",
-  },
 } satisfies Record<LandingRole, {
   eyebrow: string; headline: string[]; lead: string; heroCta: string;
   title: string; description: string; benefits: string[]; cta: string;
@@ -50,10 +41,5 @@ export const ROLE_FAQS: Record<LandingRole, readonly (readonly [string, string])
     ["¿La calculadora garantiza mis ingresos?", "No. Es un ejemplo bruto e ilustrativo. Elegibilidad, reproducciones verificadas, ventas aprobadas, ajustes y contrato determinan la liquidación real. No es una nómina ni un saldo."],
     ["¿Un referido pendiente cuenta como CPA?", "No. Este ejemplo solo representa eventos CPA validados. Un referido pendiente no es una venta aprobada. El máximo de 100 es un límite de la demo, no una regla del negocio."],
     ["¿Dónde conozco los requisitos para mi taxi?", "La página dedicada al taxista explica beneficios, proceso, requisitos y condiciones. Si ya participas, el acceso como conductor lleva a tu portal privado."],
-  ],
-  fleet: [
-    ["¿El mapa muestra taxis reales?", "No. Es un esquema con datos de demostración. Santo Domingo y Santiago son escenarios ilustrativos: la demo no acredita cobertura ni disponibilidad."],
-    ["¿Qué significa perder la conexión?", "Describe la señal conocida del dispositivo. El reproductor contempla contenido en caché y sincronización al recuperar la red, sujeto a licencia y estado. Desconectado no equivale a reproducción detenida."],
-    ["¿El color indica una deuda o bloqueo?", "No. Verde, amarillo y rojo describen conectividad. El estado financiero y las autorizaciones son independientes y solo se consultan con los permisos correspondientes."],
   ],
 };

@@ -94,3 +94,13 @@ Revertir únicamente los commits acotados de la revisión del
 PR, verificando dependencias. No usar `git checkout` masivo
 sobre apps, no alterar Admin, player, Driver offline, wallets,
 Prisma o datos productivos.
+
+## CI remota del commit actualizado
+
+Para el commit `4bc7e28e81a8691ca7f481fb9dede21176baab81`, GitHub registra:
+- [CI Quality Gates #41247430379](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41247430379): conclusión `failure`.
+- [Docker Image CI #41247430311](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41247430311): conclusión `failure`.
+- Los jobs `Tests` (124673663250), `TypeScript Check` (124673663181) y `Build Docker Image (driver)` (124673662451) devolvieron listas de pasos vacías `steps: []`.
+- El intento de obtener logs de Tests devolvió `BlobNotFound` (HTTP 404). Por tanto, **no hay ejecución de pruebas/compilación demostrada**, y la causa exacta del bloqueo del runner requiere revisión administrativa de GitHub Actions/billing. No atribuir esos failures a errores de la rama.
+
+El código fue verificado por inspección estática de las rutas y componentes modificados, pero **no** se ejecutó lint, TypeScript, browser ni builds sobre este SHA en esta revisión. Mantener el PR en borrador.

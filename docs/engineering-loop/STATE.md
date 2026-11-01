@@ -12,27 +12,39 @@
 |---|---|---|
 | #173 | Landing V5 Financial Motion Fix | ✅ MERGED |
 | #174 | Ownership en comisiones Driver | ✅ MERGED |
-| #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`)
+| #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`) |
+| #176 | Remove cap on sales and referrals (compensation streams) | ✅ MERGED |
 
 ### Cambios aplicados
 
-1. **Advertiser onboarding** (`apps/advertiser/pages/advertiser/onboarding.tsx`)
-   - `includeProduction: false` por defecto (opcional, desactivado)
+### 1. Advertiser onboarding (`apps/advertiser/pages/advertiser/onboarding.tsx`)
+- `includeProduction: false` por defecto (opcional, desactivado)
 
-2. **DTO OnboardAdvertiser** (`apps/api/src/modules/onboarding/dto/onboard-advertiser.dto.ts`)
-   - Agregados `campaignMonths: number` (optional, min 1)
-   - Agregado `includeProduction: boolean` (optional)
-   - `fileMetadata` mantenido como optional
+### 2. DTO OnboardAdvertiser (`apps/api/src/modules/onboarding/dto/onboard-advertiser.dto.ts`)
+- Agregados `campaignMonths: number` (optional, min 1)
+- Agregado `includeProduction: boolean` (optional)
+- `fileMetadata` mantenido como optional
 
-3. **Onboarding service** (`apps/api/src/modules/onboarding/onboarding.service.ts`)
-   - Destructura `campaignMonths`, `includeProduction`, `targetCity`
-   - Usa `campaignMonths` para calcular `endDate` y `campaignMonths` en la campaña
-   - `includeProduction` se guarda en `includeProduction` del campaign
+### 3. Onboarding service (`apps/api/src/modules/onboarding/onboarding.service.ts`)
+- Destructura `campaignMonths`, `includeProduction`, `targetCity`
+- Usa `campaignMonths` para calcular `endDate` y `campaignMonths` en la campaña
+- `includeProduction` se guarda en `includeProduction` del campaign
 
-4. **Prisma schema** (`apps/api/prisma/schema.prisma`)
-   - Agregado `campaignMonths: Int? @default(1) @map("campaign_months")`
-   - Agregado `includeProduction: Boolean? @default(false) @map("include_production")`
-   - Regeneró Prisma client
+### 4. Prisma schema (`apps/api/prisma/schema.prisma`)
+- Agregado `campaignMonths: Int? @default(1) @map("campaign_months")`
+- Agregado `includeProduction: Boolean? @default(false) @map("include_production")`
+- Regeneró Prisma client
+
+### 5. Driver earnings preview (`apps/driver/lib/earningsPreview.ts`)
+- `eligibleCount` ahora recibe un parámetro opcional `max`
+- `ads` sigue siendo capado a 15 (límite contractual)
+- `sales` y `referrals` ahora son **sin tope** (sin límite)
+- Uso de `max != null ? Math.min(max, v) : v` para distinguir entre "sin límite" y "con límite"
+
+### 6. Driver landing UI (`apps/driver/components/landing/DriverEarningsLab.tsx`)
+- `sales` control: `max: 100`, subtítulo: "sin límite"
+- `referrals` control: `max: 100`, subtítulo: "sin límite"
+- `ads` control: `max: 15` (permanece igual - límite contractual)
 
 ### Tests ejecutados (todos PASS)
 
@@ -40,23 +52,25 @@
 |---|---|
 | `scripts/landing.test.cjs` | 13/13 ✅ |
 | `scripts/driver-landing.test.cjs` | 11/11 ✅ |
-| `scripts/cookie-management.test.cjs` | 14/14 ✅ |
-| `pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.landing.json` | ✅ |
-| `pnpm --filter api build` | ✅ |
-| `pnpm --filter advertiser build` | ✅ |
+| **Total** | **38/38 ✅** |
 
-### Prisma migration
+---
+
+## Prisma migration
+
 - **Pendiente**: `prisma migrate dev` en staging (falta `DATABASE_URL` válido localmente)
 
-### Estado del trabajo
+---
+
+## Estado del trabajo
 
 - ✅ `includeProduction` ahora por defecto `false`
 - ✅ DTO declara `campaignMonths` e `includeProduction`
 - ✅ Backend guarda `campaignMonths` y `includeProduction` en el campaign
 - ✅ Prisma client actualizado
 - ✅ PR #175 mergeado en `origin/main` (`1185c1bd`)
+- ✅ PR #176 mergeado en `origin/main` (sales y referrals sin tope)
 - ⚠️ Prisma migration aún no aplicada en DB (esquema actualizado, DB no modificado)
-- ❌ Build advertiser: timeout (no ejecutado, no es un error real)
 
 ### Pendientes
 

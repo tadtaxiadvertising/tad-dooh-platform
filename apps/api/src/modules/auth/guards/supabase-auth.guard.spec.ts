@@ -151,6 +151,36 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     expect(getUser).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves Supabase network verification when local signature differs", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "network-auth-user",
+          email: "advertiser@example.com",
+          app_metadata: { role: "ADVERTISER", entityId: "advertiser-1" },
+        },
+      },
+      error: null,
+    });
+    const token = jwt.sign(
+      {
+        sub: "network-auth-user",
+        role: "authenticated",
+        session_id: "network-session-1",
+      },
+      "different-signing-key-used-only-in-test",
+      { audience: "authenticated", expiresIn: "1h" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toMatchObject({
+      id: "network-auth-user",
+      role: "ADVERTISER",
+      entityId: "advertiser-1",
+    });
+    expect(getUser).toHaveBeenCalledWith(token);
+  });
+
   it("does not accept a signed token without a user subject", async () => {
     const token = jwt.sign({ app_metadata: { role: "ADMIN" } }, secret, {
       audience: "authenticated",

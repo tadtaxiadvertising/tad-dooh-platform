@@ -35,7 +35,9 @@ export class OnboardingService {
       password,
       budget,
       expectedScreens,
-      fileMetadata,
+      targetCity,
+      campaignMonths,
+      includeProduction,
     } = data;
 
     // Normalize identity consistently across Prisma and Supabase Auth.
@@ -104,33 +106,38 @@ export class OnboardingService {
         });
 
         // 2. Create Initial Campaign (as an "Intent" or actual Campaign)
+        const months = campaignMonths ?? 1;
+        const targetImpressions = expectedScreens * 12500; // Estimación basada en screens
         const campaign = await tx.campaign.create({
           data: {
             name: `Lanzamiento - ${companyName}`,
             advertiser: companyName,
             advertiserId: advertiser.id,
             budget: Number(budget),
-            targetImpressions: Number(expectedScreens) * 12500, // Estimación basada en screens
+            targetImpressions,
             startDate: new Date(),
-            endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+            endDate: new Date(new Date().setMonth(new Date().getMonth() + months)),
             status: BUSINESS_RULES.STATUS.CAMPAIGN.PENDING_PAYMENT,
             active: false, // Inactiva hasta que se pague
             hasSeenTutorial: true,
             category: "General",
-            targetCity: data.targetCity,
+            targetCity: targetCity,
+            // Se respeta la duración declarada por el anunciante
+            campaignMonths: months,
+            includeProduction: includeProduction ?? false,
           },
         });
 
         // 3. Register Video Metadata (The actual file upload happens on frontend to storage)
-        if (fileMetadata) {
+        if (data.fileMetadata) {
           await tx.video.create({
             data: {
               campaignId: campaign.id,
-              title: fileMetadata.name,
+              title: data.fileMetadata.name,
               url: "PENDING_UPLOAD", // Placeholder, the frontend will handle upload to storage
               duration: 30, // Default duration per slot
-              fileSize: fileMetadata.size,
-              mimeType: fileMetadata.type,
+              fileSize: data.fileMetadata.size,
+              mimeType: data.fileMetadata.type,
             },
           });
         }

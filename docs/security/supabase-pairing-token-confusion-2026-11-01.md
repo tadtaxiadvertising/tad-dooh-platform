@@ -30,6 +30,18 @@ New Jest spec `supabase-auth.guard.spec.ts` defines nine cases:
 
 **Status:** test code added; Jest, TypeScript and staging E2E have **not yet produced passing results**. Static connector read-back is not a replacement for runtime tests. Earlier run [41179854949](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41179854949) failed with no executable steps. On 2026-11-01, this PR triggered [CI Quality Gates 41282584585](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41282584585) and [Docker Image CI 41282584618](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41282584618): checkout/setup steps completed and jobs entered execution. **Final conclusions are pending**; see [issue #147](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/147).
 
+## Executed CI evidence — 2026-11-01 UTC
+[CI Quality Gates run 41282584585](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41282584585) reached actual runner steps:
+- **API Jest passed:** 27/27 suites and 118/118 tests, including `supabase-auth.guard.spec.ts`.
+- **Prisma validation and client generation passed.**
+- **TypeScript failed before reaching API:** five errors in `apps/admin` (MapView Leaflet types/comparisons and proxy type mismatch), tracked in [#170](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/170).
+- **E2E did not run:** `Command "playwright" not found` (exit 254).
+- **Prettier failed:** 50 files need formatting, including this PR's guard and test spec; lint was skipped. Format only the touched files in this PR, not unrelated UX files.
+- **Security audit failed:** 84 findings (2 critical), including a Next.js image optimizer RCE advisory tracked in [#171](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/171).
+- Git checkout cleanup also warned about unconfigured submodule path `.worktrees/main1`. This was not the primary TypeScript failure.
+
+These failures mean the PR is **not release-ready** despite passing API unit tests. Results refer to the tested commit before this documentation-only update; a newer head requires its own CI checks.
+
 ## Release gates
 1. Restore GitHub Actions runner execution; run `pnpm --filter api exec jest src/modules/auth/guards/supabase-auth.guard.spec.ts --runInBand` and `pnpm --filter api exec tsc --noEmit`.
 2. On staging, verify genuine Supabase access JWTs (password + OAuth, HS256 and any configured asymmetric signing) have the expected audience and continue working.

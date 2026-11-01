@@ -1,11 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { DollarSign, Store, Users, Sparkles, ArrowRight, Zap } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { DollarSign, Users, Sparkles, ArrowRight, Zap } from "lucide-react";
 
 const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 500;
 
 interface ValuePropStepProps {
   onNext: () => void;
@@ -14,26 +12,27 @@ interface ValuePropStepProps {
 const BENEFITS = [
   {
     icon: DollarSign,
-    title: "Ingreso por Comisión de Campañas Vendidas",
-    subtitle: "Ingreso por Comisión: Gana RD$500 mensuales por cada campaña vendida.",
-    desc: "Gana RD$500 mensuales por cada campaña activa en tu pantalla, por cada campaña vendida.",
+    title: "Comisión por venta de publicidad",
+    subtitle: "RD$500 por venta aprobada",
+    desc: "La comisión se genera al validar la venta. No es un ingreso mensual automático ni se acredita solo por un interesado.",
     color: "text-[#22C55E]",
     bg: "bg-[#22C55E]/10",
     border: "border-[#22C55E]/20",
   },
   {
     icon: Users,
-    title: "Invitar Compañeros",
-    desc: `Gana un bono de RD$${REFERRAL_DRIVER_BONUS.toLocaleString()} por cada compañero taxista que refieras y recibe comisión por venta/referido de campañas.`,
+    title: "Referir otros conductores",
+    subtitle: `RD${REFERRAL_DRIVER_BONUS.toLocaleString()} por referido activado`,
+    desc: "El bono se genera cuando el conductor referido completa los requisitos de activación; no basta con compartir tu enlace.",
     color: "text-[#22C55E]",
     bg: "bg-[#22C55E]/10",
     border: "border-[#22C55E]/20",
   },
   {
     icon: Zap,
-    title: "Transmisión de Campañas",
-    subtitle: "Transmisión de Campañas: 1 a 15",
-    desc: "Gana RD$500 mensuales adicionales por cada campaña que transmitas activa en tu pantalla.",
+    title: "Publicidad en tu pantalla",
+    subtitle: "Hasta 15 anuncios elegibles",
+    desc: "RD$500 por anuncio elegible en el escenario mensual, sujeto a actividad verificada y a las condiciones de tu contrato.",
     color: "text-[#FDCB01]",
     bg: "bg-[#FDCB01]/10",
     border: "border-[#FDCB01]/20",
@@ -41,37 +40,20 @@ const BENEFITS = [
 ];
 
 export default function ValuePropStep({ onNext }: ValuePropStepProps) {
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      raf = requestAnimationFrame(() => {
-        const doc = document.documentElement;
-        const win = window;
-        const progress = doc.scrollTop / (doc.scrollHeight - win.innerHeight);
-        setScrollProgress(Math.min(1, Math.max(0, progress)));
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="flex-1 flex flex-col">
       {/* Hero */}
       <motion.div
         className="text-center pt-6 pb-8"
-        initial={{ opacity: 0, y: 20 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <motion.div
           className="w-20 h-20 bg-[#FDCB01] rounded-[1.75rem] flex items-center justify-center mx-auto mb-6 shadow-[0_20px_60px_rgba(253,203,1,0.15)]"
-          initial={{ scale: 0.8, rotate: -10 }}
+          initial={reduceMotion ? false : { scale: 0.8, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{
             delay: 0.1,
@@ -84,11 +66,11 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
         </motion.div>
         <motion.h1
           className="text-[28px] font-black text-white uppercase tracking-tight leading-tight mb-3"
-          initial={{ opacity: 0, y: 10 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          Tu taxi genera <span className="text-[#FDCB01]">dinero extra</span>
+          Tu taxi abre <span className="text-[#FDCB01]">tres oportunidades</span>
         </motion.h1>
         <motion.p
           className="text-sm text-gray-400 font-medium leading-relaxed max-w-[320px] mx-auto"
@@ -96,15 +78,15 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          Coloca una pantalla publicitaria en tu taxi y gana dinero mensual
-          mientras realizas tus rutas de siempre.
+          Conoce cómo funcionan los anuncios elegibles, las ventas publicitarias
+          y los bonos por conductores referidos antes de comenzar.
         </motion.p>
       </motion.div>
 
       {/* Benefit Cards */}
       <motion.div
         className="space-y-3 flex-1"
-        initial={{ opacity: 0 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
       >
@@ -114,18 +96,18 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
             <motion.div
               key={i}
               className={`flex items-start gap-4 p-4 rounded-2xl bg-white/[0.02] border ${b.border} hover:bg-white/[0.04] transition-all duration-300 hover:border-opacity-50`}
-              initial={{ opacity: 0, x: -20 }}
+              initial={reduceMotion ? false : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{
                 delay: 0.4 + i * 0.1,
                 duration: 0.5,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              whileHover={{ x: 4, scale: 1.01 }}
+              whileHover={reduceMotion ? undefined : { x: 4, scale: 1.01 }}
             >
               <motion.div
                 className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${b.bg} ${b.color}`}
-                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.1, rotate: 5 }}
               >
                 <Icon className="w-5 h-5" />
               </motion.div>
@@ -168,16 +150,7 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
         </motion.button>
       </motion.div>
 
-      {/* Scroll Progress Bar */}
-      <div className="w-full px-4">
-        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-[#FDCB01]"
-            style={{ width: `${scrollProgress * 100}%` }}
-            animate={{ width: `${scrollProgress * 100}%` }}
-          />
-        </div>
-      </div>
+
     </div>
   );
 }

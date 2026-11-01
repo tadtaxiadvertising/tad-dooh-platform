@@ -8,6 +8,8 @@ import {
   Query,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
+  Req,
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
@@ -22,12 +24,23 @@ import type {
 } from "./commission.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
+import type { AuthUser } from "../auth/auth.types";
 
 @Controller("commissions")
 export class CommissionController {
   private readonly logger = new Logger(CommissionController.name);
 
   constructor(private readonly commissionService: CommissionService) {}
+
+  /**
+   * TenantGuard validates :id, not :driverId. Fail closed here for
+   * commission history/pending endpoints that use a named driverId.
+   */
+  private assertDriverAccess(driverId: string, user?: AuthUser) {
+    if (user?.role === UserRole.ADMIN) return;
+    if (user?.role === UserRole.DRIVER && user.entityId && user.entityId === driverId) return;
+    throw new ForbiddenException("No tienes acceso a las comisiones de este conductor.");
+  }
 
   /**
    * POST /api/commissions — Crear comisión idempotente
@@ -62,7 +75,11 @@ export class CommissionController {
    */
   @Get("pending/:driverId")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
-  async getPendingCommissions(@Param("driverId") driverId: string) {
+  async getPendingCommissions(
+    @Param("driverId") driverId: string,
+    @Req() req: { user?: AuthUser },
+  ) {
+    this.assertDriverAccess(driverId, req.user);
     const commissions =
       await this.commissionService.getPendingCommissions(driverId);
     return { success: true, commissions };
@@ -73,7 +90,11 @@ export class CommissionController {
    */
   @Get("history/:driverId")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
-  async getCommissionHistory(@Param("driverId") driverId: string) {
+  async getCommissionHistory(
+    @Param("driverId") driverId: string,
+    @Req() req: { user?: AuthUser },
+  ) {
+    this.assertDriverAccess(driverId, req.user);
     const commissions =
       await this.commissionService.getDriverCommissionHistory(driverId);
     return { success: true, commissions };

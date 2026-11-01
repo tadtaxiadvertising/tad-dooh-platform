@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "strict": true, "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "pages/index.tsx",
+    "pages/driver/onboarding.tsx",
+    "components/landing/**/*.tsx",
+    "components/onboarding/EarningsCalculatorStep.tsx",
+    "components/onboarding/ValuePropStep.tsx",
+    "lib/earningsPreview.ts"
+  ],
+  "exclude": ["node_modules", ".next", "tests/e2e"]
+}

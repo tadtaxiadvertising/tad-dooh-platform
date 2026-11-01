@@ -105,6 +105,8 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     const token = jwt.sign(
       {
         sub: "auth-user-1",
+        session_id: "supabase-session-1",
+        role: "authenticated",
         email: "admin@example.com",
         app_metadata: { role: "ADMIN", entityId: "admin-1" },
       },
@@ -119,6 +121,34 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
       entityId: "admin-1",
     });
     expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects an audience-matched token without a Supabase session_id", async () => {
+    const token = jwt.sign(
+      { sub: "driver-4", role: "authenticated", app_metadata: { role: "ADMIN" } },
+      secret,
+      { audience: "authenticated", expiresIn: "5m" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a non-user role even when audience and session_id are present", async () => {
+    const token = jwt.sign(
+      { sub: "service-token", role: "service_role", session_id: "not-user-session" },
+      secret,
+      { audience: "authenticated", expiresIn: "5m" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
   });
 
   it("does not accept a signed token without a user subject", async () => {

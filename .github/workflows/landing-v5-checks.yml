@@ -37,5 +37,5 @@ jobs:
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
         run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.landing.json
-      - name: Isolated driver TypeScript diagnostics
-        run: pnpm --filter driver exec tsc --noEmit --pretty false
+      - name: Type check Driver landing and onboarding simulator
+        run: pnpm exec tsc --noEmit --project apps/driver/tsconfig.landing.json

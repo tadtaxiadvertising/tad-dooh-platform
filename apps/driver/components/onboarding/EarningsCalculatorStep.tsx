@@ -1,337 +1,137 @@
 "use client";
 
-import { motion } from "framer-motion";
-import {
-  RotateCcw,
-  Calculator,
-  ArrowRight,
-  TrendingUp,
-  BadgeCheck,
-  Wifi,
-  Clock,
-  ShieldCheck,
-} from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowLeft, ArrowRight, BadgeCheck, MonitorPlay, ShoppingBag, Users, ShieldCheck } from "lucide-react";
+import { previewDriverEarnings } from "../../lib/earningsPreview";
 
-const REFERRAL_DRIVER_BONUS = 500;
+type Earnings = ReturnType<typeof previewDriverEarnings>;
 
-interface EarningsCalculatorStepProps {
+interface Props {
   onNext: () => void;
   onPrev: () => void;
   campaigns: number;
-  setCampaigns: (value: number) => void;
+  setCampaigns: (n: number) => void;
+  approvedSales: number;
+  setApprovedSales: (n: number) => void;
   referredDrivers: number;
-  setReferredDrivers: (value: number) => void;
-  projectedEarnings: number;
-  REFERRAL_DRIVER_BONUS: number;
-  REFERRAL_BUSINESS_BONUS?: number;
+  setReferredDrivers: (n: number) => void;
+  earningsPreview: Earnings;
 }
 
-interface SliderFieldProps {
-  label: string;
-  min: number;
-  max: number;
-  value: number;
-  onChange: (value: number) => void;
-  color: "yellow" | "green" | "orange";
-  icon: React.ElementType;
-  ariaLabel: string;
-  bonusText?: React.ReactNode;
-  description?: string;
-}
+const rd = (amount: number) => `RD$ ${amount.toLocaleString("es-DO")}`;
 
-function SliderField({
-  label,
-  min,
-  max,
-  value,
-  onChange,
-  color,
-  icon: Icon,
-  ariaLabel,
-  bonusText,
-  description,
-}: SliderFieldProps) {
-  const colorMap = {
-    yellow: "tad-range-yellow",
-    green: "tad-range-green",
-    orange: "tad-range-orange",
-  };
-  const sliderColorClass = colorMap[color];
-  const pct = ((value - min) / (max - min)) * 100;
-  const bonusColor =
-    color === "green" ? "#22C55E" : color === "orange" ? "#FF8C00" : "#FDCB01";
-
+function EarningsSlider({
+  id, label, value, max, onChange, description,
+}: {
+  id: string; label: string; value: number; max: number;
+  onChange: (value: number) => void; description: string;
+}) {
   return (
-    <motion.div
-      className="space-y-2"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <div className="flex justify-between items-end gap-3 mb-1">
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider leading-snug">
-          {label}
-          <span className="text-white/25 normal-case">
-            ({min} - {max})
-          </span>
-        </span>
-        <span className="text-base font-black tabular-nums shrink-0 text-[#FDCB01]">
-          {value}
-        </span>
+    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={id} className="text-xs font-semibold text-zinc-200">{label}</label>
+        <output htmlFor={id} className="text-xl font-black tabular-nums text-[#FFD400]">{value}</output>
       </div>
       <div className="flex items-center gap-3">
-        <motion.button
-          type="button"
-          aria-label={`Reducir ${label}`}
-          onClick={() => onChange(Math.max(min, value - 1))}
-          className="tad-stepper"
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          −
-        </motion.button>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={1}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className={`tad-slider ${sliderColorClass} flex-1 min-h-[32px]`}
-          style={
-            {
-              "--fill": `${Math.min(100, Math.max(0, pct))}%`,
-            } as React.CSSProperties
-          }
-          aria-label={ariaLabel}
-        />
-        <motion.button
-          type="button"
-          aria-label={`Aumentar ${label}`}
-          onClick={() => onChange(Math.min(max, value + 1))}
-          className="tad-stepper"
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          +
-        </motion.button>
+        <button type="button" aria-label={`Disminuir ${label}`} className="tad-stepper shrink-0"
+          disabled={value <= 0} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+        <input id={id} className="tad-slider tad-range-yellow min-w-0 flex-1"
+          type="range" min={0} max={max} step={1} value={value}
+          onChange={event => onChange(Number(event.target.value))}
+          aria-valuetext={`${value} ${label.toLowerCase()}`} />
+        <button type="button" aria-label={`Aumentar ${label}`} className="tad-stepper shrink-0"
+          disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>+</button>
       </div>
-      {description && (
-        <p className="text-[10px] text-[#FDCB01]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
-          <RotateCcw className="w-3 h-3" />
-          {description}
-        </p>
-      )}
-      {bonusText && (
-        <motion.p
-          className="mt-2 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"
-          style={{ color: bonusColor }}
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-        >
-          {Icon && <Icon className="w-3 h-3" />}
-          {bonusText}
-        </motion.p>
-      )}
-    </motion.div>
+      <p className="text-xs leading-relaxed text-zinc-400">{description}</p>
+    </div>
   );
 }
 
 export default function EarningsCalculatorStep({
-  onNext,
-  onPrev,
-  campaigns,
-  setCampaigns,
-  referredDrivers,
-  setReferredDrivers,
-  projectedEarnings,
-  REFERRAL_DRIVER_BONUS,
-}: EarningsCalculatorStepProps) {
+  onNext, onPrev, campaigns, setCampaigns, approvedSales, setApprovedSales,
+  referredDrivers, setReferredDrivers, earningsPreview,
+}: Props) {
+  const reduceMotion = useReducedMotion();
+  const { ads, sales, referrals, screenAdsRD, salesRD, referralsRD,
+    recurringMonthlyExampleRD, oneTimeEventsExampleRD, illustrativeTotalRD } = earningsPreview;
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <motion.div
-        className="text-center pt-6 pb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          className="inline-flex px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black text-[#FDCB01] uppercase tracking-[0.2em] mb-4"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            delay: 0.1,
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-          }}
-        >
-          <Calculator className="w-3 h-3" />
-          Simulador de Ganancias
-        </motion.div>
-        <motion.h1
-          className="text-[26px] font-black text-white uppercase tracking-tight leading-tight mb-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          Simula tus <span className="text-[#FDCB01]">Ingresos</span>
-        </motion.h1>
-        <motion.p
-          className="text-xs text-gray-500 font-bold uppercase tracking-wider"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          Ajusta los valores para calcular tus ganancias estimadas
-        </motion.p>
-      </motion.div>
+    <motion.section initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }} className="flex flex-1 flex-col gap-5">
+      <header className="space-y-2 text-center">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#FFD400]/30 bg-[#FFD400]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#FFD400]">
+          <BadgeCheck size={15} aria-hidden="true"/> Ejemplo de tres formas de ganar
+        </span>
+        <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+          Tu recorrido. <span className="text-[#FFD400]">Tus oportunidades.</span>
+        </h1>
+        <p className="text-sm leading-relaxed text-zinc-400">
+          Ajusta las cantidades del ejemplo. Una oportunidad no equivale a una comisión aprobada ni a un pago recibido.
+        </p>
+      </header>
 
-      {/* Calculator Card */}
-      <motion.div
-        className="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 space-y-6 flex-1"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-      >
-        {/* Campaigns Slider */}
-        <SliderField
-          label="1. Anuncios en tu Pantalla"
-          min={0}
-          max={100}
-          value={campaigns}
-          onChange={setCampaigns}
-          color="yellow"
-          icon={RotateCcw}
-          ariaLabel="Anuncios en tu pantalla"
-          description="Rotación exacta cada 30 segundos · Ganas RD$500 mensuales por cada anuncio"
-        />
+      <div className="grid gap-3 md:grid-cols-3">
+        <article className="rounded-2xl border border-[#FFD400]/20 bg-[#FFD400]/[0.06] p-4">
+          <MonitorPlay size={23} className="mb-3 text-[#FFD400]" aria-hidden="true"/>
+          <h2 className="text-xs font-bold text-white">Anuncios en pantalla</h2>
+          <p className="mt-2 text-2xl font-black tabular-nums text-white">{rd(screenAdsRD)}</p>
+          <p className="mt-1 text-xs text-zinc-400">Escenario mensual · {ads} de 15 anuncios</p>
+        </article>
+        <article className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <ShoppingBag size={23} className="mb-3 text-emerald-400" aria-hidden="true"/>
+          <h2 className="text-xs font-bold text-white">Venta de publicidad</h2>
+          <p className="mt-2 text-2xl font-black tabular-nums text-white">{rd(salesRD)}</p>
+          <p className="mt-1 text-xs text-zinc-400">Bonos de ejemplo · {sales} ventas aprobadas</p>
+        </article>
+        <article className="rounded-2xl border border-sky-500/20 bg-sky-500/[0.06] p-4">
+          <Users size={23} className="mb-3 text-sky-400" aria-hidden="true"/>
+          <h2 className="text-xs font-bold text-white">Referir conductores</h2>
+          <p className="mt-2 text-2xl font-black tabular-nums text-white">{rd(referralsRD)}</p>
+          <p className="mt-1 text-xs text-zinc-400">Bonos de ejemplo · {referrals} referidos activados</p>
+        </article>
+      </div>
 
-        {/* Driver Referral Slider */}
-        <SliderField
-          label="2. Compañeros Taxistas Invitados"
-          min={0}
-          max={100}
-          value={referredDrivers}
-          onChange={setReferredDrivers}
-          color="green"
-          icon={BadgeCheck}
-          ariaLabel="Compañeros taxistas invitados"
-        />
-
-        {/* Earnings Display */}
-        <motion.div
-          className="bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-        >
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40 mb-1">
-                Total Mensual Estimado
-              </p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xs font-bold text-[#AAAAAA]">RD$</span>
-                <motion.span className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums">
-                  {projectedEarnings.toLocaleString()}
-                </motion.span>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
-                    Fórmula mensual
-                  </span>
-                  <span className="text-[10px] font-black text-[#FDCB01] tabular-nums">
-                    RD$500 × {campaigns} + RD$500 × {referredDrivers} = RD${projectedEarnings.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
-                    ROI estimado · año 1
-                  </span>
-                  <span className="text-xs font-black text-[#22C55E] tabular-nums">
-                    {Math.round((projectedEarnings * 12) / 6000 * 100)}%
-                  </span>
-                </div>
-              </div>
-            </div>
+      <div className="grid gap-4 rounded-3xl border border-white/10 bg-zinc-950/70 p-4 sm:p-6">
+        <div className="grid grid-cols-5 gap-2" aria-label={`Escenario de ${ads} anuncios elegibles de 15`}>
+          {Array.from({ length: 15 }, (_, index) => (
+            <span key={index} aria-hidden="true"
+              className={`grid h-9 place-items-center rounded-lg border text-xs font-bold tabular-nums transition-colors duration-200 ${index < ads ? "border-[#FFD400] bg-[#FFD400] text-black" : "border-white/10 bg-white/5 text-zinc-500"}`}>
+              {String(index + 1).padStart(2, "0")}
+            </span>
+          ))}
+        </div>
+        <EarningsSlider id="onboarding-screen-ads" label="Anuncios elegibles en pantalla"
+          value={campaigns} max={15} onChange={setCampaigns}
+          description="RD$500 por anuncio elegible bajo las condiciones del período. Máximo 15." />
+        <EarningsSlider id="onboarding-sales" label="Ventas aprobadas de publicidad"
+          value={approvedSales} max={20} onChange={setApprovedSales}
+          description="RD$500 por comisión de venta validada. No equivale a un anunciante que solo preguntó." />
+        <EarningsSlider id="onboarding-referrals" label="Conductores referidos activados"
+          value={referredDrivers} max={20} onChange={setReferredDrivers}
+          description="RD$500 por referido que cumpla activación y condiciones. No basta con enviar un enlace." />
+        <div className="rounded-2xl border border-[#FFD400]/20 bg-[#FFD400]/[0.07] p-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-zinc-300">Total bruto del ejemplo en un período</p>
+          <output className="mt-2 block text-4xl font-black tabular-nums tracking-tight text-[#FFD400]"
+            htmlFor="onboarding-screen-ads onboarding-sales onboarding-referrals">
+            {rd(illustrativeTotalRD)}
+          </output>
+          <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 text-xs text-zinc-300">
+            <p>Escenario mensual de anuncios: <strong>{rd(recurringMonthlyExampleRD)}</strong></p>
+            <p>Eventos de venta y referido (no recurrentes): <strong>{rd(oneTimeEventsExampleRD)}</strong></p>
+            <p className="flex items-start gap-2 leading-relaxed text-zinc-400">
+              <ShieldCheck size={17} className="mt-0.5 shrink-0 text-[#FFD400]" aria-hidden="true"/>
+              Esta simulación no es saldo, nómina, ROI ni una promesa de ingresos. Las liquidaciones dependen de actividad verificada, comisiones aprobadas, contrato y ajustes.
+            </p>
           </div>
-
-          <motion.div
-            className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
-            <div className="flex justify-between gap-4">
-              <span>Por anuncios activos ({campaigns} × RD$500):</span>
-              <span className="text-white font-bold tabular-nums shrink-0">
-                RD${(campaigns * 500).toLocaleString()}
-              </span>
-            </div>
-            {referredDrivers > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex justify-between gap-4 text-[#22C55E]"
-              >
-                <span>
-                  Bonificación taxistas ({referredDrivers} × RD$
-                  {REFERRAL_DRIVER_BONUS.toLocaleString()}):
-                </span>
-                <span className="font-bold tabular-nums shrink-0">
-                  RD$
-                  {(referredDrivers * REFERRAL_DRIVER_BONUS).toLocaleString()}
-                </span>
-              </motion.div>
-            )}
-          </motion.div>
-
-          {/* Membership Cost */}
-          <motion.div
-            className="mt-4 pt-4 border-t border-white/[0.06] bg-white/5 rounded-xl p-4 border border-white/5 text-xs text-gray-400"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-              <span>Inversión de Activación</span>
-              <span>Monto</span>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between font-bold text-zinc-300">
-                <span>Membresía, Canal y Soporte</span>
-                <span>RD$6,000 / año</span>
-              </div>
-              <p className="text-[10px] text-gray-500 leading-normal italic">
-                * El pago de la membresía cubre el Starter Kit (tablet, soporte,
-                cableado) y seguro contra robo o averías.
-              </p>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* CTA */}
-        <motion.div className="pt-6 mt-auto">
-          <motion.button
-            onClick={onNext}
-            className="w-full bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.15em] text-sm py-5 rounded-2xl transition-all shadow-[0_10px_40px_rgba(253,203,1,0.15)] active:scale-[0.97] flex items-center justify-center gap-3"
-            whileHover={{
-              scale: 1.02,
-              boxShadow: "0 15px 50px rgba(253,203,1,0.25)",
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <span>QUIERO SOLICITAR MI PANTALLA</span>
-            <ArrowRight className="w-5 h-5" />
-          </motion.button>
-        </motion.div>
-      </motion.div>
-    </div>
+        </div>
+      </div>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row">
+        <button type="button" onClick={onPrev} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 px-4 font-bold text-white">
+          <ArrowLeft size={18} aria-hidden="true"/> Anterior
+        </button>
+        <button type="button" onClick={onNext} className="flex min-h-12 flex-[2] items-center justify-center gap-2 rounded-xl bg-[#FFD400] px-4 font-black text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD400]">
+          Conocer los requisitos <ArrowRight size={18} aria-hidden="true"/>
+        </button>
+      </div>
+    </motion.section>
   );
 }

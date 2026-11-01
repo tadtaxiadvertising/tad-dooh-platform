@@ -153,8 +153,15 @@ export class SupabaseAuthGuard implements CanActivate {
             audience: "authenticated",
           }) as jwt.JwtPayload;
 
-          if (typeof payload.sub !== "string" || !payload.sub) {
-            throw new UnauthorizedException("JWT sin identidad de usuario.");
+          // Supabase user access JWTs carry a session_id and a top-level
+          // "authenticated" role; application RBAC lives in app_metadata.
+          // This prevents other locally signed JWTs from becoming sessions.
+          if (
+            typeof payload.sub !== "string" || !payload.sub ||
+            typeof payload.session_id !== "string" || !payload.session_id ||
+            payload.role !== "authenticated"
+          ) {
+            throw new UnauthorizedException("JWT sin sesión de usuario válida.");
           }
 
           if (payload) {

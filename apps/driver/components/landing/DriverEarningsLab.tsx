@@ -16,10 +16,10 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
   const result = previewDriverEarnings(ads, sales, referrals);
 
   const controls = [
-    { id: "ads", title: "Publicidad en mi pantalla", subtitle: "Anuncios elegibles en un mes · máximo 15", icon: MonitorPlay, value: ads, setter: setAds, max: 15 },
-    { id: "sales", title: "Venta de publicidad", subtitle: "Comisiones por ventas aprobadas · no recurrentes", icon: ShoppingBag, value: sales, setter: setSales, max: 20 },
-    { id: "referrals", title: "Referir conductores", subtitle: "Conductores referidos activados · bono único por hito", icon: Users, value: referrals, setter: setReferrals, max: 20 },
-  ];
+      { id: "ads", title: "Publicidad en mi pantalla", subtitle: "Anuncios elegibles en un mes · máximo 15", icon: MonitorPlay, value: ads, setter: setAds, max: 15 },
+      { id: "sales", title: "Venta de publicidad", subtitle: "Comisiones por ventas aprobadas · sin límite", icon: ShoppingBag, value: sales, setter: setSales, max: 100 },
+      { id: "referrals", title: "Referir conductores", subtitle: "Conductores referidos activados · bono único por hito · sin límite", icon: Users, value: referrals, setter: setReferrals, max: 100 },
+    ];
 
   return (
     <section id="calculadora" className={styles.section} aria-labelledby="driver-lab-title">

@@ -27,8 +27,15 @@
 .breakdown div { display:flex; justify-content:space-between; align-items:start; gap:12px; font-size:11px; line-height:1.5; color:#b4bcb0; }
 .breakdown strong { color:#fff; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .explainer { display:grid; gap:5px; padding:20px 0; font-size:11px; color:#c9d3c4; }
-.explainer strong { color:white; }
-.notice { font-size:11px; color:#bcc5b7; line-height:1.75; }
+|.explainer strong { color:white; }
+|.rateTable { margin-top:28px; border:1px solid #ffffff24; border-radius:16px; overflow:hidden; font-size:11px; }
+|.rateTable table { width:100%; border-collapse:collapse; }
+|.rateTable th { background:#FFD40013; color:#aaafb7; font-weight:800; text-align:left; padding:12px 14px; border-bottom:1px solid #ffffff1b; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+|.rateTable td { padding:12px 14px; border-bottom:1px solid #ffffff1b; color:#b4bcb0; }
+|.rateTable tr:last-child td { border-bottom:none; }
+|.rateTable tbody tr:hover { background:#13171b44; }
+|.rateNote { margin-top:12px; font-size:10px; color:#9da2aa; line-height:1.6; }
+|.notice { font-size:11px; color:#bcc5b7; line-height:1.75; }
 .next { display:flex; align-items:center; justify-content:space-between; min-height:50px; margin-top:25px; padding:13px 19px; background:#FFD400; color:#131313; border-radius:11px; font-size:12px; font-weight:800; transition:transform .2s,background .2s; }
 .next:hover { background:#ffe55b; transform:translateY(-2px); }
 @media (max-width:850px) { .section { width:calc(100% - 40px); padding:64px 0 78px; } .layout { grid-template-columns:1fr; } .result { position:static; } }

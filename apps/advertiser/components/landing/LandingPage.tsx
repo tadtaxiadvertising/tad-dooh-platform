@@ -136,6 +136,18 @@ export default function LandingPage() {
               </motion.output>
               <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas.</p>
               <p className="landing-disclaimer">Tarifas de referencia del estimador compartido, pendientes de conciliación comercial con el backend. La metodología utiliza benchmarks internacionales, no datos de impacto propios calibrados en RD. No es una cotización ni una garantía de alcance.</p>
+              <div className="landing-rate-summary">
+                <p className="landing-rate-label">Los tres sustratos que mueven el negocio publicitario:</p>
+                <table className="landing-rate-table">
+                  <thead><tr><th>Sustrato</th><th>Disparador</th><th>Tasa de referencia</th><th>Frecuencia</th><th>Límite</th></tr></thead>
+                  <tbody>
+                    <tr><td>Pantalla digital</td><td>Play de 30s</td><td>RD$2.500/mes · pantalla</td><td>Mensual</td><td>15 (máx.)</td></tr>
+                    <tr><td>Producción creativa</td><td>Video o estático</td><td>RD$2.500</td><td>Una vez</td><td>Opcional</td></tr>
+                    <tr><td>Campaña</td><td>Suscripción</td><td>RD$1.500/campaña</td><td>Mensual</td><td>15 (máx.)</td></tr>
+                  </tbody>
+                </table>
+                <p className="landing-rate-note">Tasas de referencia del estimador compartido. La cotización final se concilia con el backend; la metodología utiliza benchmarks internacionales (IAB/Geopath/NYC-TLC) sin datos RD propios calibrados.</p>
+              </div>
               {projection.warnings.length > 0 && <details className="landing-warning-details"><summary>Ver fuentes y advertencias ({projection.warnings.length})</summary>
                 <ul>{projection.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>
               </details>}

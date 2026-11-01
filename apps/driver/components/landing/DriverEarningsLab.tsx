@@ -39,7 +39,9 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
               <div className={styles.controlHeader}>
                 <span className={styles.icon}><Icon size={20} aria-hidden="true"/></span>
                 <div className={styles.controlTitle}><label htmlFor={`driver-lab-${id}`}>{title}</label><small>{subtitle}</small></div>
-                <output htmlFor={`driver-lab-${id}`} className={styles.value}>{value}</output>
+                <output htmlFor={`driver-lab-${id}`} className={styles.value}>
+                  {id === "ads" ? `${value} × RD$500` : id === "sales" ? `RD$500 × ${value}` : `RD$500 × ${value}`}
+                </output>
               </div>
               <input id={`driver-lab-${id}`} type="range" min={0} max={max} step={1}
                 value={value} onChange={e => setter(Number(e.target.value))}
@@ -70,6 +72,43 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
           <div className={styles.explainer}>
             <p><strong>Mensual por anuncios:</strong> {money(result.recurringMonthlyExampleRD)}</p>
             <p><strong>Bonos por eventos:</strong> {money(result.oneTimeEventsExampleRD)}</p>
+          </div>
+          <div className={styles.rateTable}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Flujo de ingresos</th>
+                  <th>Disparador</th>
+                  <th>Tasa de referencia</th>
+                  <th>Frecuencia</th>
+                  <th>Límite</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Publicidad en pantalla</td>
+                  <td>Play de 30s</td>
+                  <td>RD$500</td>
+                  <td>Mensual</td>
+                  <td>15 (máx.)</td>
+                </tr>
+                <tr>
+                  <td>Venta de publicidad</td>
+                  <td>Venta aprobada</td>
+                  <td>RD$500 × ventas</td>
+                  <td>Única (transitoria)</td>
+                  <td>Sin límite</td>
+                </tr>
+                <tr>
+                  <td>Referir conductores</td>
+                  <td>Activación verificada</td>
+                  <td>RD$500</td>
+                  <td>Una vez (transitoria)</td>
+                  <td>Sin límite</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className={styles.rateNote}>Tasas de referencia del simulador. No son nóminas, balance ni pago prometido. La tasa de pago real por play de publicidad es RD$1.25 según la normativa en vigor.</p>
           </div>
           <p className={styles.notice}>No representa una nómina, balance, ingreso neto o pago prometido. Aplican validación de actividad, estados de comisión, contrato, disponibilidad y ajustes. Los referidos y ventas no se repiten mensualmente por defecto.</p>
           <a className={styles.next} href={signupEnabled ? "/register" : "#como-participar"}>

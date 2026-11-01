@@ -145,6 +145,31 @@ async function main() {
         'Run default smoke with NEXT_PUBLIC_LANDING_SIGNUP_ENABLED unset or false.');
     });
 
+    await check('Three earning streams update without network calls or balances', async () => {
+      const lab = page.locator('#calculadora');
+      assert.equal(await lab.count(), 1);
+      const ads = lab.getByRole('slider', { name: /publicidad en mi pantalla/i });
+      const sales = lab.getByRole('slider', { name: /venta de publicidad/i });
+      const referrals = lab.getByRole('slider', { name: /referir conductores/i });
+      const total = lab.locator('output[htmlFor]');
+      assert.equal(await ads.getAttribute('max'), '15');
+      assert.equal(await sales.getAttribute('max'), '20');
+      assert.equal(await referrals.getAttribute('max'), '20');
+      const read = async () => Number((await lab.locator('output').last().innerText()).replace(/[^0-9]/g, ''));
+      assert.equal(await read(), 5000); // 8 ads + 1 sale + 1 referral
+      await ads.fill('15');
+      assert.equal(await read(), 8500);
+      await sales.fill('0');
+      await referrals.fill('0');
+      assert.equal(await read(), 7500);
+      await ads.fill('0');
+      assert.equal(await read(), 0);
+      assert.equal(await lab.locator('[data-active="true"]').count(), 0);
+      assert.equal(await lab.locator('[data-active]').count(), 15);
+      assert.match(await lab.innerText(), /no recurrentes|no se repiten mensualmente/i);
+      assert.deepEqual(api, []);
+    });
+
     await check('Participation anchor and native FAQ are operable by keyboard', async () => {
       const participation = page.getByRole('link', { name: 'Conoce cómo participar', exact: false }).first();
       await participation.focus();

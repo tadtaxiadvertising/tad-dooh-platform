@@ -11,7 +11,11 @@ describe("SimulationController Security & Authorization", () => {
   const reflector = new Reflector();
 
   const mockSimulationService = {
-    getState: jest.fn().mockReturnValue({ isRunning: false, currentScenario: null, fleetCount: 0 }),
+    getState: jest.fn().mockReturnValue({
+      isRunning: false,
+      currentScenario: null,
+      fleetCount: 0,
+    }),
     loadScenario: jest.fn().mockResolvedValue(undefined),
     stopSimulation: jest.fn().mockResolvedValue({ success: true }),
     clearTestData: jest.fn().mockResolvedValue(undefined),
@@ -35,7 +39,10 @@ describe("SimulationController Security & Authorization", () => {
 
   describe("Security Metadata", () => {
     it("must NOT be marked with @Public() at controller level", () => {
-      const isPublic = reflector.get<boolean>(IS_PUBLIC_KEY, SimulationController);
+      const isPublic = reflector.get<boolean>(
+        IS_PUBLIC_KEY,
+        SimulationController,
+      );
       expect(isPublic).toBeFalsy();
     });
 

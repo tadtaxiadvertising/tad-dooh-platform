@@ -15,6 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import styles from "./driver-landing.module.css";
+import DriverEarningsLab from "./DriverEarningsLab";
 
 const signupEnabled = process.env.NEXT_PUBLIC_LANDING_SIGNUP_ENABLED === "true";
 
@@ -64,8 +65,8 @@ const questions = [
     answer: "No. La solicitud queda pendiente de revisión y de las condiciones de aprobación y pago aplicables. Crear una cuenta no confirma incorporación, instalación ni activación del servicio.",
   },
   {
-    question: "¿Cuánto voy a ganar?",
-    answer: "Esta página no ofrece una ganancia garantizada. Los resultados y cualquier condición económica deben confirmarse según las campañas disponibles, la operación y el acuerdo aplicable. Revisa costos, pagos y responsabilidades antes de aceptar.",
+    question: "¿Cuáles son las tres formas de generar ingresos?",
+    answer: "Puedes obtener compensaciones por anuncios elegibles reproducidos en tu pantalla (hasta 15), comisiones por ventas publicitarias aprobadas y bonos de RD$500 por conductores referidos que cumplan la activación. El simulador separa los importes de ejemplo; no son saldo ni pagos prometidos.",
   },
   {
     question: "¿Qué datos necesito para solicitar el registro?",
@@ -164,7 +165,7 @@ export default function DriverLandingPage() {
               <span>PARA TAXISTAS</span>
             </a>
             <nav aria-label="Navegación principal" className={styles.nav}>
-              <a href="#como-participar" className={styles.navSection}>Cómo participar</a>
+              <a href="#calculadora" className={styles.navSection}>Calcula tus oportunidades</a><a href="#como-participar" className={styles.navSection}>Cómo participar</a>
               <a href="#preguntas" className={styles.navSection}>Preguntas</a>
               <a href="/driver/login" className={styles.login}>Ingresar <ArrowRight size={16} aria-hidden="true" /></a>
             </nav>
@@ -178,8 +179,8 @@ export default function DriverLandingPage() {
               <h1 id="hero-title">Tu taxi. <br />Tu recorrido. <br /><span>Una nueva oportunidad.</span></h1>
               <p className={styles.heroDescription}>Conecta tu vehículo con la publicidad digital a bordo. Conoce la propuesta, revisa las condiciones y descubre cómo participar en TAD.</p>
               <div className={styles.actions}>
-                <a className={styles.primaryButton} href={signupEnabled ? "/register" : "#como-participar"}>
-                  {signupEnabled ? "Solicitar registro" : "Conoce cómo participar"}<ArrowRight size={18} aria-hidden="true" />
+                <a className={styles.primaryButton} href="#calculadora">
+                  Probar mis ganancias<ArrowRight size={18} aria-hidden="true" />
                 </a>
                 <a className={styles.textLink} href={signupEnabled ? "#como-participar" : "#condiciones"}>{signupEnabled ? "Conoce cómo participar" : "Ver las condiciones"} <ArrowDown size={15} aria-hidden="true" /></a>
               </div>
@@ -211,6 +212,8 @@ export default function DriverLandingPage() {
               ))}
             </div>
           </section>
+
+          <DriverEarningsLab signupEnabled={signupEnabled} />
 
           <section id="como-participar" className={`${styles.processSection} ${styles.anchor}`} aria-labelledby="process-title">
             <div className={`${styles.container} ${styles.processLayout}`}>

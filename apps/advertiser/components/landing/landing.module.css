@@ -123,3 +123,18 @@
   .landing :global(.landing-final h2) { font-size: 39px; }
 }
 @media (max-width: 380px) { .landing :global(.landing-perspectives button) { padding-inline: 13px; font-size: 10px; } .landing :global(.landing-creative) { padding: 18px; } .landing :global(.landing-creative strong) { font-size: 25px; } .landing :global(h1) { font-size: 44px; } }
+
+/* V5: the advertiser experience has one audience and one genuinely optional addon. */
+.landing :global(.landing-campaign-panel) { align-items:start; }
+.landing :global(.landing-production-option) { align-items:center; justify-content:flex-start; padding:14px; border:1px solid #FFD40044; border-radius:12px; background:#FFD4000a; cursor:pointer; min-height:52px; gap:13px; }
+.landing :global(.landing-production-option input[type=checkbox]) { width:22px; height:22px; flex-shrink:0; accent-color:#FFD400; cursor:pointer; }
+.landing :global(.landing-production-option span) { font-weight:600; font-size:12px; line-height:1.5; color:#f1f3e9; }
+.landing :global(.landing-estimate-detail) { padding:14px; background:#FFD4000c; border:1px solid #FFD40022; border-radius:9px; font-size:11px; line-height:1.7; color:#e3e7c4; }
+.landing :global(.landing-warning-details) { margin-top:16px; color:#c6cbbc; font-size:11px; line-height:1.7; }
+.landing :global(.landing-warning-details summary) { cursor:pointer; min-height:44px; display:flex; align-items:center; text-decoration:underline; text-underline-offset:3px; color:#FFD400; }
+.landing :global(.landing-warning-details ul) { list-style:disc; padding-left:19px; }
+.landing :global(.landing-warning-details li) { margin:7px 0; }
+.landing :global(.landing-preview) { box-shadow:0 24px 70px #0004; }
+.landing :global(.landing-creative) { transition: background .25s ease, border-color .25s ease; }
+@media (max-width:760px) { .landing :global(.landing-campaign-panel) { grid-template-columns:1fr; } }
+@media (prefers-reduced-motion:reduce) { .landing :global(.landing-creative) { transition:none; } }

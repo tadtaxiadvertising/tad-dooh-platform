@@ -1,0 +1,196 @@
+import { ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import * as jwt from "jsonwebtoken";
+import { SupabaseAuthGuard } from "./supabase-auth.guard";
+
+describe("SupabaseAuthGuard token purpose isolation", () => {
+  const secret = "unit-test-only-secret-with-at-least-32-chars";
+  const getUser = jest.fn();
+  const supabase = {
+    getAnonClient: jest.fn(() => ({ auth: { getUser } })),
+    getClient: jest.fn(),
+  };
+  const config = {
+    get: jest.fn((key: string) =>
+      key === "SUPABASE_JWT_SECRET" || key === "JWT_SECRET"
+        ? secret
+        : undefined,
+    ),
+  };
+  const reflector = { getAllAndOverride: jest.fn() };
+
+  let guard: SupabaseAuthGuard;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: "invalid session" },
+    });
+    reflector.getAllAndOverride.mockReturnValue(false);
+    guard = new SupabaseAuthGuard(
+      reflector as never,
+      supabase as never,
+      config as never,
+    );
+  });
+
+  function contextFor(token: string, isPublic = false) {
+    reflector.getAllAndOverride.mockReturnValue(isPublic);
+    const request: {
+      headers: { authorization: string };
+      url: string;
+      user?: { id: string; role: string; entityId?: string | null };
+    } = {
+      headers: { authorization: `Bearer ${token}` },
+      url: "/api/v1/protected",
+    };
+    const context = {
+      getHandler: () => function handler() {},
+      getClass: () => class Controller {},
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as unknown as ExecutionContext;
+    return { context, request };
+  }
+
+  it("rejects a real hardware pairing JWT on protected API routes", async () => {
+    const token = jwt.sign({ sub: "driver-1", type: "pairing" }, secret, {
+      expiresIn: "5m",
+    });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects pairing tokens even when they include a user-session audience", async () => {
+    const token = jwt.sign(
+      { sub: "driver-2", type: "pairing", app_metadata: { role: "ADMIN" } },
+      secret,
+      { audience: "authenticated", expiresIn: "5m" },
+    );
+    const { context } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("ignores pairing JWT identity on public routes", async () => {
+    const token = jwt.sign({ sub: "driver-3", type: "pairing" }, secret, {
+      expiresIn: "5m",
+    });
+    const { context, request } = contextFor(token, true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signed non-session JWT without the authenticated audience", async () => {
+    const token = jwt.sign(
+      { sub: "other-token", app_metadata: { role: "ADMIN" } },
+      secret,
+      { expiresIn: "5m" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a valid Supabase-shaped access token with user identity", async () => {
+    const token = jwt.sign(
+      {
+        sub: "auth-user-1",
+        session_id: "supabase-session-1",
+        role: "authenticated",
+        email: "admin@example.com",
+        app_metadata: { role: "ADMIN", entityId: "admin-1" },
+      },
+      secret,
+      { audience: "authenticated", expiresIn: "1h" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toMatchObject({
+      id: "auth-user-1",
+      role: "ADMIN",
+      entityId: "admin-1",
+    });
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects an audience-matched token without a Supabase session_id", async () => {
+    const token = jwt.sign(
+      { sub: "driver-4", role: "authenticated", app_metadata: { role: "ADMIN" } },
+      secret,
+      { audience: "authenticated", expiresIn: "5m" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a non-user role even when audience and session_id are present", async () => {
+    const token = jwt.sign(
+      { sub: "service-token", role: "service_role", session_id: "not-user-session" },
+      secret,
+      { audience: "authenticated", expiresIn: "5m" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves Supabase network verification when local signature differs", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "network-auth-user",
+          email: "advertiser@example.com",
+          app_metadata: { role: "ADVERTISER", entityId: "advertiser-1" },
+        },
+      },
+      error: null,
+    });
+    const token = jwt.sign(
+      {
+        sub: "network-auth-user",
+        role: "authenticated",
+        session_id: "network-session-1",
+      },
+      "different-signing-key-used-only-in-test",
+      { audience: "authenticated", expiresIn: "1h" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toMatchObject({
+      id: "network-auth-user",
+      role: "ADVERTISER",
+      entityId: "advertiser-1",
+    });
+    expect(getUser).toHaveBeenCalledWith(token);
+  });
+
+  it("does not accept a signed token without a user subject", async () => {
+    const token = jwt.sign({ app_metadata: { role: "ADMIN" } }, secret, {
+      audience: "authenticated",
+      expiresIn: "5m",
+    });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+});

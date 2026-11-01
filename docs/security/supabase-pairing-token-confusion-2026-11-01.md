@@ -28,7 +28,7 @@ New Jest spec `supabase-auth.guard.spec.ts` defines nine cases:
 - Reject a non-user role even with audience and session ID.
 - Preserve Supabase network verification when a valid token is signed with a different key.
 
-**Status:** test code added; Jest, TypeScript and staging E2E have **not** been executed in this run. Static connector read-back is not a replacement for runtime tests. Previous GitHub Actions run [41179854949](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41179854949) had failed jobs with no executable steps; the exact runner root cause remains unconfirmed in [issue #147](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/147).
+**Status:** test code added; Jest, TypeScript and staging E2E have **not yet produced passing results**. Static connector read-back is not a replacement for runtime tests. Earlier run [41179854949](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41179854949) failed with no executable steps. On 2026-11-01, this PR triggered [CI Quality Gates 41282584585](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41282584585) and [Docker Image CI 41282584618](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41282584618): checkout/setup steps completed and jobs entered execution. **Final conclusions are pending**; see [issue #147](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/147).
 
 ## Release gates
 1. Restore GitHub Actions runner execution; run `pnpm --filter api exec jest src/modules/auth/guards/supabase-auth.guard.spec.ts --runInBand` and `pnpm --filter api exec tsc --noEmit`.

@@ -107,6 +107,18 @@ export class SupabaseAuthGuard implements CanActivate {
 
     const token = authHeader.split(" ")[1];
 
+    // A hardware pairing JWT is NOT a Supabase user session. AuthModule signs
+    // pairing tokens with the same configured secret used for local verification.
+    // Reject before cache, network fallback, and the development bypass.
+    // Reading an unverified claim is safe here because it can only DENY access.
+    const tokenClaims = jwt.decode(token) as jwt.JwtPayload | null;
+    if (tokenClaims?.type === "pairing") {
+      if (strict) {
+        throw new UnauthorizedException("Token de sesión no válido.");
+      }
+      return;
+    }
+
     // --- CACHE LOOKUP ---
     const cached = SupabaseAuthGuard.sessionCache.get(token);
     if (cached && cached.expiry > Date.now()) {
@@ -136,7 +148,14 @@ export class SupabaseAuthGuard implements CanActivate {
         } else {
           const payload = jwt.verify(token, jwtSecret, {
             algorithms: [alg, "HS256", "HS384", "HS512"],
+            // The shared JWT secret must not make other application tokens
+            // (pairing, service tokens) acceptable as Supabase user sessions.
+            audience: "authenticated",
           }) as jwt.JwtPayload;
+
+          if (typeof payload.sub !== "string" || !payload.sub) {
+            throw new UnauthorizedException("JWT sin identidad de usuario.");
+          }
 
           if (payload) {
             request.user = {

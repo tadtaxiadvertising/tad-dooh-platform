@@ -60,6 +60,14 @@ export class OnboardAdvertiserDto {
   @IsNotEmpty()
   targetCity: string;
 
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  campaignMonths?: number;
+
+  @IsOptional()
+  includeProduction?: boolean;
+
   @IsObject()
   @IsOptional()
   @ValidateNested()

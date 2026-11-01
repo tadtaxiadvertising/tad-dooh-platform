@@ -92,6 +92,8 @@ model Campaign {
   priority          Int      @default(0)
   targetImpressions Int      @default(0) @map("target_impressions")
   budget            Float    @default(0)
+  campaignMonths    Int?     @default(1) @map("campaign_months")
+  includeProduction Boolean? @default(false) @map("include_production")
   targetUrl         String?  @map("target_url")
   createdById       String?  @map("created_by")
   createdAt         DateTime @default(now()) @map("created_at")

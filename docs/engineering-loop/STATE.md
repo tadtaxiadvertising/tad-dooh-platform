@@ -6,13 +6,13 @@
 
 ---
 
-## Checkpoint inicial
+## Historial de PRs
 
-### Hallazgos críticos identificados
-
-| P0 | P1 | P2 | P3 |
-|---|---|---|---|
-| **None** (no incidentes críticos) | - DTO no declara `campaignMonths` e `includeProduction` - Producción por defecto `true` en onboarding | Pricing discrepante entre frontend/backend - Driver preview sin límite 15 anuncios | Registro de costos en docs | Reglas de negocio sin centralización |
+| PR | Título | Estado |
+|---|---|---|
+| #173 | Landing V5 Financial Motion Fix | ✅ MERGED |
+| #174 | Ownership en comisiones Driver | ✅ MERGED |
+| #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`)
 
 ### Cambios aplicados
 
@@ -45,23 +45,39 @@
 | `pnpm --filter api build` | ✅ |
 | `pnpm --filter advertiser build` | ✅ |
 
+### Prisma migration
+- **Pendiente**: `prisma migrate dev` en staging (falta `DATABASE_URL` válido localmente)
+
 ### Estado del trabajo
 
 - ✅ `includeProduction` ahora por defecto `false`
 - ✅ DTO declara `campaignMonths` e `includeProduction`
 - ✅ Backend guarda `campaignMonths` y `includeProduction` en el campaign
 - ✅ Prisma client actualizado
-- ⚠️ Prisma migration aún no aplicada (esquema actualizado, DB no modificado)
+- ✅ PR #175 mergeado en `origin/main` (`1185c1bd`)
+- ⚠️ Prisma migration aún no aplicada en DB (esquema actualizado, DB no modificado)
 - ❌ Build advertiser: timeout (no ejecutado, no es un error real)
 
 ### Pendientes
 
-- [ ] Aplicar `prisma migrate dev` para sincronizar la base de datos
-- [ ] Tests de integración del endpoint `POST /api/proxy/onboarding/advertiser` con `campaignMonths` y `includeProduction`
-- [ ] Corregir precios de producción: `BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD=1500` vs `screen-monthly-rate-rd=2500` (contrato comercial pendiente)
-- [ ] Drift: `driver-evidence-RD` vs `estimateEarnings.ts` del driver lib (ya validado)
-- [ ] Auditoría de seguridad: `apps/driver/pages/api/proxy/[...path].ts`
-- [ ] Registrar captured screenshots y evidencia visual
+| # | Pendiente | Prioridad |
+|---|---|---|
+| 1 | Aplicar `prisma migrate dev` en staging | 🔴 |
+| 2 | Concordar precio de producción: `1500rd` vs `2500rd/month` (drift comercial) | 🟡 |
+| 3 | Auditoría `apps/driver/pages/api/proxy/[...path].ts` — implementación correcta | 🟡 |
+| 4 | Registrar captured screenshots y evidencia visual | 🟡 | Verificar con navegador (Playwright) en `docs/engineering-loop/` |
+
+### Resumen de audit
+| Archivo | Encontrado | Avalado | Acción |
+|---|---|---|---|
+| `apps/driver/pages/api/proxy/[...path].ts` | `bodyParser: false`, `getRawBody` con `limit: "5mb"`, `duplex: "half"` | ✅ Correcto | Sin cambios |
+| `apps/advertiser/components/advertiser/simulatorPricing.ts` | `SCREEN_MONTHLY_RATE = 2500`, `PRODUCTION_FEE = 2500` | ⚠️ Drift | PR financiero independiente |
+| `apps/api/src/common/constants/business-rules.ts` | `ADVERTISER_COST_PER_CAMPAIGN_RD = 1500` | ⚠️ Drift | PR financiero independiente |
+
+### Próximos pasos
+1. **Prisma migrate**: Aplicar en staging (`prisma migrate dev`) con DATABASE_URL válido
+2. **Pricing**: Concordar contrato comercial entre `1500rd` y `2500rd/month`
+3. **Screenshots**: Capturar con Playwright en sistemas con navegador disponible
 
 ### Personal de rollback
 

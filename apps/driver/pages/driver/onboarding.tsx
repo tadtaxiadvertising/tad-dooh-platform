@@ -9,11 +9,10 @@ import ValuePropStep from "@/components/onboarding/ValuePropStep";
 import EarningsCalculatorStep from "@/components/onboarding/EarningsCalculatorStep";
 import RegistrationStep from "@/components/onboarding/RegistrationStep";
 import SuccessStep from "@/components/onboarding/SuccessStep";
+import { previewDriverEarnings } from "../../lib/earningsPreview";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 
-const REFERRAL_DRIVER_BONUS = 500;
-const REFERRAL_BUSINESS_BONUS = 500;
 
 export default function DriverOnboarding() {
   const router = useRouter();
@@ -23,10 +22,9 @@ export default function DriverOnboarding() {
   // Simulator states
   const [campaigns, setCampaigns] = useState(5);
   const [referredDrivers, setReferredDrivers] = useState(0);
-
-  // Total projected earnings: campaign pay (RD$500 each) + driver referral (RD$500 each)
-  const projectedEarnings =
-    campaigns * 500 + referredDrivers * REFERRAL_DRIVER_BONUS;
+  const [approvedSales, setApprovedSales] = useState(0);
+  // The wizard and landing share the same capped and distinct revenue streams.
+  const earningsPreview = previewDriverEarnings(campaigns, approvedSales, referredDrivers);
 
   // Registration fields
   const [formData, setFormData] = useState({
@@ -153,9 +151,9 @@ export default function DriverOnboarding() {
             setCampaigns={setCampaigns}
             referredDrivers={referredDrivers}
             setReferredDrivers={setReferredDrivers}
-            projectedEarnings={projectedEarnings}
-            REFERRAL_DRIVER_BONUS={REFERRAL_DRIVER_BONUS}
-            REFERRAL_BUSINESS_BONUS={REFERRAL_BUSINESS_BONUS}
+            approvedSales={approvedSales}
+            setApprovedSales={setApprovedSales}
+            earningsPreview={earningsPreview}
           />
         );
       case 3:

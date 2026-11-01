@@ -42,7 +42,7 @@ export default function AdvertiserOnboarding() {
     screens: 1,
     months: 1,
     frequencySeconds: 30,
-    includeProduction: true,
+    includeProduction: false,
   });
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({

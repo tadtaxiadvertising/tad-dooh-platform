@@ -31,66 +31,29 @@ const modelPath = 'apps/advertiser/lib/landing/model.ts';
 const model = loadTs(modelPath);
 const DRIVER_ORIGIN = 'https://tad.driver.ibusiness.com.do';
 
-test('public marketing offers exactly two perspectives without an admin destination', () => {
-  assert.deepEqual(model.ROLES.map(role => role.id), ['advertiser', 'driver']);
-  const content = loadTs('apps/advertiser/lib/landing/content.ts');
-  assert.deepEqual(Object.keys(content.ROLE_CONTENT).sort(), ['advertiser', 'driver']);
-  assert.deepEqual(Object.keys(content.ROLE_FAQS).sort(), ['advertiser', 'driver']);
-  assert.equal(Object.hasOwn(model.landingLinks(), 'fleet'), false);
+test('advertiser public landing has only one audience and the onboarding engine', () => {
+  const landing = fs.readFileSync(path.resolve(__dirname, '..',
+    'apps/advertiser/components/landing/LandingPage.tsx'), 'utf8');
+  assert.match(landing, /ROLE_CONTENT\.advertiser/);
+  assert.match(landing, /estimateCampaignDetailed\(config\)/);
+  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
+  assert.doesNotMatch(landing, /roleButtons|estimateDriverEarnings|landing-driver-path|driver-slots|driver-cpa|ROLES\.map|ROLE_FAQS\[role\]/);
+  assert.match(landing, /ROLE_FAQS\.advertiser/);
+  const metadata = fs.readFileSync(path.resolve(__dirname, '..',
+    'apps/advertiser/app/layout.tsx'), 'utf8');
+  assert.doesNotMatch(metadata, /conductor|flota|taxista/i);
 });
 
-test('multirole driver experience links the dedicated taxi landing and keeps login separate', () => {
-  let stateIndex = 0;
-  const jsx = (type, props) => ({ type, props: props || {} });
-  const Landing = loadTs('apps/advertiser/components/landing/LandingPage.tsx', { imports: {
-    react: {
-      useState: initial => [stateIndex++ === 0 ? 'driver' : initial, () => {}],
-      useRef: initial => ({ current: initial }),
-      useEffect() {},
-    },
-    'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: Symbol('Fragment') },
-    'lucide-react': new Proxy({}, { get: () => () => null }),
-    '@tad/ui/components/CookieBanner': { __esModule: true, default: () => null },
-    '@tad/services/cookie-consent': { trackAnalyticsEvent() {} },
-    '../../lib/landing/model': model,
-    '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
-    './CampaignJourney': { __esModule: true, default: () => null },
-    './CityScene': { __esModule: true, default: () => null },
-    './LandingAnalytics': { __esModule: true, default: () => null },
-    './landing.module.css': { __esModule: true, default: { landing: 'landing' } },
-  } }).default;
-  function descendants(node) {
-    if (Array.isArray(node)) return node.flatMap(descendants);
-    if (!node || typeof node !== 'object') return [];
-    return [node, ...descendants(node.props?.children)];
-  }
-  const links = descendants(Landing()).filter(node => node.type === 'a');
-  const text = node => Array.isArray(node) ? node.map(text).join('')
-    : typeof node === 'string' ? node : node && typeof node === 'object' ? text(node.props?.children) : '';
-  assert.equal(links.find(node => text(node).includes('Conocer TAD para taxistas')).props.href, `${DRIVER_ORIGIN}/`);
-  assert.equal(links.find(node => text(node).includes('Ingresar como conductor')).props.href, `${DRIVER_ORIGIN}/driver/login`);
-});
-
-test('driver example calculates gross slots and approved CPA at RD$500 each', () => {
-  for (const [slots, cpa, adsRD, cpaRD, totalRD] of [
-    [0, 0, 0, 0, 0], [8, 0, 4000, 0, 4000], [15, 2, 7500, 1000, 8500],
-    [30, 2, 7500, 1000, 8500], [-3, -2, 0, 0, 0], [2.9, 1.8, 1000, 500, 1500],
-  ]) {
-    assert.deepEqual(model.estimateDriverEarnings(slots, cpa), { adsRD, cpaRD, totalRD });
-  }
-});
-
-test('driver example fails closed for nonfinite input and keeps very large totals safe', () => {
-  for (const invalid of [NaN, Infinity, -Infinity]) {
-    assert.deepEqual(model.estimateDriverEarnings(invalid, invalid), { adsRD: 0, cpaRD: 0, totalRD: 0 });
-    assert.equal(model.estimateDriverEarnings(8, invalid).totalRD, 4000);
-    assert.equal(model.estimateDriverEarnings(invalid, 2).totalRD, 1000);
-  }
-  const large = model.estimateDriverEarnings(Number.MAX_VALUE, Number.MAX_VALUE);
-  assert.equal(large.adsRD, 7500);
-  assert.ok(Number.isSafeInteger(large.totalRD));
-  assert.equal(large.cpaRD, 50000);
-  assert.equal(large.totalRD, 57500);
+test('public advertiser onboarding requires production opt-in and retains exact flag', () => {
+  const page = fs.readFileSync(path.resolve(__dirname, '..',
+    'apps/advertiser/pages/advertiser/onboarding.tsx'), 'utf8');
+  assert.match(page, /includeProduction: false/);
+  assert.match(page, /includeProduction: simulator\.includeProduction/);
+  const landing = fs.readFileSync(path.resolve(__dirname, '..',
+    'apps/advertiser/components/landing/LandingPage.tsx'), 'utf8');
+  assert.match(landing, /type="checkbox" checked=\{includeProduction\}/);
+  assert.match(landing, /includeProduction \? money\(quote\.productionFee\) : "No incluida · RD\$ 0"/);
 });
 
 test('referral transfer permits a single bounded code and drops other URL data', () => {

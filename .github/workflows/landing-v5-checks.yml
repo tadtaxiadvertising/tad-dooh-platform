@@ -1,0 +1,41 @@
+name: Landing V5 Focused Gates
+
+on:
+  pull_request:
+    paths:
+      - "apps/advertiser/**"
+      - "apps/driver/**"
+      - "scripts/landing*.cjs"
+      - "scripts/driver-landing*.cjs"
+      - ".github/workflows/landing-v5-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  landing-logic-and-types:
+    name: Landing logic and isolated type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Landing and driver regression logic
+        run: node --test scripts/landing.test.cjs scripts/driver-landing.test.cjs
+      - name: Consent regression logic
+        run: node --test scripts/cookie-management.test.cjs
+      - name: Type check advertiser landing
+        run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.landing.json
+      - name: Type check Driver landing and onboarding simulator
+        run: pnpm exec tsc --noEmit --project apps/driver/tsconfig.landing.json

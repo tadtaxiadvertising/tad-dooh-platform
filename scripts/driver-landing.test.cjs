@@ -189,6 +189,7 @@ test('driver landing uses native links so hovering cannot prefetch private pages
     'next/image': { __esModule: true, default: () => null },
     'lucide-react': new Proxy({}, { get: () => () => null }),
     './driver-landing.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
+    './DriverEarningsLab': { __esModule: true, default: () => null },
   };
   const Landing = loadTs('apps/driver/components/landing/DriverLandingPage.tsx', { imports }).default;
   const tree = nodes(Landing());
@@ -200,4 +201,32 @@ test('driver landing uses native links so hovering cannot prefetch private pages
   assert.ok(linkedNodes.some(node => node.props.href === 'https://tad.anunciante.ibusiness.com.do/'),
     'Drivers can reach the advertiser experience without a third public profile.');
   assert.equal(linkedNodes.some(node => node.props.href === '/register'), false);
+});
+
+test('driver preview applies the absolute 15-ad cap and models three streams separately', () => {
+  const { previewDriverEarnings } = loadTs('apps/driver/lib/earningsPreview.ts');
+  assert.deepEqual(previewDriverEarnings(8, 2, 3), {
+    ads: 8, sales: 2, referrals: 3,
+    screenAdsRD: 4000, salesRD: 1000, referralsRD: 1500,
+    recurringMonthlyExampleRD: 4000, oneTimeEventsExampleRD: 2500,
+    illustrativeTotalRD: 6500,
+  });
+  assert.equal(previewDriverEarnings(15, 0, 0).illustrativeTotalRD, 7500);
+  assert.equal(previewDriverEarnings(100, 0, 0).illustrativeTotalRD, 7500);
+  assert.equal(previewDriverEarnings(100, 1, 1).illustrativeTotalRD, 8500);
+  for (const value of [NaN, Infinity, -Infinity, -8]) {
+    assert.equal(previewDriverEarnings(value, value, value).illustrativeTotalRD, 0);
+  }
+  assert.equal(previewDriverEarnings(2.9, 1.5, 1.5).illustrativeTotalRD, 2000);
+});
+
+test('public driver calculator and onboarding reuse the same earnings helper', () => {
+  const read = relativePath => fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8');
+  assert.match(read('apps/driver/components/landing/DriverEarningsLab.tsx'), /previewDriverEarnings\(ads, sales, referrals\)/);
+  assert.match(read('apps/driver/pages/driver/onboarding.tsx'), /previewDriverEarnings\(campaigns, approvedSales, referredDrivers\)/);
+  const step = read('apps/driver/components/onboarding/EarningsCalculatorStep.tsx');
+  assert.match(step, /max=\{15\}/);
+  assert.match(step, /Ventas aprobadas de publicidad/);
+  assert.match(step, /Conductores referidos activados/);
+  assert.doesNotMatch(step, /ROI estimado|Total Mensual Estimado/);
 });

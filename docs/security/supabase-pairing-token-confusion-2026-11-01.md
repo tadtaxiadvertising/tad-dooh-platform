@@ -17,7 +17,7 @@
 Supabase documentation confirms `aud`, `sub`, `role` and `session_id` as required Auth JWT claims: [JWT Claims Reference](https://supabase.com/docs/guides/auth/jwt-fields). Validate the actual deployed token profile in staging before merge.
 
 ## Test evidence and limits
-New Jest spec `supabase-auth.guard.spec.ts` defines eight cases:
+New Jest spec `supabase-auth.guard.spec.ts` defines nine cases:
 - Reject real pairing token on protected route.
 - Reject pairing token even with a forged session audience.
 - Ignore pairing identity on public route.
@@ -26,6 +26,7 @@ New Jest spec `supabase-auth.guard.spec.ts` defines eight cases:
 - Reject a token without a subject.
 - Reject a token with audience but without a Supabase session ID.
 - Reject a non-user role even with audience and session ID.
+- Preserve Supabase network verification when a valid token is signed with a different key.
 
 **Status:** test code added; Jest, TypeScript and staging E2E have **not** been executed in this run. Static connector read-back is not a replacement for runtime tests. Previous GitHub Actions run [41179854949](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41179854949) had failed jobs with no executable steps; the exact runner root cause remains unconfirmed in [issue #147](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/147).
 

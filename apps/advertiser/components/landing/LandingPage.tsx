@@ -27,6 +27,7 @@ export default function LandingPage() {
   const [referral, setReferral] = useState<string | null>(null);
   useEffect(() => { setReferral(referralCodeFromSearch(window.location.search)); }, []);
   const previousPreview = useRef("");
+  const reduceMotion = useReducedMotion();
   const links = landingLinks();
   const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
   const quote = estimateCampaign(config);
@@ -56,7 +57,7 @@ export default function LandingPage() {
         <section className="landing-hero landing-wrap" aria-labelledby="hero-title">
           <div className="landing-hero-copy">
             <p className="landing-eyebrow"><span/> PUBLICIDAD QUE ACOMPAÑA TU CIUDAD</p>
-            <motion.h1 id="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
+            <motion.h1 id="hero-title" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
               {content.headline[0]}<br/><span>{content.headline[1]}</span>
             </motion.h1>
             <p className="landing-lead">{content.lead}</p>
@@ -130,7 +131,7 @@ export default function LandingPage() {
               <p className="landing-total-label">Total estimado del ejemplo · sin impuestos adicionales</p>
               <motion.output className="landing-large-number" key={quote.total} id="budget-total"
                 htmlFor="campaign-screens campaign-months campaign-production"
-                initial={{ opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
+                initial={reduceMotion ? false : { opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
                 {money(quote.total)}
               </motion.output>
               <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas.</p>

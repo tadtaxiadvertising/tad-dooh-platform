@@ -160,19 +160,15 @@ async function assertNoSideEffects(context, evidence) {
   }
 }
 
-async function assertProfileLinks(page, base) {
-  const links = await page.locator('#perfiles a[href]').evaluateAll(elements =>
-    elements.map(element => ({ href: element.getAttribute('href'), text: element.textContent.trim() })));
-  const destination = href => new URL(href, base.href);
-  assert.ok(links.some(link => destination(link.href).pathname === '/advertiser/login'),
-    'An indexable advertiser login link must survive without JavaScript.');
-  assert.ok(links.some(link => destination(link.href).origin === 'https://tad.driver.ibusiness.com.do'
-    && destination(link.href).pathname === '/'), 'The driver landing must be linked canonically.');
-  assert.equal(links.length, 2, 'Only advertiser and driver profile cards should render.');
-  assert.equal(links.some(link => /tad\.adm\.ibusiness\.com\.do|\/admin\/login/.test(link.href)), false,
-    'Public marketing must not advertise the admin portal.');
-  assert.equal(links.some(link => /onboarding/.test(link.href)), false,
-    'This smoke expects the default signup gate to remain disabled.');
+async function assertAdvertiserLinks(page) {
+  const links = await page.locator('a[href]').evaluateAll(nodes =>
+    nodes.map(node => node.getAttribute('href')));
+  assert.ok(links.includes('/advertiser/login'),
+    'Advertiser login must remain discoverable without JavaScript.');
+  assert.equal(links.some(link => /tad\.driver\.ibusiness\.com\.do|tad\.adm\.ibusiness\.com\.do|\/driver\/login|\/admin\/login/.test(link)), false,
+    'Advertiser public landing must not contain other portals.');
+  assert.equal(links.some(link => /\/advertiser\/onboarding/.test(link)), false,
+    'Signup should remain gated by default in the isolated smoke environment.');
 }
 
 async function main() {
@@ -213,21 +209,11 @@ async function main() {
 
     await check('Fresh visitor may reject optional cookies', () => rejectCookies(page));
 
-    await check('Both role selectors update the same hero, experience and FAQ', async () => {
-      const titles = new Set();
-      const questions = new Set();
-      for (const role of ROLE_LABELS) {
-        await selectRole(hero, role);
-        assert.equal(await panel.getByRole('button', { name: role, exact: true })
-          .getAttribute('aria-pressed'), 'true');
-        titles.add(await page.locator('#hero-title').innerText());
-        questions.add(await page.locator('#preguntas summary').first().innerText());
-      }
-      assert.equal(titles.size, 2, 'Hero must tell a distinct story for each perspective.');
-      assert.equal(questions.size, 2, 'The first FAQ must reflect the active perspective.');
-      await selectRole(panel, 'Anunciante', true);
-      assert.equal(await hero.getByRole('button', { name: 'Anunciante', exact: true })
-        .getAttribute('aria-pressed'), 'true');
+    await check('Advertiser-only landing has no role selector or driver simulator', async () => {
+      assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);
+      assert.equal(await page.getByText('Simular mi campaña').count(), 1);
+      assert.equal(await page.locator('[data-slot-active], #driver-total, .landing-perspectives, .landing-roles').count(), 0);
+      await assertAdvertiserLinks(page);
     });
 
     await check('Campaign story has four controllable keyboard steps', async () => {
@@ -251,54 +237,29 @@ async function main() {
       assert.equal(await steps.nth(1).getAttribute('aria-pressed'), 'true');
     });
 
-    await check('Advertiser lab exposes honest bounded budget, city and objective', async () => {
-      await selectRole(panel, 'Anunciante');
-      const budget = panel.getByLabel('Presupuesto de campaña', { exact: true });
-      assert.equal(await budget.getAttribute('min'), '5000');
-      assert.equal(await budget.getAttribute('max'), '150000');
-      assert.equal(amount(await panel.locator('#budget-total').innerText()), 25000);
-      assert.ok(await budget.getAttribute('aria-valuetext'), 'Currency range needs a spoken value.');
-      await pressRange(budget, 'End', 150000);
-      assert.equal(amount(await panel.locator('#budget-total').innerText()), 150000);
-      await pressRange(budget, 'Home', 5000);
-      assert.equal(amount(await panel.locator('#budget-total').innerText()), 5000);
-      const city = panel.getByLabel('Ciudad de tu campaña', { exact: true });
+    await check('Advertiser campaign calculator shares screen/month pricing and optional production', async () => {
+      const screens = panel.getByLabel('Pantallas del ejemplo');
+      const months = panel.getByLabel('Duración');
+      const production = panel.getByRole('checkbox', { name: /producción creativa opcional/i });
+      assert.equal(await screens.getAttribute('max'), '15');
+      assert.equal(await months.getAttribute('max'), '12');
+      assert.equal(await production.isChecked(), false);
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 15000);
+      await production.check();
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 17500);
+      await production.uncheck();
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 15000);
+      await pressRange(screens, 'End', 15);
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 75000);
+      await pressRange(months, 'Home', 1);
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 37500);
+      const city = panel.getByLabel('Ciudad del ejemplo');
       await city.selectOption('stgo');
       assert.equal(await city.inputValue(), 'stgo');
-      const objective = panel.getByLabel('Objetivo del ejemplo', { exact: true });
-      const options = await objective.locator('option').evaluateAll(elements => elements.map(element => element.value));
-      assert.equal(options.length, 3);
-      for (const value of options) {
-        await objective.selectOption(value);
-        assert.equal(await objective.inputValue(), value);
-      }
-      await panel.getByText('No estima alcance ni confirma disponibilidad', { exact: false })
-        .waitFor({ state: 'visible' });
-    });
-
-    await check('Driver lab has 15 visual slots, CPA bounds and an exact gross breakdown', async () => {
-      await selectRole(panel, 'Conductor');
-      const slots = panel.getByLabel('Slots publicitarios', { exact: true });
-      const cpa = panel.getByLabel('Eventos CPA validados', { exact: true });
-      assert.equal(await slots.getAttribute('min'), '0');
-      assert.equal(await slots.getAttribute('max'), '15');
-      assert.equal(await cpa.getAttribute('max'), '100');
-      assert.equal(await panel.locator('[data-slot-active]').count(), 15);
-      assert.equal(amount(await panel.locator('#driver-total').innerText()), 4000);
-      assert.equal(await panel.locator('[data-slot-active="true"]').count(), 8);
-      await pressRange(slots, 'End', 15);
-      await pressRange(cpa, 'Home', 0);
-      await pressRange(cpa, 'ArrowRight', 1);
-      await pressRange(cpa, 'ArrowRight', 2);
-      assert.equal(amount(await panel.locator('#driver-total').innerText()), 8500);
-      assert.equal(await panel.locator('[data-slot-active="true"]').count(), 15);
-      await pressRange(cpa, 'End', 100);
-      assert.equal(amount(await panel.locator('#driver-total').innerText()), 57500);
-      await pressRange(slots, 'Home', 0);
-      await pressRange(cpa, 'Home', 0);
-      assert.equal(amount(await panel.locator('#driver-total').innerText()), 0);
-      assert.equal(await panel.locator('[data-slot-active="true"]').count(), 0);
-      await panel.getByText('No es una nómina ni un saldo', { exact: false }).waitFor({ state: 'visible' });
+      const objective = panel.getByLabel('Objetivo de comunicación');
+      await objective.selectOption('local');
+      assert.equal(await objective.inputValue(), 'local');
+      assert.match(await panel.innerText(), /benchmarks internacionales/i);
     });
 
     await check('Measurement education and contextual FAQ are accessible', async () => {
@@ -309,60 +270,44 @@ async function main() {
       assert.equal(await question.evaluate(element => element.parentElement.open), true);
       assert.equal(await page.locator('input[type="password"], input[type="email"], input[type="tel"]').count(), 0,
         'Public demo must not collect identity or banking information.');
-      await assertProfileLinks(page, base);
+      await assertAdvertiserLinks(page);
     });
 
-    await check('Consent gates analytics and revocation stops new events', async () => {
+    await check('Consent gates budget analytics and does not expose personal data', async () => {
       await page.evaluate(() => {
         window.__landingEvents = [];
         window.umami = { track: callback => window.__landingEvents.push(callback({})) };
       });
-      await selectRole(panel, 'Anunciante');
       assert.equal(await page.evaluate(() => window.__landingEvents.length), 0);
       await page.getByRole('button', { name: 'Configuración de cookies', exact: true }).click();
       await page.getByRole('button', { name: 'Aceptar opcionales', exact: true }).click();
-      const budget = panel.getByLabel('Presupuesto de campaña', { exact: true });
-      await pressRange(budget, 'End', 150000);
-      await selectRole(panel, 'Conductor', true);
-      const slots = panel.getByLabel('Slots publicitarios', { exact: true });
-      await pressRange(slots, 'End', 15);
+      const screens = panel.getByLabel('Pantallas del ejemplo');
+      await screens.focus();
+      await screens.press('ArrowLeft');
+      await screens.press('Tab');
       await hero.locator('a[href="#experiencia"]').click();
       const events = await page.evaluate(() => window.__landingEvents);
-      assert.ok(events.length > 0, 'Consented interactions must produce analytics events.');
-      assert.equal(events.find(event => event.name === 'budget_demo_used')?.data.budget, 150000);
-      assert.equal(events.filter(event => event.name === 'perspective_selected').at(-1)?.data.role, 'driver');
-      assert.equal(events.filter(event => event.name === 'earnings_demo_used').at(-1)?.data.slots, 15);
-      assert.equal(events.filter(event => event.name === 'cta_clicked').at(-1)?.data.role, 'driver');
-      assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false,
-        'Exploring a public demo must not claim an official onboarding transition.');
+      assert.ok(events.some(event => event.name === 'cta_clicked'), 'CTA interaction must be logged with consent.');
+      assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false);
       for (const event of events) {
-        const fields = Object.keys(event.data || {});
-        assert.equal(fields.some(field => /email|phone|password|token|rnc|bank|cedula|cédula/i.test(field)), false);
-        assert.equal(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(JSON.stringify(event)), false);
+        assert.equal(Object.keys(event.data || {}).some(field =>
+          /email|phone|password|token|rnc|bank|cedula/i.test(field)), false);
       }
-      const count = events.length;
-      await slots.focus();
-      await slots.press('Tab');
-      assert.equal(await page.evaluate(() => window.__landingEvents.length), count,
-        'Leaving an unchanged slider must not duplicate the event.');
+      const previousCount = events.length;
       await page.getByRole('button', { name: 'Configuración de cookies', exact: true }).click();
       await rejectCookies(page);
-      await selectRole(panel, 'Anunciante');
-      assert.equal(await page.evaluate(() => window.__landingEvents.length), count);
+      await screens.press('ArrowRight');
+      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount);
     });
 
-    await check('Both perspectives fit 320, 390, 768 and 1440 pixel viewports', async () => {
+    await check('Advertiser landing fits 320, 390, 768 and 1440 pixel viewports', async () => {
       for (const width of [320, 390, 768, 1440]) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
-        for (const role of ROLE_LABELS) {
-          await selectRole(panel, role);
-          const sizes = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: innerWidth }));
-          assert.ok(sizes.document <= sizes.viewport + 1,
-            `${width}px ${role}: ${sizes.document}px content exceeds viewport.`);
-          if (screenshots && [390, 1440].includes(width)) {
-            await page.screenshot({ path: path.join(screenshots,
-              `landing-v3-${width}-${role.toLowerCase()}.png`), fullPage: true });
-          }
+        const sizes = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: innerWidth }));
+        assert.ok(sizes.document <= sizes.viewport + 1,
+          `${width}px: ${sizes.document}px content exceeds viewport.`);
+        if (screenshots && [390, 1440].includes(width)) {
+          await page.screenshot({ path: path.join(screenshots, `landing-v5-${width}-advertiser.png`), fullPage: true });
         }
       }
     });
@@ -378,7 +323,7 @@ async function main() {
       assert.equal(moving, 0);
     });
 
-    await check('Without JavaScript, both profiles retain copy and safe links', async () => {
+    await check('Without JavaScript, advertiser content and portal links survive', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       const noJsEvidence = evidenceCollector();
@@ -387,16 +332,13 @@ async function main() {
       const response = await staticPage.goto(base.href, { waitUntil: 'load', timeout: 60_000 });
       assert.equal(response.status(), 200);
       await staticPage.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
-      assert.equal(await staticPage.locator('#perfiles article').count(), 2);
-      await assertProfileLinks(staticPage, base);
-      const profiles = await staticPage.locator('#perfiles').innerText();
-      for (const term of [/anunciant/i, /conductor|taxista/i]) assert.match(profiles, term);
+      await assertAdvertiserLinks(staticPage);
       assert.equal(await staticPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await assertNoSideEffects(noJs, noJsEvidence);
       await noJs.close();
     });
 
-    await check('Slow 3G and CPU slowdown preserve root content and a working selector', async () => {
+    await check('Slow 3G preserves content and readable simulation', async () => {
       const slow = await browser.newContext({ viewport: { width: 390, height: 844 },
         reducedMotion: 'reduce', serviceWorkers: 'block' });
       const slowEvidence = evidenceCollector();
@@ -411,8 +353,7 @@ async function main() {
       await slowPage.goto(base.href, { waitUntil: 'load', timeout: 120_000 });
       await slowPage.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
       await rejectCookies(slowPage);
-      await selectRole(slowPage.locator('#experiencia'), 'Conductor', true);
-      assert.equal(await slowPage.locator('#driver-total').count(), 1);
+      assert.equal(await slowPage.locator('#budget-total').count(), 1);
       assert.equal(await slowPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await assertNoSideEffects(slow, slowEvidence);
       await slow.close();

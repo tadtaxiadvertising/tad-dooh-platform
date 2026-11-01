@@ -1,0 +1,244 @@
+{
+  "main": {
+    "id": "e6987ce7e31911d8",
+    "type": "split",
+    "children": [
+      {
+        "id": "870471cd71992c3d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "bcb6939e3eb9cfcb",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Vista gráfica"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "79294a3958a15cde",
+    "type": "split",
+    "children": [
+      {
+        "id": "755993a9bf89f6c1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "acbbb518073a79a3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "e63b462a6090784e",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "24def69932b95aea",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "6ac6c68af505b268",
+    "type": "split",
+    "children": [
+      {
+        "id": "0ad658a6579db783",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1d4771f36c36f620",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes"
+            }
+          },
+          {
+            "id": "400672e596a25626",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes"
+            }
+          },
+          {
+            "id": "326217ee3ef667a5",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "5b24098b8d3a8691",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "fdd71266fed01e1c",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema"
+            }
+          },
+          {
+            "id": "35adc182ffd186df",
+            "type": "leaf",
+            "state": {
+              "type": "footnotes",
+              "state": {},
+              "icon": "lucide-file-signature",
+              "title": "Notas al pie"
+            }
+          },
+          {
+            "id": "b1b5def50185a790",
+            "type": "leaf",
+            "state": {
+              "type": "file-properties",
+              "state": {},
+              "icon": "lucide-info",
+              "title": "Propiedades del archivo"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false,
+      "zk-prefixer:Crear nueva nota única": false,
+      "workspaces:Gestionar disposiciones de espacio de trabajo": false
+    }
+  },
+  "active": "e63b462a6090784e",
+  "lastOpenFiles": [
+    "apps/driver/components/landing/DriverEarningsLab.tsx",
+    "apps/driver/lib/earningsPreview.ts",
+    "apps/api/src/modules/device/__tests__/device-admin.controller.spec.ts",
+    "apps/api/src/modules/device/__tests__",
+    "apps/api/src/modules/simulation/__tests__/simulation.controller.spec.ts",
+    "apps/api/src/modules/simulation/__tests__",
+    "docs/engineering-loop/PR_BODY.md",
+    "docs/engineering-loop/STATE.md",
+    "docs/engineering-loop",
+    "apps/advertiser/tsconfig.landing.json",
+    "docs/ux-landing/05-qa-handoff.md",
+    "apps/advertiser/lib/landing/content.ts",
+    "docs/ux-landing/02-storyboard.md",
+    "docs/ux-landing/04-component-selection.md",
+    "docs/ux-landing/03-design-system.md",
+    "docs/ux-landing/01-adr-public-routing.md",
+    "docs/ux-landing/00-baseline.md",
+    "docs/ux-landing",
+    "scripts/landing-v3-measure.cjs",
+    "docs/history/skills/tad-landing-multirole-pre-v3-2026-10-31/references/anclajes-2026-10-31.md",
+    "docs/history/skills/tad-landing-multirole-pre-v3-2026-10-31/SKILL.md",
+    "docs/skill-landing-v3-2026-10-31.md",
+    "docs/landing-taxista-2026-10-31.md",
+    "docs/landing-multirole-2026-10-31.md",
+    "docs/knowledge/project-map.canvas",
+    "docs/knowledge/inicio.md",
+    "docs/people/personas.md",
+    "docs/domains/mapa-dominios.md",
+    "docs/current-state.md",
+    "docs/catalog.md",
+    "docs/domains/business.md",
+    "docs/agents/agentes.md",
+    "Sin título.canvas",
+    "Sin título 1.canvas",
+    "docs/documentation-policy.md",
+    "docs/knowledge/project-map.svg",
+    "docs/knowledge/organization-2026-10-31.md",
+    "docs/templates/decision.md",
+    "docs/decisions/decisiones.md",
+    "docs/knowledge/graph-guide.md"
+  ]
+}

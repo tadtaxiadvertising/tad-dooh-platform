@@ -1,10 +1,10 @@
 import { Controller, Post, Body, Delete, Get } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import { SimulationService, ScenarioConfig } from "./simulation.service";
-import { Public } from "../auth/decorators/public.decorator";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @SkipThrottle()
-@Public()
+@Roles(UserRole.ADMIN)
 @Controller("simulation")
 export class SimulationController {
   constructor(private readonly simService: SimulationService) {}

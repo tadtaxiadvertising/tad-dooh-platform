@@ -200,6 +200,8 @@
   },
   "active": "e63b462a6090784e",
   "lastOpenFiles": [
+    "postgres.exe",
+    "apps/driver/components/landing/driver-earnings-lab.module.css",
     "apps/driver/components/landing/DriverEarningsLab.tsx",
     "apps/driver/lib/earningsPreview.ts",
     "apps/api/src/modules/device/__tests__/device-admin.controller.spec.ts",
@@ -217,8 +219,6 @@
     "docs/ux-landing/03-design-system.md",
     "docs/ux-landing/01-adr-public-routing.md",
     "docs/ux-landing/00-baseline.md",
-    "docs/ux-landing",
-    "scripts/landing-v3-measure.cjs",
     "docs/history/skills/tad-landing-multirole-pre-v3-2026-10-31/references/anclajes-2026-10-31.md",
     "docs/history/skills/tad-landing-multirole-pre-v3-2026-10-31/SKILL.md",
     "docs/skill-landing-v3-2026-10-31.md",

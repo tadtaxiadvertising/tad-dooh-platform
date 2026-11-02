@@ -6,7 +6,7 @@ El usuario autorizó revisar/adoptar la skill nueva y aplicar mejoras, conservan
 
 ## Alcance y tarjetas
 
-<<<<<<< HEAD
+
 1. **Paquete:** sustituir V3 por Engineering + Motion UX, con referencias contrastadas contra #175/#176. [Registro](skill-adoption-2026-11-01.md).
 2. **P2, presentación/consentimiento:** mantener hero y controles legibles en SSR/sin JS, feedback del importe solo al cambiar, preferencia de movimiento reducido y foco; corregir eventos de ciudad/objetivo/producción que usaban el estado anterior. Retirar cifras/garantías y urgencia no verificadas de los pasos educativos de onboarding.
 3. **P3, aritmética educativa:** impedir Infinity/importes sin precisión segura sin reinstalar el cap comercial de ventas/referidos. El helper sigue compartido por landing y onboarding.
@@ -34,7 +34,7 @@ Exclusiones: API, esquema/migraciones, RBAC, identidad, tarifas reales, wallets/
 - **Navegador real:** las landings pasan con/sin JS en 320/390/768/1024/1440 px. La animación de importe es una sola de180 ms después de cambiar; cero al montar o con movimiento reducido, con foco retenido. Los pasos educativos se recorrieron también en navegador, producción OFF→ON→OFF y atrás; se observaron dos transiciones direccionales180 ms en modo normal y cero en modo reducido. No se introdujeron datos personales ni se avanzó al registro.
 - **Visual:** capturas revisadas de hero/laboratorios y dos pasos de onboarding a390 px; vistas completas a cinco anchos. En320 px CTA termina eny533 en Advertiser y eny480 en Driver (viewport800), sin overflow. El botón flotante de preferencias y el indicador de desarrollo aparecen en las capturas; no se consideran contenido nuevo de la landing.
 - **Coste:** build Advertiser:117659 bytes gzip de JS inicial,14955 exclusivos de ruta; Driver:169099 bytes gzip iniciales (unión /_app+/). Compresión nivel9 por asset, sin polyfills opcionales/headers/lazy chunks. No existe un baseline V5 equivalente capturado antes de editar; no se infiere delta contra V2 ni se certifica presupuesto de incremento. Lighthouse, INP y p75 de campo NO EJECUTADOS; el navegador usa desarrollo, no el artefacto compilado.
-=======
+
 | PR | Título | Estado |
 |---|---|---|
 | #173 | Landing V5 Financial Motion Fix | ✅ MERGED |
@@ -72,11 +72,11 @@ Exclusiones: API, esquema/migraciones, RBAC, identidad, tarifas reales, wallets/
 - `sales` control: `max: 100`, subtítulo: "sin límite"
 - `referrals` control: `max: 100`, subtítulo: "sin límite"
 - `ads` control: `max: 15` (permanece igual - límite contractual)
->>>>>>> main
+
 
 ## Verificaciones ejecutadas
 
-<<<<<<< HEAD
+
 Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlazadas al checkout; sin `.env` copiado ni instalaciones. Destinos de builds/servidores únicamente loopback con fixtures públicos; signup OFF y analítica externa sin ID.
 
 | Gate | Resultado | Límite |
@@ -101,7 +101,7 @@ Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlaza
 Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, con `advertiser-smoke.log`, `driver-smoke.log`, `advertiser-bundle.json`, `driver-bundle.json`, `visual-snapshots.json`, `onboarding-presentation-browser.json` y capturas. Las pruebas corresponden a63c807e más el diff de producto, no a producción. Las dos muestras de onboarding son una prueba puntual del recorrido educativo, distinta de los smokes públicos versionados.
 
 ## Pendientes y límites
-=======
+
 | Test | Resultado |
 |---|---|
 | `scripts/landing.test.cjs` | 13/13 ✅ |
@@ -125,7 +125,7 @@ Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, 
 - ✅ PR #175 mergeado en `origin/main` (`1185c1bd`)
 - ✅ PR #176 mergeado en `origin/main` (sales y referrals sin tope)
 - ⚠️ Prisma migration aún no aplicada en DB (esquema actualizado, DB no modificado)
->>>>>>> main
+
 
 - Contrato comercial: los importes observados de1500/2500/500 pueden tener unidades distintas; no se eligió una tarifa ni se cambiaron cobros. Requiere conciliación comercial y pruebas de contrato específicas.
 - #175 modificó el esquema; la necesidad/aplicación de una migración debe contrastarse en entorno aprobado, sin ejecutar `migrate dev` sobre DB compartida por seguir un documento.
@@ -135,3 +135,8 @@ Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, 
 - Reversión: revertir únicamente el commit/PR acotado, tras revisar dependencias; el helper es educativo. No restaurar toda la rama ni tocar datos productivos.
 
 Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), rama `codex/motion-ux-post-176`. Los procesos propios de desarrollo se detuvieron. Los resultados remotos deben leerse para el SHA exacto y distinguir código, runner y cuenta. No se promete trabajo en segundo plano.
+## Loop v2 checkpoint 2026-11-02
+- Branch: feat/landing-v5-financial-motion-fix
+- Skill motion-system-v2.md created
+- Merge conflicts in STATE.md cleaned
+- Next: responsive/mobile QA, then motion scenes

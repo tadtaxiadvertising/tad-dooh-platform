@@ -109,6 +109,7 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
               </tbody>
             </table>
             <p className={styles.rateNote}>Tasas de referencia del simulador. No son nóminas, balance ni pago prometido. La tasa de pago real por play de publicidad es RD$1.25 según la normativa en vigor.</p>
+            {/* RESUELTO: conflictos merge DriverEarningsLab.tsx — motion controls y rateTable añadidos */}
           </div>
           <p className={styles.notice}>No representa una nómina, balance, ingreso neto o pago prometido. Aplican validación de actividad, estados de comisión, contrato, disponibilidad y ajustes. Los referidos y ventas no se repiten mensualmente por defecto.</p>
           <a className={styles.next} href={signupEnabled ? "/register" : "#como-participar"}>

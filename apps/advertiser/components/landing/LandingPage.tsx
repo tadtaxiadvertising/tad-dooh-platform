@@ -147,6 +147,7 @@ export default function LandingPage() {
                   </tbody>
                 </table>
                 <p className="landing-rate-note">Tasas de referencia del estimador compartido. La cotización final se concilia con el backend; la metodología utiliza benchmarks internacionales (IAB/Geopath/NYC-TLC) sin datos RD propios calibrados.</p>
+              {/* RESUELTO: conflictos merge LandingPage.tsx — tarjeta rate-summary y rateTable añadidas */}
               </div>
               {projection.warnings.length > 0 && <details className="landing-warning-details"><summary>Ver fuentes y advertencias ({projection.warnings.length})</summary>
                 <ul>{projection.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>

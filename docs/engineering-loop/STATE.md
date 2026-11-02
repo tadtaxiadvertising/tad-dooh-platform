@@ -15,7 +15,7 @@
 | #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`) |
 | #176 | Remove cap on sales and referrals (compensation streams) | ✅ MERGED |
 
-### Cambios aplicados
+### Cambios aplicados — RESUELTO: conflictos merge (LandingPage.tsx, DriverEarningsLab.tsx, STATE.md)
 
 ### 1. Advertiser onboarding (`apps/advertiser/pages/advertiser/onboarding.tsx`)
 - `includeProduction: false` por defecto (opcional, desactivado)

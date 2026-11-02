@@ -180,13 +180,10 @@ jobs:
           pnpm audit --audit-level=high
 
       - name: TruffleHog secret scan
-        run: |
-          set -euo pipefail
-          if command -v trufflehog &> /dev/null; then
-            trufflehog git file://. --no-verification --fail
-          else
-            echo "::warning::TruffleHog is not installed; secret scanning was not performed."
-          fi
+        uses: trufflesecurity/trufflehog@v3.90.12
+        with:
+          path: ./
+          extra_args: --results=verified,unknown
 
   # ── 6. BUILD IMAGES IN ISOLATED RUNNERS ──────────────────────────────────────
   # Docker builds do not consume the monorepo's installed node_modules. Each

@@ -1,7 +1,7 @@
 # E2E Automation — TAD DOOH Platform (v12)
 
 Suite de pruebas Playwright de extremo a extremo contra los tres portales
-desplegados (Admin, Advertiser, Driver), con foco en el flujo `offline-first`
+locales por defecto (Admin, Advertiser, Driver), con foco en el flujo `offline-first`
 del portal Driver.
 
 ## Estructura
@@ -25,6 +25,10 @@ tests/e2e/
         └── driver-helpers.ts   # login, onboarding, wizard bancario, offline/online
 ```
 
+## Seguridad de ejecución
+
+Los valores predeterminados son loopback local. Las pruebas pueden crear conductores, solicitar campañas y enviar datos bancarios: **nunca configurar las variables TAD_*_URL hacia producción**. Ejecutar únicamente contra entornos aislados con datos sintéticos y credenciales de prueba. Los overrides remotos siguen siendo posibles y requieren revisión manual; este cambio no constituye un bloqueo técnico de producción.
+
 ## Requisitos de entorno
 
 Los portales Admin y Advertiser autentican contra Supabase, por lo que
@@ -33,9 +37,9 @@ se marcan como **SKIP** (no fallan).
 
 | Variable | Default | Portal |
 | --- | --- | --- |
-| `TAD_ADMIN_URL` | `https://proyecto-ia-tad-dashboard.rewvid.easypanel.host` | admin |
-| `TAD_ADVERTISER_URL` | `https://proyecto-ia-tad-advertiser.rewvid.easypanel.host` | advertiser |
-| `TAD_DRIVER_URL` | `https://proyecto-ia-tad-driver.rewvid.easypanel.host` | driver |
+| `TAD_ADMIN_URL` | `http://127.0.0.1:3002` | admin |
+| `TAD_ADVERTISER_URL` | `http://127.0.0.1:3003` | advertiser |
+| `TAD_DRIVER_URL` | `http://127.0.0.1:3004` | driver |
 | `TAD_ADMIN_EMAIL` | `admin@tad.do` | admin |
 | `TAD_ADMIN_PASSWORD` | *(vacío → SKIP)* | admin |
 | `TAD_ADVERTISER_EMAIL` | *(vacío → SKIP)* | advertiser |

@@ -6,7 +6,7 @@
  *
  * - Los tests se ejecutan contra las URLs desplegadas en la web (EasyPanel),
  *   configurables via variables de entorno (TAD_ADMIN_URL / TAD_ADVERTISER_URL
- *   / TAD_DRIVER_URL). Por defecto apuntan a los servicios remotos.
+ *   / TAD_DRIVER_URL). Por defecto apuntan a servicios locales; nunca a producción.
  * - 1 worker + fullyParallel:false para respetar los límites de conexión del
  *   backend y evitar OOM (contenedores 512MB).
  * - El reporte consolidado e2e-report.md se genera en la raíz del proyecto y
@@ -15,9 +15,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export const ENV_URLS = {
-  admin: process.env.TAD_ADMIN_URL || 'https://proyecto-ia-tad-dashboard.rewvid.easypanel.host',
-  advertiser: process.env.TAD_ADVERTISER_URL || 'https://proyecto-ia-tad-advertiser.rewvid.easypanel.host',
-  driver: process.env.TAD_DRIVER_URL || 'https://proyecto-ia-tad-driver.rewvid.easypanel.host',
+  admin: process.env.TAD_ADMIN_URL || 'http://127.0.0.1:3002',
+  advertiser: process.env.TAD_ADVERTISER_URL || 'http://127.0.0.1:3003',
+  driver: process.env.TAD_DRIVER_URL || 'http://127.0.0.1:3004',
 };
 
 export default defineConfig({

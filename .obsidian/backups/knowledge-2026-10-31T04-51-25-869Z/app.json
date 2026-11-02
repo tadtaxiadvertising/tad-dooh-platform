@@ -1,0 +1,19 @@
+{
+  "excludedFiles": [
+    "node_modules/",
+    "npm10/",
+    "npmfix2/",
+    "nptest_n1/",
+    "nptest_n2/",
+    "nptest_n3/",
+    "package/",
+    ".git/",
+    ".worktrees/",
+    "worktrees/",
+    ".artifacts/",
+    "scratch/",
+    "releases/",
+    "playwright-report/",
+    "test-results/"
+  ]
+}

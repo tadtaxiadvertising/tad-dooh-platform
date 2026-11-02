@@ -1,0 +1,86 @@
+{
+  "toolLoading": {
+    "profile": "all",
+    "promoted": [],
+    "counters": {
+      "get_vault_file": 2,
+      "show_file_in_obsidian": 3,
+      "get_note_outline": 1,
+      "find_broken_links": 6,
+      "get_workspace_state": 1,
+      "get_files_by_tag": 1,
+      "get_canvas": 1
+    },
+    "profiles": {
+      "default": {
+        "profile": "all",
+        "promoted": [],
+        "allowed": null
+      },
+      "rqnriKXiDxxI": {
+        "profile": "adaptive",
+        "promoted": [
+          "find_broken_links",
+          "show_file_in_obsidian"
+        ],
+        "allowed": null
+      }
+    },
+    "everCalled": {
+      "rqnriKXiDxxI": [
+        "get_vault_file",
+        "show_file_in_obsidian",
+        "get_note_outline",
+        "find_broken_links",
+        "get_workspace_state",
+        "get_files_by_tag",
+        "get_canvas"
+      ]
+    },
+    "everCalledSince": 1793419717675
+  },
+  "mcpTransport": {
+    "tokens": [
+      {
+        "id": "default",
+        "label": "Default",
+        "token": "x2hBbr1nmylsu5IXZhCw_BAExR4u3TWsCgMT_nAztkY",
+        "createdAt": 1793419717602
+      },
+      {
+        "id": "rqnriKXiDxxI",
+        "label": "New client",
+        "token": "Ytlr2t5BFXMTlPnsmYE_ft8YnxQOhAHVf0cPmwttayY",
+        "createdAt": 1793419786915
+      }
+    ],
+    "bearerToken": "x2hBbr1nmylsu5IXZhCw_BAExR4u3TWsCgMT_nAztkY",
+    "livePort": 27201,
+    "eraCounters": {
+      "legacy": 229,
+      "modern": 0
+    },
+    "eraCountersByToken": {
+      "rqnriKXiDxxI": {
+        "legacy": 229,
+        "modern": 0
+      }
+    }
+  },
+  "mcpClientConfig": {
+    "codexDiscovery": {
+      "routeId": "0b45b841-6574-4399-b6f3-54c90d89a0dc",
+      "accessToken": "wF6ncGbCr46ssqU7hVg142G9qZsO2eRh1C7rYILpiPY",
+      "dataPath": "c:\\tad-dooh-platform\\.obsidian\\plugins\\mcp-tools-istefox\\data.json"
+    }
+  },
+  "semanticSearch": {
+    "provider": "auto",
+    "indexingMode": "live",
+    "unloadModelWhenIdle": false
+  },
+  "commandPermissions": {
+    "enabled": true,
+    "allowlist": []
+  }
+}

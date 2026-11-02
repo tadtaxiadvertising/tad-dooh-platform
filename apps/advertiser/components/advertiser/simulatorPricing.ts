@@ -25,8 +25,8 @@ export interface CampaignEstimate {
 }
 
 /** Constantes de compatibilidad (para no romper imports existentes) */
-export const SCREEN_MONTHLY_RATE = 2500;
-export const PRODUCTION_FEE = 2500;
+export const SCREEN_MONTHLY_RATE = 1500; // ADVERTISER_COST_PER_CAMPAIGN_RD per business-rules.ts
+export const PRODUCTION_FEE = 1500; // Aligned with business-rules commercial contract
 export const DAILY_ACTIVE_HOURS = 10;
 export const ATTENTION_RATE = 0.4;
 export const FIXED_FREQUENCY_SECONDS = 30;

@@ -6,8 +6,8 @@
  *  - Advertiser (proyecto-ia-tad-advertiser.rewvid.easypanel.host)
  *  - Driver (proyecto-ia-tad-driver.rewvid.easypanel.host)
  *
- * Credenciales: administradas via env (TAD_AUDIT_*). Uso credenciales reales
- * documentadas en la sesión (admin@tad.do / password reseteada, qa-advertiser@tad.do).
+ * Credenciales: exclusivamente variables de entorno (TAD_AUDIT_*).
+ * Nunca almacenar contraseñas reales en código o documentación.
  * Solo lectura + login. Sin mutaciones (R8/R3).
  */
 import { test, expect } from '@playwright/test';
@@ -17,9 +17,9 @@ const ADVERTISER_URL = process.env.TAD_AUDIT_ADVERTISER_URL || 'https://proyecto
 const DRIVER_URL = process.env.TAD_AUDIT_DRIVER_URL || 'https://proyecto-ia-tad-driver.rewvid.easypanel.host';
 
 const ADMIN_EMAIL = process.env.TAD_AUDIT_ADMIN_USER || 'admin@tad.do';
-const ADMIN_PASS = process.env.TAD_AUDIT_ADMIN_PASS || 'kjVhrMYHmWEPSeZ0';
+const ADMIN_PASS = process.env.TAD_AUDIT_ADMIN_PASS;
 const ADVERTISER_EMAIL = process.env.TAD_AUDIT_ADVERTISER_USER || 'qa-advertiser@tad.do';
-const ADVERTISER_PASS = process.env.TAD_AUDIT_ADVERTISER_PASS || 'kjVhrMYHmWEPSeZ0';
+const ADVERTISER_PASS = process.env.TAD_AUDIT_ADVERTISER_PASS;
 
 const results: Record<string, { ok: boolean; detail: string; ms: number }> = {};
 
@@ -29,6 +29,7 @@ function mark(name: string, ok: boolean, detail: string, ms: number) {
 
 test.describe('TAD DOOH — Auditoría E2E de producción', () => {
   test('Admin: login y rutas principales', async ({ page }) => {
+    test.skip(!ADMIN_PASS, 'TAD_AUDIT_ADMIN_PASS is required');
     const sw = Date.now();
     const consoleErrors: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
@@ -58,6 +59,7 @@ test.describe('TAD DOOH — Auditoría E2E de producción', () => {
   });
 
   test('Advertiser: login y dashboard', async ({ page }) => {
+    test.skip(!ADVERTISER_PASS, 'TAD_AUDIT_ADVERTISER_PASS is required');
     const sw = Date.now();
     const consoleErrors: string[] = [];
     const badResponses: string[] = [];

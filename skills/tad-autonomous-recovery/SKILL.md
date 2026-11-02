@@ -95,7 +95,7 @@ Each iteration of the loop performs 13 ordered sub-steps. Steps that depend on p
 - **Do not claim "verified" without output.** "Checked" without a command result is not evidence.
 - **Do not treat a Prisma model comment as evidence of a DB constraint.** Prisma stores only the literal columns; if the migration creates a *computed* constraint (e.g. `date_trunc('second', timestamp)` inside `ON CONFLICT`), the Prisma comment must state that the enforcement is runtime SQL (raw `ON CONFLICT (...)`), not a native Prisma unique index. A stale or wrong comment invites a refactor that silently duplicates or voids the constraint.
 - **`next-pwa` v10+: `buildExcludes` deprecated; use `exclude`.** Never exclude `middleware-manifest.json` — Next.js 15 requires it. A stale `.next` directory causes `EEXIST` `copyfile` errors; clean (`rm -rf .next`) before any `pnpm build` on `driver`.
-- **Landing rate data must reference `business-rules.ts`.** The frontend simulation (`DriverEarningsLab`, `LandingPage`) must reference the single source of truth (`DRIVER_RATE_PER_CAMPAIGN_RD: 500`, `DRIVER_RATE_PER_AD_PLAY_RD: 1.25`, `DRIVER_REFERRAL_BONUS_RD: 500`). Generic international benchmark references without the backend contract create a data-integrity gap.
+- **Landing rate data must reference `business-rules.ts`.** The frontend simulation (`DriverEarningsLab`, `LandingPage`) and the pricing wrapper (`simulatorPricing.ts`) must reference the single source of truth (`ADVERTISER_COST_PER_CAMPAIGN_RD: 1500`, `DRIVER_RATE_PER_CAMPAIGN_RD: 500`, `DRIVER_RATE_PER_AD_PLAY_RD: 1.25`, `DRIVER_REFERRAL_BONUS_RD: 500`). When fixing landing/financial motion conflicts, remove leftover `/* RESUELTO: conflictos merge ... */` artifacts — they hide unresolved drift and confuse future audits.
 - **Concise response format.** Lead with the finding and real command output (e.g. `Compiled successfully in 97s`, `TSC_EXIT=0`); omit boilerplate, history, and repeated state. A report must cite real output, not narration.
 
 ## Verification
@@ -113,3 +113,4 @@ Each iteration of the loop performs 13 ordered sub-steps. Steps that depend on p
 - `references/`
   - `gate-classification.md` — P0/P1/P2/P3 + PASS/FAIL/BLOCKED/NOT RUN + final classification.
   - `recovery-patterns.md` — idempotent retry, batching, offline-queue, reconciliation.
+  - `landing-rate-sync.md` — sync rules for landing/simulator pricing against `business-rules.ts` (1500rd campaign, 500rd driver rates, conflict-artifact cleanup).

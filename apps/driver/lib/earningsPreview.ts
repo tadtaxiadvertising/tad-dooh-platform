@@ -10,10 +10,10 @@ export const DRIVER_PREVIEW_RATES_RD = {
   maximumScreenAds: 15,
 } as const;
 
-function eligibleCount(value: number, max: number): number {
-  return Number.isFinite(value)
-    ? Math.min(max, Math.max(0, Math.trunc(value)))
-    : 0;
+function eligibleCount(value: number, max?: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const v = Math.trunc(value) > 0 ? Math.trunc(value) : 0;
+  return max != null ? Math.min(max, v) : v;
 }
 
 export function previewDriverEarnings(
@@ -22,9 +22,9 @@ export function previewDriverEarnings(
   activatedDrivers: number,
 ) {
   const ads = eligibleCount(screenAds, DRIVER_PREVIEW_RATES_RD.maximumScreenAds);
-  // 100 es un límite de interacción del simulador, no una regla contractual.
-  const sales = eligibleCount(approvedSales, 100);
-  const referrals = eligibleCount(activatedDrivers, 100);
+  // SIN TOPE: ventas y referidos no tienen límite contractual
+  const sales = eligibleCount(approvedSales);
+  const referrals = eligibleCount(activatedDrivers);
   const screenAdsRD = ads * DRIVER_PREVIEW_RATES_RD.screenAdMonthly;
   const salesRD = sales * DRIVER_PREVIEW_RATES_RD.approvedSale;
   const referralsRD = referrals * DRIVER_PREVIEW_RATES_RD.activatedDriver;

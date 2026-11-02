@@ -6,6 +6,9 @@
     "app/page.tsx",
     "app/layout.tsx",
     "components/landing/**/*.tsx",
+    "components/onboarding/BenefitsStep.tsx",
+    "components/onboarding/SimulatorStep.tsx",
+    "components/onboarding/OnboardingWizard.tsx",
     "lib/landing/**/*.ts"
   ],
   "exclude": ["node_modules", ".next"]

@@ -50,10 +50,20 @@ test('public advertiser onboarding requires production opt-in and retains exact 
     'apps/advertiser/pages/advertiser/onboarding.tsx'), 'utf8');
   assert.match(page, /includeProduction: false/);
   assert.match(page, /includeProduction: simulator\.includeProduction/);
-  const landing = fs.readFileSync(path.resolve(__dirname, '..',
-    'apps/advertiser/components/landing/LandingPage.tsx'), 'utf8');
-  assert.match(landing, /type="checkbox" checked=\{includeProduction\}/);
-  assert.match(landing, /includeProduction \? money\(quote\.productionFee\) : "No incluida · RD\$ 0"/);
+  const harness = landingComponentHarness();
+  const total = () => Number(harness.control('budget-total').children.replace(/\D/g, ''));
+  harness.render();
+  assert.equal(harness.control('campaign-production').type, 'checkbox');
+  assert.equal(harness.control('campaign-production').checked, false);
+  const initialTotal = total();
+  harness.control('campaign-production').onChange({ target: { checked: true } });
+  harness.render();
+  assert.equal(harness.control('campaign-production').checked, true);
+  assert.ok(total() > initialTotal, 'Opting in must include the separate production amount.');
+  harness.control('campaign-production').onChange({ target: { checked: false } });
+  harness.render();
+  assert.equal(harness.control('campaign-production').checked, false);
+  assert.equal(total(), initialTotal, 'Disabling production must restore the initial estimate.');
 });
 
 test('referral transfer permits a single bounded code and drops other URL data', () => {
@@ -207,6 +217,145 @@ function analyticsHarness() {
   const consent = loadTs('packages/services/cookie-consent.ts', { window });
   return { window, consent, events };
 }
+
+function landingComponentHarness() {
+  const analytics = analyticsHarness();
+  const hookValues = [];
+  let hookIndex = 0;
+  let effects = [];
+  let tree;
+  const element = (type, props) => ({ type, props: props || {} });
+  const sources = loadTs('packages/impact-calculator/sources.ts');
+  const impact = loadTs('packages/impact-calculator/index.ts', { imports: { './sources': sources } });
+  const pricing = loadTs('apps/advertiser/components/advertiser/simulatorPricing.ts', {
+    imports: { '@tad/impact-calculator': impact },
+  });
+  const Landing = loadTs('apps/advertiser/components/landing/LandingPage.tsx', {
+    window: analytics.window,
+    imports: {
+      react: {
+        useState(initial) {
+          const index = hookIndex++;
+          if (!(index in hookValues)) hookValues[index] = initial;
+          return [hookValues[index], value => {
+            hookValues[index] = typeof value === 'function' ? value(hookValues[index]) : value;
+          }];
+        },
+        useRef(initial) {
+          const index = hookIndex++;
+          if (!(index in hookValues)) hookValues[index] = { current: initial };
+          return hookValues[index];
+        },
+        useEffect(effect, dependencies) {
+          const index = hookIndex++;
+          const previous = hookValues[index];
+          if (!dependencies || !previous || dependencies.some((value, i) => !Object.is(value, previous[i]))) {
+            effects.push(effect);
+          }
+          hookValues[index] = dependencies;
+        },
+      },
+      'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
+      'framer-motion': { motion: new Proxy({}, { get: (_, name) => name }), useReducedMotion: () => true },
+      'lucide-react': new Proxy({}, { get: (_, name) => name }),
+      '@tad/ui/components/CookieBanner': { default: 'CookieBanner' },
+      '@tad/services/cookie-consent': analytics.consent,
+      '../../lib/landing/model': model,
+      '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
+      '../advertiser/simulatorPricing': pricing,
+      './CampaignJourney': { default: 'CampaignJourney' },
+      './CityScene': { default: 'CityScene' },
+      './LandingAnalytics': { default: 'LandingAnalytics' },
+      './landing.module.css': { default: {} },
+    },
+  }).default;
+  function find(node, id) {
+    if (Array.isArray(node)) return node.map(child => find(child, id)).find(Boolean);
+    if (!node || typeof node !== 'object') return undefined;
+    return node.props.id === id ? node : find(node.props.children, id);
+  }
+  return {
+    ...analytics,
+    render() {
+      hookIndex = 0;
+      tree = Landing();
+      const committedEffects = effects;
+      effects = [];
+      committedEffects.forEach(effect => effect());
+    },
+    control(id) {
+      const node = find(tree, id);
+      assert.ok(node, `Missing rendered control: ${id}`);
+      return node.props;
+    },
+  };
+}
+
+const defaultPreview = { city: 'sd', objective: 'awareness', screens: 3, months: 2, includeProduction: false };
+
+for (const scenario of [
+  { label: 'city', id: 'campaign-city', target: { value: 'stgo' }, reset: { value: 'sd' }, prop: 'value', value: 'stgo', next: { city: 'stgo' } },
+  { label: 'objective', id: 'campaign-objective', target: { value: 'launch' }, reset: { value: 'awareness' }, prop: 'value', value: 'launch', next: { objective: 'launch' } },
+  { label: 'production opt-in', id: 'campaign-production', target: { checked: true }, reset: { checked: false }, prop: 'checked', value: true, next: { includeProduction: true } },
+]) {
+  test(`landing preview analytics records the selected ${scenario.label} after the interaction`, () => {
+    const harness = landingComponentHarness();
+    harness.consent.saveCookieConsent({ essential: true, functional: false, analytics: true, advertisement: false });
+    harness.render();
+    assert.equal(harness.events.length, 0, 'Rendering must not record simulator usage.');
+    harness.control(scenario.id).onChange({ target: scenario.target });
+    harness.render();
+    assert.equal(harness.control(scenario.id)[scenario.prop], scenario.value);
+    assert.deepEqual(harness.events.map(event => ({ name: event.name, data: event.data })), [{
+      name: 'budget_demo_used', data: { ...defaultPreview, ...scenario.next },
+    }]);
+    harness.render();
+    assert.equal(harness.events.length, 1, 'Rerendering must not emit another usage event.');
+    harness.control(scenario.id).onChange({ target: scenario.target });
+    harness.render();
+    assert.equal(harness.events.length, 1, 'An unchanged scenario must remain deduplicated.');
+    harness.control(scenario.id).onChange({ target: scenario.reset });
+    harness.render();
+    assert.equal(harness.events.length, 2, 'Returning to a previous scenario is a new interaction.');
+    assert.deepEqual(harness.events[1].data, defaultPreview);
+    assert.equal(harness.control(scenario.id)[scenario.prop], scenario.reset[scenario.prop]);
+  });
+}
+
+test('landing range analytics retains committed values and deduplicates pointer, blur and keyboard completion', () => {
+  const harness = landingComponentHarness();
+  harness.consent.saveCookieConsent({ essential: true, functional: false, analytics: true, advertisement: false });
+  harness.render();
+  harness.control('campaign-screens').onChange({ target: { value: '8' } });
+  harness.control('campaign-months').onChange({ target: { value: '4' } });
+  harness.render();
+  assert.equal(harness.events.length, 0, 'Slider changes must wait for interaction completion.');
+  harness.control('campaign-screens').onPointerUp({ type: 'pointerup' });
+  harness.control('campaign-screens').onBlur({ type: 'blur' });
+  harness.control('campaign-months').onKeyUp({ key: 'ArrowRight' });
+  harness.control('campaign-months').onKeyUp({ key: 'Tab' });
+  assert.deepEqual(harness.events.map(event => ({ name: event.name, data: event.data })), [{
+    name: 'budget_demo_used', data: { ...defaultPreview, screens: 8, months: 4 },
+  }]);
+});
+
+test('landing interaction analytics stays disabled without opt-in and after consent revocation', () => {
+  const harness = landingComponentHarness();
+  harness.render();
+  harness.control('campaign-city').onChange({ target: { value: 'stgo' } });
+  harness.render();
+  assert.equal(harness.events.length, 0);
+  harness.consent.saveCookieConsent({ essential: true, functional: false, analytics: true, advertisement: false });
+  harness.control('campaign-objective').onChange({ target: { value: 'launch' } });
+  harness.render();
+  assert.equal(harness.events.length, 1);
+  assert.equal(harness.events[0].url, '/');
+  assert.equal(harness.events[0].referrer, '');
+  harness.consent.saveCookieConsent(harness.consent.ESSENTIAL_ONLY);
+  harness.control('campaign-production').onChange({ target: { checked: true } });
+  harness.render();
+  assert.equal(harness.events.length, 1);
+});
 
 test('existing analytics helper requires explicit consent and strips URL query/referrer/title', () => {
   const { consent, events } = analyticsHarness();

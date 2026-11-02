@@ -10,6 +10,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
+  setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
@@ -154,10 +156,10 @@ async function assertNoSideEffects(context, evidence) {
   for (const page of context.pages()) workerCalls.push(...await page.evaluate(() =>
     window.__landingWorkerRegistrations || []));
   assert.deepEqual(workerCalls, [], 'Public landing attempted to register a service worker.');
-  for (const [name, values] of Object.entries(evidence)) {
-    if (name === 'devHmr') continue; // Explicitly opted-in development transport only.
-    assert.deepEqual(values, [], `${name}: blocked requests or browser errors were observed.`);
-  }
+  // Show every failure together: a blocked dev diagnostic must not obscure the
+  // JavaScript error that caused it. Explicit development HMR is the sole exception.
+  const failures = Object.entries(evidence).filter(([name, values]) => name !== 'devHmr' && values.length > 0);
+  assert.deepEqual(failures, [], 'Blocked requests or browser errors were observed.');
 }
 
 async function assertAdvertiserLinks(page) {
@@ -186,6 +188,7 @@ async function main() {
       reducedMotion: 'reduce', serviceWorkers: 'block' });
     const evidence = evidenceCollector();
     await guardContext(context, base, evidence);
+    await installAmountFeedbackProbe(context, '#budget-total');
     const page = await context.newPage();
     page.setDefaultTimeout(15_000);
     recordErrors(page, evidence);
@@ -273,40 +276,93 @@ async function main() {
       await assertAdvertiserLinks(page);
     });
 
-    await check('Consent gates budget analytics and does not expose personal data', async () => {
+    await check('Real consent helper gates accurate city, objective and production events with deduplication', async () => {
       await page.evaluate(() => {
         window.__landingEvents = [];
-        window.umami = { track: callback => window.__landingEvents.push(callback({})) };
+        // Replace the transport only. Application handlers and the real shared
+        // consent helper still decide whether/what to send on every interaction.
+        window.umami = { track: callback => window.__landingEvents.push(callback({
+          url: '/fixture-private?token=fixture', referrer: 'fixture-private', title: 'fixture-private',
+        })) };
       });
-      assert.equal(await page.evaluate(() => window.__landingEvents.length), 0);
+      const city = panel.getByLabel('Ciudad del ejemplo');
+      const objective = panel.getByLabel('Objetivo de comunicación');
+      const production = panel.getByRole('checkbox', { name: /producción creativa opcional/i });
+      const screens = panel.getByLabel('Pantallas del ejemplo');
+      const months = panel.getByLabel('Duración');
+      const readBudgetEvents = () => page.evaluate(() => window.__landingEvents.filter(event => event.name === 'budget_demo_used'));
+      const state = async () => ({ city: await city.inputValue(), objective: await objective.inputValue(),
+        screens: Number(await screens.inputValue()), months: Number(await months.inputValue()),
+        includeProduction: await production.isChecked() });
+      const oneEvent = async action => {
+        const before = (await readBudgetEvents()).length;
+        await action();
+        const events = await readBudgetEvents();
+        assert.equal(events.length, before + 1, 'One changed preview must emit exactly one event.');
+        assert.deepEqual(events.at(-1).data, await state(), 'Event must describe the committed control values.');
+      };
+      await city.selectOption('sd');
+      await objective.selectOption('awareness');
+      await production.check();
+      assert.equal(await page.evaluate(() => window.__landingEvents.length), 0,
+        'Actual control changes must remain silent before opt-in.');
       await page.getByRole('button', { name: 'Configuración de cookies', exact: true }).click();
       await page.getByRole('button', { name: 'Aceptar opcionales', exact: true }).click();
-      const screens = panel.getByLabel('Pantallas del ejemplo');
-      await screens.focus();
-      await screens.press('ArrowLeft');
+      await oneEvent(() => city.selectOption('stgo'));
+      await oneEvent(() => objective.selectOption('launch'));
+      await oneEvent(() => production.uncheck());
+      await oneEvent(() => pressRange(screens, 'Home', 1));
+      const afterHome = (await readBudgetEvents()).length;
       await screens.press('Tab');
+      await screens.focus();
+      await screens.press('Home'); // Same boundary: keyup is real but state is unchanged.
+      await screens.press('Tab');
+      assert.equal((await readBudgetEvents()).length, afterHome,
+        'Blur, Tab and a repeated boundary key must not duplicate the same preview.');
+      await oneEvent(() => pressRange(months, 'ArrowRight', 2));
+      const afterMonth = (await readBudgetEvents()).length;
+      await months.press('Tab');
+      assert.equal((await readBudgetEvents()).length, afterMonth, 'Month blur must not duplicate its key event.');
+      const ctaBefore = await page.evaluate(() => window.__landingEvents.filter(event => event.name === 'cta_clicked').length);
       await hero.locator('a[href="#experiencia"]').click();
       const events = await page.evaluate(() => window.__landingEvents);
-      assert.ok(events.some(event => event.name === 'cta_clicked'), 'CTA interaction must be logged with consent.');
+      const ctas = events.filter(event => event.name === 'cta_clicked');
+      assert.equal(ctas.length, ctaBefore + 1);
+      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab' });
       assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false);
       for (const event of events) {
+        assert.equal(event.url, '/');
+        assert.equal(event.referrer, '');
+        assert.equal(event.title, '');
         assert.equal(Object.keys(event.data || {}).some(field =>
           /email|phone|password|token|rnc|bank|cedula/i.test(field)), false);
+        assert.equal(JSON.stringify(event).includes('fixture-private'), false,
+          'The real helper must discard transport URL, title and referrer fixtures.');
       }
       const previousCount = events.length;
       await page.getByRole('button', { name: 'Configuración de cookies', exact: true }).click();
       await rejectCookies(page);
-      await screens.press('ArrowRight');
+      await city.selectOption('sd');
+      await objective.selectOption('local');
+      await production.check();
+      await pressRange(screens, 'End', 15);
+      await screens.press('Tab');
+      await hero.locator('a[href="#experiencia"]').click();
       assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount);
+      await setRangeWithKeyboard(screens, 3);
+      await setRangeWithKeyboard(months, 2);
+      await objective.selectOption('awareness');
+      await production.uncheck();
+      assert.equal(amount(await panel.locator('#budget-total').innerText()), 15000);
+      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount,
+        'Restoring the default preview after revocation must also remain silent.');
     });
 
-    await check('Advertiser landing fits 320, 390, 768 and 1440 pixel viewports', async () => {
-      for (const width of [320, 390, 768, 1440]) {
+    await check('Advertiser landing fits all five required widths', async () => {
+      for (const width of VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
-        const sizes = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: innerWidth }));
-        assert.ok(sizes.document <= sizes.viewport + 1,
-          `${width}px: ${sizes.document}px content exceeds viewport.`);
-        if (screenshots && [390, 1440].includes(width)) {
+        await assertNoHorizontalOverflow(page, `Advertiser ${width}px`);
+        if (screenshots) {
           await page.screenshot({ path: path.join(screenshots, `landing-v5-${width}-advertiser.png`), fullPage: true });
         }
       }
@@ -321,9 +377,29 @@ async function main() {
         return animation.playState === 'running' && typeof duration === 'number' && duration > 1;
       }).length);
       assert.equal(moving, 0);
+      assert.equal(await page.evaluate(() => window.__landingAmountAnimations.length), 0,
+        'Reduced motion must skip amount feedback for every preceding keyboard interaction.');
     });
 
-    await check('Without JavaScript, advertiser content and portal links survive', async () => {
+    await check('Normal motion gives one 180ms amount response after a change, with no entrance animation or focus loss', async () => {
+      const normal = await browser.newContext({ viewport: { width: 1440, height: 1000 },
+        reducedMotion: 'no-preference', serviceWorkers: 'block' });
+      const normalEvidence = evidenceCollector();
+      await guardContext(normal, base, normalEvidence);
+      await installAmountFeedbackProbe(normal, '#budget-total');
+      const normalPage = await normal.newPage();
+      recordErrors(normalPage, normalEvidence);
+      try {
+        const response = await normalPage.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
+        assert.equal(response.status(), 200);
+        await rejectCookies(normalPage);
+        await assertAmountFeedback(normalPage, { outputSelector: '#budget-total',
+          inputSelector: '#campaign-screens', nextValue: 4, nextAmount: 20000 });
+        await assertNoSideEffects(normal, normalEvidence);
+      } finally { await normal.close(); }
+    });
+
+    await check('Without JavaScript, advertiser heading and all controls remain opaque at all five widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       const noJsEvidence = evidenceCollector();
@@ -331,11 +407,20 @@ async function main() {
       const staticPage = await noJs.newPage();
       const response = await staticPage.goto(base.href, { waitUntil: 'load', timeout: 60_000 });
       assert.equal(response.status(), 200);
-      await staticPage.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
-      await assertAdvertiserLinks(staticPage);
-      assert.equal(await staticPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
-      await assertNoSideEffects(noJs, noJsEvidence);
-      await noJs.close();
+      try {
+        for (const width of VIEWPORT_WIDTHS) {
+          await staticPage.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
+          for (const selector of ['#hero-title', '#campaign-city', '#campaign-objective',
+            '#campaign-screens', '#campaign-months', '#campaign-production', '#budget-total']) {
+            await assertOpaque(staticPage.locator(selector), `Advertiser no-JS ${width}px ${selector}`);
+          }
+          await assertAdvertiserLinks(staticPage);
+          await assertNoHorizontalOverflow(staticPage, `Advertiser no-JS ${width}px`);
+          if (screenshots) await staticPage.screenshot({
+            path: path.join(screenshots, `landing-v5-${width}-advertiser-no-js.png`), fullPage: true });
+        }
+        await assertNoSideEffects(noJs, noJsEvidence);
+      } finally { await noJs.close(); }
     });
 
     await check('Slow 3G preserves content and readable simulation', async () => {
@@ -351,7 +436,7 @@ async function main() {
         downloadThroughput: 50 * 1024, uploadThroughput: 50 * 1024, connectionType: 'cellular3g' });
       await session.send('Emulation.setCPUThrottlingRate', { rate: 4 });
       await slowPage.goto(base.href, { waitUntil: 'load', timeout: 120_000 });
-      await slowPage.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+      await assertOpaque(slowPage.getByRole('heading', { level: 1 }), 'Advertiser slow-3G heading');
       await rejectCookies(slowPage);
       assert.equal(await slowPage.locator('#budget-total').count(), 1);
       assert.equal(await slowPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);

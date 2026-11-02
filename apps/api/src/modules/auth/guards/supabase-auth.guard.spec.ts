@@ -193,4 +193,66 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     expect(request.user).toBeUndefined();
     expect(getUser).toHaveBeenCalledTimes(1);
   });
+  it("does not resurrect revoked ADMIN claims after Supabase network verification", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "auth-user-demoted",
+          email: "demoted@example.com",
+          app_metadata: { role: "ADVERTISER", entityId: "adv-verified" },
+        },
+      },
+      error: null,
+    });
+    const token = jwt.sign(
+      {
+        sub: "auth-user-demoted",
+        session_id: "session-demoted",
+        role: "authenticated",
+        app_metadata: { role: "ADMIN", entityId: "admin-stale" },
+      },
+      "different-signing-key-used-only-in-test",
+      { audience: "authenticated", expiresIn: "1h" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toMatchObject({
+      id: "auth-user-demoted",
+      role: "ADVERTISER",
+      entityId: "adv-verified",
+    });
+    expect(getUser).toHaveBeenCalledWith(token);
+  });
+
+  it("fails closed when server metadata no longer grants a role", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "auth-user-revoked",
+          email: "revoked@example.com",
+          app_metadata: {},
+        },
+      },
+      error: null,
+    });
+    const token = jwt.sign(
+      {
+        sub: "auth-user-revoked",
+        session_id: "session-revoked",
+        role: "authenticated",
+        app_metadata: { role: "ADMIN", entityId: "admin-revoked" },
+      },
+      "different-signing-key-used-only-in-test",
+      { audience: "authenticated", expiresIn: "1h" },
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toMatchObject({
+      id: "auth-user-revoked",
+      role: "GUEST",
+      entityId: null,
+    });
+    expect(getUser).toHaveBeenCalledWith(token);
+  });
+
 });

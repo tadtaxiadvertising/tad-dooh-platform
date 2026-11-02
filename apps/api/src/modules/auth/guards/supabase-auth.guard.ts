@@ -220,17 +220,11 @@ export class SupabaseAuthGuard implements CanActivate {
       const { data, error } = await supabase.auth.getUser(token);
 
       if (!error && data.user) {
-        const decoded = jwt.decode(token) as jwt.JwtPayload;
-        const roleFromMeta =
-          data.user.app_metadata?.role ||
-          decoded?.app_metadata?.role ||
-          (data.user as any).role ||
-          decoded?.role ||
-          "GUEST";
-        const entityId =
-          data.user.app_metadata?.entityId ||
-          decoded?.app_metadata?.entityId ||
-          null;
+        // Only server-returned app_metadata may authorize application roles.
+        // JWT claims can be stale after an admin revokes a role or entity link.
+        // Never restore revoked privileges from the presented token.
+        const roleFromMeta = data.user.app_metadata?.role || "GUEST";
+        const entityId = data.user.app_metadata?.entityId || null;
 
         request.user = {
           id: data.user.id,

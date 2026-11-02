@@ -265,6 +265,7 @@ function landingComponentHarness() {
       '../advertiser/simulatorPricing': pricing,
       './CampaignJourney': { default: 'CampaignJourney' },
       './CityScene': { default: 'CityScene' },
+      './ImpactExplainer': { default: 'ImpactExplainer' },
       './LandingAnalytics': { default: 'LandingAnalytics' },
       './landing.module.css': { default: {} },
     },

@@ -1,142 +1,81 @@
-# Estado de Engineering + Motion UX después de #176
+# Creative Motion V2 — intervención actual
 
-Fecha: 2026-11-01, America/La_Paz. Rama `codex/motion-ux-post-176`. Base confirmada: `63c807eba7b2c016411337f14345ae8c1ae5901d`, merge #176. Este checkpoint describe esta intervención, no la salud global de la plataforma.
+Fecha: 2026-11-02, America/La_Paz. Rama `codex/creative-motion-v2-20261102`. Base actual: `06e611e7383511fb1ff131da7d80fc3b620944c8`, main verificado tras #180. El baseline visual se capturó en `0df24484`; #180 solo cambió API/Auth y sus docs/tests, incorporado por fast-forward sin conflicto. Los archivos UI del baseline no cambiaron entre ambos commits.
 
-El usuario autorizó revisar/adoptar la skill nueva y aplicar mejoras, conservando #176. Se creó un worktree dedicado; el checkout principal y el worktree anterior con cambios sin commit se preservan. El [estado anterior](history/state-at-63c807e.md) es evidencia histórica, incluidos sus resultados y propuestas de migración; no una instrucción ejecutable ni una comprobación de producción.
+El usuario pidió continuar e indicó que no veía cambios notables. Se implementa la experiencia V2 sobre la base actual, preservando los cambios de tarifas y calculadores. El checkout principal y sus cambios de skill quedan intactos; se reutiliza el worktree adjunto con rama nueva. El [estado previo](history/state-at-0df24484-before-creative-v2.md) es historia; sus migraciones propuestas y resultados no son instrucciones ni verificaciones actuales.
 
-## Alcance y tarjetas
+## Alcance y aceptación
 
-
-1. **Paquete:** sustituir V3 por Engineering + Motion UX, con referencias contrastadas contra #175/#176. [Registro](skill-adoption-2026-11-01.md).
-2. **P2, presentación/consentimiento:** mantener hero y controles legibles en SSR/sin JS, feedback del importe solo al cambiar, preferencia de movimiento reducido y foco; corregir eventos de ciudad/objetivo/producción que usaban el estado anterior. Retirar cifras/garantías y urgencia no verificadas de los pasos educativos de onboarding.
-3. **P3, aritmética educativa:** impedir Infinity/importes sin precisión segura sin reinstalar el cap comercial de ventas/referidos. El helper sigue compartido por landing y onboarding.
-4. **Verificación y entrega:** pruebas, tipos, lint, builds, navegador con cinco anchos, capturas, revisión Motion UX y PR draft sobre el SHA exacto.
-
-Exclusiones: API, esquema/migraciones, RBAC, identidad, tarifas reales, wallets/ledger, liquidaciones, pagos, Player y lógica offline/SW. Registro público no se activa. No hay despliegue ni merge.
-
-## Hallazgos, causa y corrección
-
-| Hallazgo | Evidencia y reproducción | Corrección y aceptación |
+| Tarjeta | Aceptación | Estado |
 | --- | --- | --- |
-| P2: contenido inicial oculto | Hero Advertiser `motion.h1` y controles Driver con `opacity:0` en SSR; Wizard también ocultaba sus children. Prueba de composición de Wizard: 4 PASS / 3 FAIL antes de corregir | HTML inicial visible; sin animación de entrada que oculte información. Importes y cambio de paso usan transform de 180 ms tras interacción, con cancelación y reduced motion. Test de composición: 7/7 PASS |
-| P2: analítica con dato anterior | `setCity`/`setObjective`/`setIncludeProduction` y lectura del closure en el mismo handler | `recordPreview(next)` recibe el valor seleccionado. Pruebas ejecutan handlers, consentimiento, revocación y deduplicación; no se transfieren datos personales |
-| P2: promesas sin evidencia | Benefits contenía 3.4X/500K+/120+, atención garantizada; Simulator mencionaba inversión media y reserva urgente | Hitos de planificación, revisión y estimaciones ilustrativas. Mismo motor de cálculo y producción OFF, navegación preservada |
-| P3: overflow del preview | `(15, Number.MAX_VALUE, 1)` producía Infinity; valores seguros individuales podían sumar un importe inseguro. Regresión inicial 1 PASS / 3 FAIL | Productos, subtotal y total deben ser enteros seguros; en caso contrario RangeError explícito. 101/1000 ventas/referidos siguen admitidos; ads mantiene cap15, negativos/nofinitos/truncamiento previos |
-| P2: smoke desfasado de #176 | La prueba Driver esperaba rangos20 y los fixtures no ejercitaban100 | Rangos100 como demo, fixture independiente 15+100+100 → 107500, mensual7500/eventos100000. No se modifica el contrato de ventas/referidos sin tope |
+| A1 | Hero Anunciante con tres ejemplos seleccionables, transferencia a tablet y replay, SSR y movimiento reducido | VERIFICADO EN EL ALCANCE |
+| A2 | Crear/Programar/Reproducir/Medir, controles reversibles, escena contextual y eventos existentes | VERIFICADO EN EL ALCANCE |
+| A3 | Studio con motor compartido, producción OFF→ON→OFF, visualización opt-in, foco y salida estables | VERIFICADO EN EL ALCANCE |
+| A4 | Rango de impacto y supuestos de la proyección compartida, sin métricas reales inventadas | VERIFICADO EN EL ALCANCE |
+| D1 | Taxi/tablet Driver con demo y restablecer | VERIFICADO EN EL ALCANCE |
+| D2 | Quince slots vinculados a slider y ejemplo mensual | VERIFICADO EN EL ALCANCE |
+| D3 | Tres vías seleccionables, contadores persistentes y distinción mensual/eventos | VERIFICADO EN EL ALCANCE |
+| D4 | Compartir/Registro/Validación/Activación/Bono, avance/retroceso y condición de aprobación | VERIFICADO EN EL ALCANCE |
 
-## Motion UX review
+Sin cambios a tarifas reales, API/Auth, esquema, datos, registro público, Player/SW, ledger, wallets o payouts. Sin merge ni despliegue. Correcciones numéricas y consentimiento existentes se preservan; no se adopta un tope comercial de ventas/referidos por un rango visual.
 
-- **Propósito:** relacionar el cambio de pantalla/duración/producción y las tres vías Driver con su total; orientar el avance/retroceso entre pasos educativos.
-- **Estado inicial:** contenido/importe opaco y estático en SSR, sin feedback al montar. Acción: cambio de importe/paso. Resultado: número o contenido actualizado inmediatamente y desplazamiento breve; reversión con el mismo control. `output` no se remonta al cambiar y el slider conserva foco.
-- **Movimiento:** Web Animations API existente, transform de 3 px para importes y 12 px direccional en Wizard, 180 ms; cancelación en cleanup. Sin opacity0, autoplay, dependencias nuevas ni movimiento de layout. Se conserva estático cuando la preferencia de movimiento todavía es desconocida o reducida.
-- **Accesibilidad:** etiquetas/rangos nativos, foco visible, botón atrás con nombre, progreso semántico con `aria-current`. El máximo100 describe la interacción de demo, no una regla comercial. El cambio de copy no implica alta, aprobación, reserva ni ingreso garantizado.
-- **Límite onboarding:** se verifican los pasos educativos y su composición con Wizard; no se acredita registro real, formulario bancario, sesión ni ruta completa sin JS. Las pruebas de navegador públicas no envían formularios ni entran a portales.
-- **Navegador real:** las landings pasan con/sin JS en 320/390/768/1024/1440 px. La animación de importe es una sola de180 ms después de cambiar; cero al montar o con movimiento reducido, con foco retenido. Los pasos educativos se recorrieron también en navegador, producción OFF→ON→OFF y atrás; se observaron dos transiciones direccionales180 ms en modo normal y cero en modo reducido. No se introdujeron datos personales ni se avanzó al registro.
-- **Visual:** capturas revisadas de hero/laboratorios y dos pasos de onboarding a390 px; vistas completas a cinco anchos. En320 px CTA termina eny533 en Advertiser y eny480 en Driver (viewport800), sin overflow. El botón flotante de preferencias y el indicador de desarrollo aparecen en las capturas; no se consideran contenido nuevo de la landing.
-- **Coste:** build Advertiser:117659 bytes gzip de JS inicial,14955 exclusivos de ruta; Driver:169099 bytes gzip iniciales (unión /_app+/). Compresión nivel9 por asset, sin polyfills opcionales/headers/lazy chunks. No existe un baseline V5 equivalente capturado antes de editar; no se infiere delta contra V2 ni se certifica presupuesto de incremento. Lighthouse, INP y p75 de campo NO EJECUTADOS; el navegador usa desarrollo, no el artefacto compilado.
+## Baseline ejecutado antes de editar UI
 
-| PR | Título | Estado |
-|---|---|---|
-| #173 | Landing V5 Financial Motion Fix | ✅ MERGED |
-| #174 | Ownership en comisiones Driver | ✅ MERGED |
-| #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`) |
-| #176 | Remove cap on sales and referrals (compensation streams) | ✅ MERGED |
+- 54 pruebas Node: **51 PASS / 3 FAIL**. Las tres fallidas reproducen eventos de ciudad/objetivo/producción con el valor anterior, reintroducidos después de #177.
+- Navegador Chromium en desarrollo loopback, cuatro anchos320/390/768/1440, perfiles móviles emulados con DPR2; hero/full por landing y no-JS390. Las ocho respuestas raíz son200, sin overflow global en esa captura.
+- Anunciante sin JS: H1 con opacidad efectiva0. Driver:1. Se observa contenido pequeño:23 elementos p/small/label de Anunciante <12px,19 en Driver móvil; es una señal para revisión, no una certificación completa de tipografía.
+- Las capturas de primer render usan800ms tras DOMContentLoaded: algunas muestran HTML antes de hidratar. No confundirlas con una sesión estable; la prueba no-JS confirma ocultación inicial del H1 independientemente del tiempo.
+- Driver primera visita muestra banner de cookies que ocupa una parte importante del viewport; verificar por separado primera visita y rechazo de opcionales. No cambiar consentimiento para disimularlo.
+- En Anunciante se bloquearon solicitudes POST del overlay de desarrollo a __nextjs_original-stack-frames; no se registran consultas de API privada en raíces. La inspección posterior en sesión estable no produjo pageerror y H1 llegó a opacidad1.
 
-### Cambios aplicados — RESUELTO: conflictos merge (LandingPage.tsx, DriverEarningsLab.tsx, STATE.md)
+## Motion y dependencias
 
-### 1. Advertiser onboarding (`apps/advertiser/pages/advertiser/onboarding.tsx`)
-- `includeProduction: false` por defecto (opcional, desactivado)
+[Mapa del sistema y decisiones](../ux-landing/motion-system-v2.md). Se adapta TextMorph de Motion Primitives en packages/ui con SHA exacto, licencia MIT y notices conservados. Usa Framer Motion existente y fallback idéntico de SSR/primer render de hidratación. No se instala otro runtime Motion.
 
-### 2. DTO OnboardAdvertiser (`apps/api/src/modules/onboarding/dto/onboard-advertiser.dto.ts`)
-- Agregados `campaignMonths: number` (optional, min 1)
-- Agregado `includeProduction: boolean` (optional)
-- `fileMetadata` mantenido como optional
+GSAP/ScrollTrigger se evalúa como candidato de narrativa; esta iteración usa pasos controlados por botones y timelines finitas existentes. No se justificó añadir motor/instalación a node_modules compartidos para resolver esas transiciones. La alternativa debe demostrarse en navegador; no se afirma uso de GSAP. No se modifica lockfile ni manifiestos.
 
-### 3. Onboarding service (`apps/api/src/modules/onboarding/onboarding.service.ts`)
-- Destructura `campaignMonths`, `includeProduction`, `targetCity`
-- Usa `campaignMonths` para calcular `endDate` y `campaignMonths` en la campaña
-- `includeProduction` se guarda en `includeProduction` del campaign
+## Seguridad conocida y límites
 
-### 4. Prisma schema (`apps/api/prisma/schema.prisma`)
-- Agregado `campaignMonths: Int? @default(1) @map("campaign_months")`
-- Agregado `includeProduction: Boolean? @default(false) @map("include_production")`
-- Regeneró Prisma client
+Triage de solo lectura: el Security Audit histórico de #177 contó dos rutas de un mismo advisory crítico Next, GHSA-2464-fhr4-w9xw. Next15.5.24 continúa en rango auditado; el lock resuelve sharp0.35.5, workaround indicado por el aviso. Las imágenes declaradas usan Alpine/musl y no habilitan SVG; no se inspecciona artefacto productivo ni se prueba un exploit. Esto no impide QA local con fixtures; sí impide certificar seguridad global o publicación. La actualización a Next15.5.28 y su auditoría debe ir en intervención propia, sin confundir estas mitigaciones con un gate aprobado. Fuentes: [aviso oficial](https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw), [job histórico](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41371642211/job/125043170531).
 
-### 5. Driver earnings preview (`apps/driver/lib/earningsPreview.ts`)
-- `eligibleCount` ahora recibe un parámetro opcional `max`
-- `ads` sigue siendo capado a 15 (límite contractual)
-- `sales` y `referrals` ahora son **sin tope** (sin límite)
-- Uso de `max != null ? Math.min(max, v) : v` para distinguir entre "sin límite" y "con límite"
+La tabla final más abajo acredita checks, matriz táctil/reduced/noJS/landscape, revisión visual y builds de esta iteración. Los resultados remotos se registrarán en el PR para el SHA final. No se atribuyen verificaciones de #177 a este diff.
 
-### 6. Driver landing UI (`apps/driver/components/landing/DriverEarningsLab.tsx`)
-- `sales` control: `max: 100`, subtítulo: "sin límite"
-- `referrals` control: `max: 100`, subtítulo: "sin límite"
-- `ads` control: `max: 15` (permanece igual - límite contractual)
+## Artefactos y reanudación
+
+Carpeta externa del chat: creative-motion-v2-20261102. before/baseline.json y PNGs conservan el estado0df24484. Los servidores de QA usan3413 Anunciante/3414 Driver con API/Supabase loopback ficticios, sin .env copiado. La evidencia final debe registrar SHA más diff, resultados exactos y límites; detener procesos propios al concluir salvo vista previa solicitada.
 
 
-## Verificaciones ejecutadas
-
-
-Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlazadas al checkout; sin `.env` copiado ni instalaciones. Destinos de builds/servidores únicamente loopback con fixtures públicos; signup OFF y analítica externa sin ID.
+## Verificación final local — 2026-11-02
 
 | Gate | Resultado | Límite |
 | --- | --- | --- |
-| Baseline en63c807e | 38/38 PASS en landing, Driver y cookies | SDK/red sintéticos; no sesiones reales |
-| Suites finales | 54/54 PASS: `landing.test.cjs`, `driver-landing.test.cjs`, `cookie-management.test.cjs`, `driver-preview-arithmetic.test.cjs`, `advertiser-onboarding-presentation.test.cjs` | Real React/Motion SSR para presentación; handlers y modelos aislados para cálculo/analítica |
-| Lint del alcance | PASS en ambos portales, cero warnings | No es lint global |
-| Tipado estricto | PASS en los dos `tsconfig.landing.json`, incluye Wizard y pasos educativos | No sustituye el gate global |
-| Skill | Validador oficial PASS en proyecto e instalación; cinco hashes coincidentes | No evalúa todos los futuros usos de la skill |
-| Prettier del alcance | PASS en siete archivos TS/TSX/JSON modificados | No es formato global; el último cambio fue solo normalización de estilo |
-| Build Advertiser | PASS,17 páginas; `/`15 kB /117 kB FirstLoadJS; build21nXZlnhaRhO0-TWwj-gc | Next omite tipos/lint por configuración previa; se comprobaron aparte. Warnings de strings grandes de caché |
-| Build Driver | PASS,13 páginas; `/`15.1 kB /169 kB FirstLoadJS; buildKS3Bst5Hj3bv8sdLcNhJy | Warnings previos Sentry/PWA/caché. Cinco hashes PWA originales restaurados y outputs nuevos conservados fuera de Git; public sin diff |
-| Navegador Advertiser | PASS13 comprobaciones; incluye consentimiento, valores actuales, producción opt-in, teclado, cinco anchos, no-JS y Slow3G400ms/50KBps/CPU×4 | Desarrollo loopback. Sin API/recursos remotos/SW; solo HMR de desarrollo permitido |
-| Navegador Driver | PASS11 comprobaciones; incluye fixture107500, foco y feedback real, movimiento reducido, cinco anchos y no-JS | Desarrollo loopback; sin API/SW/datos privados ni recursos remotos |
-| Onboarding educativo en navegador | PASS2 escenarios (normal/reducido), cinco anchos, avanzar/volver y producción reversible | Proveedores Pages existentes intentaron fuente Google y Realtime contra fixture local; bloqueados antes de red. No equivale a auditoría de privacidad de esa ruta |
-| Ownership comisiones de#174 | Jest aislado:5/5 PASS, propio/ajeno/sin entidad/sin sesión/admin | Controlador y servicio mock; sin DB, no valida JWT contra servidor real |
-| Tipado global Advertiser | FAIL previo: TS2307 en playwright.config.ts y tests/e2e/advertiser.spec.ts | Falta @playwright/test en ese workspace. No se oculta ni instala para esta intervención |
-| Tipado global Driver | FAIL previo: TS2322 en pages/api/proxy/[...path].ts:193, Buffer/BodyInit | No se cambió el proxy como parte de UI |
-| PR | [#177 en borrador](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), producto `c0d17a82bd0e9de6e43b1d00a8c3628ce0e45f9f`, padre63c807e | 24 archivos, incluidos checkpoint y registro de regresiones en CI; sin cambios ajenos |
-| CI | Workflows iniciados en dd5ac91f; revalidar el SHA posterior al registro de pruebas | La gate focalizada incorpora los dos scripts nuevos y sus filtros de paths; no se desactiva ninguna gate global |
+| Node lógica/regresión | 57/57 PASS | Modelos, consentimiento, SSR, fuentes e interacciones aisladas; sin DB/sesión real |
+| Nuevo navegador V2 | 28/28 escenarios PASS | Chromium desarrollo: diez viewports por portal +390 reducido +noJS320/390/1440. Emulación touch/DPR2, no teléfono físico |
+| Smoke existente Anunciante | 13/13 PASS | Incluye contrato calculadora, consentimiento/revocación, foco, normal/reduce, cinco anchos, noJS y Slow3G. HMR exacto local permitido explícitamente |
+| Smoke existente Driver | 11/11 PASS | Fixture107500, quince slots, teclado y foco, gates y cero consultas privadas/SW/remotos; HMR local explícito |
+| Máximos y ampliación visual | 4/4 escenarios PASS | Máximos de controles a320 y CSS zoom2 a1440; estrés de layout, no equivale a probar zoom del navegador/dispositivo físico |
+| Tipado focalizado | PASS ambos portales | Incluye shared TextMorph y todos los componentes de landing importados |
+| Tipado global Driver | PASS | Ejecución nueva, no se reutiliza el fallo histórico Buffer/BodyInit |
+| Tipado global Anunciante | FAIL previo | @playwright/test ausente en playwright.config.ts y tests/e2e/advertiser.spec.ts; archivos y dependencias sin cambios |
+| Lint | PASS componentes de ambos portales y TextMorph | Scope explícito, cero warnings. El componente compartido se ejecutó desde raíz para no ignorarlo por base path |
+| Prettier | PASS19 archivos TSX/CSS/scripts del cambio | LandingAnalytics previo fuera del diff conserva advertencia de formato; no se afirma formato global |
+| Build Anunciante | PASS17 páginas estáticas, raíz61.3kB/164kB First Load | Build VE5ipJ6dkqIOsXIsXehkZ; tipos/lint separados porque Next los omite por configuración previa |
+| Build Driver | PASS | Build6R8N77jXScvWtQEkG0HK5; warnings existentes Sentry/PWA/webpack. Cinco hashes PWA restaurados; outputs nuevos preservados fuera de Git |
+| JS inicial gzip | Anunciante164045 bytes; Driver215052 bytes | Unión de assets /layout+/page de app manifest, y /_app+/ de Pages; gzip9. Sin baseline compilado comparable0df: no se afirma delta/budget de incremento |
+| Revisión independiente | Hallazgo focoP2 corregido | Anterior/Siguiente de historia usan aria-disabled con guard de índices; nuevo navegador prueba foco y límites. No equivale a auditoría global |
+| Seguridad y fuentes económicas | Sin cambios en API/locks/precios/helpers financieros | diff contra06e611e7 vacío en esas superficies. El riesgo Next y gates generales se mantienen visibles |
+| Lighthouse/CrUX/RUM/WCAG completo | NO EJECUTADO | No se certifican p75 real, INP de campo ni conformidad completa. Navegador usa desarrollo, no runtime compilado |
 
-Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, con `advertiser-smoke.log`, `driver-smoke.log`, `advertiser-bundle.json`, `driver-bundle.json`, `visual-snapshots.json`, `onboarding-presentation-browser.json` y capturas. Las pruebas corresponden a63c807e más el diff de producto, no a producción. Las dos muestras de onboarding son una prueba puntual del recorrido educativo, distinta de los smokes públicos versionados.
+La revisión detectó y corrigió hidratación de title/desc SVG (un único texto en lugar de children segmentados), tipos derivados del wrapper vigente (sin asany), foco al llegar a extremos y las tres regresiones de analítica de la base. La prueba de animación observa animationstart real para no competir con una animación finita ya terminada por carga del runner. No se aumentaron duraciones/timeouts como arreglo ni se silenciaron gates.
 
-## Pendientes y límites
+Los smokes existentes se adaptaron a la nueva etiqueta/destino de condiciones, manteniendo la comprobación del ancla local correcta. El nuevo test SSR TextMorph se añadió a CI junto con su filtro de archivo compartido. No se instala ninguna dependencia ni se modifica lockfile.
 
-| Test | Resultado |
-|---|---|
-| `scripts/landing.test.cjs` | 13/13 ✅ |
-| `scripts/driver-landing.test.cjs` | 11/11 ✅ |
-| **Total** | **38/38 ✅** |
+Artefactos finales: after/creative-qa.json, zoom-max.json, capturas revisadas de hero/demo/lab/referidos; demos WebM en after/demos y su mapa demo-videos.json. Logs unit-final, advertiser/driver-smoke-final, advertiser/driver-build y tipos globales; métricas advertiser-bundle.json/driver-bundle.json. Hay capturas anteriores de intentos fallidos: la aceptación final se acredita con JSON/logs finales, no con un screenshot aislado.
 
----
+## Entrega y publicación
 
-## Prisma migration
+La rama de entrega es codex/creative-motion-v2-20261102, sobre main06e611e7 e incluyendo la reparación ajena#180. Se preparará PR draft; enlace y checks remotos del HEAD definitivo se registran en su descripción y adjuntos del chat, para evitar atribuir CI de un SHA anterior.
 
-- **Pendiente**: `prisma migrate dev` en staging (falta `DATABASE_URL` válido localmente)
+El usuario confirmó que estaba mirando la web publicada. Esta intervención aún no se ha fusionado ni desplegado allí; los artefactos muestran la versión local nueva. La publicación requiere autorización y resolver/aceptar formalmente sus gates y riesgos; el PR no se certifica listo para release por pasar UI. Procesos propios de QA detenidos antes de compilar.
 
----
-
-## Estado del trabajo
-
-- ✅ `includeProduction` ahora por defecto `false`
-- ✅ DTO declara `campaignMonths` e `includeProduction`
-- ✅ Backend guarda `campaignMonths` y `includeProduction` en el campaign
-- ✅ Prisma client actualizado
-- ✅ PR #175 mergeado en `origin/main` (`1185c1bd`)
-- ✅ PR #176 mergeado en `origin/main` (sales y referrals sin tope)
-- ⚠️ Prisma migration aún no aplicada en DB (esquema actualizado, DB no modificado)
-
-
-- Contrato comercial: los importes observados de1500/2500/500 pueden tener unidades distintas; no se eligió una tarifa ni se cambiaron cobros. Requiere conciliación comercial y pruebas de contrato específicas.
-- #175 modificó el esquema; la necesidad/aplicación de una migración debe contrastarse en entorno aprobado, sin ejecutar `migrate dev` sobre DB compartida por seguir un documento.
-- Ownership de comisiones de#174 ya está presente. No se vuelve a declarar abierto el hallazgo histórico ni se altera su guarda sin reproducción actual.
-- P2 observado: onboarding Pages intenta cargar Google Fonts y una suscripción Realtime aun en su fase educativa. La prueba bloqueó ambos y la UI siguió operativa. La raíz App Router y la landing Driver no hicieron esas solicitudes. Auditar sus proveedores en una tarjeta separada antes de afirmar privacidad de toda la incorporación.
-- El programa general no se certifica completo. Quedan gates de staging, sesiones, actualización de SW instalado, rendimiento de campo y flujos financieros fuera de esta intervención.
-- Reversión: revertir únicamente el commit/PR acotado, tras revisar dependencias; el helper es educativo. No restaurar toda la rama ni tocar datos productivos.
-
-Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), rama `codex/motion-ux-post-176`. Los procesos propios de desarrollo se detuvieron. Los resultados remotos deben leerse para el SHA exacto y distinguir código, runner y cuenta. No se promete trabajo en segundo plano.
-## Loop v2 checkpoint 2026-11-02
-- Branch: feat/landing-v5-financial-motion-fix
-- Skill motion-system-v2.md created
-- Merge conflicts in STATE.md cleaned
-- Next: responsive/mobile QA, then motion scenes
+Reversión: revertir el PR acotado tras revisar dependencias; no operaciones de datos, cambios de saldo ni restauración de una rama completa. El programa global (sesiones reales, staging, SW instalado y finanzas) sigue fuera de esta validación.

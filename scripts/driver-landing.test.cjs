@@ -190,6 +190,8 @@ test('driver landing uses native links so hovering cannot prefetch private pages
     'lucide-react': new Proxy({}, { get: () => () => null }),
     './driver-landing.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
     './DriverEarningsLab': { __esModule: true, default: () => null },
+    './DriverTaxiDemo': { __esModule: true, default: () => null },
+    './DriverReferralJourney': { __esModule: true, default: () => null },
   };
   const Landing = loadTs('apps/driver/components/landing/DriverLandingPage.tsx', { imports }).default;
   const tree = nodes(Landing());

@@ -153,11 +153,11 @@ async function main() {
       }
       assert.equal(await page.locator('header').getByRole('link', { name: 'Ingresar', exact: true })
         .getAttribute('href'), '/driver/login');
-      const participation = new URL(await page.getByRole('link', { name: 'Conoce cómo participar', exact: false }).first()
+      const participation = new URL(await page.getByRole('link', { name: 'Ver las condiciones', exact: true }).first()
         .getAttribute('href'), base);
       assert.equal(participation.origin, base.origin);
       assert.equal(participation.pathname, '/');
-      assert.equal(participation.hash, '#como-participar');
+      assert.equal(participation.hash, '#condiciones');
       for (const pathname of ['/politica-de-cookies', '/politica-de-privacidad', '/terminos-de-servicio', '/aviso-legal']) {
         assert.ok(await page.locator(`a[href="${pathname}"]`).count(), `Missing legal link ${pathname}`);
       }
@@ -217,11 +217,11 @@ async function main() {
       assert.deepEqual(api, []);
     });
 
-    await check('Participation anchor and native FAQ are operable by keyboard', async () => {
-      const participation = page.getByRole('link', { name: 'Conoce cómo participar', exact: false }).first();
+    await check('Conditions anchor and native FAQ are operable by keyboard', async () => {
+      const participation = page.getByRole('link', { name: 'Ver las condiciones', exact: true }).first();
       await participation.focus();
       await participation.press('Enter');
-      assert.equal(new URL(page.url()).hash, '#como-participar');
+      assert.equal(new URL(page.url()).hash, '#condiciones');
       const summary = page.locator('#preguntas summary').first();
       await summary.focus();
       assert.equal(await summary.evaluate(element => element === document.activeElement), true);

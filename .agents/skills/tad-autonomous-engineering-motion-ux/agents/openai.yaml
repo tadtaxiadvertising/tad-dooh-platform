@@ -1,4 +1,4 @@
 interface:
-  display_name: "TAD Engineering + Motion UX"
-  short_description: "Ingenieria segura y Motion UX para TAD"
-  default_prompt: "Usa $tad-autonomous-engineering-motion-ux para continuar el trabajo autorizado en TAD con evidencia, pruebas locales y revision de Motion UX."
+  display_name: "TAD Creative Motion V2"
+  short_description: "Landings TAD: creatividad, móvil y Motion UX verificable"
+  default_prompt: "Usa $tad-autonomous-engineering-motion-ux V2 para mejorar las landings de TAD dentro del alcance solicitado, con storyboard, interacciones reales, QA móvil y evidencia."

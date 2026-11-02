@@ -1,7 +1,16 @@
 "use client";
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowLeft, ArrowRight, ChartNoAxesCombined, ClipboardList, Monitor, Play, ShieldCheck } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChartNoAxesCombined,
+  ClipboardList,
+  Monitor,
+  Play,
+  ShieldCheck,
+} from "lucide-react";
 import styles from "./campaign-journey.module.css";
 
 type JourneyStep = "campaign" | "screen" | "playback" | "report";
@@ -13,9 +22,10 @@ type CampaignJourneyProps = {
 const STEPS = [
   {
     id: "campaign",
-    title: "Prepara tu campaña",
+    title: "Crear",
     summary: "Define el contenido y los objetivos antes de salir a la calle.",
-    detail: "La planificación reúne la creatividad, las condiciones y la selección de pantallas. El contenido y la disponibilidad se revisan en el proceso oficial del portal.",
+    detail:
+      "La planificación reúne la creatividad, las condiciones y la selección de pantallas. El contenido y la disponibilidad se revisan en el proceso oficial del portal.",
     question: "¿Qué se decide aquí?",
     answer: "Qué comunicar y cómo preparar la campaña para su revisión.",
     sceneLabel: "Creatividad de ejemplo",
@@ -25,23 +35,27 @@ const STEPS = [
   },
   {
     id: "screen",
-    title: "Llega a la pantalla",
-    summary: "El contenido aprobado se prepara para el reproductor.",
-    detail: "La distribución depende de la aprobación, la configuración y el estado del dispositivo. El reproductor contempla contenido en caché, sujeto a la licencia y las condiciones de operación.",
-    question: "¿Conexión significa reproducción?",
-    answer: "No. La conectividad describe una señal del dispositivo; por sí sola no confirma que el anuncio se haya reproducido.",
-    sceneLabel: "Pantalla ilustrativa",
-    sceneTitle: "Una idea. Un nuevo lugar para verla.",
-    sceneDetail: "Sin conexión a dispositivos reales",
+    title: "Programar",
+    summary: "Da contexto a las pantallas y a la duración de tu idea.",
+    detail:
+      "La planificación relaciona pantallas, duración y contenido aprobado. La programación y la disponibilidad se confirman en el proceso comercial y en el portal autorizado.",
+    question: "¿La demo reserva fechas o pantallas?",
+    answer:
+      "No. El calendario es una ilustración del proceso. No consulta disponibilidad ni crea una reserva.",
+    sceneLabel: "Planificación ilustrativa",
+    sceneTitle: "Cada idea necesita su momento.",
+    sceneDetail: "Calendario conceptual · sin reserva",
     icon: Monitor,
   },
   {
     id: "playback",
-    title: "Verifica la reproducción",
+    title: "Reproducir",
     summary: "La actividad registrada pasa por validaciones.",
-    detail: "El reproductor registra eventos de reproducción para su sincronización y validación. Una reproducción y una impresión estimada representan medidas distintas; ninguna garantiza una venta.",
+    detail:
+      "El reproductor registra eventos de reproducción para su sincronización y validación. Una reproducción y una impresión estimada representan medidas distintas; ninguna garantiza una venta.",
     question: "¿Y si no hay conexión?",
-    answer: "Los eventos locales pueden enviarse al recuperar la red. La demo no confirma entrega, aceptación ni actividad real.",
+    answer:
+      "Los eventos locales pueden enviarse al recuperar la red. La demo no confirma entrega, aceptación ni actividad real.",
     sceneLabel: "Reproducción de ejemplo",
     sceneTitle: "Reproducir es un paso. Verificar, otro.",
     sceneDetail: "Secuencia didáctica · sin evento enviado",
@@ -49,11 +63,13 @@ const STEPS = [
   },
   {
     id: "report",
-    title: "Entiende el reporte",
+    title: "Medir",
     summary: "Consulta actividad y estimaciones con sus límites claros.",
-    detail: "El portal autorizado permite revisar la información de la campaña. Los registros validados y las estimaciones se interpretan con su metodología; el reporte no equivale a alcance único ni retorno garantizado.",
+    detail:
+      "El portal autorizado permite revisar la información de la campaña. Los registros validados y las estimaciones se interpretan con su metodología; el reporte no equivale a alcance único ni retorno garantizado.",
     question: "¿Qué muestra esta demo?",
-    answer: "El recorrido conceptual de una campaña. Tus datos y resultados reales pertenecen al portal privado.",
+    answer:
+      "El recorrido conceptual de una campaña. Tus datos y resultados reales pertenecen al portal privado.",
     sceneLabel: "Reporte ilustrativo",
     sceneTitle: "Más contexto para tu próxima decisión.",
     sceneDetail: "Sin resultados ni métricas de una campaña real",
@@ -63,6 +79,9 @@ const STEPS = [
 
 export default function CampaignJourney({ onStepView }: CampaignJourneyProps) {
   const [activeStep, setActiveStep] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [direction, setDirection] = useState(1);
+  const reduceMotion = useReducedMotion();
   const activeStepRef = useRef(0);
   const stepButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const uniqueId = useId();
@@ -74,29 +93,53 @@ export default function CampaignJourney({ onStepView }: CampaignJourneyProps) {
     if (index < 0 || index >= STEPS.length) return;
     if (focus) stepButtons.current[index]?.focus();
     if (activeStepRef.current === index) return;
+    setDirection(index > activeStepRef.current ? 1 : -1);
+    setHasInteracted(true);
     activeStepRef.current = index;
     setActiveStep(index);
     onStepView?.(STEPS[index].id);
   };
 
-  const navigateSteps = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const next = event.key === "ArrowRight" ? (index + 1) % STEPS.length
-      : event.key === "ArrowLeft" ? (index + STEPS.length - 1) % STEPS.length
-        : event.key === "Home" ? 0
-          : event.key === "End" ? STEPS.length - 1 : null;
+  const navigateSteps = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const next =
+      event.key === "ArrowRight"
+        ? (index + 1) % STEPS.length
+        : event.key === "ArrowLeft"
+          ? (index + STEPS.length - 1) % STEPS.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? STEPS.length - 1
+              : null;
     if (next === null) return;
     event.preventDefault();
     selectStep(next, true);
   };
 
   return (
-    <section id="recorrido-campana" className={styles.journey} aria-labelledby={`${uniqueId}-title`}>
+    <section
+      id="recorrido-campana"
+      className={styles.journey}
+      aria-labelledby={`${uniqueId}-title`}
+      data-motion={hasInteracted && reduceMotion === false}
+      data-direction={direction}
+    >
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>UNA IDEA. CUATRO HITOS.</p>
-          <h2 id={`${uniqueId}-title`} className={styles.title}>Del anuncio <span>al recorrido.</span></h2>
+          <p className={styles.eyebrow}>02 / UNA IDEA. CUATRO HITOS.</p>
+          <h2 id={`${uniqueId}-title`} className={styles.title}>
+            Así se mueve
+            <br />
+            <span>una campaña.</span>
+          </h2>
         </div>
-        <p className={styles.introduction}>Explora qué sucede entre planificar una campaña y entender su actividad. Tú eliges el paso.</p>
+        <p className={styles.introduction}>
+          Explora qué sucede entre planificar una campaña y entender su
+          actividad. Tú eliges el paso.
+        </p>
       </div>
 
       <ol className={styles.steps} aria-label="Pasos de una campaña">
@@ -105,15 +148,21 @@ export default function CampaignJourney({ onStepView }: CampaignJourneyProps) {
           return (
             <li key={step.id}>
               <button
-                ref={element => { stepButtons.current[index] = element; }}
+                ref={(element) => {
+                  stepButtons.current[index] = element;
+                }}
                 type="button"
                 aria-pressed={activeStep === index}
+                aria-current={activeStep === index ? "step" : undefined}
                 aria-controls={detailId}
                 onClick={() => selectStep(index)}
-                onKeyDown={event => navigateSteps(event, index)}
+                onKeyDown={(event) => navigateSteps(event, index)}
                 className={styles.step}
               >
-                <span className={styles.stepTop}><span>Paso {index + 1}</span><Icon size={19} aria-hidden="true" /></span>
+                <span className={styles.stepTop}>
+                  <span>Paso {index + 1}</span>
+                  <Icon size={19} aria-hidden="true" />
+                </span>
                 <span className={styles.stepTitle}>{step.title}</span>
                 <span className={styles.stepSummary}>{step.summary}</span>
               </button>
@@ -122,18 +171,97 @@ export default function CampaignJourney({ onStepView }: CampaignJourneyProps) {
         })}
       </ol>
 
-      <div id={detailId} className={styles.stage}>
+      <div
+        className={styles.progress}
+        role="progressbar"
+        aria-label="Recorrido de campaña"
+        aria-valuemin={1}
+        aria-valuemax={4}
+        aria-valuenow={activeStep + 1}
+        aria-valuetext={`Paso ${activeStep + 1}: ${current.title}`}
+      >
+        <span style={{ width: `${(activeStep + 1) * 25}%` }} />
+      </div>
+
+      <div id={detailId} className={styles.stage} data-step={current.id}>
         <div className={styles.visual} aria-hidden="true">
-          <div className={styles.visualTop}><span>TAD<span className={styles.brandDot}>.</span></span><span className={styles.example}>EJEMPLO DIDÁCTICO</span></div>
-          <div className={styles.tablet}>
+          <div className={styles.visualTop}>
+            <span>
+              TAD<span className={styles.brandDot}>.</span>
+            </span>
+            <span className={styles.example}>EJEMPLO DIDÁCTICO</span>
+          </div>
+          <div className={styles.tablet} data-stage={current.id}>
             <div className={styles.tabletContent} key={current.id}>
-              <div className={styles.sceneLabel}><CurrentIcon size={17} /><span>{current.sceneLabel}</span></div>
+              <div className={styles.sceneLabel}>
+                <CurrentIcon size={17} />
+                <span>{current.sceneLabel}</span>
+              </div>
+              <div className={styles.contextScene}>
+                {current.id === "campaign" && (
+                  <div className={styles.creativeScene}>
+                    <span>TU IDEA ↗</span>
+                    <strong>
+                      Una marca.
+                      <br />
+                      Un nuevo destino.
+                    </strong>
+                    <div>
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                )}
+                {current.id === "screen" && (
+                  <div className={styles.calendarScene}>
+                    <div>
+                      <span>PLAN DE CAMPAÑA</span>
+                      <span>↗</span>
+                    </div>
+                    <div>
+                      {Array.from({ length: 21 }, (_, index) => (
+                        <span
+                          key={index}
+                          data-scheduled={index >= 4 && index <= 15}
+                        >
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                      ))}
+                    </div>
+                    <p>Duración y pantallas, en contexto.</p>
+                  </div>
+                )}
+                {current.id === "playback" && (
+                  <div className={styles.playbackScene}>
+                    <span>
+                      <Play size={39} fill="currentColor" />
+                    </span>
+                    <div />
+                    <p>REPRODUCIR → SINCRONIZAR → VALIDAR</p>
+                  </div>
+                )}
+                {current.id === "report" && (
+                  <div className={styles.reportScene}>
+                    <div>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                    <p>ACTIVIDAD + MÉTODO + CONTEXTO</p>
+                    <span>Gráfico conceptual · sin cifras reales</span>
+                  </div>
+                )}
+              </div>
               <p className={styles.sceneTitle}>{current.sceneTitle}</p>
-              <div className={styles.routeLine}><span /><span /><span /><span /></div>
               <p className={styles.sceneDetail}>{current.sceneDetail}</p>
             </div>
           </div>
-          <p className={styles.visualNote}>Ilustración conceptual. Sin datos reales.</p>
+          <p className={styles.visualNote}>
+            Ilustración conceptual. Sin datos reales.
+          </p>
         </div>
 
         <div className={styles.detail}>
@@ -142,16 +270,51 @@ export default function CampaignJourney({ onStepView }: CampaignJourneyProps) {
           <p className={styles.description}>{current.detail}</p>
           <div className={styles.context}>
             <ShieldCheck size={20} aria-hidden="true" />
-            <div><h4>{current.question}</h4><p>{current.answer}</p></div>
+            <div>
+              <h4>{current.question}</h4>
+              <p>{current.answer}</p>
+            </div>
           </div>
           <div className={styles.navigation}>
-            <button type="button" disabled={activeStep === 0} onClick={() => selectStep(activeStep - 1, true)}><ArrowLeft size={17} aria-hidden="true" /> Anterior</button>
-            <button type="button" disabled={activeStep === STEPS.length - 1} onClick={() => selectStep(activeStep + 1, true)}>Siguiente <ArrowRight size={17} aria-hidden="true" /></button>
+            <button
+              type="button"
+              aria-disabled={activeStep === 0}
+              onClick={() => selectStep(activeStep - 1)}
+            >
+              <ArrowLeft size={17} aria-hidden="true" /> Anterior
+            </button>
+            <button
+              type="button"
+              aria-disabled={activeStep === STEPS.length - 1}
+              onClick={() => selectStep(activeStep + 1)}
+            >
+              Siguiente <ArrowRight size={17} aria-hidden="true" />
+            </button>
           </div>
-          <p className={styles.boundary}>Demo local. No crea una campaña ni confirma aprobación, publicación o resultados.</p>
+          <p className={styles.boundary}>
+            Demo local. No crea una campaña ni confirma aprobación, publicación
+            o resultados.
+          </p>
         </div>
       </div>
-      <p className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">Paso {activeStep + 1} de 4: {current.title}.</p>
+      <noscript>
+        <ol className={styles.staticStory}>
+          {STEPS.map((step) => (
+            <li key={step.id}>
+              <strong>{step.title}</strong>
+              <p>{step.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </noscript>
+      <p
+        className={styles.srOnly}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Paso {activeStep + 1} de 4: {current.title}.
+      </p>
     </section>
   );
 }

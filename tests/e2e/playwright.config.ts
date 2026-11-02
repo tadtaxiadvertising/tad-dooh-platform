@@ -20,6 +20,27 @@ export const ENV_URLS = {
   driver: process.env.TAD_DRIVER_URL || 'http://127.0.0.1:3004',
 };
 
+// This suite performs state-changing operations (drivers, campaigns, bank details).
+// Never run it against a remote endpoint, even when TAD_*_URL is overridden.
+for (const [portal, rawUrl] of Object.entries(ENV_URLS)) {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`E2E safety: invalid URL configured for ${portal}`);
+  }
+  if (
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) ||
+    parsed.username ||
+    parsed.password
+  ) {
+    throw new Error(
+      `E2E safety: ${portal} must use a local loopback URL; remote test targets are forbidden`,
+    );
+  }
+}
+
 export default defineConfig({
   testDir: './v12',
 

@@ -27,7 +27,7 @@ tests/e2e/
 
 ## Seguridad de ejecución
 
-Los valores predeterminados son loopback local. Las pruebas pueden crear conductores, solicitar campañas y enviar datos bancarios: **nunca configurar las variables TAD_*_URL hacia producción**. Ejecutar únicamente contra entornos aislados con datos sintéticos y credenciales de prueba. Los overrides remotos siguen siendo posibles y requieren revisión manual; este cambio no constituye un bloqueo técnico de producción.
+Los valores predeterminados y los overrides permitidos son loopback local. Las pruebas pueden crear conductores, solicitar campañas y enviar datos bancarios: **nunca configurar las variables TAD_*_URL hacia producción**. Ejecutar únicamente contra entornos aislados con datos sintéticos y credenciales de prueba. La configuración Playwright ahora rechaza destinos remotos, incluso cuando se proporcionan overrides TAD_*_URL. Solo acepta http(s) en localhost, 127.0.0.1 o [::1]; las credenciales incrustadas en URL también se rechazan. Esto protege la suite v12 configurada en este directorio, no otros runners o configuraciones del repositorio.
 
 ## Requisitos de entorno
 

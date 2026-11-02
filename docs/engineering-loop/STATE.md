@@ -54,7 +54,8 @@ Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlaza
 | Ownership comisiones de#174 | Jest aislado:5/5 PASS, propio/ajeno/sin entidad/sin sesión/admin | Controlador y servicio mock; sin DB, no valida JWT contra servidor real |
 | Tipado global Advertiser | FAIL previo: TS2307 en playwright.config.ts y tests/e2e/advertiser.spec.ts | Falta @playwright/test en ese workspace. No se oculta ni instala para esta intervención |
 | Tipado global Driver | FAIL previo: TS2322 en pages/api/proxy/[...path].ts:193, Buffer/BodyInit | No se cambió el proxy como parte de UI |
-| PR/CI | PENDIENTE DE PUBLICACIÓN | Consultar SHA exacto, no asumir estado de runs anteriores |
+| PR | [#177 en borrador](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), producto `c0d17a82bd0e9de6e43b1d00a8c3628ce0e45f9f`, padre63c807e | 23 archivos; solo esta intervención, sin cambios ajenos |
+| CI | PENDIENTE DE CONSULTA tras el commit documental que enlaza el PR | Consultar SHA exacto, no asumir estado de runs anteriores |
 
 Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, con `advertiser-smoke.log`, `driver-smoke.log`, `advertiser-bundle.json`, `driver-bundle.json`, `visual-snapshots.json`, `onboarding-presentation-browser.json` y capturas. Las pruebas corresponden a63c807e más el diff de producto, no a producción. Las dos muestras de onboarding son una prueba puntual del recorrido educativo, distinta de los smokes públicos versionados.
 
@@ -67,4 +68,4 @@ Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, 
 - El programa general no se certifica completo. Quedan gates de staging, sesiones, actualización de SW instalado, rendimiento de campo y flujos financieros fuera de esta intervención.
 - Reversión: revertir únicamente el commit/PR acotado, tras revisar dependencias; el helper es educativo. No restaurar toda la rama ni tocar datos productivos.
 
-PR y CI: pendientes. Los resultados remotos deben leerse para el SHA exacto y distinguir código, runner y cuenta. No se promete trabajo en segundo plano.
+Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), rama `codex/motion-ux-post-176`. Los procesos propios de desarrollo se detuvieron. Los resultados remotos deben leerse para el SHA exacto y distinguir código, runner y cuenta. No se promete trabajo en segundo plano.

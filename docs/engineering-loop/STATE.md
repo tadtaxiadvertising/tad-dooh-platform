@@ -6,6 +6,7 @@ El usuario autorizó revisar/adoptar la skill nueva y aplicar mejoras, conservan
 
 ## Alcance y tarjetas
 
+<<<<<<< HEAD
 1. **Paquete:** sustituir V3 por Engineering + Motion UX, con referencias contrastadas contra #175/#176. [Registro](skill-adoption-2026-11-01.md).
 2. **P2, presentación/consentimiento:** mantener hero y controles legibles en SSR/sin JS, feedback del importe solo al cambiar, preferencia de movimiento reducido y foco; corregir eventos de ciudad/objetivo/producción que usaban el estado anterior. Retirar cifras/garantías y urgencia no verificadas de los pasos educativos de onboarding.
 3. **P3, aritmética educativa:** impedir Infinity/importes sin precisión segura sin reinstalar el cap comercial de ventas/referidos. El helper sigue compartido por landing y onboarding.
@@ -33,9 +34,49 @@ Exclusiones: API, esquema/migraciones, RBAC, identidad, tarifas reales, wallets/
 - **Navegador real:** las landings pasan con/sin JS en 320/390/768/1024/1440 px. La animación de importe es una sola de180 ms después de cambiar; cero al montar o con movimiento reducido, con foco retenido. Los pasos educativos se recorrieron también en navegador, producción OFF→ON→OFF y atrás; se observaron dos transiciones direccionales180 ms en modo normal y cero en modo reducido. No se introdujeron datos personales ni se avanzó al registro.
 - **Visual:** capturas revisadas de hero/laboratorios y dos pasos de onboarding a390 px; vistas completas a cinco anchos. En320 px CTA termina eny533 en Advertiser y eny480 en Driver (viewport800), sin overflow. El botón flotante de preferencias y el indicador de desarrollo aparecen en las capturas; no se consideran contenido nuevo de la landing.
 - **Coste:** build Advertiser:117659 bytes gzip de JS inicial,14955 exclusivos de ruta; Driver:169099 bytes gzip iniciales (unión /_app+/). Compresión nivel9 por asset, sin polyfills opcionales/headers/lazy chunks. No existe un baseline V5 equivalente capturado antes de editar; no se infiere delta contra V2 ni se certifica presupuesto de incremento. Lighthouse, INP y p75 de campo NO EJECUTADOS; el navegador usa desarrollo, no el artefacto compilado.
+=======
+| PR | Título | Estado |
+|---|---|---|
+| #173 | Landing V5 Financial Motion Fix | ✅ MERGED |
+| #174 | Ownership en comisiones Driver | ✅ MERGED |
+| #175 | Advertiser onboarding opt-in production + campaignMonths + includeProduction | ✅ MERGED (`origin/main` → `1185c1bd`) |
+| #176 | Remove cap on sales and referrals (compensation streams) | ✅ MERGED |
+
+### Cambios aplicados — RESUELTO: conflictos merge (LandingPage.tsx, DriverEarningsLab.tsx, STATE.md)
+
+### 1. Advertiser onboarding (`apps/advertiser/pages/advertiser/onboarding.tsx`)
+- `includeProduction: false` por defecto (opcional, desactivado)
+
+### 2. DTO OnboardAdvertiser (`apps/api/src/modules/onboarding/dto/onboard-advertiser.dto.ts`)
+- Agregados `campaignMonths: number` (optional, min 1)
+- Agregado `includeProduction: boolean` (optional)
+- `fileMetadata` mantenido como optional
+
+### 3. Onboarding service (`apps/api/src/modules/onboarding/onboarding.service.ts`)
+- Destructura `campaignMonths`, `includeProduction`, `targetCity`
+- Usa `campaignMonths` para calcular `endDate` y `campaignMonths` en la campaña
+- `includeProduction` se guarda en `includeProduction` del campaign
+
+### 4. Prisma schema (`apps/api/prisma/schema.prisma`)
+- Agregado `campaignMonths: Int? @default(1) @map("campaign_months")`
+- Agregado `includeProduction: Boolean? @default(false) @map("include_production")`
+- Regeneró Prisma client
+
+### 5. Driver earnings preview (`apps/driver/lib/earningsPreview.ts`)
+- `eligibleCount` ahora recibe un parámetro opcional `max`
+- `ads` sigue siendo capado a 15 (límite contractual)
+- `sales` y `referrals` ahora son **sin tope** (sin límite)
+- Uso de `max != null ? Math.min(max, v) : v` para distinguir entre "sin límite" y "con límite"
+
+### 6. Driver landing UI (`apps/driver/components/landing/DriverEarningsLab.tsx`)
+- `sales` control: `max: 100`, subtítulo: "sin límite"
+- `referrals` control: `max: 100`, subtítulo: "sin límite"
+- `ads` control: `max: 15` (permanece igual - límite contractual)
+>>>>>>> main
 
 ## Verificaciones ejecutadas
 
+<<<<<<< HEAD
 Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlazadas al checkout; sin `.env` copiado ni instalaciones. Destinos de builds/servidores únicamente loopback con fixtures públicos; signup OFF y analítica externa sin ID.
 
 | Gate | Resultado | Límite |
@@ -60,6 +101,31 @@ Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlaza
 Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, con `advertiser-smoke.log`, `driver-smoke.log`, `advertiser-bundle.json`, `driver-bundle.json`, `visual-snapshots.json`, `onboarding-presentation-browser.json` y capturas. Las pruebas corresponden a63c807e más el diff de producto, no a producción. Las dos muestras de onboarding son una prueba puntual del recorrido educativo, distinta de los smokes públicos versionados.
 
 ## Pendientes y límites
+=======
+| Test | Resultado |
+|---|---|
+| `scripts/landing.test.cjs` | 13/13 ✅ |
+| `scripts/driver-landing.test.cjs` | 11/11 ✅ |
+| **Total** | **38/38 ✅** |
+
+---
+
+## Prisma migration
+
+- **Pendiente**: `prisma migrate dev` en staging (falta `DATABASE_URL` válido localmente)
+
+---
+
+## Estado del trabajo
+
+- ✅ `includeProduction` ahora por defecto `false`
+- ✅ DTO declara `campaignMonths` e `includeProduction`
+- ✅ Backend guarda `campaignMonths` y `includeProduction` en el campaign
+- ✅ Prisma client actualizado
+- ✅ PR #175 mergeado en `origin/main` (`1185c1bd`)
+- ✅ PR #176 mergeado en `origin/main` (sales y referrals sin tope)
+- ⚠️ Prisma migration aún no aplicada en DB (esquema actualizado, DB no modificado)
+>>>>>>> main
 
 - Contrato comercial: los importes observados de1500/2500/500 pueden tener unidades distintas; no se eligió una tarifa ni se cambiaron cobros. Requiere conciliación comercial y pruebas de contrato específicas.
 - #175 modificó el esquema; la necesidad/aplicación de una migración debe contrastarse en entorno aprobado, sin ejecutar `migrate dev` sobre DB compartida por seguir un documento.

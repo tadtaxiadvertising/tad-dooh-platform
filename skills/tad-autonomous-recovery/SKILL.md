@@ -113,4 +113,4 @@ Each iteration of the loop performs 13 ordered sub-steps. Steps that depend on p
 - `references/`
   - `gate-classification.md` — P0/P1/P2/P3 + PASS/FAIL/BLOCKED/NOT RUN + final classification.
   - `recovery-patterns.md` — idempotent retry, batching, offline-queue, reconciliation.
-  - `landing-rate-sync.md` — sync rules for landing/simulator pricing against `business-rules.ts` (1500rd campaign, 500rd driver rates, conflict-artifact cleanup).
+  - `landing-rate-sync.md` — sync rules for landing/simulator pricing against `business-rules.ts` (1500rd campaign, 500rd driver rates, conflict-artifact cleanup, duplicate-file prevention after rebase).

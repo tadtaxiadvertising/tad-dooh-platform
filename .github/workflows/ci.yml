@@ -180,6 +180,7 @@ jobs:
           pnpm audit --audit-level=high
 
       - name: TruffleHog secret scan
+        if: ${{ always() }}
         uses: trufflesecurity/trufflehog@v3.90.12
         with:
           path: ./

@@ -1,16 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   Calculator,
-  TrendingUp,
   RotateCcw,
-  Users,
-  Store,
-  Check,
-  Target,
   Minus,
   Plus,
   Info,
@@ -48,7 +43,7 @@ export default function SimulatorStep({
   onPrev,
 }: SimulatorStepProps) {
   const [customScreens, setCustomScreens] = useState(6);
-  const isCustomScreens = config.screens > 5;
+  const reduceMotion = useReducedMotion();
 
   const estimate = estimateCampaign(config);
   const detailed = estimateCampaignDetailed(config);
@@ -70,64 +65,38 @@ export default function SimulatorStep({
   };
 
   return (
-    <motion.div
-      className="flex-1 flex flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      <motion.div
-        className="text-center pt-6 pb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#FDCB01] mb-5"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            delay: 0.1,
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-          }}
-        >
+    <div data-onboarding-simulator className="flex-1 flex flex-col">
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          [data-onboarding-simulator] .tad-stepper,
+          [data-onboarding-simulator] .tad-stepper::before,
+          [data-onboarding-simulator] .tad-slider,
+          [data-onboarding-simulator] .tad-slider::-webkit-slider-thumb,
+          [data-onboarding-simulator] .tad-slider::-moz-range-thumb {
+            transition: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
+      <div className="text-center pt-6 pb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FDCB01]/[0.08] border border-[#FDCB01]/25 rounded-full text-[9px] font-black uppercase tracking-[0.25em] text-[#FDCB01] mb-5">
           <Calculator className="w-3 h-3" />
-          Simulador en vivo · 2 de 4
-        </motion.div>
-        <motion.h1
-          className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
+          Simulación ilustrativa · 2 de 4
+        </div>
+        <h1 className="text-[26px] sm:text-4xl font-black text-white uppercase tracking-tight leading-[1.05] mb-2">
           Simula tu impacto <br />
           <span className="text-[#FDCB01]">y presupuesto</span>
-        </motion.h1>
-        <motion.p
-          className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-[#AAAAAA]"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <TrendingUp className="w-3 h-3 text-[#FDCB01]" />
-          El anunciante promedio de la red invierte RD$45,000+ por campaña
-        </motion.p>
-      </motion.div>
+        </h1>
+        <p className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-[#AAAAAA]">
+          <Info className="w-3 h-3 text-[#FDCB01]" />
+          Explora pantallas, duración y producción opcional antes de solicitar
+          revisión
+        </p>
+      </div>
 
-      <motion.div
-        className="bg-[#121212]/80 border border-white/10 rounded-xl p-5 sm:p-6 space-y-6 flex-1 overflow-y-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-      >
+      <div className="bg-[#121212]/80 border border-white/10 rounded-xl p-5 sm:p-6 space-y-6 flex-1 overflow-y-auto">
         {/* Screens Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-        >
+        <div>
           <div className="flex justify-between items-end gap-3 mb-3">
             <span className="text-[10px] font-black text-[#AAAAAA] uppercase tracking-wider leading-snug">
               1. Número de pantallas (taxis)
@@ -144,22 +113,21 @@ export default function SimulatorStep({
                 key={n}
                 type="button"
                 onClick={() => handleScreenSelect(n)}
-                className={`w-12 h-12 rounded-xl font-black text-lg transition-all select-none flex items-center justify-center ${
+                aria-pressed={config.screens === n}
+                aria-label={`${n} pantalla${n !== 1 ? "s" : ""}`}
+                whileHover={reduceMotion ? undefined : { scale: 1.06 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                className={`w-12 h-12 rounded-xl font-black text-lg transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FDCB01] select-none flex items-center justify-center ${
                   config.screens === n
                     ? "bg-[#FDCB01] text-black shadow-[0_0_20px_rgba(253,203,1,0.35)] border border-[#FDCB01]/30"
                     : "bg-white/[0.04] border border-white/10 text-white hover:bg-white/10 hover:border-white/20"
                 }`}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
               >
                 {n}
               </motion.button>
             ))}
             <div className="w-1.5 h-1.5 bg-white/15 rounded-full my-auto" />
-            <motion.div
-              className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2"
-              whileHover={{ borderColor: "rgba(253,203,1,0.5)" }}
-            >
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2">
               <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">
                 Más
               </span>
@@ -175,26 +143,17 @@ export default function SimulatorStep({
                 className="w-16 bg-transparent border-none outline-none text-white font-black text-base text-center"
                 aria-label="Número de pantallas personalizado"
               />
-            </motion.div>
+            </div>
           </div>
 
-          <motion.p
-            className="text-[10px] text-[#FDCB01]/80 font-bold uppercase tracking-wider flex items-center gap-1.5"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
+          <p className="text-[10px] text-[#FDCB01]/80 font-bold uppercase tracking-wider flex items-center gap-1.5">
             <RotateCcw className="w-3 h-3" />
-            Rotación exacta cada 30 segundos
-          </motion.p>
-        </motion.div>
+            Frecuencia de ejemplo: cada {FIXED_FREQUENCY_SECONDS} segundos
+          </p>
+        </div>
 
         {/* Months Slider */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-        >
+        <div>
           <div className="flex justify-between items-end gap-3 mb-3">
             <span className="text-[10px] font-black text-[#AAAAAA] uppercase tracking-wider leading-snug">
               2. Duración de la campaña
@@ -214,8 +173,8 @@ export default function SimulatorStep({
               onClick={() => handleMonthsChange(Math.max(1, config.months - 1))}
               aria-label="Reducir meses"
               className="tad-stepper"
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.06 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             >
               <Minus className="w-5 h-5" />
             </motion.button>
@@ -226,7 +185,7 @@ export default function SimulatorStep({
               step={1}
               value={config.months}
               onChange={(e) => handleMonthsChange(Number(e.target.value))}
-              className="tad-slider tad-range-yellow flex-1 min-h-[32px] animate-fill"
+              className="tad-slider tad-range-yellow flex-1 min-h-[32px] motion-reduce:transition-none"
               style={
                 {
                   "--fill": `${((config.months - 1) / 11) * 100}%`,
@@ -241,20 +200,16 @@ export default function SimulatorStep({
               }
               aria-label="Aumentar meses"
               className="tad-stepper"
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.06 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             >
               <Plus className="w-5 h-5" />
             </motion.button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Production Checkbox */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.4 }}
-        >
+        <div>
           <div className="flex justify-between items-end gap-3 mb-3">
             <span className="text-[10px] font-black text-[#AAAAAA] uppercase tracking-wider leading-snug">
               3. Producción creativa
@@ -265,10 +220,7 @@ export default function SimulatorStep({
             </span>
           </div>
 
-          <motion.label
-            className="flex items-center gap-3 cursor-pointer group/check p-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors"
-            whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-          >
+          <label className="flex items-center gap-3 cursor-pointer group/check p-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors">
             <input
               type="checkbox"
               checked={config.includeProduction}
@@ -285,31 +237,25 @@ export default function SimulatorStep({
                 (RD$ {PRODUCTION_FEE.toLocaleString()})
               </span>
             </span>
-          </motion.label>
-        </motion.div>
+          </label>
+        </div>
 
         {/* Budget Summary Card */}
-        <motion.div
-          className="bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10 stitched-card"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-        >
-          <motion.div
-            className="flex justify-between items-end mb-4"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.4 }}
-          >
+        <div className="bg-black/60 rounded-xl p-5 sm:p-6 border border-white/10 stitched-card">
+          <div className="flex justify-between items-end mb-4">
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40 mb-1">
-                Presupuesto estimado
+                Presupuesto ilustrativo
               </p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-bold text-[#AAAAAA]">RD$</span>
-                <motion.span className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums">
+                <output
+                  aria-label="Presupuesto ilustrativo"
+                  aria-live="polite"
+                  className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums"
+                >
                   {estimate.total.toLocaleString()}
-                </motion.span>
+                </output>
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -319,42 +265,28 @@ export default function SimulatorStep({
               <span className="text-lg sm:text-xl font-black text-white tabular-nums tracking-tight">
                 {estimate.impressions.toLocaleString()}
               </span>
-              <motion.p
-                className="text-[9px] text-white/40 tabular-nums mt-0.5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9, duration: 0.4 }}
-              >
+              <p className="text-[9px] text-white/40 tabular-nums mt-0.5">
                 {formatRange(detailed.totalImpressions)}
-              </motion.p>
+              </p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Badge de fuente / calibración */}
-          <motion.div
-            className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.05, duration: 0.4 }}
-          >
+          <div className="flex items-start gap-2 bg-[#FDCB01]/[0.06] border border-[#FDCB01]/20 rounded-lg px-3 py-2 mt-2">
             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#FDCB01]" />
             <div className="text-[9px] leading-snug text-[#AAAAAA]">
               <span className="font-black text-[#FDCB01] uppercase tracking-wider">
                 {calibration.label}
               </span>
               <span className="block text-white/45 mt-0.5">
-                Alcance por rango de confianza. Fuente: IAB DOOH + Geopath 2024
-                · Beneficio pendiente DATOS RD (DIGESETT/ONE, Q4 2026).
+                Rangos de impacto basados en benchmarks, sin calibración local
+                validada. No equivalen a reproducciones verificadas ni a
+                personas únicas.
               </span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.0, duration: 0.4 }}
-          >
+          <div className="border-t border-white/[0.06] pt-4 space-y-2 text-[11px] text-[#AAAAAA]">
             <div className="flex justify-between gap-4">
               <span>
                 Pantallas ({config.screens} × {config.months} mes
@@ -366,49 +298,36 @@ export default function SimulatorStep({
               </span>
             </div>
             {config.includeProduction && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-              >
+              <div>
                 <div className="flex justify-between gap-4">
                   <span>Producción creativa:</span>
                   <span className="text-white font-bold tabular-nums shrink-0">
                     RD${estimate.productionFee.toLocaleString()}
                   </span>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </motion.div>
+          </div>
 
-          <motion.p
+          <p
+            role="note"
             className="mt-4 pt-4 border-t border-white/[0.06] text-[10px] font-bold leading-relaxed text-[#FDCB01]/90"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
           >
-            * Disponibilidad limitada de pantallas en rutas clave. Resérvalo
-            ahora.
-          </motion.p>
-        </motion.div>
-      </motion.div>
+            Tarifas ilustrativas pendientes de conciliación y revisión
+            comercial. Los importes deben confirmarse en la cotización final. La
+            simulación no contrata, cobra ni reserva pantallas.
+          </p>
+        </div>
+      </div>
 
       {/* Actions */}
-      <motion.div
-        className="pt-6 mt-auto flex flex-col sm:flex-row gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.5 }}
-      >
+      <div className="pt-6 mt-auto flex flex-col sm:flex-row gap-3">
         <motion.button
           type="button"
           onClick={onPrev}
-          className="order-2 sm:order-1 w-full min-h-[48px] py-3 bg-white/[0.04] border border-white/10 text-[#AAAAAA] hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          whileHover={{
-            scale: 1.02,
-            backgroundColor: "rgba(255,255,255,0.08)",
-          }}
-          whileTap={{ scale: 0.98 }}
+          className="order-2 sm:order-1 w-full min-h-[48px] py-3 bg-white/[0.04] border border-white/10 text-[#AAAAAA] hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors motion-reduce:transition-none flex items-center justify-center gap-2"
+          whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         >
           <ArrowRight
             className="w-4 h-4"
@@ -417,18 +336,16 @@ export default function SimulatorStep({
           Ajustar simulación
         </motion.button>
         <motion.button
+          type="button"
           onClick={onNext}
-          className="order-1 sm:order-2 w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
-          whileHover={{
-            scale: 1.02,
-            boxShadow: "0 10px 50px rgba(253,203,1,0.4)",
-          }}
-          whileTap={{ scale: 0.98 }}
+          className="order-1 sm:order-2 w-full min-h-[52px] bg-[#FDCB01] hover:bg-white text-black font-black uppercase tracking-[0.12em] text-sm py-4 rounded-xl transition-colors motion-reduce:transition-none shadow-[0_0_44px_rgba(253,203,1,0.28)] flex items-center justify-center gap-3"
+          whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         >
-          <span>Asegurar este plan</span>
+          <span>Continuar con este escenario</span>
           <ArrowRight className="w-5 h-5" />
         </motion.button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

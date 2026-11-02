@@ -54,8 +54,8 @@ Entorno local: Windows, Node22.20.0, Next15.5.24, dependencias existentes enlaza
 | Ownership comisiones de#174 | Jest aislado:5/5 PASS, propio/ajeno/sin entidad/sin sesión/admin | Controlador y servicio mock; sin DB, no valida JWT contra servidor real |
 | Tipado global Advertiser | FAIL previo: TS2307 en playwright.config.ts y tests/e2e/advertiser.spec.ts | Falta @playwright/test en ese workspace. No se oculta ni instala para esta intervención |
 | Tipado global Driver | FAIL previo: TS2322 en pages/api/proxy/[...path].ts:193, Buffer/BodyInit | No se cambió el proxy como parte de UI |
-| PR | [#177 en borrador](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), producto `c0d17a82bd0e9de6e43b1d00a8c3628ce0e45f9f`, padre63c807e | 23 archivos; solo esta intervención, sin cambios ajenos |
-| CI | PENDIENTE DE CONSULTA tras el commit documental que enlaza el PR | Consultar SHA exacto, no asumir estado de runs anteriores |
+| PR | [#177 en borrador](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/177), producto `c0d17a82bd0e9de6e43b1d00a8c3628ce0e45f9f`, padre63c807e | 24 archivos, incluidos checkpoint y registro de regresiones en CI; sin cambios ajenos |
+| CI | Workflows iniciados en dd5ac91f; revalidar el SHA posterior al registro de pruebas | La gate focalizada incorpora los dos scripts nuevos y sus filtros de paths; no se desactiva ninguna gate global |
 
 Artefactos fuera de Git: carpeta `after-176-2026-11-01` de evidencias del chat, con `advertiser-smoke.log`, `driver-smoke.log`, `advertiser-bundle.json`, `driver-bundle.json`, `visual-snapshots.json`, `onboarding-presentation-browser.json` y capturas. Las pruebas corresponden a63c807e más el diff de producto, no a producción. Las dos muestras de onboarding son una prueba puntual del recorrido educativo, distinta de los smokes públicos versionados.
 

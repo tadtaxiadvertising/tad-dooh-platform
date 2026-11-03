@@ -12,7 +12,7 @@ export const CONFIG = {
   TABLET_COUNT: parseInt(process.env.TABLET_COUNT || '10', 10),
   SIMULATION_DURATION_MINUTES: parseInt(process.env.SIMULATION_DURATION_MINUTES || '5', 10),
   MAX_CONCURRENT: parseInt(process.env.MAX_CONCURRENT || '5', 10),
-  TABLET_KEY: process.env.TAD_TABLET_KEY || 'tad-tablet-key-2026',
+  TABLET_KEY: process.env.TAD_TABLET_KEY?.trim() || null,
   IS_SIMULATED: process.env.IS_SIMULATED !== 'false',
 };
 

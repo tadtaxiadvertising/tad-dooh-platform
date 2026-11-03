@@ -93,6 +93,12 @@ async function withConcurrency(items, fn) {
 }
 
 async function main() {
+  // No telemetry, playback or heartbeat simulation without explicit credentials.
+  if (!TABLET_KEY) {
+    console.error('TAD Simulator cannot start: TAD_TABLET_KEY is required.');
+    process.exitCode = 1;
+    return;
+  }
   console.log('🚀 TAD Simulator v2.0 starting...');
   console.log(`   Tablets: ${TABLET_COUNT} | Concurrent: ${MAX_CONCURRENT} | Duration: ${SIMULATION_DURATION_MINUTES} min`);
   console.log(`   GPS: ${API_URLS.gps}`);

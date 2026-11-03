@@ -167,6 +167,14 @@ export default function DriverLandingPage() {
             <nav aria-label="Navegación principal" className={styles.nav}>
               <a href="#calculadora" className={styles.navSection}>Calcula tus oportunidades</a><a href="#como-participar" className={styles.navSection}>Cómo participar</a>
               <a href="#preguntas" className={styles.navSection}>Preguntas</a>
+              <details className={styles.mobileMenu}>
+                <summary>Secciones</summary>
+                <div>
+                  <a href="#calculadora" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Calcular oportunidades</a>
+                  <a href="#como-participar" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Cómo participar</a>
+                  <a href="#preguntas" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Preguntas frecuentes</a>
+                </div>
+              </details>
               <a href="/driver/login" className={styles.login}>Ingresar <ArrowRight size={16} aria-hidden="true" /></a>
             </nav>
           </div>
@@ -176,15 +184,20 @@ export default function DriverLandingPage() {
           <section className={`${styles.container} ${styles.hero}`} aria-labelledby="hero-title">
             <div className={styles.heroCopy}>
               <p className={styles.eyebrow}><span aria-hidden="true" /> TAD · PUBLICIDAD EN MOVIMIENTO</p>
-              <h1 id="hero-title">Tu taxi. <br />Tu recorrido. <br /><span>Una nueva oportunidad.</span></h1>
-              <p className={styles.heroDescription}>Conecta tu vehículo con la publicidad digital a bordo. Conoce la propuesta, revisa las condiciones y descubre cómo participar en TAD.</p>
+              <h1 id="hero-title">La ciudad no se detiene.<br /><span>Tu taxi tampoco.</span></h1>
+              <p className={styles.heroDescription}>Tu recorrido puede conectar marcas con personas. Descubre tres formas de generar ingresos elegibles, simula un escenario y decide con las condiciones claras.</p>
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="#calculadora">
-                  Probar mis ganancias<ArrowRight size={18} aria-hidden="true" />
+                  Simular mis oportunidades<ArrowRight size={18} aria-hidden="true" />
                 </a>
                 <a className={styles.textLink} href={signupEnabled ? "#como-participar" : "#condiciones"}>{signupEnabled ? "Conoce cómo participar" : "Ver las condiciones"} <ArrowDown size={15} aria-hidden="true" /></a>
               </div>
               <p className={styles.heroNote}><ShieldCheck size={15} aria-hidden="true" /> Incorporación sujeta a revisión y disponibilidad.</p>
+              <ul className={styles.heroChannels} aria-label="Tres oportunidades para conductores">
+                <li><strong>01</strong> Pantalla</li>
+                <li><strong>02</strong> Ventas</li>
+                <li><strong>03</strong> Referidos</li>
+              </ul>
             </div>
             <TaxiIllustration />
           </section>

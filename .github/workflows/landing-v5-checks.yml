@@ -35,10 +35,113 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Landing and driver regression logic
-        run: node --test scripts/landing.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+        run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
         run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.landing.json
       - name: Type check Driver landing and onboarding simulator
         run: pnpm exec tsc --noEmit --project apps/driver/tsconfig.landing.json
+
+
+  browser-smoke:
+    name: Public landing browser smoke (local only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install isolated Chromium runtime
+        run: pnpm --filter driver exec playwright install --with-deps chromium
+      - name: Build production-equivalent public portals
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: "false"
+          NEXT_PUBLIC_SUPABASE_URL: "https://fixture.supabase.invalid"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "fixture-anon-key"
+          NEXT_PUBLIC_API_URL: "http://127.0.0.1:5999"
+          BACKEND_INTERNAL_URL: "http://127.0.0.1:5999"
+        run: |
+          set -euo pipefail
+          pnpm --filter @tad/impact-calculator run build
+          pnpm --filter @tad/advertiser run build
+          pnpm --filter driver run build
+      - name: Smoke both production builds with local-only Chromium
+        env:
+          NODE_ENV: "production"
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: "false"
+          NEXT_PUBLIC_SUPABASE_URL: "https://fixture.supabase.invalid"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "fixture-anon-key"
+          LANDING_BASE_URL: "http://127.0.0.1:3003/"
+          DRIVER_LANDING_BASE_URL: "http://127.0.0.1:3004/"
+          LANDING_SCREENSHOT_DIR: "/tmp/tad-landing-screenshots/advertiser"
+          DRIVER_LANDING_SCREENSHOT_DIR: "/tmp/tad-landing-screenshots/driver"
+        run: |
+          set -euo pipefail
+          # This job is read-only: synthetic config, no production URLs or credentials.
+          mkdir -p "$LANDING_SCREENSHOT_DIR" "$DRIVER_LANDING_SCREENSHOT_DIR"
+          for app in advertiser driver; do
+            target="apps/$app/.next/standalone/apps/$app"
+            test -f "$target/server.js"
+            mkdir -p "$target/.next"
+            ln -sfn "$GITHUB_WORKSPACE/apps/$app/.next/static" "$target/.next/static"
+            ln -sfn "$GITHUB_WORKSPACE/apps/$app/public" "$target/public"
+          done
+          (
+            cd apps/advertiser/.next/standalone
+            PORT=3003 HOSTNAME=127.0.0.1 node apps/advertiser/server.js
+          ) > /tmp/tad-advertiser-landing.log 2>&1 &
+          ADV_PID=$!
+          (
+            cd apps/driver/.next/standalone
+            PORT=3004 HOSTNAME=127.0.0.1 node apps/driver/server.js
+          ) > /tmp/tad-driver-landing.log 2>&1 &
+          DRV_PID=$!
+          cleanup() {
+            code=$?
+            if [ "$code" -ne 0 ]; then
+              echo "Advertiser log (last 80 lines)"
+              tail -n 80 /tmp/tad-advertiser-landing.log || true
+              echo "Driver log (last 80 lines)"
+              tail -n 80 /tmp/tad-driver-landing.log || true
+            fi
+            kill "$ADV_PID" "$DRV_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          ready() {
+            local port="$1" pid="$2"
+            for attempt in $(seq 1 90); do
+              if curl -fsS "http://127.0.0.1:$port/" > /dev/null 2>&1; then return 0; fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                echo "::error::Production Next server exited unexpectedly ($port)."
+                return 1
+              fi
+              sleep 2
+            done
+            echo "::error::Production Next server not ready ($port)."
+            return 1
+          }
+          ready 3003 "$ADV_PID"
+          ready 3004 "$DRV_PID"
+          export NODE_PATH="$GITHUB_WORKSPACE/apps/driver/node_modules"
+          node scripts/landing-v3-smoke.cjs
+          node scripts/driver-landing-smoke.cjs
+      - name: Preserve read-only browser QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tad-public-landings-responsive
+          path: /tmp/tad-landing-screenshots
+          if-no-files-found: warn
+          retention-days: 5

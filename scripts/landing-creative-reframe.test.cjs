@@ -1,0 +1,111 @@
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
+
+test("advertiser creative reframe preserves the live estimate and explicit production opt-in", () => {
+  const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
+  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.match(landing, /estimateCampaignDetailed\(config\)/);
+  assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
+  assert.match(landing, /id="campaign-production"/);
+  assert.match(landing, /checked=\{includeProduction\}/);
+  assert.match(landing, /Subtotal ilustrativo · impuestos no incluidos/);
+  assert.match(landing, /@tad\/impact-calculator/);
+  assert.doesNotMatch(landing, /RD\$1\.500\/mes · pantalla|Los tres sustratos que mueven el negocio/);
+  assert.match(landing, /landing-hero-steps/);
+  assert.match(landing, /ROLE_FAQS\.advertiser/);
+});
+
+test("driver creative reframe preserves three separate income streams and approval gates", () => {
+  const landing = read("apps/driver/components/landing/DriverLandingPage.tsx");
+  const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  assert.match(landing, /className=\{styles\.heroChannels\}/);
+  for (const label of ["Pantalla", "Ventas", "Referidos"]) {
+    assert.ok(landing.includes(label), "Missing path: " + label);
+  }
+  assert.match(landing, /signupEnabled \? "\/register" : "#como-participar"/);
+  assert.match(lab, /previewDriverEarnings\(ads, sales, referrals\)/);
+  assert.match(lab, /RD\$1\.25 por play validado es un concepto distinto/);
+  assert.match(lab, /No son pagos recurrentes/);
+  assert.doesNotMatch(lab, /15 anuncios \/ día/);
+  assert.match(lab, /href=\{signupEnabled \? "\/register" : "#como-participar"\}/);
+});
+
+test("creative reframe remains responsive, reduced-motion friendly and asset-light", () => {
+  const driver = read("apps/driver/components/landing/driver-landing.module.css");
+  const advertiser = read("apps/advertiser/components/landing/landing.module.css");
+  const earnings = read("apps/driver/components/landing/driver-earnings-lab.module.css");
+  for (const css of [driver, advertiser, earnings]) {
+    assert.ok(css.includes("Creative Reframe V4"), "Missing design layer");
+    assert.match(css, /@media\s*\(max-width:\s*(?:380|400|580|760|800)px\)/);
+  }
+  for (const css of [driver, advertiser]) {
+    assert.match(css, /@media\s*\(prefers-reduced-motion:\s*no-preference\)/);
+    assert.match(css, /transform:\s*translate3d/);
+    assert.doesNotMatch(css, /url\(\s*https?:/i, "Public landing must not add remote CSS assets");
+  }
+  assert.doesNotMatch(earnings, /\n\|\.rateTable\b/);
+  assert.match(driver, /\.heroChannels/);
+  assert.match(advertiser, /landing-hero-steps/);
+  assert.match(advertiser, /landing-mobile-menu/);
+  assert.match(driver, /\.mobileMenu/);
+  assert.match(driver, /--yellow:\s*#ffd400/i);
+  assert.match(advertiser, /--yellow:\s*#ffd400/i);
+  assert.match(driver, /background:\s*#08090b/i);
+  assert.match(advertiser, /background:\s*#08090b/i);
+});
+
+test("both public landings retain mobile navigation with working anchor destinations", () => {
+  const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const driver = read("apps/driver/components/landing/DriverLandingPage.tsx");
+  assert.match(advertiser, /<details className="landing-mobile-menu">/);
+  assert.match(advertiser, /aria-label="Secciones de anunciantes en móvil"/);
+  assert.match(driver, /<details className=\{styles\.mobileMenu\}>/);
+  for (const id of ["#como-funciona", "#experiencia", "#preguntas"]) {
+    assert.ok(advertiser.includes(`href="${id}"`), "Advertiser anchor absent: " + id);
+  }
+  for (const id of ["#calculadora", "#como-participar", "#preguntas"]) {
+    assert.ok(driver.includes(`href="${id}"`), "Driver anchor absent: " + id);
+  }
+  assert.match(advertiser, /closest\("details"\)\?\.removeAttribute\("open"\)/);
+  assert.match(driver, /closest\("details"\)\?\.removeAttribute\("open"\)/);
+});
+
+test("financial outputs only animate after a changed amount, never on mount", () => {
+  const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const driver = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  for (const [name, source] of [["advertiser", advertiser], ["driver", driver]]) {
+    assert.doesNotMatch(source, /<motion\.output|key=\{(?:quote\.total|result\.illustrativeTotalRD)\}/, name);
+    assert.match(source, /\.animate\(/, name);
+    assert.match(source, /duration:\s*180/, name);
+    assert.match(source, /opacity:\s*0\.94/, name);
+    assert.match(source, /reduceMotion !== false/, name);
+    assert.match(source, /animation\.cancel\(\)/, name);
+  }
+  assert.match(advertiser, /<h1 id="hero-title">/);
+  assert.match(advertiser, /ref=\{budgetOutputRef\}/);
+  assert.match(driver, /ref=\{earningsOutputRef\}/);
+});
+
+
+test("driver range outputs expose numeric quantities and hide decorative rates from assistive tech", () => {
+  const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  assert.match(lab, /className=\{styles\.value\}>\{value\}<\/output>/);
+  assert.match(lab, /className=\{styles\.unit\} aria-hidden="true">× RD\$500<\/span>/);
+  assert.doesNotMatch(lab, /<output[^>]+>[\s\S]{0,120}\$\{value\} × RD\$500/);
+});
+
+test("driver sales and referrals distinguish simulator display limits from commercial conditions", () => {
+  const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  const css = read("apps/driver/components/landing/driver-earnings-lab.module.css");
+  assert.doesNotMatch(lab, /subtitle:\s*"[^"]*sin límite"/);
+  assert.match(lab, /hasta 100 en este simulador/);
+  assert.match(lab, /hasta 100 simulados/);
+  assert.match(lab, /no define condiciones ni posibles límites contractuales/);
+  assert.match(lab, /max:\s*100/);
+  assert.match(css, /\.rangeNote/);
+});

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { ArrowUpRight, ArrowRight, Check, CarFront, ChartNoAxesCombined, ShieldCheck, MapPin, Radio, Play, MonitorPlay } from "lucide-react";
 import CookieBanner from "@tad/ui/components/CookieBanner";
 import { trackAnalyticsEvent } from "@tad/services/cookie-consent";
@@ -32,14 +32,36 @@ export default function LandingPage() {
   const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
   const quote = estimateCampaign(config);
   const projection = estimateCampaignDetailed(config);
+  const budgetOutputRef = useRef<HTMLOutputElement>(null);
+  const previousBudgetTotal = useRef(quote.total);
+  useEffect(() => {
+    if (previousBudgetTotal.current === quote.total) return;
+    previousBudgetTotal.current = quote.total;
+    if (reduceMotion !== false || !budgetOutputRef.current) return;
+    // A stable output avoids remounts, mount animation and keyboard focus loss.
+    const animation = budgetOutputRef.current.animate(
+      [{ transform: "translateY(3px)", opacity: 0.94 }, { transform: "translateY(0px)", opacity: 1 }],
+      { duration: 180, easing: "ease-out" },
+    );
+    return () => animation.cancel();
+  }, [quote.total, reduceMotion]);
   const advertiserDestination = referral ? `${links.advertiser}?ref=${encodeURIComponent(referral)}` : links.advertiser;
   const signupDestination = referral ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}` : links.advertiserSignup;
   const cta = (destination: string) => trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
-  const recordPreview = () => {
-    const key = `${city}:${objective}:${screens}:${months}:${includeProduction}`;
+  const recordPreview = (patch: Partial<{
+    city: DemoCity;
+    objective: DemoObjective;
+    screens: number;
+    months: number;
+    includeProduction: boolean;
+  }> = {}) => {
+    // Read the just-committed interaction directly: React state is updated
+    // asynchronously, so the closure still contains the previous selection.
+    const snapshot = { city, objective, screens, months, includeProduction, ...patch };
+    const key = `${snapshot.city}:${snapshot.objective}:${snapshot.screens}:${snapshot.months}:${snapshot.includeProduction}`;
     if (previousPreview.current === key) return;
     previousPreview.current = key;
-    trackAnalyticsEvent("budget_demo_used", { city, objective, screens, months, includeProduction });
+    trackAnalyticsEvent("budget_demo_used", snapshot);
   };
 
   return (
@@ -50,6 +72,14 @@ export default function LandingPage() {
         <nav aria-label="Navegación principal" className="landing-nav">
           <a href="#como-funciona">Cómo funciona</a><a href="#experiencia">Simula tu campaña</a><a href="#preguntas">Preguntas</a>
         </nav>
+        <details className="landing-mobile-menu">
+          <summary>Secciones</summary>
+          <nav aria-label="Secciones de anunciantes en móvil">
+            <a href="#como-funciona" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Cómo funciona</a>
+            <a href="#experiencia" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Simular campaña</a>
+            <a href="#preguntas" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Preguntas frecuentes</a>
+          </nav>
+        </details>
         <a href={advertiserDestination} className="landing-access" onClick={() => cta("advertiser_login")}>Ingresar <ArrowUpRight size={16} aria-hidden="true"/></a>
       </header>
 
@@ -57,15 +87,20 @@ export default function LandingPage() {
         <section className="landing-hero landing-wrap" aria-labelledby="hero-title">
           <div className="landing-hero-copy">
             <p className="landing-eyebrow"><span/> PUBLICIDAD QUE ACOMPAÑA TU CIUDAD</p>
-            <motion.h1 id="hero-title" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
+            <h1 id="hero-title">
               {content.headline[0]}<br/><span>{content.headline[1]}</span>
-            </motion.h1>
+            </h1>
             <p className="landing-lead">{content.lead}</p>
             <div className="landing-hero-actions">
               <a className="landing-button landing-button-primary" href="#experiencia" onClick={() => cta("advertiser_lab")}>Simular mi campaña <ArrowUpRight size={19} aria-hidden="true"/></a>
               <a className="landing-text-link" href="#recorrido-campana" onClick={() => cta("campaign_story")}>Ver cómo funciona <ArrowRight size={17} aria-hidden="true"/></a>
             </div>
             <div className="landing-hero-proof"><ShieldCheck size={17} aria-hidden="true"/><span>Explora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.</span></div>
+            <ol className="landing-hero-steps" aria-label="Así comienza una campaña">
+              <li><span>01</span> Imagina</li>
+              <li><span>02</span> Configura</li>
+              <li><span>03</span> Solicita revisión</li>
+            </ol>
           </div>
           <CityScene />
         </section>
@@ -103,51 +138,42 @@ export default function LandingPage() {
                 <span>{CITIES[city]} ↗</span>
               </div>
               <label htmlFor="campaign-city">Ciudad del ejemplo</label>
-              <select id="campaign-city" value={city} onChange={e => { setCity(e.target.value as DemoCity); recordPreview(); }}>
+              <select id="campaign-city" value={city} onChange={e => { const nextCity = e.target.value as DemoCity; setCity(nextCity); recordPreview({ city: nextCity }); }}>
                 {Object.entries(CITIES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-objective">Objetivo de comunicación</label>
-              <select id="campaign-objective" value={objective} onChange={e => { setObjective(e.target.value as DemoObjective); recordPreview(); }}>
+              <select id="campaign-objective" value={objective} onChange={e => { const nextObjective = e.target.value as DemoObjective; setObjective(nextObjective); recordPreview({ objective: nextObjective }); }}>
                 {Object.entries(OBJECTIVES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-screens">Pantallas del ejemplo <span>{screens}</span></label>
               <input id="campaign-screens" type="range" min={1} max={15} step={1} value={screens}
                 aria-valuetext={`${screens} pantallas`} onChange={e => setScreens(Number(e.target.value))}
-                onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
+                onBlur={() => recordPreview()} onPointerUp={() => recordPreview()} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 pantalla</span><span>15 pantallas</span></div>
               <label htmlFor="campaign-months">Duración <span>{months} {months === 1 ? "mes" : "meses"}</span></label>
               <input id="campaign-months" type="range" min={1} max={12} step={1} value={months}
                 aria-valuetext={`${months} meses`} onChange={e => setMonths(Number(e.target.value))}
-                onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
+                onBlur={() => recordPreview()} onPointerUp={() => recordPreview()} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 mes</span><span>12 meses</span></div>
               <label className="landing-production-option" htmlFor="campaign-production">
-                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { setIncludeProduction(e.target.checked); recordPreview(); }}/>
+                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { const checked = e.target.checked; setIncludeProduction(checked); recordPreview({ includeProduction: checked }); }}/>
                 <span>Quiero contratar producción creativa opcional</span>
               </label>
               <div className="landing-preview-summary">
                 <span>Pantallas y duración (precio de referencia)</span><strong>{money(quote.screensCost)}</strong>
                 <span>Producción creativa (opcional)</span><strong>{includeProduction ? money(quote.productionFee) : "No incluida · RD$ 0"}</strong>
               </div>
-              <p className="landing-total-label">Total estimado del ejemplo · sin impuestos adicionales</p>
-              <motion.output className="landing-large-number" key={quote.total} id="budget-total"
-                htmlFor="campaign-screens campaign-months campaign-production"
-                initial={reduceMotion ? false : { opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
+              <p className="landing-total-label">Subtotal ilustrativo · impuestos no incluidos</p>
+              <output ref={budgetOutputRef} className="landing-large-number" id="budget-total"
+                htmlFor="campaign-screens campaign-months campaign-production">
                 {money(quote.total)}
-              </motion.output>
-              <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas.</p>
-              <p className="landing-disclaimer">Tarifas basadas en <code>business-rules.ts</code> (ADVERTISER_COST_PER_CAMPAIGN_RD: 1500; DRIVER_RATE_PER_AD_PLAY_RD: 1.25; DRIVER_REFERRAL_BONUS_RD: 500). Las tasas ilustrativas pueden diferir de las tarifas comerciales finales conciliadas con el backend. No es una cotización ni garantía de alcance.</p>
-              <div className="landing-rate-summary">
-                <p className="landing-rate-label">Los tres sustratos que mueven el negocio publicitario:</p>
-                <table className="landing-rate-table">
-                  <thead><tr><th>Sustrato</th><th>Disparador</th><th>Tasa de referencia</th><th>Frecuencia</th><th>Límite</th></tr></thead>
-                  <tbody>
-                    <tr><td>Pantalla digital</td><td>Play de 30s</td><td>RD$1.500/mes · pantalla</td><td>Mensual</td><td>15 (máx.)</td></tr>
-                    <tr><td>Producción creativa</td><td>Video o estático</td><td>RD$1.500</td><td>Una vez</td><td>Opcional</td></tr>
-                    <tr><td>Campaña</td><td>Suscripción</td><td>RD$1.500/campaña</td><td>Mensual</td><td>15 (máx.)</td></tr>
-                  </tbody>
-                </table>
-                <p className="landing-rate-note">Tasas basadas en <code>business-rules.ts</code> (ADVERTISER_COST_PER_CAMPAIGN_RD: 1500; DRIVER_RATE_PER_AD_PLAY_RD: 1.25; DRIVER_REFERRAL_BONUS_RD: 500). Las tasas ilustrativas pueden diferir de las tarifas comerciales finales conciliadas con el backend.</p>
-              </div>
+              </output>
+              <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas. Las proyecciones utilizan benchmarks internacionales y supuestos del modelo; revisa las fuentes y advertencias antes de interpretar el alcance.</p>
+              <p className="landing-disclaimer">Estimación calculada con el motor <code>@tad/impact-calculator</code>. Las referencias comerciales del simulador requieren conciliación con el backend y confirmación contractual. No constituye cotización, inventario reservado ni garantía de alcance.</p>
+              <aside className="landing-rate-summary" aria-label="Cómo interpretar esta estimación">
+                <strong>Una propuesta para explorar, no una factura.</strong>
+                <p>El ejemplo separa pantallas y duración de la producción creativa, que empieza desactivada. Los impuestos aplicables y la disponibilidad se confirman antes de contratar. Los importes del simulador no sustituyen las tarifas aprobadas.</p>
+              </aside>
               {projection.warnings.length > 0 && <details className="landing-warning-details"><summary>Ver fuentes y advertencias ({projection.warnings.length})</summary>
                 <ul>{projection.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>
               </details>}

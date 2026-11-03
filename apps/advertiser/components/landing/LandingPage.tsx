@@ -28,6 +28,10 @@ export default function LandingPage() {
   useEffect(() => { setReferral(referralCodeFromSearch(window.location.search)); }, []);
   const previousPreview = useRef("");
   const reduceMotion = useReducedMotion();
+  const links = landingLinks();
+  const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
+  const quote = estimateCampaign(config);
+  const projection = estimateCampaignDetailed(config);
   const budgetOutputRef = useRef<HTMLOutputElement>(null);
   const previousBudgetTotal = useRef(quote.total);
   useEffect(() => {
@@ -41,10 +45,6 @@ export default function LandingPage() {
     );
     return () => animation.cancel();
   }, [quote.total, reduceMotion]);
-  const links = landingLinks();
-  const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
-  const quote = estimateCampaign(config);
-  const projection = estimateCampaignDetailed(config);
   const advertiserDestination = referral ? `${links.advertiser}?ref=${encodeURIComponent(referral)}` : links.advertiser;
   const signupDestination = referral ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}` : links.advertiserSignup;
   const cta = (destination: string) => trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });

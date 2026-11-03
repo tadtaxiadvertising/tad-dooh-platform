@@ -1,6 +1,8 @@
 name: Landing V5 Focused Gates
 
 on:
+  push:
+    branches: [main]
   pull_request:
     paths:
       - "apps/advertiser/**"

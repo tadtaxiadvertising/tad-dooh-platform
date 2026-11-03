@@ -105,7 +105,7 @@ test("driver sales and referrals distinguish simulator display limits from comme
   assert.doesNotMatch(lab, /subtitle:\s*"[^"]*sin límite"/);
   assert.match(lab, /hasta 100 en este simulador/);
   assert.match(lab, /hasta 100 simulados/);
-  assert.match(lab, /límite de esta demostración, no un tope de pagos/);
+  assert.match(lab, /no define condiciones ni posibles límites contractuales/);
   assert.match(lab, /max:\s*100/);
   assert.match(css, /\.rangeNote/);
 });

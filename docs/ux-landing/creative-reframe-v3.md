@@ -53,4 +53,4 @@ For **both portals**, test 320x568, 360x800, 390x844, 430x932, 768x1024, 1024x76
 - Verify CI again on the latest head; older CI conclusions do not apply to subsequent commits.
 
 ## Slider boundary disclosure (QA revision)
-The sales and referral inputs intentionally show at most **100 illustrative events** each. Their copy now makes clear that this is a user-interface simulation boundary, **not a contractual cap**. The underlying earnings helper and its overflow protections remain unchanged. Verify the explanation remains readable at 320 px and at browser zoom 200%.
+The sales and referral inputs intentionally show at most **100 illustrative events** each. Their copy now makes clear that this is a user-interface simulation boundary, **not evidence of any specific contractual cap or an absence of one**. The underlying earnings helper and its overflow protections remain unchanged. Verify the explanation remains readable at 320 px and at browser zoom 200%.

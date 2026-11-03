@@ -66,7 +66,7 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
               </div>}
             </motion.div>
           ))}
-          <p className={styles.rangeNote}>Los deslizadores permiten explorar hasta 100 ventas y 100 referidos activados. Es un límite de esta demostración, no un tope de pagos establecido por TAD.</p>
+          <p className={styles.rangeNote}>Los controles muestran hasta 100 ventas y 100 referidos activados para facilitar esta simulación. Este máximo no define condiciones ni posibles límites contractuales de comisiones o bonos.</p>
         </div>
         <div className={styles.result} aria-label="Desglose ilustrativo de ganancias">
           <div className={styles.resultTop}><BadgeCheck size={19} aria-hidden="true"/><span>SIMULACIÓN EDUCATIVA</span></div>

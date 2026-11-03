@@ -31,7 +31,10 @@ describe("AuthService OAuth token verification", () => {
     const oldSecret = process.env.JWT_SECRET;
     process.env.JWT_SECRET = "local-only-test-secret";
     try {
-      getUser.mockResolvedValue({ data: { user: null }, error: new Error("invalid") });
+      getUser.mockResolvedValue({
+        data: { user: null },
+        error: new Error("invalid"),
+      });
       await expect(
         service().exchangeOAuth({
           access_token: "not-a-supabase-token",

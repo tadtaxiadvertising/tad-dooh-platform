@@ -20,10 +20,9 @@ test.describe("Driver registration public routing", () => {
   }) => {
     await page.goto("/driver/login");
 
-    await expect(page.getByRole("link", { name: "Crear cuenta" })).toHaveAttribute(
-      "href",
-      "/register",
-    );
+    await expect(
+      page.getByRole("link", { name: "Crear cuenta" }),
+    ).toHaveAttribute("href", "/register");
   });
 
   test("the driver dashboard remains protected for anonymous visitors", async ({
@@ -48,10 +47,14 @@ test.describe("Driver registration public routing", () => {
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Atrás" }).click();
 
-    await expect(page.getByLabel("Modelo del vehículo")).toHaveValue("Toyota Prius");
+    await expect(page.getByLabel("Modelo del vehículo")).toHaveValue(
+      "Toyota Prius",
+    );
     await expect(page.getByLabel("Placa")).toHaveValue("A123456");
     await page.getByRole("button", { name: "Atrás" }).click();
-    await expect(page.getByLabel("Nombre completo")).toHaveValue("María Conductora");
+    await expect(page.getByLabel("Nombre completo")).toHaveValue(
+      "María Conductora",
+    );
     await expect(page.getByLabel("Teléfono")).toHaveValue("8095550101");
   });
 
@@ -135,6 +138,8 @@ test.describe("Driver registration public routing", () => {
     await expect(page.locator('p[role="alert"]')).toContainText(
       "El teléfono ya está registrado",
     );
-    await expect(page.getByRole("button", { name: "Crear cuenta" })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Crear cuenta" }),
+    ).toBeEnabled();
   });
 });

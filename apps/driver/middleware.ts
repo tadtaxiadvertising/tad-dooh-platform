@@ -1,4 +1,7 @@
-import { AUTH_COOKIE_MAX_AGE, readAccessTokenCookie } from "@tad/services/session-cookies";
+import {
+  AUTH_COOKIE_MAX_AGE,
+  readAccessTokenCookie,
+} from "@tad/services/session-cookies";
 import { isPublicLegalPath } from "@tad/services/cookie-consent";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -107,7 +110,14 @@ export async function middleware(request: NextRequest) {
                 request: { headers: request.headers },
               });
               cookiesToSet.forEach(({ name, value, options }) =>
-                response.cookies.set(name, value, { ...options, maxAge: value ? AUTH_COOKIE_MAX_AGE : 0, sameSite: "lax", secure: process.env.NODE_ENV === "production" || request.nextUrl.protocol === "https:" }),
+                response.cookies.set(name, value, {
+                  ...options,
+                  maxAge: value ? AUTH_COOKIE_MAX_AGE : 0,
+                  sameSite: "lax",
+                  secure:
+                    process.env.NODE_ENV === "production" ||
+                    request.nextUrl.protocol === "https:",
+                }),
               );
             },
           },

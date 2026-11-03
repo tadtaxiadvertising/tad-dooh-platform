@@ -40,7 +40,12 @@ describe("AuthService login token refresh security", () => {
     Object.assign(instance, {
       prisma,
       supabaseService: supabase,
-      logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() },
+      logger: {
+        log: jest.fn(),
+        error: jest.fn(),
+        debug: jest.fn(),
+        warn: jest.fn(),
+      },
     });
     return instance;
   };
@@ -58,7 +63,9 @@ describe("AuthService login token refresh security", () => {
 
   it("returns only refreshed tokens after successful claims update", async () => {
     anonClient.auth.refreshSession.mockResolvedValue({
-      data: { session: { access_token: "new-token", refresh_token: "new-refresh" } },
+      data: {
+        session: { access_token: "new-token", refresh_token: "new-refresh" },
+      },
       error: null,
     });
     const result = await service().login({

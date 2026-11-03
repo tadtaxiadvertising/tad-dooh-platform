@@ -11,7 +11,7 @@ Sentry.init({
   defaultIntegrations: false,
   sendClientReports: false,
   sendDefaultPii: false,
-  beforeSend: event => hasCookieConsent('analytics') ? event : null,
+  beforeSend: (event) => (hasCookieConsent("analytics") ? event : null),
   // 🔇 Deshabilitar en producción si está dando 403 Forbidden para no saturar consola
   enabled: process.env.NODE_ENV !== "production",
   integrations: [],

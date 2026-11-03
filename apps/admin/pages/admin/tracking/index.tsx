@@ -422,16 +422,22 @@ export default function TrackingPage() {
           )}
         </button>
 
-        <div className={clsx(
-          "min-w-[190px] rounded-2xl border p-4 shadow-2xl backdrop-blur-xl",
-          mapTheme === "dark"
-            ? "bg-slate-950/85 border-white/10 text-white"
-            : "bg-white/90 border-slate-200 text-slate-800",
-        )}>
-          <div className={clsx(
-            "mb-3 text-[9px] font-black uppercase tracking-[0.22em]",
-            mapTheme === "dark" ? "text-slate-400" : "text-slate-500",
-          )}>Estado de dispositivos</div>
+        <div
+          className={clsx(
+            "min-w-[190px] rounded-2xl border p-4 shadow-2xl backdrop-blur-xl",
+            mapTheme === "dark"
+              ? "bg-slate-950/85 border-white/10 text-white"
+              : "bg-white/90 border-slate-200 text-slate-800",
+          )}
+        >
+          <div
+            className={clsx(
+              "mb-3 text-[9px] font-black uppercase tracking-[0.22em]",
+              mapTheme === "dark" ? "text-slate-400" : "text-slate-500",
+            )}
+          >
+            Estado de dispositivos
+          </div>
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-5">
               <span className="flex items-center gap-2 text-xs font-semibold">
@@ -448,11 +454,13 @@ export default function TrackingPage() {
                 Desconectado &lt;24h
               </span>
               <span className="text-xs font-black tabular-nums">
-                {fleetLocations.filter((v) => {
-                  if (v.isOnline || !v.lastSeen) return false;
-                  const age = Date.now() - new Date(v.lastSeen).getTime();
-                  return Number.isFinite(age) && age >= 0 && age < 86_400_000;
-                }).length}
+                {
+                  fleetLocations.filter((v) => {
+                    if (v.isOnline || !v.lastSeen) return false;
+                    const age = Date.now() - new Date(v.lastSeen).getTime();
+                    return Number.isFinite(age) && age >= 0 && age < 86_400_000;
+                  }).length
+                }
               </span>
             </div>
             <div className="flex items-center justify-between gap-5">
@@ -461,12 +469,16 @@ export default function TrackingPage() {
                 Desconectado &gt;24h
               </span>
               <span className="text-xs font-black tabular-nums">
-                {fleetLocations.filter((v) => {
-                  if (v.isOnline) return false;
-                  if (!v.lastSeen) return true;
-                  const age = Date.now() - new Date(v.lastSeen).getTime();
-                  return !Number.isFinite(age) || age >= 86_400_000 || age < 0;
-                }).length}
+                {
+                  fleetLocations.filter((v) => {
+                    if (v.isOnline) return false;
+                    if (!v.lastSeen) return true;
+                    const age = Date.now() - new Date(v.lastSeen).getTime();
+                    return (
+                      !Number.isFinite(age) || age >= 86_400_000 || age < 0
+                    );
+                  }).length
+                }
               </span>
             </div>
           </div>

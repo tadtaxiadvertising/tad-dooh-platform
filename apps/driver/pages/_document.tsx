@@ -1,5 +1,11 @@
 // apps/driver/pages/_document.tsx
-import { Html, Head, Main, NextScript, type DocumentProps } from "next/document";
+import {
+  Html,
+  Head,
+  Main,
+  NextScript,
+  type DocumentProps,
+} from "next/document";
 
 /**
  * _document.tsx — Configuración global del documento HTML
@@ -15,10 +21,12 @@ export default function Document({ __NEXT_DATA__ }: DocumentProps) {
       <Head>
         {/* ── Identidad de la App ── */}
         <meta name="application-name" content="TAD Driver" />
-        {__NEXT_DATA__.page !== "/" && <meta
-          name="description"
-          content="Panel de control para conductores TAD DOOH. Telemetría GPS y monitoreo de ganancias en República Dominicana."
-        />}
+        {__NEXT_DATA__.page !== "/" && (
+          <meta
+            name="description"
+            content="Panel de control para conductores TAD DOOH. Telemetría GPS y monitoreo de ganancias en República Dominicana."
+          />
+        )}
 
         {/* ── PWA Android / Chrome ── */}
         <link rel="manifest" href="/manifest.json" />
@@ -38,8 +46,6 @@ export default function Document({ __NEXT_DATA__ }: DocumentProps) {
         {/* ── Misc / Seguridad ── */}
         <meta name="format-detection" content="telephone=no" />
         <link rel="shortcut icon" href="/favicon.svg" />
-
-
       </Head>
       <body className="antialiased bg-[#0a0a0a]">
         <Main />

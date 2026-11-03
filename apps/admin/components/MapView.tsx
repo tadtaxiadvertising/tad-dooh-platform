@@ -228,7 +228,8 @@ export default function MapView({
           latitude > 90 ||
           longitude < -180 ||
           longitude > 180
-        ) return null;
+        )
+          return null;
 
         const position: [number, number] = [latitude, longitude];
         const isSelected = selectedId === (item.deviceId || item.id);
@@ -238,19 +239,24 @@ export default function MapView({
         // and status: SystemStatus (OPERATIVO | PENDIENTE_PAGO | BLOQUEADO),
         // NEVER status: 'online'. The previous version evaluated
         // item.status === 'online', which was false for all records.
-        const lastSeenMs = item.lastSeen ? new Date(item.lastSeen).getTime() : NaN;
+        const lastSeenMs = item.lastSeen
+          ? new Date(item.lastSeen).getTime()
+          : NaN;
         const pingMs = (item as any)._lastPingAt
           ? new Date((item as any)._lastPingAt).getTime()
           : NaN;
         const freshnessMs = Math.min(
-          Number.isFinite(lastSeenMs) ? Math.max(0, Date.now() - lastSeenMs) : Infinity,
+          Number.isFinite(lastSeenMs)
+            ? Math.max(0, Date.now() - lastSeenMs)
+            : Infinity,
           Number.isFinite(pingMs) ? Math.max(0, Date.now() - pingMs) : Infinity,
         );
         // Fresh telemetry is authoritative; stale backend flags cannot keep
         // an inactive device green indefinitely.
         const isOnline =
           freshnessMs <= 180_000 ||
-          (!!item.isOnline && Number.isFinite(lastSeenMs) &&
+          (!!item.isOnline &&
+            Number.isFinite(lastSeenMs) &&
             Date.now() - lastSeenMs <= 15 * 60_000);
 
         if (currentMode) {
@@ -338,14 +344,14 @@ export default function MapView({
           filter: grayscale(1) invert(1) brightness(0.82) contrast(0.9);
         }
         .tad-map .leaflet-control-attribution {
-          background: rgba(255,255,255,0.82) !important;
+          background: rgba(255, 255, 255, 0.82) !important;
           color: #334155 !important;
           border-radius: 8px 0 0 0;
           padding: 3px 7px !important;
           font-size: 10px !important;
         }
         .tad-map.tad-map-dark .leaflet-control-attribution {
-          background: rgba(15,23,42,0.82) !important;
+          background: rgba(15, 23, 42, 0.82) !important;
           color: #cbd5e1 !important;
         }
         .tad-map .leaflet-control-attribution a {

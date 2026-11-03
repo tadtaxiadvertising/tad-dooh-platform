@@ -300,7 +300,9 @@ export class AuthService {
     // A generic application JWT_SECRET must never authorize a Supabase identity.
     const anonClient = this.supabaseService.getAnonClient();
     if (!anonClient) {
-      throw new UnauthorizedException("Autenticación de Supabase no disponible.");
+      throw new UnauthorizedException(
+        "Autenticación de Supabase no disponible.",
+      );
     }
     const { data, error } = await anonClient.auth.getUser(dto.access_token);
     if (error || !data.user?.id || !data.user.email) {
@@ -309,8 +311,10 @@ export class AuthService {
     const payload = {
       sub: data.user.id,
       email: data.user.email,
-      name: data.user.user_metadata?.full_name ||
-        data.user.user_metadata?.name || data.user.email,
+      name:
+        data.user.user_metadata?.full_name ||
+        data.user.user_metadata?.name ||
+        data.user.email,
       app_metadata: data.user.app_metadata,
     };
 
@@ -380,8 +384,12 @@ export class AuthService {
           app_metadata: { role: resolvedRole, entityId },
         });
       if (updateError) {
-        this.logger.error(`Failed to set OAuth authorization claims for ${email}`);
-        throw new ForbiddenException("No se pudo establecer una sesión autorizada.");
+        this.logger.error(
+          `Failed to set OAuth authorization claims for ${email}`,
+        );
+        throw new ForbiddenException(
+          "No se pudo establecer una sesión autorizada.",
+        );
       }
     }
 
@@ -391,26 +399,36 @@ export class AuthService {
     let refreshToken = dto.refresh_token || "";
     if (claimsChanged) {
       if (!dto.refresh_token) {
-        throw new ForbiddenException("Se requiere renovar la sesión autorizada.");
+        throw new ForbiddenException(
+          "Se requiere renovar la sesión autorizada.",
+        );
       }
       const anonClient = this.supabaseService.getAnonClient();
       if (!anonClient) {
-        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
+        throw new ForbiddenException(
+          "No se pudo renovar la sesión autorizada.",
+        );
       }
       try {
         const { data: refreshed, error: refreshError } =
-          await anonClient.auth.refreshSession({ refresh_token: dto.refresh_token });
+          await anonClient.auth.refreshSession({
+            refresh_token: dto.refresh_token,
+          });
         if (
           refreshError ||
           !refreshed.session?.access_token ||
           !refreshed.session?.refresh_token
         ) {
-          throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
+          throw new ForbiddenException(
+            "No se pudo renovar la sesión autorizada.",
+          );
         }
         accessToken = refreshed.session.access_token;
         refreshToken = refreshed.session.refresh_token;
       } catch {
-        throw new ForbiddenException("No se pudo renovar la sesión autorizada.");
+        throw new ForbiddenException(
+          "No se pudo renovar la sesión autorizada.",
+        );
       }
     }
 
@@ -488,26 +506,29 @@ export class AuthService {
         perPage: pageSize,
       });
       if (error) {
-        throw new Error(`Failed to list Auth users on page ${page}: ${error.message}`);
+        throw new Error(
+          `Failed to list Auth users on page ${page}: ${error.message}`,
+        );
       }
       const batch = data?.users ?? [];
       authUsers.push(...batch);
       if (batch.length < pageSize) break;
     }
     const authUsersByEmail = new Map(
-      authUsers.filter((user) => user.email).map((user) => [user.email!.toLowerCase(), user]),
+      authUsers
+        .filter((user) => user.email)
+        .map((user) => [user.email!.toLowerCase(), user]),
     );
 
     // Only update existing identities. Creating accounts with a shared bootstrap
     // password gives multiple users the same credential and is not safe.
-    const upsertUser = async (
-      email: string,
-      appMeta: Record<string, any>,
-    ) => {
+    const upsertUser = async (email: string, appMeta: Record<string, any>) => {
       try {
         const existing = authUsersByEmail.get(email.toLowerCase());
         if (!existing) {
-          errors.push(`${email}: Auth identity missing; requires individual provisioning`);
+          errors.push(
+            `${email}: Auth identity missing; requires individual provisioning`,
+          );
           return;
         }
         const { error: updateError } =
@@ -515,7 +536,9 @@ export class AuthService {
             app_metadata: appMeta,
           });
         if (updateError) {
-          throw new Error(`Failed to update Auth metadata: ${updateError.message}`);
+          throw new Error(
+            `Failed to update Auth metadata: ${updateError.message}`,
+          );
         }
         synced++;
       } catch (e: any) {
@@ -578,7 +601,9 @@ export class AuthService {
     // This maintenance action is admin-only: never elevate an arbitrary Auth user.
     const admin = await this.prisma.user.findUnique({ where: { email } });
     if (!admin || admin.role !== "ADMIN") {
-      throw new ForbiddenException("Bootstrap confirmation is restricted to administrators");
+      throw new ForbiddenException(
+        "Bootstrap confirmation is restricted to administrators",
+      );
     }
 
     const serviceClient = this.supabaseService.getClient();
@@ -590,10 +615,14 @@ export class AuthService {
       const { data, error: listError } =
         await serviceClient.auth.admin.listUsers({ page, perPage: pageSize });
       if (listError) {
-        throw new Error(`Failed to list users on page ${page}: ${listError.message}`);
+        throw new Error(
+          `Failed to list users on page ${page}: ${listError.message}`,
+        );
       }
       const batch = data?.users ?? [];
-      user = batch.find((candidate) => candidate.email?.toLowerCase() === email.toLowerCase());
+      user = batch.find(
+        (candidate) => candidate.email?.toLowerCase() === email.toLowerCase(),
+      );
       if (user || batch.length < pageSize) break;
     }
     if (!user) {
@@ -624,66 +653,73 @@ export class AuthService {
   }
 
   async registerDriver(data: {
-      name: string;
-      phone: string;
-      password: string;
-      vehicleModel?: string;
-      licensePlate?: string;
-    }) {
-      // Validate at the service boundary; the public controller uses a plain object DTO.
-      if (typeof data.name !== "string" || !data.name.trim() ||
-          typeof data.phone !== "string" || !data.phone.trim() ||
-          typeof data.password !== "string" || data.password.length < 8) {
-        throw new BadRequestException("Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.");
-      }
-      const existingDriver = await this.prisma.driver.findUnique({
-        where: { phone: data.phone },
-      });
-      if (existingDriver) {
-        throw new HttpException(
-          "Ya existe un chofer con ese teléfono",
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      let hashedPassword: string;
-      try {
-        hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-      } catch (err) {
-        this.logger.error("bcrypt.hash failed", err);
-        throw new HttpException(
-          "Error procesando la contraseña. Intente nuevamente.",
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      let driver;
-      try {
-        driver = await this.prisma.driver.create({
-          data: {
-            fullName: data.name,
-            phone: data.phone,
-            taxiPlate: data.vehicleModel || null,
-            licensePlate: data.licensePlate || null,
-            password: hashedPassword,
-            status: BUSINESS_RULES.STATUS.DRIVER.INITIAL,
-            subscriptionPaid: false,
-            contractAccepted: false,
-            onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
-          },
-        });
-      } catch (err) {
-        // Log completo para diagnóstico; el filtro Prisma mapeará P2002/P2003/P2025
-        this.logger.error("prisma.driver.create failed", err);
-        throw err;
-      }
-
-      // Registration does not create a Supabase Auth session. Never issue a local
-      // JWT that JwtStrategy will subsequently reject via Supabase getUser().
-      return {
-        success: true,
-        message: "Registro completado. Inicia sesión para continuar.",
-        driverId: driver.id,
-      };
+    name: string;
+    phone: string;
+    password: string;
+    vehicleModel?: string;
+    licensePlate?: string;
+  }) {
+    // Validate at the service boundary; the public controller uses a plain object DTO.
+    if (
+      typeof data.name !== "string" ||
+      !data.name.trim() ||
+      typeof data.phone !== "string" ||
+      !data.phone.trim() ||
+      typeof data.password !== "string" ||
+      data.password.length < 8
+    ) {
+      throw new BadRequestException(
+        "Nombre, teléfono y contraseña de al menos 8 caracteres son obligatorios.",
+      );
     }
+    const existingDriver = await this.prisma.driver.findUnique({
+      where: { phone: data.phone },
+    });
+    if (existingDriver) {
+      throw new HttpException(
+        "Ya existe un chofer con ese teléfono",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    let hashedPassword: string;
+    try {
+      hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+    } catch (err) {
+      this.logger.error("bcrypt.hash failed", err);
+      throw new HttpException(
+        "Error procesando la contraseña. Intente nuevamente.",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    let driver;
+    try {
+      driver = await this.prisma.driver.create({
+        data: {
+          fullName: data.name,
+          phone: data.phone,
+          taxiPlate: data.vehicleModel || null,
+          licensePlate: data.licensePlate || null,
+          password: hashedPassword,
+          status: BUSINESS_RULES.STATUS.DRIVER.INITIAL,
+          subscriptionPaid: false,
+          contractAccepted: false,
+          onboardingStatus: BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.TOS_PENDING,
+        },
+      });
+    } catch (err) {
+      // Log completo para diagnóstico; el filtro Prisma mapeará P2002/P2003/P2025
+      this.logger.error("prisma.driver.create failed", err);
+      throw err;
+    }
+
+    // Registration does not create a Supabase Auth session. Never issue a local
+    // JWT that JwtStrategy will subsequently reject via Supabase getUser().
+    return {
+      success: true,
+      message: "Registro completado. Inicia sesión para continuar.",
+      driverId: driver.id,
+    };
+  }
 }

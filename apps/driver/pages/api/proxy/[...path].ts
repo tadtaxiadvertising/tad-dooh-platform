@@ -227,8 +227,7 @@ export default async function handler(
         (BACKEND_BASE.includes("api:3000") ||
           BACKEND_BASE.includes("localhost"))
       ) {
-        const publicFallback =
-          "https://tad.api.ibusiness.com.do/api/v1";
+        const publicFallback = "https://tad.api.ibusiness.com.do/api/v1";
         const fallbackUrl = `${publicFallback}/${pathStr}${queryString}`;
         console.warn(
           `[PROXY] 🔄 Reintentando vía pública por error de red: ${errorMessage} -> ${fallbackUrl}`,

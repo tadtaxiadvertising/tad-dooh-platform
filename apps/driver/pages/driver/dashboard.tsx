@@ -1,4 +1,4 @@
-import { clearAuthCookies } from '@tad/services/session-cookies';
+import { clearAuthCookies } from "@tad/services/session-cookies";
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from "react";
 import Head from "next/head";

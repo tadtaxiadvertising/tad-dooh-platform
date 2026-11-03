@@ -11,9 +11,7 @@ import { test, expect, Page } from "@playwright/test";
 // ──────────────────────────────────────────────────────────────────
 const advertiserEmail = process.env.TEST_ADVERTISER_EMAIL?.trim();
 const advertiserPassword = process.env.TEST_ADVERTISER_PASSWORD?.trim();
-const hasAdvertiserCredentials = Boolean(
-  advertiserEmail && advertiserPassword,
-);
+const hasAdvertiserCredentials = Boolean(advertiserEmail && advertiserPassword);
 
 async function loginAsAdvertiser(page: Page) {
   if (!advertiserEmail || !advertiserPassword) {
@@ -55,10 +53,7 @@ test.describe("Advertiser Portal — Autenticación", () => {
       'input[type="email"]',
       "nobody-" + Date.now() + "@example.invalid",
     );
-    await page.fill(
-      'input[type="password"]',
-      "invalid-" + crypto.randomUUID(),
-    );
+    await page.fill('input[type="password"]', "invalid-" + crypto.randomUUID());
     await page.click('button[type="submit"]');
     await page.waitForTimeout(3000);
     expect(page.url()).toContain("/login");

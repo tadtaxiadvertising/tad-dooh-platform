@@ -1,4 +1,4 @@
-import { writeAccessTokenCookie } from '@tad/services/session-cookies';
+import { writeAccessTokenCookie } from "@tad/services/session-cookies";
 import React, { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -259,7 +259,8 @@ export default function DriverLoginPage() {
           <footer className="mt-8 text-center text-[10px] text-zinc-500">
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
               <span>
-                © {new Date().getFullYear()} Proyecto TAD (Taxi Advertising) · IBUSIN3SS SRL
+                © {new Date().getFullYear()} Proyecto TAD (Taxi Advertising) ·
+                IBUSIN3SS SRL
               </span>
               <span className="hidden sm:inline">·</span>
               <Link

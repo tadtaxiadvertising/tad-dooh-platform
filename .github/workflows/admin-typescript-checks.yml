@@ -1,0 +1,46 @@
+name: Admin TypeScript Focused Gates
+
+on:
+  pull_request:
+    paths:
+      - "apps/admin/components/MapView.tsx"
+      - "apps/admin/pages/api/proxy/**"
+      - "apps/admin/utils/mapCoordinates.ts"
+      - "apps/advertiser/package.json"
+      - "pnpm-lock.yaml"
+      - "packages/ui/tsconfig.json"
+      - "scripts/ui-jsx-config.test.cjs"
+      - "scripts/admin-coordinate.test.cjs"
+      - ".github/workflows/admin-typescript-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-types-and-coordinates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Coordinate and proxy regression
+        run: node --test scripts/admin-coordinate.test.cjs
+      - name: Admin TypeScript
+        run: pnpm exec tsc --noEmit --project apps/admin/tsconfig.json
+      - name: Advertiser TypeScript (including E2E sources)
+        run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.json
+
+      - name: Shared UI React 19 TypeScript
+        run: pnpm exec tsc --noEmit --project packages/ui/tsconfig.json
+      - name: JSX runtime configuration regression
+        run: node --test scripts/ui-jsx-config.test.cjs

@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 
-const VIEWPORT_WIDTHS = Object.freeze([320, 390, 768, 1024, 1440]);
+const VIEWPORT_WIDTHS = Object.freeze([320, 360, 390, 430, 768, 1024, 1440, 1920]);
 
 // Playwright's visibility check permits opacity:0. Inspect the whole ancestor
 // chain so disabled page JavaScript cannot leave essential SSR content hidden.

@@ -232,7 +232,25 @@ async function main() {
       assert.equal(await summary.evaluate(element => element.parentElement.open), before);
     });
 
-    await check('Driver landing fits all five required widths', async () => {
+    await check('Driver mobile sections menu opens by keyboard and navigates without private routes', async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const menu = page.locator('header details');
+      assert.equal(await menu.count(), 1, 'Expected one native mobile sections disclosure.');
+      const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const target = menu.locator('a[href="#calculadora"]');
+      const height = await target.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(height >= 44, 'Menu link must have a >=44px touch target.');
+      await target.click();
+      assert.equal(new URL(page.url()).hash, '#calculadora');
+      assert.equal(await menu.evaluate(element => element.open), false);
+      await page.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
+      await assertNoHorizontalOverflow(page, 'Driver after mobile menu navigation');
+    });
+
+    await check('Driver landing fits all eight required widths', async () => {
       for (const width of VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
@@ -273,7 +291,7 @@ async function main() {
       } finally { await normal.close(); }
     });
 
-    await check('Without JavaScript, driver heading, earnings controls and total remain opaque at all five widths', async () => {
+    await check('Without JavaScript, driver heading, earnings controls and total remain opaque at all eight widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       await guardContext(noJs, base, { remote, api, workers });

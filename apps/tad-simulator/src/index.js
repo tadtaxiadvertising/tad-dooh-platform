@@ -31,6 +31,7 @@ function logStats() {
   );
 }
 
+/** @param {string} deviceId */
 async function sendGPSBatch(deviceId) {
   const point = generateGPSPoint(deviceId);
   try {
@@ -43,10 +44,15 @@ async function sendGPSBatch(deviceId) {
     trackLatency(Date.now() - start);
   } catch (e) {
     gpsFail++;
-    if (gpsFail <= 3) console.error('GPS error:', e.message?.slice(0, 80));
+    if (gpsFail <= 3) {
+      // Strict JS checking treats caught values as unknown, as it should.
+      const safeMessage = e instanceof Error ? e.message : "unavailable";
+      console.error('GPS error:', safeMessage.slice(0, 80));
+    }
   }
 }
 
+/** @param {string} deviceId */
 async function sendPlayback(deviceId) {
   const event = generatePlaybackEvent(deviceId);
   try {
@@ -62,6 +68,7 @@ async function sendPlayback(deviceId) {
   }
 }
 
+/** @param {string} deviceId */
 async function sendHeartbeat(deviceId) {
   const hb = generateHeartbeat(deviceId);
   try {
@@ -75,12 +82,17 @@ async function sendHeartbeat(deviceId) {
   }
 }
 
+/** @param {number} ms */
 function trackLatency(ms) {
   totalLatency += ms;
   latencySamples++;
 }
 
 // Run all devices in parallel per interval with p-limit
+/**
+ * @param {string[]} items
+ * @param {(deviceId: string) => Promise<void>} fn
+ */
 async function withConcurrency(items, fn) {
   const queue = [...items];
   const workers = Array.from({ length: MAX_CONCURRENT }, async () => {
@@ -93,6 +105,12 @@ async function withConcurrency(items, fn) {
 }
 
 async function main() {
+  // No telemetry, playback or heartbeat simulation without explicit credentials.
+  if (!TABLET_KEY) {
+    console.error('TAD Simulator cannot start: TAD_TABLET_KEY is required.');
+    process.exitCode = 1;
+    return;
+  }
   console.log('🚀 TAD Simulator v2.0 starting...');
   console.log(`   Tablets: ${TABLET_COUNT} | Concurrent: ${MAX_CONCURRENT} | Duration: ${SIMULATION_DURATION_MINUTES} min`);
   console.log(`   GPS: ${API_URLS.gps}`);

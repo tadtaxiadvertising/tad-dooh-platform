@@ -44,7 +44,7 @@ export default function DriverEarningsLab({
     {
       id: "ads",
       title: "Publicidad en mi pantalla",
-      subtitle: "Anuncios elegibles en un mes · máximo 15",
+      subtitle: "Campañas elegibles · hasta 15 simultáneas",
       icon: MonitorPlay,
       value: ads,
       setter: setAds,
@@ -135,7 +135,7 @@ export default function DriverEarningsLab({
                 {id === "ads" && (
                   <div
                     className={styles.slots}
-                    aria-label={`${result.ads} de 15 anuncios de ejemplo`}
+                    aria-label={`${result.ads} de 15 campañas simultáneas de ejemplo`}
                   >
                     {Array.from({ length: 15 }, (_, i) => (
                       <span
@@ -177,7 +177,7 @@ export default function DriverEarningsLab({
           </output>
           <div className={styles.breakdown}>
             <div>
-              <span>{result.ads} anuncios × RD$500 (ejemplo mensual)</span>
+              <span>{result.ads} campañas × RD$500 (ejemplo mensual)</span>
               <strong>{money(result.screenAdsRD)}</strong>
             </div>
             <div>

@@ -69,7 +69,7 @@ const questions = [
   {
     question: "¿Cuáles son las tres formas de generar ingresos?",
     answer:
-      "Puedes obtener compensaciones por anuncios elegibles reproducidos en tu pantalla (hasta 15), comisiones por ventas publicitarias aprobadas y bonos de RD$500 por conductores referidos que cumplan la activación. El simulador separa los importes de ejemplo; no son saldo ni pagos prometidos.",
+      "Puedes obtener compensaciones por campañas elegibles en tu pantalla (hasta 15 simultáneas), comisiones por ventas publicitarias aprobadas y bonos de RD$500 por conductores referidos que cumplan la activación. El simulador separa los importes de ejemplo; no son saldo ni pagos prometidos.",
   },
   {
     question: "¿Qué datos necesito para solicitar el registro?",

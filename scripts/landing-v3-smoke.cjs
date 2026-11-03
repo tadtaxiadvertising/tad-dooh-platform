@@ -11,7 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
-  setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback } = require('./landing-browser-contracts.cjs');
+  assertCssZoomReflow, setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
@@ -386,6 +386,50 @@ async function main() {
       }
     });
 
+    await check('Advertiser CSS zoom200% stress preserves reflow and keyboard controls in portrait, landscape and desktop', async () => {
+      await assertCssZoomReflow(page, {
+        label: 'Advertiser',
+        essentialSelectors: ['#hero-title', '#budget-total', '#campaign-city', '#campaign-objective',
+          '#campaign-screens', '#campaign-months', '#campaign-production'],
+        controlSelectors: ['.landing-hero-actions a[href="#experiencia"]', 'header a[href="/advertiser/login"]',
+          '#campaign-city', '#campaign-objective', '#campaign-screens', '#campaign-months', '#campaign-production'],
+        exerciseControls: async scenario => {
+          for (const [id, alternate] of [['campaign-city', 'stgo'], ['campaign-objective', 'launch']]) {
+            const control = page.locator(`#${id}`);
+            const original = await control.inputValue();
+            await control.selectOption(alternate);
+            assert.equal(await control.inputValue(), alternate, `${scenario}: ${id} remains usable.`);
+            await control.selectOption(original);
+          }
+          for (const id of ['campaign-screens', 'campaign-months']) {
+            const control = page.locator(`#${id}`);
+            const original = Number(await control.inputValue());
+            const before = amount(await page.locator('#budget-total').innerText());
+            const next = original < Number(await control.getAttribute('max')) ? original + 1 : original - 1;
+            await setRangeWithKeyboard(control, next);
+            assert.notEqual(amount(await page.locator('#budget-total').innerText()), before,
+              `${scenario}: ${id} must update the estimate.`);
+            await setRangeWithKeyboard(control, original);
+            assert.equal(amount(await page.locator('#budget-total').innerText()), before);
+          }
+          const production = page.locator('#campaign-production');
+          const checked = await production.isChecked();
+          const before = amount(await page.locator('#budget-total').innerText());
+          await production.focus();
+          await production.press('Space');
+          assert.equal(await production.isChecked(), !checked);
+          assert.notEqual(amount(await page.locator('#budget-total').innerText()), before);
+          await production.press('Space');
+          assert.equal(await production.isChecked(), checked);
+          assert.equal(amount(await page.locator('#budget-total').innerText()), before);
+        },
+        capture: screenshots ? size => page.screenshot({
+          path: path.join(screenshots, `landing-v5-${size.width}x${size.height}-advertiser-css-zoom200-stress.png`),
+          fullPage: true,
+        }) : undefined,
+      });
+    });
+
     await check('Reduced motion suppresses nontrivial running animation', async () => {
       assert.equal(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), true);
       assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), 'auto');
@@ -474,7 +518,7 @@ async function main() {
       checksRun: results,
       omitted: ['Authenticated portal sessions and RBAC backend execution', 'Real signup or payment',
         'Production and staging hosts', 'Full WCAG audit and assistive technology',
-        'Lighthouse and field Core Web Vitals', 'Player offline licensing'] }, null, 2) + '\n');
+        'Native browser zoom certification', 'Lighthouse and field Core Web Vitals', 'Player offline licensing'] }, null, 2) + '\n');
   } catch (error) {
     process.stderr.write(`FAIL ${error.message}\n${results.length} earlier checks passed; remaining checks NOT RUN.\n`);
     process.exitCode = 1;

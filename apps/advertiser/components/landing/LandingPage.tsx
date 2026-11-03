@@ -66,6 +66,11 @@ export default function LandingPage() {
               <a className="landing-text-link" href="#recorrido-campana" onClick={() => cta("campaign_story")}>Ver cómo funciona <ArrowRight size={17} aria-hidden="true"/></a>
             </div>
             <div className="landing-hero-proof"><ShieldCheck size={17} aria-hidden="true"/><span>Explora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.</span></div>
+            <ol className="landing-hero-steps" aria-label="Así comienza una campaña">
+              <li><span>01</span> Imagina</li>
+              <li><span>02</span> Configura</li>
+              <li><span>03</span> Solicita revisión</li>
+            </ol>
           </div>
           <CityScene />
         </section>
@@ -128,26 +133,18 @@ export default function LandingPage() {
                 <span>Pantallas y duración (precio de referencia)</span><strong>{money(quote.screensCost)}</strong>
                 <span>Producción creativa (opcional)</span><strong>{includeProduction ? money(quote.productionFee) : "No incluida · RD$ 0"}</strong>
               </div>
-              <p className="landing-total-label">Total estimado del ejemplo · sin impuestos adicionales</p>
+              <p className="landing-total-label">Subtotal ilustrativo · impuestos no incluidos</p>
               <motion.output className="landing-large-number" key={quote.total} id="budget-total"
                 htmlFor="campaign-screens campaign-months campaign-production"
                 initial={reduceMotion ? false : { opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
                 {money(quote.total)}
               </motion.output>
               <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas.</p>
-              <p className="landing-disclaimer">Tarifas basadas en <code>business-rules.ts</code> (ADVERTISER_COST_PER_CAMPAIGN_RD: 1500; DRIVER_RATE_PER_AD_PLAY_RD: 1.25; DRIVER_REFERRAL_BONUS_RD: 500). Las tasas ilustrativas pueden diferir de las tarifas comerciales finales conciliadas con el backend. No es una cotización ni garantía de alcance.</p>
-              <div className="landing-rate-summary">
-                <p className="landing-rate-label">Los tres sustratos que mueven el negocio publicitario:</p>
-                <table className="landing-rate-table">
-                  <thead><tr><th>Sustrato</th><th>Disparador</th><th>Tasa de referencia</th><th>Frecuencia</th><th>Límite</th></tr></thead>
-                  <tbody>
-                    <tr><td>Pantalla digital</td><td>Play de 30s</td><td>RD$1.500/mes · pantalla</td><td>Mensual</td><td>15 (máx.)</td></tr>
-                    <tr><td>Producción creativa</td><td>Video o estático</td><td>RD$1.500</td><td>Una vez</td><td>Opcional</td></tr>
-                    <tr><td>Campaña</td><td>Suscripción</td><td>RD$1.500/campaña</td><td>Mensual</td><td>15 (máx.)</td></tr>
-                  </tbody>
-                </table>
-                <p className="landing-rate-note">Tasas basadas en <code>business-rules.ts</code> (ADVERTISER_COST_PER_CAMPAIGN_RD: 1500; DRIVER_RATE_PER_AD_PLAY_RD: 1.25; DRIVER_REFERRAL_BONUS_RD: 500). Las tasas ilustrativas pueden diferir de las tarifas comerciales finales conciliadas con el backend.</p>
-              </div>
+              <p className="landing-disclaimer">Estimación calculada con el motor <code>@tad/impact-calculator</code>. Las referencias comerciales del simulador requieren conciliación con el backend y confirmación contractual. No constituye cotización, inventario reservado ni garantía de alcance.</p>
+              <aside className="landing-rate-summary" aria-label="Cómo interpretar esta estimación">
+                <strong>Una propuesta para explorar, no una factura.</strong>
+                <p>El ejemplo separa pantallas y duración de la producción creativa, que empieza desactivada. Los impuestos aplicables y la disponibilidad se confirman antes de contratar. Los importes del simulador no sustituyen las tarifas aprobadas.</p>
+              </aside>
               {projection.warnings.length > 0 && <details className="landing-warning-details"><summary>Ver fuentes y advertencias ({projection.warnings.length})</summary>
                 <ul>{projection.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul>
               </details>}

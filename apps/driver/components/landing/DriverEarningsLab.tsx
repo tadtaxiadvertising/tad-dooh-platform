@@ -73,43 +73,14 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
             <p><strong>Mensual por anuncios:</strong> {money(result.recurringMonthlyExampleRD)}</p>
             <p><strong>Bonos por eventos:</strong> {money(result.oneTimeEventsExampleRD)}</p>
           </div>
-          <div className={styles.rateTable}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Flujo de ingresos</th>
-                  <th>Disparador</th>
-                  <th>Tasa de referencia</th>
-                  <th>Frecuencia</th>
-                  <th>Límite</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Publicidad en pantalla (play verificado)</td>
-                  <td>Play de 30s verificado</td>
-                  <td>RD$1.25</td>
-                  <td>Por play / mensual</td>
-                  <td>15 anuncios / día (máx.)</td>
-                </tr>
-                <tr>
-                  <td>Venta de publicidad</td>
-                  <td>Venta aprobada</td>
-                  <td>RD$500 × ventas</td>
-                  <td>Única (transitoria)</td>
-                  <td>Sin límite</td>
-                </tr>
-                <tr>
-                  <td>Referir conductores</td>
-                  <td>Activación verificada</td>
-                  <td>RD$500</td>
-                  <td>Una vez (transitoria)</td>
-                  <td>Sin límite</td>
-                </tr>
-              </tbody>
-            </table>
-            <p className={styles.rateNote}>Tasas de referencia del simulador. No son nóminas, balance ni pago prometido. La tasa de pago real por play de publicidad es RD$1.25 según la normativa en vigor.</p>
-          </div>
+          <aside className={styles.rateTable} aria-label="Notas sobre tipos de compensación">
+            <h3>Cómo se interpreta cada ingreso</h3>
+            <dl>
+              <div><dt>Campañas elegibles</dt><dd>La simulación mensual usa RD$500 por campaña en pantalla, hasta 15 simultáneas.</dd></div>
+              <div><dt>Reproducciones verificadas</dt><dd>La referencia operativa de RD$1.25 por play validado es un concepto distinto; no se suma automáticamente al ejemplo.</dd></div>
+              <div><dt>Ventas y referidos</dt><dd>RD$500 por venta aprobada y RD$500 por conductor referido activado, sujetos a validación. No son pagos recurrentes.</dd></div>
+            </dl>
+          </aside>
           <p className={styles.notice}>No representa una nómina, balance, ingreso neto o pago prometido. Aplican validación de actividad, estados de comisión, contrato, disponibilidad y ajustes. Los referidos y ventas no se repiten mensualmente por defecto.</p>
           <a className={styles.next} href={signupEnabled ? "/register" : "#como-participar"}>
             {signupEnabled ? "Solicitar evaluación" : "Entender cómo participar"}<ArrowRight size={17} aria-hidden="true"/>

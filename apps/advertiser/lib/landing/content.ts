@@ -8,12 +8,12 @@ export type DemoObjective = keyof typeof OBJECTIVES;
 export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
-    headline: ["Tu ciudad se mueve.", "Tu marca también."],
-    lead: "Dale a tu próxima idea un lugar en el recorrido de cada día. Explora cómo se prepara una campaña en pantallas de taxis con TAD.",
+    headline: ["La ciudad está en movimiento.", "Tu marca también puede estarlo."],
+    lead: "Tu próxima campaña puede salir del feed y entrar al recorrido de cada día. Diseña una idea para pantallas a bordo de taxis, explora el presupuesto y conoce cada paso antes de contratar.",
     heroCta: "Explorar mi campaña", title: "Que tu marca salga a la calle.",
     description: "Empieza por un objetivo, una ciudad y un presupuesto. Prueba una idea antes de entrar al proceso de revisión y planificación.",
     benefits: ["Presupuesto bajo tu control", "Contenido sujeto a revisión", "Actividad y estimaciones con contexto"],
-    cta: "Ingresar como anunciante", finalTitle: "Tu próxima campaña empieza con una idea.",
+    cta: "Ingresar como anunciante", finalTitle: "Que tu siguiente idea tome las calles.",
     finalCopy: "Llévala a tu portal para revisar las condiciones, la creatividad y la disponibilidad.",
   },
   driver: {

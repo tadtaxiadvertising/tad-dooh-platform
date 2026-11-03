@@ -156,7 +156,7 @@ export default function LandingPage() {
                 initial={reduceMotion ? false : { opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
                 {money(quote.total)}
               </motion.output>
-              <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas.</p>
+              <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas. Las proyecciones utilizan benchmarks internacionales y supuestos del modelo; revisa las fuentes y advertencias antes de interpretar el alcance.</p>
               <p className="landing-disclaimer">Estimación calculada con el motor <code>@tad/impact-calculator</code>. Las referencias comerciales del simulador requieren conciliación con el backend y confirmación contractual. No constituye cotización, inventario reservado ni garantía de alcance.</p>
               <aside className="landing-rate-summary" aria-label="Cómo interpretar esta estimación">
                 <strong>Una propuesta para explorar, no una factura.</strong>

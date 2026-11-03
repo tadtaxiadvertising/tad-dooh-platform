@@ -1,0 +1,40 @@
+name: Runtime Dependency Security Regression
+
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "apps/api/package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/runtime-upload-security.test.cjs"
+      - ".github/workflows/runtime-security-regression.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-dependencies:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Reproducible dependency install
+        run: pnpm install --frozen-lockfile
+      - name: Real multipart overflow and lockfile regression
+        run: node --test scripts/runtime-upload-security.test.cjs
+      - name: API unit regression
+        run: pnpm --filter api test --runInBand
+      - name: API TypeScript
+        run: pnpm exec tsc --noEmit --project apps/api/tsconfig.json
+      - name: Critical vulnerability gate
+        run: pnpm audit --audit-level=critical

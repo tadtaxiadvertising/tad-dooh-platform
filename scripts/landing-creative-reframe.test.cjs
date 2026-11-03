@@ -74,3 +74,19 @@ test("both public landings retain mobile navigation with working anchor destinat
   assert.match(advertiser, /closest\("details"\)\?\.removeAttribute\("open"\)/);
   assert.match(driver, /closest\("details"\)\?\.removeAttribute\("open"\)/);
 });
+
+test("financial outputs only animate after a changed amount, never on mount", () => {
+  const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const driver = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  for (const [name, source] of [["advertiser", advertiser], ["driver", driver]]) {
+    assert.doesNotMatch(source, /<motion\.output|key=\{(?:quote\.total|result\.illustrativeTotalRD)\}/, name);
+    assert.match(source, /\.animate\(/, name);
+    assert.match(source, /duration:\s*180/, name);
+    assert.match(source, /opacity:\s*0\.94/, name);
+    assert.match(source, /reduceMotion !== false/, name);
+    assert.match(source, /animation\.cancel\(\)/, name);
+  }
+  assert.match(advertiser, /<h1 id="hero-title">/);
+  assert.match(advertiser, /ref=\{budgetOutputRef\}/);
+  assert.match(driver, /ref=\{earningsOutputRef\}/);
+});

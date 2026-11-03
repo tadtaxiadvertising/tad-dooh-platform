@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, BadgeCheck, MonitorPlay, ShoppingBag, Users } from "lucide-react";
 import { previewDriverEarnings } from "../../lib/earningsPreview";
@@ -14,6 +14,18 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
   const [referrals, setReferrals] = useState(1);
   const reduceMotion = useReducedMotion();
   const result = previewDriverEarnings(ads, sales, referrals);
+  const earningsOutputRef = useRef<HTMLOutputElement>(null);
+  const previousEarningsTotal = useRef(result.illustrativeTotalRD);
+  useEffect(() => {
+    if (previousEarningsTotal.current === result.illustrativeTotalRD) return;
+    previousEarningsTotal.current = result.illustrativeTotalRD;
+    if (reduceMotion !== false || !earningsOutputRef.current) return;
+    const animation = earningsOutputRef.current.animate(
+      [{ transform: "translateY(3px)", opacity: 0.94 }, { transform: "translateY(0px)", opacity: 1 }],
+      { duration: 180, easing: "ease-out" },
+    );
+    return () => animation.cancel();
+  }, [result.illustrativeTotalRD, reduceMotion]);
 
   const controls = [
       { id: "ads", title: "Publicidad en mi pantalla", subtitle: "Anuncios elegibles en un mes · máximo 15", icon: MonitorPlay, value: ads, setter: setAds, max: 15 },
@@ -57,13 +69,10 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
         <div className={styles.result} aria-label="Desglose ilustrativo de ganancias">
           <div className={styles.resultTop}><BadgeCheck size={19} aria-hidden="true"/><span>SIMULACIÓN EDUCATIVA</span></div>
           <p className={styles.resultEyebrow}>Total bruto del ejemplo, en un mismo período</p>
-          <motion.output
+          <output
+            ref={earningsOutputRef}
             htmlFor="driver-lab-ads driver-lab-sales driver-lab-referrals"
-            className={styles.total}
-            key={result.illustrativeTotalRD}
-            initial={reduceMotion ? false : { opacity: 0.6, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18 }}>{money(result.illustrativeTotalRD)}</motion.output>
+            className={styles.total}>{money(result.illustrativeTotalRD)}</output>
           <div className={styles.breakdown}>
             <div><span>{result.ads} anuncios × RD$500 (ejemplo mensual)</span><strong>{money(result.screenAdsRD)}</strong></div>
             <div><span>{result.sales} ventas aprobadas × RD$500</span><strong>{money(result.salesRD)}</strong></div>

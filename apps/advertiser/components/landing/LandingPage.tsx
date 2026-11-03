@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { ArrowUpRight, ArrowRight, Check, CarFront, ChartNoAxesCombined, ShieldCheck, MapPin, Radio, Play, MonitorPlay } from "lucide-react";
 import CookieBanner from "@tad/ui/components/CookieBanner";
 import { trackAnalyticsEvent } from "@tad/services/cookie-consent";
@@ -28,6 +28,19 @@ export default function LandingPage() {
   useEffect(() => { setReferral(referralCodeFromSearch(window.location.search)); }, []);
   const previousPreview = useRef("");
   const reduceMotion = useReducedMotion();
+  const budgetOutputRef = useRef<HTMLOutputElement>(null);
+  const previousBudgetTotal = useRef(quote.total);
+  useEffect(() => {
+    if (previousBudgetTotal.current === quote.total) return;
+    previousBudgetTotal.current = quote.total;
+    if (reduceMotion !== false || !budgetOutputRef.current) return;
+    // A stable output avoids remounts, mount animation and keyboard focus loss.
+    const animation = budgetOutputRef.current.animate(
+      [{ transform: "translateY(3px)", opacity: 0.94 }, { transform: "translateY(0px)", opacity: 1 }],
+      { duration: 180, easing: "ease-out" },
+    );
+    return () => animation.cancel();
+  }, [quote.total, reduceMotion]);
   const links = landingLinks();
   const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
   const quote = estimateCampaign(config);
@@ -74,9 +87,9 @@ export default function LandingPage() {
         <section className="landing-hero landing-wrap" aria-labelledby="hero-title">
           <div className="landing-hero-copy">
             <p className="landing-eyebrow"><span/> PUBLICIDAD QUE ACOMPAÑA TU CIUDAD</p>
-            <motion.h1 id="hero-title" initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
+            <h1 id="hero-title">
               {content.headline[0]}<br/><span>{content.headline[1]}</span>
-            </motion.h1>
+            </h1>
             <p className="landing-lead">{content.lead}</p>
             <div className="landing-hero-actions">
               <a className="landing-button landing-button-primary" href="#experiencia" onClick={() => cta("advertiser_lab")}>Simular mi campaña <ArrowUpRight size={19} aria-hidden="true"/></a>
@@ -151,11 +164,10 @@ export default function LandingPage() {
                 <span>Producción creativa (opcional)</span><strong>{includeProduction ? money(quote.productionFee) : "No incluida · RD$ 0"}</strong>
               </div>
               <p className="landing-total-label">Subtotal ilustrativo · impuestos no incluidos</p>
-              <motion.output className="landing-large-number" key={quote.total} id="budget-total"
-                htmlFor="campaign-screens campaign-months campaign-production"
-                initial={reduceMotion ? false : { opacity: .7, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
+              <output ref={budgetOutputRef} className="landing-large-number" id="budget-total"
+                htmlFor="campaign-screens campaign-months campaign-production">
                 {money(quote.total)}
-              </motion.output>
+              </output>
               <p className="landing-estimate-detail">Impresiones estimadas por modelo: {projection.totalImpressions.min.toLocaleString("es-DO")}–{projection.totalImpressions.max.toLocaleString("es-DO")}. No equivalen a vistas verificadas ni personas únicas. Las proyecciones utilizan benchmarks internacionales y supuestos del modelo; revisa las fuentes y advertencias antes de interpretar el alcance.</p>
               <p className="landing-disclaimer">Estimación calculada con el motor <code>@tad/impact-calculator</code>. Las referencias comerciales del simulador requieren conciliación con el backend y confirmación contractual. No constituye cotización, inventario reservado ni garantía de alcance.</p>
               <aside className="landing-rate-summary" aria-label="Cómo interpretar esta estimación">

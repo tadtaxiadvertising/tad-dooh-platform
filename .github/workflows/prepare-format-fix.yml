@@ -1,0 +1,56 @@
+name: Reconcile Prettier formatting (temporary)
+on:
+  push:
+    branches: [chore/prettier-ci-reconciliation-20261103]
+    paths:
+      - ".github/workflows/prepare-format-fix.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  format-checked-sources:
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/chore/prettier-ci-reconciliation-20261103'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Format exactly the same source glob checked by CI
+        run: |
+          set -euo pipefail
+          pnpm dlx prettier --write "apps/**/*.{ts,tsx}"
+          if [ -d packages/ui/src ]; then
+            pnpm dlx prettier --write "packages/ui/src/**/*.{ts,tsx}"
+          fi
+      - name: Assert only tracked TS/TSX source files changed
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only)"
+          if [ -z "$changed" ]; then
+            echo "Nothing to format."
+            exit 0
+          fi
+          while IFS= read -r f; do
+            case "$f" in
+              apps/*.ts|apps/*.tsx|packages/ui/src/*.ts|packages/ui/src/*.tsx) ;;
+              *) echo "::error::Unexpected formatted file $f"; exit 1 ;;
+            esac
+          done <<< "$changed"
+      - name: Commit only formatting to isolated branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- apps/
+          if [ -d packages/ui/src ]; then git add -- packages/ui/src; fi
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(ci): format tracked TypeScript sources with Prettier [generated]"
+          git push origin HEAD:chore/prettier-ci-reconciliation-20261103

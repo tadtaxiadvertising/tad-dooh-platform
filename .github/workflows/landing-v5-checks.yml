@@ -42,3 +42,59 @@ jobs:
         run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.landing.json
       - name: Type check Driver landing and onboarding simulator
         run: pnpm exec tsc --noEmit --project apps/driver/tsconfig.landing.json
+
+
+  browser-smoke:
+    name: Public landing browser smoke (local only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install isolated Chromium runtime
+        run: pnpm --filter driver exec playwright install --with-deps chromium
+      - name: Smoke both public roots with controlled local Next servers
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: "false"
+          LANDING_ALLOW_DEV_HMR: "true"
+          LANDING_BASE_URL: "http://127.0.0.1:3003/"
+          DRIVER_LANDING_BASE_URL: "http://127.0.0.1:3004/"
+        run: |
+          set -euo pipefail
+          # This job is read-only. Never point the smokes at deployed hosts.
+          trap 'kill "$ADV_PID" "$DRV_PID" 2>/dev/null || true' EXIT
+          pnpm --filter @tad/advertiser exec next dev -p 3003 --hostname 127.0.0.1 > /tmp/tad-advertiser-landing.log 2>&1 &
+          ADV_PID=$!
+          pnpm --filter driver exec next dev -p 3004 --hostname 127.0.0.1 > /tmp/tad-driver-landing.log 2>&1 &
+          DRV_PID=$!
+          ready() {
+            local port="$1" pid="$2" log="$3"
+            for attempt in $(seq 1 120); do
+              if curl -fsS "http://127.0.0.1:$port/" > /dev/null 2>&1; then return 0; fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                echo "::error::Local Next process exited unexpectedly ($port)."
+                tail -n 80 "$log"
+                return 1
+              fi
+              sleep 2
+            done
+            echo "::error::Local Next failed to become ready ($port)."
+            tail -n 80 "$log"
+            return 1
+          }
+          ready 3003 "$ADV_PID" /tmp/tad-advertiser-landing.log
+          ready 3004 "$DRV_PID" /tmp/tad-driver-landing.log
+          export NODE_PATH="$GITHUB_WORKSPACE/apps/driver/node_modules"
+          node scripts/landing-v3-smoke.cjs
+          node scripts/driver-landing-smoke.cjs

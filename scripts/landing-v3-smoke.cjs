@@ -358,7 +358,25 @@ async function main() {
         'Restoring the default preview after revocation must also remain silent.');
     });
 
-    await check('Advertiser landing fits all five required widths', async () => {
+    await check('Native mobile menu reaches simulator with keyboard and closes after navigation', async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const menu = page.locator('header details.landing-mobile-menu');
+      assert.equal(await menu.count(), 1, 'Mobile sections navigation must be present.');
+      const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const target = menu.locator('a[href="#experiencia"]');
+      const height = await target.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(height >= 44, 'Mobile navigation link touch target must be >=44px.');
+      await target.click();
+      assert.equal(new URL(page.url()).hash, '#experiencia');
+      assert.equal(await menu.evaluate(element => element.open), false);
+      await page.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
+      await assertNoHorizontalOverflow(page, 'Advertiser after mobile menu navigation');
+    });
+
+    await check('Advertiser landing fits all eight required widths', async () => {
       for (const width of VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await assertNoHorizontalOverflow(page, `Advertiser ${width}px`);
@@ -399,7 +417,7 @@ async function main() {
       } finally { await normal.close(); }
     });
 
-    await check('Without JavaScript, advertiser heading and all controls remain opaque at all five widths', async () => {
+    await check('Without JavaScript, advertiser heading and all controls remain opaque at all eight widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       const noJsEvidence = evidenceCollector();

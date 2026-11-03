@@ -59,6 +59,14 @@ export default function LandingPage() {
         <nav aria-label="Navegación principal" className="landing-nav">
           <a href="#como-funciona">Cómo funciona</a><a href="#experiencia">Simula tu campaña</a><a href="#preguntas">Preguntas</a>
         </nav>
+        <details className="landing-mobile-menu">
+          <summary>Secciones</summary>
+          <nav aria-label="Secciones de anunciantes en móvil">
+            <a href="#como-funciona" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Cómo funciona</a>
+            <a href="#experiencia" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Simular campaña</a>
+            <a href="#preguntas" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Preguntas frecuentes</a>
+          </nav>
+        </details>
         <a href={advertiserDestination} className="landing-access" onClick={() => cta("advertiser_login")}>Ingresar <ArrowUpRight size={16} aria-hidden="true"/></a>
       </header>
 

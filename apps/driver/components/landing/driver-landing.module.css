@@ -449,3 +449,39 @@
   .heroChannels { gap: 6px; }
   .brand img { width: 111px; height: auto; }
 }
+
+
+/* Accessible tablet/mobile navigation. Native summary and links work without JS. */
+.mobileMenu { display: none; }
+@media (max-width: 800px) {
+  .headerInner { position: relative; }
+  .nav { gap: 8px; }
+  .mobileMenu { display: block; flex: 0 0 auto; }
+  .mobileMenu summary {
+    list-style: none; display: flex; align-items: center; min-height: 44px;
+    padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 750;
+    color: #f4f4ed; border-radius: 10px;
+  }
+  .mobileMenu summary::-webkit-details-marker { display: none; }
+  .mobileMenu summary::after { content: "+"; color: #ffd400; margin-left: 7px; font-weight: 900; }
+  .mobileMenu[open] summary::after { content: "−"; }
+  .mobileMenu > div {
+    position: absolute; z-index: 20; top: calc(100% - 1px); right: 0; left: 0;
+    display: grid; gap: 2px; padding: 12px; border: 1px solid #ffd40088;
+    border-radius: 0 0 18px 18px; background: #101215;
+    box-shadow: 0 25px 40px #000b;
+  }
+  .mobileMenu > div a {
+    display: flex; min-height: 49px; align-items: center; padding: 11px 14px;
+    font-size: 13px; color: #f5f2ea; border-radius: 10px;
+  }
+  .mobileMenu > div a:hover { color: #ffd400; background: #ffffff0d; }
+  .mobileMenu summary:focus-visible, .mobileMenu a:focus-visible {
+    outline: 3px solid #ffd400; outline-offset: 3px;
+  }
+}
+@media (max-width: 370px) {
+  .nav { gap: 2px; }
+  .mobileMenu summary { font-size: 11px; padding-inline: 6px; }
+  .login { padding-inline: 10px; }
+}

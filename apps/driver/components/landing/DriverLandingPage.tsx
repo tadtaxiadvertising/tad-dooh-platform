@@ -167,6 +167,14 @@ export default function DriverLandingPage() {
             <nav aria-label="Navegación principal" className={styles.nav}>
               <a href="#calculadora" className={styles.navSection}>Calcula tus oportunidades</a><a href="#como-participar" className={styles.navSection}>Cómo participar</a>
               <a href="#preguntas" className={styles.navSection}>Preguntas</a>
+              <details className={styles.mobileMenu}>
+                <summary>Secciones</summary>
+                <div>
+                  <a href="#calculadora" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Calcular oportunidades</a>
+                  <a href="#como-participar" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Cómo participar</a>
+                  <a href="#preguntas" onClick={e => e.currentTarget.closest("details")?.removeAttribute("open")}>Preguntas frecuentes</a>
+                </div>
+              </details>
               <a href="/driver/login" className={styles.login}>Ingresar <ArrowRight size={16} aria-hidden="true" /></a>
             </nav>
           </div>

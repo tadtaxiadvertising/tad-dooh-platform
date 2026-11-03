@@ -51,8 +51,26 @@ test("creative reframe remains responsive, reduced-motion friendly and asset-lig
   assert.doesNotMatch(earnings, /\n\|\.rateTable\b/);
   assert.match(driver, /\.heroChannels/);
   assert.match(advertiser, /landing-hero-steps/);
+  assert.match(advertiser, /landing-mobile-menu/);
+  assert.match(driver, /\.mobileMenu/);
   assert.match(driver, /--yellow:\s*#ffd400/i);
   assert.match(advertiser, /--yellow:\s*#ffd400/i);
   assert.match(driver, /background:\s*#08090b/i);
   assert.match(advertiser, /background:\s*#08090b/i);
+});
+
+test("both public landings retain mobile navigation with working anchor destinations", () => {
+  const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const driver = read("apps/driver/components/landing/DriverLandingPage.tsx");
+  assert.match(advertiser, /<details className="landing-mobile-menu">/);
+  assert.match(advertiser, /aria-label="Secciones de anunciantes en móvil"/);
+  assert.match(driver, /<details className=\{styles\.mobileMenu\}>/);
+  for (const id of ["#como-funciona", "#experiencia", "#preguntas"]) {
+    assert.ok(advertiser.includes(`href="${id}"`), "Advertiser anchor absent: " + id);
+  }
+  for (const id of ["#calculadora", "#como-participar", "#preguntas"]) {
+    assert.ok(driver.includes(`href="${id}"`), "Driver anchor absent: " + id);
+  }
+  assert.match(advertiser, /closest\("details"\)\?\.removeAttribute\("open"\)/);
+  assert.match(driver, /closest\("details"\)\?\.removeAttribute\("open"\)/);
 });

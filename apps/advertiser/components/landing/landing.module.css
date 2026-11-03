@@ -382,3 +382,34 @@
   .landing :global(.landing-preview) { padding: 17px; }
   .landing :global(.landing-large-number) { font-size: 34px; }
 }
+
+
+/* Mobile navigation: native disclosure, no extra animation runtime or client state. */
+.landing :global(.landing-mobile-menu) { display: none; }
+@media (max-width: 760px) {
+  .landing :global(.landing-header) { position: relative; gap: 8px; }
+  .landing :global(.landing-mobile-menu) { display: block; flex: 0 0 auto; }
+  .landing :global(.landing-mobile-menu summary) {
+    min-height: 44px; padding: 11px 10px; display: flex; align-items: center;
+    list-style: none; cursor: pointer; font-size: 12px; font-weight: 750;
+    border-radius: 10px; color: #f5f4ed;
+  }
+  .landing :global(.landing-mobile-menu summary::-webkit-details-marker) { display: none; }
+  .landing :global(.landing-mobile-menu summary::after) { content: "+"; margin-left: 6px; color: #ffd400; font-weight: 900; }
+  .landing :global(.landing-mobile-menu[open] summary::after) { content: "−"; }
+  .landing :global(.landing-mobile-menu > nav) {
+    position: absolute; z-index: 20; top: calc(100% - 1px); right: 0; left: 0;
+    display: grid; padding: 10px; border: 1px solid #ffd40076; border-radius: 0 0 18px 18px;
+    background: #111317; box-shadow: 0 25px 40px #000b;
+  }
+  .landing :global(.landing-mobile-menu > nav a) {
+    display: flex; align-items: center; min-height: 49px; padding: 12px 14px;
+    font-size: 13px; font-weight: 650; color: #f6f3ea; border-radius: 10px;
+  }
+  .landing :global(.landing-mobile-menu > nav a:hover) { color: #ffd400; background: #ffffff0b; }
+}
+@media (max-width: 380px) {
+  .landing :global(.landing-mobile-menu summary) { font-size: 11px; padding-inline: 5px; }
+  .landing :global(.landing-access) { gap: 7px; padding-inline: 13px; }
+}
+.landing :global(.landing-preview :focus-visible) { outline-color: #665200; }

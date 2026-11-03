@@ -11,7 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
-  setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback } = require('./landing-browser-contracts.cjs');
+  assertCssZoomReflow, setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
@@ -358,7 +358,25 @@ async function main() {
         'Restoring the default preview after revocation must also remain silent.');
     });
 
-    await check('Advertiser landing fits all five required widths', async () => {
+    await check('Native mobile menu reaches simulator with keyboard and closes after navigation', async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const menu = page.locator('header details.landing-mobile-menu');
+      assert.equal(await menu.count(), 1, 'Mobile sections navigation must be present.');
+      const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const target = menu.locator('a[href="#experiencia"]');
+      const height = await target.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(height >= 44, 'Mobile navigation link touch target must be >=44px.');
+      await target.click();
+      assert.equal(new URL(page.url()).hash, '#experiencia');
+      assert.equal(await menu.evaluate(element => element.open), false);
+      await page.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
+      await assertNoHorizontalOverflow(page, 'Advertiser after mobile menu navigation');
+    });
+
+    await check('Advertiser landing fits all eight required widths', async () => {
       for (const width of VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await assertNoHorizontalOverflow(page, `Advertiser ${width}px`);
@@ -366,6 +384,50 @@ async function main() {
           await page.screenshot({ path: path.join(screenshots, `landing-v5-${width}-advertiser.png`), fullPage: true });
         }
       }
+    });
+
+    await check('Advertiser CSS zoom200% stress preserves reflow and keyboard controls in portrait, landscape and desktop', async () => {
+      await assertCssZoomReflow(page, {
+        label: 'Advertiser',
+        essentialSelectors: ['#hero-title', '#budget-total', '#campaign-city', '#campaign-objective',
+          '#campaign-screens', '#campaign-months', '#campaign-production'],
+        controlSelectors: ['.landing-hero-actions a[href="#experiencia"]', 'header a[href="/advertiser/login"]',
+          '#campaign-city', '#campaign-objective', '#campaign-screens', '#campaign-months', '#campaign-production'],
+        exerciseControls: async scenario => {
+          for (const [id, alternate] of [['campaign-city', 'stgo'], ['campaign-objective', 'launch']]) {
+            const control = page.locator(`#${id}`);
+            const original = await control.inputValue();
+            await control.selectOption(alternate);
+            assert.equal(await control.inputValue(), alternate, `${scenario}: ${id} remains usable.`);
+            await control.selectOption(original);
+          }
+          for (const id of ['campaign-screens', 'campaign-months']) {
+            const control = page.locator(`#${id}`);
+            const original = Number(await control.inputValue());
+            const before = amount(await page.locator('#budget-total').innerText());
+            const next = original < Number(await control.getAttribute('max')) ? original + 1 : original - 1;
+            await setRangeWithKeyboard(control, next);
+            assert.notEqual(amount(await page.locator('#budget-total').innerText()), before,
+              `${scenario}: ${id} must update the estimate.`);
+            await setRangeWithKeyboard(control, original);
+            assert.equal(amount(await page.locator('#budget-total').innerText()), before);
+          }
+          const production = page.locator('#campaign-production');
+          const checked = await production.isChecked();
+          const before = amount(await page.locator('#budget-total').innerText());
+          await production.focus();
+          await production.press('Space');
+          assert.equal(await production.isChecked(), !checked);
+          assert.notEqual(amount(await page.locator('#budget-total').innerText()), before);
+          await production.press('Space');
+          assert.equal(await production.isChecked(), checked);
+          assert.equal(amount(await page.locator('#budget-total').innerText()), before);
+        },
+        capture: screenshots ? size => page.screenshot({
+          path: path.join(screenshots, `landing-v5-${size.width}x${size.height}-advertiser-css-zoom200-stress.png`),
+          fullPage: true,
+        }) : undefined,
+      });
     });
 
     await check('Reduced motion suppresses nontrivial running animation', async () => {
@@ -399,7 +461,7 @@ async function main() {
       } finally { await normal.close(); }
     });
 
-    await check('Without JavaScript, advertiser heading and all controls remain opaque at all five widths', async () => {
+    await check('Without JavaScript, advertiser heading and all controls remain opaque at all eight widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       const noJsEvidence = evidenceCollector();
@@ -456,7 +518,7 @@ async function main() {
       checksRun: results,
       omitted: ['Authenticated portal sessions and RBAC backend execution', 'Real signup or payment',
         'Production and staging hosts', 'Full WCAG audit and assistive technology',
-        'Lighthouse and field Core Web Vitals', 'Player offline licensing'] }, null, 2) + '\n');
+        'Native browser zoom certification', 'Lighthouse and field Core Web Vitals', 'Player offline licensing'] }, null, 2) + '\n');
   } catch (error) {
     process.stderr.write(`FAIL ${error.message}\n${results.length} earlier checks passed; remaining checks NOT RUN.\n`);
     process.exitCode = 1;

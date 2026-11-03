@@ -70,7 +70,8 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          Tu taxi abre <span className="text-[#FDCB01]">tres oportunidades</span>
+          Tu taxi abre{" "}
+          <span className="text-[#FDCB01]">tres oportunidades</span>
         </motion.h1>
         <motion.p
           className="text-sm text-gray-400 font-medium leading-relaxed max-w-[320px] mx-auto"
@@ -107,7 +108,9 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
             >
               <motion.div
                 className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${b.bg} ${b.color}`}
-                whileHover={reduceMotion ? undefined : { scale: 1.1, rotate: 5 }}
+                whileHover={
+                  reduceMotion ? undefined : { scale: 1.1, rotate: 5 }
+                }
               >
                 <Icon className="w-5 h-5" />
               </motion.div>
@@ -149,8 +152,6 @@ export default function ValuePropStep({ onNext }: ValuePropStepProps) {
           <ArrowRight className="w-5 h-5" />
         </motion.button>
       </motion.div>
-
-
     </div>
   );
 }

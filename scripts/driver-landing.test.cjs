@@ -223,7 +223,7 @@ test('driver preview applies the absolute 15-ad cap and models three streams sep
 test('public driver calculator and onboarding reuse the same earnings helper', () => {
   const read = relativePath => fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8');
   assert.match(read('apps/driver/components/landing/DriverEarningsLab.tsx'), /previewDriverEarnings\(ads, sales, referrals\)/);
-  assert.match(read('apps/driver/pages/driver/onboarding.tsx'), /previewDriverEarnings\(campaigns, approvedSales, referredDrivers\)/);
+  assert.match(read('apps/driver/pages/driver/onboarding.tsx'), /previewDriverEarnings\(\s*campaigns,\s*approvedSales,\s*referredDrivers,?\s*\)/);
   const step = read('apps/driver/components/onboarding/EarningsCalculatorStep.tsx');
   assert.match(step, /max=\{15\}/);
   assert.match(step, /Ventas aprobadas de publicidad/);

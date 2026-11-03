@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
-  monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe,
+  assertCssZoomReflow, monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe,
   assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 const results = [];
@@ -232,13 +232,57 @@ async function main() {
       assert.equal(await summary.evaluate(element => element.parentElement.open), before);
     });
 
-    await check('Driver landing fits all five required widths', async () => {
+    await check('Driver mobile sections menu opens by keyboard and navigates without private routes', async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const menu = page.locator('header details');
+      assert.equal(await menu.count(), 1, 'Expected one native mobile sections disclosure.');
+      const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const target = menu.locator('a[href="#calculadora"]');
+      const height = await target.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(height >= 44, 'Menu link must have a >=44px touch target.');
+      await target.click();
+      assert.equal(new URL(page.url()).hash, '#calculadora');
+      assert.equal(await menu.evaluate(element => element.open), false);
+      await page.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
+      await assertNoHorizontalOverflow(page, 'Driver after mobile menu navigation');
+    });
+
+    await check('Driver landing fits all eight required widths', async () => {
       for (const width of VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
         await assertNoHorizontalOverflow(page, `Driver ${width}px`);
         if (screenshots) await page.screenshot({ path: path.join(screenshots, `driver-landing-${width}.png`), fullPage: true });
       }
+    });
+
+    await check('Driver CSS zoom200% stress preserves reflow and keyboard controls in portrait, landscape and desktop', async () => {
+      await assertCssZoomReflow(page, {
+        label: 'Driver',
+        essentialSelectors: ['#hero-title', amountSelector, '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
+        controlSelectors: ['section[aria-labelledby="hero-title"] a[href="#calculadora"]',
+          'header a[href="/driver/login"]', '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
+        exerciseControls: async scenario => {
+          for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
+            const control = page.locator(`#${id}`);
+            const original = Number(await control.inputValue());
+            const before = monetaryAmount(await page.locator(amountSelector).innerText());
+            const next = original < Number(await control.getAttribute('max')) ? original + 1 : original - 1;
+            await setRangeWithKeyboard(control, next);
+            assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before + (next - original) * 500,
+              `${scenario}: ${id} must update the educational total.`);
+            await setRangeWithKeyboard(control, original);
+            assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before);
+          }
+        },
+        capture: screenshots ? size => page.screenshot({
+          path: path.join(screenshots, `driver-landing-${size.width}x${size.height}-css-zoom200-stress.png`),
+          fullPage: true,
+        }) : undefined,
+      });
     });
 
     await check('Reduced motion suppresses nontrivial animations', async () => {
@@ -273,7 +317,7 @@ async function main() {
       } finally { await normal.close(); }
     });
 
-    await check('Without JavaScript, driver heading, earnings controls and total remain opaque at all five widths', async () => {
+    await check('Without JavaScript, driver heading, earnings controls and total remain opaque at all eight widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       await guardContext(noJs, base, { remote, api, workers });
@@ -318,7 +362,8 @@ async function main() {
     });
     process.stdout.write(JSON.stringify({ result: 'PASS', checks: results.length, baseUrl: base.href,
       screenshots, omitted: ['Authenticated login and dashboard', 'Registration submission',
-        'Real API, earnings or financial data', 'Production deployment', 'Comprehensive accessibility audit'],
+        'Real API, earnings or financial data', 'Production deployment', 'Comprehensive accessibility audit',
+        'Native browser zoom certification'],
     }, null, 2) + '\n');
   } finally { await browser.close(); }
 }

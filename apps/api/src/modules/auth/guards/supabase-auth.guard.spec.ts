@@ -125,7 +125,11 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
 
   it("rejects an audience-matched token without a Supabase session_id", async () => {
     const token = jwt.sign(
-      { sub: "driver-4", role: "authenticated", app_metadata: { role: "ADMIN" } },
+      {
+        sub: "driver-4",
+        role: "authenticated",
+        app_metadata: { role: "ADMIN" },
+      },
       secret,
       { audience: "authenticated", expiresIn: "5m" },
     );
@@ -139,7 +143,11 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
 
   it("rejects a non-user role even when audience and session_id are present", async () => {
     const token = jwt.sign(
-      { sub: "service-token", role: "service_role", session_id: "not-user-session" },
+      {
+        sub: "service-token",
+        role: "service_role",
+        session_id: "not-user-session",
+      },
       secret,
       { audience: "authenticated", expiresIn: "5m" },
     );
@@ -254,5 +262,4 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     });
     expect(getUser).toHaveBeenCalledWith(token);
   });
-
 });

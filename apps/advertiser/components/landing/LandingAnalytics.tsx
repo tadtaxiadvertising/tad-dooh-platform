@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { CONSENT_EVENT, CONSENT_STORAGE_KEY, hasCookieConsent, readCookieConsent, syncCookieConsentFromStorage, trackAnalyticsEvent } from "@tad/services/cookie-consent";
+import {
+  CONSENT_EVENT,
+  CONSENT_STORAGE_KEY,
+  hasCookieConsent,
+  readCookieConsent,
+  syncCookieConsentFromStorage,
+  trackAnalyticsEvent,
+} from "@tad/services/cookie-consent";
 
 /** App Router entry: the shared analytics component currently requires Pages Router. */
 export default function LandingAnalytics() {
@@ -13,11 +20,17 @@ export default function LandingAnalytics() {
     let viewed = false;
     const sync = () => {
       if (timer) clearTimeout(timer);
-      if (!hasCookieConsent("analytics")) { script?.remove(); script = null; return; }
+      if (!hasCookieConsent("analytics")) {
+        script?.remove();
+        script = null;
+        return;
+      }
       if (!script) {
         script = document.createElement("script");
         script.async = true;
-        script.src = process.env.NEXT_PUBLIC_UMAMI_URL || "https://cloud.umami.is/script.js";
+        script.src =
+          process.env.NEXT_PUBLIC_UMAMI_URL ||
+          "https://cloud.umami.is/script.js";
         script.dataset.websiteId = id;
         script.dataset.autoTrack = "false";
         script.dataset.doNotTrack = "true";
@@ -30,10 +43,17 @@ export default function LandingAnalytics() {
         document.head.appendChild(script);
       }
       const consent = readCookieConsent();
-      if (consent) timer = setTimeout(sync, Math.min(consent.expiresAt - Date.now() + 1, 2147483647));
+      if (consent)
+        timer = setTimeout(
+          sync,
+          Math.min(consent.expiresAt - Date.now() + 1, 2147483647),
+        );
     };
     const storage = (event: StorageEvent) => {
-      if (event.key === CONSENT_STORAGE_KEY || event.key === null) { syncCookieConsentFromStorage(); sync(); }
+      if (event.key === CONSENT_STORAGE_KEY || event.key === null) {
+        syncCookieConsentFromStorage();
+        sync();
+      }
     };
     sync();
     window.addEventListener(CONSENT_EVENT, sync);

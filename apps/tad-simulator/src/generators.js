@@ -12,7 +12,7 @@ export const CONFIG = {
   TABLET_COUNT: parseInt(process.env.TABLET_COUNT || '10', 10),
   SIMULATION_DURATION_MINUTES: parseInt(process.env.SIMULATION_DURATION_MINUTES || '5', 10),
   MAX_CONCURRENT: parseInt(process.env.MAX_CONCURRENT || '5', 10),
-  TABLET_KEY: process.env.TAD_TABLET_KEY || 'tad-tablet-key-2026',
+  TABLET_KEY: process.env.TAD_TABLET_KEY?.trim() || null,
   IS_SIMULATED: process.env.IS_SIMULATED !== 'false',
 };
 
@@ -24,6 +24,7 @@ const API_URLS = {
 
 const VIDEO_IDS = ['VID-001', 'VID-002', 'VID-003', 'VID-004', 'VID-005'];
 
+/** @param {string} deviceId */
 function generateGPSPoint(deviceId) {
   return {
     driverId: `SIM-${deviceId}`,
@@ -34,6 +35,7 @@ function generateGPSPoint(deviceId) {
   };
 }
 
+/** @param {string} deviceId */
 function generatePlaybackEvent(deviceId) {
   return {
     deviceId,
@@ -46,6 +48,7 @@ function generatePlaybackEvent(deviceId) {
   };
 }
 
+/** @param {string} deviceId */
 function generateHeartbeat(deviceId) {
   return {
     deviceId,

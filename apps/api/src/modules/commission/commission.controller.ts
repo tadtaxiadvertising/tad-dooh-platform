@@ -13,10 +13,7 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import {
-  CommissionService,
-  CommissionSourceType,
-} from "./commission.service";
+import { CommissionService, CommissionSourceType } from "./commission.service";
 import type {
   CreateCommissionInput,
   CommissionStatus,
@@ -38,8 +35,15 @@ export class CommissionController {
    */
   private assertDriverAccess(driverId: string, user?: AuthUser) {
     if (user?.role === UserRole.ADMIN) return;
-    if (user?.role === UserRole.DRIVER && user.entityId && user.entityId === driverId) return;
-    throw new ForbiddenException("No tienes acceso a las comisiones de este conductor.");
+    if (
+      user?.role === UserRole.DRIVER &&
+      user.entityId &&
+      user.entityId === driverId
+    )
+      return;
+    throw new ForbiddenException(
+      "No tienes acceso a las comisiones de este conductor.",
+    );
   }
 
   /**

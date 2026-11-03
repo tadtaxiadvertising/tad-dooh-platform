@@ -27,17 +27,95 @@
 .breakdown div { display:flex; justify-content:space-between; align-items:start; gap:12px; font-size:11px; line-height:1.5; color:#b4bcb0; }
 .breakdown strong { color:#fff; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .explainer { display:grid; gap:5px; padding:20px 0; font-size:11px; color:#c9d3c4; }
-|.explainer strong { color:white; }
-|.rateTable { margin-top:28px; border:1px solid #ffffff24; border-radius:16px; overflow:hidden; font-size:11px; }
-|.rateTable table { width:100%; border-collapse:collapse; }
-|.rateTable th { background:#FFD40013; color:#aaafb7; font-weight:800; text-align:left; padding:12px 14px; border-bottom:1px solid #ffffff1b; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
-|.rateTable td { padding:12px 14px; border-bottom:1px solid #ffffff1b; color:#b4bcb0; }
-|.rateTable tr:last-child td { border-bottom:none; }
-|.rateTable tbody tr:hover { background:#13171b44; }
-|.rateNote { margin-top:12px; font-size:10px; color:#9da2aa; line-height:1.6; }
-|.notice { font-size:11px; color:#bcc5b7; line-height:1.75; }
+.explainer strong { color:white; }
+.rateTable { margin-top:28px; border:1px solid #ffffff24; border-radius:16px; overflow:hidden; font-size:11px; }
+.rateTable table { width:100%; border-collapse:collapse; }
+.rateTable th { background:#FFD40013; color:#aaafb7; font-weight:800; text-align:left; padding:12px 14px; border-bottom:1px solid #ffffff1b; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+.rateTable td { padding:12px 14px; border-bottom:1px solid #ffffff1b; color:#b4bcb0; }
+.rateTable tr:last-child td { border-bottom:none; }
+.rateTable tbody tr:hover { background:#13171b44; }
+.rateNote { margin-top:12px; font-size:10px; color:#9da2aa; line-height:1.6; }
+.notice { font-size:11px; color:#bcc5b7; line-height:1.75; }
 .next { display:flex; align-items:center; justify-content:space-between; min-height:50px; margin-top:25px; padding:13px 19px; background:#FFD400; color:#131313; border-radius:11px; font-size:12px; font-weight:800; transition:transform .2s,background .2s; }
 .next:hover { background:#ffe55b; transform:translateY(-2px); }
 @media (max-width:850px) { .section { width:calc(100% - 40px); padding:64px 0 78px; } .layout { grid-template-columns:1fr; } .result { position:static; } }
 @media (max-width:400px) { .section { width:calc(100% - 32px); } .control { padding:16px; } .result { padding:20px; } .controlTitle label { font-size:13px; } .controlHeader { gap:9px; } }
 @media (prefers-reduced-motion:reduce) { .section * { transition:none !important; animation:none !important; } }
+
+/* Creative Reframe V4 — financial clarity inside TAD Night Shift. */
+.section { width: min(1200px, calc(100% - 80px)); padding-block: 112px; }
+.heading { max-width: 820px; }
+.heading .eyebrow, .heading em { color: #ffd400; }
+.heading h2 { font-size: clamp(39px, 5vw, 70px); letter-spacing: -.06em; }
+.heading p { color: #bfc4cb; font-size: 15px; }
+.layout { gap: 22px; }
+.control { background: linear-gradient(145deg, #1b1f24, #111315); border: 1px solid #ffffff28; border-radius: 25px; padding: 29px; }
+.control:hover, .control:focus-within { border-color: #ffd400a0; }
+.icon { color: #ffd400; background: #ffd40016; border-color: #ffd40044; }
+.controlTitle label { color: #fff; }
+.controlTitle small { color: #bec3cb; }
+.value { color: #ffd400; }
+.control input[type=range] { accent-color: #ffd400; }
+.slots span { background: #282c31; border-color: #ffffff23; color: #c0c3c8; }
+.slots span[data-active=true] { background: #ffd400; border-color: #ffd400; color: #1a1910; }
+.result {
+  position: sticky;
+  top: 22px;
+  border: 1px solid #ffd40080;
+  border-radius: 30px;
+  color: #f8f8f4;
+  background: radial-gradient(ellipse at 90% 1%, #ffd40035, transparent 53%), linear-gradient(145deg, #29271c, #141619 85%);
+  box-shadow: 0 30px 80px #000a;
+}
+.resultTop { color: #ffe17a; }
+.resultEyebrow { color: #d2d0c8; }
+.total { color: #ffd400; }
+.breakdown { border-color: #ffffff33; }
+.breakdown div { color: #c5c4be; font-size: 12px; }
+.breakdown strong { color: #fff; }
+.explainer { color: #d3d0c2; font-size: 12px; }
+.explainer strong { color: #fff; }
+.rateTable { margin-top: 20px; border: 1px solid #ffd40040; background: #ffffff09; border-radius: 20px; padding: 21px; }
+.rateTable h3 { margin: 0 0 13px; color: #ffe17c; font-size: 17px; line-height: 1.3; }
+.rateTable dl { margin: 0; display: grid; gap: 13px; }
+.rateTable dl > div { padding-top: 12px; border-top: 1px solid #ffffff22; }
+.rateTable dt { color: #fff1b0; font-size: 12px; font-weight: 800; }
+.rateTable dd { margin: 5px 0 0; color: #c5c4bc; font-size: 11px; line-height: 1.7; }
+.notice { margin-top: 17px; color: #babbb9; font-size: 11px; line-height: 1.75; }
+.next { min-height: 55px; border-radius: 999px; background: #ffd400; color: #151515; }
+.next:hover { background: #ffe775; }
+@media (max-width: 850px) {
+  .section { width: calc(100% - 40px); padding-block: 75px; }
+  .result { position: static; }
+}
+@media (max-width: 400px) {
+  .section { width: calc(100% - 32px); }
+  .heading h2 { font-size: 37px; }
+  .control { padding: 19px; }
+  .result { padding: 22px; }
+  .controlHeader { flex-wrap: wrap; }
+  .value { font-size: 20px; }
+  .slots { gap: 5px; }
+  .slots span { height: 32px; font-size: 10px; }
+}
+
+
+/* Keep quantity in its own output; the illustrative rate is explanatory text. */
+.valueGroup { display: grid; justify-items: end; flex: 0 0 auto; min-width: 0; text-align: right; line-height: 1.2; }
+.valueGroup .value { font-variant-numeric: tabular-nums; }
+.unit { margin-top: 4px; font-size: 10px; font-weight: 700; color: #d5d1b6; white-space: nowrap; }
+@media (max-width: 400px) {
+  .valueGroup { justify-items: start; text-align: left; }
+}
+
+/* Keep the example's UI range cap distinct from commercial earning conditions. */
+.rangeNote {
+  margin: 0;
+  padding: 2px 8px 4px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #c4c6c9;
+}
+@media (max-width: 400px) {
+  .rangeNote { font-size: 11px; padding-inline: 2px; }
+}

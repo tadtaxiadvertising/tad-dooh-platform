@@ -1,4 +1,4 @@
-import { writeAccessTokenCookie } from '@tad/services/session-cookies';
+import { writeAccessTokenCookie } from "@tad/services/session-cookies";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";

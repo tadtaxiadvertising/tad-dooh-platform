@@ -3,7 +3,7 @@ import { getAdminCredentials } from "./helpers/auth.helper";
 
 const hasAdminCredentials = Boolean(
   process.env.TEST_ADMIN_EMAIL?.trim() &&
-    process.env.TEST_ADMIN_PASSWORD?.trim(),
+  process.env.TEST_ADMIN_PASSWORD?.trim(),
 );
 
 /**
@@ -20,7 +20,10 @@ test.describe("TAD Platform - Critical Path", () => {
   test("Debe permitir login de admin y mostrar el Dashboard", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     const credentials = getAdminCredentials();
     await page.fill('input[type="email"]', credentials.email);
     await page.fill('input[type="password"]', credentials.password);
@@ -35,7 +38,10 @@ test.describe("TAD Platform - Critical Path", () => {
   test("Debe aplicar Kill-Switch si el backend devuelve 402 (Manejo de Morosidad)", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     const credentials = getAdminCredentials();
     await page.fill('input[type="email"]', credentials.email);
     await page.fill('input[type="password"]', credentials.password);

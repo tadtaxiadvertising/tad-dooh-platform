@@ -40,7 +40,8 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, "jwt") {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: (secret || configService.get<string>("JWT_SECRET")) as string,
+      secretOrKey: (secret ||
+        configService.get<string>("JWT_SECRET")) as string,
     });
   }
 

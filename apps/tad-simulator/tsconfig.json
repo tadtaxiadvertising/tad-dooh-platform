@@ -9,9 +9,21 @@
     "resolveJsonModule": true,
     "outDir": "./dist",
     "rootDir": ".",
-    "types": ["node"],
-    "lib": ["ES2021"]
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2021"
+    ],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

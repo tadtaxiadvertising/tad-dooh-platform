@@ -104,7 +104,11 @@ export function DriverRegistrationWizard() {
 
   if (success) {
     return (
-      <TadCard variant="elevated" padding="lg" className="w-full max-w-lg text-center">
+      <TadCard
+        variant="elevated"
+        padding="lg"
+        className="w-full max-w-lg text-center"
+      >
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/10 text-2xl text-emerald-300">
           ✓
         </div>
@@ -217,9 +221,8 @@ export function DriverRegistrationWizard() {
               minLength={6}
             />
             <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-5 text-zinc-400">
-              Al enviar, tu solicitud queda pendiente de aprobación y pago.
-              Esta pantalla es informativa y no activa una cuenta
-              automáticamente.
+              Al enviar, tu solicitud queda pendiente de aprobación y pago. Esta
+              pantalla es informativa y no activa una cuenta automáticamente.
             </p>
           </div>
         )}

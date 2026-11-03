@@ -2,7 +2,12 @@
 
 const assert = require('node:assert/strict');
 
-const VIEWPORT_WIDTHS = Object.freeze([320, 390, 768, 1024, 1440]);
+const VIEWPORT_WIDTHS = Object.freeze([320, 360, 390, 430, 768, 1024, 1440, 1920]);
+const CSS_ZOOM_STRESS_VIEWPORTS = Object.freeze([
+  Object.freeze({ width: 390, height: 844 }),
+  Object.freeze({ width: 844, height: 390 }),
+  Object.freeze({ width: 1440, height: 900 }),
+]);
 
 // Playwright's visibility check permits opacity:0. Inspect the whole ancestor
 // chain so disabled page JavaScript cannot leave essential SSR content hidden.
@@ -34,6 +39,71 @@ async function assertNoHorizontalOverflow(page, label) {
   }));
   assert.ok(sizes.content <= sizes.viewport + 1,
     `${label}: ${sizes.content}px content exceeds ${sizes.viewport}px viewport.`);
+}
+
+async function assertKeyboardControl(locator, name) {
+  await assertOpaque(locator, name);
+  assert.equal(await locator.isEnabled(), true, `${name}: control must be enabled.`);
+  await locator.scrollIntoViewIfNeeded();
+  await locator.focus();
+  const result = await locator.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const label = element.getAttribute('aria-label')
+      || Array.from(element.labels || []).map(node => node.textContent).join(' ')
+      || element.textContent;
+    return { focused: document.activeElement === element, tabIndex: element.tabIndex,
+      name: label?.trim(), left: rect.left, right: rect.right, viewport: innerWidth };
+  });
+  assert.ok(result.name, `${name}: control must retain an accessible label.`);
+  assert.ok(result.tabIndex >= 0 && result.focused, `${name}: control must retain keyboard focus.`);
+  assert.ok(result.left >= -1 && result.right <= result.viewport + 1,
+    `${name}: control is clipped horizontally (${result.left}..${result.right} of ${result.viewport}px).`);
+}
+
+// CSS zoom is a reproducible reflow stress case, not certification of native
+// browser zoom. Preserve the caller's viewport, style and scroll on every exit.
+async function assertCssZoomReflow(page, {
+  label, essentialSelectors, controlSelectors, exerciseControls, capture,
+}) {
+  const viewport = page.viewportSize();
+  const original = await page.evaluate(() => ({ zoom: document.documentElement.style.zoom,
+    x: scrollX, y: scrollY }));
+  try {
+    for (const size of CSS_ZOOM_STRESS_VIEWPORTS) {
+      await page.setViewportSize(size);
+      await page.evaluate(() => { document.documentElement.style.zoom = '2'; scrollTo(0, 0); });
+      const scenario = `${label} CSS zoom200% stress ${size.width}x${size.height}`;
+      try {
+        assert.equal(await page.evaluate(() => Number(getComputedStyle(document.documentElement).zoom)), 2,
+          `${scenario}: CSS zoom must be applied.`);
+        await assertNoHorizontalOverflow(page, scenario);
+        for (const selector of essentialSelectors) {
+          const essential = page.locator(selector);
+          await assertOpaque(essential, `${scenario} ${selector}`);
+          const box = await essential.evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, viewport: innerWidth,
+              content: element.scrollWidth, width: element.clientWidth };
+          });
+          assert.ok(box.left >= -1 && box.right <= box.viewport + 1,
+            `${scenario} ${selector}: essential content is clipped horizontally.`);
+          assert.ok(box.content <= box.width + 1,
+            `${scenario} ${selector}: text or content overflows its own box (${box.content}px of ${box.width}px).`);
+        }
+        for (const selector of controlSelectors) {
+          await assertKeyboardControl(page.locator(selector), `${scenario} ${selector}`);
+        }
+        await exerciseControls(scenario);
+        await assertNoHorizontalOverflow(page, `${scenario} after interaction`);
+      } finally {
+        if (capture) await capture(size);
+      }
+    }
+  } finally {
+    await page.evaluate(zoom => { document.documentElement.style.zoom = zoom; }, original.zoom);
+    if (viewport) await page.setViewportSize(viewport);
+    await page.evaluate(({ x, y }) => { document.activeElement?.blur(); scrollTo(x, y); }, original);
+  }
 }
 
 function monetaryAmount(text) {
@@ -109,5 +179,5 @@ async function assertAmountFeedback(page, { outputSelector, inputSelector, nextV
   await assertOpaque(output, 'Completed amount feedback');
 }
 
-module.exports = { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
+module.exports = { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow, assertCssZoomReflow,
   monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe, assertAmountFeedback };

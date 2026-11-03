@@ -30,7 +30,8 @@ describe("AuthService bootstrap sync", () => {
   });
 
   afterAll(() => {
-    if (previousEnabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+    if (previousEnabled === undefined)
+      delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
     else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = previousEnabled;
     if (originalSecret === undefined) delete process.env.BOOTSTRAP_SECRET;
     else process.env.BOOTSTRAP_SECRET = originalSecret;
@@ -62,26 +63,31 @@ describe("AuthService bootstrap sync", () => {
     const result = await service().syncUsersToSupabaseAuth("test-secret");
     expect(result).toEqual({ synced: 1, errors: [] });
     expect(listUsers).toHaveBeenCalledTimes(1);
-    expect(updateUserById).toHaveBeenCalledWith(
-      "auth-1",
-      { app_metadata: { role: "ADVERTISER", entityId: "adv-1" } },
-    );
+    expect(updateUserById).toHaveBeenCalledWith("auth-1", {
+      app_metadata: { role: "ADVERTISER", entityId: "adv-1" },
+    });
   });
 
   it("rejects an invalid secret before listing identities", async () => {
-    await expect(service().syncUsersToSupabaseAuth("invalid")).rejects.toMatchObject({
+    await expect(
+      service().syncUsersToSupabaseAuth("invalid"),
+    ).rejects.toMatchObject({
       status: 403,
     });
     expect(listUsers).not.toHaveBeenCalled();
   });
-  it.each([undefined, "false", "TRUE"])("rejects sync when maintenance flag is %s before DB or Auth access", async (enabled) => {
-    if (enabled === undefined) delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
-    else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = enabled;
-    await expect(service().syncUsersToSupabaseAuth("test-secret"))
-      .rejects.toMatchObject({ status: 403 });
-    expect(prisma.user.findMany).not.toHaveBeenCalled();
-    expect(prisma.advertiser.findMany).not.toHaveBeenCalled();
-    expect(supabase.getClient).not.toHaveBeenCalled();
-  });
-
+  it.each([undefined, "false", "TRUE"])(
+    "rejects sync when maintenance flag is %s before DB or Auth access",
+    async (enabled) => {
+      if (enabled === undefined)
+        delete process.env.BOOTSTRAP_MAINTENANCE_ENABLED;
+      else process.env.BOOTSTRAP_MAINTENANCE_ENABLED = enabled;
+      await expect(
+        service().syncUsersToSupabaseAuth("test-secret"),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(prisma.user.findMany).not.toHaveBeenCalled();
+      expect(prisma.advertiser.findMany).not.toHaveBeenCalled();
+      expect(supabase.getClient).not.toHaveBeenCalled();
+    },
+  );
 });

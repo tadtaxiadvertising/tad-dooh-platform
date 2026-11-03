@@ -76,8 +76,9 @@ export default function SuccessStep({
           <span className="text-[#FDCB01]">fue registrada</span>
         </h1>
         <p className="text-sm text-[#AAAAAA] max-w-[320px] leading-relaxed mb-8">
-          Registramos tu solicitud. Tu cuenta está pendiente de revisión y tu campaña
-          permanecerá inactiva hasta completar las aprobaciones y el pago correspondiente.
+          Registramos tu solicitud. Tu cuenta está pendiente de revisión y tu
+          campaña permanecerá inactiva hasta completar las aprobaciones y el
+          pago correspondiente.
         </p>
       </motion.div>
 
@@ -174,17 +175,13 @@ export default function SuccessStep({
             <div className="w-5 h-5 rounded-full bg-[#FDCB01] text-black flex items-center justify-center text-[10px] font-black shrink-0">
               1
             </div>
-            <span>
-              Revisión de la solicitud por el equipo TAD
-            </span>
+            <span>Revisión de la solicitud por el equipo TAD</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">
               2
             </div>
-            <span>
-              Validación de creatividades y confirmación de pago
-            </span>
+            <span>Validación de creatividades y confirmación de pago</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-[10px] font-black shrink-0">

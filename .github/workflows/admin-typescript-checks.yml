@@ -8,6 +8,8 @@ on:
       - "apps/admin/utils/mapCoordinates.ts"
       - "apps/advertiser/package.json"
       - "pnpm-lock.yaml"
+      - "packages/ui/tsconfig.json"
+      - "scripts/ui-jsx-config.test.cjs"
       - "scripts/admin-coordinate.test.cjs"
       - ".github/workflows/admin-typescript-checks.yml"
   workflow_dispatch:
@@ -37,3 +39,8 @@ jobs:
         run: pnpm exec tsc --noEmit --project apps/admin/tsconfig.json
       - name: Advertiser TypeScript (including E2E sources)
         run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.json
+
+      - name: Shared UI React 19 TypeScript
+        run: pnpm exec tsc --noEmit --project packages/ui/tsconfig.json
+      - name: JSX runtime configuration regression
+        run: node --test scripts/ui-jsx-config.test.cjs

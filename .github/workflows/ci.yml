@@ -114,14 +114,16 @@ jobs:
           set -euo pipefail
           pnpm --filter api test --runInBand
 
-      - name: Run e2e tests
+      # The root tests/e2e tree includes authenticated production audits and
+      # mutating driver-registration flows. Never execute those against live
+      # systems in an unprivileged push/PR job. Public browser E2E runs in the
+      # isolated, fixture-only landing-v5-checks workflow.
+      - name: Run safe cross-portal integration contracts
         run: |
           set -euo pipefail
-          if [ -d tests/e2e ]; then
-            pnpm exec playwright test --reporter=dot
-          else
-            echo "No tests/e2e directory; Playwright E2E suite is not configured here."
-          fi
+          node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+          node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
+          node --test scripts/ci-e2e-isolation.test.cjs
 
   # ── 4. PRISMA SCHEMA VALIDATION ──────────────────────────────────────────────
   prisma:

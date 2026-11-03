@@ -14,6 +14,7 @@ import L from "leaflet";
 import { TaxiData } from "@/types/tracking";
 import { getDriverStatusInfo } from "@/utils/driverStatus";
 import { VehiclePopup } from "@/components/ui/VehiclePopup";
+import { parseMapCoordinate } from "@/utils/mapCoordinates";
 
 interface MapLocation {
   id?: string;
@@ -118,30 +119,6 @@ const createStatusIcon = (
   });
 };
 
-// Heatmap cluster icon
-const createClusterIcon = (cluster: L.MarkerCluster) => {
-  const count = cluster.getChildCount();
-  let size = 40;
-  if (count > 50) size = 60;
-  else if (count > 20) size = 50;
-
-  return L.divIcon({
-    html: `
-      <div style="
-        width:${size}px;height:${size}px;border-radius:50%;
-        background:#fad400;border:2px solid rgba(255,255,255,0.2);
-        display:flex;align-items:center;justify-content:center;
-        font-family:'Inter',sans-serif;font-size:${size > 50 ? 14 : 11}px;font-weight:900;
-        color:#000;box-shadow:0 0 15px rgba(250,212,0,0.3);
-      ">
-        ${count}
-      </div>
-    `,
-    className: "custom-cluster",
-    iconSize: [size, size],
-  });
-};
-
 // Synchronize theme classes imperatively because Leaflet's MapContainer
 // does not update its options after initial creation.
 function MapThemeController({ darkMode }: { darkMode: boolean }) {
@@ -241,14 +218,8 @@ export default function MapView({
         const rawLatitude = item.lastLat ?? item.latitude ?? item.lat;
         const rawLongitude =
           item.lastLng ?? item.longitude ?? item.lng ?? item.lon;
-        const latitude =
-          rawLatitude === null || rawLatitude === undefined || rawLatitude === ""
-            ? NaN
-            : Number(rawLatitude);
-        const longitude =
-          rawLongitude === null || rawLongitude === undefined || rawLongitude === ""
-            ? NaN
-            : Number(rawLongitude);
+        const latitude = parseMapCoordinate(rawLatitude);
+        const longitude = parseMapCoordinate(rawLongitude);
 
         if (
           !Number.isFinite(latitude) ||

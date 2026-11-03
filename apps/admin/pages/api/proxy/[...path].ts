@@ -297,9 +297,13 @@ export default async function handler(
     const serverSetCookie = backendResponse.headers.get("set-cookie");
     if (serverSetCookie) {
       const existingCookies = res.getHeader("set-cookie");
+      // NextApiResponse.getHeader can be string[], string, number or undefined.
+      // Only existing string cookies are valid Set-Cookie values.
       const cookiesArray = Array.isArray(existingCookies)
         ? existingCookies
-        : [existingCookies];
+        : typeof existingCookies === "string"
+          ? [existingCookies]
+          : [];
       res.setHeader("set-cookie", [...cookiesArray, serverSetCookie]);
     }
 

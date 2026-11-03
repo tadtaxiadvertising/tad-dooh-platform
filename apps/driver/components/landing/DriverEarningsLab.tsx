@@ -135,6 +135,7 @@ export default function DriverEarningsLab({
                 {id === "ads" && (
                   <div
                     className={styles.slots}
+                    role="img"
                     aria-label={`${result.ads} de 15 campañas simultáneas de ejemplo`}
                   >
                     {Array.from({ length: 15 }, (_, i) => (

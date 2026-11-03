@@ -394,6 +394,40 @@ async function main() {
         controlSelectors: ['.landing-hero-actions a[href="#experiencia"]', 'header a[href="/advertiser/login"]',
           '#campaign-city', '#campaign-objective', '#campaign-screens', '#campaign-months', '#campaign-production'],
         exerciseControls: async scenario => {
+          const assertNarrowPreviewFlow = async () => {
+            const summary = await page.locator('.landing-preview-summary').evaluate(element => {
+              const entries = Array.from(element.children);
+              const box = node => {
+                const rect = node.getBoundingClientRect();
+                return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+              };
+              return { width: element.clientWidth, box: box(element), pairs: entries
+                .filter((_, index) => index % 2 === 0)
+                .map((label, index) => ({ label: box(label), price: box(entries[index * 2 + 1]) })) };
+            });
+            assert.equal(summary.pairs.length, 2, `${scenario}: keep each of the two price/label pairs.`);
+            if (summary.width <= 220) {
+              for (const [index, pair] of summary.pairs.entries()) {
+                assert.ok(pair.price.top >= pair.label.bottom - 1,
+                  `${scenario}: narrow summary price ${index + 1} must appear below its label.`);
+                assert.ok(pair.price.left >= summary.box.left - 1 && pair.price.right <= summary.box.right + 1,
+                  `${scenario}: narrow summary price ${index + 1} must remain inside its row.`);
+                if (index > 0) assert.ok(pair.label.top >= summary.pairs[index - 1].price.bottom - 1,
+                  `${scenario}: the next summary label must not overlap the preceding price.`);
+              }
+              const option = await page.locator('.landing-production-option').evaluate(element => {
+                const text = element.querySelector('span');
+                const rect = text.getBoundingClientRect();
+                const card = element.getBoundingClientRect();
+                return { left: rect.left, right: rect.right, cardLeft: card.left, cardRight: card.right,
+                  content: text.scrollWidth, width: text.clientWidth };
+              });
+              assert.ok(option.left >= option.cardLeft - 1 && option.right <= option.cardRight + 1
+                && option.content <= option.width + 1,
+              `${scenario}: production label text must fit inside its option without clipping.`);
+            }
+          };
+          await assertNarrowPreviewFlow();
           for (const [id, alternate] of [['campaign-city', 'stgo'], ['campaign-objective', 'launch']]) {
             const control = page.locator(`#${id}`);
             const original = await control.inputValue();
@@ -419,9 +453,13 @@ async function main() {
           await production.press('Space');
           assert.equal(await production.isChecked(), !checked);
           assert.notEqual(amount(await page.locator('#budget-total').innerText()), before);
+          assert.equal(await production.evaluate(element => document.activeElement === element), true);
+          await assertNarrowPreviewFlow();
           await production.press('Space');
           assert.equal(await production.isChecked(), checked);
           assert.equal(amount(await page.locator('#budget-total').innerText()), before);
+          assert.equal(await production.evaluate(element => document.activeElement === element), true);
+          await assertNarrowPreviewFlow();
         },
         capture: screenshots ? size => page.screenshot({
           path: path.join(screenshots, `landing-v5-${size.width}x${size.height}-advertiser-css-zoom200-stress.png`),

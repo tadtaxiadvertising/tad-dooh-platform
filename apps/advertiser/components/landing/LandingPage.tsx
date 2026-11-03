@@ -437,7 +437,7 @@ export default function LandingPage() {
                     recordPreview({ includeProduction: checked });
                   }}
                 />
-                <span>Quiero contratar producción creativa opcional</span>
+                <span>Añadir producción creativa opcional al ejemplo</span>
               </label>
               <div className="landing-preview-summary">
                 <span>Pantallas y duración (precio de referencia)</span>
@@ -470,11 +470,9 @@ export default function LandingPage() {
                 el alcance.
               </p>
               <p className="landing-disclaimer">
-                Estimación calculada con el motor{" "}
-                <code>@tad/impact-calculator</code>. Las referencias comerciales
-                del simulador requieren conciliación con el backend y
-                confirmación contractual. No constituye cotización, inventario
-                reservado ni garantía de alcance.
+                Las tarifas de esta simulación son ilustrativas y requieren
+                confirmación comercial antes de contratar. No constituye
+                cotización, inventario reservado ni garantía de alcance.
               </p>
               <aside
                 className="landing-rate-summary"

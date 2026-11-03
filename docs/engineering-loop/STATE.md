@@ -1,4 +1,12 @@
-# Estado de Engineering + Motion UX después de #176
+# Checkpoint actual — 2026-11-03, después de #198
+
+La base vigente es `10774bb43c8190bdb3ebb0bd98d640ec144ea6cc` (#198), con Creative Reframe V4 de #189 integrado. La continuación y su evidencia por SHA están en [QA post-198](../qa/post-198-completion-2026-11-03.md). La rama de intervención es `codex/post-198-completion-20261103`, en worktree aislado; el checkout histórico y sus modificaciones locales se preservan.
+
+CI de esa base: landings y cuatro imágenes Docker PASS; Quality Gates FAIL por sintaxis del guard E2E, deuda ESLint y 18 high de dependencias. Este checkpoint no acredita producción ni habilita merge/despliegue. Consultar el reporte actual para resultados de la intervención y pendientes.
+
+El contenido siguiente se conserva como **historia de #176/#177**, no como lista ejecutable ni estado actual.
+
+# Estado histórico de Engineering + Motion UX después de #176
 
 Fecha: 2026-11-01, America/La_Paz. Rama `codex/motion-ux-post-176`. Base confirmada: `63c807eba7b2c016411337f14345ae8c1ae5901d`, merge #176. Este checkpoint describe esta intervención, no la salud global de la plataforma.
 

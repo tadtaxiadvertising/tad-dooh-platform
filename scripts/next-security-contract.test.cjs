@@ -4,8 +4,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const root = path.resolve(__dirname, "..");
-const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const normalizeNewlines = source => source.replace(/\r\n?/g, "\n");
+const read = file => normalizeNewlines(fs.readFileSync(path.join(root, file), "utf8"));
 const lock = read("pnpm-lock.yaml");
+
+test("text fixtures preserve the same contracts with LF and CRLF checkouts", () => {
+  assert.equal(lock.includes("\r"), false, "The loaded fixture must use normalized newlines.");
+  const crlf = lock.replace(/\n/g, "\r\n");
+  assert.ok(crlf.includes("\r\n"), "Exercise a real CRLF fixture on every platform.");
+  assert.equal(normalizeNewlines(lock), lock);
+  assert.equal(normalizeNewlines(crlf), lock);
+  assert.match(normalizeNewlines(crlf), /\n  sharp@0\.35\.5:\n/);
+});
 
 function importer(name) {
   const prefix = "\n  " + name + ":\n";

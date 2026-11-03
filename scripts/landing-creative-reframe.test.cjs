@@ -15,7 +15,9 @@ test("advertiser creative reframe preserves the live estimate and explicit produ
   assert.match(landing, /id="campaign-production"/);
   assert.match(landing, /checked=\{includeProduction\}/);
   assert.match(landing, /Subtotal ilustrativo · impuestos no incluidos/);
-  assert.match(landing, /@tad\/impact-calculator/);
+  assert.match(landing, /Añadir producción creativa opcional al ejemplo/);
+  assert.match(collapseLayout(landing), /tarifas de esta simulación son ilustrativas y requieren confirmación comercial/);
+  assert.doesNotMatch(landing, /@tad\/impact-calculator|Quiero contratar/);
   assert.doesNotMatch(landing, /RD\$1\.500\/mes · pantalla|Los tres sustratos que mueven el negocio/);
   assert.match(landing, /landing-hero-steps/);
   assert.match(landing, /ROLE_FAQS\.advertiser/);
@@ -32,6 +34,9 @@ test("driver creative reframe preserves three separate income streams and approv
   assert.match(lab, /previewDriverEarnings\(ads, sales, referrals\)/);
   assert.match(collapseLayout(lab), /RD\$1\.25 por play validado es un concepto distinto/);
   assert.match(lab, /No son pagos recurrentes/);
+  assert.match(lab, /Campañas elegibles · hasta 15 simultáneas/);
+  assert.match(landing, /campañas elegibles en tu pantalla \(hasta 15 simultáneas\)/);
+  assert.match(lab, /de 15 campañas simultáneas de ejemplo/);
   assert.doesNotMatch(lab, /15 anuncios \/ día/);
   assert.match(lab, /href=\{signupEnabled \? "\/register" : "#como-participar"\}/);
 });

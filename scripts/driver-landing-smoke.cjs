@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
-  monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe,
+  assertCssZoomReflow, monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe,
   assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 const results = [];
@@ -259,6 +259,32 @@ async function main() {
       }
     });
 
+    await check('Driver CSS zoom200% stress preserves reflow and keyboard controls in portrait, landscape and desktop', async () => {
+      await assertCssZoomReflow(page, {
+        label: 'Driver',
+        essentialSelectors: ['#hero-title', amountSelector, '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
+        controlSelectors: ['section[aria-labelledby="hero-title"] a[href="#calculadora"]',
+          'header a[href="/driver/login"]', '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
+        exerciseControls: async scenario => {
+          for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
+            const control = page.locator(`#${id}`);
+            const original = Number(await control.inputValue());
+            const before = monetaryAmount(await page.locator(amountSelector).innerText());
+            const next = original < Number(await control.getAttribute('max')) ? original + 1 : original - 1;
+            await setRangeWithKeyboard(control, next);
+            assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before + (next - original) * 500,
+              `${scenario}: ${id} must update the educational total.`);
+            await setRangeWithKeyboard(control, original);
+            assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before);
+          }
+        },
+        capture: screenshots ? size => page.screenshot({
+          path: path.join(screenshots, `driver-landing-${size.width}x${size.height}-css-zoom200-stress.png`),
+          fullPage: true,
+        }) : undefined,
+      });
+    });
+
     await check('Reduced motion suppresses nontrivial animations', async () => {
       assert.equal(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), true);
       const moving = await page.evaluate(() => document.getAnimations().filter(animation => {
@@ -336,7 +362,8 @@ async function main() {
     });
     process.stdout.write(JSON.stringify({ result: 'PASS', checks: results.length, baseUrl: base.href,
       screenshots, omitted: ['Authenticated login and dashboard', 'Registration submission',
-        'Real API, earnings or financial data', 'Production deployment', 'Comprehensive accessibility audit'],
+        'Real API, earnings or financial data', 'Production deployment', 'Comprehensive accessibility audit',
+        'Native browser zoom certification'],
     }, null, 2) + '\n');
   } finally { await browser.close(); }
 }

@@ -1,0 +1,22 @@
+$tad-autonomous-engineering-motion-ux
+
+Actúa como Creative Frontend Developer + Senior UX Motion Designer y Principal Engineer de TAD.
+Entra en un loop agéntico seguro desde origin/main. Primero reproduce con Playwright los
+problemas actuales de ambas landings en Android 320/360/390/430px, graba baseline,
+identifica clipping/textos pequeños/CTAs ocultos y corrige diseño MOBILE-FIRST.
+
+Luego ejecuta los blueprints incluidos en references/creative-experience-blueprints.md:
+- Anunciante: hero taxi/tablet vivo, storytelling de 4 fases con GSAP ScrollTrigger,
+  laboratorio de campañas (producción creativa OFF por defecto) y visualización de impacto.
+- Driver: taxi animado, 15 slots visuales ligados al slider, tres ingresos independientes
+  de RD$500 por evento elegible, y recorrido animado de referido hasta aprobación.
+- Usa Framer Motion ya instalado para UI; GSAP + @gsap/react para narrativa;
+  integra Magic UI y/o Motion Primitives en componentes REALES, libres, revisados y medidos.
+- Mantén loaders, interacciones, CTA, keyboard/touch, reduced motion, SSR, velocidad y SEO.
+
+No aceptes una página estática con solo fade-in. Exige 4 interacciones reales por landing,
+screenshots ANTES/DESPUÉS a 320/390/768/1440, vídeos/Playwright, accesibilidad y bundle.
+Corrige de raíz cualquier error relevante (sin fake fixes), registra tests y crea PRs draft.
+P0/P1 seguridad/finanzas separadas; no cambiar wallets/payouts, RLS ni producción sin permiso.
+No hagas merge ni deploy; continúa hasta bloqueo verificable o límites de sesión,
+deja un checkpoint reproducible y el siguiente paso.

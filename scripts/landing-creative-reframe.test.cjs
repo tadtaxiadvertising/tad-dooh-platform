@@ -90,3 +90,11 @@ test("financial outputs only animate after a changed amount, never on mount", ()
   assert.match(advertiser, /ref=\{budgetOutputRef\}/);
   assert.match(driver, /ref=\{earningsOutputRef\}/);
 });
+
+
+test("driver range outputs expose numeric quantities and hide decorative rates from assistive tech", () => {
+  const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  assert.match(lab, /className=\{styles\.value\}>\{value\}<\/output>/);
+  assert.match(lab, /className=\{styles\.unit\} aria-hidden="true">× RD\$500<\/span>/);
+  assert.doesNotMatch(lab, /<output[^>]+>[\s\S]{0,120}\$\{value\} × RD\$500/);
+});

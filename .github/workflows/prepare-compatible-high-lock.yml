@@ -1,0 +1,53 @@
+name: Generate compatible high-severity patch lockfile (temporary)
+on:
+  push:
+    branches: [security/high-transitive-compatible-20261103]
+    paths:
+      - ".github/workflows/prepare-compatible-high-lock.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  resolve:
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/security/high-transitive-compatible-20261103'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate lockfile without lifecycle scripts
+        run: |
+          set -euo pipefail
+          pnpm install --lockfile-only --ignore-scripts
+      - name: Require patched compatible versions
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const lock=fs.readFileSync('pnpm-lock.yaml','utf8');
+          const required=['lodash@4.18.1','postcss@8.5.31','glob@10.5.0','picomatch@4.0.7',
+            'js-yaml@4.3.2','semver@5.7.2','body-parser@1.20.9','body-parser@2.4.0'];
+          const disallowed=['lodash@4.17.21','postcss@8.4.31','glob@10.4.5','picomatch@4.0.1',
+            'js-yaml@4.1.0','semver@5.5.0','body-parser@1.20.4','body-parser@1.20.8','body-parser@2.3.0'];
+          let failed=false;
+          for(const name of required) if(!lock.includes('\n  '+name+':')){console.error('Unresolved compatible patch: '+name);failed=true;}
+          for(const name of disallowed) if(lock.includes('\n  '+name+':')){console.error('Unpatched dependency remains: '+name);failed=true;}
+          if(failed)process.exit(1);
+          NODE
+      - name: Commit pnpm-generated lockfile to this branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(security): resolve compatible high-severity dependency patches [generated]"
+          git push origin HEAD:security/high-transitive-compatible-20261103

@@ -20,8 +20,8 @@
     "dev:simulator": "npm run dev --workspace tad-simulator",
     "install:all": "npm install",
     "build": "npm run build --workspaces --if-present --parallel",
-      "build:ci": "pnpm -r --parallel build",
-      "build:backend": "npm run build --workspace api",
+    "build:ci": "pnpm -r --parallel build",
+    "build:backend": "npm run build --workspace api",
     "build:all": "npm run build --workspaces",
     "start": "npm run start --workspace api",
     "lint": "npm run lint --workspaces --if-present",
@@ -81,5 +81,17 @@
     "@typescript-eslint/parser": "^8.0.0",
     "postcss": "^8.4.31",
     "typescript": "5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "lodash": "4.18.1",
+      "postcss": "8.5.31",
+      "glob@^10.0.0": "10.5.0",
+      "picomatch@^4.0.0": "4.0.7",
+      "js-yaml@^4.0.0": "4.3.2",
+      "semver@^5.0.0": "5.7.2",
+      "body-parser@^1.0.0": "1.20.9",
+      "body-parser@^2.0.0": "2.4.0"
+    }
   }
 }

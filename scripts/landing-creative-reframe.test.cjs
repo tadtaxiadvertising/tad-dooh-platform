@@ -40,7 +40,7 @@ test("creative reframe remains responsive, reduced-motion friendly and asset-lig
   const advertiser = read("apps/advertiser/components/landing/landing.module.css");
   const earnings = read("apps/driver/components/landing/driver-earnings-lab.module.css");
   for (const css of [driver, advertiser, earnings]) {
-    assert.ok(css.includes("Creative Reframe V3"), "Missing design layer");
+    assert.ok(css.includes("Creative Reframe V4"), "Missing design layer");
     assert.match(css, /@media\s*\(max-width:\s*(?:380|400|580|760|800)px\)/);
   }
   for (const css of [driver, advertiser]) {
@@ -51,4 +51,8 @@ test("creative reframe remains responsive, reduced-motion friendly and asset-lig
   assert.doesNotMatch(earnings, /\n\|\.rateTable\b/);
   assert.match(driver, /\.heroChannels/);
   assert.match(advertiser, /landing-hero-steps/);
+  assert.match(driver, /--yellow:\s*#ffd400/i);
+  assert.match(advertiser, /--yellow:\s*#ffd400/i);
+  assert.match(driver, /background:\s*#08090b/i);
+  assert.match(advertiser, /background:\s*#08090b/i);
 });

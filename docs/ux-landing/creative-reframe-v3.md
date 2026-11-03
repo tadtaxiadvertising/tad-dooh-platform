@@ -1,13 +1,13 @@
-# TAD Landing Creative Reframe V3 — QA handoff
+# TAD Landing Creative Reframe V4 — Brand Continuity — QA handoff
 
 ## Scope and intent
 Branch: \`feat/landing-creative-reframe-20261102\`. Base: \`main@af4ad38ad287a27f4e64bbc967388a62209f3c2f\`.
 
 A visual and copywriting redesign of **two public landing pages only**:
-- Advertiser (\`apps/advertiser/app/page.tsx\` → \`LandingPage\`): **Campaign Atelier**, editorial ivory, clay/orange accent, forest-green campaign theater and a light, accessible quote workbench.
-- Driver (\`apps/driver/pages/index.tsx\` → \`DriverLandingPage\`): **Midnight Mobility**, deep petroleum-green, fluorescent lime accent and a legible mint financial summary.
+- Advertiser (\`apps/advertiser/app/page.tsx\` → \`LandingPage\`): **TAD Cinema**, original black/yellow brand, dramatic digital taxi hero and accessible contrasting light quote workbench.
+- Driver (\`apps/driver/pages/index.tsx\` → \`DriverLandingPage\`): **TAD Night Shift**, original black/yellow brand, subtle spotlight lighting and legible dark earnings dashboard.
 
-These visual systems deliberately differ by audience. They continue using existing SVG/CSS scenery, preinstalled Framer Motion and CSS transforms; no new dependency, 3D runtime, remote font or asset is required.
+Both experiences preserve the original TAD black (#08090b) and yellow (#ffd400) visual identity, while varying their layout emphasis by audience. They continue using existing SVG/CSS scenery, preinstalled Framer Motion and CSS transforms; no new dependency, 3D runtime, remote font or asset is required.
 
 ## Conversion changes
 - Advertiser: hero steps **Imagina → Configura → Solicita revisión**; the CTA still links to \`#experiencia\`. The example continues showing city, objective, screens, duration and production checkbox **OFF** by default. The projected impressions remain estimates with sources and caveats.
@@ -45,3 +45,9 @@ For **both portals**, test 320x568, 360x800, 390x844, 430x932, 768x1024, 1024x76
 - At review time, #181 documented global TypeScript, formatting, E2E runner and security audit failures. Those were not introduced or fixed by this visual PR, and passing landing-only tests does **not** certify production readiness.
 - No direct main commit, no merge/release until CI and QA pass. If any checkpoint fails, leave as a draft PR with the blocker and exact failing evidence.
 - Rollback: revert the single creative-reframe PR; no data migrations or persistent state changes.
+
+## Focused CI evidence and follow-up
+- Prior focused gate exposed three stale analytics snapshots; the advertiser event callback now snapshots the selected city/objective/production synchronously.
+- React pointer/blur events are explicitly discarded rather than spread into analytics metadata.
+- No-JS/SSR headings and earnings cards remain visible before hydration.
+- Verify CI again on the latest head; older CI conclusions do not apply to subsequent commits.

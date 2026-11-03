@@ -32,7 +32,7 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
         <div className={styles.controls}>
           {controls.map(({ id, title, subtitle, icon: Icon, value, setter, max }, index) => (
             <motion.div key={id} className={styles.control}
-              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.3, delay: index * 0.06 }}>

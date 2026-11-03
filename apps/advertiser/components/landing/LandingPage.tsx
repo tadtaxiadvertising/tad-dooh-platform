@@ -127,12 +127,12 @@ export default function LandingPage() {
               <label htmlFor="campaign-screens">Pantallas del ejemplo <span>{screens}</span></label>
               <input id="campaign-screens" type="range" min={1} max={15} step={1} value={screens}
                 aria-valuetext={`${screens} pantallas`} onChange={e => setScreens(Number(e.target.value))}
-                onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
+                onBlur={() => recordPreview()} onPointerUp={() => recordPreview()} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 pantalla</span><span>15 pantallas</span></div>
               <label htmlFor="campaign-months">Duración <span>{months} {months === 1 ? "mes" : "meses"}</span></label>
               <input id="campaign-months" type="range" min={1} max={12} step={1} value={months}
                 aria-valuetext={`${months} meses`} onChange={e => setMonths(Number(e.target.value))}
-                onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
+                onBlur={() => recordPreview()} onPointerUp={() => recordPreview()} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 mes</span><span>12 meses</span></div>
               <label className="landing-production-option" htmlFor="campaign-production">
                 <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { const checked = e.target.checked; setIncludeProduction(checked); recordPreview({ includeProduction: checked }); }}/>

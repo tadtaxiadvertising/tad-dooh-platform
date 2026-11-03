@@ -47,3 +47,11 @@ test("missing key prevents simulator startup before network activity", () => {
   assert.match(result.stderr, /TAD_TABLET_KEY is required/);
   assert.doesNotMatch(result.stdout, /GPS:|Playback:|Heartbeat:/);
 });
+
+test("simulator TypeScript project validates its real JavaScript instead of zero inputs", () => {
+  const config = JSON.parse(fs.readFileSync(path.join(ROOT, "apps/tad-simulator/tsconfig.json"), "utf8"));
+  assert.equal(config.compilerOptions.allowJs, true);
+  assert.equal(config.compilerOptions.checkJs, true);
+  assert.equal(config.compilerOptions.noEmit, true);
+  assert.ok(config.include.includes("src/**/*"));
+});

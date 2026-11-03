@@ -24,6 +24,7 @@ const API_URLS = {
 
 const VIDEO_IDS = ['VID-001', 'VID-002', 'VID-003', 'VID-004', 'VID-005'];
 
+/** @param {string} deviceId */
 function generateGPSPoint(deviceId) {
   return {
     driverId: `SIM-${deviceId}`,
@@ -34,6 +35,7 @@ function generateGPSPoint(deviceId) {
   };
 }
 
+/** @param {string} deviceId */
 function generatePlaybackEvent(deviceId) {
   return {
     deviceId,
@@ -46,6 +48,7 @@ function generatePlaybackEvent(deviceId) {
   };
 }
 
+/** @param {string} deviceId */
 function generateHeartbeat(deviceId) {
   return {
     deviceId,

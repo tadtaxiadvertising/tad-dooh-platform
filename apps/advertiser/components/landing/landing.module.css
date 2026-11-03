@@ -1,4 +1,13 @@
-.landing { --ink: #0a0a0a; --yellow: #ffd400; background: var(--ink); color: #f6f5ef; font-family: Arial, Helvetica, sans-serif; overflow: clip; }
+.landing {
+  --ink: #0a0a0a;
+  --yellow: #ffd400;
+  background: var(--ink);
+  color: #f6f5ef;
+  --font-sans: Inter, Arial, sans-serif;
+  --font-display: Outfit, Inter, sans-serif;
+  font-family: var(--font-sans);
+  overflow: clip;
+}
 .landing :global(*) { box-sizing: border-box; }
 .landing :global(a) { text-decoration: none; }
 .landing :global(button), .landing :global(select), .landing :global(input) { font: inherit; }

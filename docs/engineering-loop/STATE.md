@@ -1,8 +1,8 @@
-# Checkpoint actual — 2026-11-03, después de #198
+# Checkpoint actual — 2026-11-03, después de #199
 
-La base vigente es `10774bb43c8190bdb3ebb0bd98d640ec144ea6cc` (#198), con Creative Reframe V4 de #189 integrado. La continuación y su evidencia por SHA están en [QA post-198](../qa/post-198-completion-2026-11-03.md). La rama de intervención es `codex/post-198-completion-20261103`, en worktree aislado; el checkout histórico y sus modificaciones locales se preservan.
+La base de la continuación es `148af7ce7f11c89bafcb14a8d2cce173ea29f423`, que ya incluye #199. El cierre de reflow/accesibilidad se entrega en `codex/landing-reflow-post-199-20261103`, desde un worktree aislado. Evidencia y límites en [QA post-199](../qa/post-199-landing-reflow-2026-11-03.md); [QA post-198](../qa/post-198-completion-2026-11-03.md) conserva la primera fase. El checkout principal y los cambios locales del usuario se preservan.
 
-CI de esa base: landings y cuatro imágenes Docker PASS; Quality Gates FAIL por sintaxis del guard E2E, deuda ESLint y 18 high de dependencias. Este checkpoint no acredita producción ni habilita merge/despliegue. Consultar el reporte actual para resultados de la intervención y pendientes.
+CI de esa base: Tests/TypeScript/Prisma y cuatro imágenes Docker PASS; browser FAIL por H1 ampliado recortado; formato FAIL en LandingPage.tsx y lint SKIPPED; seguridad FAIL con 64 hallazgos, 18 high. El guard E2E ya está reparado. Consultar el reporte post-199 y el PR del complemento para los resultados de su SHA exacto. No hay autorización de merge/despliegue ni certificación global.
 
 El contenido siguiente se conserva como **historia de #176/#177**, no como lista ejecutable ni estado actual.
 

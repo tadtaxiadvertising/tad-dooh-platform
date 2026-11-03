@@ -208,9 +208,16 @@ async function main() {
       const canonical = new URL(await page.locator('link[rel="canonical"]').getAttribute('href'));
       assert.equal(canonical.pathname, '/');
       assert.equal(canonical.search, '');
+      assert.match(await page.locator('header a.landing-brand').getAttribute('aria-label'),
+        /TAD Taxi Advertising/i, 'The accessible brand name must include its visible desktop tagline.');
     });
 
-    await check('Fresh visitor may reject optional cookies', () => rejectCookies(page));
+    await check('Fresh visitor may reject optional cookies', async () => {
+      const policy = page.getByRole('link', { name: 'Ver política e inventario', exact: true });
+      assert.match(await policy.evaluate(element => getComputedStyle(element).textDecorationLine),
+        /underline/, 'The cookie policy link must remain distinguishable without relying on color.');
+      await rejectCookies(page);
+    });
 
     await check('Advertiser-only landing has no role selector or driver simulator', async () => {
       assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);

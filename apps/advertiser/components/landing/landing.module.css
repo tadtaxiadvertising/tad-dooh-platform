@@ -10,6 +10,7 @@
 }
 .landing :global(*) { box-sizing: border-box; }
 .landing :global(a) { text-decoration: none; }
+.landing :global(a.underline) { text-decoration-line: underline; }
 .landing :global(button), .landing :global(select), .landing :global(input) { font: inherit; }
 .landing :global(button), .landing :global(a), .landing :global(summary), .landing :global(input), .landing :global(select) { -webkit-tap-highlight-color: transparent; }
 .landing :global(:focus-visible) { outline: 3px solid var(--yellow); outline-offset: 5px; }

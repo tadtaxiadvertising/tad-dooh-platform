@@ -6,7 +6,7 @@ Base: `10774bb43c8190bdb3ebb0bd98d640ec144ea6cc`, merge de [#198](https://github
 
 El pedido es revisar el estado del proyecto y continuar la tarea pendiente. El documento de Downloads sobre CRO/Motion se leyó como contexto; sus prompts de ejemplo no iniciaron cambios adicionales. La continuación conserva el Creative Reframe V4 integrado en #189 y repara su verificación después de #198. El checkout principal histórico `1d668d95`, sus skills modificadas y sus archivos sin commit se preservaron. Se trabaja en un worktree separado desde la base actual.
 
-Estado de esta intervención: **IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN**. No es una certificación global ni una autorización de merge/despliegue.
+Estado histórico: la primera parte quedó integrada mediante [#199](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/199). Las correcciones de reflow/accesibilidad y su verificación final continúan sobre main `148af7ce` en [QA post-199](post-199-landing-reflow-2026-11-03.md). Este documento conserva la evidencia de la primera fase; no certifica la plataforma ni autoriza merge/despliegue.
 
 ## Evidencia de la base
 
@@ -60,11 +60,11 @@ Entorno local: Windows, Node 22.20.0. Dependencias bloqueadas mediante pnpm 10.3
 | Tipos estrictos de ambas landings | PASS | `corepack pnpm@10.34.0 exec tsc --noEmit --project apps/{advertiser,driver}/tsconfig.landing.json`, dos comandos, exit0 |
 | Lint de componentes modificados | PASS | Driver: ESLint del workspace. Advertiser carece de binario propio: se invocó el ESLint 9 instalado en Driver, con cwd/config de Advertiser. Ambos `--max-warnings 0`, exit0; no equivale al lint global |
 | Formato del alcance TSX | PASS | `corepack pnpm@10.34.0 dlx prettier@3.8.5 --check` sobre los tres componentes, exit0; se normalizó estilo/LF |
-| Ambos builds con fixtures | NOT RUN | Sin credenciales reales, signup OFF, destinos de API loopback |
-| Browser final, capturas y reflow | NOT RUN | Pendiente builds locales |
-| Lighthouse | NOT RUN | Sin métricas inventadas; no sustituye datos de campo |
+| Ambos builds con fixtures | PASS local | Advertiser `CAQhH3OiK4vGY-wdxUStq`, Driver `dCd3rpRrzH2qEVMfWMiFG`; configuración sintética, signup OFF. Ver continuación para artefactos vigentes |
+| Browser local de esta fase | PASS | Advertiser 15/15 y Driver 13/13; logs `post-198/advertiser-accepted/advertiser-smoke-accepted.log` y `post-198/driver-smoke-accepted.log`. La revisión visual posterior amplió la regresión del laboratorio Driver; estos pases no acreditan esa cobertura nueva |
+| Lighthouse | VER CONTINUACIÓN | Las muestras anteriores no acreditan las últimas correcciones. Resultados y límites vigentes en QA post-199 |
 | CI de `53cc599c` | PARCIAL | [Tests, TypeScript y Prisma PASS](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41640606235); [cuatro Docker PASS](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41640606073). Nuevo browser FAIL reprodujo el recorte; ESLint y seguridad siguen FAIL |
-| CI del SHA final | VER PR | El resultado remoto del SHA final se registra en la descripción de [#199](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/199), después del push, para evitar cambiar nuevamente el SHA solo al registrar su resultado |
+| CI posterior | VER CONTINUACIÓN | #199 se integró durante la pausa de sesión. El complemento se entrega en una rama/PR nuevos desde main actual; no se publican commits adicionales al PR cerrado |
 
 Los nueve archivos de Node son `landing.test.cjs`, `landing-creative-reframe.test.cjs`, `driver-landing.test.cjs`, `driver-preview-arithmetic.test.cjs`, `advertiser-onboarding-presentation.test.cjs`, `cookie-management.test.cjs`, `simulator-key-security.test.cjs`, `next-security-contract.test.cjs` y `ci-e2e-isolation.test.cjs`, todos bajo `scripts/`.
 

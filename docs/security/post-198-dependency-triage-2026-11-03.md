@@ -2,6 +2,8 @@
 
 Fecha: 2026-11-03, America/La_Paz. Destinatarios: mantenimiento, revisión de seguridad y responsables de CI de TAD DOOH.
 
+Actualización de lectura, 2026-11-03 20:44:57 UTC: main `148af7ce7f11c89bafcb14a8d2cce173ea29f423` conserva el gate **FAIL**, con **64 hallazgos: 18 high, 38 moderate y 8 low** en [Security Audit 126193314402](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41715214665/job/126193314402). El inventario detallado siguiente corresponde al snapshot de #198; los 65 hallazgos históricos no se presentan como conteo actual. El follow-up de landing no cambia dependencias.
+
 **Veredicto del gate de seguridad: FAIL.** El job ejecutado sobre `main` tras #198 terminó con código 1 al ejecutar `pnpm audit --audit-level=high`. Este documento conserva el diagnóstico y separa propuestas futuras del cierre de CI/E2E y QA de las landings. **El alcance actual no altera dependencias, manifiestos, lockfile, API, datos ni producción. Ninguna remediación descrita aquí fue implementada.**
 
 ## Evidencia y límites

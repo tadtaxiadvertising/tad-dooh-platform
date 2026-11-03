@@ -257,3 +257,250 @@
   :global(html):has(.landing) { scroll-behavior: auto !important; }
   .landing *, .landing *::before, .landing *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+
+/* Creative Reframe V3 — Midnight Mobility.
+ * A separate, brand-recognizable product surface. Pure CSS on top of the
+ * existing layout contract: no extra JS, images, fonts or private providers.
+ */
+.landing {
+  --yellow: #d5fc78;
+  --muted: #adc4be;
+  --line: rgba(214, 252, 225, .16);
+  background: #071b1c;
+  color: #f4fcf6;
+}
+.header {
+  position: relative;
+  z-index: 2;
+  background: #071b1cf5;
+  border-color: var(--line);
+  backdrop-filter: blur(14px);
+}
+.headerInner { min-height: 90px; }
+.brand > span { color: #d6e9da; border-color: var(--line); }
+.navSection, .login { color: #effff5; }
+.navSection:hover, .login:hover { color: var(--yellow); }
+.login { border-radius: 999px; border-color: #a7c3ba88; }
+.hero {
+  position: relative;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+  min-height: 660px;
+  gap: clamp(24px, 3vw, 58px);
+  padding-block: 84px 96px;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 40% 0 -20vw;
+  background: radial-gradient(ellipse at 40% 40%, #1b655d48, transparent 64%);
+  pointer-events: none;
+}
+.heroCopy { position: relative; z-index: 1; min-width: 0; }
+.hero .eyebrow { color: var(--yellow); font-size: 11px; }
+.hero h1 {
+  font-size: clamp(56px, 5.8vw, 93px);
+  line-height: 1.02;
+  font-weight: 850;
+  letter-spacing: -.072em;
+  text-wrap: balance;
+  max-width: 740px;
+}
+.hero h1 > span { color: var(--yellow); }
+.heroDescription {
+  color: #d2e2dc;
+  max-width: 490px;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.primaryButton {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #0a231f;
+  border-radius: 999px;
+  box-shadow: 0 12px 40px #b6ed6350;
+  transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease;
+}
+.primaryButton:hover { background: #eeffae; border-color: #eeffae; transform: translateY(-2px); box-shadow: 0 18px 45px #b6ed6355; }
+.secondaryButton { border-radius: 999px; }
+.textLink { color: #e7f4e8; font-size: 13px; }
+.heroNote { color: #b6d1c6; font-size: 12px; }
+.heroChannels {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.heroChannels li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid #b7dbb344;
+  border-radius: 999px;
+  background: #efffdd0a;
+  color: #eff9ee;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.heroChannels strong { color: var(--yellow); font-size: 10px; letter-spacing: .08em; }
+.scene {
+  position: relative;
+  margin-top: 0;
+  min-height: 490px;
+  border-radius: 35px;
+  border-color: #c7fe7a55;
+  background:
+    radial-gradient(ellipse at 70% 20%, #b0ee7055, transparent 55%),
+    radial-gradient(ellipse at 5% 90%, #24998766, transparent 50%),
+    linear-gradient(145deg, #153f3b, #08191c);
+  box-shadow: 0 35px 90px #0007, inset 0 1px 0 #c7f3a322;
+}
+.sceneGrid { background-size: 30px 30px; opacity: .9; }
+.sceneLabel { color: #d7f4df; }
+.screenCard {
+  border-color: #b5ea8e77;
+  border-radius: 19px;
+  background: #0a2929;
+  box-shadow: 0 25px 55px #001d19bb;
+}
+.screenPlay { background: var(--yellow); color: #082822; border-radius: 13px; }
+.sceneFooter > span:first-child { color: #ecffec; }
+.promiseBar {
+  background: #d9f2df;
+  border: 0;
+}
+.promiseBar > div { padding-block: 22px; }
+.promiseBar span { color: #173c35; font-weight: 700; }
+.promiseBar svg { color: #236b59; }
+.section { padding-block: 108px; }
+.sectionHeading h2 {
+  max-width: 830px;
+  font-size: clamp(36px, 4.6vw, 61px);
+  letter-spacing: -.055em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.sectionHeading h2 > span { color: #a2bbb5; }
+.sectionHeading > p:last-of-type:not(.eyebrow) { color: #b7cec6; font-size: 15px; }
+.benefitGrid { gap: 15px; margin-top: 45px; }
+.benefitCard {
+  position: relative;
+  background: linear-gradient(155deg, #153534, #0c2729);
+  border-color: #d0f8d01c;
+  border-radius: 28px;
+  padding: 34px;
+  min-width: 0;
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.benefitCard:hover, .benefitCard:focus-within {
+  transform: translateY(-5px);
+  border-color: #bdfa7877;
+  box-shadow: 0 22px 55px #00131177;
+}
+.iconTile { border-radius: 16px; border-color: #caff8955; background: #d5fc7815; }
+.benefitCard h3 { font-size: 21px; letter-spacing: -.035em; }
+.benefitCard p { color: #c0d3cb; font-size: 14px; }
+.processSection {
+  padding-block: 104px;
+  color: #0c3531;
+  background: #e9f4ec;
+  border: 0;
+}
+.processSection .eyebrow,
+.processLayout .textLink { color: #176653; }
+.processSection .sectionHeading > p:last-of-type:not(.eyebrow) { color: #41635b; }
+.processSection .stepNumber { border-color: #1c78603a; color: #115d4a; }
+.processSection .steps > li { border-color: #174b3d2b; }
+.processSection .steps p { color: #4b665e; font-size: 14px; }
+.requirementsCard {
+  border-radius: 28px;
+  background: #10302e;
+  border-color: #b4e0c222;
+}
+.requirementsList strong { font-size: 14px; }
+.requirementsList p { color: #b8d1c5; font-size: 13px; }
+.conditionsCard {
+  border-radius: 28px;
+  background: linear-gradient(140deg, #d7fc93, #a6e5bb);
+  color: #0c332a;
+  border-color: #d7fc93;
+}
+.conditionsCard .smallLabel, .conditionsCard .textLink { color: #1d614c; }
+.conditionsCard h3 { font-size: clamp(25px, 2.5vw, 34px); }
+.conditionsCard > p, .conditionsList li { color: #1b493b; font-size: 13px; }
+.conditionsList svg { color: #217456; }
+.faqSection { padding-block: 45px 115px; }
+.faqItem summary { font-size: 15px; }
+.faqItem[open] summary { color: #d5fc78; }
+.closingCard {
+  background: radial-gradient(circle at 88% 8%, #fbffe3, transparent 50%), #cbf38b;
+  border: 0;
+  border-radius: 34px;
+  color: #102b28;
+  padding: clamp(30px, 6vw, 78px);
+}
+.closingCard .eyebrow { color: #24644c; }
+.closingCard h2 { font-size: clamp(37px, 4.5vw, 67px); max-width: 900px; }
+.closingCard h2 > span { color: #1a7358; }
+.closingCard > p:not(.eyebrow) { color: #325549; font-size: 15px; }
+.closingCard .primaryButton { background: #082d2a; border-color: #082d2a; color: #ecffdc; box-shadow: none; }
+.closingCard .primaryButton:hover { background: #185045; }
+.closingCard .secondaryButton { color: #143d33; border-color: #446c54; }
+.footer { background: #031112; }
+.footer strong { color: var(--yellow); }
+.footer nav a { color: #c8dcd3; }
+@media (prefers-reduced-motion: no-preference) {
+  .taxi { animation: tadDriveFloat 7s ease-in-out infinite; }
+  .screenCard { animation: tadScreenHover 6s ease-in-out infinite; }
+}
+@keyframes tadDriveFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -8px, 0); }
+}
+@keyframes tadScreenHover {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-3deg); }
+  50% { transform: translate3d(0, -6px, 0) rotate(-1deg); }
+}
+@media (max-width: 1100px) {
+  .hero h1 { font-size: clamp(48px, 5vw, 69px); }
+  .scene { min-height: 420px; }
+}
+@media (max-width: 800px) {
+  .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-block: 60px 70px; }
+  .hero h1 { font-size: clamp(52px, 9vw, 78px); }
+  .scene { width: 100%; max-width: 650px; margin: 0 auto; min-height: 430px; aspect-ratio: 1.1; }
+  .section { padding-block: 76px; }
+  .processSection { padding-block: 70px; }
+  .benefitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .benefitCard:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 580px) {
+  .container { width: calc(100% - 36px); }
+  .headerInner { width: calc(100% - 32px); min-height: 74px; }
+  .hero { padding-block: 44px 54px; gap: 26px; }
+  .hero h1 { font-size: clamp(44px, 11vw, 60px); letter-spacing: -.063em; }
+  .heroDescription { font-size: 14px; line-height: 1.7; }
+  .scene { min-height: 330px; border-radius: 25px; }
+  .screenCard { top: 48px; }
+  .heroChannels { gap: 6px; }
+  .heroChannels li { font-size: 10px; padding: 8px 10px; }
+  .benefitGrid { grid-template-columns: 1fr; }
+  .benefitCard:last-child { grid-column: auto; }
+  .benefitCard { border-radius: 22px; padding: 26px; }
+  .section { padding-block: 62px; }
+  .sectionHeading h2 { font-size: clamp(34px, 9vw, 46px); }
+  .closingCard { border-radius: 25px; }
+  .closingCard h2 { font-size: clamp(34px, 9vw, 49px); }
+  .promiseBar > div { gap: 14px; }
+}
+@media (max-width: 370px) {
+  .hero h1 { font-size: 42px; }
+  .scene { min-height: 290px; }
+  .brand img { width: 111px; height: auto; }
+  .brand > span { padding-left: 10px; font-size: 8px; }
+}
